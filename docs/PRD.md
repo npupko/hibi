@@ -5,10 +5,10 @@
 > automated agents never read a **superseded or outdated** document and act on it as if it were
 > current.
 >
-> **Status:** final-product design ("what it looks like when it's done"). Every decision that the
-> earlier draft left open (§10 of that draft) is **resolved here** and recorded in the **Decision
-> Log (§14)**. This document is self-sufficient: it is intended as the sole input for building the
-> tool from scratch in a fresh, empty repository.
+> **Status:** complete, self-contained specification — the sole input for building the tool from
+> scratch in a fresh, empty repository. The architecture, data model, contracts, algorithms, and
+> parameters below are final and migration-free; every design decision is recorded, with its
+> rationale, in the **Decision Log (§14)**.
 >
 > **"Final product, no shortcuts" means no *architectural* compromise — not a big-bang build.** The
 > full architecture, contracts, and data model below are complete and migration-free; the
@@ -96,7 +96,8 @@ chain, and **cross-corroborates** — confidence is a function of selector agree
 - **`text-position`** — line/char range; a cheap first guess and corroboration hint.
 - **`ast-node`** — the enclosing construct via **tree-sitter**; survives relocation/reformatting.
 - **`value`** — for claims about a specific value (e.g. `MAX_ATTEMPTS == 5`), an extracted structured
-  value so a `5 → 50` change trips even if nothing else moves.
+  value so a `5 → 50` change trips even if nothing else moves. Which AST node kinds carry a literal is
+  configured **per language grammar** (§6).
 - **`path` / `glob`** *(coarse)* — a file / directory / glob → an **edge**: navigation and
   blast-radius only ("which decisions bear on this module?"). **Coarse anchors are never reported as
   stale** — the primary defense against over-flagging (§11).
@@ -131,8 +132,10 @@ add more **out-of-process, in any language**, against the same wire protocol (§
 
 ## 5. Data model
 
-The **canonical model** is small and is the **source of truth as versioned JSON Schema**
-(`schemas/*.v1.json`); the Rust types and every language SDK are **generated from it**.
+The **canonical model** is small and is defined **once in Zod (v4)** as the single source of truth;
+the **versioned JSON Schema** (`schemas/*.v1.json`), the **TypeScript types**, and every language SDK
+are **generated from it** (via `z.toJSONSchema`), and claim-store records are validated against it at
+load. (Dependency rationale: §16.)
 
 - **Document** `{ id, path, lifecycle, edges[], frontmatterStatus? }` — a file. Owns lifecycle and
   supersession edges.
@@ -148,8 +151,8 @@ The **canonical model** is small and is the **source of truth as versioned JSON 
 **Deliberately excluded entities** (rejected on principle, not scope):
 - **No `Evidence` entity** — an anchor has no identity apart from its assertion; it is a value-object
   (mirrors W3C's selector-inside-target).
-- **No `Run` / verdict-history entity** — §6 mandates recompute-live; a stored run contradicts the
-  persistence model.
+- **No `Run` / verdict-history entity** — §6 never persists verdicts (they are recomputed on every
+  `check`); a stored run would contradict that.
 
 Lineage of the shape: **Proposition/Assertion** ≈ Truth-Maintenance Systems' belief/justification
 (Doyle 1979); **Document edges** ≈ ADR `superseded-by` / RFC `Obsoletes`; **Anchor selectors** ≈ W3C
@@ -157,35 +160,55 @@ Web Annotation `TextQuoteSelector` (+ tree-sitter for the structural selector).
 
 ## 6. How it works
 
-**Persistence model — recompute-live, no committed lockfile.** Authored records (Propositions +
-Assertions + Anchors) live in a **git-ignored-optional, regenerable claim store** beside the docs
-(see §8); they are **self-describing**. **git is the baseline/time-machine**: the state at `@ref` is
-derived on demand via an **in-process git library (gitoxide/`gix`)** — equivalent to `git show
-@ref:path` with no subprocess — **recomputed live, never stored**.
-Freshness is **recomputed on every check**. A **fat, git-ignored, regenerable cache/index** (parsed
-trees, blob hashes, prior locations) is permitted **purely** as a performance optimization — never a
-committed source of truth, never a `*.lock`.
+**Persistence model — the anchor carries its own baseline; no committed verdict-lock; git is not on
+the verdict path.** Authored records (Propositions + Assertions + Anchors) live in a **committed
+claim store** beside the docs (see §8). **The anchor *is* the baseline snapshot:** because
+re-localizing a claim requires its original selectors, every Anchor already carries the `text-quote`
+(exact + prefix/suffix), the normalized-AST hash, and the extracted `value` as captured when the
+claim was recorded. Freshness is therefore computed from **(the stored Anchor) vs (the current
+working tree)** alone — the engine never reads a historical revision to reach a verdict. This keeps
+`check` **fully offline** and correct under shallow CI clones (`git clone --depth=1`), where
+historical commit objects are absent from the local repository. **git is used only for advisory
+work** — `git diff --name-only <ref> HEAD` to scope the write-time loop (described below) and blame
+for attribution — never to compute a verdict. **Computed verdicts are never persisted.** The
+committed store holds only authored records and their baselines, written as **one file per claim** so
+that merges stay scoped and meaningful, never a monolithic lockfile. A **git-ignored, regenerable
+cache** (parsed trees, blob hashes) is permitted purely as a performance optimization.
 
 **Drift detection (per precise Assertion), layered cheapest-first with corroboration:**
-1. **Localize** — resolve each selector in the *current* tree: `text-position` (hint) → `text-quote`
-   (fuzzy) → `ast-node` (tree-sitter). Output: current region + a **confidence derived from how many
-   selectors agree**, or `ghost` (not locatable across all selectors / file gone).
-2. **Detect change** — compare the located region against its state at `@ref` (derived live from
-   git) via the appropriate tier: **text-normalized hash** (base) and **normalized-AST hash**
-   (structural). For `value` selectors, compare the extracted value directly.
+1. **Localize** — resolve each selector in the *current* tree: `text-position` (a hint) → `text-quote`
+   (fuzzy match via the Bitap algorithm) → `ast-node` (**snapped to the smallest enclosing *named*
+   tree-sitter node**, computed the same way at record time and at check time so that re-indentation
+   and reformatting never shift the node boundary). Output: the current region + a **confidence
+   derived from how many selectors agree**, or `ghost` when no selector can locate it.
+2. **Detect change** — compare the located region against the **baseline stored in the Anchor** via
+   the appropriate tier: a **text-normalized similarity** (base; a normalized edit-distance score, §17.2) and a **two-tier AST hash** — a
+   *structural* hash (node kinds only; invariant under renames and whitespace) and a *semantic* hash
+   (node kinds plus token **and literal** text, so a changed string or numeric literal is always
+   caught). For `value` selectors, compare the extracted value using a **per-grammar extraction
+   map**. (`text-quote` and `ast-node` are language-universal; `value` is the one selector that needs
+   a small per-language configuration of which AST node kinds carry literals.)
 3. **Grade with thresholds**, not a boolean: unchanged → `fresh`; located-but-moved (selectors agree
    it relocated) → `moved` (re-anchorable); region changed → `stale`; unlocatable → `ghost`; past
    `ttl` → `expired`. Selector **disagreement** lowers confidence and yields `moved`/re-verify,
    **never** a hard `stale` — keeping the suspect set tight.
 
 **Precision tiers (all first-party; SCIP is *not* — §14):**
-- **Tier 1 — text:** fuzzy `text-quote` localization + text-normalized region hash.
-- **Tier 2 — structural:** **tree-sitter** `ast-node` localization + normalized-AST hash. Lightweight
-  (grammar, not a semantic indexer), deterministic, cheap to run at two commits, ~universal grammars.
+- **Tier 1 — text:** fuzzy `text-quote` localization + a text-normalized similarity score (§17.2).
+- **Tier 2 — structural:** **tree-sitter** `ast-node` localization (snapped to the enclosing named
+  node) + a **two-tier** normalized-AST hash (structural + semantic). Lightweight (a grammar, not a
+  semantic indexer), deterministic, with grammars available for all mainstream languages
+  (TypeScript, Python, Rust, Go, and more).
 - **Tier 3 — semantic (optional, quarantined):** an LLM "is it still *true*?" resolver MAY be
   registered, but it is **opt-in, runs out-of-process, and never gates a deterministic verdict** — it
   can only *advise* (e.g. annotate a `fresh` region as "semantically suspect"). The deterministic
   verdict stands on its own. (§7.4, §11.)
+
+**Deterministic boundary.** Tiers 1–2 detect *structural* change — to an anchored name, type, value,
+signature, or its existence. They do **not** judge whether a natural-language *behavioral* claim is
+still true (e.g. "sorts ascending", "retries on timeout", an "O(n)" complexity claim); a change that
+alters behavior without touching the anchored region is, by design, graded `fresh`. Surfacing such
+semantic claims for re-verification is exactly — and only — what the optional Tier-3 advisor is for.
 
 **Supersession.** Authoring `amends`/`supersedes` on the new document causes the engine to (a)
 **derive the reverse edge**, (b) set the old Document's lifecycle, and (c) mark the affected
@@ -267,10 +290,19 @@ verdicts. The store lets the engine track **any** document — including pristin
 third-party docs — **without rewriting its prose**.
 
 **Stamping (satisfies the threat model regardless of carrier):**
-- A **universal banner** — sentinel-delimited (`BEGIN`/`END`), **idempotent** (find-and-replace
-  between sentinels → no diff churn), **plain visible text** (better for a naive raw-file reader than
-  a hidden comment) — is written into each affected document, listing the suspect Propositions and
-  their status.
+- A **universal banner** — sentinel-delimited (`BEGIN`/`END`), **idempotent** (the engine locates the
+  region between the sentinels and replaces it, so re-stamping an unchanged status produces no diff),
+  **plain visible text** (better for a naive raw-file reader than a hidden comment) — is written into
+  each affected document, listing the suspect Propositions and their status. The banner mechanism
+  **must** satisfy four requirements: (1) the sentinels carry a **per-repository nonce**, so that a
+  document which legitimately quotes the banner format (this specification itself, for example) is
+  never mistaken for a banner and overwritten; (2) the `END` sentinel carries an **FNV-1a checksum**
+  of the banner body, so that a hand-edit inside the banner is detected and the engine refuses to
+  overwrite (or self-heals, per `--fail-on`); (3) markers are **line-anchored and version-tagged**;
+  (4) **all whitespace inside the banner is engine-owned**. The result: re-stamping is byte-stable,
+  a status update changes only the bytes between the sentinels, and clearing a banner restores the
+  file to its exact pre-banner bytes — in any text format. (Exact sentinel strings, nonce derivation,
+  locate regexes, comment styles, frontmatter placement, and the splice contract are in §17.5.)
 - For markdown, an **optional** machine-readable `frontmatterStatus` is also written.
 
 *(Inline line-microformat carriers — claims authored as lines inside the doc, à la atlas — were
@@ -306,6 +338,19 @@ it. See §14.)*
 - **Document lifecycle:** `active` · `amended` · `superseded` · `archived` · `retracted`.
 - **TTL:** an Assertion may carry an optional `ttl`; past it the computed state is `expired`
   (time-based re-verification, independent of code drift).
+- **Grading parameters.** Selector-fusion confidence is `C = Σ(wᵢ·sᵢ) / Σ(wᵢ)` over the selectors
+  that resolved, with weights `ast-node 0.35 · text-quote 0.30 · value 0.20 · text-position 0.15`, a
+  **minimum of two agreeing selectors** required (otherwise the verdict is `ghost`), a structural-only
+  AST match credited as a partial `ast-node` score, and an active localization-gated **value veto**
+  (both detailed in §17.3). Fuzzy
+  matching (diff-match-patch) uses `Match_Threshold 0.4`, `Match_Distance 100000` (deliberately large,
+  so a region relocated by hundreds of characters is still found), and a 48-character `text-quote`
+  context window. Verdict bands: `C ≥ 0.8` → `fresh`; `0.5 ≤ C < 0.8` → `moved`; `0.2 ≤ C < 0.5` →
+  `stale`; `C < 0.2` → `ghost`. The engine is tuned for **precision over recall**: it holds
+  false-`stale` at or below ~2% and **never reports a drifted claim as `fresh`** — every missed drift
+  is graded `moved` (i.e. *re-verify*), not clean. (A deeply-nested whitespace-only edit may
+  occasionally over-flag to `moved`/`stale`; it never silently passes.) The full normative procedure —
+  localization, hashing, fusion, grading, the per-grammar value map, and the banner format — is in **§17**.
 
 ## 11. Principles & constraints (the discipline)
 
@@ -325,42 +370,46 @@ it. See §14.)*
 
 ## 12. Distribution
 
-- **A single statically-linked binary** (musl; `cargo build --release`) — tiny and zero-runtime, the
-  ideal artifact for dropping into any CI or environment, with instant startup. Prebuilt binaries
-  (Linux/macOS/Windows, x64/arm64) on GitHub releases; `cargo install`; `curl | sh` + a Homebrew
-  formula; a thin **GitHub Action** wrapper for CI gating.
-- **Per-language resolver SDKs** generated from the protocol schema (TS and Rust first), so resolver
-  authors are never forced into the host language.
-- JS-ecosystem consumers (e.g. atlas) read the binary's **JSON output / exit codes** like any other
-  consumer — no host-language coupling.
+- **A single self-contained executable** built with `bun build --compile` — no separate runtime to
+  install, with instant startup; the ideal artifact for dropping into any CI or git hook. Prebuilt
+  executables (Linux/macOS/Windows, x64/arm64) on GitHub releases; installable from npm for
+  JS-ecosystem users; `curl | sh` + a Homebrew formula; a thin **GitHub Action** wrapper for CI
+  gating. If an even smaller, faster-starting artifact is later required, the engine core can be
+  ported to Rust behind the unchanged CLI/JSON contract (a static `musl` binary).
+- **Per-language resolver SDKs** generated from the protocol schema (TypeScript and Rust first), so
+  resolver authors are never forced into the host language.
+- JS-ecosystem consumers (e.g. atlas) read the executable's **JSON output / exit codes** like any
+  other consumer — no host-language coupling.
 
 ## 13. Build sequencing (no architectural shortcuts; validate each layer)
 
 The architecture above is complete and migration-free. Implement it in this order, validating
 correctness (especially the suspect-set precision of §11.3) at each step:
 
-1. **Core + contracts** — schemas → generated Rust types; data model; Verdict; the kinded `Anchor` union.
-2. **Tier-1 drift** — text-quote fuzzy localize + text-normalized hash, against live git; the claim
-   store; the universal banner; `check` + exit codes.
+1. **Core + contracts** — the Zod model → generated JSON Schema + TypeScript types; data model; Verdict; the kinded `Anchor` union.
+2. **Tier-1 drift** — text-quote fuzzy localize + text-normalized hash, compared against the baseline
+   stored in the Anchor; the claim store; the universal banner; `check` + exit codes.
 3. **Supersession + lifecycle** — `amends`/`supersedes`, reverse-derivation, stamping; `supersede`,
    `query`, `diff`, `status`.
 4. **Resolver protocol** — JSONL-RPC + TS & Rust SDKs; move the built-in drift & supersession logic
    behind the same contract; default-deny manifest.
-5. **Tier-2 structural** — tree-sitter `ast-node` selector + normalized-AST hash; corroboration &
-   confidence grading across selectors; `value` selector.
+5. **Tier-2 structural** — tree-sitter `ast-node` selector (snapped to the enclosing named node) +
+   two-tier normalized-AST hash; corroboration & confidence grading across selectors; `value` selector.
 6. **Tier-3 (optional)** — the quarantined semantic advisory resolver; additional language SDKs.
 
 ## 14. Decision Log (resolved; do not silently re-open)
 
-- **D1 — Language & runtime → Rust.** For the *final* product the decisive factor is the artifact:
-  a tiny, statically-linked, zero-runtime binary is the platonic CLI for dropping into anyone's CI
-  or git hooks, with instant startup and the rigor a determinism-critical engine deserves. Pure-Rust
-  git (`gix`) reads baselines in-process (no shell-out), and `tree-sitter` / `dissimilar` are
-  first-class. The owner has working Rust and has accepted owning the engine in it. *TypeScript/Bun
-  considered and rejected for the final product* (its edge was owner-velocity, not end-state quality;
-  `bun build --compile` binaries are large and embed a runtime). *Go rejected* (no owner fluency).
-  *Zig rejected* (immature ecosystem). The JSON/CLI contract is language-agnostic, so consumers
-  (incl. the Bun/TS atlas) are unaffected.
+- **D1 — Language & runtime → TypeScript on Bun for the engine; an optional Rust port reserved solely
+  for static-binary distribution.** The engine's work is anchoring, fuzzy text matching, tree-sitter
+  parsing, and JSON I/O — all first-class in the TypeScript/Bun ecosystem (`web-tree-sitter` for
+  parsing, plus a small vendored Bitap matcher for fuzzy text — see D8). Because the baseline lives in the Anchor record rather than in git (§6), the
+  engine has no hot-path dependency on an in-process git library — which removes the principal reason
+  a determinism-critical CLI would otherwise reach for a systems language. A single statically-linked
+  binary remains desirable for drop-in CI use (§12); that is a *packaging* concern, satisfied by
+  `bun build --compile` or, if an even smaller/faster-starting artifact is later required, by porting
+  the engine core to Rust (`dissimilar` + `tree-sitter` crates) behind the unchanged CLI/JSON
+  contract. *Go and Zig are out of scope.* The JSON/CLI contract is language-agnostic, so consumers
+  (including the Bun/TS *atlas*) are unaffected.
 - **D2 — Authoring → agent-authored records.** "Retrofit" means an agent *authors* claims for
   existing prose; the engine never NLP-extracts claims (that would break determinism).
 - **D3 — Carrier → dedicated claim store + universal banner; frontmatter optional.** Tracks any doc
@@ -368,16 +417,24 @@ correctness (especially the suspect-set precision of §11.3) at each step:
   human/third-party docs); *frontmatter rejected as universal* (markdown-only).
 - **D4 — Data model → Document + Proposition + Assertion + composite Anchor (value-object); verdict
   ephemeral.** *Flat rejected* (conflates the three status kinds; no clean `amends` target). *4-way
-  (+Evidence +Run) rejected* (Run contradicts recompute-live; Evidence has no identity apart from its
-  assertion).
+  (+Evidence +Run) rejected* (Run contradicts the never-persist-verdicts rule; Evidence has no identity
+  apart from its assertion).
 - **D5 — Precision → layered + corroborating: text → tree-sitter AST → optional quarantined
   semantic.** Confidence from selector agreement.
 - **D6 — CLI surface → as §9.** JSON schema-as-source-of-truth; explicit exit-code contract;
   out-of-process JSONL-RPC resolver SDK.
 - **D7 — Enums → as §10.** Adds TTL→`expired` and `retracted` for the final product.
-- **D8 — Fuzzy anchoring → `dissimilar` (dtolnay's diff-match-patch port) / `similar` + tree-sitter
-  grammars; git via `gix` (pure-Rust, no C dep), with `git2` as fallback.** (Google's diff-match-patch
-  was archived 2024-08-05; maintained Rust ports exist — a non-issue.)
+- **D8 — Fuzzy anchoring → a *vendored* Bitap/Myers matcher (the diff-match-patch algorithm) +
+  official `tree-sitter` grammars via `web-tree-sitter`.** The diff-match-patch *algorithm* is stable
+  and standard, but no implementation is dependency-healthy — Google's original is **archived** and
+  every JS fork is either dormant or under 100 stars — so the ~150-line matcher is **vendored into the
+  engine** (consistent with §11.5: own every part; no fragile third-party dependency on the verdict
+  path). `tree-sitter`/`web-tree-sitter` and the per-language grammars are taken from the **official
+  tree-sitter org** as **prebuilt wasm shipped in the official `tree-sitter-LANG` packages** (the
+  tree-sitter CLI is only a fallback for a language whose package lacks wasm) — never a third-party
+  grammar bundle. git is accessed through the CLI for `diff --name-only` and blame only — advisory,
+  never on the verdict path (§6). Fixed parameters are in §10; full dependency grounding in §16.
+  (A Rust port would use the `dissimilar` and `tree-sitter` crates.)
 - **D9 — Distribution → as §12.**
 - **D10 — Name → provisional "Claim Engine."** Open for the owner; shortlist offered out-of-band.
 - **SCIP — rejected as first-party.** Its differentiator over tree-sitter (cross-file semantic symbol
@@ -403,11 +460,12 @@ correctness (especially the suspect-set precision of §11.3) at each step:
 - **Fiberplane Drift** — the closest existing tool and our true sibling: it binds docs/specs to code,
   anchors via **tree-sitter + git**, and detects staleness with an **AST-fingerprint** (XxHash3 of the
   normalized AST) stored in a committed **`drift.lock`**, checked in CI. Study its anchoring; the
-  deliberate differences are what define us — Drift checks file content against a stored signature
-  (**no git history needed**) and yields a **binary** stale/not-stale, whereas we **store nothing**
-  (git is the baseline/time-machine, §6), add **fuzzy text-quote re-localization** over the AST tier,
-  grade a **`fresh/moved/stale/ghost/expired`** verdict with corroboration-based confidence, and add
-  **document supersession** + **in-file status stamping** — none of which Drift does.
+  deliberate differences are what define us — Drift checks file content against a single stored AST
+  signature (**no git history needed**) and yields a **binary** stale/not-stale; we likewise need no
+  git history to reach a verdict, but store a **richer per-claim baseline** (text-quote + AST + value,
+  one file per claim, never a monolithic lock) that enables **fuzzy re-localization** and a graded
+  **`fresh/moved/stale/ghost/expired`** verdict with corroboration-based confidence, plus **document
+  supersession** + **in-file status stamping** — none of which Drift does.
 - **Doorstop** — the engine *shape*: fingerprint-per-link, recompute → "suspect", explicit
   re-baseline.
 - **Hypothesis fuzzy anchoring + W3C TextQuoteSelector + Google `diff-match-patch`** — the robust
@@ -423,8 +481,168 @@ correctness (especially the suspect-set precision of §11.3) at each step:
   indexer, not the namesake enterprise-search product) — studied and *not* adopted: they index code
   symbols for *navigation*; we are not a code index (§2, §14). **Codescope** — a similar typed-claim
   product, studied and *not* adopted (§14).
+- **`driftdev.sh`** — a TypeScript-compiler doc-drift checker: it extracts an API spec from source,
+  runs rules over JSDoc/markdown, and validates executable `@example` blocks, emitting JSON. Worth
+  studying, but **language-locked** to TypeScript — exactly the limitation the out-of-process resolver
+  seam (§7) exists to avoid; its executable-`@example` validation is a natural future third-party
+  resolver.
+- **ReqToCode** — embeds requirement identifiers into *code* as compiler-checked constants, so a
+  broken trace is a broken build. The mirror image of this tool: it enforces by instrumenting
+  **code**, where we stamp **documents** — instructive as a contrast (and as the reason we reject
+  in-code instrumentation: it defaces the source), not a model to copy.
+
+## 16. Dependencies (grounded)
+
+Every runtime dependency is either a Bun runtime built-in or a reputable, actively-maintained,
+non-archived project; anything else is vendored. No capability forces an unknown, abandoned, or
+single-maintainer package, and none forces a change to the vision. Star counts are approximate,
+included as evidence of health.
+
+| Capability | Decision | Package (health) | Alternatives considered | Why |
+|---|---|---|---|---|
+| CLI arg parsing | **built-in** | `node:util.parseArgs` (Bun native) | commander 28k★, yargs 11k★, citty, cac | subcommands + typed flags suffice; commander (0-dep) is the only sanctioned upgrade if UX outgrows it |
+| Glob / path matching | **built-in** | `Bun.Glob` | picomatch | `match()` + `scanSync()` cover coarse anchors and corpus walking |
+| Content hashing | **built-in** | `Bun.hash.xxHash64`, `node:crypto` | xxhash-wasm, crypto-js | fast non-crypto fingerprint, zero-dep |
+| Fuzzy locate (Bitap) | **vendor** | ~150 lines, owned | see *Vendored* below | no healthy package does fuzzy *substring location* |
+| Structural parsing | **dep (official)** | `web-tree-sitter` ~26k★, official tree-sitter org, 0 deps | native `tree-sitter` node binding (needs native build) | official WASM binding; portable into the single binary |
+| Language grammars | **dep (official)** | `tree-sitter-{typescript,python,rust,go,java}` (official org) | third-party wasm bundles (rejected — `tree-sitter-wasms` is 16★) | official packages ship prebuilt wasm; see plan below |
+| Schema → types + validation | **dep (single source)** | `zod` v4 ~43k★, 0 runtime deps | TypeBox + ajv; json-schema-to-typescript (9 deps) + ajv | one source for types + runtime validation + `z.toJSONSchema` (JSON-Schema export) |
+| Frontmatter (optional) | **vendor (+ opt dep)** | `---` splitter; `js-yaml` 6.6k★ only if a YAML body must be parsed | gray-matter (just wraps js-yaml) | frontmatter is optional (§7.3); keep it dep-light |
+| Resolver protocol (JSONL-RPC) | **vendor** | line-framing + dispatch | jsonrpc-lite (dormant 2022), vscode-jsonrpc (heavy, LSP-coupled) | trivial and on the isolation boundary |
+| SDK codegen (deferred, Layer 6) | **dep (dev-time)** | `quicktype` ~14k★ | hand-rolled templates | build-time only, never on the verdict path |
+| UUID / TTL / git / logging | **built-in + CLI** | `crypto.randomUUID`, `Date`, `git` CLI, `console` | uuid, dayjs, simple-git | git is CLI-only and advisory (§6) |
+
+**Vendored** (small, owned per §11.5; no healthy dependency exists for these): the Bitap fuzzy-locate
+matcher (the diff-match-patch algorithm — §10's parameters presume its exact semantics), the FNV-1a
+banner checksum (§8), the JSONL-RPC line-framing and dispatch (§7.1), the banner stamping logic (§8),
+and the optional frontmatter `---` splitter.
+
+**Grammar acquisition** (the one non-trivial external cluster). The official `tree-sitter-LANG` npm
+packages are published by the same maintainers as `web-tree-sitter`, point at the `tree-sitter/<lang>`
+repos, and **each ships prebuilt, loadable `.wasm`** — so no emscripten/docker build and no
+third-party bundle are needed. The plan:
+1. Add the official grammar packages as **pinned, exact-version** dependencies.
+2. At build time, copy each `node_modules/tree-sitter-LANG/*.wasm` into a tracked `grammars/`
+   directory (the filename carrying the version) and load via `Language.load(path)`. This keeps
+   `check` fully offline (§6) and survives `bun build --compile` into the single binary (§12).
+3. Pin grammar versions and upgrade them in lockstep with `web-tree-sitter` (wasm ABI compatibility);
+   the per-grammar `value`-extraction map (§4/§6) is keyed to the pinned version and lives in-tree.
+4. A language whose package ever lacks wasm falls back to building it with the tree-sitter CLI —
+   documented, but not needed for the initial TypeScript/Python/Rust/Go/Java set.
+
+**Net runtime footprint:** `web-tree-sitter` + the official grammar packages + `zod` — all org-backed
+with zero or near-zero transitive dependencies — plus the five small vendored pieces. Nothing unknown,
+legacy, archived, or abandoned.
+
+## 17. Algorithm reference (normative)
+
+§6 is the conceptual design; this section pins the exact procedures and constants an implementation
+must reproduce. Where any value here would differ from a prototype, this section is authoritative.
+
+### 17.1 Localization
+- **Bitap cascade** (re-locate a `text-quote` in the current text): `Match_Threshold 0.4`,
+  `Match_Distance 100000`; the search bias is the stored `text-position` start clamped to
+  `[0, len−1]`. The Bitap word size caps a pattern at **32 characters**, so: (1) if `exact` ≤ 32
+  chars, match it directly and take `[at, at+len(exact))`; (2) if longer, match the **first 32 chars**
+  at the bias to fix the start, set the end to `at+len(exact)`, then refine the end by matching up to
+  **32 chars of the suffix**; (3) fallback — match the **last 32 chars of the prefix** and begin the
+  region just after it.
+- **Snap to enclosing named node** (`ast-node` selector; applied identically at record and check
+  time): take the located span, **trim leading and trailing whitespace off the span** (if it
+  collapses, keep one character), then select the **smallest enclosing *named* tree-sitter node** that
+  fully contains the trimmed span (the deepest named node in pre-order descent). The whitespace trim is
+  what makes the chosen node — and therefore its hash — invariant to re-indentation.
+
+### 17.2 Region comparison
+- **Text tier is a normalized similarity, not hash-equality.** Normalize both the located text and the
+  baseline `exact`: per line strip leading whitespace, then collapse interior whitespace runs to a
+  single space. Similarity `= max(0, 1 − editDistance / maxLen)` (Levenshtein), returning `1` on
+  post-normalization equality. A pure reindent/reflow scores `1.0`.
+- **Structural tier is a two-tier AST fingerprint** (there is no single-hash mode). Serialize the
+  snapped node by pre-order DFS over **all** children (including anonymous token nodes), in source
+  order, with **no** child sorting and no trivia dropping:
+  - *structural* stream — the `type` (kind) of every node; invariant under renames, literals, and whitespace.
+  - *semantic* stream — for a leaf, `type + ":" + text`; for an internal node, `type`; and for any
+    **content-literal kind** additionally `"=" + whitespace-collapsed text` (some grammars hide a
+    literal's body from its leaves, so a `"a"→"b"` string change would otherwise collide).
+  - **Content-literal kinds (verbatim):** `string, string_literal, interpreted_string_literal,
+    raw_string_literal, char_literal, rune_literal, number, integer, float, integer_literal,
+    float_literal, int_literal, imaginary_literal`.
+  - Fingerprints use **xxHash64** (§16); collision resistance is the only requirement.
+- **Value tier:** compare extracted values (17.4) by **whitespace-collapsed string equality**.
+
+### 17.3 Confidence fusion & grading
+- `C = Σ(wᵢ·sᵢ) / Σ(wᵢ)` taken over the selectors that **resolved (found) only** — *not* all four.
+  (Normalizing over all weights would stop a rename, where `ast-node`+`text-quote` agree, from clearing
+  the `stale` band.) Weights: `ast-node 0.35 · text-quote 0.30 · value 0.20 · text-position 0.15`.
+  Fewer than **two** found selectors → `ghost` (confidence forced to 0).
+- **"Found" per selector:** `text-quote` — Bitap located a region. `text-position` — the content at
+  the baseline offset has text-similarity **≥ 0.6**. `ast-node`/`value` — a positive match is always
+  found; a **total mismatch (score 0) counts as found only if `text-position` is found**
+  (*position-corroboration*). This last rule is the ghost-detection mechanism: a deleted region's
+  spurious Bitap neighbour fails the 0.6 position cross-check, so the mismatch cannot manufacture
+  two-selector agreement, and the verdict falls to `ghost` rather than `stale`.
+- **Structural-only match:** when the structural hash matches but the semantic hash differs (a rename
+  or whitespace change), the `ast-node` selector's score is `S = 0.40` (not a full `1.0`), then
+  weighted by `0.35` in fusion — keeping renames out of the `stale` band without a forced full match.
+- **Value veto (active):** if `value` is found with score 0 (the value changed) **and** `text-quote`
+  is found with similarity **≥ 0.9** (high confidence we are at the right place), force
+  `verdict = stale, confidence = 0.3`.
+- **Verdict bands:** `C ≥ 0.8 → fresh` · `0.5 ≤ C < 0.8 → moved` · `0.2 ≤ C < 0.5 → stale` ·
+  `C < 0.2 → ghost`. A `fresh` result is **downgraded to `moved`** when the located start differs from
+  the baseline start by **more than 4 characters** (move-awareness). `expired` is determined **before**
+  fusion from `ttl` versus the current time, independent of confidence.
+
+### 17.4 Per-grammar value-extraction map
+The `value` selector identifies a literal by AST node kind, per grammar. Extraction: pre-order DFS over
+**named** children, take the **first** matching literal and stop; `array`/collection literals have all
+whitespace stripped at extraction; booleans and null/none are treated as scalars (the literal text is
+the value); if nothing matches, the `value` selector is omitted from the bundle.
+
+| Language | scalar / number kinds | string kinds | array / collection kinds |
+|---|---|---|---|
+| TypeScript | `number, true, false, null, undefined` | `string` | `array` |
+| Python | `integer, float, true, false, none` | `string` | `list, tuple, set, dictionary` |
+| Rust | `integer_literal, float_literal, boolean_literal` | `string_literal, char_literal, raw_string_literal` | `array_expression` |
+| Go | `int_literal, float_literal, imaginary_literal, true, false, nil` | `interpreted_string_literal, raw_string_literal, rune_literal` | `composite_literal` |
+| Java | `decimal_integer_literal, hex_integer_literal, decimal_floating_point_literal, true, false, null_literal, character_literal` | `string_literal` | `array_initializer` |
+
+(The Java row is derived from the grammar's node names and must be verified against the pinned
+`tree-sitter-java` version before first use.)
+
+### 17.5 Banner format
+- **Sentinels** are line-anchored, version-tagged, and **nonce-bearing**: BEGIN = `CLAIM-ENGINE:BEGIN
+  v1 <nonce>`, END = `CLAIM-ENGINE:END v1 <nonce> sha=<8-hex>`, each optionally prefixed by the file's
+  comment opener. The **`<nonce>` is a short random identifier generated once per repository at
+  claim-store initialization and stored in the store config**; embedding it in every sentinel is what
+  guarantees a document that merely quotes the banner format (this specification included) is never
+  matched and overwritten. Line-anchoring and the version tag alone do not close that hole.
+- **Locate** by whole-line regex (comment prefix optional), e.g. BEGIN
+  `^[ \t]*(?:#|//)?[ \t]*CLAIM-ENGINE:BEGIN[ \t]+v\d+[ \t]+<nonce>[ \t]*$` and the END equivalent
+  ending `[ \t]+sha=[0-9a-f]{8}[ \t]*$`. Use the first valid BEGIN and the first valid END after it.
+- **Checksum** `sha` = **FNV-1a (32-bit; offset basis `0x811c9dc5`, prime `0x01000193`), 8 hex chars**
+  of the banner body, recorded on the END line (outside the body it covers). One canonical FNV-1a
+  variant is used wherever a non-crypto checksum is needed. On re-stamp the engine recomputes it; on
+  mismatch the banner was hand-edited → refuse to overwrite under `--fail-on` tamper, else the fresh
+  stamp wins (the engine owns the region).
+- **Comment styles:** markdown → HTML block `<!-- … -->`; `#`-per-line for python/shell/yaml/toml;
+  `//`-per-line for ts/js/rust/c/go/java; none for plain `.txt`.
+- **Placement:** for the HTML style only, if the file opens with a `---` YAML frontmatter fence, insert
+  the banner **after** the closing fence; otherwise at the top of the file.
+- **Idempotent splice (the engine owns all spacing):** the banner block carries no leading/trailing
+  blank line; the splicer normalizes the head to end in exactly one `\n`, then the banner, then `\n\n`
+  (or a single `\n` at EOF), then the remainder with leading newlines trimmed. Removal reverses this
+  exactly. Re-stamping identical content is byte-for-byte stable.
+- **Body:** suspect Propositions **sorted by `id`** (a stable total order, never by similarity), one
+  per line as `[STATUS] (id) text`, under a default headline
+  `STALE DOCUMENT — N suspect claim(s) — re-verify before trusting.` No timestamps or run-ids
+  (determinism). Banner statuses may also include the lifecycle states `superseded`, `amended`,
+  `retracted` alongside the computed ones.
+- **Actions:** `insert` (no banner present) · `replace` (present, content changed) · `remove` (empty
+  payload → restore pristine bytes) · `noop` (present and identical).
 
 ---
 
-*This PRD fixes the final product. The build is sequenced (§13) for validation, not scope reduction.
-Decisions in §14 are resolved; re-open one only with a deliberate design pass, not silently.*
+*This document is the complete and self-contained specification for the tool: the architecture, data
+model, contracts, algorithms, and parameters are final. The build is sequenced (§13) for validation,
+not scope reduction.*
