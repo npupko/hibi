@@ -1,0 +1,149 @@
+import { describe, test, expect, afterEach } from "bun:test";
+import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, dirname } from "node:path";
+
+const CLI = join(import.meta.dir, "..", "src", "cli", "index.ts");
+
+interface RunResult {
+  code: number;
+  json: any;
+  stdout: string;
+}
+
+async function run(cwd: string, args: string[]): Promise<RunResult> {
+  const proc = Bun.spawn(["bun", "run", CLI, ...args], { cwd, stdout: "pipe", stderr: "pipe" });
+  const stdout = await new Response(proc.stdout).text();
+  const code = await proc.exited;
+  let json: any = undefined;
+  try {
+    json = JSON.parse(stdout.trim().split("\n").pop()!);
+  } catch {
+    /* non-JSON (e.g. usage) */
+  }
+  return { code, json, stdout };
+}
+
+let dirs: string[] = [];
+async function repo(): Promise<string> {
+  const d = await mkdtemp(join(tmpdir(), "ce-cli-"));
+  dirs.push(d);
+  await Bun.spawn(["git", "init", "-q"], { cwd: d }).exited;
+  await Bun.spawn(["git", "config", "user.email", "t@t.co"], { cwd: d }).exited;
+  await Bun.spawn(["git", "config", "user.name", "t"], { cwd: d }).exited;
+  return d;
+}
+async function write(root: string, rel: string, content: string) {
+  const abs = join(root, rel);
+  await mkdir(dirname(abs), { recursive: true });
+  await writeFile(abs, content);
+}
+afterEach(async () => {
+  await Promise.all(dirs.map((d) => rm(d, { recursive: true, force: true })));
+  dirs = [];
+});
+
+describe("CLI end-to-end (§9)", () => {
+  test("init → record → check clean → drift → exit 2", async () => {
+    const d = await repo();
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+    await write(d, "README.md", "# Doc\n\nProse.\n");
+
+    const init = await run(d, ["init"]);
+    expect(init.code).toBe(0);
+    expect(init.json.nonce).toMatch(/^[0-9a-f]{8}$/);
+
+    const rec = await run(d, ["record", "--doc", "README.md", "--text", "Capped at 5", "--file", "src/retry.ts", "--quote", "MAX_ATTEMPTS = 5", "--trust", "verified", "--owner", "alice"]);
+    expect(rec.code).toBe(0);
+    expect(rec.json.assertion.anchor.selectors.map((s: any) => s.kind)).toContain("value");
+
+    const clean = await run(d, ["check"]);
+    expect(clean.code).toBe(0);
+    expect(clean.json.summary.fresh).toBe(1);
+
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
+    const drifted = await run(d, ["check"]);
+    expect(drifted.code).toBe(2);
+    expect(drifted.json.verdicts[0].state).toBe("stale");
+  });
+
+  test("check --write stamps a banner that the consumer can see in the raw file", async () => {
+    const d = await repo();
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+    await write(d, "README.md", "# Doc\n");
+    await run(d, ["init"]);
+    await run(d, ["record", "--doc", "README.md", "--text", "Capped at 5", "--file", "src/retry.ts", "--quote", "MAX_ATTEMPTS = 5"]);
+    await write(d, "src/retry.ts", "// removed\n");
+    const res = await run(d, ["check", "--write"]);
+    expect(res.code).toBe(2);
+    const doc = await Bun.file(join(d, "README.md")).text();
+    expect(doc).toContain("CLAIM-ENGINE:BEGIN");
+    expect(doc).toContain("STALE DOCUMENT");
+  });
+
+  test("diff --since scopes to changed files (the write-time loop)", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "src/b.ts", "export const B = 2;\n");
+    await write(d, "doc.md", "# Doc\n");
+    await run(d, ["init"]);
+    await run(d, ["record", "--doc", "doc.md", "--text", "A is 1", "--file", "src/a.ts", "--quote", "A = 1"]);
+    await run(d, ["record", "--doc", "doc.md", "--text", "B is 2", "--file", "src/b.ts", "--quote", "B = 2"]);
+    await Bun.spawn(["git", "add", "-A"], { cwd: d }).exited;
+    await Bun.spawn(["git", "commit", "-qm", "init"], { cwd: d }).exited;
+
+    // Change only a.ts.
+    await write(d, "src/a.ts", "export const A = 100;\n");
+    const res = await run(d, ["diff", "--since", "HEAD"]);
+    expect(res.json.changedFiles).toContain("src/a.ts");
+    expect(res.json.changedFiles).not.toContain("src/b.ts");
+    // Only the changed file's claim is evaluated.
+    expect(res.json.verdicts.length).toBe(1);
+  });
+
+  test("query --path reports claims covering a file", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await run(d, ["init"]);
+    await run(d, ["record", "--doc", "doc.md", "--text", "A is 1", "--file", "src/a.ts", "--quote", "A = 1"]);
+    const res = await run(d, ["query", "--path", "src/a.ts"]);
+    expect(res.code).toBe(0);
+    expect(res.json.count).toBe(1);
+  });
+
+  test("status --doc is a read-time gate returning non-zero when suspect", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "doc.md", "# Doc\n");
+    await run(d, ["init"]);
+    await run(d, ["record", "--doc", "doc.md", "--text", "A is 1", "--file", "src/a.ts", "--quote", "A = 1"]);
+    expect((await run(d, ["status", "--doc", "doc.md"])).code).toBe(0);
+    await write(d, "src/a.ts", "// gone\n");
+    const after = await run(d, ["status", "--doc", "doc.md"]);
+    expect(after.code).toBe(2);
+    expect(after.json.current).toBe(false);
+  });
+
+  test("supersede authors the edge and flips lifecycle", async () => {
+    const d = await repo();
+    await run(d, ["init"]);
+    const res = await run(d, ["supersede", "--new", "v2.md", "--old", "v1.md", "--type", "supersedes"]);
+    expect(res.code).toBe(0);
+    expect(res.json.oldDoc.lifecycle).toBe("superseded");
+  });
+
+  test("schema emits generated JSON Schema by name", async () => {
+    const d = await repo();
+    const res = await run(d, ["schema", "--name", "Assertion"]);
+    expect(res.code).toBe(0);
+    expect(res.json.type).toBe("object");
+    expect(res.json.properties.anchor).toBeDefined();
+  });
+
+  test("unknown command is an operational error (exit 1)", async () => {
+    const d = await repo();
+    const res = await run(d, ["frobnicate"]);
+    expect(res.code).toBe(1);
+    expect(res.json.ok).toBe(false);
+  });
+});

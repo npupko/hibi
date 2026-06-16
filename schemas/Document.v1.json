@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "lifecycle": {
+      "default": "active",
+      "type": "string",
+      "enum": [
+        "active",
+        "amended",
+        "superseded",
+        "archived",
+        "retracted"
+      ]
+    },
+    "edges": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "supersedes"
+              },
+              "target": {
+                "type": "string"
+              },
+              "derived": {
+                "default": false,
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "target",
+              "derived"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "superseded-by"
+              },
+              "source": {
+                "type": "string"
+              },
+              "derived": {
+                "default": true,
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "source",
+              "derived"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "amends"
+              },
+              "target": {
+                "type": "string"
+              },
+              "propositions": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "derived": {
+                "default": false,
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "target",
+              "propositions",
+              "derived"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "amended-by"
+              },
+              "source": {
+                "type": "string"
+              },
+              "propositions": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "derived": {
+                "default": true,
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "type",
+              "source",
+              "propositions",
+              "derived"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "frontmatterStatus": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "path",
+    "lifecycle",
+    "edges"
+  ],
+  "additionalProperties": false
+}

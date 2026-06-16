@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "kinds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "tier": {
+      "default": 1,
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "advisory": {
+      "default": false,
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "name",
+    "version",
+    "kinds",
+    "tier",
+    "advisory"
+  ],
+  "additionalProperties": false
+}

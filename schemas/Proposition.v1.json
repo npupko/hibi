@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    },
+    "authoredTrust": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "inferred",
+        "assumed"
+      ]
+    },
+    "fingerprint": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "text",
+    "authoredTrust",
+    "fingerprint"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "assertionId": {
+      "type": "string"
+    },
+    "propositionId": {
+      "type": "string"
+    },
+    "documentId": {
+      "type": "string"
+    },
+    "state": {
+      "type": "string",
+      "enum": [
+        "fresh",
+        "moved",
+        "stale",
+        "ghost",
+        "expired"
+      ]
+    },
+    "confidence": {
+      "type": "number"
+    },
+    "region": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "additionalProperties": false
+    },
+    "selectorScores": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string"
+          },
+          "found": {
+            "type": "boolean"
+          },
+          "score": {
+            "type": "number"
+          },
+          "weight": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "kind",
+          "found",
+          "score",
+          "weight"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "ref": {
+      "type": "string"
+    },
+    "notes": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "advisories": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "resolver": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "confidence": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "resolver",
+          "message"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "assertionId",
+    "propositionId",
+    "documentId",
+    "state",
+    "confidence",
+    "selectorScores",
+    "notes",
+    "advisories"
+  ],
+  "additionalProperties": false
+}

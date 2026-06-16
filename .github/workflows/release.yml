@@ -1,0 +1,44 @@
+name: Release
+
+# Prebuilt single-file executables for the platform matrix (§12).
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: ${{ matrix.target }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: ubuntu-latest, target: linux-x64, bun: bun-linux-x64 }
+          - { os: ubuntu-latest, target: linux-arm64, bun: bun-linux-aarch64 }
+          - { os: macos-latest, target: darwin-x64, bun: bun-darwin-x64 }
+          - { os: macos-latest, target: darwin-arm64, bun: bun-darwin-aarch64 }
+          - { os: windows-latest, target: windows-x64, bun: bun-windows-x64 }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build:grammars && bun run build:schemas
+      - name: Compile
+        run: bun build --compile --target=${{ matrix.bun }} src/cli/index.ts --outfile dist/claim-engine-${{ matrix.target }}
+      - name: Smoke test (host only)
+        if: matrix.target == 'linux-x64' || matrix.target == 'darwin-arm64'
+        run: ./dist/claim-engine-${{ matrix.target }} version
+      - uses: actions/upload-artifact@v4
+        with:
+          name: claim-engine-${{ matrix.target }}
+          path: dist/claim-engine-${{ matrix.target }}*
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build:grammars
+      - run: bun test

@@ -1,0 +1,29 @@
+{
+  "name": "claim-engine",
+  "version": "0.1.0",
+  "description": "A deterministic, agent-facing CLI that keeps documentation and AI-agent-instruction files from silently going stale.",
+  "type": "module",
+  "module": "src/index.ts",
+  "bin": {
+    "claim-engine": "./src/cli/index.ts"
+  },
+  "scripts": {
+    "build:grammars": "bun run scripts/copy-grammars.ts",
+    "build:schemas": "bun run scripts/gen-schemas.ts",
+    "build": "bun run build:grammars && bun run build:schemas && bun build --compile src/cli/index.ts --outfile dist/claim-engine",
+    "test": "bun test",
+    "cli": "bun run src/cli/index.ts"
+  },
+  "dependencies": {
+    "web-tree-sitter": "0.25.10",
+    "zod": "4.1.13",
+    "tree-sitter-typescript": "0.23.2",
+    "tree-sitter-python": "0.25.0",
+    "tree-sitter-rust": "0.24.0",
+    "tree-sitter-go": "0.25.0",
+    "tree-sitter-java": "0.23.5"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

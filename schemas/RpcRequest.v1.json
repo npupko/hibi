@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer",
+      "minimum": -9007199254740991,
+      "maximum": 9007199254740991
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "describe",
+        "resolve"
+      ]
+    },
+    "params": {}
+  },
+  "required": [
+    "id",
+    "method"
+  ],
+  "additionalProperties": false
+}

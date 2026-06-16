@@ -1,0 +1,44 @@
+name: "Claim Engine"
+description: "Fail the build when documentation claims drift from the code they describe."
+branding:
+  icon: "anchor"
+  color: "purple"
+inputs:
+  command:
+    description: "Verb to run (check | diff)."
+    required: false
+    default: "check"
+  fail-on:
+    description: "Strictness: suspect | moved | tamper | never."
+    required: false
+    default: "suspect"
+  since:
+    description: "For `diff`: the base ref to compare against."
+    required: false
+    default: ""
+  write:
+    description: "Stamp banners into affected documents (true|false)."
+    required: false
+    default: "false"
+  working-directory:
+    description: "Repo subdirectory holding the .claims store."
+    required: false
+    default: "."
+runs:
+  using: "composite"
+  steps:
+    - name: Install Bun
+      uses: oven-sh/setup-bun@v2
+    - name: Run Claim Engine
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        ARGS="${{ inputs.command }} --fail-on ${{ inputs.fail-on }}"
+        if [ "${{ inputs.write }}" = "true" ]; then ARGS="$ARGS --write"; fi
+        if [ -n "${{ inputs.since }}" ]; then ARGS="$ARGS --since ${{ inputs.since }}"; fi
+        # Use a published binary if present, else run from source via bunx.
+        if command -v claim-engine >/dev/null 2>&1; then
+          claim-engine $ARGS
+        else
+          bunx claim-engine $ARGS
+        fi

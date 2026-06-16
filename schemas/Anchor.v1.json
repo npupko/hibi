@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "file": {
+      "type": "string"
+    },
+    "selectors": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "text-quote"
+              },
+              "exact": {
+                "type": "string"
+              },
+              "prefix": {
+                "default": "",
+                "type": "string"
+              },
+              "suffix": {
+                "default": "",
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "exact",
+              "prefix",
+              "suffix"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "text-position"
+              },
+              "start": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "end": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "kind",
+              "start",
+              "end"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "ast-node"
+              },
+              "language": {
+                "type": "string"
+              },
+              "nodeType": {
+                "type": "string"
+              },
+              "structuralHash": {
+                "type": "string"
+              },
+              "semanticHash": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "language",
+              "nodeType",
+              "structuralHash",
+              "semanticHash"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "value"
+              },
+              "language": {
+                "type": "string"
+              },
+              "nodeKind": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "language",
+              "nodeKind",
+              "value"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "path"
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "path"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "glob"
+              },
+              "glob": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "kind",
+              "glob"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "file",
+    "selectors"
+  ],
+  "additionalProperties": false
+}

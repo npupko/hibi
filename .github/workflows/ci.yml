@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
+      - run: bun run build:grammars
+      - name: Typecheck
+        run: bunx tsc --noEmit
+      - name: Test
+        run: bun test
+      - name: Schemas are up to date
+        run: |
+          bun run build:schemas
+          git diff --exit-code schemas/ || (echo "schemas/ is stale — run bun run build:schemas" && exit 1)
+
+  rust-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --examples
+        working-directory: sdk/rust
