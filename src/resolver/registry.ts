@@ -10,6 +10,7 @@
 
 import { type AstAnalyzer, resolveAssertion } from "../algo/resolve.ts";
 import type { Assertion, Proposition, Verdict } from "../core/model.ts";
+import type { ClaimStore } from "../store/store.ts";
 import { OutOfProcessResolver } from "./client.ts";
 import { loadManifest } from "./manifest.ts";
 
@@ -111,16 +112,20 @@ export class ResolverRegistry {
     this.resolvers.push(r);
   }
 
-  /** Spawn & register every resolver allowed by the default-deny manifest. */
-  async loadFromManifest(root: string): Promise<void> {
-    const manifest = await loadManifest(root);
+  /**
+   * Spawn & register every resolver allowed by the default-deny manifest.
+   * The manifest is read from the store dir; resolver processes run with the
+   * anchor root as cwd (so their paths resolve against the tracked tree, §8).
+   */
+  async loadFromManifest(store: ClaimStore): Promise<void> {
+    const manifest = await loadManifest(store.dir);
     for (const spec of manifest.resolvers) {
       const proc = new OutOfProcessResolver({
         name: spec.name,
         command: spec.command,
         args: spec.args,
         timeoutMs: spec.timeoutMs,
-        cwd: root,
+        cwd: store.anchorRoot,
       });
       const desc = await proc.describe();
       if (!desc) {

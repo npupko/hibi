@@ -125,7 +125,7 @@ export async function runCheck(
   store: ClaimStore,
   options: CheckOptions = {},
 ): Promise<CheckReport> {
-  const root = store.root;
+  const root = store.anchorRoot;
   const ref = options.ref ?? "WORKTREE";
   const documents = await store.allDocuments();
   const propositions = await store.allPropositions();

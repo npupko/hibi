@@ -82,7 +82,7 @@ describe("archival remediation (§6)", () => {
   test("moves the doc out of the read path, writes a tombstone, sets lifecycle archived", async () => {
     const r = await repo();
     await r.write("old.md", "# Old policy\n\nOriginal content.\n");
-    const result = await archiveDocument(r.store, r.root, "old.md", "new.md");
+    const result = await archiveDocument(r.store, "old.md", "new.md");
     expect(result.document.lifecycle).toBe("archived");
     expect(result.archivedTo).toBe(join("archive", "old.md"));
     // Original content preserved in the archive.

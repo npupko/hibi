@@ -37,13 +37,40 @@ const SUBDIRS = {
   claims: "claims",
 } as const;
 
-export class ClaimStore {
-  readonly root: string; // absolute path to the repo root
-  readonly dir: string; // absolute path to .claims
+/**
+ * Where a store lives and what its anchors resolve against — decoupled (§8).
+ * A bare string is the common case (`anchorRoot`, store at `<anchorRoot>/.claims`);
+ * the object form lets a consumer (e.g. atlas) keep the store outside the tree it
+ * anchors into, so one repo can carry many investigation-scoped stores.
+ */
+export interface StoreLocation {
+  /** Absolute path the anchors resolve against (the repo / content root). */
+  anchorRoot: string;
+  /** Absolute path to the store directory. Default: `<anchorRoot>/.claims`. */
+  storeDir?: string;
+}
 
-  private constructor(root: string) {
-    this.root = root;
-    this.dir = join(root, STORE_DIR);
+function resolveLocation(location: string | StoreLocation): {
+  anchorRoot: string;
+  dir: string;
+} {
+  if (typeof location === "string")
+    return { anchorRoot: location, dir: join(location, STORE_DIR) };
+  return {
+    anchorRoot: location.anchorRoot,
+    dir: location.storeDir ?? join(location.anchorRoot, STORE_DIR),
+  };
+}
+
+export class ClaimStore {
+  /** Absolute path the anchors resolve against (the repo / content root). */
+  readonly anchorRoot: string;
+  /** Absolute path to the store directory (holds config + records). */
+  readonly dir: string;
+
+  private constructor(loc: { anchorRoot: string; dir: string }) {
+    this.anchorRoot = loc.anchorRoot;
+    this.dir = loc.dir;
   }
 
   /** Generate a fresh per-repository banner nonce: 8 regex-safe hex chars (§17.5). */
@@ -51,12 +78,12 @@ export class ClaimStore {
     return randomUUID().replace(/-/g, "").slice(0, 8);
   }
 
-  /** Initialize a store at `root`; idempotent — refuses to clobber an existing config. */
+  /** Initialize a store; idempotent — refuses to clobber an existing config. */
   static async init(
-    root: string,
+    location: string | StoreLocation,
     nonce = ClaimStore.newNonce(),
   ): Promise<ClaimStore> {
-    const s = new ClaimStore(root);
+    const s = new ClaimStore(resolveLocation(location));
     await mkdir(s.dir, { recursive: true });
     for (const sub of Object.values(SUBDIRS))
       await mkdir(join(s.dir, sub), { recursive: true });
@@ -71,16 +98,18 @@ export class ClaimStore {
   }
 
   /** Open an existing store; throws if not initialized. */
-  static async open(root: string): Promise<ClaimStore> {
-    const s = new ClaimStore(root);
+  static async open(location: string | StoreLocation): Promise<ClaimStore> {
+    const s = new ClaimStore(resolveLocation(location));
     if (!(await exists(join(s.dir, "config.json")))) {
       throw new Error(`No claim store at ${s.dir}. Run \`hibi init\` first.`);
     }
     return s;
   }
 
-  static async isInitialized(root: string): Promise<boolean> {
-    return exists(join(root, STORE_DIR, "config.json"));
+  static async isInitialized(
+    location: string | StoreLocation,
+  ): Promise<boolean> {
+    return exists(join(resolveLocation(location).dir, "config.json"));
   }
 
   async config(): Promise<StoreConfig> {

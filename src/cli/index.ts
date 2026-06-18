@@ -65,12 +65,12 @@ async function loadAnalyzer(): Promise<
 
 /** Build the resolver registry: built-in drift + manifest-gated externals (§7). */
 async function buildRegistry(
-  root: string,
+  store: ClaimStore,
   analyzer: AstAnalyzer | undefined,
 ): Promise<ResolverRegistry> {
   const registry = new ResolverRegistry();
   registry.register(new DriftResolver(analyzer));
-  await registry.loadFromManifest(root);
+  await registry.loadFromManifest(store);
   return registry;
 }
 
@@ -198,7 +198,7 @@ async function main(argv: string[]): Promise<number> {
       const store = await ClaimStore.open(root).catch(() =>
         fail("No claim store. Run `hibi init`.", pretty),
       );
-      const registry = await buildRegistry(root, analyzer);
+      const registry = await buildRegistry(store, analyzer);
       const report = await runCheck(store, {
         registry,
         write: Boolean(values.write),
@@ -217,7 +217,7 @@ async function main(argv: string[]): Promise<number> {
       if (!values.doc) return fail("status requires --doc", pretty);
       const docId = documentIdForPath(values.doc as string);
       const doc = await store.getDocument(docId);
-      const statusRegistry = await buildRegistry(root, analyzer);
+      const statusRegistry = await buildRegistry(store, analyzer);
       const report = await runCheck(store, {
         registry: statusRegistry,
         write: false,
@@ -268,7 +268,7 @@ async function main(argv: string[]): Promise<number> {
       );
       if (!values.since) return fail("diff requires --since <ref>", pretty);
       const files = await changedFiles(values.since as string, root);
-      const diffRegistry = await buildRegistry(root, analyzer);
+      const diffRegistry = await buildRegistry(store, analyzer);
       const report = await runCheck(store, {
         registry: diffRegistry,
         write: Boolean(values.write),
@@ -335,7 +335,6 @@ async function main(argv: string[]): Promise<number> {
       if (!values.doc) return fail("archive requires --doc", pretty);
       const result = await archiveDocument(
         store,
-        root,
         values.doc as string,
         values.successor as string | undefined,
       );

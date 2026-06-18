@@ -44,10 +44,10 @@ export interface ArchiveResult {
 
 export async function archiveDocument(
   store: ClaimStore,
-  root: string,
   docPath: string,
   successorPath?: string,
 ): Promise<ArchiveResult> {
+  const root = store.anchorRoot;
   const id = documentIdForPath(docPath);
   const doc: Document = (await store.getDocument(id)) ?? {
     id,

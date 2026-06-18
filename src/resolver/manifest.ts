@@ -7,7 +7,6 @@
 import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import * as z from "zod";
-import { STORE_DIR } from "../store/store.ts";
 
 export const ResolverSpec = z.object({
   name: z.string(),
@@ -25,13 +24,14 @@ export const Manifest = z.object({
 });
 export type Manifest = z.infer<typeof Manifest>;
 
-export function manifestPath(root: string): string {
-  return join(root, STORE_DIR, "resolvers.json");
+/** The manifest lives inside the store dir (decoupled from the anchor root, §8). */
+export function manifestPath(storeDir: string): string {
+  return join(storeDir, "resolvers.json");
 }
 
 /** Load the manifest; default-deny (empty) when absent or unreadable. */
-export async function loadManifest(root: string): Promise<Manifest> {
-  const path = manifestPath(root);
+export async function loadManifest(storeDir: string): Promise<Manifest> {
+  const path = manifestPath(storeDir);
   try {
     await access(path);
   } catch {
