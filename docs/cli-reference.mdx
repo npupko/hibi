@@ -1,0 +1,63 @@
+---
+title: "CLI reference"
+description: "Commands, exit codes, and strictness."
+---
+
+Output is JSON by default. Add `--pretty` for human-readable output.
+
+## Commands
+
+| Command | What it does |
+|---------|--------------|
+| `hibi init` | Create `.claims/` (with a per-repo banner nonce). |
+| `hibi record` | Record a claim and anchor it to the code that backs it. |
+| `hibi check` | Verify every claim. Add `--write` to stamp status banners into affected docs. |
+| `hibi diff --since <ref>` | Show what a change invalidated, relative to a base ref. |
+| `hibi query --path <path>` | Before editing: list which claims cover a file. |
+| `hibi supersede --new <doc> --old <doc> --type <type>` | Record that one doc supersedes/amends another. |
+| `hibi status --doc <doc>` | Report whether a doc is still current. |
+
+### `hibi record`
+
+```sh
+hibi record \
+  --doc README.md --text "Retries are capped at 5 attempts" \
+  --file src/retry.ts --quote "MAX_ATTEMPTS = 5" --trust verified --owner alice
+```
+
+| Flag | Description |
+|------|-------------|
+| `--doc` | The document the claim lives in. |
+| `--text` | The claim sentence. |
+| `--file` | The source file the claim is anchored to. |
+| `--quote` | The exact code text to anchor on (matched fuzzily). |
+| `--trust` | Authored trust level (e.g. `verified`). |
+| `--owner` | Who vouches for the claim. |
+
+## Exit codes
+
+Hibi communicates results through its exit code so it slots straight into CI and
+git hooks:
+
+| Code | Meaning |
+|------|---------|
+| `0` | All clean. |
+| `2` | Suspect present (`stale` / `ghost` / `expired`). |
+| `3` | `moved`-only (re-anchorable warning). |
+| `1` | Operational error. |
+
+## Strictness
+
+Tune which states fail the run with `--fail-on`:
+
+```sh
+hibi check --fail-on suspect   # default
+hibi check --fail-on moved     # also fail on re-anchorable warnings
+hibi check --fail-on tamper    # fail only on tampering
+hibi check --fail-on never     # report, never fail the run
+```
+
+<Tip>
+  In CI, pair `hibi check` with `--fail-on` to choose how strict the gate is.
+  The official GitHub Action wraps exactly this.
+</Tip>

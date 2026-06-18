@@ -1,0 +1,40 @@
+---
+title: "How it works"
+description: "Claims, redundant anchors, and how Hibi grades drift."
+---
+
+A **claim** is a sentence in a doc that asserts how the code behaves. Each claim
+carries several redundant **anchors** to the code it describes:
+
+- the **quoted code text**, matched fuzzily so it survives small edits and moves;
+- its **byte position**, as a cheap hint;
+- the **enclosing syntax node**, parsed with tree-sitter, so reformatting alone
+  does not trip it;
+- any **literal value** it mentions, so changing `MAX_ATTEMPTS = 5` to `50` flags
+  the claim even when nothing else moves;
+- an optional **`path` or `glob`** for coarse coverage, used to size blast radius.
+
+## Grading drift
+
+On `hibi check`, Hibi re-finds each anchor in your current files and grades how
+far it moved. When the anchors agree, you get a confident verdict; when they
+disagree, Hibi asks you to re-verify instead of guessing. Verdicts are computed
+live and kept out of the store.
+
+<Info>
+  A flag is a request to **re-verify**, not a claim that the doc is wrong. Hibi
+  reports that the evidence under a claim moved — the human or agent decides what
+  to do about it.
+</Info>
+
+## Why redundant anchors
+
+No single signal is robust on its own: byte offsets drift on every edit, quoted
+text breaks on reformatting, and syntax nodes move when code is restructured. By
+fusing several anchors, Hibi distinguishes a harmless reformat (anchors still
+agree) from a meaningful change (anchors disagree) — without running a model in
+the check loop.
+
+<Card title="Design rationale & data model" icon="book" href="https://github.com/npupko/hibi/blob/main/docs/PRD.md">
+  The full data model, verdict algorithm, and design rationale live in the PRD.
+</Card>

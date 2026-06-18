@@ -1,0 +1,39 @@
+---
+title: "Resolvers"
+description: "Extend drift detection with out-of-process resolvers."
+---
+
+Hibi finds drift through an out-of-process **resolver protocol** (JSONL-RPC over
+stdio). The built-in code-anchor resolver speaks the same contract, so you can
+add your own in any language.
+
+Resolvers stay off until you list them in `.claims/resolvers.json`:
+
+```jsonc .claims/resolvers.json
+// Opt in to the optional semantic advisor (it advises, it does not gate)
+{
+  "resolvers": [
+    {
+      "name": "semantic-advisor",
+      "command": "bun",
+      "args": ["run", "resolvers/semantic-advisor.ts"]
+    }
+  ]
+}
+```
+
+<Warning>
+  A semantic resolver **advises** — it never gates. Verdicts stay deterministic;
+  resolver output is advisory context layered on top.
+</Warning>
+
+## Writing your own
+
+Because the protocol is plain JSONL-RPC over stdio, a resolver is any program
+that reads requests on stdin and writes responses on stdout. SDKs ship for
+TypeScript and Rust to handle the framing for you — see [SDKs](/sdks).
+
+The JSON Schemas for every protocol message
+([`schemas/*.v1.json`](https://github.com/npupko/hibi/tree/main/schemas)) are
+generated from the single Zod source of truth, so any language with a JSON
+Schema toolchain can validate against them.
