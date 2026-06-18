@@ -36,9 +36,9 @@ runs:
         ARGS="${{ inputs.command }} --fail-on ${{ inputs.fail-on }}"
         if [ "${{ inputs.write }}" = "true" ]; then ARGS="$ARGS --write"; fi
         if [ -n "${{ inputs.since }}" ]; then ARGS="$ARGS --since ${{ inputs.since }}"; fi
-        # Use a published binary if present, else run from source via bunx.
+        # Use a published binary if present, else run via bunx from npm.
         if command -v hibi >/dev/null 2>&1; then
           hibi $ARGS
         else
-          bunx hibi $ARGS
+          bunx @npupko/hibi $ARGS
         fi
