@@ -4,7 +4,7 @@ name: Release
 # npm package. Driven by the vX.Y.Z tags release-please pushes.
 on:
   push:
-    tags: ["v*"]
+    tags: ["hibi-v*"]
   workflow_dispatch:
 
 permissions:
