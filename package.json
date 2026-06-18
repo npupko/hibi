@@ -21,7 +21,6 @@
     "docs-drift"
   ],
   "type": "module",
-  "module": "src/index.ts",
   "bin": {
     "hibi": "./src/cli/index.ts"
   },
@@ -31,7 +30,8 @@
   "files": [
     "src",
     "grammars",
-    "schemas"
+    "schemas",
+    "sdk/ts"
   ],
   "publishConfig": {
     "access": "public",

@@ -6,7 +6,7 @@
  * framing and dispatch over stdio.
  *
  * Example:
- *   import { serveResolver } from "hibi/sdk/ts";
+ *   import { serveResolver } from "@npupko/hibi/sdk/ts";
  *   serveResolver({
  *     describe: () => ({ name: "my-resolver", version: "1", kinds: ["scip-symbol"], tier: 2, advisory: false }),
  *     resolve: ({ assertion, text }) => ({ verdict: myVerdict(assertion, text) }),
