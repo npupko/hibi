@@ -11,8 +11,9 @@ import { Language, Parser } from "web-tree-sitter";
 // Embedded grammar wasm — `with { type: "file" }` yields a path that resolves in
 // dev (`bun run`) and is embedded by `bun build --compile` (§16, §12).
 // The web-tree-sitter runtime wasm must also be embedded and located explicitly,
-// otherwise the compiled binary cannot find it (`/$bunfs/root/tree-sitter.wasm`).
-import runtimeWasm from "web-tree-sitter/tree-sitter.wasm" with {
+// otherwise the compiled binary cannot find it (`/$bunfs/root/web-tree-sitter.wasm`).
+// web-tree-sitter 0.26 renamed this file from `tree-sitter.wasm`.
+import runtimeWasm from "web-tree-sitter/web-tree-sitter.wasm" with {
   type: "file",
 };
 import goWasm from "../../grammars/tree-sitter-go.wasm" with { type: "file" };

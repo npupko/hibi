@@ -49,8 +49,8 @@
     "prepare": "lefthook install"
   },
   "dependencies": {
-    "web-tree-sitter": "0.25.10",
-    "zod": "4.1.13",
+    "web-tree-sitter": "0.26.9",
+    "zod": "4.4.3",
     "tree-sitter-typescript": "0.23.2",
     "tree-sitter-python": "0.25.0",
     "tree-sitter-rust": "0.24.0",
