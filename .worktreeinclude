@@ -1,0 +1,16 @@
+# Files Claude Code copies into each new git worktree it creates
+# (`claude --worktree`, subagent `isolation: worktree`, desktop parallel sessions).
+# Uses .gitignore syntax. Only paths that are ALSO gitignored are copied, so
+# tracked files are never duplicated. See https://code.claude.com/docs/en/worktrees
+#
+# Why node_modules: a fresh worktree starts with no node_modules, so the
+# lefthook-installed git hooks (which resolve the binary via
+# <worktree>/node_modules/lefthook-*/bin/lefthook) print "Can't find lefthook in
+# PATH" at commit time. Copying node_modules makes hooks, biome, and tsc work
+# immediately without a manual `bun install`. Run `bun install` in the worktree
+# if package.json/bun.lock drift on the branch.
+node_modules/
+
+# Add local env/secret files here if the project ever uses them, e.g.:
+# .env
+# .env.local
