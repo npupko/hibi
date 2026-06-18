@@ -1,6 +1,13 @@
-# Hibi 日々
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo/hibi-wordmark-dark.png">
+    <img alt="Hibi 日々" src="assets/logo/hibi-wordmark-transparent.png" width="300">
+  </picture>
+</p>
 
-> *hibi* (日々) — "day after day." Documentation kept honest continuously, so it never quietly goes stale.
+<p align="center"><em>hibi (日々) — "day after day." Documentation kept honest continuously, so it never quietly goes stale.</em></p>
+
+# Hibi 日々
 
 A **deterministic, agent-facing CLI** (with a small reusable library core) that keeps a codebase's
 documentation and AI-agent-instruction files from silently going stale — so automated agents never
