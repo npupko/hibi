@@ -20,7 +20,7 @@
   "javascript": {
     "formatter": { "quoteStyle": "double", "semicolons": "always" }
   },
-  "linter": { "enabled": true, "rules": { "recommended": true } },
+  "linter": { "enabled": true, "rules": { "preset": "recommended" } },
   "assist": {
     "enabled": true,
     "actions": { "source": { "organizeImports": "on" } }
