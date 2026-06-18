@@ -1,0 +1,78 @@
+name: Bug report
+description: Report something in Hibi that is broken or behaving incorrectly.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug report. Hibi is deterministic, so
+        a clear set of reproduction steps and version info usually pins the issue
+        down quickly. Please fill out the fields below.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: Describe the bug, including what you expected to happen versus what actually happened.
+      placeholder: |
+        Expected: `hibi check` reports the claim as stale.
+        Actual: it exits 0 and reports clean.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: A minimal sequence of commands (and any relevant doc/code) that reproduces the behavior.
+      placeholder: |
+        1. `hibi init`
+        2. `hibi record --doc README.md --text "..." --file src/x.ts --quote "..."`
+        3. Edit `src/x.ts`
+        4. `hibi check`
+    validations:
+      required: true
+  - type: input
+    id: hibi-version
+    attributes:
+      label: Hibi version
+      description: Output of `hibi version`.
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: bun-version
+    attributes:
+      label: Bun version
+      description: Output of `bun --version`.
+      placeholder: e.g. 1.2.0
+    validations:
+      required: false
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      description: Which operating system are you running Hibi on?
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs/output
+      description: Paste any relevant command output. This is rendered as shell, so no backticks needed.
+      render: shell
+    validations:
+      required: false
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Acknowledgements
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I can reproduce this on the latest version of Hibi.
+          required: true

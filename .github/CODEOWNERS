@@ -1,0 +1,5 @@
+# Code owners for Hibi.
+# These owners are requested for review on any pull request that touches matching files.
+# See https://docs.github.com/en/repositories/managing-your-repositories-settings-and-features/customizing-your-repository/about-code-owners
+
+* @npupko
