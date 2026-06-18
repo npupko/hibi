@@ -1,13 +1,24 @@
 /**
- * The hibi library facade — the curated, in-process public surface (§7.5).
+ * The hibi library facade (§7.5) — the in-process surface a JS/TS consumer
+ * (e.g. atlas) imports instead of shelling out to the CLI.
  *
- * This is the contract a JS/TS consumer (e.g. atlas) imports instead of shelling
- * out to the CLI. It is deliberately *contract-equal* to the CLI (§9): every
- * method returns the same typed object the CLI serializes to JSON, and the
- * verdict/lifecycle semantics are identical because both paths share the same
- * engine wiring below. Import this module — never `src/engine/*` internals — so a
- * future Rust port (§12/§14-D1) can keep serving consumers through the CLI/JSON
- * contract without breaking them.
+ * Architecture — functional core, imperative shell:
+ *   • The functional core is `src/engine/*` + `src/store/*`: pure-ish operations
+ *     (`planRecord`, `recordClaim`, `runCheck`, …) that take already-resolved
+ *     values and never touch git or argv.
+ *   • `Engine` below is the imperative shell for in-process consumers; the CLI
+ *     (`src/cli`) is a second, sibling shell. Both are thin and sit on the SAME
+ *     core, so the verdict/lifecycle semantics and the returned JSON shapes are
+ *     identical by construction, not by convention.
+ *
+ * Git is a host concern, kept OUT of this core (Mark Seemann's "Dependency
+ * Rejection"): the library never blames or resolves a ref, and imports nothing
+ * from `src/git/*`. A pure consumer gets the documented defaults (`owner:
+ * "unknown"`, `ref: "WORKTREE"`); the CLI shell resolves git first and passes the
+ * values in, so the git seam stays clean for a future Rust port (§12/§14-D1).
+ * (Out-of-process *resolvers* — §7, default-deny — are a separate, opt-in concern
+ * that may spawn a declared subprocess via the resolver client; that is not git,
+ * and never runs for a consumer with no resolver manifest.)
  *
  * Scope discipline (§2, §11.4): this exposes hibi's own model and verdicts only.
  * Consumer-specific concepts stay in the consumer; they map *down* onto the
@@ -21,6 +32,7 @@ import type {
   AuthoredTrust,
   Document,
   DocumentLifecycle,
+  Region,
   Verdict,
 } from "./core/model.ts";
 import type { AnchorAnalyzer } from "./engine/anchor.ts";
@@ -34,9 +46,9 @@ import {
 import { type QueryHit, queryByPath } from "./engine/query.ts";
 import {
   documentIdForPath,
+  planRecord,
   type RecordResult,
   recordClaim,
-  resolveRegion,
 } from "./engine/record.ts";
 import {
   retract,
@@ -61,8 +73,10 @@ export type {
 export type { QueryHit } from "./engine/query.ts";
 export {
   documentIdForPath,
+  planRecord,
   type RecordInput,
   type RecordResult,
+  type RegionSpec,
   resolveRegion,
 } from "./engine/record.ts";
 export {
@@ -78,22 +92,27 @@ type Analyzer = AstAnalyzer & AnchorAnalyzer;
 let analyzerPromise: Promise<Analyzer | undefined> | undefined;
 
 /**
- * Lazily load the tree-sitter analyzer (Tier-2), once per process and shared
+ * Lazily load the tree-sitter analyzer (Tier-2), memoized per process and shared
  * across every Engine and the CLI. Tier-1 works without it, so a load failure
- * degrades to `undefined` rather than throwing. Loading it from here (a dynamic
- * import) keeps WASM off the path of consumers that never check structurally.
+ * degrades to `undefined` rather than throwing — and is NOT cached, so a later
+ * call retries (a transient cold-load hiccup must not strand a long-lived
+ * consumer in Tier-1 for the life of the process). The dynamic import keeps WASM
+ * off the path of consumers that never check structurally.
  */
 export async function loadAnalyzer(): Promise<Analyzer | undefined> {
   if (!analyzerPromise) {
     analyzerPromise = import("./ast/analyzer.ts")
       .then((m) => m.getAnalyzer() as Promise<Analyzer>)
-      .catch(() => undefined);
+      .catch(() => {
+        analyzerPromise = undefined; // let the next call retry
+        return undefined;
+      });
   }
   return analyzerPromise;
 }
 
 /** Build the resolver registry: built-in drift + manifest-gated externals (§7). */
-export async function buildRegistry(
+async function buildRegistry(
   store: ClaimStore,
   analyzer?: AstAnalyzer,
 ): Promise<ResolverRegistry> {
@@ -129,9 +148,9 @@ export interface RecordCall {
   coarse?: boolean;
   /** Default `"inferred"`. `"verified"` requires a precise region + a ref. */
   authoredTrust?: AuthoredTrust;
-  /** Default `"unknown"` — the library does no git blame (a CLI concern). */
+  /** Default `"unknown"` — the library does no git (attribution is a host concern). */
   owner?: string;
-  /** The ref last verified against. Default `"WORKTREE"`. */
+  /** The ref last verified against. Default `"WORKTREE"` — the host resolves git. */
   ref?: string;
   ttl?: string;
   attrs?: Record<string, unknown>;
@@ -148,8 +167,10 @@ export interface StatusResult {
 }
 
 /**
- * An open claim store with the engine wiring attached — the in-process equivalent
- * of the CLI. Methods mirror the §9 verbs and return the same shapes the CLI emits.
+ * An open claim store with the engine wiring attached — the in-process shell over
+ * the functional core. Methods mirror the §9 verbs and return the same shapes the
+ * CLI emits. Git-derived inputs (`owner`, `ref`) are accepted as values; omitted,
+ * they take the documented git-free defaults (the library never shells out to git).
  */
 export class Engine {
   private constructor(
@@ -181,6 +202,7 @@ export class Engine {
    * Verify every claim against the working tree (§9 `check`). Banners are stamped
    * into documents only when `write` is set; otherwise this is a pure read that
    * returns verdicts as data — the mode a consumer rendering its own status uses.
+   * Pass `onlyFiles` to scope the check (the write-time loop / `diff`).
    */
   async check(
     opts: {
@@ -206,14 +228,24 @@ export class Engine {
     }
   }
 
-  /** Read-time "is this current?" gate for one document (§9 `status`). */
+  /**
+   * Read-time "is this current?" gate for one document (§9 `status`). Scoped to
+   * the document's own anchored files, so answering it costs work proportional to
+   * the one document, not the whole store.
+   */
   async status(
     docPath: string,
     opts: { ref?: string } = {},
   ): Promise<StatusResult> {
     const docId = documentIdForPath(docPath);
     const doc = await this.store.getDocument(docId);
-    const report = await this.check({ write: false, ref: opts.ref });
+    const assertions = await this.store.allAssertions();
+    const onlyFiles = new Set(
+      assertions
+        .filter((a) => a.documentId === docId)
+        .map((a) => a.anchor.file),
+    );
+    const report = await this.check({ write: false, ref: opts.ref, onlyFiles });
     const docReport = report.documents.find((d) => d.id === docId);
     return {
       doc: docPath,
@@ -232,27 +264,33 @@ export class Engine {
 
   /**
    * Record a code-anchored claim (§9 `record`). The anchored file is read from the
-   * store's anchor root and the region resolved from quote / offsets / line.
+   * store's anchor root and the region resolved (via the core `planRecord`) from
+   * quote / offsets / line. Attribution (`owner`) and the verifying `ref` are
+   * caller-supplied values; this shell never derives them from git.
    */
   async record(call: RecordCall): Promise<RecordResult> {
     const coarse = call.coarse ?? false;
     let codeContent: string | null = null;
-    let region: ReturnType<typeof resolveRegion> | undefined;
+    let region: Region | undefined;
     if (!coarse) {
-      // Mirror the CLI guard: a precise anchor needs a real file, else the
-      // join below resolves to the anchor-root dir and readFile throws EISDIR.
+      // A precise anchor needs a real file; without this guard the join below
+      // resolves to the anchor-root dir and readFile throws an opaque EISDIR.
       if (!call.codeFile)
         throw new Error("record requires a codeFile (or set coarse: true)");
       const abs = isAbsolute(call.codeFile)
         ? call.codeFile
         : join(this.store.anchorRoot, call.codeFile);
-      codeContent = await readFile(abs, "utf8");
-      region = resolveRegion(codeContent, {
-        quote: call.quote,
-        start: call.start,
-        end: call.end,
-        line: call.line,
-      });
+      try {
+        codeContent = await readFile(abs, "utf8");
+      } catch (e) {
+        // Only a missing file becomes the friendly message (mirrors the CLI's
+        // exists() pre-check); surface EISDIR/EACCES/etc. as-is so the library
+        // and the CLI agree and the real cause is never masked.
+        if ((e as { code?: string }).code === "ENOENT")
+          throw new Error(`Code file not found: ${call.codeFile}`);
+        throw e;
+      }
+      region = planRecord(codeContent, call).region;
     }
     return recordClaim(this.store, codeContent, {
       docPath: call.docPath,

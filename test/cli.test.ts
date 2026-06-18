@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { exists } from "../src/fs.ts";
 
 const CLI = join(import.meta.dir, "..", "src", "cli", "index.ts");
 
@@ -13,6 +14,7 @@ interface Selector {
 interface CliJson {
   ok?: boolean;
   nonce?: string;
+  store?: string;
   assertion?: { anchor?: { selectors?: Selector[] } };
   summary?: { fresh?: number };
   verdicts?: { state?: string }[];
@@ -242,5 +244,42 @@ describe("CLI end-to-end (§9)", () => {
     const res = await run(d, ["frobnicate"]);
     expect(res.code).toBe(1);
     expect(res.json.ok).toBe(false);
+  });
+
+  test("--store-dir decouples the store from the anchor root", async () => {
+    const d = await repo();
+    const storeHome = await mkdtemp(join(tmpdir(), "ce-cli-store-"));
+    dirs.push(storeHome);
+    const storeDir = join(storeHome, "claims");
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "doc.md", "# Doc\n");
+
+    const init = await run(d, ["init", "--store-dir", storeDir]);
+    expect(init.code).toBe(0);
+    expect(init.json.store).toBe(storeDir);
+
+    const rec = await run(d, [
+      "record",
+      "--store-dir",
+      storeDir,
+      "--doc",
+      "doc.md",
+      "--text",
+      "A is 1",
+      "--file",
+      "src/a.ts",
+      "--quote",
+      "A = 1",
+    ]);
+    expect(rec.code).toBe(0);
+
+    // The store lives at the custom dir — nothing under <anchor>/.claims.
+    expect(await exists(join(d, ".claims"))).toBe(false);
+    expect(await exists(join(storeDir, "config.json"))).toBe(true);
+
+    // Anchors still resolve against the anchor root through the far store.
+    const clean = await run(d, ["check", "--store-dir", storeDir]);
+    expect(clean.code).toBe(0);
+    expect(clean.json.summary?.fresh).toBe(1);
   });
 });

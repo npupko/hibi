@@ -1,26 +1,29 @@
 #!/usr/bin/env bun
-import { access, readFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 /**
- * The Hibi CLI (§9) — JSON-first, quiet by default; the consumer is a
- * machine. Verbs: init · record · check · query · diff · supersede · retract ·
- * status · schema. Exit codes follow the §9 contract.
+ * The Hibi CLI (§9) — JSON-first, quiet by default; the consumer is a machine.
+ * Verbs: init · record · check · query · diff · supersede · retract · status ·
+ * schema. Exit codes follow the §9 contract.
+ *
+ * This is a thin *imperative shell*: it parses argv, resolves the environment
+ * (git ref / blame / changed-files) into plain values, delegates to the `Engine`
+ * facade (the single in-process orchestration layer), and serializes the result.
+ * The one exception is `record`, which composes the git-free core (`planRecord` +
+ * `recordClaim`) directly so it can blame the resolved line between the two steps.
  */
 import { parseArgs } from "node:util";
 import pkg from "../../package.json" with { type: "json" };
 import type { AuthoredTrust, Region } from "../core/model.ts";
-import { archiveDocument } from "../engine/archive.ts";
-import { type FailOn, runCheck } from "../engine/check.ts";
-import { queryByPath } from "../engine/query.ts";
-import {
-  documentIdForPath,
-  recordClaim,
-  resolveRegion,
-} from "../engine/record.ts";
-import { retract, supersede } from "../engine/supersede.ts";
+import { planRecord, recordClaim } from "../engine/record.ts";
+import { exists } from "../fs.ts";
 import { blameAuthor, changedFiles, currentRef } from "../git/git.ts";
-import { buildRegistry, loadAnalyzer } from "../index.ts";
-import { ClaimStore } from "../store/store.ts";
+import {
+  Engine,
+  type FailOn,
+  loadAnalyzer,
+  type StoreLocation,
+} from "../index.ts";
 
 const EXIT_OPERATIONAL_ERROR = 1;
 
@@ -37,13 +40,11 @@ function fail(message: string, pretty: boolean): never {
   process.exit(EXIT_OPERATIONAL_ERROR);
 }
 
-async function exists(p: string): Promise<boolean> {
-  try {
-    await access(p);
-    return true;
-  } catch {
-    return false;
-  }
+function absPath(root: string, p: string): string {
+  return isAbsolute(p) ? p : join(root, p);
+}
+function num(v: unknown): number | undefined {
+  return v !== undefined ? Number(v) : undefined;
 }
 
 async function main(argv: string[]): Promise<number> {
@@ -56,6 +57,7 @@ async function main(argv: string[]): Promise<number> {
     strict: false,
     options: {
       cwd: { type: "string" },
+      "store-dir": { type: "string" },
       pretty: { type: "boolean", default: false },
       // record
       doc: { type: "string" },
@@ -89,18 +91,28 @@ async function main(argv: string[]): Promise<number> {
   });
 
   const pretty = Boolean(values.pretty);
-  const root = (values.cwd as string) ?? process.cwd();
-  const analyzer = values["no-ast"] ? undefined : await loadAnalyzer();
+  const anchorRoot = (values.cwd as string) ?? process.cwd();
+  const noAst = Boolean(values["no-ast"]);
+  // The store defaults to <anchorRoot>/.claims; --store-dir decouples it (§8).
+  const storeDir = values["store-dir"] as string | undefined;
+  const loc: string | StoreLocation = storeDir
+    ? { anchorRoot, storeDir: absPath(anchorRoot, storeDir) }
+    : anchorRoot;
+
+  const open = () =>
+    Engine.open(loc, { noAst }).catch(() =>
+      fail("No claim store. Run `hibi init`.", pretty),
+    );
 
   switch (cmd) {
     case "init": {
-      const store = await ClaimStore.init(root);
-      const config = await store.config();
+      const engine = await Engine.init(loc);
+      const config = await engine.store.config();
       out(
         {
           ok: true,
           action: "init",
-          store: store.dir,
+          store: engine.store.dir,
           nonce: config.nonce,
           version: config.version,
         },
@@ -110,9 +122,7 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "record": {
-      const store = await ClaimStore.open(root).catch(() =>
-        fail("No claim store. Run `hibi init`.", pretty),
-      );
+      const engine = await open();
       if (!values.doc || !values.text)
         return fail("record requires --doc and --text", pretty);
       const trust = String(values.trust) as AuthoredTrust;
@@ -120,34 +130,34 @@ async function main(argv: string[]): Promise<number> {
       const codeFile = (values.file as string) ?? "";
       let codeContent: string | null = null;
       let region: Region | undefined;
+      let owner = values.owner as string | undefined;
       if (!coarse) {
         if (!codeFile)
           return fail("record requires --file (or --coarse)", pretty);
-        const abs = absPath(root, codeFile);
+        const abs = absPath(anchorRoot, codeFile);
         if (!(await exists(abs)))
           return fail(`Code file not found: ${codeFile}`, pretty);
         codeContent = await readFile(abs, "utf8");
+        let plan: { region: Region; line: number };
         try {
-          region = resolveRegion(codeContent, {
+          plan = planRecord(codeContent, {
             quote: values.quote as string | undefined,
-            start:
-              values.start !== undefined ? Number(values.start) : undefined,
-            end: values.end !== undefined ? Number(values.end) : undefined,
-            line: values.line !== undefined ? Number(values.line) : undefined,
+            start: num(values.start),
+            end: num(values.end),
+            line: num(values.line),
           });
         } catch (e) {
           return fail((e as Error).message, pretty);
         }
+        region = plan.region;
+        // Advisory git attribution of the anchored line (a host concern, §6).
+        if (!owner)
+          owner =
+            (await blameAuthor(codeFile, plan.line, anchorRoot)) ?? undefined;
       }
-      const ref = (values.ref as string) ?? (await currentRef(root));
-      // Owner: explicit, else advisory git-blame of the anchored line, else unknown.
-      let owner = values.owner as string | undefined;
-      if (!owner && region && codeContent) {
-        const line = codeContent.slice(0, region.start).split("\n").length;
-        owner = (await blameAuthor(codeFile, line, root)) ?? undefined;
-      }
+      const ref = (values.ref as string) ?? (await currentRef(anchorRoot));
       try {
-        const result = await recordClaim(store, codeContent, {
+        const result = await recordClaim(engine.store, codeContent, {
           docPath: values.doc as string,
           text: values.text as string,
           authoredTrust: trust,
@@ -157,7 +167,8 @@ async function main(argv: string[]): Promise<number> {
           codeFile: coarse ? codeFile || (values.doc as string) : codeFile,
           region,
           coarse,
-          analyzer: analyzer ?? undefined,
+          // Tier-1 only when coarse (path anchors ignore the analyzer) or --no-ast.
+          analyzer: coarse || noAst ? undefined : await loadAnalyzer(),
         });
         out({ ok: true, action: "record", ...result }, pretty);
         return 0;
@@ -167,60 +178,31 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "check": {
-      const store = await ClaimStore.open(root).catch(() =>
-        fail("No claim store. Run `hibi init`.", pretty),
-      );
-      const registry = await buildRegistry(store, analyzer);
-      const report = await runCheck(store, {
-        registry,
+      const engine = await open();
+      const report = await engine.check({
         write: Boolean(values.write),
         failOn: String(values["fail-on"]) as FailOn,
-        ref: await currentRef(root),
+        ref: await currentRef(anchorRoot),
       });
-      registry.dispose();
       out({ ok: true, action: "check", ...report }, pretty);
       return report.exitCode;
     }
 
     case "status": {
-      const store = await ClaimStore.open(root).catch(() =>
-        fail("No claim store. Run `hibi init`.", pretty),
-      );
+      const engine = await open();
       if (!values.doc) return fail("status requires --doc", pretty);
-      const docId = documentIdForPath(values.doc as string);
-      const doc = await store.getDocument(docId);
-      const statusRegistry = await buildRegistry(store, analyzer);
-      const report = await runCheck(store, {
-        registry: statusRegistry,
-        write: false,
-        ref: await currentRef(root),
+      const result = await engine.status(values.doc as string, {
+        ref: await currentRef(anchorRoot),
       });
-      statusRegistry.dispose();
-      const docReport = report.documents.find((d) => d.id === docId);
-      const verdicts = report.verdicts.filter((v) => v.documentId === docId);
-      out(
-        {
-          ok: true,
-          action: "status",
-          doc: values.doc,
-          found: Boolean(doc),
-          lifecycle: doc?.lifecycle ?? null,
-          current: !docReport || docReport.suspect.length === 0,
-          suspect: docReport?.suspect ?? [],
-          verdicts,
-        },
-        pretty,
-      );
+      out({ ok: true, action: "status", ...result }, pretty);
       // Read-time gate: non-zero when this doc is suspect.
-      return docReport && docReport.suspect.length > 0 ? 2 : 0;
+      return result.suspect.length > 0 ? 2 : 0;
     }
 
     case "query": {
-      const store = await ClaimStore.open(root).catch(() =>
-        fail("No claim store. Run `hibi init`.", pretty),
-      );
+      const engine = await open();
       if (!values.path) return fail("query requires --path", pretty);
-      const hits = await queryByPath(store, values.path as string);
+      const hits = await engine.query(values.path as string);
       out(
         {
           ok: true,
@@ -235,20 +217,15 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "diff": {
-      const store = await ClaimStore.open(root).catch(() =>
-        fail("No claim store. Run `hibi init`.", pretty),
-      );
+      const engine = await open();
       if (!values.since) return fail("diff requires --since <ref>", pretty);
-      const files = await changedFiles(values.since as string, root);
-      const diffRegistry = await buildRegistry(store, analyzer);
-      const report = await runCheck(store, {
-        registry: diffRegistry,
+      const files = await changedFiles(values.since as string, anchorRoot);
+      const report = await engine.check({
+        onlyFiles: files,
         write: Boolean(values.write),
-        onlyFiles: new Set(files),
         failOn: String(values["fail-on"]) as FailOn,
-        ref: await currentRef(root),
+        ref: await currentRef(anchorRoot),
       });
-      diffRegistry.dispose();
       out(
         {
           ok: true,
@@ -263,9 +240,7 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "supersede": {
-      const store = await ClaimStore.open(root).catch(() =>
-        fail("No claim store. Run `hibi init`.", pretty),
-      );
+      const engine = await open();
       if (!values.new || !values.old || !values.type) {
         return fail(
           "supersede requires --new, --old, and --type (supersedes|amends)",
@@ -273,7 +248,7 @@ async function main(argv: string[]): Promise<number> {
         );
       }
       try {
-        const result = await supersede(store, {
+        const result = await engine.supersede({
           newDocPath: values.new as string,
           oldDocPath: values.old as string,
           type: String(values.type) as "supersedes" | "amends",
@@ -291,22 +266,17 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "retract": {
-      const store = await ClaimStore.open(root).catch(() =>
-        fail("No claim store. Run `hibi init`.", pretty),
-      );
+      const engine = await open();
       if (!values.doc) return fail("retract requires --doc", pretty);
-      const doc = await retract(store, values.doc as string);
+      const doc = await engine.retract(values.doc as string);
       out({ ok: true, action: "retract", document: doc }, pretty);
       return 0;
     }
 
     case "archive": {
-      const store = await ClaimStore.open(root).catch(() =>
-        fail("No claim store. Run `hibi init`.", pretty),
-      );
+      const engine = await open();
       if (!values.doc) return fail("archive requires --doc", pretty);
-      const result = await archiveDocument(
-        store,
+      const result = await engine.archive(
         values.doc as string,
         values.successor as string | undefined,
       );
@@ -355,10 +325,6 @@ async function main(argv: string[]): Promise<number> {
   }
 }
 
-function absPath(root: string, p: string): string {
-  return isAbsolute(p) ? p : join(root, p);
-}
-
 const USAGE = `hibi — deterministic doc-staleness tracking (JSON-first)
 
 Usage: hibi <command> [options]
@@ -378,7 +344,8 @@ Commands:
   schema   [--name <Name>]          Emit generated JSON Schema(s)
 
 Exit codes: 0 clean · 2 suspect (stale/ghost/expired) · 3 moved-only · 1 error
-Options: --pretty (human output) · --cwd <dir> · --no-ast (skip tree-sitter)
+Options: --pretty (human output) · --cwd <dir> (anchor root) · --store-dir <dir> (store
+  location, default <anchor>/.claims) · --no-ast (skip tree-sitter)
 `;
 
 main(process.argv.slice(2))

@@ -111,11 +111,34 @@ export async function recordClaim(
   return { document, proposition, assertion, dedupedProposition: deduped };
 }
 
-/** Resolve a region from a literal quote, char offsets, or a 1-based line number. */
-export function resolveRegion(
+/** How a record call locates the anchor region inside the code file. */
+export interface RegionSpec {
+  /** A literal quote to find… */
+  quote?: string;
+  /** …or explicit char offsets… */
+  start?: number;
+  end?: number;
+  /** …or a 1-based line number. */
+  line?: number;
+}
+
+/**
+ * Plan a record: resolve the anchor region AND the 1-based line it starts on, in
+ * one pure step (no I/O, no git). The line is the value a host needs to attribute
+ * the anchor (e.g. `git blame`); deriving it lives HERE so the CLI shell and the
+ * library shell can never drift on the off-by-one (§7.5, functional core).
+ */
+export function planRecord(
   content: string,
-  spec: { quote?: string; start?: number; end?: number; line?: number },
-): Region {
+  spec: RegionSpec,
+): { region: Region; line: number } {
+  const region = resolveRegion(content, spec);
+  const line = content.slice(0, region.start).split("\n").length;
+  return { region, line };
+}
+
+/** Resolve a region from a literal quote, char offsets, or a 1-based line number. */
+export function resolveRegion(content: string, spec: RegionSpec): Region {
   if (spec.quote !== undefined) {
     const idx = content.indexOf(spec.quote);
     if (idx === -1)
