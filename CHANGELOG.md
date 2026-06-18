@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.2](https://github.com/npupko/hibi/compare/v0.1.1...v0.1.2) (2026-06-18)
+
+
+### Features
+
+* **lib:** add in-process library facade ([afb70bc](https://github.com/npupko/hibi/commit/afb70bc6e9f2e0f5c0ddc58f917ed4bc33eaf806))
+
+
+### Bug Fixes
+
+* **ast:** load web-tree-sitter runtime wasm by its 0.26 filename ([f566a0d](https://github.com/npupko/hibi/commit/f566a0d9893904696cd21b5c9f626ccf80d7c0f3))
+* **check:** honor --fail-on never and tamper in exit code ([1b78c10](https://github.com/npupko/hibi/commit/1b78c104ff13a7fc162959924e644309c9ad65ba))
+* **check:** honor --fail-on never and tamper in exit code ([0593091](https://github.com/npupko/hibi/commit/0593091b66c666272b0346d892afc196555f1f28)), closes [#9](https://github.com/npupko/hibi/issues/9)
+
 ## [0.1.1](https://github.com/npupko/hibi/compare/v0.1.0...v0.1.1) (2026-06-18)
 
 
