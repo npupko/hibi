@@ -36,7 +36,7 @@ function matchAlphabet(pattern: string): Map<string, number> {
   for (let i = 0; i < pattern.length; i++) s.set(pattern.charAt(i), 0);
   for (let i = 0; i < pattern.length; i++) {
     const c = pattern.charAt(i);
-    s.set(c, s.get(c)! | (1 << (pattern.length - i - 1)));
+    s.set(c, (s.get(c) ?? 0) | (1 << (pattern.length - i - 1)));
   }
   return s;
 }
@@ -118,14 +118,14 @@ function matchBitap(
     for (let j = finish; j >= start; j--) {
       const charMatch = s.get(text.charAt(j - 1)) ?? 0;
       if (d === 0) {
-        rd[j] = ((rd[j + 1]! << 1) | 1) & charMatch; // exact (shift-or)
+        rd[j] = (((rd[j + 1] ?? 0) << 1) | 1) & charMatch; // exact (shift-or)
       } else {
         rd[j] =
-          (((rd[j + 1]! << 1) | 1) & charMatch) |
-          (((lastRd[j + 1]! | lastRd[j]!) << 1) | 1) |
-          lastRd[j + 1]!;
+          ((((rd[j + 1] ?? 0) << 1) | 1) & charMatch) |
+          ((((lastRd[j + 1] ?? 0) | (lastRd[j] ?? 0)) << 1) | 1) |
+          (lastRd[j + 1] ?? 0);
       }
-      if (rd[j]! & matchmask) {
+      if ((rd[j] ?? 0) & matchmask) {
         const sc = bitapScore(d, j - 1);
         if (sc <= scoreThreshold) {
           scoreThreshold = sc;

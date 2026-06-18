@@ -131,7 +131,7 @@ export function resolveRegion(
     const lines = content.split("\n");
     let off = 0;
     for (let i = 0; i < spec.line - 1 && i < lines.length; i++)
-      off += lines[i]!.length + 1;
+      off += (lines[i] ?? "").length + 1;
     const lineText = lines[spec.line - 1] ?? "";
     return { start: off, end: off + lineText.length };
   }

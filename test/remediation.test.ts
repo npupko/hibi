@@ -71,7 +71,8 @@ describe("optional markdown frontmatter status (§8)", () => {
     });
     await r.write("src/a.ts", "// gone\n");
     const rep = await runCheck(r.store, { ast: analyzer, write: true });
-    const docReport = rep.documents.find((d) => d.path === "doc.md")!;
+    const docReport = rep.documents.find((d) => d.path === "doc.md");
+    if (docReport === undefined) throw new Error("doc.md report not found");
     expect(docReport.frontmatterStatus).toBe("ghost");
     expect(getFrontmatterStatus(await r.read("doc.md"))).toBe("ghost");
   });
@@ -111,13 +112,14 @@ describe("coarse glob blast-radius in query (§4, §9)", () => {
       coarse: true,
     });
     // Replace the path anchor with a glob anchor for the test.
-    const a = (await r.store.allAssertions())[0]!;
+    const a = (await r.store.allAssertions())[0];
+    if (a === undefined) throw new Error("expected a recorded assertion");
     a.anchor = buildGlobAnchor("src/auth/**");
     await r.store.putAssertion(a);
 
     const hits = await queryByPath(r.store, "src/auth/login.ts");
     expect(hits.length).toBe(1);
-    expect(hits[0]!.coarse).toBe(true);
+    expect(hits[0]?.coarse).toBe(true);
   });
 });
 
@@ -135,10 +137,10 @@ describe("moved-only verdict yields exit code 3 end-to-end (§9)", () => {
     // nothing about the anchored construct changes.
     await r.write(
       "src/a.ts",
-      "// prologue line\n".repeat(3) + "export const MAX = 5;\n",
+      `${"// prologue line\n".repeat(3)}export const MAX = 5;\n`,
     );
     const rep = await runCheck(r.store, { ast: analyzer });
-    expect(rep.verdicts[0]!.state).toBe("moved");
+    expect(rep.verdicts[0]?.state).toBe("moved");
     expect(rep.exitCode).toBe(3);
   });
 });

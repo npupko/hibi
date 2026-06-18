@@ -71,7 +71,7 @@ export const PROTOCOL_SCHEMAS = {
 
 /** Encode a message as a single JSONL line. */
 export function encodeLine(msg: unknown): string {
-  return JSON.stringify(msg) + "\n";
+  return `${JSON.stringify(msg)}\n`;
 }
 
 /**
@@ -83,11 +83,12 @@ export class LineFramer {
   push(chunk: string): string[] {
     this.buf += chunk;
     const lines: string[] = [];
-    let nl: number;
-    while ((nl = this.buf.indexOf("\n")) !== -1) {
+    let nl = this.buf.indexOf("\n");
+    while (nl !== -1) {
       const line = this.buf.slice(0, nl);
       this.buf = this.buf.slice(nl + 1);
       if (line.trim().length > 0) lines.push(line);
+      nl = this.buf.indexOf("\n");
     }
     return lines;
   }

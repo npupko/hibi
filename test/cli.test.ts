@@ -5,9 +5,28 @@ import { dirname, join } from "node:path";
 
 const CLI = join(import.meta.dir, "..", "src", "cli", "index.ts");
 
+interface Selector {
+  kind?: string;
+}
+
+/** Minimal shape of the CLI's JSON output that these tests actually read. */
+interface CliJson {
+  ok?: boolean;
+  nonce?: string;
+  assertion?: { anchor?: { selectors?: Selector[] } };
+  summary?: { fresh?: number };
+  verdicts?: { state?: string }[];
+  changedFiles?: string[];
+  count?: number;
+  current?: boolean;
+  oldDoc?: { lifecycle?: string };
+  type?: string;
+  properties?: { anchor?: unknown };
+}
+
 interface RunResult {
   code: number;
-  json: any;
+  json: CliJson;
   stdout: string;
 }
 
@@ -19,9 +38,9 @@ async function run(cwd: string, args: string[]): Promise<RunResult> {
   });
   const stdout = await new Response(proc.stdout).text();
   const code = await proc.exited;
-  let json: any;
+  let json: CliJson = {};
   try {
-    json = JSON.parse(stdout.trim().split("\n").pop()!);
+    json = JSON.parse(stdout.trim().split("\n").at(-1) ?? "");
   } catch {
     /* non-JSON (e.g. usage) */
   }
@@ -74,17 +93,17 @@ describe("CLI end-to-end (§9)", () => {
     ]);
     expect(rec.code).toBe(0);
     expect(
-      rec.json.assertion.anchor.selectors.map((s: any) => s.kind),
+      rec.json.assertion?.anchor?.selectors?.map((s: Selector) => s.kind),
     ).toContain("value");
 
     const clean = await run(d, ["check"]);
     expect(clean.code).toBe(0);
-    expect(clean.json.summary.fresh).toBe(1);
+    expect(clean.json.summary?.fresh).toBe(1);
 
     await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
     const drifted = await run(d, ["check"]);
     expect(drifted.code).toBe(2);
-    expect(drifted.json.verdicts[0].state).toBe("stale");
+    expect(drifted.json.verdicts?.[0]?.state).toBe("stale");
   });
 
   test("check --write stamps a banner that the consumer can see in the raw file", async () => {
@@ -148,7 +167,7 @@ describe("CLI end-to-end (§9)", () => {
     expect(res.json.changedFiles).toContain("src/a.ts");
     expect(res.json.changedFiles).not.toContain("src/b.ts");
     // Only the changed file's claim is evaluated.
-    expect(res.json.verdicts.length).toBe(1);
+    expect(res.json.verdicts?.length).toBe(1);
   });
 
   test("query --path reports claims covering a file", async () => {
@@ -207,7 +226,7 @@ describe("CLI end-to-end (§9)", () => {
       "supersedes",
     ]);
     expect(res.code).toBe(0);
-    expect(res.json.oldDoc.lifecycle).toBe("superseded");
+    expect(res.json.oldDoc?.lifecycle).toBe("superseded");
   });
 
   test("schema emits generated JSON Schema by name", async () => {
@@ -215,7 +234,7 @@ describe("CLI end-to-end (§9)", () => {
     const res = await run(d, ["schema", "--name", "Assertion"]);
     expect(res.code).toBe(0);
     expect(res.json.type).toBe("object");
-    expect(res.json.properties.anchor).toBeDefined();
+    expect(res.json.properties?.anchor).toBeDefined();
   });
 
   test("unknown command is an operational error (exit 1)", async () => {

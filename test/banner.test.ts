@@ -132,7 +132,7 @@ describe("nonce safety & tamper detection (§17.5)", () => {
     );
     const located = locateBanner(tampered, NONCE, "html");
     expect(located).not.toBeNull();
-    expect(located!.sha).not.toBe(located!.computedSha);
+    expect(located?.sha).not.toBe(located?.computedSha);
   });
 
   test("--fail-on tamper refuses to overwrite a hand-edited banner", () => {

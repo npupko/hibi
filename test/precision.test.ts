@@ -82,7 +82,7 @@ describe("neutral edits do not produce false-`stale` (§11.3, §17.2)", () => {
     expect(["fresh", "moved"]).toContain(v.state);
     expect(v.state).not.toBe("stale");
     const tq = v.selectorScores.find((s) => s.kind === "text-quote");
-    expect(tq!.score).toBe(1); // pure reindent ⇒ text similarity 1.0
+    expect(tq?.score).toBe(1); // pure reindent ⇒ text similarity 1.0
   });
 
   test("reflow (added blank lines elsewhere) stays fresh", () => {

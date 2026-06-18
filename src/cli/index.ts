@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { access, readFile, writeFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 /**
  * The Hibi CLI (§9) — JSON-first, quiet by default; the consumer is a
@@ -8,7 +8,7 @@ import { isAbsolute, join } from "node:path";
  */
 import { parseArgs } from "node:util";
 import type { AstAnalyzer } from "../algo/resolve.ts";
-import type { AuthoredTrust } from "../core/model.ts";
+import type { AuthoredTrust, Region } from "../core/model.ts";
 import type { AnchorAnalyzer } from "../engine/anchor.ts";
 import { archiveDocument } from "../engine/archive.ts";
 import { type FailOn, runCheck } from "../engine/check.ts";
@@ -27,7 +27,7 @@ const EXIT_OPERATIONAL_ERROR = 1;
 
 function out(value: unknown, pretty: boolean): void {
   process.stdout.write(
-    JSON.stringify(value, jsonReplacer, pretty ? 2 : 0) + "\n",
+    `${JSON.stringify(value, jsonReplacer, pretty ? 2 : 0)}\n`,
   );
 }
 function jsonReplacer(_k: string, v: unknown) {
@@ -77,7 +77,7 @@ async function main(argv: string[]): Promise<number> {
   const cmd = argv[0];
   const rest = argv.slice(1);
 
-  const { values, positionals } = parseArgs({
+  const { values } = parseArgs({
     args: rest,
     allowPositionals: true,
     strict: false,
@@ -146,7 +146,7 @@ async function main(argv: string[]): Promise<number> {
       const coarse = Boolean(values.coarse);
       const codeFile = (values.file as string) ?? "";
       let codeContent: string | null = null;
-      let region;
+      let region: Region | undefined;
       if (!coarse) {
         if (!codeFile)
           return fail("record requires --file (or --coarse)", pretty);
@@ -347,7 +347,9 @@ async function main(argv: string[]): Promise<number> {
       const z = await import("zod");
       const name = values.name as string | undefined;
       if (name) {
-        const schema = (SCHEMAS as Record<string, any>)[name];
+        const schema = (
+          SCHEMAS as Record<string, (typeof SCHEMAS)[keyof typeof SCHEMAS]>
+        )[name];
         if (!schema)
           return fail(
             `Unknown schema: ${name}. Known: ${Object.keys(SCHEMAS).join(", ")}`,
@@ -410,6 +412,6 @@ Options: --pretty (human output) · --cwd <dir> · --no-ast (skip tree-sitter)
 main(process.argv.slice(2))
   .then((code) => process.exit(code))
   .catch((e) => {
-    process.stderr.write(String(e?.stack ?? e) + "\n");
+    process.stderr.write(`${String(e?.stack ?? e)}\n`);
     process.exit(EXIT_OPERATIONAL_ERROR);
   });

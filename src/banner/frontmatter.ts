@@ -23,8 +23,9 @@ export function splitFrontmatter(text: string): Frontmatter {
   if (lines[0]?.trim() !== "---") {
     return { hasFrontmatter: false, inner: [], body: text, closingNewline: "" };
   }
-  for (let i = 1; i < lines.length; i++) {
-    if (lines[i]!.trim() === "---") {
+  for (const [i, line] of lines.entries()) {
+    if (i < 1) continue;
+    if (line.trim() === "---") {
       const inner = lines.slice(1, i);
       const rest = lines.slice(i + 1);
       return {

@@ -113,7 +113,7 @@ export function resolveAssertion(
       : undefined;
   const astSel =
     sel["ast-node"]?.kind === "ast-node" ? sel["ast-node"] : undefined;
-  const valSel = sel["value"]?.kind === "value" ? sel["value"] : undefined;
+  const valSel = sel.value?.kind === "value" ? sel.value : undefined;
 
   // ── Localize (text-quote cascade, biased by text-position) ──
   const bias = positionBias(tp);
@@ -209,7 +209,7 @@ export function resolveAssertion(
       kind: "value",
       found: valueFound,
       score: valueScore,
-      weight: WEIGHTS["value"],
+      weight: WEIGHTS.value,
     });
   }
 

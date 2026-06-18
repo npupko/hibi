@@ -58,10 +58,10 @@ describe("out-of-process resolver over JSONL-RPC (§7.1)", () => {
     const desc = await proc.describe();
     proc.dispose();
     expect(desc).not.toBeNull();
-    expect(desc!.name).toBe("semantic-advisor");
-    expect(desc!.tier).toBe(3);
-    expect(desc!.advisory).toBe(true);
-    expect(desc!.kinds).toContain("text-quote");
+    expect(desc?.name).toBe("semantic-advisor");
+    expect(desc?.tier).toBe(3);
+    expect(desc?.advisory).toBe(true);
+    expect(desc?.kinds).toContain("text-quote");
   });
 
   test("resolve returns advisories for a behavioral claim, none otherwise", async () => {
@@ -77,11 +77,11 @@ describe("out-of-process resolver over JSONL-RPC (§7.1)", () => {
       proposition: prop("MAX_ATTEMPTS equals 5"),
     });
     proc.dispose();
-    expect(behavioral!.advisories.length).toBeGreaterThan(0);
-    expect(behavioral!.advisories[0]!.message).toContain(
+    expect(behavioral?.advisories.length).toBeGreaterThan(0);
+    expect(behavioral?.advisories[0]?.message).toContain(
       "re-verify semantically",
     );
-    expect(structural!.advisories.length).toBe(0);
+    expect(structural?.advisories.length).toBe(0);
   });
 
   test("a resolver that never responds is timed out and degrades to null", async () => {
@@ -126,11 +126,12 @@ describe("registry: advisory resolvers advise but never gate (§7.4)", () => {
     // Manually register the advisor as an out-of-process resolver.
     const proc = advisorProc();
     const desc = await proc.describe();
-    expect(desc!.advisory).toBe(true);
+    if (desc === null) throw new Error("advisor describe() returned null");
+    expect(desc.advisory).toBe(true);
     registry.register({
-      name: desc!.name,
-      kinds: desc!.kinds,
-      tier: desc!.tier,
+      name: desc.name,
+      kinds: desc.kinds,
+      tier: desc.tier,
       advisory: true,
       resolve: async (a, t, p) => {
         const r = await proc.resolve({ assertion: a, text: t, proposition: p });
@@ -163,6 +164,6 @@ describe("registry: advisory resolvers advise but never gate (§7.4)", () => {
 
     expect(verdict.state).toBe("fresh"); // advisory did NOT change the deterministic verdict
     expect(verdict.advisories.length).toBeGreaterThan(0);
-    expect(verdict.advisories[0]!.resolver).toBe("semantic-advisor");
+    expect(verdict.advisories[0]?.resolver).toBe("semantic-advisor");
   });
 });

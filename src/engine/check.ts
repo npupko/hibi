@@ -18,7 +18,6 @@ import {
 } from "../banner/banner.ts";
 import { setFrontmatterStatus } from "../banner/frontmatter.ts";
 import type {
-  Assertion,
   ComputedState,
   Document,
   DocumentLifecycle,
@@ -138,7 +137,8 @@ export async function runCheck(
   // Cache file reads (a regenerable optimization; never affects the verdict).
   const fileCache = new Map<string, string | null>();
   const readFileText = async (rel: string): Promise<string | null> => {
-    if (fileCache.has(rel)) return fileCache.get(rel)!;
+    const cached = fileCache.get(rel);
+    if (cached !== undefined || fileCache.has(rel)) return cached ?? null;
     const abs = join(root, rel);
     const text = (await exists(abs)) ? await readFile(abs, "utf8") : null;
     fileCache.set(rel, text);
@@ -186,7 +186,7 @@ export async function runCheck(
     }
     verdicts.push(verdict);
     summary[verdict.state] = (summary[verdict.state] ?? 0) + 1;
-    summary.total!++;
+    summary.total = (summary.total ?? 0) + 1;
   }
 
   // ── Per-document banner payloads & lifecycle ──
@@ -231,10 +231,12 @@ export async function runCheck(
       ...suspectVerdicts.map((v) => v.state as string),
       ...(doc.lifecycle !== "active" ? [doc.lifecycle as string] : []),
     ];
-    const statusValue = severities.length
-      ? (STATUS_PRECEDENCE.find((s) => severities.includes(s)) ??
-        severities[0]!)
-      : null;
+    const [firstSeverity] = severities;
+    const statusValue =
+      firstSeverity !== undefined
+        ? (STATUS_PRECEDENCE.find((s) => severities.includes(s)) ??
+          firstSeverity)
+        : null;
 
     if (options.write) {
       const abs = join(root, doc.path);

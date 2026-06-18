@@ -18,18 +18,14 @@ describe("tree-sitter snapping & two-tier hash (§17.2)", () => {
   test("structural hash is invariant under re-indentation", () => {
     const a = "export const MAX_ATTEMPTS = 5;";
     const b = "export   const    MAX_ATTEMPTS   =   5;";
-    const fa = analyzer.analyze(
-      a,
-      "typescript",
-      region(a, "MAX_ATTEMPTS = 5"),
-    )!;
+    const fa = analyzer.analyze(a, "typescript", region(a, "MAX_ATTEMPTS = 5"));
     const fb = analyzer.analyze(
       b,
       "typescript",
       region(b, "MAX_ATTEMPTS   =   5"),
-    )!;
-    expect(fa.structuralHash).toBe(fb.structuralHash);
-    expect(fa.semanticHash).toBe(fb.semanticHash); // whitespace is collapsed
+    );
+    expect(fa?.structuralHash).toBe(fb?.structuralHash);
+    expect(fa?.semanticHash).toBe(fb?.semanticHash); // whitespace is collapsed
   });
 
   test("a rename keeps the structural hash but changes the semantic hash", () => {
@@ -39,18 +35,18 @@ describe("tree-sitter snapping & two-tier hash (§17.2)", () => {
       a,
       "typescript",
       region(a, "retry(maxAttempts"),
-    )!;
-    const fb = analyzer.analyze(b, "typescript", region(b, "retry(maxTries"))!;
-    expect(fa.structuralHash).toBe(fb.structuralHash);
-    expect(fa.semanticHash).not.toBe(fb.semanticHash);
+    );
+    const fb = analyzer.analyze(b, "typescript", region(b, "retry(maxTries"));
+    expect(fa?.structuralHash).toBe(fb?.structuralHash);
+    expect(fa?.semanticHash).not.toBe(fb?.semanticHash);
   });
 
   test("a changed numeric literal changes the semantic hash (5 → 50)", () => {
     const a = "const MAX = 5;";
     const b = "const MAX = 50;";
-    const fa = analyzer.analyze(a, "typescript", region(a, "MAX = 5"))!;
-    const fb = analyzer.analyze(b, "typescript", region(b, "MAX = 50"))!;
-    expect(fa.semanticHash).not.toBe(fb.semanticHash);
+    const fa = analyzer.analyze(a, "typescript", region(a, "MAX = 5"));
+    const fb = analyzer.analyze(b, "typescript", region(b, "MAX = 50"));
+    expect(fa?.semanticHash).not.toBe(fb?.semanticHash);
   });
 });
 

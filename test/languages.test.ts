@@ -71,7 +71,7 @@ describe("all five first-party grammars (§16, §17.4)", () => {
       // Parse + fingerprint succeed.
       const fp = analyzer.analyze(c.original, c.language, region);
       expect(fp).not.toBeNull();
-      expect(fp!.structuralHash).toMatch(/^[0-9a-f]{16}$/);
+      expect(fp?.structuralHash).toMatch(/^[0-9a-f]{16}$/);
 
       // Value extraction per the language map.
       expect(analyzer.extractValue(c.original, c.language, region)).toBe(

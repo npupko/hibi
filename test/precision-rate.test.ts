@@ -66,17 +66,15 @@ function neutralEdit(
   const choice = Math.floor(r() * 5);
   switch (choice) {
     case 0: // blank lines after the anchor line
-      return src.slice(0, after) + "\n\n" + src.slice(after);
+      return `${src.slice(0, after)}\n\n${src.slice(after)}`;
     case 1: // a comment appended at EOF
-      return src + `// note ${Math.floor(r() * 1000)}\n`;
+      return `${src}// note ${Math.floor(r() * 1000)}\n`;
     case 2: // an unrelated function appended at EOF
-      return (
-        src + `export function extra${Math.floor(r() * 1000)}() { return 0; }\n`
-      );
+      return `${src}export function extra${Math.floor(r() * 1000)}() { return 0; }\n`;
     case 3: // trailing whitespace on the last line
       return src.replace(/\n$/, "   \n");
     default: // a comment line at EOF (keeps anchor start stable)
-      return src + "// trailing comment\n";
+      return `${src}// trailing comment\n`;
   }
 }
 
@@ -93,7 +91,7 @@ function driftEdit(src: string, anchorQuote: string, r: () => number): string {
   }
   // No digit → mutate an identifier/operator within the region.
   const mutated = region
-    .replace(/[a-zA-Z]+/, (m) => m + "X")
+    .replace(/[a-zA-Z]+/, (m) => `${m}X`)
     .replace(/\*/, "+");
   return src.slice(0, idx) + mutated + src.slice(idx + anchorQuote.length);
 }

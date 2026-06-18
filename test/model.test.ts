@@ -52,7 +52,7 @@ describe("canonical model is the single source of truth (§5)", () => {
     };
     const variants = js.oneOf ?? js.anyOf;
     expect(Array.isArray(variants)).toBe(true);
-    expect(variants!.length).toBe(6); // text-quote, text-position, ast-node, value, path, glob
+    expect(variants?.length).toBe(6); // text-quote, text-position, ast-node, value, path, glob
   });
 
   test("a valid record round-trips through Zod", () => {

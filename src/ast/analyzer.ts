@@ -44,7 +44,7 @@ const WASM: Record<string, string> = {
 class TreeSitterAnalyzer implements AstAnalyzer, AnchorAnalyzer {
   private parsers = new Map<string, Parser>();
 
-  constructor(private languages: Map<string, Language>) {
+  constructor(languages: Map<string, Language>) {
     for (const [name, lang] of languages) {
       const p = new Parser();
       p.setLanguage(lang);

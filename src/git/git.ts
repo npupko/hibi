@@ -65,5 +65,6 @@ export async function blameAuthor(
   );
   if (!out) return null;
   const m = out.match(/^author (.+)$/m);
-  return m ? m[1]!.trim() : null;
+  const author = m?.[1];
+  return author !== undefined ? author.trim() : null;
 }

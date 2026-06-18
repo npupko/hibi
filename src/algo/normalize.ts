@@ -36,11 +36,14 @@ export function levenshtein(a: string, b: string): number {
     const ca = a.charCodeAt(i - 1);
     for (let j = 1; j <= b.length; j++) {
       const cost = ca === b.charCodeAt(j - 1) ? 0 : 1;
-      curr[j] = Math.min(prev[j]! + 1, curr[j - 1]! + 1, prev[j - 1]! + cost);
+      const del = (prev[j] ?? 0) + 1;
+      const ins = (curr[j - 1] ?? 0) + 1;
+      const sub = (prev[j - 1] ?? 0) + cost;
+      curr[j] = Math.min(del, ins, sub);
     }
     [prev, curr] = [curr, prev];
   }
-  return prev[b.length]!;
+  return prev[b.length] ?? 0;
 }
 
 /**

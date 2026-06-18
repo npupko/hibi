@@ -13,8 +13,8 @@ export function fnv1a32(input: string | Uint8Array): number {
   const bytes =
     typeof input === "string" ? new TextEncoder().encode(input) : input;
   let hash = OFFSET_BASIS;
-  for (let i = 0; i < bytes.length; i++) {
-    hash ^= bytes[i]!;
+  for (const byte of bytes) {
+    hash ^= byte;
     // 32-bit multiply (Math.imul) then force unsigned.
     hash = Math.imul(hash, PRIME) >>> 0;
   }

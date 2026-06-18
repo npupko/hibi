@@ -84,7 +84,7 @@ describe("text-quote localization cascade (§17.1)", () => {
       9,
     );
     expect(r).not.toBeNull();
-    expect(text.slice(r!.start, r!.end)).toBe("const MAX = 5;");
+    expect(text.slice(r?.start, r?.end)).toBe("const MAX = 5;");
   });
   test("locates a quote that moved", () => {
     const text = "// a new header line added at the top\nconst MAX = 5;";
@@ -94,7 +94,7 @@ describe("text-quote localization cascade (§17.1)", () => {
       0,
     );
     expect(r).not.toBeNull();
-    expect(text.slice(r!.start, r!.end)).toBe("const MAX = 5;");
+    expect(text.slice(r?.start, r?.end)).toBe("const MAX = 5;");
   });
   test("handles long quotes (>32 chars) via head+suffix", () => {
     const exact =
@@ -106,7 +106,7 @@ describe("text-quote localization cascade (§17.1)", () => {
       9,
     );
     expect(r).not.toBeNull();
-    expect(text.slice(r!.start, r!.end)).toContain(
+    expect(text.slice(r?.start, r?.end)).toContain(
       "the retry policy caps attempts",
     );
   });

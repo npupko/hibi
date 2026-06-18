@@ -180,8 +180,8 @@ export function locateBanner(
   const eRe = endRe(nonce);
 
   let beginIdx = -1;
-  for (let i = 0; i < lines.length; i++) {
-    if (bRe.test(lines[i]!)) {
+  for (const [i, line] of lines.entries()) {
+    if (bRe.test(line)) {
       beginIdx = i;
       break;
     }
@@ -190,11 +190,12 @@ export function locateBanner(
 
   let endIdx = -1;
   let sha = "";
-  for (let i = beginIdx + 1; i < lines.length; i++) {
-    const m = eRe.exec(lines[i]!);
-    if (m) {
+  for (const [i, line] of lines.entries()) {
+    if (i <= beginIdx) continue;
+    const m = eRe.exec(line);
+    if (m?.[1] !== undefined) {
       endIdx = i;
-      sha = m[1]!;
+      sha = m[1];
       break;
     }
   }
@@ -207,14 +208,23 @@ export function locateBanner(
   let firstLine = beginIdx;
   let lastLine = endIdx;
   if (style === "html") {
-    if (firstLine > 0 && lines[firstLine - 1]!.trim() === "<!--")
+    if (firstLine > 0 && lines[firstLine - 1]?.trim() === "<!--")
       firstLine -= 1;
-    if (lastLine < lines.length - 1 && lines[lastLine + 1]!.trim() === "-->")
+    if (lastLine < lines.length - 1 && lines[lastLine + 1]?.trim() === "-->")
       lastLine += 1;
   }
 
-  const blockStart = starts[firstLine]!;
-  const blockEnd = starts[lastLine]! + lines[lastLine]!.length;
+  const blockStart = starts[firstLine];
+  const lastStart = starts[lastLine];
+  const lastText = lines[lastLine];
+  if (
+    blockStart === undefined ||
+    lastStart === undefined ||
+    lastText === undefined
+  ) {
+    return null;
+  }
+  const blockEnd = lastStart + lastText.length;
   return { blockStart, blockEnd, sha, computedSha };
 }
 
@@ -225,10 +235,13 @@ function placementOffset(text: string, style: CommentStyle): number {
   if (style !== "html") return 0;
   const lines = text.split("\n");
   if (lines[0]?.trim() !== "---") return 0;
-  for (let i = 1; i < lines.length; i++) {
-    if (lines[i]!.trim() === "---") {
+  for (const [i, line] of lines.entries()) {
+    if (i < 1) continue;
+    if (line.trim() === "---") {
       const starts = lineOffsets(text);
-      return starts[i]! + lines[i]!.length + (i + 1 < lines.length ? 1 : 0);
+      const start = starts[i];
+      if (start === undefined) break;
+      return start + line.length + (i + 1 < lines.length ? 1 : 0);
     }
   }
   return 0;

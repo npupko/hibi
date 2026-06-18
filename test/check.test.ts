@@ -79,7 +79,7 @@ describe("end-to-end drift detection", () => {
     });
     await r.write("README.md", "# Doc\n");
     const rep = await check(r);
-    expect(rep.verdicts[0]!.state).toBe("fresh");
+    expect(rep.verdicts[0]?.state).toBe("fresh");
     expect(rep.exitCode).toBe(0);
   });
 
@@ -95,7 +95,7 @@ describe("end-to-end drift detection", () => {
     });
     await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
     const rep = await check(r);
-    expect(rep.verdicts[0]!.state).toBe("stale");
+    expect(rep.verdicts[0]?.state).toBe("stale");
     expect(rep.exitCode).toBe(2);
   });
 
@@ -112,7 +112,7 @@ describe("end-to-end drift detection", () => {
     const { rm } = await import("node:fs/promises");
     await rm(`${r.root}/src/retry.ts`);
     const rep = await check(r);
-    expect(rep.verdicts[0]!.state).toBe("ghost");
+    expect(rep.verdicts[0]?.state).toBe("ghost");
     expect(rep.exitCode).toBe(2);
   });
 
@@ -127,7 +127,7 @@ describe("end-to-end drift detection", () => {
       ttl: "2000-01-01T00:00:00Z", // long past
     });
     const rep = await check(r);
-    expect(rep.verdicts[0]!.state).toBe("expired");
+    expect(rep.verdicts[0]?.state).toBe("expired");
     expect(rep.exitCode).toBe(2);
   });
 
@@ -143,7 +143,7 @@ describe("end-to-end drift detection", () => {
     // Rewrite the file wholesale — a precise anchor would ghost; a coarse one must not.
     await r.write("src/retry.ts", "// totally different content\n");
     const rep = await check(r);
-    expect(rep.verdicts[0]!.state).toBe("fresh");
+    expect(rep.verdicts[0]?.state).toBe("fresh");
     expect(rep.exitCode).toBe(0);
   });
 });
@@ -195,7 +195,7 @@ describe("the write-time loop: banner stamping (§6, §17.5)", () => {
     await check(r, { write: true });
     const located = locateBanner(await r.read("README.md"), "deadbeef", "html");
     expect(located).not.toBeNull();
-    expect(located!.sha).toBe(located!.computedSha);
+    expect(located?.sha).toBe(located?.computedSha);
   });
 });
 
@@ -212,8 +212,8 @@ describe("check is fully offline — no git on the verdict path (§6)", () => {
     // The temp dir is NOT a git repo; check must still succeed deterministically.
     const a = await check(r);
     const b = await check(r);
-    expect(a.verdicts[0]!.state).toBe("fresh");
-    expect(a.verdicts[0]!.state).toBe(b.verdicts[0]!.state);
-    expect(a.verdicts[0]!.confidence).toBe(b.verdicts[0]!.confidence);
+    expect(a.verdicts[0]?.state).toBe("fresh");
+    expect(a.verdicts[0]?.state).toBe(b.verdicts[0]?.state);
+    expect(a.verdicts[0]?.confidence).toBe(b.verdicts[0]?.confidence);
   });
 });

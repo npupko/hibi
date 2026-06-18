@@ -63,7 +63,7 @@ export class ClaimStore {
     const configPath = join(s.dir, "config.json");
     if (!(await exists(configPath))) {
       const config: StoreConfig = { version: MODEL_VERSION, nonce };
-      await writeFile(configPath, JSON.stringify(config, null, 2) + "\n");
+      await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
     }
     // git-ignore the regenerable cache (§6).
     await writeFile(join(s.dir, ".gitignore"), "cache/\n");
@@ -140,7 +140,7 @@ export class ClaimStore {
     await mkdir(join(this.dir, sub), { recursive: true });
     await writeFile(
       join(this.dir, sub, `${id}.json`),
-      JSON.stringify(value, null, 2) + "\n",
+      `${JSON.stringify(value, null, 2)}\n`,
     );
   }
 

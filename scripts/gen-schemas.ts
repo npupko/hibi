@@ -21,7 +21,7 @@ export async function generateSchemas(outDir = OUT_DIR): Promise<string[]> {
       reused: "ref",
     });
     const file = join(outDir, `${name}.${MODEL_VERSION}.json`);
-    await writeFile(file, JSON.stringify(jsonSchema, null, 2) + "\n");
+    await writeFile(file, `${JSON.stringify(jsonSchema, null, 2)}\n`);
     written.push(file);
   }
   return written;

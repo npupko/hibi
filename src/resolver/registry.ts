@@ -11,7 +11,7 @@
 import { type AstAnalyzer, resolveAssertion } from "../algo/resolve.ts";
 import type { Assertion, Proposition, Verdict } from "../core/model.ts";
 import { OutOfProcessResolver } from "./client.ts";
-import { loadManifest, type ResolverSpec } from "./manifest.ts";
+import { loadManifest } from "./manifest.ts";
 
 export interface Resolver {
   name: string;

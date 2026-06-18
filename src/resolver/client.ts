@@ -81,6 +81,7 @@ export class OutOfProcessResolver {
 
   private rpc(method: string, params?: unknown): Promise<unknown> {
     if (!this.ensure() || !this.child) return Promise.resolve(null);
+    const child = this.child;
     const id = this.nextId++;
     return new Promise((resolve) => {
       const timer = setTimeout(() => {
@@ -89,7 +90,7 @@ export class OutOfProcessResolver {
       }, this.timeoutMs);
       this.pending.set(id, { resolve, timer });
       try {
-        this.child!.stdin.write(encodeLine({ id, method, params }));
+        child.stdin.write(encodeLine({ id, method, params }));
       } catch {
         clearTimeout(timer);
         this.pending.delete(id);

@@ -85,7 +85,7 @@ describe("supersession edges: forward-authored, reverse-derived (§4, §6)", () 
       type: "supersedes",
     });
     const newDoc = await r.store.getDocument(documentIdForPath("v2.md"));
-    expect(newDoc!.edges.filter((e) => e.type === "supersedes").length).toBe(1);
+    expect(newDoc?.edges.filter((e) => e.type === "supersedes").length).toBe(1);
   });
 
   test("retract marks lifecycle retracted (§10)", async () => {
@@ -123,7 +123,7 @@ describe("supersession and code-drift are surfaced together (§4, §6)", () => {
     // Drift proposition B by changing its value.
     await r.write("src/a.ts", "export const A = 1;\nexport const B = 22;\n");
 
-    const rep = await runCheck(r.store, { ast: analyzer, write: true });
+    await runCheck(r.store, { ast: analyzer, write: true });
     const banner = await r.read("doc.md");
     expect(banner).toContain("[amended]");
     expect(banner).toContain(b.proposition.id); // the drifted claim
