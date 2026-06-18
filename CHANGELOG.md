@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/npupko/hibi/compare/hibi-v0.1.1...hibi-v0.1.2) (2026-06-18)
+
+
+### Bug Fixes
+
+* **ci:** match release workflow trigger to release-please tag format ([fc92832](https://github.com/npupko/hibi/commit/fc92832109def179d617f6038a3eb9736fe0bc0d))
+
 ## [0.1.1](https://github.com/npupko/hibi/compare/hibi-v0.1.0...hibi-v0.1.1) (2026-06-18)
 
 
