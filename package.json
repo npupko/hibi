@@ -17,7 +17,8 @@
     "lint": "biome lint .",
     "format": "biome format --write .",
     "check:biome": "biome check .",
-    "cli": "bun run src/cli/index.ts"
+    "cli": "bun run src/cli/index.ts",
+    "prepare": "lefthook install"
   },
   "dependencies": {
     "web-tree-sitter": "0.25.10",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.0",
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "lefthook": "2.1.9"
   }
 }
