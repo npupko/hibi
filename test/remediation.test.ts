@@ -1,5 +1,4 @@
 import { afterEach, beforeAll, describe, expect, test } from "bun:test";
-import { access } from "node:fs/promises";
 import { join } from "node:path";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
 import {
@@ -12,6 +11,7 @@ import { archiveDocument } from "../src/engine/archive.ts";
 import { runCheck } from "../src/engine/check.ts";
 import { queryByPath } from "../src/engine/query.ts";
 import { recordClaim } from "../src/engine/record.ts";
+import { exists } from "../src/fs.ts";
 import { makeRepo, record, type TempRepo } from "./helpers.ts";
 
 let analyzer: Awaited<ReturnType<typeof getAnalyzer>>;
@@ -29,14 +29,6 @@ afterEach(async () => {
   await Promise.all(repos.map((r) => r.cleanup()));
   repos = [];
 });
-async function fileExists(p: string) {
-  try {
-    await access(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 describe("optional markdown frontmatter status (§8)", () => {
   test("setFrontmatterStatus only acts where frontmatter exists; round-trips", () => {
@@ -82,7 +74,7 @@ describe("archival remediation (§6)", () => {
   test("moves the doc out of the read path, writes a tombstone, sets lifecycle archived", async () => {
     const r = await repo();
     await r.write("old.md", "# Old policy\n\nOriginal content.\n");
-    const result = await archiveDocument(r.store, r.root, "old.md", "new.md");
+    const result = await archiveDocument(r.store, "old.md", "new.md");
     expect(result.document.lifecycle).toBe("archived");
     expect(result.archivedTo).toBe(join("archive", "old.md"));
     // Original content preserved in the archive.
@@ -94,7 +86,7 @@ describe("archival remediation (§6)", () => {
     expect(tomb).toContain("# Archived");
     expect(tomb).toContain("new.md");
     expect(getFrontmatterStatus(tomb)).toBe("archived");
-    expect(await fileExists(join(r.root, "archive", "old.md"))).toBe(true);
+    expect(await exists(join(r.root, "archive", "old.md"))).toBe(true);
   });
 });
 

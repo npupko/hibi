@@ -5,20 +5,12 @@
  * division of labor).
  */
 
-import { access, mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import type { Document } from "../core/model.ts";
+import { exists } from "../fs.ts";
 import type { ClaimStore } from "../store/store.ts";
 import { documentIdForPath } from "./record.ts";
-
-async function exists(p: string): Promise<boolean> {
-  try {
-    await access(p);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 function tombstone(docPath: string, successorPath?: string): string {
   const redirect = successorPath
@@ -44,10 +36,10 @@ export interface ArchiveResult {
 
 export async function archiveDocument(
   store: ClaimStore,
-  root: string,
   docPath: string,
   successorPath?: string,
 ): Promise<ArchiveResult> {
+  const root = store.anchorRoot;
   const id = documentIdForPath(docPath);
   const doc: Document = (await store.getDocument(id)) ?? {
     id,
