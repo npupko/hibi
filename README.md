@@ -7,6 +7,15 @@
 
 <p align="center"><em>Catch documentation that no longer matches your code.</em></p>
 
+<p align="center">
+  <a href="https://github.com/npupko/hibi/actions/workflows/ci.yml"><img src="https://github.com/npupko/hibi/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://www.npmjs.com/package/hibi"><img src="https://img.shields.io/npm/v/hibi.svg" alt="npm version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+  <!-- Uncomment once the first OpenSSF Scorecard run has published results:
+  <a href="https://securityscorecards.dev/viewer/?uri=github.com/npupko/hibi"><img src="https://api.securityscorecards.dev/projects/github.com/npupko/hibi/badge" alt="OpenSSF Scorecard"></a>
+  -->
+</p>
+
 Hibi tracks **claims**: sentences in your docs and AI-agent instructions that assert how the code behaves. You anchor each claim to the code it describes. When that code changes, `hibi check` flags the claim and can stamp a status banner into the doc, so no reader and no agent acts on a page that has fallen out of sync with the source.
 
 Run it in CI, in a git hook, or as a pre-edit lookup an agent makes before it trusts a doc.
@@ -92,6 +101,14 @@ bun run build               # single-file executable at dist/hibi
 ```
 
 The data model lives once in Zod (`src/core/model.ts`). The JSON Schemas (`schemas/*.v1.json`) and SDK types come from it via `bun run build:schemas`.
+
+## Contributing
+
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup, commit conventions, and PR expectations. Please follow our [Code of Conduct](CODE_OF_CONDUCT.md), and report security issues per [SECURITY.md](SECURITY.md).
+
+## License
+
+[MIT](LICENSE) © Nick Pupko
 
 ---
 
