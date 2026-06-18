@@ -86,7 +86,9 @@ jobs:
       - run: npm install -g npm@latest # ensure >= 11.5.1 for OIDC Trusted Publishing
       - run: bun install --frozen-lockfile
       - run: bun run build:grammars && bun run build:schemas
-      - run: npm publish # access + provenance via publishConfig; OIDC, no token
+      # --ignore-scripts: don't run the `prepare` (lefthook install) lifecycle
+      # hook during publish; package content is already built above + committed.
+      - run: npm publish --ignore-scripts # access + provenance via publishConfig; OIDC, no token
 
   test:
     runs-on: ubuntu-latest
