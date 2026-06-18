@@ -437,6 +437,14 @@ correctness (especially the suspect-set precision of §11.3) at each step:
   (A Rust port would use the `dissimilar` and `tree-sitter` crates.)
 - **D9 — Distribution → as §12.**
 - **D10 — Name → "Hibi" (日々).** *hibi* = "day after day"; the product name, npm package, and CLI command are all `hibi`.
+- **D11 — Visual identity → the `hibi` wordmark + 日々 seal.** Lowercase `hibi` in a geometric
+  slab-mono, paired with a cinnabar seal carrying the kanji 日々 — the seal deliberately echoes the
+  status banner the engine stamps into docs. Palette: cinnabar `#D6452F`, sumi ink `#1B1B1A`,
+  rice-paper `#F3EDE1`, cream `#F0E8D5`. The asset kit (wordmark in light/dark/transparent, square
+  mark, favicons + `.ico`, Apple/PWA icons, 1200×630 OG card) and its usage notes live in
+  `assets/logo/` (see `assets/logo/README.md`). Assets are **raster** — Nano Banana Pro has no native
+  alpha, so transparency comes from a chroma-key green screen keyed with ImageMagick; a hand-drawn
+  **SVG redraw is the reserved next step** if infinitely-scalable output is later required.
 - **SCIP — rejected as first-party.** Its differentiator over tree-sitter (cross-file semantic symbol
   graph) serves navigation/blast-radius, which §2 says this tool is not; its costs (heavy per-language
   indexer, code-only, two-commit indexing) are permanent. The kinded-anchor seam leaves the door open
