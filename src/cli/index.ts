@@ -7,6 +7,7 @@ import { isAbsolute, join } from "node:path";
  * status · schema. Exit codes follow the §9 contract.
  */
 import { parseArgs } from "node:util";
+import pkg from "../../package.json" with { type: "json" };
 import type { AstAnalyzer } from "../algo/resolve.ts";
 import type { AuthoredTrust, Region } from "../core/model.ts";
 import type { AnchorAnalyzer } from "../engine/anchor.ts";
@@ -367,7 +368,7 @@ async function main(argv: string[]): Promise<number> {
 
     case "version":
     case "--version": {
-      out({ name: "hibi", version: "0.1.0" }, pretty);
+      out({ name: "hibi", version: pkg.version }, pretty);
       return 0;
     }
 
