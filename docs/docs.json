@@ -1,0 +1,59 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Hibi",
+  "description": "Catch documentation that no longer matches your code.",
+  "colors": {
+    "primary": "#D6452F",
+    "light": "#E97A66",
+    "dark": "#B83A28"
+  },
+  "favicon": "/favicon.ico",
+  "logo": {
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png",
+    "href": "https://github.com/npupko/hibi"
+  },
+  "contextual": {
+    "options": ["copy", "view", "chatgpt", "claude", "mcp"]
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Getting started",
+        "pages": ["index", "quickstart"]
+      },
+      {
+        "group": "Guides",
+        "pages": ["concepts", "cli-reference", "resolvers"]
+      },
+      {
+        "group": "SDKs",
+        "pages": ["sdks"]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/npupko/hibi"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get started",
+      "href": "/quickstart"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/npupko/hibi"
+    }
+  },
+  "seo": {
+    "metatags": {
+      "og:image": "/logo/og.png"
+    }
+  }
+}

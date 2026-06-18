@@ -1,0 +1,31 @@
+---
+title: "SDKs"
+description: "Build resolvers in TypeScript or Rust."
+---
+
+Resolvers speak JSONL-RPC over stdio. These SDKs handle the framing so you can
+focus on the drift logic.
+
+<CardGroup cols={2}>
+  <Card title="TypeScript SDK" icon="js" href="https://github.com/npupko/hibi/tree/main/sdk/ts">
+    Write resolvers in TypeScript, run them with Bun.
+  </Card>
+  <Card title="Rust SDK" icon="rust" href="https://github.com/npupko/hibi/tree/main/sdk/rust">
+    A native crate with a worked `echo_resolver` example.
+  </Card>
+</CardGroup>
+
+## Shared contract
+
+Both SDKs implement the same protocol, and every message type has a JSON Schema
+in [`schemas/`](https://github.com/npupko/hibi/tree/main/schemas) generated from
+Hibi's single Zod model (`src/core/model.ts`). That means a resolver in any
+language can validate its messages against the same canonical contract.
+
+<Info>
+  The Rust SDK builds independently of the CLI:
+
+  ```sh
+  cd sdk/rust && cargo build --examples
+  ```
+</Info>

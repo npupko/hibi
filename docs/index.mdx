@@ -1,0 +1,50 @@
+---
+title: "Hibi"
+sidebarTitle: "Overview"
+description: "Catch documentation that no longer matches your code."
+---
+
+Hibi tracks **claims**: sentences in your docs and AI-agent instructions that
+assert how the code behaves. You anchor each claim to the code it describes.
+When that code changes, `hibi check` flags the claim and can stamp a status
+banner into the doc — so no reader, and no agent, acts on a page that has
+fallen out of sync with the source.
+
+Run it in CI, in a git hook, or as a pre-edit lookup an agent makes before it
+trusts a doc.
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Install Hibi and record your first claim in a couple of minutes.
+  </Card>
+  <Card title="How it works" icon="diagram-project" href="/concepts">
+    Claims, anchors, and how verdicts are graded — deterministically.
+  </Card>
+  <Card title="CLI reference" icon="terminal" href="/cli-reference">
+    Every command, exit code, and strictness level.
+  </Card>
+  <Card title="Resolvers & SDKs" icon="puzzle-piece" href="/resolvers">
+    Extend drift detection with out-of-process resolvers in any language.
+  </Card>
+</CardGroup>
+
+## What you can rely on
+
+<CardGroup cols={2}>
+  <Card title="Deterministic" icon="scale-balanced">
+    No model runs in the check loop, so the same working tree yields the same
+    verdicts every time. The optional semantic resolver advises and nothing more.
+  </Card>
+  <Card title="A flag means re-verify" icon="flag">
+    Hibi reports that the evidence under a claim moved. It never declares a doc
+    wrong on its own.
+  </Card>
+  <Card title="Any file format" icon="file-lines">
+    Hibi treats docs as text, so Markdown, plain text, AsciiDoc, or anything
+    else works without a per-format parser.
+  </Card>
+  <Card title="Offline & shallow-clone safe" icon="wifi-slash">
+    The anchor is its own baseline, so `check` reads your files, never git
+    history.
+  </Card>
+</CardGroup>
