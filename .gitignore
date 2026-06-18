@@ -4,3 +4,4 @@ sdk/rust/target/
 *.tsbuildinfo
 .DS_Store
 .claude/
+test
