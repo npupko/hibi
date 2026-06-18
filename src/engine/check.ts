@@ -6,7 +6,7 @@
  * Verdicts are recomputed live and never persisted (§6).
  */
 
-import { access, readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { type AstAnalyzer, resolveAssertion } from "../algo/resolve.ts";
 import {
@@ -24,6 +24,7 @@ import type {
   Proposition,
   Verdict,
 } from "../core/model.ts";
+import { exists } from "../fs.ts";
 import type { ResolverRegistry } from "../resolver/registry.ts";
 import type { ClaimStore } from "../store/store.ts";
 
@@ -79,15 +80,6 @@ export interface CheckReport {
   documents: DocumentReport[];
   summary: Record<ComputedState | "total", number>;
   exitCode: number;
-}
-
-async function exists(p: string): Promise<boolean> {
-  try {
-    await access(p);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 /** Banner entries contributed by a document's lifecycle (§6 remediation). */

@@ -12,15 +12,8 @@
  */
 
 import { randomUUID } from "node:crypto";
-import {
-  access,
-  mkdir,
-  readdir,
-  readFile,
-  rm,
-  writeFile,
-} from "node:fs/promises";
-import { join } from "node:path";
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
 import {
   Assertion,
   Document,
@@ -28,6 +21,7 @@ import {
   Proposition,
   StoreConfig,
 } from "../core/model.ts";
+import { exists } from "../fs.ts";
 
 export const STORE_DIR = ".claims";
 
@@ -54,11 +48,18 @@ function resolveLocation(location: string | StoreLocation): {
   anchorRoot: string;
   dir: string;
 } {
-  if (typeof location === "string")
-    return { anchorRoot: location, dir: join(location, STORE_DIR) };
+  // Normalize to absolute so anchors and the store resolve deterministically,
+  // independent of the process cwd when the store is later used (§8).
+  if (typeof location === "string") {
+    const anchorRoot = resolve(location);
+    return { anchorRoot, dir: join(anchorRoot, STORE_DIR) };
+  }
+  const anchorRoot = resolve(location.anchorRoot);
   return {
-    anchorRoot: location.anchorRoot,
-    dir: location.storeDir ?? join(location.anchorRoot, STORE_DIR),
+    anchorRoot,
+    dir: location.storeDir
+      ? resolve(location.storeDir)
+      : join(anchorRoot, STORE_DIR),
   };
 }
 
@@ -195,14 +196,5 @@ export class ClaimStore {
       out.push(schema.parse(JSON.parse(await readFile(join(dir, f), "utf8"))));
     }
     return out;
-  }
-}
-
-async function exists(p: string): Promise<boolean> {
-  try {
-    await access(p);
-    return true;
-  } catch {
-    return false;
   }
 }
