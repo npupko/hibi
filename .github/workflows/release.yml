@@ -25,14 +25,14 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run build:grammars && bun run build:schemas
       - name: Compile
-        run: bun build --compile --target=${{ matrix.bun }} src/cli/index.ts --outfile dist/claim-engine-${{ matrix.target }}
+        run: bun build --compile --target=${{ matrix.bun }} src/cli/index.ts --outfile dist/hibi-${{ matrix.target }}
       - name: Smoke test (host only)
         if: matrix.target == 'linux-x64' || matrix.target == 'darwin-arm64'
-        run: ./dist/claim-engine-${{ matrix.target }} version
+        run: ./dist/hibi-${{ matrix.target }} version
       - uses: actions/upload-artifact@v4
         with:
-          name: claim-engine-${{ matrix.target }}
-          path: dist/claim-engine-${{ matrix.target }}*
+          name: hibi-${{ matrix.target }}
+          path: dist/hibi-${{ matrix.target }}*
 
   test:
     runs-on: ubuntu-latest

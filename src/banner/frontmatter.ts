@@ -2,11 +2,11 @@
  * Optional markdown frontmatter status (§8). A vendored `---` splitter (§16) —
  * frontmatter is an *optional* machine-readable enhancement where it exists,
  * never a dependency. The engine writes a dedicated, clearly-owned key
- * (`claim-engine-status`) so it never clobbers an author's own `status:` field,
+ * (`hibi-status`) so it never clobbers an author's own `status:` field,
  * and can be removed cleanly. No YAML library is needed for a scalar key.
  */
 
-const FM_KEY = "claim-engine-status";
+const FM_KEY = "hibi-status";
 
 export interface Frontmatter {
   hasFrontmatter: boolean;

@@ -1,4 +1,4 @@
-//! Claim Engine — Rust resolver SDK (§7.1, §12).
+//! Hibi — Rust resolver SDK (§7.1, §12).
 //!
 //! A thin SDK for authoring an out-of-process resolver in Rust. Implement the
 //! [`Resolver`] trait and call [`serve`]; the SDK owns the JSONL-RPC framing and

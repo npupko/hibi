@@ -1,4 +1,4 @@
-name: "Claim Engine"
+name: "Hibi"
 description: "Fail the build when documentation claims drift from the code they describe."
 branding:
   icon: "anchor"
@@ -29,7 +29,7 @@ runs:
   steps:
     - name: Install Bun
       uses: oven-sh/setup-bun@v2
-    - name: Run Claim Engine
+    - name: Run Hibi
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
@@ -37,8 +37,8 @@ runs:
         if [ "${{ inputs.write }}" = "true" ]; then ARGS="$ARGS --write"; fi
         if [ -n "${{ inputs.since }}" ]; then ARGS="$ARGS --since ${{ inputs.since }}"; fi
         # Use a published binary if present, else run from source via bunx.
-        if command -v claim-engine >/dev/null 2>&1; then
-          claim-engine $ARGS
+        if command -v hibi >/dev/null 2>&1; then
+          hibi $ARGS
         else
-          bunx claim-engine $ARGS
+          bunx hibi $ARGS
         fi

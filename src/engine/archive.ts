@@ -25,7 +25,7 @@ function tombstone(docPath: string, successorPath?: string): string {
     : "\n";
   return [
     "---",
-    "claim-engine-status: archived",
+    "hibi-status: archived",
     "---",
     "",
     "# Archived",

@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "claim-engine-resolver"
+name = "hibi-resolver"
 version = "0.1.0"
 dependencies = [
  "serde",

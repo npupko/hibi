@@ -1,16 +1,16 @@
 {
-  "name": "claim-engine",
+  "name": "hibi",
   "version": "0.1.0",
   "description": "A deterministic, agent-facing CLI that keeps documentation and AI-agent-instruction files from silently going stale.",
   "type": "module",
   "module": "src/index.ts",
   "bin": {
-    "claim-engine": "./src/cli/index.ts"
+    "hibi": "./src/cli/index.ts"
   },
   "scripts": {
     "build:grammars": "bun run scripts/copy-grammars.ts",
     "build:schemas": "bun run scripts/gen-schemas.ts",
-    "build": "bun run build:grammars && bun run build:schemas && bun build --compile src/cli/index.ts --outfile dist/claim-engine",
+    "build": "bun run build:grammars && bun run build:schemas && bun build --compile src/cli/index.ts --outfile dist/hibi",
     "test": "bun test",
     "cli": "bun run src/cli/index.ts"
   },

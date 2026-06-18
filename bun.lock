@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "claim-engine",
+      "name": "hibi",
       "dependencies": {
         "tree-sitter-go": "0.25.0",
         "tree-sitter-java": "0.23.5",

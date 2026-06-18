@@ -1,8 +1,8 @@
 [package]
-name = "claim-engine-resolver"
+name = "hibi-resolver"
 version = "0.1.0"
 edition = "2021"
-description = "Claim Engine — Rust resolver SDK (out-of-process JSONL-RPC over stdio)"
+description = "Hibi — Rust resolver SDK (out-of-process JSONL-RPC over stdio)"
 license = "MIT"
 
 [dependencies]
@@ -10,7 +10,7 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 [lib]
-name = "claim_engine_resolver"
+name = "hibi_resolver"
 path = "src/lib.rs"
 
 [[example]]

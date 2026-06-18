@@ -1,4 +1,6 @@
-# Claim Engine
+# Hibi 日々
+
+> *hibi* (日々) — "day after day." Documentation kept honest continuously, so it never quietly goes stale.
 
 A **deterministic, agent-facing CLI** (with a small reusable library core) that keeps a codebase's
 documentation and AI-agent-instruction files from silently going stale — so automated agents never
@@ -25,28 +27,28 @@ documents themselves** so no consumer can read a stale one as current.
 
 ```sh
 # Prebuilt single-file executable (no runtime needed)
-curl -fsSL https://raw.githubusercontent.com/your-org/claim-engine/main/scripts/install.sh | sh
+curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | sh
 
 # Or, in a Bun/JS project
-bun add claim-engine
+bun add hibi
 ```
 
 ## Quickstart
 
 ```sh
-claim-engine init                       # create .claims/ (with a per-repo banner nonce)
+hibi init                       # create .claims/ (with a per-repo banner nonce)
 
 # Record a claim: "Retries are capped at 5 attempts" anchored to the constant in code
-claim-engine record \
+hibi record \
   --doc README.md --text "Retries are capped at 5 attempts" \
   --file src/retry.ts --quote "MAX_ATTEMPTS = 5" --trust verified --owner alice
 
-claim-engine check                      # verify all claims (exit 0 clean / 2 suspect / 3 moved)
-claim-engine check --write              # also stamp status banners into affected documents
-claim-engine diff --since origin/main   # the write-time loop: what did this change invalidate?
-claim-engine query --path src/retry.ts  # before-edit: what claims cover this file?
-claim-engine supersede --new v2.md --old v1.md --type supersedes
-claim-engine status --doc README.md     # read-time gate: "is this current?"
+hibi check                      # verify all claims (exit 0 clean / 2 suspect / 3 moved)
+hibi check --write              # also stamp status banners into affected documents
+hibi diff --since origin/main   # the write-time loop: what did this change invalidate?
+hibi query --path src/retry.ts  # before-edit: what claims cover this file?
+hibi supersede --new v2.md --old v1.md --type supersedes
+hibi status --doc README.md     # read-time gate: "is this current?"
 ```
 
 JSON is the default output (the consumer is a machine); add `--pretty` for humans.
@@ -103,7 +105,7 @@ gated by a **default-deny manifest** (`.claims/resolvers.json`). Thin SDKs ship 
 bun install
 bun run build:grammars      # copy official tree-sitter wasm into grammars/
 bun test                    # the full suite
-bun run build               # single-file executable → dist/claim-engine
+bun run build               # single-file executable → dist/hibi
 ```
 
 The canonical data model lives once in Zod (`src/core/model.ts`); JSON Schemas (`schemas/*.v1.json`)

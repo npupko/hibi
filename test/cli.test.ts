@@ -77,7 +77,7 @@ describe("CLI end-to-end (§9)", () => {
     const res = await run(d, ["check", "--write"]);
     expect(res.code).toBe(2);
     const doc = await Bun.file(join(d, "README.md")).text();
-    expect(doc).toContain("CLAIM-ENGINE:BEGIN");
+    expect(doc).toContain("HIBI:BEGIN");
     expect(doc).toContain("STALE DOCUMENT");
   });
 

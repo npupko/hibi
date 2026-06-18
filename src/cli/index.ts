@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * The Claim Engine CLI (§9) — JSON-first, quiet by default; the consumer is a
+ * The Hibi CLI (§9) — JSON-first, quiet by default; the consumer is a
  * machine. Verbs: init · record · check · query · diff · supersede · retract ·
  * status · schema. Exit codes follow the §9 contract.
  */
@@ -115,7 +115,7 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "record": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `claim-engine init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
       if (!values.doc || !values.text) return fail("record requires --doc and --text", pretty);
       const trust = String(values.trust) as AuthoredTrust;
       const coarse = Boolean(values.coarse);
@@ -166,7 +166,7 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "check": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `claim-engine init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
       const registry = await buildRegistry(root, analyzer);
       const report = await runCheck(store, {
         registry,
@@ -180,7 +180,7 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "status": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `claim-engine init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
       if (!values.doc) return fail("status requires --doc", pretty);
       const docId = documentIdForPath(values.doc as string);
       const doc = await store.getDocument(docId);
@@ -207,7 +207,7 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "query": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `claim-engine init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
       if (!values.path) return fail("query requires --path", pretty);
       const hits = await queryByPath(store, values.path as string);
       out({ ok: true, action: "query", path: values.path, count: hits.length, hits }, pretty);
@@ -215,7 +215,7 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "diff": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `claim-engine init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
       if (!values.since) return fail("diff requires --since <ref>", pretty);
       const files = await changedFiles(values.since as string, root);
       const diffRegistry = await buildRegistry(root, analyzer);
@@ -232,7 +232,7 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "supersede": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `claim-engine init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
       if (!values.new || !values.old || !values.type) {
         return fail("supersede requires --new, --old, and --type (supersedes|amends)", pretty);
       }
@@ -251,7 +251,7 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "retract": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `claim-engine init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
       if (!values.doc) return fail("retract requires --doc", pretty);
       const doc = await retract(store, values.doc as string);
       out({ ok: true, action: "retract", document: doc }, pretty);
@@ -259,7 +259,7 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "archive": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `claim-engine init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
       if (!values.doc) return fail("archive requires --doc", pretty);
       const result = await archiveDocument(store, root, values.doc as string, values.successor as string | undefined);
       out({ ok: true, action: "archive", ...result }, pretty);
@@ -282,7 +282,7 @@ async function main(argv: string[]): Promise<number> {
 
     case "version":
     case "--version": {
-      out({ name: "claim-engine", version: "0.1.0" }, pretty);
+      out({ name: "hibi", version: "0.1.0" }, pretty);
       return 0;
     }
 
@@ -294,7 +294,7 @@ async function main(argv: string[]): Promise<number> {
     }
 
     default:
-      return fail(`Unknown command: ${cmd}. Run \`claim-engine help\`.`, pretty);
+      return fail(`Unknown command: ${cmd}. Run \`hibi help\`.`, pretty);
   }
 }
 
@@ -302,9 +302,9 @@ function absPath(root: string, p: string): string {
   return isAbsolute(p) ? p : join(root, p);
 }
 
-const USAGE = `claim-engine — deterministic doc-staleness tracking (JSON-first)
+const USAGE = `hibi — deterministic doc-staleness tracking (JSON-first)
 
-Usage: claim-engine <command> [options]
+Usage: hibi <command> [options]
 
 Commands:
   init                              Initialize a claim store (.claims/) with a banner nonce

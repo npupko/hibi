@@ -56,18 +56,18 @@ export function commentStyleFor(filePath: string): CommentStyle {
 // ── Sentinel construction & matching ─────────────────────────────────────────
 
 function beginSentinel(nonce: string): string {
-  return `CLAIM-ENGINE:BEGIN v${BANNER_VERSION} ${nonce}`;
+  return `HIBI:BEGIN v${BANNER_VERSION} ${nonce}`;
 }
 function endSentinel(nonce: string, sha: string): string {
-  return `CLAIM-ENGINE:END v${BANNER_VERSION} ${nonce} sha=${sha}`;
+  return `HIBI:END v${BANNER_VERSION} ${nonce} sha=${sha}`;
 }
 
 /** Whole-line locate regexes; the comment prefix is optional (§17.5). */
 function beginRe(nonce: string): RegExp {
-  return new RegExp(`^[ \\t]*(?:#|//)?[ \\t]*CLAIM-ENGINE:BEGIN[ \\t]+v\\d+[ \\t]+${nonce}[ \\t]*$`);
+  return new RegExp(`^[ \\t]*(?:#|//)?[ \\t]*HIBI:BEGIN[ \\t]+v\\d+[ \\t]+${nonce}[ \\t]*$`);
 }
 function endRe(nonce: string): RegExp {
-  return new RegExp(`^[ \\t]*(?:#|//)?[ \\t]*CLAIM-ENGINE:END[ \\t]+v\\d+[ \\t]+${nonce}[ \\t]+sha=([0-9a-f]{8})[ \\t]*$`);
+  return new RegExp(`^[ \\t]*(?:#|//)?[ \\t]*HIBI:END[ \\t]+v\\d+[ \\t]+${nonce}[ \\t]+sha=([0-9a-f]{8})[ \\t]*$`);
 }
 
 function stripCommentPrefix(line: string): string {

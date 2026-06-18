@@ -2,7 +2,7 @@
 //! `scip-symbol` kind and returns a `fresh` verdict — illustrating how a new
 //! anchor kind plugs in out-of-process with no core change (§7.2).
 
-use claim_engine_resolver::{serve, DescribeResult, Resolver, ResolveParams, ResolveResult, Verdict};
+use hibi_resolver::{serve, DescribeResult, Resolver, ResolveParams, ResolveResult, Verdict};
 
 struct EchoResolver;
 

@@ -1,4 +1,4 @@
-# Claim Engine — PRD (final-product design)
+# Hibi — PRD (final-product design)
 
 > A standalone, **agent-facing** CLI (with a small reusable library core) that keeps a
 > codebase's documentation and AI-agent-instruction files from silently going stale — so that
@@ -436,7 +436,7 @@ correctness (especially the suspect-set precision of §11.3) at each step:
   never on the verdict path (§6). Fixed parameters are in §10; full dependency grounding in §16.
   (A Rust port would use the `dissimilar` and `tree-sitter` crates.)
 - **D9 — Distribution → as §12.**
-- **D10 — Name → provisional "Claim Engine."** Open for the owner; shortlist offered out-of-band.
+- **D10 — Name → "Hibi" (日々).** *hibi* = "day after day"; the product name, npm package, and CLI command are all `hibi`.
 - **SCIP — rejected as first-party.** Its differentiator over tree-sitter (cross-file semantic symbol
   graph) serves navigation/blast-radius, which §2 says this tool is not; its costs (heavy per-language
   indexer, code-only, two-commit indexing) are permanent. The kinded-anchor seam leaves the door open
@@ -611,14 +611,14 @@ the value); if nothing matches, the `value` selector is omitted from the bundle.
 `tree-sitter-java` version before first use.)
 
 ### 17.5 Banner format
-- **Sentinels** are line-anchored, version-tagged, and **nonce-bearing**: BEGIN = `CLAIM-ENGINE:BEGIN
-  v1 <nonce>`, END = `CLAIM-ENGINE:END v1 <nonce> sha=<8-hex>`, each optionally prefixed by the file's
+- **Sentinels** are line-anchored, version-tagged, and **nonce-bearing**: BEGIN = `HIBI:BEGIN
+  v1 <nonce>`, END = `HIBI:END v1 <nonce> sha=<8-hex>`, each optionally prefixed by the file's
   comment opener. The **`<nonce>` is a short random identifier generated once per repository at
   claim-store initialization and stored in the store config**; embedding it in every sentinel is what
   guarantees a document that merely quotes the banner format (this specification included) is never
   matched and overwritten. Line-anchoring and the version tag alone do not close that hole.
 - **Locate** by whole-line regex (comment prefix optional), e.g. BEGIN
-  `^[ \t]*(?:#|//)?[ \t]*CLAIM-ENGINE:BEGIN[ \t]+v\d+[ \t]+<nonce>[ \t]*$` and the END equivalent
+  `^[ \t]*(?:#|//)?[ \t]*HIBI:BEGIN[ \t]+v\d+[ \t]+<nonce>[ \t]*$` and the END equivalent
   ending `[ \t]+sha=[0-9a-f]{8}[ \t]*$`. Use the first valid BEGIN and the first valid END after it.
 - **Checksum** `sha` = **FNV-1a (32-bit; offset basis `0x811c9dc5`, prime `0x01000193`), 8 hex chars**
   of the banner body, recorded on the END line (outside the body it covers). One canonical FNV-1a

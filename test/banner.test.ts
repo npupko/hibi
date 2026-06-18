@@ -36,7 +36,7 @@ describe("banner body ordering & checksum (§17.5)", () => {
   });
   test("END line carries an 8-hex FNV-1a checksum", () => {
     const block = buildBanner(payload, NONCE, "none");
-    expect(block).toMatch(/CLAIM-ENGINE:END v1 a1b2c3d4 sha=[0-9a-f]{8}/);
+    expect(block).toMatch(/HIBI:END v1 a1b2c3d4 sha=[0-9a-f]{8}/);
   });
 });
 
@@ -100,11 +100,11 @@ describe("frontmatter placement (§17.5)", () => {
 
 describe("nonce safety & tamper detection (§17.5)", () => {
   test("a document quoting the banner format with a different nonce is never matched", () => {
-    const quoting = "Here is the format: CLAIM-ENGINE:BEGIN v1 deadbeef\nand the rest.\n";
+    const quoting = "Here is the format: HIBI:BEGIN v1 deadbeef\nand the rest.\n";
     expect(locateBanner(quoting, NONCE, "none")).toBeNull();
     // Stamping inserts a new banner and leaves the quoted text untouched.
     const stamped = stampBanner(quoting, "notes.txt", payload, NONCE);
-    expect(stamped.content).toContain("CLAIM-ENGINE:BEGIN v1 deadbeef");
+    expect(stamped.content).toContain("HIBI:BEGIN v1 deadbeef");
     expect(hasBanner(stamped.content, "notes.txt", NONCE)).toBe(true);
   });
 

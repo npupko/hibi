@@ -1,11 +1,11 @@
 #!/bin/sh
-# curl -fsSL https://raw.githubusercontent.com/<org>/claim-engine/main/scripts/install.sh | sh
+# curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | sh
 # Downloads the prebuilt single-file executable for this platform (§12).
 set -eu
 
-REPO="${CLAIM_ENGINE_REPO:-your-org/claim-engine}"
-VERSION="${CLAIM_ENGINE_VERSION:-latest}"
-BIN_DIR="${CLAIM_ENGINE_BIN_DIR:-/usr/local/bin}"
+REPO="${HIBI_REPO:-npupko/hibi}"
+VERSION="${HIBI_VERSION:-latest}"
+BIN_DIR="${HIBI_BIN_DIR:-/usr/local/bin}"
 
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
 arch="$(uname -m)"
@@ -14,14 +14,14 @@ case "$arch" in x86_64|amd64) arch=x64 ;; arm64|aarch64) arch=arm64 ;; *) echo "
 
 target="${os}-${arch}"
 if [ "$VERSION" = "latest" ]; then
-  url="https://github.com/${REPO}/releases/latest/download/claim-engine-${target}"
+  url="https://github.com/${REPO}/releases/latest/download/hibi-${target}"
 else
-  url="https://github.com/${REPO}/releases/download/${VERSION}/claim-engine-${target}"
+  url="https://github.com/${REPO}/releases/download/${VERSION}/hibi-${target}"
 fi
 
-echo "Downloading claim-engine (${target}) from ${url}"
+echo "Downloading hibi (${target}) from ${url}"
 tmp="$(mktemp)"
 curl -fsSL "$url" -o "$tmp"
 chmod +x "$tmp"
-mv "$tmp" "${BIN_DIR}/claim-engine"
-echo "Installed claim-engine to ${BIN_DIR}/claim-engine"
+mv "$tmp" "${BIN_DIR}/hibi"
+echo "Installed hibi to ${BIN_DIR}/hibi"

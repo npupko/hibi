@@ -58,7 +58,7 @@ export class ClaimStore {
   static async open(root: string): Promise<ClaimStore> {
     const s = new ClaimStore(root);
     if (!(await exists(join(s.dir, "config.json")))) {
-      throw new Error(`No claim store at ${s.dir}. Run \`claim-engine init\` first.`);
+      throw new Error(`No claim store at ${s.dir}. Run \`hibi init\` first.`);
     }
     return s;
   }
