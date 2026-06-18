@@ -3,7 +3,13 @@
  * JSONL-RPC over stdio. The TS SDK (sdk/ts) re-exports this; in-tree example
  * resolvers use it directly. Vendored framing/dispatch (§16).
  */
-import { encodeLine, LineFramer, type DescribeResult, type ResolveParams, type ResolveResult } from "./protocol.ts";
+import {
+  type DescribeResult,
+  encodeLine,
+  LineFramer,
+  type ResolveParams,
+  type ResolveResult,
+} from "./protocol.ts";
 
 export interface ResolverHandler {
   describe(): DescribeResult;
@@ -33,10 +39,20 @@ export function serveResolver(
           const result = await handler.resolve(req.params as ResolveParams);
           stdout.write(encodeLine({ id: req.id, result }));
         } else {
-          stdout.write(encodeLine({ id: req.id, error: { message: `unknown method: ${req.method}`, code: -1 } }));
+          stdout.write(
+            encodeLine({
+              id: req.id,
+              error: { message: `unknown method: ${req.method}`, code: -1 },
+            }),
+          );
         }
       } catch (e) {
-        stdout.write(encodeLine({ id: req.id, error: { message: String((e as Error)?.message ?? e), code: -1 } }));
+        stdout.write(
+          encodeLine({
+            id: req.id,
+            error: { message: String((e as Error)?.message ?? e), code: -1 },
+          }),
+        );
       }
     }
   });

@@ -27,7 +27,12 @@ export function splitFrontmatter(text: string): Frontmatter {
     if (lines[i]!.trim() === "---") {
       const inner = lines.slice(1, i);
       const rest = lines.slice(i + 1);
-      return { hasFrontmatter: true, inner, body: rest.join("\n"), closingNewline: "\n" };
+      return {
+        hasFrontmatter: true,
+        inner,
+        body: rest.join("\n"),
+        closingNewline: "\n",
+      };
     }
   }
   return { hasFrontmatter: false, inner: [], body: text, closingNewline: "" };
@@ -42,12 +47,18 @@ function rejoin(inner: string[], body: string): string {
  * acts when the document already has a frontmatter fence; returns text unchanged
  * otherwise (frontmatter is never created — the banner is the universal carrier).
  */
-export function setFrontmatterStatus(text: string, status: string | null): string {
+export function setFrontmatterStatus(
+  text: string,
+  status: string | null,
+): string {
   const fm = splitFrontmatter(text);
   if (!fm.hasFrontmatter) return text;
 
-  const without = fm.inner.filter((l) => !new RegExp(`^[ \\t]*${FM_KEY}[ \\t]*:`).test(l));
-  const inner = status === null ? without : [...without, `${FM_KEY}: ${status}`];
+  const without = fm.inner.filter(
+    (l) => !new RegExp(`^[ \\t]*${FM_KEY}[ \\t]*:`).test(l),
+  );
+  const inner =
+    status === null ? without : [...without, `${FM_KEY}: ${status}`];
   return rejoin(inner, fm.body);
 }
 
@@ -56,7 +67,9 @@ export function getFrontmatterStatus(text: string): string | undefined {
   const fm = splitFrontmatter(text);
   if (!fm.hasFrontmatter) return undefined;
   for (const l of fm.inner) {
-    const m = new RegExp(`^[ \\t]*${FM_KEY}[ \\t]*:[ \\t]*(.+?)[ \\t]*$`).exec(l);
+    const m = new RegExp(`^[ \\t]*${FM_KEY}[ \\t]*:[ \\t]*(.+?)[ \\t]*$`).exec(
+      l,
+    );
     if (m) return m[1];
   }
   return undefined;

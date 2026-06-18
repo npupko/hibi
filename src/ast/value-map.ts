@@ -36,8 +36,19 @@ export const VALUE_MAP: Record<string, ValueKinds> = {
     collection: s("array_expression"),
   },
   go: {
-    scalar: s("int_literal", "float_literal", "imaginary_literal", "true", "false", "nil"),
-    string: s("interpreted_string_literal", "raw_string_literal", "rune_literal"),
+    scalar: s(
+      "int_literal",
+      "float_literal",
+      "imaginary_literal",
+      "true",
+      "false",
+      "nil",
+    ),
+    string: s(
+      "interpreted_string_literal",
+      "raw_string_literal",
+      "rune_literal",
+    ),
     collection: s("composite_literal"),
   },
   java: {
@@ -56,7 +67,10 @@ export const VALUE_MAP: Record<string, ValueKinds> = {
 };
 
 /** Whether a node kind carries a literal value for `language`, and its class. */
-export function valueClass(language: string, kind: string): "scalar" | "string" | "collection" | null {
+export function valueClass(
+  language: string,
+  kind: string,
+): "scalar" | "string" | "collection" | null {
   const map = VALUE_MAP[language];
   if (!map) return null;
   if (map.scalar.has(kind)) return "scalar";

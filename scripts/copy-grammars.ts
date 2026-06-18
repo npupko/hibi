@@ -3,7 +3,7 @@
  * directory (§16 grammar-acquisition plan, step 2). This keeps `check` fully
  * offline and survives `bun build --compile` into the single binary.
  */
-import { mkdir, copyFile, access } from "node:fs/promises";
+import { access, copyFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 
 const ROOT = join(import.meta.dir, "..");

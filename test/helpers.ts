@@ -1,10 +1,10 @@
-import { mkdtemp, mkdir, writeFile, rm, readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, dirname } from "node:path";
-import { ClaimStore } from "../src/store/store.ts";
+import { dirname, join } from "node:path";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
-import { recordClaim, resolveRegion } from "../src/engine/record.ts";
 import type { AuthoredTrust } from "../src/core/model.ts";
+import { recordClaim, resolveRegion } from "../src/engine/record.ts";
+import { ClaimStore } from "../src/store/store.ts";
 
 export interface TempRepo {
   root: string;

@@ -10,7 +10,10 @@ const exec = promisify(execFile);
 
 async function git(args: string[], cwd: string): Promise<string | null> {
   try {
-    const { stdout } = await exec("git", args, { cwd, maxBuffer: 64 * 1024 * 1024 });
+    const { stdout } = await exec("git", args, {
+      cwd,
+      maxBuffer: 64 * 1024 * 1024,
+    });
     return stdout;
   } catch {
     return null; // advisory — never throw onto the verdict path
@@ -33,7 +36,10 @@ export async function currentRef(cwd: string): Promise<string> {
  * Files changed between `ref` and the working tree (HEAD diff + unstaged +
  * untracked). Scopes the write-time loop (§6); purely advisory.
  */
-export async function changedFiles(ref: string, cwd: string): Promise<string[]> {
+export async function changedFiles(
+  ref: string,
+  cwd: string,
+): Promise<string[]> {
   const set = new Set<string>();
   for (const args of [
     ["diff", "--name-only", ref],
@@ -41,14 +47,22 @@ export async function changedFiles(ref: string, cwd: string): Promise<string[]> 
     ["ls-files", "--others", "--exclude-standard"],
   ]) {
     const out = await git(args, cwd);
-    if (out) for (const line of out.split("\n")) if (line.trim()) set.add(line.trim());
+    if (out)
+      for (const line of out.split("\n")) if (line.trim()) set.add(line.trim());
   }
   return [...set];
 }
 
 /** Blame attribution for a line (advisory only). */
-export async function blameAuthor(file: string, line: number, cwd: string): Promise<string | null> {
-  const out = await git(["blame", "-L", `${line},${line}`, "--porcelain", file], cwd);
+export async function blameAuthor(
+  file: string,
+  line: number,
+  cwd: string,
+): Promise<string | null> {
+  const out = await git(
+    ["blame", "-L", `${line},${line}`, "--porcelain", file],
+    cwd,
+  );
   if (!out) return null;
   const m = out.match(/^author (.+)$/m);
   return m ? m[1]!.trim() : null;

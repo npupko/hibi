@@ -5,11 +5,11 @@
  */
 import type { ComputedState } from "../core/model.ts";
 import {
-  MIN_AGREEING_SELECTORS,
   BANDS,
+  MIN_AGREEING_SELECTORS,
   MOVE_AWARENESS_CHARS,
-  VALUE_VETO_TEXTQUOTE_SIMILARITY,
   VALUE_VETO_CONFIDENCE,
+  VALUE_VETO_TEXTQUOTE_SIMILARITY,
 } from "./params.ts";
 
 export interface ResolvedSelector {
@@ -63,12 +63,20 @@ export function grade(input: GradeInput): GradeResult {
 
   // `expired` is determined before fusion, independent of confidence (§17.3).
   if (input.expired) {
-    return { state: "expired", confidence: 0, notes: ["past ttl — time-based re-verification"] };
+    return {
+      state: "expired",
+      confidence: 0,
+      notes: ["past ttl — time-based re-verification"],
+    };
   }
 
   // Coarse anchors are navigational and are never reported as stale (§11.3).
   if (input.coarseOnly) {
-    return { state: "fresh", confidence: 1, notes: ["coarse anchor — navigational, never stale"] };
+    return {
+      state: "fresh",
+      confidence: 1,
+      notes: ["coarse anchor — navigational, never stale"],
+    };
   }
 
   // Fewer than two agreeing selectors → ghost, confidence forced to 0 (§17.3).
@@ -77,7 +85,9 @@ export function grade(input: GradeInput): GradeResult {
     return {
       state: "ghost",
       confidence: 0,
-      notes: [`only ${foundCount} selector(s) resolved (min ${MIN_AGREEING_SELECTORS})`],
+      notes: [
+        `only ${foundCount} selector(s) resolved (min ${MIN_AGREEING_SELECTORS})`,
+      ],
     };
   }
 
@@ -89,14 +99,22 @@ export function grade(input: GradeInput): GradeResult {
     input.textQuoteFound &&
     input.textQuoteSimilarity >= VALUE_VETO_TEXTQUOTE_SIMILARITY
   ) {
-    return { state: "stale", confidence: VALUE_VETO_CONFIDENCE, notes: ["value veto — anchored value changed"] };
+    return {
+      state: "stale",
+      confidence: VALUE_VETO_CONFIDENCE,
+      notes: ["value veto — anchored value changed"],
+    };
   }
 
   const c = fuseConfidence(input.selectors);
   let state = bandConfidence(c);
 
   // Move-awareness: a `fresh` result whose start drifted > 4 chars → `moved` (§17.3).
-  if (state === "fresh" && input.startDelta !== null && input.startDelta > MOVE_AWARENESS_CHARS) {
+  if (
+    state === "fresh" &&
+    input.startDelta !== null &&
+    input.startDelta > MOVE_AWARENESS_CHARS
+  ) {
     state = "moved";
     notes.push(`located region moved ${input.startDelta} chars from baseline`);
   }

@@ -1,7 +1,7 @@
-import { describe, test, expect, afterEach } from "bun:test";
-import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
+import { afterEach, describe, expect, test } from "bun:test";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, dirname } from "node:path";
+import { dirname, join } from "node:path";
 
 const CLI = join(import.meta.dir, "..", "src", "cli", "index.ts");
 
@@ -12,10 +12,14 @@ interface RunResult {
 }
 
 async function run(cwd: string, args: string[]): Promise<RunResult> {
-  const proc = Bun.spawn(["bun", "run", CLI, ...args], { cwd, stdout: "pipe", stderr: "pipe" });
+  const proc = Bun.spawn(["bun", "run", CLI, ...args], {
+    cwd,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
   const stdout = await new Response(proc.stdout).text();
   const code = await proc.exited;
-  let json: any = undefined;
+  let json: any;
   try {
     json = JSON.parse(stdout.trim().split("\n").pop()!);
   } catch {
@@ -53,9 +57,25 @@ describe("CLI end-to-end (§9)", () => {
     expect(init.code).toBe(0);
     expect(init.json.nonce).toMatch(/^[0-9a-f]{8}$/);
 
-    const rec = await run(d, ["record", "--doc", "README.md", "--text", "Capped at 5", "--file", "src/retry.ts", "--quote", "MAX_ATTEMPTS = 5", "--trust", "verified", "--owner", "alice"]);
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "README.md",
+      "--text",
+      "Capped at 5",
+      "--file",
+      "src/retry.ts",
+      "--quote",
+      "MAX_ATTEMPTS = 5",
+      "--trust",
+      "verified",
+      "--owner",
+      "alice",
+    ]);
     expect(rec.code).toBe(0);
-    expect(rec.json.assertion.anchor.selectors.map((s: any) => s.kind)).toContain("value");
+    expect(
+      rec.json.assertion.anchor.selectors.map((s: any) => s.kind),
+    ).toContain("value");
 
     const clean = await run(d, ["check"]);
     expect(clean.code).toBe(0);
@@ -72,7 +92,17 @@ describe("CLI end-to-end (§9)", () => {
     await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
     await write(d, "README.md", "# Doc\n");
     await run(d, ["init"]);
-    await run(d, ["record", "--doc", "README.md", "--text", "Capped at 5", "--file", "src/retry.ts", "--quote", "MAX_ATTEMPTS = 5"]);
+    await run(d, [
+      "record",
+      "--doc",
+      "README.md",
+      "--text",
+      "Capped at 5",
+      "--file",
+      "src/retry.ts",
+      "--quote",
+      "MAX_ATTEMPTS = 5",
+    ]);
     await write(d, "src/retry.ts", "// removed\n");
     const res = await run(d, ["check", "--write"]);
     expect(res.code).toBe(2);
@@ -87,8 +117,28 @@ describe("CLI end-to-end (§9)", () => {
     await write(d, "src/b.ts", "export const B = 2;\n");
     await write(d, "doc.md", "# Doc\n");
     await run(d, ["init"]);
-    await run(d, ["record", "--doc", "doc.md", "--text", "A is 1", "--file", "src/a.ts", "--quote", "A = 1"]);
-    await run(d, ["record", "--doc", "doc.md", "--text", "B is 2", "--file", "src/b.ts", "--quote", "B = 2"]);
+    await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--text",
+      "A is 1",
+      "--file",
+      "src/a.ts",
+      "--quote",
+      "A = 1",
+    ]);
+    await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--text",
+      "B is 2",
+      "--file",
+      "src/b.ts",
+      "--quote",
+      "B = 2",
+    ]);
     await Bun.spawn(["git", "add", "-A"], { cwd: d }).exited;
     await Bun.spawn(["git", "commit", "-qm", "init"], { cwd: d }).exited;
 
@@ -105,7 +155,17 @@ describe("CLI end-to-end (§9)", () => {
     const d = await repo();
     await write(d, "src/a.ts", "export const A = 1;\n");
     await run(d, ["init"]);
-    await run(d, ["record", "--doc", "doc.md", "--text", "A is 1", "--file", "src/a.ts", "--quote", "A = 1"]);
+    await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--text",
+      "A is 1",
+      "--file",
+      "src/a.ts",
+      "--quote",
+      "A = 1",
+    ]);
     const res = await run(d, ["query", "--path", "src/a.ts"]);
     expect(res.code).toBe(0);
     expect(res.json.count).toBe(1);
@@ -116,7 +176,17 @@ describe("CLI end-to-end (§9)", () => {
     await write(d, "src/a.ts", "export const A = 1;\n");
     await write(d, "doc.md", "# Doc\n");
     await run(d, ["init"]);
-    await run(d, ["record", "--doc", "doc.md", "--text", "A is 1", "--file", "src/a.ts", "--quote", "A = 1"]);
+    await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--text",
+      "A is 1",
+      "--file",
+      "src/a.ts",
+      "--quote",
+      "A = 1",
+    ]);
     expect((await run(d, ["status", "--doc", "doc.md"])).code).toBe(0);
     await write(d, "src/a.ts", "// gone\n");
     const after = await run(d, ["status", "--doc", "doc.md"]);
@@ -127,7 +197,15 @@ describe("CLI end-to-end (§9)", () => {
   test("supersede authors the edge and flips lifecycle", async () => {
     const d = await repo();
     await run(d, ["init"]);
-    const res = await run(d, ["supersede", "--new", "v2.md", "--old", "v1.md", "--type", "supersedes"]);
+    const res = await run(d, [
+      "supersede",
+      "--new",
+      "v2.md",
+      "--old",
+      "v1.md",
+      "--type",
+      "supersedes",
+    ]);
     expect(res.code).toBe(0);
     expect(res.json.oldDoc.lifecycle).toBe("superseded");
   });

@@ -6,7 +6,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import * as z from "zod";
-import { SCHEMAS, MODEL_VERSION } from "../src/core/model.ts";
+import { MODEL_VERSION, SCHEMAS } from "../src/core/model.ts";
 import { PROTOCOL_SCHEMAS } from "../src/resolver/protocol.ts";
 
 const OUT_DIR = join(import.meta.dir, "..", "schemas");
@@ -16,7 +16,10 @@ export async function generateSchemas(outDir = OUT_DIR): Promise<string[]> {
   const written: string[] = [];
   const all = { ...SCHEMAS, ...PROTOCOL_SCHEMAS };
   for (const [name, schema] of Object.entries(all)) {
-    const jsonSchema = z.toJSONSchema(schema, { target: "draft-2020-12", reused: "ref" });
+    const jsonSchema = z.toJSONSchema(schema, {
+      target: "draft-2020-12",
+      reused: "ref",
+    });
     const file = join(outDir, `${name}.${MODEL_VERSION}.json`);
     await writeFile(file, JSON.stringify(jsonSchema, null, 2) + "\n");
     written.push(file);

@@ -1,18 +1,22 @@
-import { describe, test, expect } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import {
-  stampBanner,
-  removeBanner,
-  locateBanner,
-  commentStyleFor,
-  buildBanner,
-  hasBanner,
   type BannerPayload,
+  buildBanner,
+  commentStyleFor,
+  hasBanner,
+  locateBanner,
+  removeBanner,
+  stampBanner,
 } from "../src/banner/banner.ts";
 
 const NONCE = "a1b2c3d4";
 const payload: BannerPayload = {
   entries: [
-    { status: "stale", id: "prop_002", text: "Retries are capped at 5 attempts" },
+    {
+      status: "stale",
+      id: "prop_002",
+      text: "Retries are capped at 5 attempts",
+    },
     { status: "ghost", id: "prop_001", text: "Backoff is exponential" },
   ],
 };
@@ -53,7 +57,11 @@ describe("idempotent stamping (§17.5)", () => {
   test("re-stamp with changed status replaces only the banner region", () => {
     const original = "# Doc\n\nbody\n";
     const a = stampBanner(original, "doc.md", payload, NONCE);
-    const changed: BannerPayload = { entries: [{ status: "fresh", id: "prop_001", text: "Backoff is exponential" }] };
+    const changed: BannerPayload = {
+      entries: [
+        { status: "fresh", id: "prop_001", text: "Backoff is exponential" },
+      ],
+    };
     const b = stampBanner(a.content, "doc.md", changed, NONCE);
     expect(b.action).toBe("replace");
     expect(b.content).toContain("# Doc");
@@ -94,13 +102,16 @@ describe("frontmatter placement (§17.5)", () => {
     const bannerStart = stamped.content.indexOf("<!--");
     expect(bannerStart).toBeGreaterThan(fmEnd);
     // Frontmatter preserved intact.
-    expect(stamped.content.startsWith("---\ntitle: Hi\nstatus: active\n---")).toBe(true);
+    expect(
+      stamped.content.startsWith("---\ntitle: Hi\nstatus: active\n---"),
+    ).toBe(true);
   });
 });
 
 describe("nonce safety & tamper detection (§17.5)", () => {
   test("a document quoting the banner format with a different nonce is never matched", () => {
-    const quoting = "Here is the format: HIBI:BEGIN v1 deadbeef\nand the rest.\n";
+    const quoting =
+      "Here is the format: HIBI:BEGIN v1 deadbeef\nand the rest.\n";
     expect(locateBanner(quoting, NONCE, "none")).toBeNull();
     // Stamping inserts a new banner and leaves the quoted text untouched.
     const stamped = stampBanner(quoting, "notes.txt", payload, NONCE);
@@ -109,24 +120,44 @@ describe("nonce safety & tamper detection (§17.5)", () => {
   });
 
   test("a hand-edit inside the banner is detected via checksum mismatch", () => {
-    const stamped = stampBanner("# Doc\n\nbody\n", "doc.md", payload, NONCE).content;
-    const tampered = stamped.replace("Retries are capped at 5 attempts", "Retries are capped at 99 attempts");
+    const stamped = stampBanner(
+      "# Doc\n\nbody\n",
+      "doc.md",
+      payload,
+      NONCE,
+    ).content;
+    const tampered = stamped.replace(
+      "Retries are capped at 5 attempts",
+      "Retries are capped at 99 attempts",
+    );
     const located = locateBanner(tampered, NONCE, "html");
     expect(located).not.toBeNull();
     expect(located!.sha).not.toBe(located!.computedSha);
   });
 
   test("--fail-on tamper refuses to overwrite a hand-edited banner", () => {
-    const stamped = stampBanner("# Doc\n\nbody\n", "doc.md", payload, NONCE).content;
+    const stamped = stampBanner(
+      "# Doc\n\nbody\n",
+      "doc.md",
+      payload,
+      NONCE,
+    ).content;
     const tampered = stamped.replace("capped at 5", "capped at 99");
-    const res = stampBanner(tampered, "doc.md", payload, NONCE, { failOnTamper: true });
+    const res = stampBanner(tampered, "doc.md", payload, NONCE, {
+      failOnTamper: true,
+    });
     expect(res.action).toBe("noop");
     expect(res.tampered).toBe(true);
     expect(res.content).toBe(tampered);
   });
 
   test("without fail-on, the fresh stamp wins over a tampered banner", () => {
-    const stamped = stampBanner("# Doc\n\nbody\n", "doc.md", payload, NONCE).content;
+    const stamped = stampBanner(
+      "# Doc\n\nbody\n",
+      "doc.md",
+      payload,
+      NONCE,
+    ).content;
     const tampered = stamped.replace("capped at 5", "capped at 99");
     const res = stampBanner(tampered, "doc.md", payload, NONCE);
     expect(res.action).toBe("replace");

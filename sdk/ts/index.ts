@@ -12,15 +12,26 @@
  *     resolve: ({ assertion, text }) => ({ verdict: myVerdict(assertion, text) }),
  *   });
  */
-export { serveResolver, type ResolverHandler } from "../../src/resolver/server.ts";
+
+export type {
+  Advisory,
+  Anchor,
+  Assertion,
+  Proposition,
+  Selector,
+  Verdict,
+} from "../../src/core/model.ts";
 export {
+  type DescribeResult,
   encodeLine,
   LineFramer,
   PROTOCOL_VERSION,
-  type DescribeResult,
   type ResolveParams,
   type ResolveResult,
   type RpcRequest,
   type RpcResponse,
 } from "../../src/resolver/protocol.ts";
-export type { Assertion, Verdict, Advisory, Anchor, Selector, Proposition } from "../../src/core/model.ts";
+export {
+  type ResolverHandler,
+  serveResolver,
+} from "../../src/resolver/server.ts";

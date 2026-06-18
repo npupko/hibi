@@ -10,20 +10,32 @@
  *   propositions/<id>.json
  *   claims/<assertionId>.json   — the Assertion + its Anchor baseline
  */
-import { mkdir, readFile, writeFile, readdir, rm, access } from "node:fs/promises";
-import { join } from "node:path";
+
 import { randomUUID } from "node:crypto";
 import {
-  Document,
-  Proposition,
+  access,
+  mkdir,
+  readdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
+import { join } from "node:path";
+import {
   Assertion,
-  StoreConfig,
+  Document,
   MODEL_VERSION,
+  Proposition,
+  StoreConfig,
 } from "../core/model.ts";
 
 export const STORE_DIR = ".claims";
 
-const SUBDIRS = { documents: "documents", propositions: "propositions", claims: "claims" } as const;
+const SUBDIRS = {
+  documents: "documents",
+  propositions: "propositions",
+  claims: "claims",
+} as const;
 
 export class ClaimStore {
   readonly root: string; // absolute path to the repo root
@@ -40,10 +52,14 @@ export class ClaimStore {
   }
 
   /** Initialize a store at `root`; idempotent — refuses to clobber an existing config. */
-  static async init(root: string, nonce = ClaimStore.newNonce()): Promise<ClaimStore> {
+  static async init(
+    root: string,
+    nonce = ClaimStore.newNonce(),
+  ): Promise<ClaimStore> {
     const s = new ClaimStore(root);
     await mkdir(s.dir, { recursive: true });
-    for (const sub of Object.values(SUBDIRS)) await mkdir(join(s.dir, sub), { recursive: true });
+    for (const sub of Object.values(SUBDIRS))
+      await mkdir(join(s.dir, sub), { recursive: true });
     const configPath = join(s.dir, "config.json");
     if (!(await exists(configPath))) {
       const config: StoreConfig = { version: MODEL_VERSION, nonce };
@@ -68,7 +84,9 @@ export class ClaimStore {
   }
 
   async config(): Promise<StoreConfig> {
-    const raw = JSON.parse(await readFile(join(this.dir, "config.json"), "utf8"));
+    const raw = JSON.parse(
+      await readFile(join(this.dir, "config.json"), "utf8"),
+    );
     return StoreConfig.parse(raw);
   }
 
@@ -94,7 +112,9 @@ export class ClaimStore {
     return this.readAll(SUBDIRS.propositions, Proposition);
   }
   /** Find an existing proposition by content fingerprint (the dedup unit, §5). */
-  async findPropositionByFingerprint(fingerprint: string): Promise<Proposition | undefined> {
+  async findPropositionByFingerprint(
+    fingerprint: string,
+  ): Promise<Proposition | undefined> {
     const all = await this.allPropositions();
     return all.find((p) => p.fingerprint === fingerprint);
   }
@@ -118,16 +138,26 @@ export class ClaimStore {
   // ── private helpers ──
   private async write(sub: string, id: string, value: unknown): Promise<void> {
     await mkdir(join(this.dir, sub), { recursive: true });
-    await writeFile(join(this.dir, sub, `${id}.json`), JSON.stringify(value, null, 2) + "\n");
+    await writeFile(
+      join(this.dir, sub, `${id}.json`),
+      JSON.stringify(value, null, 2) + "\n",
+    );
   }
 
-  private async read<T>(sub: string, id: string, schema: { parse(v: unknown): T }): Promise<T | undefined> {
+  private async read<T>(
+    sub: string,
+    id: string,
+    schema: { parse(v: unknown): T },
+  ): Promise<T | undefined> {
     const path = join(this.dir, sub, `${id}.json`);
     if (!(await exists(path))) return undefined;
     return schema.parse(JSON.parse(await readFile(path, "utf8")));
   }
 
-  private async readAll<T>(sub: string, schema: { parse(v: unknown): T }): Promise<T[]> {
+  private async readAll<T>(
+    sub: string,
+    schema: { parse(v: unknown): T },
+  ): Promise<T[]> {
     const dir = join(this.dir, sub);
     if (!(await exists(dir))) return [];
     const files = (await readdir(dir)).filter((f) => f.endsWith(".json"));

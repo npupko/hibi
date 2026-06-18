@@ -5,22 +5,48 @@
  *
  * Verdicts are recomputed live and never persisted (§6).
  */
-import { join } from "node:path";
-import { readFile, writeFile, access } from "node:fs/promises";
-import type { ClaimStore } from "../store/store.ts";
-import type { Assertion, Document, Proposition, Verdict, ComputedState, DocumentLifecycle } from "../core/model.ts";
-import { resolveAssertion, type AstAnalyzer } from "../algo/resolve.ts";
-import type { ResolverRegistry } from "../resolver/registry.ts";
-import { stampBanner, removeBanner, type BannerEntry, type BannerAction, DEFAULT_HEADLINE } from "../banner/banner.ts";
+
+import { access, readFile, writeFile } from "node:fs/promises";
+import { extname, join } from "node:path";
+import { type AstAnalyzer, resolveAssertion } from "../algo/resolve.ts";
+import {
+  type BannerAction,
+  type BannerEntry,
+  DEFAULT_HEADLINE,
+  removeBanner,
+  stampBanner,
+} from "../banner/banner.ts";
 import { setFrontmatterStatus } from "../banner/frontmatter.ts";
-import { extname } from "node:path";
+import type {
+  Assertion,
+  ComputedState,
+  Document,
+  DocumentLifecycle,
+  Proposition,
+  Verdict,
+} from "../core/model.ts";
+import type { ResolverRegistry } from "../resolver/registry.ts";
+import type { ClaimStore } from "../store/store.ts";
 
 /** Status precedence for the single-valued frontmatter status (most severe first). */
-const STATUS_PRECEDENCE = ["stale", "ghost", "expired", "retracted", "superseded", "archived", "amended", "moved"];
+const STATUS_PRECEDENCE = [
+  "stale",
+  "ghost",
+  "expired",
+  "retracted",
+  "superseded",
+  "archived",
+  "amended",
+  "moved",
+];
 const MARKDOWN_EXT = new Set([".md", ".markdown", ".mdx"]);
 
 /** Computed states that put a document in the suspect set (exit 2). */
-const SUSPECT_STATES: ReadonlySet<ComputedState> = new Set(["stale", "ghost", "expired"]);
+const SUSPECT_STATES: ReadonlySet<ComputedState> = new Set([
+  "stale",
+  "ghost",
+  "expired",
+]);
 
 export type FailOn = "suspect" | "moved" | "tamper" | "never";
 
@@ -66,7 +92,10 @@ async function exists(p: string): Promise<boolean> {
 }
 
 /** Banner entries contributed by a document's lifecycle (§6 remediation). */
-function lifecycleEntries(doc: Document, propsById: Map<string, Proposition>): BannerEntry[] {
+function lifecycleEntries(
+  doc: Document,
+  propsById: Map<string, Proposition>,
+): BannerEntry[] {
   const entries: BannerEntry[] = [];
   const amended = new Set<string>();
   for (const e of doc.edges) {
@@ -77,15 +106,26 @@ function lifecycleEntries(doc: Document, propsById: Map<string, Proposition>): B
     if (p) entries.push({ status: "amended", id: propId, text: p.text });
   }
   if (doc.lifecycle === "superseded") {
-    entries.push({ status: "superseded", id: doc.id, text: `This document has been superseded.` });
+    entries.push({
+      status: "superseded",
+      id: doc.id,
+      text: `This document has been superseded.`,
+    });
   }
   if (doc.lifecycle === "retracted") {
-    entries.push({ status: "retracted", id: doc.id, text: `The author withdrew this document.` });
+    entries.push({
+      status: "retracted",
+      id: doc.id,
+      text: `The author withdrew this document.`,
+    });
   }
   return entries;
 }
 
-export async function runCheck(store: ClaimStore, options: CheckOptions = {}): Promise<CheckReport> {
+export async function runCheck(
+  store: ClaimStore,
+  options: CheckOptions = {},
+): Promise<CheckReport> {
   const root = store.root;
   const ref = options.ref ?? "WORKTREE";
   const documents = await store.allDocuments();
@@ -106,14 +146,25 @@ export async function runCheck(store: ClaimStore, options: CheckOptions = {}): P
   };
 
   const verdicts: Verdict[] = [];
-  const summary: Record<string, number> = { fresh: 0, moved: 0, stale: 0, ghost: 0, expired: 0, total: 0 };
+  const summary: Record<string, number> = {
+    fresh: 0,
+    moved: 0,
+    stale: 0,
+    ghost: 0,
+    expired: 0,
+    total: 0,
+  };
 
   for (const a of assertions) {
     if (options.onlyFiles && !options.onlyFiles.has(a.anchor.file)) continue;
     const text = await readFileText(a.anchor.file);
     let verdict: Verdict;
     if (options.registry) {
-      verdict = await options.registry.resolve(a, text, propsById.get(a.propositionId));
+      verdict = await options.registry.resolve(
+        a,
+        text,
+        propsById.get(a.propositionId),
+      );
     } else if (text === null) {
       // Anchored file is gone → ghost (no selector can locate it).
       verdict = {
@@ -128,7 +179,10 @@ export async function runCheck(store: ClaimStore, options: CheckOptions = {}): P
         advisories: [],
       };
     } else {
-      verdict = resolveAssertion(a, text, { ast: options.ast, now: options.now });
+      verdict = resolveAssertion(a, text, {
+        ast: options.ast,
+        now: options.now,
+      });
     }
     verdicts.push(verdict);
     summary[verdict.state] = (summary[verdict.state] ?? 0) + 1;
@@ -166,7 +220,10 @@ export async function runCheck(store: ClaimStore, options: CheckOptions = {}): P
       id: doc.id,
       path: doc.path,
       lifecycle: doc.lifecycle,
-      suspect: suspectVerdicts.map((v) => ({ propositionId: v.propositionId, state: v.state })),
+      suspect: suspectVerdicts.map((v) => ({
+        propositionId: v.propositionId,
+        state: v.state,
+      })),
     };
 
     // Worst single status for the optional frontmatter field (§8).
@@ -175,7 +232,8 @@ export async function runCheck(store: ClaimStore, options: CheckOptions = {}): P
       ...(doc.lifecycle !== "active" ? [doc.lifecycle as string] : []),
     ];
     const statusValue = severities.length
-      ? (STATUS_PRECEDENCE.find((s) => severities.includes(s)) ?? severities[0]!)
+      ? (STATUS_PRECEDENCE.find((s) => severities.includes(s)) ??
+        severities[0]!)
       : null;
 
     if (options.write) {
@@ -195,16 +253,25 @@ export async function runCheck(store: ClaimStore, options: CheckOptions = {}): P
           content = res.content;
           report.bannerAction = res.action;
         } else {
-          const res = stampBanner(content, doc.path, { headline, entries: allEntries }, nonce, {
-            failOnTamper: options.failOn === "tamper",
-          });
+          const res = stampBanner(
+            content,
+            doc.path,
+            { headline, entries: allEntries },
+            nonce,
+            {
+              failOnTamper: options.failOn === "tamper",
+            },
+          );
           if (res.tampered) {
             sawTamper = true;
             report.tampered = true;
           }
           report.bannerAction = res.action;
           // Honor --fail-on tamper: refuse to overwrite a hand-edited banner.
-          content = res.tampered && options.failOn === "tamper" ? original : res.content;
+          content =
+            res.tampered && options.failOn === "tamper"
+              ? original
+              : res.content;
         }
 
         // Optional markdown frontmatter status (§8): only where frontmatter exists.
@@ -222,7 +289,12 @@ export async function runCheck(store: ClaimStore, options: CheckOptions = {}): P
 
   void docsById; // documents already iterated directly
 
-  const exitCode = computeExitCode({ sawSuspect, sawMoved, sawTamper, failOn: options.failOn ?? "suspect" });
+  const exitCode = computeExitCode({
+    sawSuspect,
+    sawMoved,
+    sawTamper,
+    failOn: options.failOn ?? "suspect",
+  });
 
   return {
     ref,

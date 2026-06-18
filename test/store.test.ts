@@ -1,4 +1,4 @@
-import { describe, test, expect, afterEach } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ClaimStore } from "../src/store/store.ts";
@@ -35,8 +35,18 @@ describe("claim store (§6, §8)", () => {
     const r = await repo();
     await r.write("src/a.ts", "export const A = 1;\n");
     await r.write("src/b.ts", "export const B = 2;\n");
-    await record(r, { doc: "d.md", text: "A is 1", file: "src/a.ts", quote: "A = 1" });
-    await record(r, { doc: "d.md", text: "B is 2", file: "src/b.ts", quote: "B = 2" });
+    await record(r, {
+      doc: "d.md",
+      text: "A is 1",
+      file: "src/a.ts",
+      quote: "A = 1",
+    });
+    await record(r, {
+      doc: "d.md",
+      text: "B is 2",
+      file: "src/b.ts",
+      quote: "B = 2",
+    });
     const claimFiles = await readdir(join(r.store.dir, "claims"));
     expect(claimFiles.filter((f) => f.endsWith(".json")).length).toBe(2);
   });
@@ -44,8 +54,18 @@ describe("claim store (§6, §8)", () => {
   test("propositions dedup by content fingerprint (§5)", async () => {
     const r = await repo();
     await r.write("src/a.ts", "export const A = 1;\nexport const B = 2;\n");
-    const r1 = await record(r, { doc: "d1.md", text: "Same claim text", file: "src/a.ts", quote: "A = 1" });
-    const r2 = await record(r, { doc: "d2.md", text: "Same claim text", file: "src/a.ts", quote: "B = 2" });
+    const r1 = await record(r, {
+      doc: "d1.md",
+      text: "Same claim text",
+      file: "src/a.ts",
+      quote: "A = 1",
+    });
+    const r2 = await record(r, {
+      doc: "d2.md",
+      text: "Same claim text",
+      file: "src/a.ts",
+      quote: "B = 2",
+    });
     expect(r2.dedupedProposition).toBe(true);
     expect(r2.proposition.id).toBe(r1.proposition.id);
     const props = await r.store.allPropositions();
@@ -56,10 +76,17 @@ describe("claim store (§6, §8)", () => {
   test("records validate against the schema on load", async () => {
     const r = await repo();
     await r.write("src/a.ts", "export const A = 1;\n");
-    const { assertion } = await record(r, { doc: "d.md", text: "A is 1", file: "src/a.ts", quote: "A = 1" });
+    const { assertion } = await record(r, {
+      doc: "d.md",
+      text: "A is 1",
+      file: "src/a.ts",
+      quote: "A = 1",
+    });
     const reopened = await ClaimStore.open(r.root);
     const loaded = await reopened.getAssertion(assertion.id);
-    expect(loaded?.anchor.selectors.some((s) => s.kind === "ast-node")).toBe(true);
+    expect(loaded?.anchor.selectors.some((s) => s.kind === "ast-node")).toBe(
+      true,
+    );
   });
 
   test("open throws when no store exists", async () => {
@@ -69,6 +96,14 @@ describe("claim store (§6, §8)", () => {
   test("verified trust requires a precise anchor + ref (§10)", async () => {
     const r = await repo();
     await r.write("src/a.ts", "export const A = 1;\n");
-    await expect(record(r, { doc: "d.md", text: "coarse verified", file: "src/a.ts", trust: "verified", coarse: true })).rejects.toThrow();
+    await expect(
+      record(r, {
+        doc: "d.md",
+        text: "coarse verified",
+        file: "src/a.ts",
+        trust: "verified",
+        coarse: true,
+      }),
+    ).rejects.toThrow();
   });
 });

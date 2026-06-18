@@ -7,7 +7,7 @@
  * Framing: one JSON object per line (`\n`-delimited) in each direction.
  */
 import * as z from "zod";
-import { Assertion, Verdict, Advisory, Proposition } from "../core/model.ts";
+import { Advisory, Assertion, Proposition, Verdict } from "../core/model.ts";
 
 export const PROTOCOL_VERSION = "1" as const;
 
@@ -48,7 +48,10 @@ export const RpcRequest = z.object({
 });
 export type RpcRequest = z.infer<typeof RpcRequest>;
 
-export const RpcError = z.object({ message: z.string(), code: z.number().int().default(-1) });
+export const RpcError = z.object({
+  message: z.string(),
+  code: z.number().int().default(-1),
+});
 export const RpcResponse = z.object({
   id: z.number().int(),
   result: z.unknown().optional(),

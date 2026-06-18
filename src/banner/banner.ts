@@ -41,9 +41,46 @@ export interface StampResult {
 
 // ── Comment style by extension (§17.5) ───────────────────────────────────────
 
-const HASH_EXT = new Set([".py", ".sh", ".bash", ".zsh", ".yaml", ".yml", ".toml", ".cfg", ".ini", ".rb"]);
-const SLASH_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs", ".rs", ".c", ".h", ".cc", ".cpp", ".hpp", ".go", ".java", ".kt", ".swift", ".scala"]);
-const HTML_EXT = new Set([".md", ".markdown", ".mdx", ".html", ".htm", ".xml", ".svg"]);
+const HASH_EXT = new Set([
+  ".py",
+  ".sh",
+  ".bash",
+  ".zsh",
+  ".yaml",
+  ".yml",
+  ".toml",
+  ".cfg",
+  ".ini",
+  ".rb",
+]);
+const SLASH_EXT = new Set([
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
+  ".rs",
+  ".c",
+  ".h",
+  ".cc",
+  ".cpp",
+  ".hpp",
+  ".go",
+  ".java",
+  ".kt",
+  ".swift",
+  ".scala",
+]);
+const HTML_EXT = new Set([
+  ".md",
+  ".markdown",
+  ".mdx",
+  ".html",
+  ".htm",
+  ".xml",
+  ".svg",
+]);
 
 export function commentStyleFor(filePath: string): CommentStyle {
   const ext = extname(filePath).toLowerCase();
@@ -64,10 +101,14 @@ function endSentinel(nonce: string, sha: string): string {
 
 /** Whole-line locate regexes; the comment prefix is optional (§17.5). */
 function beginRe(nonce: string): RegExp {
-  return new RegExp(`^[ \\t]*(?:#|//)?[ \\t]*HIBI:BEGIN[ \\t]+v\\d+[ \\t]+${nonce}[ \\t]*$`);
+  return new RegExp(
+    `^[ \\t]*(?:#|//)?[ \\t]*HIBI:BEGIN[ \\t]+v\\d+[ \\t]+${nonce}[ \\t]*$`,
+  );
 }
 function endRe(nonce: string): RegExp {
-  return new RegExp(`^[ \\t]*(?:#|//)?[ \\t]*HIBI:END[ \\t]+v\\d+[ \\t]+${nonce}[ \\t]+sha=([0-9a-f]{8})[ \\t]*$`);
+  return new RegExp(
+    `^[ \\t]*(?:#|//)?[ \\t]*HIBI:END[ \\t]+v\\d+[ \\t]+${nonce}[ \\t]+sha=([0-9a-f]{8})[ \\t]*$`,
+  );
 }
 
 function stripCommentPrefix(line: string): string {
@@ -78,13 +119,19 @@ function stripCommentPrefix(line: string): string {
 
 /** The checksum-covered body: headline + claim lines sorted by id (§17.5). */
 export function bannerBody(payload: BannerPayload): string[] {
-  const entries = [...payload.entries].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+  const entries = [...payload.entries].sort((a, b) =>
+    a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
+  );
   const headline = payload.headline ?? DEFAULT_HEADLINE(entries.length);
   return [headline, ...entries.map((e) => `[${e.status}] (${e.id}) ${e.text}`)];
 }
 
 /** Build the banner block text (with comment wrapping) for a given style. */
-export function buildBanner(payload: BannerPayload, nonce: string, style: CommentStyle): string {
+export function buildBanner(
+  payload: BannerPayload,
+  nonce: string,
+  style: CommentStyle,
+): string {
   const body = bannerBody(payload);
   const sha = fnv1a32hex(body.join("\n"));
   const core = [beginSentinel(nonce), ...body, endSentinel(nonce, sha)];
@@ -116,12 +163,17 @@ interface Located {
 
 function lineOffsets(text: string): number[] {
   const starts = [0];
-  for (let i = 0; i < text.length; i++) if (text[i] === "\n") starts.push(i + 1);
+  for (let i = 0; i < text.length; i++)
+    if (text[i] === "\n") starts.push(i + 1);
   return starts;
 }
 
 /** Find the first valid BEGIN and the first valid END after it (§17.5). */
-export function locateBanner(text: string, nonce: string, style: CommentStyle): Located | null {
+export function locateBanner(
+  text: string,
+  nonce: string,
+  style: CommentStyle,
+): Located | null {
   const lines = text.split("\n");
   const starts = lineOffsets(text);
   const bRe = beginRe(nonce);
@@ -155,8 +207,10 @@ export function locateBanner(text: string, nonce: string, style: CommentStyle): 
   let firstLine = beginIdx;
   let lastLine = endIdx;
   if (style === "html") {
-    if (firstLine > 0 && lines[firstLine - 1]!.trim() === "<!--") firstLine -= 1;
-    if (lastLine < lines.length - 1 && lines[lastLine + 1]!.trim() === "-->") lastLine += 1;
+    if (firstLine > 0 && lines[firstLine - 1]!.trim() === "<!--")
+      firstLine -= 1;
+    if (lastLine < lines.length - 1 && lines[lastLine + 1]!.trim() === "-->")
+      lastLine += 1;
   }
 
   const blockStart = starts[firstLine]!;
@@ -218,11 +272,16 @@ export function stampBanner(
       return { content: text, action: "noop", tampered: true };
     }
     const current = text.slice(existing.blockStart, existing.blockEnd);
-    if (current === banner && !tampered) return { content: text, action: "noop" };
+    if (current === banner && !tampered)
+      return { content: text, action: "noop" };
     // Replace the existing block in place (engine owns the region).
     const before = text.slice(0, existing.blockStart);
     const after = text.slice(existing.blockEnd);
-    return { content: before + banner + after, action: "replace", tampered: tampered || undefined };
+    return {
+      content: before + banner + after,
+      action: "replace",
+      tampered: tampered || undefined,
+    };
   }
 
   // Insert fresh at the placement offset.
@@ -233,7 +292,11 @@ export function stampBanner(
 }
 
 /** Remove the banner, restoring pristine bytes (§17.5). */
-export function removeBanner(text: string, filePath: string, nonce: string): StampResult {
+export function removeBanner(
+  text: string,
+  filePath: string,
+  nonce: string,
+): StampResult {
   const style = commentStyleFor(filePath);
   const existing = locateBanner(text, nonce, style);
   if (!existing) return { content: text, action: "noop" };
@@ -245,6 +308,10 @@ export function removeBanner(text: string, filePath: string, nonce: string): Sta
 }
 
 /** Whether a document currently carries a banner for this nonce. */
-export function hasBanner(text: string, filePath: string, nonce: string): boolean {
+export function hasBanner(
+  text: string,
+  filePath: string,
+  nonce: string,
+): boolean {
   return locateBanner(text, nonce, commentStyleFor(filePath)) !== null;
 }

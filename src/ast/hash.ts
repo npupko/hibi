@@ -4,8 +4,8 @@
  * the value-extraction map (§17.4).
  */
 import type { Node } from "web-tree-sitter";
-import type { Region } from "../core/model.ts";
 import { collapseWhitespace } from "../algo/normalize.ts";
+import type { Region } from "../core/model.ts";
 import { valueClass } from "./value-map.ts";
 
 /** Content-literal kinds (§17.2, verbatim) — some grammars hide a literal body. */
@@ -38,7 +38,11 @@ function xx(s: string): string {
  * trailing whitespace off the span first (if it collapses, keep one character) —
  * this is what makes the chosen node invariant to re-indentation.
  */
-export function snapNamedNode(root: Node, text: string, region: Region): Node | null {
+export function snapNamedNode(
+  root: Node,
+  text: string,
+  region: Region,
+): Node | null {
   let ts = Math.max(0, region.start);
   let te = Math.min(text.length, region.end);
   const span = text.slice(ts, te);
@@ -105,7 +109,10 @@ export function extractValueFrom(
     const cls = valueClass(language, n.type);
     if (cls) {
       const raw = n.text;
-      const value = cls === "collection" ? raw.replace(/\s+/g, "") : collapseWhitespace(raw);
+      const value =
+        cls === "collection"
+          ? raw.replace(/\s+/g, "")
+          : collapseWhitespace(raw);
       found = { nodeKind: n.type, value };
       return;
     }

@@ -1,8 +1,8 @@
-import { describe, test, expect, beforeAll } from "bun:test";
-import { getAnalyzer } from "../src/ast/analyzer.ts";
-import { buildAnchor } from "../src/engine/anchor.ts";
+import { beforeAll, describe, expect, test } from "bun:test";
 import { resolveAssertion } from "../src/algo/resolve.ts";
+import { getAnalyzer } from "../src/ast/analyzer.ts";
 import type { Assertion } from "../src/core/model.ts";
+import { buildAnchor } from "../src/engine/anchor.ts";
 
 let analyzer: Awaited<ReturnType<typeof getAnalyzer>>;
 beforeAll(async () => {
@@ -13,13 +13,31 @@ beforeAll(async () => {
 function anchorOn(original: string, quote: string, language = "typescript") {
   const start = original.indexOf(quote);
   if (start < 0) throw new Error(`quote not in source: ${quote}`);
-  const anchor = buildAnchor("f.ts", original, { start, end: start + quote.length }, { language, analyzer });
-  const a: Assertion = { id: "a", propositionId: "p", documentId: "d", owner: "o", ref: "r", anchor, attrs: {} };
+  const anchor = buildAnchor(
+    "f.ts",
+    original,
+    { start, end: start + quote.length },
+    { language, analyzer },
+  );
+  const a: Assertion = {
+    id: "a",
+    propositionId: "p",
+    documentId: "d",
+    owner: "o",
+    ref: "r",
+    anchor,
+    attrs: {},
+  };
   return (modified: string) => resolveAssertion(a, modified, { ast: analyzer });
 }
 
 describe("never report a drifted claim as `fresh` (§10 — precision over recall)", () => {
-  const cases: { name: string; original: string; quote: string; drifted: string }[] = [
+  const cases: {
+    name: string;
+    original: string;
+    quote: string;
+    drifted: string;
+  }[] = [
     {
       name: "numeric literal 5 → 50",
       original: "export const MAX_ATTEMPTS = 5;\n",
@@ -75,7 +93,8 @@ describe("neutral edits do not produce false-`stale` (§11.3, §17.2)", () => {
 
   test("unrelated code added below the anchor stays fresh", () => {
     const original = "export const MAX = 5;\n";
-    const edited = "export const MAX = 5;\nexport function helper() { return 42; }\n";
+    const edited =
+      "export const MAX = 5;\nexport function helper() { return 42; }\n";
     expect(anchorOn(original, "MAX = 5")(edited).state).toBe("fresh");
   });
 
@@ -87,15 +106,19 @@ describe("neutral edits do not produce false-`stale` (§11.3, §17.2)", () => {
       "export const MAX = 5;\nexport const NAME = 'a';\nexport const X = 9;\n",
       "export   const   MAX   =   5;\nexport const NAME = 'a';\n",
     ];
-    const states = neutralEdits.map((e) => anchorOn(original, "MAX = 5")(e).state);
+    const states = neutralEdits.map(
+      (e) => anchorOn(original, "MAX = 5")(e).state,
+    );
     expect(states.filter((s) => s === "stale" || s === "ghost")).toEqual([]);
   });
 });
 
 describe("renames stay out of the hard-`stale` band (§17.3 structural-only)", () => {
   test("renaming the anchored identifier is re-verify (never stale, never silently fresh)", () => {
-    const original = "function retryWithBackoff(maxAttempts: number) { return maxAttempts * 2; }\n";
-    const renamed = "function retryWithBackoff(maxTries: number) { return maxTries * 2; }\n";
+    const original =
+      "function retryWithBackoff(maxAttempts: number) { return maxAttempts * 2; }\n";
+    const renamed =
+      "function retryWithBackoff(maxTries: number) { return maxTries * 2; }\n";
     const v = anchorOn(original, "maxAttempts: number")(renamed);
     // A rename is drift of the anchored name: it must surface for re-verification
     // (moved or ghost) and must never land in `stale` or pass silently as `fresh`.
@@ -108,7 +131,10 @@ describe("renames stay out of the hard-`stale` band (§17.3 structural-only)", (
     // and text/position corroborate, so a rename is `moved`, not `ghost`.
     const original = "const result = computeTotal(items);\n";
     const renamed = "const result = computeSum(items);\n";
-    const v = anchorOn(original, "const result = computeTotal(items);")(renamed);
+    const v = anchorOn(
+      original,
+      "const result = computeTotal(items);",
+    )(renamed);
     expect(["moved", "stale", "ghost"]).toContain(v.state);
     expect(v.state).not.toBe("fresh");
   });
@@ -116,9 +142,11 @@ describe("renames stay out of the hard-`stale` band (§17.3 structural-only)", (
 
 describe("ghost detection via position-corroboration (§17.3)", () => {
   test("deleting the anchored region → ghost, not a manufactured stale", () => {
-    const original = "export const MAX_ATTEMPTS = 5;\nexport const OTHER = 99;\n";
+    const original =
+      "export const MAX_ATTEMPTS = 5;\nexport const OTHER = 99;\n";
     // Remove the anchored line entirely; fill with unrelated content.
-    const deleted = "export const OTHER = 99;\nexport function brandNew() { return 0; }\n";
+    const deleted =
+      "export const OTHER = 99;\nexport function brandNew() { return 0; }\n";
     const v = anchorOn(original, "MAX_ATTEMPTS = 5")(deleted);
     expect(v.state).toBe("ghost");
   });
@@ -128,7 +156,9 @@ describe("selector disagreement lowers confidence toward re-verify, not hard-sta
   test("a moved-but-intact region grades moved (re-anchorable), keeping the suspect set tight", () => {
     const original = "export const MAX_ATTEMPTS = 5;\n";
     // Push the anchored line far down with a large unrelated prologue (intact content).
-    const moved = "// ".concat("x".repeat(400), "\n").repeat(1) + "export const MAX_ATTEMPTS = 5;\n";
+    const moved =
+      "// ".concat("x".repeat(400), "\n").repeat(1) +
+      "export const MAX_ATTEMPTS = 5;\n";
     const v = anchorOn(original, "MAX_ATTEMPTS = 5")(moved);
     expect(["fresh", "moved"]).toContain(v.state);
   });

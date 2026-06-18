@@ -4,8 +4,9 @@
  * and — when a tree-sitter analyzer is supplied — the ast-node two-tier hash and
  * the extracted value, all as seen at record time.
  */
-import type { Anchor, Selector, Region } from "../core/model.ts";
+
 import { TEXT_QUOTE_CONTEXT } from "../algo/params.ts";
+import type { Anchor, Region, Selector } from "../core/model.ts";
 
 /** Record-time tree-sitter seam (implemented in Layer 5). */
 export interface AnchorAnalyzer {
@@ -14,7 +15,10 @@ export interface AnchorAnalyzer {
     text: string,
     language: string,
     region: Region,
-  ): { astNode?: Extract<Selector, { kind: "ast-node" }>; value?: Extract<Selector, { kind: "value" }> };
+  ): {
+    astNode?: Extract<Selector, { kind: "ast-node" }>;
+    value?: Extract<Selector, { kind: "value" }>;
+  };
 }
 
 export interface BuildAnchorOptions {
@@ -35,7 +39,10 @@ export function buildAnchor(
 
   const exact = content.slice(start, end);
   const prefix = content.slice(Math.max(0, start - TEXT_QUOTE_CONTEXT), start);
-  const suffix = content.slice(end, Math.min(content.length, end + TEXT_QUOTE_CONTEXT));
+  const suffix = content.slice(
+    end,
+    Math.min(content.length, end + TEXT_QUOTE_CONTEXT),
+  );
 
   const selectors: Selector[] = [
     { kind: "text-quote", exact, prefix, suffix },
@@ -43,7 +50,11 @@ export function buildAnchor(
   ];
 
   if (opts.language && opts.analyzer) {
-    const { astNode, value } = opts.analyzer.recordSelectors(content, opts.language, { start, end });
+    const { astNode, value } = opts.analyzer.recordSelectors(
+      content,
+      opts.language,
+      { start, end },
+    );
     if (astNode) selectors.push(astNode);
     if (value) selectors.push(value);
   }

@@ -7,8 +7,9 @@
  * Strict rule (§7.4, §11.1): only a non-advisory (deterministic) resolver may
  * produce a gating verdict. Advisory (Tier-3) resolvers only attach advisories.
  */
-import type { Assertion, Verdict, Proposition } from "../core/model.ts";
-import { resolveAssertion, type AstAnalyzer } from "../algo/resolve.ts";
+
+import { type AstAnalyzer, resolveAssertion } from "../algo/resolve.ts";
+import type { Assertion, Proposition, Verdict } from "../core/model.ts";
 import { OutOfProcessResolver } from "./client.ts";
 import { loadManifest, type ResolverSpec } from "./manifest.ts";
 
@@ -21,13 +22,23 @@ export interface Resolver {
     assertion: Assertion,
     text: string | null,
     proposition?: Proposition,
-  ): Promise<{ verdict?: Verdict; advisories?: import("../core/model.ts").Advisory[] }>;
+  ): Promise<{
+    verdict?: Verdict;
+    advisories?: import("../core/model.ts").Advisory[];
+  }>;
 }
 
 /** The built-in code-anchor drift resolver — the deterministic fusion of §17. */
 export class DriftResolver implements Resolver {
   readonly name = "builtin:drift";
-  readonly kinds = ["text-quote", "text-position", "ast-node", "value", "path", "glob"];
+  readonly kinds = [
+    "text-quote",
+    "text-position",
+    "ast-node",
+    "value",
+    "path",
+    "glob",
+  ];
   readonly tier = 2;
   readonly advisory = false;
 
@@ -36,7 +47,11 @@ export class DriftResolver implements Resolver {
     private now?: number,
   ) {}
 
-  async resolve(assertion: Assertion, text: string | null, _proposition?: Proposition) {
+  async resolve(
+    assertion: Assertion,
+    text: string | null,
+    _proposition?: Proposition,
+  ) {
     if (text === null) {
       return {
         verdict: {
@@ -52,7 +67,12 @@ export class DriftResolver implements Resolver {
         },
       };
     }
-    return { verdict: resolveAssertion(assertion, text, { ast: this.ast, now: this.now }) };
+    return {
+      verdict: resolveAssertion(assertion, text, {
+        ast: this.ast,
+        now: this.now,
+      }),
+    };
   }
 }
 
@@ -66,7 +86,11 @@ class ProcessResolver implements Resolver {
     private proc: OutOfProcessResolver,
   ) {}
 
-  async resolve(assertion: Assertion, text: string | null, proposition?: Proposition) {
+  async resolve(
+    assertion: Assertion,
+    text: string | null,
+    proposition?: Proposition,
+  ) {
     const res = await this.proc.resolve({ assertion, text, proposition });
     if (!res) return {}; // timed out / crashed → degrade silently
     // A declared-advisory resolver can never gate: drop any verdict it returns.
@@ -91,14 +115,26 @@ export class ResolverRegistry {
   async loadFromManifest(root: string): Promise<void> {
     const manifest = await loadManifest(root);
     for (const spec of manifest.resolvers) {
-      const proc = new OutOfProcessResolver({ name: spec.name, command: spec.command, args: spec.args, timeoutMs: spec.timeoutMs, cwd: root });
+      const proc = new OutOfProcessResolver({
+        name: spec.name,
+        command: spec.command,
+        args: spec.args,
+        timeoutMs: spec.timeoutMs,
+        cwd: root,
+      });
       const desc = await proc.describe();
       if (!desc) {
         proc.dispose();
         continue; // unreachable/incompatible resolver — skip (default-deny posture)
       }
       const kinds = spec.kinds ?? desc.kinds;
-      const pr = new ProcessResolver(desc.name, kinds, desc.tier, desc.advisory, proc);
+      const pr = new ProcessResolver(
+        desc.name,
+        kinds,
+        desc.tier,
+        desc.advisory,
+        proc,
+      );
       this.register(pr);
       this.disposers.push(() => pr.dispose());
     }
@@ -117,7 +153,11 @@ export class ResolverRegistry {
   }
 
   /** Resolve an assertion: deterministic primary verdict + non-gating advisories. */
-  async resolve(assertion: Assertion, text: string | null, proposition?: Proposition): Promise<Verdict> {
+  async resolve(
+    assertion: Assertion,
+    text: string | null,
+    proposition?: Proposition,
+  ): Promise<Verdict> {
     const primary = this.primaryFor(assertion);
     const base = primary
       ? (await primary.resolve(assertion, text, proposition)).verdict
@@ -137,7 +177,8 @@ export class ResolverRegistry {
     // Gather non-gating advisories (Tier-3 advises, never decides — §7.4).
     for (const adv of this.advisoryResolvers()) {
       const r = await adv.resolve(assertion, text, proposition);
-      if (r.advisories?.length) verdict.advisories = [...(verdict.advisories ?? []), ...r.advisories];
+      if (r.advisories?.length)
+        verdict.advisories = [...(verdict.advisories ?? []), ...r.advisories];
     }
     return verdict;
   }

@@ -3,8 +3,9 @@
  * ONLY if they are explicitly listed in `.claims/resolvers.json`. Absent file →
  * no external resolvers (default-deny).
  */
+
+import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { readFile, access } from "node:fs/promises";
 import * as z from "zod";
 import { STORE_DIR } from "../store/store.ts";
 

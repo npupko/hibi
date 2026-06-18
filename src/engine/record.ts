@@ -3,10 +3,17 @@
  * by content fingerprint), an Assertion, and the composite baseline Anchor to the
  * store. Agent-authored — the engine never NLP-extracts claims (D2).
  */
-import type { ClaimStore } from "../store/store.ts";
-import type { Assertion, Proposition, Document, AuthoredTrust, Region } from "../core/model.ts";
+
 import { newId, propositionFingerprint } from "../core/ids.ts";
-import { buildAnchor, buildPathAnchor, type AnchorAnalyzer } from "./anchor.ts";
+import type {
+  Assertion,
+  AuthoredTrust,
+  Document,
+  Proposition,
+  Region,
+} from "../core/model.ts";
+import type { ClaimStore } from "../store/store.ts";
+import { type AnchorAnalyzer, buildAnchor, buildPathAnchor } from "./anchor.ts";
 import { languageForFile } from "./lang.ts";
 
 /** Stable document id derived from its repo-relative path. */
@@ -49,7 +56,12 @@ export async function recordClaim(
   const docId = documentIdForPath(input.docPath);
   let document = await store.getDocument(docId);
   if (!document) {
-    document = { id: docId, path: input.docPath, lifecycle: "active", edges: [] };
+    document = {
+      id: docId,
+      path: input.docPath,
+      lifecycle: "active",
+      edges: [],
+    };
     await store.putDocument(document);
   }
 
@@ -68,7 +80,10 @@ export async function recordClaim(
   }
 
   // `verified` requires evidence: an anchor + @ref (§10).
-  if (input.authoredTrust === "verified" && (input.coarse || !input.region || !input.ref)) {
+  if (
+    input.authoredTrust === "verified" &&
+    (input.coarse || !input.region || !input.ref)
+  ) {
     throw new Error("`verified` trust requires a precise anchor and a @ref.");
   }
 
@@ -103,7 +118,10 @@ export function resolveRegion(
 ): Region {
   if (spec.quote !== undefined) {
     const idx = content.indexOf(spec.quote);
-    if (idx === -1) throw new Error(`Quote not found in file: ${JSON.stringify(spec.quote.slice(0, 40))}…`);
+    if (idx === -1)
+      throw new Error(
+        `Quote not found in file: ${JSON.stringify(spec.quote.slice(0, 40))}…`,
+      );
     return { start: idx, end: idx + spec.quote.length };
   }
   if (spec.start !== undefined && spec.end !== undefined) {
@@ -112,9 +130,12 @@ export function resolveRegion(
   if (spec.line !== undefined) {
     const lines = content.split("\n");
     let off = 0;
-    for (let i = 0; i < spec.line - 1 && i < lines.length; i++) off += lines[i]!.length + 1;
+    for (let i = 0; i < spec.line - 1 && i < lines.length; i++)
+      off += lines[i]!.length + 1;
     const lineText = lines[spec.line - 1] ?? "";
     return { start: off, end: off + lineText.length };
   }
-  throw new Error("A region requires one of: --quote, --start/--end, or --line.");
+  throw new Error(
+    "A region requires one of: --quote, --start/--end, or --line.",
+  );
 }

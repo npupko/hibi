@@ -4,14 +4,14 @@
  * corrupt the determinism-critical engine — every failure degrades to `null`,
  * never throws onto the verdict path.
  */
-import { spawn, type ChildProcessByStdio } from "node:child_process";
-import type { Writable, Readable } from "node:stream";
+import { type ChildProcessByStdio, spawn } from "node:child_process";
+import type { Readable, Writable } from "node:stream";
 import {
+  DescribeResult,
   encodeLine,
   LineFramer,
-  DescribeResult,
-  ResolveResult,
   type ResolveParams,
+  ResolveResult,
 } from "./protocol.ts";
 
 export interface ResolverProcessSpec {
@@ -25,7 +25,10 @@ export interface ResolverProcessSpec {
 export class OutOfProcessResolver {
   private child?: ChildProcessByStdio<Writable, Readable, null>;
   private framer = new LineFramer();
-  private pending = new Map<number, { resolve: (v: unknown) => void; timer: ReturnType<typeof setTimeout> }>();
+  private pending = new Map<
+    number,
+    { resolve: (v: unknown) => void; timer: ReturnType<typeof setTimeout> }
+  >();
   private nextId = 1;
   private dead = false;
   readonly timeoutMs: number;

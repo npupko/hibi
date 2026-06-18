@@ -2,11 +2,15 @@
  * Tier-1 localization (§17.1): re-locate a `text-quote` selector in the current
  * text via the Bitap cascade, biased toward the stored `text-position` start.
  */
-import type { TextQuoteSelector, TextPositionSelector } from "../core/model.ts";
-import * as z from "zod";
-import { matchMain, MATCH_MAX_BITS } from "../vendor/bitap.ts";
+
+import type * as z from "zod";
+import type {
+  Region,
+  TextPositionSelector,
+  TextQuoteSelector,
+} from "../core/model.ts";
+import { MATCH_MAX_BITS, matchMain } from "../vendor/bitap.ts";
 import { BITAP } from "./params.ts";
-import type { Region } from "../core/model.ts";
 
 type TextQuote = z.infer<typeof TextQuoteSelector>;
 type TextPosition = z.infer<typeof TextPositionSelector>;
@@ -19,14 +23,19 @@ type TextPosition = z.infer<typeof TextPositionSelector>;
  *      to `at+len(exact)`, then refine the end against up to 32 chars of suffix.
  *   3. fallback → match the last 32 chars of the prefix; begin just after it.
  */
-export function localizeTextQuote(text: string, tq: TextQuote, bias: number): Region | null {
+export function localizeTextQuote(
+  text: string,
+  tq: TextQuote,
+  bias: number,
+): Region | null {
   if (text.length === 0) return null;
   const clampBias = Math.max(0, Math.min(bias, text.length - 1));
   const exact = tq.exact;
 
   if (exact.length <= MATCH_MAX_BITS) {
     const at = matchMain(text, exact, clampBias, BITAP);
-    if (at !== -1) return { start: at, end: Math.min(at + exact.length, text.length) };
+    if (at !== -1)
+      return { start: at, end: Math.min(at + exact.length, text.length) };
   } else {
     const head = exact.slice(0, MATCH_MAX_BITS);
     const at = matchMain(text, head, clampBias, BITAP);
@@ -60,5 +69,8 @@ export function positionBias(tp: TextPosition | undefined): number {
 
 /** Substring of `text` for a region, clamped. */
 export function regionText(text: string, region: Region): string {
-  return text.slice(Math.max(0, region.start), Math.min(text.length, region.end));
+  return text.slice(
+    Math.max(0, region.start),
+    Math.min(text.length, region.end),
+  );
 }

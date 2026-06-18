@@ -6,12 +6,22 @@
  * and fuse into a graded Verdict. Freshness is computed from (stored Anchor) vs
  * (current working tree) alone — the engine never reads a historical revision.
  */
-import type { Anchor, Assertion, Verdict, Selector, Region } from "../core/model.ts";
+import type {
+  Anchor,
+  Assertion,
+  Region,
+  Selector,
+  Verdict,
+} from "../core/model.ts";
 import { COARSE_SELECTOR_KINDS } from "../core/model.ts";
-import { WEIGHTS, POSITION_FOUND_SIMILARITY, STRUCTURAL_ONLY_SCORE } from "./params.ts";
-import { localizeTextQuote, positionBias, regionText } from "./localize.ts";
-import { textSimilarity, collapseWhitespace } from "./normalize.ts";
 import { grade, type ResolvedSelector } from "./fusion.ts";
+import { localizeTextQuote, positionBias, regionText } from "./localize.ts";
+import { collapseWhitespace, textSimilarity } from "./normalize.ts";
+import {
+  POSITION_FOUND_SIMILARITY,
+  STRUCTURAL_ONLY_SCORE,
+  WEIGHTS,
+} from "./params.ts";
 
 /**
  * Tier-2 analyzer hook — implemented with tree-sitter in Layer 5. Given the
@@ -29,7 +39,12 @@ export interface AstAnalyzer {
   /** Snap & hash the enclosing named node around `region`; null if none. */
   analyze(text: string, language: string, region: Region): AstAnalysis | null;
   /** Extract the first matching literal value within `region`; null if none. */
-  extractValue(text: string, language: string, region: Region, nodeKind: string): string | null;
+  extractValue(
+    text: string,
+    language: string,
+    region: Region,
+    nodeKind: string,
+  ): string | null;
 }
 
 export interface ResolveOptions {
@@ -62,7 +77,8 @@ export function resolveAssertion(
   };
 
   // ttl → expired, before fusion (§17.3).
-  const expired = assertion.ttl !== undefined && Date.parse(assertion.ttl) <= now;
+  const expired =
+    assertion.ttl !== undefined && Date.parse(assertion.ttl) <= now;
 
   // Coarse-only anchors are navigational and never stale (§11.3).
   const coarseOnly = anchor.selectors.every((s) =>
@@ -79,12 +95,24 @@ export function resolveAssertion(
       valueFound: false,
       valueScore: 0,
     });
-    return { ...base, state: g.state, confidence: g.confidence, selectorScores: [], notes: g.notes, advisories: [] };
+    return {
+      ...base,
+      state: g.state,
+      confidence: g.confidence,
+      selectorScores: [],
+      notes: g.notes,
+      advisories: [],
+    };
   }
 
-  const tq = sel["text-quote"]?.kind === "text-quote" ? sel["text-quote"] : undefined;
-  const tp = sel["text-position"]?.kind === "text-position" ? sel["text-position"] : undefined;
-  const astSel = sel["ast-node"]?.kind === "ast-node" ? sel["ast-node"] : undefined;
+  const tq =
+    sel["text-quote"]?.kind === "text-quote" ? sel["text-quote"] : undefined;
+  const tp =
+    sel["text-position"]?.kind === "text-position"
+      ? sel["text-position"]
+      : undefined;
+  const astSel =
+    sel["ast-node"]?.kind === "ast-node" ? sel["ast-node"] : undefined;
   const valSel = sel["value"]?.kind === "value" ? sel["value"] : undefined;
 
   // ── Localize (text-quote cascade, biased by text-position) ──
@@ -96,7 +124,9 @@ export function resolveAssertion(
   const baselineExact = tq?.exact ?? "";
   const textQuoteFound = tq !== undefined && region !== null;
   const textQuoteSimilarity =
-    region !== null && tq ? textSimilarity(regionText(currentText, region), baselineExact) : 0;
+    region !== null && tq
+      ? textSimilarity(regionText(currentText, region), baselineExact)
+      : 0;
 
   // ── text-position found-check (§17.3): content at baseline offset ≥ 0.6 ──
   let positionFound = false;
@@ -133,7 +163,10 @@ export function resolveAssertion(
   if (astSel && opts.ast && region) {
     const analysis = opts.ast.analyze(currentText, astSel.language, region);
     if (analysis) {
-      if (analysis.semanticHash === astSel.semanticHash && analysis.structuralHash === astSel.structuralHash) {
+      if (
+        analysis.semanticHash === astSel.semanticHash &&
+        analysis.structuralHash === astSel.structuralHash
+      ) {
         astScore = 1.0;
       } else if (analysis.structuralHash === astSel.structuralHash) {
         astScore = STRUCTURAL_ONLY_SCORE; // rename/whitespace — keep out of `stale` band
@@ -145,21 +178,39 @@ export function resolveAssertion(
     // A positive match is always found; a total mismatch counts as found only
     // if text-position corroborates (the ghost-detection mechanism, §17.3).
     astFound = astScore > 0 ? true : positionFound;
-    resolved.push({ kind: "ast-node", found: astFound, score: astScore, weight: WEIGHTS["ast-node"] });
+    resolved.push({
+      kind: "ast-node",
+      found: astFound,
+      score: astScore,
+      weight: WEIGHTS["ast-node"],
+    });
   }
 
   // ── value tier ──
   let valueScore = 0;
   let valueFound = false;
   if (valSel && opts.ast && region) {
-    const extracted = opts.ast.extractValue(currentText, valSel.language, region, valSel.nodeKind);
-    if (extracted !== null && collapseWhitespace(extracted) === collapseWhitespace(valSel.value)) {
+    const extracted = opts.ast.extractValue(
+      currentText,
+      valSel.language,
+      region,
+      valSel.nodeKind,
+    );
+    if (
+      extracted !== null &&
+      collapseWhitespace(extracted) === collapseWhitespace(valSel.value)
+    ) {
       valueScore = 1;
     } else {
       valueScore = 0;
     }
     valueFound = valueScore > 0 ? true : positionFound;
-    resolved.push({ kind: "value", found: valueFound, score: valueScore, weight: WEIGHTS["value"] });
+    resolved.push({
+      kind: "value",
+      found: valueFound,
+      score: valueScore,
+      weight: WEIGHTS["value"],
+    });
   }
 
   const startDelta = region && tp ? Math.abs(region.start - tp.start) : null;
@@ -180,7 +231,12 @@ export function resolveAssertion(
     state: g.state,
     confidence: g.confidence,
     region: region ?? undefined,
-    selectorScores: resolved.map((r) => ({ kind: r.kind, found: r.found, score: r.score, weight: r.weight })),
+    selectorScores: resolved.map((r) => ({
+      kind: r.kind,
+      found: r.found,
+      score: r.score,
+      weight: r.weight,
+    })),
     notes: [...notes, ...g.notes],
     advisories: [],
   };

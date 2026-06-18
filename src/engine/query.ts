@@ -2,8 +2,9 @@
  * `query --path` (§9): "what claims are anchored to / cover this file or region?"
  * — the before-edit lookup, including coarse edges for blast-radius.
  */
-import type { ClaimStore } from "../store/store.ts";
+
 import type { Assertion, Proposition } from "../core/model.ts";
+import type { ClaimStore } from "../store/store.ts";
 
 export interface QueryHit {
   assertion: Assertion;
@@ -14,7 +15,10 @@ export interface QueryHit {
 }
 
 /** Find every claim whose anchor targets or covers `path`. */
-export async function queryByPath(store: ClaimStore, path: string): Promise<QueryHit[]> {
+export async function queryByPath(
+  store: ClaimStore,
+  path: string,
+): Promise<QueryHit[]> {
   const assertions = await store.allAssertions();
   const props = new Map((await store.allPropositions()).map((p) => [p.id, p]));
   const docs = new Map((await store.allDocuments()).map((d) => [d.id, d.path]));

@@ -7,23 +7,30 @@
  * preloaded asynchronously by `getAnalyzer()`, after which `analyze`/`extractValue`
  * are synchronous (as the resolver fusion path requires).
  */
-import { Parser, Language } from "web-tree-sitter";
-import type { Region, Selector } from "../core/model.ts";
-import type { AstAnalyzer, AstAnalysis } from "../algo/resolve.ts";
-import type { AnchorAnalyzer } from "../engine/anchor.ts";
-import { snapNamedNode, fingerprintNode, extractValueFrom } from "./hash.ts";
-
+import { Language, Parser } from "web-tree-sitter";
 // Embedded grammar wasm — `with { type: "file" }` yields a path that resolves in
 // dev (`bun run`) and is embedded by `bun build --compile` (§16, §12).
 // The web-tree-sitter runtime wasm must also be embedded and located explicitly,
 // otherwise the compiled binary cannot find it (`/$bunfs/root/tree-sitter.wasm`).
-import runtimeWasm from "web-tree-sitter/tree-sitter.wasm" with { type: "file" };
-import tsWasm from "../../grammars/tree-sitter-typescript.wasm" with { type: "file" };
-import tsxWasm from "../../grammars/tree-sitter-tsx.wasm" with { type: "file" };
-import pyWasm from "../../grammars/tree-sitter-python.wasm" with { type: "file" };
-import rsWasm from "../../grammars/tree-sitter-rust.wasm" with { type: "file" };
+import runtimeWasm from "web-tree-sitter/tree-sitter.wasm" with {
+  type: "file",
+};
 import goWasm from "../../grammars/tree-sitter-go.wasm" with { type: "file" };
-import javaWasm from "../../grammars/tree-sitter-java.wasm" with { type: "file" };
+import javaWasm from "../../grammars/tree-sitter-java.wasm" with {
+  type: "file",
+};
+import pyWasm from "../../grammars/tree-sitter-python.wasm" with {
+  type: "file",
+};
+import rsWasm from "../../grammars/tree-sitter-rust.wasm" with { type: "file" };
+import tsxWasm from "../../grammars/tree-sitter-tsx.wasm" with { type: "file" };
+import tsWasm from "../../grammars/tree-sitter-typescript.wasm" with {
+  type: "file",
+};
+import type { AstAnalysis, AstAnalyzer } from "../algo/resolve.ts";
+import type { Region, Selector } from "../core/model.ts";
+import type { AnchorAnalyzer } from "../engine/anchor.ts";
+import { extractValueFrom, fingerprintNode, snapNamedNode } from "./hash.ts";
 
 const WASM: Record<string, string> = {
   typescript: tsWasm,
@@ -78,7 +85,10 @@ class TreeSitterAnalyzer implements AstAnalyzer, AnchorAnalyzer {
     text: string,
     language: string,
     region: Region,
-  ): { astNode?: Extract<Selector, { kind: "ast-node" }>; value?: Extract<Selector, { kind: "value" }> } {
+  ): {
+    astNode?: Extract<Selector, { kind: "ast-node" }>;
+    value?: Extract<Selector, { kind: "value" }>;
+  } {
     const root = this.parse(text, language);
     if (!root) return {};
     const node = snapNamedNode(root, text, region);
@@ -105,7 +115,9 @@ let cached: Promise<TreeSitterAnalyzer> | undefined;
 export async function getAnalyzer(): Promise<TreeSitterAnalyzer> {
   if (!cached) {
     cached = (async () => {
-      await Parser.init({ locateFile: () => runtimeWasm } as Parameters<typeof Parser.init>[0]);
+      await Parser.init({ locateFile: () => runtimeWasm } as Parameters<
+        typeof Parser.init
+      >[0]);
       const langs = new Map<string, Language>();
       for (const [name, path] of Object.entries(WASM)) {
         langs.set(name, await Language.load(path));

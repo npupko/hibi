@@ -58,9 +58,16 @@ export function matchMain(
   return matchBitap(text, pattern, loc, opts);
 }
 
-function matchBitap(text: string, pattern: string, loc: number, opts: BitapOptions): number {
+function matchBitap(
+  text: string,
+  pattern: string,
+  loc: number,
+  opts: BitapOptions,
+): number {
   if (pattern.length > MATCH_MAX_BITS) {
-    throw new Error(`Bitap pattern too long (${pattern.length} > ${MATCH_MAX_BITS}).`);
+    throw new Error(
+      `Bitap pattern too long (${pattern.length} > ${MATCH_MAX_BITS}).`,
+    );
   }
   const { matchThreshold, matchDistance } = opts;
   const s = matchAlphabet(pattern);
@@ -79,7 +86,8 @@ function matchBitap(text: string, pattern: string, loc: number, opts: BitapOptio
   if (bestLoc !== -1) {
     scoreThreshold = Math.min(bitapScore(0, bestLoc), scoreThreshold);
     bestLoc = text.lastIndexOf(pattern, loc + pattern.length);
-    if (bestLoc !== -1) scoreThreshold = Math.min(bitapScore(0, bestLoc), scoreThreshold);
+    if (bestLoc !== -1)
+      scoreThreshold = Math.min(bitapScore(0, bestLoc), scoreThreshold);
   }
 
   const matchmask = 1 << (pattern.length - 1);

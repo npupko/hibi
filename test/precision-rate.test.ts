@@ -1,8 +1,8 @@
-import { describe, test, expect, beforeAll } from "bun:test";
-import { getAnalyzer } from "../src/ast/analyzer.ts";
-import { buildAnchor } from "../src/engine/anchor.ts";
+import { beforeAll, describe, expect, test } from "bun:test";
 import { resolveAssertion } from "../src/algo/resolve.ts";
+import { getAnalyzer } from "../src/ast/analyzer.ts";
 import type { Assertion } from "../src/core/model.ts";
+import { buildAnchor } from "../src/engine/anchor.ts";
 
 let analyzer: Awaited<ReturnType<typeof getAnalyzer>>;
 beforeAll(async () => {
@@ -22,19 +22,45 @@ function rng(seed: number) {
 
 function anchorOn(original: string, quote: string, language = "typescript") {
   const start = original.indexOf(quote);
-  const anchor = buildAnchor("f.ts", original, { start, end: start + quote.length }, { language, analyzer });
-  const a: Assertion = { id: "a", propositionId: "p", documentId: "d", owner: "o", ref: "r", anchor, attrs: {} };
+  const anchor = buildAnchor(
+    "f.ts",
+    original,
+    { start, end: start + quote.length },
+    { language, analyzer },
+  );
+  const a: Assertion = {
+    id: "a",
+    propositionId: "p",
+    documentId: "d",
+    owner: "o",
+    ref: "r",
+    anchor,
+    attrs: {},
+  };
   return (modified: string) => resolveAssertion(a, modified, { ast: analyzer });
 }
 
 const BASES = [
-  { src: "export const MAX_ATTEMPTS = 5;\nexport function go() { return 1; }\n", quote: "MAX_ATTEMPTS = 5" },
-  { src: "function calc(x: number) {\n  return x * 2;\n}\nconst y = 10;\n", quote: "return x * 2" },
-  { src: 'const cfg = { mode: "strict", limit: 7 };\nexport default cfg;\n', quote: "limit: 7" },
+  {
+    src: "export const MAX_ATTEMPTS = 5;\nexport function go() { return 1; }\n",
+    quote: "MAX_ATTEMPTS = 5",
+  },
+  {
+    src: "function calc(x: number) {\n  return x * 2;\n}\nconst y = 10;\n",
+    quote: "return x * 2",
+  },
+  {
+    src: 'const cfg = { mode: "strict", limit: 7 };\nexport default cfg;\n',
+    quote: "limit: 7",
+  },
 ];
 
 /** A neutral edit: changes the file but NOT the anchored construct's meaning. */
-function neutralEdit(src: string, anchorQuote: string, r: () => number): string {
+function neutralEdit(
+  src: string,
+  anchorQuote: string,
+  r: () => number,
+): string {
   const idx = src.indexOf(anchorQuote);
   const after = idx + anchorQuote.length;
   const choice = Math.floor(r() * 5);
@@ -44,7 +70,9 @@ function neutralEdit(src: string, anchorQuote: string, r: () => number): string 
     case 1: // a comment appended at EOF
       return src + `// note ${Math.floor(r() * 1000)}\n`;
     case 2: // an unrelated function appended at EOF
-      return src + `export function extra${Math.floor(r() * 1000)}() { return 0; }\n`;
+      return (
+        src + `export function extra${Math.floor(r() * 1000)}() { return 0; }\n`
+      );
     case 3: // trailing whitespace on the last line
       return src.replace(/\n$/, "   \n");
     default: // a comment line at EOF (keeps anchor start stable)
@@ -58,11 +86,15 @@ function driftEdit(src: string, anchorQuote: string, r: () => number): string {
   const idx = src.indexOf(anchorQuote);
   const region = src.slice(idx, idx + anchorQuote.length);
   if (/\d/.test(region)) {
-    const mutated = region.replace(/\d+/, (m) => String(Number(m) + 1 + Math.floor(r() * 90)));
+    const mutated = region.replace(/\d+/, (m) =>
+      String(Number(m) + 1 + Math.floor(r() * 90)),
+    );
     return src.slice(0, idx) + mutated + src.slice(idx + anchorQuote.length);
   }
   // No digit → mutate an identifier/operator within the region.
-  const mutated = region.replace(/[a-zA-Z]+/, (m) => m + "X").replace(/\*/, "+");
+  const mutated = region
+    .replace(/[a-zA-Z]+/, (m) => m + "X")
+    .replace(/\*/, "+");
   return src.slice(0, idx) + mutated + src.slice(idx + anchorQuote.length);
 }
 

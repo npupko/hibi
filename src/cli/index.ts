@@ -1,28 +1,34 @@
 #!/usr/bin/env bun
+import { access, readFile, writeFile } from "node:fs/promises";
+import { isAbsolute, join } from "node:path";
 /**
  * The Hibi CLI (§9) — JSON-first, quiet by default; the consumer is a
  * machine. Verbs: init · record · check · query · diff · supersede · retract ·
  * status · schema. Exit codes follow the §9 contract.
  */
 import { parseArgs } from "node:util";
-import { join, isAbsolute } from "node:path";
-import { readFile, writeFile, access } from "node:fs/promises";
-import { ClaimStore } from "../store/store.ts";
-import { recordClaim, resolveRegion, documentIdForPath } from "../engine/record.ts";
-import { runCheck, type FailOn } from "../engine/check.ts";
-import { queryByPath } from "../engine/query.ts";
-import { supersede, retract } from "../engine/supersede.ts";
-import { archiveDocument } from "../engine/archive.ts";
-import { changedFiles, currentRef, blameAuthor } from "../git/git.ts";
-import { ResolverRegistry, DriftResolver } from "../resolver/registry.ts";
 import type { AstAnalyzer } from "../algo/resolve.ts";
-import type { AnchorAnalyzer } from "../engine/anchor.ts";
 import type { AuthoredTrust } from "../core/model.ts";
+import type { AnchorAnalyzer } from "../engine/anchor.ts";
+import { archiveDocument } from "../engine/archive.ts";
+import { type FailOn, runCheck } from "../engine/check.ts";
+import { queryByPath } from "../engine/query.ts";
+import {
+  documentIdForPath,
+  recordClaim,
+  resolveRegion,
+} from "../engine/record.ts";
+import { retract, supersede } from "../engine/supersede.ts";
+import { blameAuthor, changedFiles, currentRef } from "../git/git.ts";
+import { DriftResolver, ResolverRegistry } from "../resolver/registry.ts";
+import { ClaimStore } from "../store/store.ts";
 
 const EXIT_OPERATIONAL_ERROR = 1;
 
 function out(value: unknown, pretty: boolean): void {
-  process.stdout.write(JSON.stringify(value, jsonReplacer, pretty ? 2 : 0) + "\n");
+  process.stdout.write(
+    JSON.stringify(value, jsonReplacer, pretty ? 2 : 0) + "\n",
+  );
 }
 function jsonReplacer(_k: string, v: unknown) {
   return typeof v === "bigint" ? v.toString() : v;
@@ -42,8 +48,12 @@ async function exists(p: string): Promise<boolean> {
 }
 
 /** Lazily load the tree-sitter analyzer (Tier-2). Tier-1 works without it. */
-let analyzerPromise: Promise<(AstAnalyzer & AnchorAnalyzer) | undefined> | undefined;
-async function loadAnalyzer(): Promise<(AstAnalyzer & AnchorAnalyzer) | undefined> {
+let analyzerPromise:
+  | Promise<(AstAnalyzer & AnchorAnalyzer) | undefined>
+  | undefined;
+async function loadAnalyzer(): Promise<
+  (AstAnalyzer & AnchorAnalyzer) | undefined
+> {
   if (!analyzerPromise) {
     analyzerPromise = import("../ast/analyzer.ts")
       .then((m) => m.getAnalyzer())
@@ -53,7 +63,10 @@ async function loadAnalyzer(): Promise<(AstAnalyzer & AnchorAnalyzer) | undefine
 }
 
 /** Build the resolver registry: built-in drift + manifest-gated externals (§7). */
-async function buildRegistry(root: string, analyzer: AstAnalyzer | undefined): Promise<ResolverRegistry> {
+async function buildRegistry(
+  root: string,
+  analyzer: AstAnalyzer | undefined,
+): Promise<ResolverRegistry> {
   const registry = new ResolverRegistry();
   registry.register(new DriftResolver(analyzer));
   await registry.loadFromManifest(root);
@@ -110,27 +123,42 @@ async function main(argv: string[]): Promise<number> {
     case "init": {
       const store = await ClaimStore.init(root);
       const config = await store.config();
-      out({ ok: true, action: "init", store: store.dir, nonce: config.nonce, version: config.version }, pretty);
+      out(
+        {
+          ok: true,
+          action: "init",
+          store: store.dir,
+          nonce: config.nonce,
+          version: config.version,
+        },
+        pretty,
+      );
       return 0;
     }
 
     case "record": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
-      if (!values.doc || !values.text) return fail("record requires --doc and --text", pretty);
+      const store = await ClaimStore.open(root).catch(() =>
+        fail("No claim store. Run `hibi init`.", pretty),
+      );
+      if (!values.doc || !values.text)
+        return fail("record requires --doc and --text", pretty);
       const trust = String(values.trust) as AuthoredTrust;
       const coarse = Boolean(values.coarse);
       const codeFile = (values.file as string) ?? "";
       let codeContent: string | null = null;
       let region;
       if (!coarse) {
-        if (!codeFile) return fail("record requires --file (or --coarse)", pretty);
+        if (!codeFile)
+          return fail("record requires --file (or --coarse)", pretty);
         const abs = absPath(root, codeFile);
-        if (!(await exists(abs))) return fail(`Code file not found: ${codeFile}`, pretty);
+        if (!(await exists(abs)))
+          return fail(`Code file not found: ${codeFile}`, pretty);
         codeContent = await readFile(abs, "utf8");
         try {
           region = resolveRegion(codeContent, {
             quote: values.quote as string | undefined,
-            start: values.start !== undefined ? Number(values.start) : undefined,
+            start:
+              values.start !== undefined ? Number(values.start) : undefined,
             end: values.end !== undefined ? Number(values.end) : undefined,
             line: values.line !== undefined ? Number(values.line) : undefined,
           });
@@ -153,7 +181,7 @@ async function main(argv: string[]): Promise<number> {
           owner: owner ?? "unknown",
           ref,
           ttl: values.ttl as string | undefined,
-          codeFile: coarse ? (codeFile || (values.doc as string)) : codeFile,
+          codeFile: coarse ? codeFile || (values.doc as string) : codeFile,
           region,
           coarse,
           analyzer: analyzer ?? undefined,
@@ -166,7 +194,9 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "check": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() =>
+        fail("No claim store. Run `hibi init`.", pretty),
+      );
       const registry = await buildRegistry(root, analyzer);
       const report = await runCheck(store, {
         registry,
@@ -180,12 +210,18 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "status": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() =>
+        fail("No claim store. Run `hibi init`.", pretty),
+      );
       if (!values.doc) return fail("status requires --doc", pretty);
       const docId = documentIdForPath(values.doc as string);
       const doc = await store.getDocument(docId);
       const statusRegistry = await buildRegistry(root, analyzer);
-      const report = await runCheck(store, { registry: statusRegistry, write: false, ref: await currentRef(root) });
+      const report = await runCheck(store, {
+        registry: statusRegistry,
+        write: false,
+        ref: await currentRef(root),
+      });
       statusRegistry.dispose();
       const docReport = report.documents.find((d) => d.id === docId);
       const verdicts = report.verdicts.filter((v) => v.documentId === docId);
@@ -207,15 +243,28 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "query": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() =>
+        fail("No claim store. Run `hibi init`.", pretty),
+      );
       if (!values.path) return fail("query requires --path", pretty);
       const hits = await queryByPath(store, values.path as string);
-      out({ ok: true, action: "query", path: values.path, count: hits.length, hits }, pretty);
+      out(
+        {
+          ok: true,
+          action: "query",
+          path: values.path,
+          count: hits.length,
+          hits,
+        },
+        pretty,
+      );
       return 0;
     }
 
     case "diff": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() =>
+        fail("No claim store. Run `hibi init`.", pretty),
+      );
       if (!values.since) return fail("diff requires --since <ref>", pretty);
       const files = await changedFiles(values.since as string, root);
       const diffRegistry = await buildRegistry(root, analyzer);
@@ -227,21 +276,39 @@ async function main(argv: string[]): Promise<number> {
         ref: await currentRef(root),
       });
       diffRegistry.dispose();
-      out({ ok: true, action: "diff", since: values.since, changedFiles: files, ...report }, pretty);
+      out(
+        {
+          ok: true,
+          action: "diff",
+          since: values.since,
+          changedFiles: files,
+          ...report,
+        },
+        pretty,
+      );
       return report.exitCode;
     }
 
     case "supersede": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() =>
+        fail("No claim store. Run `hibi init`.", pretty),
+      );
       if (!values.new || !values.old || !values.type) {
-        return fail("supersede requires --new, --old, and --type (supersedes|amends)", pretty);
+        return fail(
+          "supersede requires --new, --old, and --type (supersedes|amends)",
+          pretty,
+        );
       }
       try {
         const result = await supersede(store, {
           newDocPath: values.new as string,
           oldDocPath: values.old as string,
           type: String(values.type) as "supersedes" | "amends",
-          propositions: values.propositions ? String(values.propositions).split(",").map((s) => s.trim()) : undefined,
+          propositions: values.propositions
+            ? String(values.propositions)
+                .split(",")
+                .map((s) => s.trim())
+            : undefined,
         });
         out({ ok: true, action: "supersede", ...result }, pretty);
         return 0;
@@ -251,7 +318,9 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "retract": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() =>
+        fail("No claim store. Run `hibi init`.", pretty),
+      );
       if (!values.doc) return fail("retract requires --doc", pretty);
       const doc = await retract(store, values.doc as string);
       out({ ok: true, action: "retract", document: doc }, pretty);
@@ -259,9 +328,16 @@ async function main(argv: string[]): Promise<number> {
     }
 
     case "archive": {
-      const store = await ClaimStore.open(root).catch(() => fail("No claim store. Run `hibi init`.", pretty));
+      const store = await ClaimStore.open(root).catch(() =>
+        fail("No claim store. Run `hibi init`.", pretty),
+      );
       if (!values.doc) return fail("archive requires --doc", pretty);
-      const result = await archiveDocument(store, root, values.doc as string, values.successor as string | undefined);
+      const result = await archiveDocument(
+        store,
+        root,
+        values.doc as string,
+        values.successor as string | undefined,
+      );
       out({ ok: true, action: "archive", ...result }, pretty);
       return 0;
     }
@@ -272,8 +348,15 @@ async function main(argv: string[]): Promise<number> {
       const name = values.name as string | undefined;
       if (name) {
         const schema = (SCHEMAS as Record<string, any>)[name];
-        if (!schema) return fail(`Unknown schema: ${name}. Known: ${Object.keys(SCHEMAS).join(", ")}`, pretty);
-        out(z.toJSONSchema(schema, { target: "draft-2020-12", reused: "ref" }), pretty);
+        if (!schema)
+          return fail(
+            `Unknown schema: ${name}. Known: ${Object.keys(SCHEMAS).join(", ")}`,
+            pretty,
+          );
+        out(
+          z.toJSONSchema(schema, { target: "draft-2020-12", reused: "ref" }),
+          pretty,
+        );
       } else {
         out({ ok: true, schemas: Object.keys(SCHEMAS) }, pretty);
       }

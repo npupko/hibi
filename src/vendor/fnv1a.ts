@@ -10,7 +10,8 @@ const OFFSET_BASIS = 0x811c9dc5;
 const PRIME = 0x01000193;
 
 export function fnv1a32(input: string | Uint8Array): number {
-  const bytes = typeof input === "string" ? new TextEncoder().encode(input) : input;
+  const bytes =
+    typeof input === "string" ? new TextEncoder().encode(input) : input;
   let hash = OFFSET_BASIS;
   for (let i = 0; i < bytes.length; i++) {
     hash ^= bytes[i]!;

@@ -1,13 +1,17 @@
-import { describe, test, expect, afterEach, beforeAll } from "bun:test";
-import { join } from "node:path";
+import { afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { access } from "node:fs/promises";
-import { runCheck } from "../src/engine/check.ts";
-import { archiveDocument } from "../src/engine/archive.ts";
-import { getFrontmatterStatus, setFrontmatterStatus, splitFrontmatter } from "../src/banner/frontmatter.ts";
+import { join } from "node:path";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
+import {
+  getFrontmatterStatus,
+  setFrontmatterStatus,
+  splitFrontmatter,
+} from "../src/banner/frontmatter.ts";
+import { buildGlobAnchor } from "../src/engine/anchor.ts";
+import { archiveDocument } from "../src/engine/archive.ts";
+import { runCheck } from "../src/engine/check.ts";
 import { queryByPath } from "../src/engine/query.ts";
 import { recordClaim } from "../src/engine/record.ts";
-import { buildGlobAnchor } from "../src/engine/anchor.ts";
 import { makeRepo, record, type TempRepo } from "./helpers.ts";
 
 let analyzer: Awaited<ReturnType<typeof getAnalyzer>>;
@@ -59,7 +63,12 @@ describe("optional markdown frontmatter status (§8)", () => {
     const r = await repo();
     await r.write("src/a.ts", "export const A = 1;\n");
     await r.write("doc.md", "---\ntitle: Doc\n---\n\n# Doc\n");
-    await record(r, { doc: "doc.md", text: "A is 1", file: "src/a.ts", quote: "A = 1" });
+    await record(r, {
+      doc: "doc.md",
+      text: "A is 1",
+      file: "src/a.ts",
+      quote: "A = 1",
+    });
     await r.write("src/a.ts", "// gone\n");
     const rep = await runCheck(r.store, { ast: analyzer, write: true });
     const docReport = rep.documents.find((d) => d.path === "doc.md")!;
@@ -76,7 +85,9 @@ describe("archival remediation (§6)", () => {
     expect(result.document.lifecycle).toBe("archived");
     expect(result.archivedTo).toBe(join("archive", "old.md"));
     // Original content preserved in the archive.
-    expect(await r.read(join("archive", "old.md"))).toContain("Original content.");
+    expect(await r.read(join("archive", "old.md"))).toContain(
+      "Original content.",
+    );
     // Tombstone at the original path, redirecting to the successor.
     const tomb = await r.read("old.md");
     expect(tomb).toContain("# Archived");
@@ -91,8 +102,13 @@ describe("coarse glob blast-radius in query (§4, §9)", () => {
     const r = await repo();
     // Record a coarse glob claim directly.
     await recordClaim(r.store, null, {
-      docPath: "arch.md", text: "Decisions about the auth module", authoredTrust: "assumed",
-      owner: "x", ref: "r", codeFile: "src/auth/**", coarse: true,
+      docPath: "arch.md",
+      text: "Decisions about the auth module",
+      authoredTrust: "assumed",
+      owner: "x",
+      ref: "r",
+      codeFile: "src/auth/**",
+      coarse: true,
     });
     // Replace the path anchor with a glob anchor for the test.
     const a = (await r.store.allAssertions())[0]!;
@@ -109,10 +125,18 @@ describe("moved-only verdict yields exit code 3 end-to-end (§9)", () => {
   test("a position shift with intact content grades moved → exit 3", async () => {
     const r = await repo();
     await r.write("src/a.ts", "export const MAX = 5;\n");
-    await record(r, { doc: "doc.md", text: "Max is 5", file: "src/a.ts", quote: "MAX = 5" });
+    await record(r, {
+      doc: "doc.md",
+      text: "Max is 5",
+      file: "src/a.ts",
+      quote: "MAX = 5",
+    });
     // Prepend a large intact prologue so the region relocates far (moved), but
     // nothing about the anchored construct changes.
-    await r.write("src/a.ts", "// prologue line\n".repeat(3) + "export const MAX = 5;\n");
+    await r.write(
+      "src/a.ts",
+      "// prologue line\n".repeat(3) + "export const MAX = 5;\n",
+    );
     const rep = await runCheck(r.store, { ast: analyzer });
     expect(rep.verdicts[0]!.state).toBe("moved");
     expect(rep.exitCode).toBe(3);

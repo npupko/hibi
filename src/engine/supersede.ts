@@ -5,11 +5,15 @@
  *   - `amends` (partial)   → named Propositions flip; old lifecycle → `amended`.
  * An old document can legitimately receive both supersession and code-drift.
  */
-import type { ClaimStore } from "../store/store.ts";
+
 import type { Document, Edge } from "../core/model.ts";
+import type { ClaimStore } from "../store/store.ts";
 import { documentIdForPath } from "./record.ts";
 
-async function upsertDocument(store: ClaimStore, path: string): Promise<Document> {
+async function upsertDocument(
+  store: ClaimStore,
+  path: string,
+): Promise<Document> {
   const id = documentIdForPath(path);
   let doc = await store.getDocument(id);
   if (!doc) {
@@ -38,21 +42,43 @@ export interface SupersedeResult {
   oldDoc: Document;
 }
 
-export async function supersede(store: ClaimStore, input: SupersedeInput): Promise<SupersedeResult> {
+export async function supersede(
+  store: ClaimStore,
+  input: SupersedeInput,
+): Promise<SupersedeResult> {
   const newDoc = await upsertDocument(store, input.newDocPath);
   const oldDoc = await upsertDocument(store, input.oldDocPath);
 
   if (input.type === "supersedes") {
-    const forward: Edge = { type: "supersedes", target: oldDoc.id, derived: false };
-    const reverse: Edge = { type: "superseded-by", source: newDoc.id, derived: true };
+    const forward: Edge = {
+      type: "supersedes",
+      target: oldDoc.id,
+      derived: false,
+    };
+    const reverse: Edge = {
+      type: "superseded-by",
+      source: newDoc.id,
+      derived: true,
+    };
     if (!hasEdge(newDoc, forward)) newDoc.edges.push(forward);
     if (!hasEdge(oldDoc, reverse)) oldDoc.edges.push(reverse);
     oldDoc.lifecycle = "superseded";
   } else {
     const props = input.propositions ?? [];
-    if (props.length === 0) throw new Error("`amends` requires one or more proposition ids.");
-    const forward: Edge = { type: "amends", target: oldDoc.id, propositions: props, derived: false };
-    const reverse: Edge = { type: "amended-by", source: newDoc.id, propositions: props, derived: true };
+    if (props.length === 0)
+      throw new Error("`amends` requires one or more proposition ids.");
+    const forward: Edge = {
+      type: "amends",
+      target: oldDoc.id,
+      propositions: props,
+      derived: false,
+    };
+    const reverse: Edge = {
+      type: "amended-by",
+      source: newDoc.id,
+      propositions: props,
+      derived: true,
+    };
     if (!hasEdge(newDoc, forward)) newDoc.edges.push(forward);
     if (!hasEdge(oldDoc, reverse)) oldDoc.edges.push(reverse);
     // The doc stays in the read path; only the named propositions flip.
@@ -65,7 +91,10 @@ export async function supersede(store: ClaimStore, input: SupersedeInput): Promi
 }
 
 /** Mark a document retracted — the author withdrew it (§10). */
-export async function retract(store: ClaimStore, docPath: string): Promise<Document> {
+export async function retract(
+  store: ClaimStore,
+  docPath: string,
+): Promise<Document> {
   const doc = await upsertDocument(store, docPath);
   doc.lifecycle = "retracted";
   await store.putDocument(doc);
@@ -75,6 +104,7 @@ export async function retract(store: ClaimStore, docPath: string): Promise<Docum
 /** Set of proposition ids amended within a document (from derived edges). */
 export function amendedPropositions(doc: Document): Set<string> {
   const out = new Set<string>();
-  for (const e of doc.edges) if (e.type === "amended-by") for (const p of e.propositions) out.add(p);
+  for (const e of doc.edges)
+    if (e.type === "amended-by") for (const p of e.propositions) out.add(p);
   return out;
 }

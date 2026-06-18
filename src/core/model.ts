@@ -21,7 +21,13 @@ export const AuthoredTrust = z.enum(["verified", "inferred", "assumed"]);
 export type AuthoredTrust = z.infer<typeof AuthoredTrust>;
 
 /** Computed state — set by the engine, never authored, ephemeral. */
-export const ComputedState = z.enum(["fresh", "moved", "stale", "ghost", "expired"]);
+export const ComputedState = z.enum([
+  "fresh",
+  "moved",
+  "stale",
+  "ghost",
+  "expired",
+]);
 export type ComputedState = z.infer<typeof ComputedState>;
 
 /** Document lifecycle — set by the engine from edges/actions. */
@@ -93,7 +99,12 @@ export const GlobSelector = z.object({
 });
 
 /** The precise selector kinds — these can be graded stale. */
-export const PRECISE_SELECTOR_KINDS = ["text-quote", "text-position", "ast-node", "value"] as const;
+export const PRECISE_SELECTOR_KINDS = [
+  "text-quote",
+  "text-position",
+  "ast-node",
+  "value",
+] as const;
 /** The coarse selector kinds — navigational; never reported as stale (§11.3). */
 export const COARSE_SELECTOR_KINDS = ["path", "glob"] as const;
 
