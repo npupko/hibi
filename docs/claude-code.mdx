@@ -1,0 +1,54 @@
+---
+title: "Claude Code skill"
+description: "Install the official Agent Skill so coding agents use Hibi correctly."
+---
+
+Hibi ships a [Claude Code](https://claude.com/claude-code) **Agent Skill** that
+teaches coding agents to use it: set up the store in a fresh repo, record
+well-anchored claims, run the everyday `check` / `diff` / `query` / `status` loops,
+read verdicts and exit codes, respond to flagged claims, wire CI, and manage doc
+lifecycle. The Hibi repository doubles as a [plugin
+marketplace](https://docs.claude.com/en/docs/claude-code/plugin-marketplaces), so
+installing it takes two commands.
+
+## Install
+
+<Steps>
+  <Step title="Add the marketplace">
+    ```
+    /plugin marketplace add npupko/hibi
+    ```
+  </Step>
+  <Step title="Install the plugin">
+    ```
+    /plugin install hibi-cli@hibi
+    ```
+  </Step>
+</Steps>
+
+Run `/plugin marketplace update` after the repo changes to pull the latest version.
+
+<Note>
+  The skill guides the agent; it does not bundle the `hibi` binary. The agent
+  installs Hibi the usual way (prebuilt binary or `bun add @npupko/hibi`) while it
+  follows the skill.
+</Note>
+
+## What the skill does
+
+Claude loads it when you ask it to work with Hibi, even if you don't name the tool
+but describe the problem: docs drifting from code, a stale `README` or `AGENTS.md`,
+"keep the docs honest". You can also run it on demand as `/hibi-cli:hibi`. It covers:
+
+- **Bootstrapping:** install, `hibi init`, tracking `.claims/`, seeding claims.
+- **Recording claims well:** anchoring on the token that backs a claim, so a real
+  change trips it while a reformat does not.
+- **The everyday loops:** `query` before editing, `diff --since` after, `check` as a
+  gate, `status` as a read-time check.
+- **Responding to drift:** re-verifying a flagged claim instead of silencing it, and
+  retiring an obsolete claim without leaving the store inconsistent.
+- **Lifecycle:** `supersede`, `amends`, `retract`, `archive`.
+
+<Card title="Plugin source" icon="github" href="https://github.com/npupko/hibi/tree/main/plugins/hibi-cli">
+  `SKILL.md`, the CLI reference it loads on demand, and a drop-in CI workflow asset.
+</Card>

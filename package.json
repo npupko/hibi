@@ -8,17 +8,19 @@
     "type": "git",
     "url": "git+https://github.com/npupko/hibi.git"
   },
-  "homepage": "https://github.com/npupko/hibi#readme",
+  "homepage": "https://npupko.mintlify.app",
   "bugs": {
     "url": "https://github.com/npupko/hibi/issues"
   },
   "keywords": [
-    "cli",
     "documentation",
+    "docs-drift",
+    "documentation-testing",
     "ai-agents",
+    "claude-code",
+    "cli",
     "tree-sitter",
-    "bun",
-    "docs-drift"
+    "bun"
   ],
   "type": "module",
   "bin": {

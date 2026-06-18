@@ -62,6 +62,31 @@ bun run build:schemas
 CI fails if `schemas/` is stale, so regenerating is not optional. Commit the
 updated `schemas/*.json` alongside your model change.
 
+## Documentation
+
+The docs site lives in [`docs/`](docs) and is built with
+**[Mintlify](https://mintlify.com)**. Pages are `.mdx`; the site is configured by
+[`docs/docs.json`](docs/docs.json) (navigation, theme, metadata).
+
+Preview locally with the Mintlify CLI. Run it from inside `docs/`, where
+`docs.json` lives:
+
+```sh
+npm i -g mint          # the Mintlify CLI (requires Node ≥ 20.17; the only Node dep in this repo)
+cd docs
+mint dev               # live preview at http://localhost:3000
+mint broken-links      # validate internal links before pushing
+```
+
+The published site deploys through the **Mintlify GitHub App**: once the app is
+connected in the Mintlify dashboard, a push to the default branch redeploys. Because
+the docs live in a subdirectory, set the dashboard's *Git Settings → content
+directory* to `docs` (no trailing slash).
+
+When adding a page, create the `.mdx` file under `docs/` and add its slug to a group
+in `docs/docs.json` → `navigation.groups`. Do not name a navigation entry `api`. The
+`/api` path is reserved by Mintlify and 404s in production.
+
 ## Commit conventions
 
 Hibi uses **[Conventional Commits](https://www.conventionalcommits.org/)**, and

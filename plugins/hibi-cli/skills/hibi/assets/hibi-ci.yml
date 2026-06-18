@@ -1,0 +1,31 @@
+# Drop this into .github/workflows/hibi.yml
+#
+# Fails the build when a documentation claim has drifted from the code it
+# describes. Uses the official hibi composite action (it installs Bun and runs
+# `hibi check`, falling back to `bunx hibi` when no binary is on PATH).
+#
+# Pin to a released tag (recommended) or a commit SHA for supply-chain safety.
+
+name: hibi
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # needed if you switch `command` to `diff` (it compares refs)
+
+      - name: Check documentation claims
+        uses: npupko/hibi@v0
+        with:
+          command: check # or: diff
+          fail-on: suspect # suspect | moved | tamper | never
+          # since: origin/${{ github.base_ref }}   # only for `command: diff`
+          # write: "false"                          # set true to stamp banners (commit them separately)
+          # working-directory: "."                  # subdir holding the .claims store

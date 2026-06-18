@@ -1,0 +1,14 @@
+{
+  "name": "hibi",
+  "owner": {
+    "name": "Nick Pupko",
+    "email": "lazynick7@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "hibi-cli",
+      "source": "./plugins/hibi-cli",
+      "description": "Teaches agents to set up and operate the hibi CLI: record code-anchored documentation claims, run check/diff/query/status, respond to drift (stale/ghost/moved/expired), wire CI, and manage doc lifecycle."
+    }
+  ]
+}

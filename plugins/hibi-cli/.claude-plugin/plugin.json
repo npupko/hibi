@@ -1,0 +1,12 @@
+{
+  "name": "hibi-cli",
+  "description": "Set up and operate the hibi CLI — record code-anchored documentation claims, run check/diff/query/status, respond to drift, wire CI, and manage doc lifecycle. Bundles the `hibi` Agent Skill.",
+  "author": {
+    "name": "Nick Pupko",
+    "email": "lazynick7@gmail.com"
+  },
+  "homepage": "https://github.com/npupko/hibi#readme",
+  "repository": "https://github.com/npupko/hibi",
+  "license": "MIT",
+  "keywords": ["hibi", "documentation", "docs-drift", "ai-agents", "skill"]
+}

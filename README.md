@@ -7,6 +7,8 @@
 
 <p align="center"><em>Catch documentation that no longer matches your code.</em></p>
 
+<p align="center"><a href="https://npupko.mintlify.app"><strong>Documentation</strong></a></p>
+
 <p align="center">
   <a href="https://github.com/npupko/hibi/actions/workflows/ci.yml"><img src="https://github.com/npupko/hibi/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.npmjs.com/package/@npupko/hibi"><img src="https://img.shields.io/npm/v/@npupko/hibi.svg" alt="npm version"></a>
@@ -90,6 +92,21 @@ Hibi finds drift through an out-of-process resolver protocol (JSONL-RPC over std
     { "name": "semantic-advisor", "command": "bun", "args": ["run", "resolvers/semantic-advisor.ts"] }
 ] }
 ```
+
+## Use it with Claude Code
+
+Hibi ships a [Claude Code](https://claude.com/claude-code) skill that teaches coding
+agents to use it: set up the store in a fresh repo, record well-anchored claims, run
+the check/diff/query loops, respond to flagged claims, and wire CI. The repo doubles
+as a plugin marketplace, so installing takes two commands:
+
+```
+/plugin marketplace add npupko/hibi
+/plugin install hibi-cli@hibi
+```
+
+Claude loads the skill when you ask it to work with hibi. You can also invoke it as
+`/hibi-cli:hibi`. The source lives in [`plugins/hibi-cli`](plugins/hibi-cli).
 
 ## Develop
 
