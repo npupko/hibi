@@ -64,6 +64,34 @@ describe("exit-code contract (§9)", () => {
       }),
     ).toBe(2);
   });
+  test("--fail-on never suppresses suspect and moved (exit 0)", () => {
+    expect(
+      computeExitCode({
+        sawSuspect: true,
+        sawMoved: true,
+        sawTamper: true,
+        failOn: "never",
+      }),
+    ).toBe(0);
+  });
+  test("--fail-on tamper fails only on tampering", () => {
+    expect(
+      computeExitCode({
+        sawSuspect: true,
+        sawMoved: true,
+        sawTamper: false,
+        failOn: "tamper",
+      }),
+    ).toBe(0);
+    expect(
+      computeExitCode({
+        sawSuspect: false,
+        sawMoved: false,
+        sawTamper: true,
+        failOn: "tamper",
+      }),
+    ).toBe(2);
+  });
 });
 
 describe("end-to-end drift detection", () => {
@@ -97,6 +125,22 @@ describe("end-to-end drift detection", () => {
     const rep = await check(r);
     expect(rep.verdicts[0]?.state).toBe("stale");
     expect(rep.exitCode).toBe(2);
+  });
+
+  test("--fail-on never reports a stale claim without failing (exit 0)", async () => {
+    const r = await repo();
+    await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+    await record(r, {
+      doc: "README.md",
+      text: "Capped at 5",
+      file: "src/retry.ts",
+      quote: "MAX_ATTEMPTS = 5",
+      trust: "verified",
+    });
+    await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
+    const rep = await check(r, { failOn: "never" });
+    expect(rep.verdicts[0]?.state).toBe("stale");
+    expect(rep.exitCode).toBe(0);
   });
 
   test("a deleted anchored file → ghost", async () => {

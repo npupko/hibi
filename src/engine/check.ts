@@ -299,17 +299,23 @@ export async function runCheck(
   };
 }
 
-/** Exit-code contract (§9): 0 clean · 2 suspect · 3 moved-only · 1 op error. */
+/**
+ * Exit-code contract (§9): 0 clean · 2 suspect · 3 moved-only · 1 op error.
+ *
+ * `--fail-on` relaxes (or tightens) the gate before any verdict is consulted:
+ * `never` always passes, `tamper` fails only on a hand-edited banner, `moved`
+ * escalates re-anchorable warnings to a failure. Strictness is decided first so
+ * the looser modes can suppress a suspect/moved result entirely.
+ */
 export function computeExitCode(s: {
   sawSuspect: boolean;
   sawMoved: boolean;
   sawTamper: boolean;
   failOn: FailOn;
 }): number {
-  if (s.failOn === "tamper" && s.sawTamper) return 2;
+  if (s.failOn === "never") return 0;
+  if (s.failOn === "tamper") return s.sawTamper ? 2 : 0;
   if (s.sawSuspect) return 2;
-  if (s.sawMoved) {
-    return s.failOn === "moved" ? 2 : 3;
-  }
+  if (s.sawMoved) return s.failOn === "moved" ? 2 : 3;
   return 0;
 }
