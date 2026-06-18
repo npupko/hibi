@@ -28,6 +28,10 @@
         "pages": ["concepts", "cli-reference", "resolvers"]
       },
       {
+        "group": "Integrations",
+        "pages": ["claude-code"]
+      },
+      {
         "group": "SDKs",
         "pages": ["sdks"]
       }
