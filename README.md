@@ -113,3 +113,4 @@ Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for
 ---
 
 For the data model, verdict algorithm, and design rationale, read [`docs/PRD.md`](docs/PRD.md).
+trigger release
