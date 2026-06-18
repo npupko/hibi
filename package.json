@@ -2,6 +2,8 @@
   "name": "hibi",
   "version": "0.1.0",
   "description": "A deterministic, agent-facing CLI that keeps documentation and AI-agent-instruction files from silently going stale.",
+  "license": "MIT",
+  "author": "Nick Pupko <lazynick7@gmail.com>",
   "type": "module",
   "module": "src/index.ts",
   "bin": {
