@@ -8,9 +8,7 @@ import { isAbsolute, join } from "node:path";
  */
 import { parseArgs } from "node:util";
 import pkg from "../../package.json" with { type: "json" };
-import type { AstAnalyzer } from "../algo/resolve.ts";
 import type { AuthoredTrust, Region } from "../core/model.ts";
-import type { AnchorAnalyzer } from "../engine/anchor.ts";
 import { archiveDocument } from "../engine/archive.ts";
 import { type FailOn, runCheck } from "../engine/check.ts";
 import { queryByPath } from "../engine/query.ts";
@@ -21,7 +19,7 @@ import {
 } from "../engine/record.ts";
 import { retract, supersede } from "../engine/supersede.ts";
 import { blameAuthor, changedFiles, currentRef } from "../git/git.ts";
-import { DriftResolver, ResolverRegistry } from "../resolver/registry.ts";
+import { buildRegistry, loadAnalyzer } from "../index.ts";
 import { ClaimStore } from "../store/store.ts";
 
 const EXIT_OPERATIONAL_ERROR = 1;
@@ -46,32 +44,6 @@ async function exists(p: string): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-/** Lazily load the tree-sitter analyzer (Tier-2). Tier-1 works without it. */
-let analyzerPromise:
-  | Promise<(AstAnalyzer & AnchorAnalyzer) | undefined>
-  | undefined;
-async function loadAnalyzer(): Promise<
-  (AstAnalyzer & AnchorAnalyzer) | undefined
-> {
-  if (!analyzerPromise) {
-    analyzerPromise = import("../ast/analyzer.ts")
-      .then((m) => m.getAnalyzer())
-      .catch(() => undefined);
-  }
-  return analyzerPromise;
-}
-
-/** Build the resolver registry: built-in drift + manifest-gated externals (§7). */
-async function buildRegistry(
-  store: ClaimStore,
-  analyzer: AstAnalyzer | undefined,
-): Promise<ResolverRegistry> {
-  const registry = new ResolverRegistry();
-  registry.register(new DriftResolver(analyzer));
-  await registry.loadFromManifest(store);
-  return registry;
 }
 
 async function main(argv: string[]): Promise<number> {
