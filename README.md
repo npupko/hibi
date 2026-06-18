@@ -5,30 +5,11 @@
   </picture>
 </p>
 
-<p align="center"><em>hibi (日々) — "day after day." Documentation kept honest continuously, so it never quietly goes stale.</em></p>
+<p align="center"><em>Catch documentation that no longer matches your code.</em></p>
 
-# Hibi 日々
+Hibi tracks **claims**: sentences in your docs and AI-agent instructions that assert how the code behaves. You anchor each claim to the code it describes. When that code changes, `hibi check` flags the claim and can stamp a status banner into the doc, so no reader and no agent acts on a page that has fallen out of sync with the source.
 
-A **deterministic, agent-facing CLI** (with a small reusable library core) that keeps a codebase's
-documentation and AI-agent-instruction files from silently going stale — so automated agents never
-read a **superseded or outdated** document and act on it as if it were current.
-
-It tracks **claims** (assertions anchored to code), detects when they **drift** (the code changed) or
-are **superseded** (a newer doc amended/replaced them), and **stamps lifecycle status into the
-documents themselves** so no consumer can read a stale one as current.
-
-> Full design rationale, data model, and normative algorithms: [`docs/PRD.md`](docs/PRD.md).
-
-## Why it's trustworthy
-
-- **Determinism is the product.** No model in the engine loop. The optional semantic tier *advises*;
-  it never decides (§7.4, §11.1).
-- **Suspect, not false.** A verdict means "the evidence moved — re-verify," never "the claim is false."
-- **Precision over recall.** A tight, trustworthy suspect set: coarse anchors are never stale;
-  grading uses thresholds with cross-selector corroboration; selector disagreement → re-verify, not
-  hard-stale; a drifted claim is **never** reported `fresh`.
-- **Universal by construction.** Documents are treated as text — any format works, no per-format parser.
-- **Offline & shallow-clone safe.** The anchor *is* the baseline; `check` never reads git history.
+Run it in CI, in a git hook, or as a pre-edit lookup an agent makes before it trusts a doc.
 
 ## Install
 
@@ -40,27 +21,27 @@ curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh
 bun add hibi
 ```
 
-## Quickstart
+## Quick start
 
 ```sh
 hibi init                       # create .claims/ (with a per-repo banner nonce)
 
-# Record a claim: "Retries are capped at 5 attempts" anchored to the constant in code
+# Record a claim and anchor it to the constant that backs it
 hibi record \
   --doc README.md --text "Retries are capped at 5 attempts" \
   --file src/retry.ts --quote "MAX_ATTEMPTS = 5" --trust verified --owner alice
 
-hibi check                      # verify all claims (exit 0 clean / 2 suspect / 3 moved)
-hibi check --write              # also stamp status banners into affected documents
-hibi diff --since origin/main   # the write-time loop: what did this change invalidate?
-hibi query --path src/retry.ts  # before-edit: what claims cover this file?
+hibi check                      # verify every claim
+hibi check --write              # verify, and stamp status banners into affected docs
+hibi diff --since origin/main   # what did this change invalidate?
+hibi query --path src/retry.ts  # before editing: which claims cover this file?
 hibi supersede --new v2.md --old v1.md --type supersedes
-hibi status --doc README.md     # read-time gate: "is this current?"
+hibi status --doc README.md     # is this doc still current?
 ```
 
-JSON is the default output (the consumer is a machine); add `--pretty` for humans.
+Output is JSON by default. Add `--pretty` for human reading.
 
-### Exit codes (§9)
+### Exit codes
 
 | code | meaning |
 |------|---------|
@@ -69,38 +50,33 @@ JSON is the default output (the consumer is a machine); add `--pretty` for human
 | `3`  | `moved`-only (re-anchorable warning) |
 | `1`  | operational error |
 
-Strictness is tunable with `--fail-on suspect|moved|tamper|never`.
+Tune strictness with `--fail-on suspect|moved|tamper|never`.
 
-## How it works (the short version)
+## How it works
 
-A claim is a **Proposition** (timeless meaning) plus **Assertions** (verification instances). Each
-Assertion carries a composite **Anchor** — a bundle of redundant selectors spanning the precision
-spectrum:
+Each claim carries several redundant anchors to the code it describes:
 
-- `text-quote` (W3C TextQuoteSelector — fuzzy, survives moves),
-- `text-position` (a cheap hint),
-- `ast-node` (tree-sitter, snapped to the enclosing named node — survives reformatting),
-- `value` (an extracted literal, so a `5 → 50` change trips even when nothing else moves),
-- `path` / `glob` (coarse — navigation & blast-radius only; **never** reported stale).
+- the quoted code text, matched fuzzily so it survives small edits and moves;
+- its byte position, as a cheap hint;
+- the enclosing syntax node, parsed with tree-sitter, so reformatting alone does not trip it;
+- any literal value it mentions, so changing `MAX_ATTEMPTS = 5` to `50` flags the claim even when nothing else moves;
+- an optional `path` or `glob` for coarse coverage, used to size blast radius.
 
-On `check`, the engine re-localizes each selector against the **current working tree** (the Anchor is
-its own baseline — git is never on the verdict path), grades drift with thresholds, and **fuses
-confidence from how many selectors agree**. Verdicts are recomputed live, never stored.
+On `hibi check`, Hibi re-finds each anchor in your current files and grades how far it moved. When the anchors agree, you get a confident verdict; when they disagree, Hibi asks you to re-verify instead of guessing. Verdicts are computed live and kept out of the store.
 
-Status is made impossible to miss via a **universal, sentinel-delimited, idempotent banner** stamped
-into the document itself (nonce-guarded, FNV-1a-checksummed, byte-stable, restores pristine bytes on
-clear) — plus an optional machine-readable frontmatter status for markdown.
+## What you can rely on
 
-## Extending it (any language)
+- **Deterministic.** No model runs in the check loop, so the same working tree yields the same verdicts every time. The optional semantic resolver advises and nothing more.
+- **A flag means re-verify.** Hibi reports that the evidence under a claim moved. It never declares a doc wrong on its own.
+- **Any file format.** Hibi treats docs as text, so Markdown, plain text, AsciiDoc, or anything else works without a per-format parser.
+- **Offline and shallow-clone safe.** The anchor is its own baseline, so `check` reads your files, never git history.
 
-The single extension seam is an **out-of-process resolver protocol** — JSONL-RPC over stdio. A
-resolver declares the anchor `kind`s it handles and answers `describe` / `resolve`. Built-in
-code-anchor drift is itself a resolver behind this contract; third parties add more, in any language,
-gated by a **default-deny manifest** (`.claims/resolvers.json`). Thin SDKs ship for
-[TypeScript](sdk/ts) and [Rust](sdk/rust).
+## Extend it
+
+Hibi finds drift through an out-of-process resolver protocol (JSONL-RPC over stdio). The built-in code-anchor resolver speaks the same contract, so you can add your own in any language. SDKs ship for [TypeScript](sdk/ts) and [Rust](sdk/rust). Resolvers stay off until you list them in `.claims/resolvers.json`:
 
 ```jsonc
-// .claims/resolvers.json — opt in to the Tier-3 semantic advisor (advises, never gates)
+// .claims/resolvers.json: opt in to the optional semantic advisor (it advises, it does not gate)
 { "resolvers": [
     { "name": "semantic-advisor", "command": "bun", "args": ["run", "resolvers/semantic-advisor.ts"] }
 ] }
@@ -112,8 +88,11 @@ gated by a **default-deny manifest** (`.claims/resolvers.json`). Thin SDKs ship 
 bun install
 bun run build:grammars      # copy official tree-sitter wasm into grammars/
 bun test                    # the full suite
-bun run build               # single-file executable → dist/hibi
+bun run build               # single-file executable at dist/hibi
 ```
 
-The canonical data model lives once in Zod (`src/core/model.ts`); JSON Schemas (`schemas/*.v1.json`)
-and SDK types are generated from it (`bun run build:schemas`).
+The data model lives once in Zod (`src/core/model.ts`). The JSON Schemas (`schemas/*.v1.json`) and SDK types come from it via `bun run build:schemas`.
+
+---
+
+For the data model, verdict algorithm, and design rationale, read [`docs/PRD.md`](docs/PRD.md).
