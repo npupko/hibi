@@ -1,5 +1,5 @@
 {
-  "name": "hibi",
+  "name": "@npupko/hibi",
   "version": "0.1.0",
   "description": "A deterministic, agent-facing CLI that keeps documentation and AI-agent-instruction files from silently going stale.",
   "license": "MIT",

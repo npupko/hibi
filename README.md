@@ -9,7 +9,7 @@
 
 <p align="center">
   <a href="https://github.com/npupko/hibi/actions/workflows/ci.yml"><img src="https://github.com/npupko/hibi/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://www.npmjs.com/package/hibi"><img src="https://img.shields.io/npm/v/hibi.svg" alt="npm version"></a>
+  <a href="https://www.npmjs.com/package/@npupko/hibi"><img src="https://img.shields.io/npm/v/@npupko/hibi.svg" alt="npm version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
   <!-- Uncomment once the first OpenSSF Scorecard run has published results:
   <a href="https://securityscorecards.dev/viewer/?uri=github.com/npupko/hibi"><img src="https://api.securityscorecards.dev/projects/github.com/npupko/hibi/badge" alt="OpenSSF Scorecard"></a>
@@ -27,7 +27,7 @@ Run it in CI, in a git hook, or as a pre-edit lookup an agent makes before it tr
 curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | sh
 
 # Or, in a Bun/JS project
-bun add hibi
+bun add @npupko/hibi
 ```
 
 ## Quick start
