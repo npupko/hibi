@@ -13,16 +13,12 @@
     "url": "https://github.com/npupko/hibi/issues"
   },
   "keywords": [
-    "cli",
     "documentation",
-    "docs",
     "docs-drift",
-    "stale-docs",
     "documentation-testing",
     "ai-agents",
-    "agents",
-    "llm",
     "claude-code",
+    "cli",
     "tree-sitter",
     "bun"
   ],
