@@ -4,10 +4,38 @@
   "description": "A deterministic, agent-facing CLI that keeps documentation and AI-agent-instruction files from silently going stale.",
   "license": "MIT",
   "author": "Nick Pupko <lazynick7@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/npupko/hibi.git"
+  },
+  "homepage": "https://github.com/npupko/hibi#readme",
+  "bugs": {
+    "url": "https://github.com/npupko/hibi/issues"
+  },
+  "keywords": [
+    "cli",
+    "documentation",
+    "ai-agents",
+    "tree-sitter",
+    "bun",
+    "docs-drift"
+  ],
   "type": "module",
   "module": "src/index.ts",
   "bin": {
     "hibi": "./src/cli/index.ts"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "files": [
+    "src",
+    "grammars",
+    "schemas"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
   },
   "scripts": {
     "build:grammars": "bun run scripts/copy-grammars.ts",

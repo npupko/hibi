@@ -1,10 +1,18 @@
 name: Release
 
-# Prebuilt single-file executables for the platform matrix (§12).
+# Prebuilt single-file executables for the platform matrix (§12), plus the
+# npm package. Driven by the vX.Y.Z tags release-please pushes.
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
@@ -20,8 +28,8 @@ jobs:
           - { os: macos-latest, target: darwin-arm64, bun: bun-darwin-aarch64 }
           - { os: windows-latest, target: windows-x64, bun: bun-windows-x64 }
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
       - run: bun install --frozen-lockfile
       - run: bun run build:grammars && bun run build:schemas
       - name: Compile
@@ -29,16 +37,62 @@ jobs:
       - name: Smoke test (host only)
         if: matrix.target == 'linux-x64' || matrix.target == 'darwin-arm64'
         run: ./dist/hibi-${{ matrix.target }} version
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: hibi-${{ matrix.target }}
           path: dist/hibi-${{ matrix.target }}*
+          retention-days: 1
+
+  release:
+    name: Attach binaries to release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create/update the GitHub Release and upload assets
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Generate checksums
+        working-directory: dist
+        run: |
+          sha256sum hibi-* > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Upload to release
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        with:
+          files: |
+            dist/hibi-*
+            dist/SHA256SUMS.txt
+          fail_on_unmatched_files: true
+
+  publish-npm:
+    name: Publish to npm
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC for npm Trusted Publishing + provenance
+      contents: read
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+      - run: npm install -g npm@latest # ensure >= 11.5.1 for OIDC Trusted Publishing
+      - run: bun install --frozen-lockfile
+      - run: bun run build:grammars && bun run build:schemas
+      - run: npm publish # access + provenance via publishConfig; OIDC, no token
 
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
       - run: bun install --frozen-lockfile
       - run: bun run build:grammars
       - run: bun test
