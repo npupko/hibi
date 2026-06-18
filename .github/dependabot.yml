@@ -1,0 +1,31 @@
+version: 2
+updates:
+  # Root package.json + bun.lock (Bun's text lockfile is read via the npm ecosystem).
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      npm-minor-patch:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
+
+  # Workflows + the root composite action.yml; keeps the SHA pins fresh.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      actions-minor-patch:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
+
+  # Rust SDK crate.
+  - package-ecosystem: "cargo"
+    directory: "/sdk/rust"
+    schedule:
+      interval: "weekly"
+    groups:
+      cargo-minor-patch:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
