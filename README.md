@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/logo/hibi-wordmark-dark.png">
-    <img alt="Hibi 日々" src="assets/logo/hibi-wordmark-transparent.png" width="300">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/npupko/hibi/main/assets/logo/hibi-wordmark-dark.png">
+    <img alt="Hibi 日々" src="https://raw.githubusercontent.com/npupko/hibi/main/assets/logo/hibi-wordmark-transparent.png" width="300">
   </picture>
 </p>
 
