@@ -11,10 +11,15 @@ export function newId(prefix: string): string {
 }
 
 /**
- * Content fingerprint of a Proposition's text (§5). Identity is by normalized
+ * Content fingerprint of a Proposition (§5), the dedup unit. Computed from the
+ * **confirmed text** — the live document span read at record/confirm time, not
+ * the non-authoritative `textCache` (§4/§18-B). Identity is by normalized
  * content so two authors writing the same claim dedup, but it is *explicit
  * content*, not a similarity score. xxHash64 hex (§16).
  */
-export function propositionFingerprint(text: string): string {
-  return Bun.hash.xxHash64(normalizeText(text)).toString(16).padStart(16, "0");
+export function propositionFingerprint(confirmedText: string): string {
+  return Bun.hash
+    .xxHash64(normalizeText(confirmedText))
+    .toString(16)
+    .padStart(16, "0");
 }

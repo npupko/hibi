@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
+import type { ResolveFiles } from "../src/algo/resolve.ts";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
 import type { Assertion, Proposition } from "../src/core/model.ts";
-import { buildAnchor } from "../src/engine/anchor.ts";
+import { buildSelectorBundle, composeAnchor } from "../src/engine/anchor.ts";
 import { OutOfProcessResolver } from "../src/resolver/client.ts";
 import { loadManifest } from "../src/resolver/manifest.ts";
 import { LineFramer } from "../src/resolver/protocol.ts";
@@ -21,24 +22,48 @@ function advisorProc(timeoutMs = 8000) {
   });
 }
 
-const prop = (text: string): Proposition => ({
+// Two-axis model: the proposition carries `textCache` (non-authoritative copy of
+// the documented sentence); the semantic advisor classifies against it.
+const prop = (textCache: string): Proposition => ({
   id: "prop_x",
-  text,
+  textCache,
   authoredTrust: "inferred",
   fingerprint: "f",
 });
+
+// Bidirectional anchor (doc-side + code-side bundles) + enforcement + verifiers.
 const assertion = (): Assertion => ({
   id: "a",
   propositionId: "prop_x",
   documentId: "d",
   owner: "o",
   ref: "r",
-  anchor: {
-    file: "x.ts",
-    selectors: [{ kind: "text-quote", exact: "foo", prefix: "", suffix: "" }],
-  },
+  anchor: composeAnchor(
+    {
+      file: "doc.md",
+      selectors: [{ kind: "text-quote", exact: "foo", prefix: "", suffix: "" }],
+    },
+    [
+      {
+        file: "x.ts",
+        selectors: [
+          { kind: "text-quote", exact: "foo", prefix: "", suffix: "" },
+        ],
+      },
+    ],
+  ),
+  enforcement: "suggested",
+  verifiers: [],
   attrs: {},
 });
+
+/** ResolveFiles wire helper: a doc string + a code Map (per the new model). */
+function files(
+  doc: string | null,
+  code: Record<string, string | null> = {},
+): ResolveFiles {
+  return { doc, code: new Map(Object.entries(code)) };
+}
 
 describe("vendored line framing (§7.1)", () => {
   test("reassembles messages split across chunks", () => {
@@ -68,18 +93,18 @@ describe("out-of-process resolver over JSONL-RPC (§7.1)", () => {
     const proc = advisorProc();
     const behavioral = await proc.resolve({
       assertion: assertion(),
-      text: "code",
+      files: { doc: null, code: { "x.ts": "code" } },
       proposition: prop("Retries on timeout with exponential backoff"),
     });
     const structural = await proc.resolve({
       assertion: assertion(),
-      text: "code",
+      files: { doc: null, code: { "x.ts": "code" } },
       proposition: prop("MAX_ATTEMPTS equals 5"),
     });
     proc.dispose();
     expect(behavioral?.advisories.length).toBeGreaterThan(0);
     expect(behavioral?.advisories[0]?.message).toContain(
-      "re-verify semantically",
+      "semantic re-verification",
     );
     expect(structural?.advisories.length).toBe(0);
   });
@@ -92,10 +117,27 @@ describe("out-of-process resolver over JSONL-RPC (§7.1)", () => {
       timeoutMs: 250,
     });
     const start = Date.now();
-    const res = await proc.resolve({ assertion: assertion(), text: null });
+    const res = await proc.resolve({
+      assertion: assertion(),
+      files: { doc: null, code: {} },
+    });
     proc.dispose();
     expect(res).toBeNull();
     expect(Date.now() - start).toBeLessThan(3000);
+  });
+
+  test("verify round-trips: a resolver with no verify handler answers unknown-method → null", async () => {
+    const proc = advisorProc();
+    const res = await proc.verify({
+      assertion: assertion(),
+      verifier: { kind: "command", ref: "bun test" },
+      files: { doc: null, code: { "x.ts": "code" } },
+      changedEvidence: [],
+    });
+    proc.dispose();
+    // The semantic advisor declares no verifierKinds and omits verify(); the
+    // server replies with an unknown-method error, which degrades to null.
+    expect(res).toBeNull();
   });
 
   test("a resolver that crashes degrades to null without throwing", async () => {
@@ -119,7 +161,7 @@ describe("default-deny manifest (§7.1)", () => {
 });
 
 describe("registry: advisory resolvers advise but never gate (§7.4)", () => {
-  test("a fresh deterministic verdict keeps its state but gains advisories", async () => {
+  test("an unchanged deterministic verdict keeps its state but gains advisories", async () => {
     const analyzer = await getAnalyzer();
     const registry = new ResolverRegistry();
     registry.register(new DriftResolver(analyzer));
@@ -133,36 +175,57 @@ describe("registry: advisory resolvers advise but never gate (§7.4)", () => {
       kinds: desc.kinds,
       tier: desc.tier,
       advisory: true,
-      resolve: async (a, t, p) => {
-        const r = await proc.resolve({ assertion: a, text: t, proposition: p });
+      resolve: async (a, f, p) => {
+        const r = await proc.resolve({
+          assertion: a,
+          files: { doc: f.doc, code: Object.fromEntries(f.code) },
+          proposition: p,
+        });
         return { advisories: r?.advisories ?? [] };
       },
     });
 
-    const text = "export const MAX_ATTEMPTS = 5;\n";
-    const start = text.indexOf("MAX_ATTEMPTS = 5");
-    const anchor = buildAnchor(
+    // Code side: anchor the literal; doc side: anchor the documented sentence.
+    const code = "export const MAX_ATTEMPTS = 5;\n";
+    const cStart = code.indexOf("MAX_ATTEMPTS = 5");
+    const codeBundle = buildSelectorBundle(
       "retry.ts",
-      text,
-      { start, end: start + "MAX_ATTEMPTS = 5".length },
+      code,
+      { start: cStart, end: cStart + "MAX_ATTEMPTS = 5".length },
       { language: "typescript", analyzer },
     );
+    const docText = "Retries on timeout with backoff.\n";
+    const dStart = docText.indexOf("Retries on timeout with backoff");
+    const docBundle = buildSelectorBundle("guide.md", docText, {
+      start: dStart,
+      end: dStart + "Retries on timeout with backoff".length,
+    });
+
     const a: Assertion = {
       id: "a1",
       propositionId: "p1",
       documentId: "d1",
       owner: "o",
       ref: "r",
-      anchor,
+      anchor: composeAnchor(docBundle, [codeBundle]),
+      enforcement: "suggested",
+      verifiers: [],
       attrs: {},
     };
     const p: Proposition = prop("Retries on timeout with backoff");
 
-    const verdict = await registry.resolve(a, text, p);
+    const verdict = await registry.resolve(
+      a,
+      files(docText, { "retry.ts": code }),
+      p,
+    );
     proc.dispose();
     registry.dispose();
 
-    expect(verdict.state).toBe("fresh"); // advisory did NOT change the deterministic verdict
+    // The advisory did NOT change the deterministic verdict (code stays unchanged).
+    expect(verdict.code).toBe("unchanged");
+    expect(verdict.doc).toBe("unchanged");
+    expect(verdict.gates).toBe(false);
     expect(verdict.advisories.length).toBeGreaterThan(0);
     expect(verdict.advisories[0]?.resolver).toBe("semantic-advisor");
   });

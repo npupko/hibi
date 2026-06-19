@@ -8,6 +8,12 @@
     },
     "nonce": {
       "type": "string"
+    },
+    "instructionFiles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
   "required": [

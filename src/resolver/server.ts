@@ -9,11 +9,19 @@ import {
   LineFramer,
   type ResolveParams,
   type ResolveResult,
+  type VerifyParams,
+  type VerifyResult,
 } from "./protocol.ts";
 
 export interface ResolverHandler {
   describe(): DescribeResult;
   resolve(params: ResolveParams): ResolveResult | Promise<ResolveResult>;
+  /**
+   * Optional verifier dispatch (§7.4): given a `Verifier`, decide a
+   * `BehaviorState`. Resolvers that only judge structural AnchorState omit
+   * this — the server answers `verify` with an unknown-method error.
+   */
+  verify?(params: VerifyParams): VerifyResult | Promise<VerifyResult>;
 }
 
 /** Run the resolver loop over the given streams (defaults to process stdio). */
@@ -37,6 +45,9 @@ export function serveResolver(
           stdout.write(encodeLine({ id: req.id, result: handler.describe() }));
         } else if (req.method === "resolve") {
           const result = await handler.resolve(req.params as ResolveParams);
+          stdout.write(encodeLine({ id: req.id, result }));
+        } else if (req.method === "verify" && handler.verify) {
+          const result = await handler.verify(req.params as VerifyParams);
           stdout.write(encodeLine({ id: req.id, result }));
         } else {
           stdout.write(

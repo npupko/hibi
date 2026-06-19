@@ -7,7 +7,15 @@
  * Framing: one JSON object per line (`\n`-delimited) in each direction.
  */
 import * as z from "zod";
-import { Advisory, Assertion, Proposition, Verdict } from "../core/model.ts";
+import {
+  Advisory,
+  Assertion,
+  BehaviorState,
+  ChangedEvidence,
+  Proposition,
+  Verdict,
+  Verifier,
+} from "../core/model.ts";
 
 export const PROTOCOL_VERSION = "1" as const;
 
@@ -17,6 +25,8 @@ export const DescribeResult = z.object({
   version: z.string(),
   /** Anchor `kind`s this resolver declares (§7.2). */
   kinds: z.array(z.string()),
+  /** Verifier `kind`s this resolver runs for behavioral verification (§7/§17.6). */
+  verifierKinds: z.array(z.string()).default([]),
   /** Precision tier; 3 = quarantined advisory (advises, never gates — §7.4). */
   tier: z.number().int().default(1),
   /** Advisory resolvers return advisories only; they never gate a verdict. */
@@ -24,11 +34,20 @@ export const DescribeResult = z.object({
 });
 export type DescribeResult = z.infer<typeof DescribeResult>;
 
-/** resolve params — the engine reads the file; the resolver stays pure/isolated. */
+/**
+ * resolve params — the engine reads the files; the resolver stays pure/isolated.
+ * Both sides of the bidirectional anchor (§4) travel on the wire: the doc-side
+ * file plus a map of code-side files (each nullable when absent).
+ */
 export const ResolveParams = z.object({
   assertion: Assertion,
-  /** Current text of the anchored file, or null if it is absent. */
-  text: z.string().nullable(),
+  /** Current contents of the anchored files; null where the file is absent. */
+  files: z.object({
+    /** The doc-side file content, or null if it is absent. */
+    doc: z.string().nullable(),
+    /** Code-side file contents keyed by path; null where a file is absent. */
+    code: z.record(z.string(), z.string().nullable()),
+  }),
   /** The proposition this assertion verifies (for semantic/behavioral advisors). */
   proposition: Proposition.optional(),
 });
@@ -41,9 +60,42 @@ export const ResolveResult = z.object({
 });
 export type ResolveResult = z.infer<typeof ResolveResult>;
 
+/**
+ * verify params — run one executable-evidence link (§5/§17.6) against the current
+ * files to upgrade behavioral belief. Dispatched only after the doc side resolves
+ * (doc-first guard, §7); `changedEvidence` carries the reachable evidence that
+ * already moved so a runner can scope its work.
+ */
+export const VerifyParams = z.object({
+  assertion: Assertion,
+  verifier: Verifier,
+  /** Current file contents, same shape as resolve; optional for a runner that reads its own. */
+  files: z
+    .object({
+      doc: z.string().nullable(),
+      code: z.record(z.string(), z.string().nullable()),
+    })
+    .optional(),
+  /** Reachable evidence that changed since the last verification (§17.6). */
+  changedEvidence: z.array(ChangedEvidence).default([]),
+});
+export type VerifyParams = z.infer<typeof VerifyParams>;
+
+/**
+ * verify result — the behavioral belief the runner reached (§17.6). `refuted` may
+ * gate an enforced claim; `supported` clears it; otherwise the deterministic
+ * baseline is kept by the registry.
+ */
+export const VerifyResult = z.object({
+  behavior: BehaviorState,
+  advisories: z.array(Advisory).default([]),
+  notes: z.array(z.string()).default([]),
+});
+export type VerifyResult = z.infer<typeof VerifyResult>;
+
 export const RpcRequest = z.object({
   id: z.number().int(),
-  method: z.enum(["describe", "resolve"]),
+  method: z.enum(["describe", "resolve", "verify"]),
   params: z.unknown().optional(),
 });
 export type RpcRequest = z.infer<typeof RpcRequest>;
@@ -63,6 +115,8 @@ export const PROTOCOL_SCHEMAS = {
   DescribeResult,
   ResolveParams,
   ResolveResult,
+  VerifyParams,
+  VerifyResult,
   RpcRequest,
   RpcResponse,
 } as const;

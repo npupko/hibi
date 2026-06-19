@@ -12,6 +12,8 @@ import {
   LineFramer,
   type ResolveParams,
   ResolveResult,
+  type VerifyParams,
+  VerifyResult,
 } from "./protocol.ts";
 
 export interface ResolverProcessSpec {
@@ -110,6 +112,15 @@ export class OutOfProcessResolver {
     const raw = await this.rpc("resolve", params);
     if (raw === null) return null;
     const parsed = ResolveResult.safeParse(raw);
+    return parsed.success ? parsed.data : null;
+  }
+
+  async verify(params: VerifyParams): Promise<VerifyResult | null> {
+    const raw = await this.rpc("verify", params);
+    if (raw === null) return null;
+    const parsed = VerifyResult.safeParse(raw);
+    // Degrade to null on timeout/crash/malformed; the caller treats a null
+    // result as a non-gating `unverified` BehaviorState (§7.4).
     return parsed.success ? parsed.data : null;
   }
 

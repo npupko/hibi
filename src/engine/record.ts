@@ -1,19 +1,35 @@
 /**
- * Recording a new code-anchored claim (§9 `record`): write a Proposition (deduped
- * by content fingerprint), an Assertion, and the composite baseline Anchor to the
- * store. Agent-authored — the engine never NLP-extracts claims (D2).
+ * Recording a new claim (§9 `record`): write a Proposition (deduped by content
+ * fingerprint of the *confirmed doc span*), an Assertion, and the composite
+ * baseline Anchor to the store. Span-first and bidirectional (§4/§18-B): the
+ * documented sentence's own span is the doc-side anchor, and zero or more code
+ * targets form the code-side bundles. Agent-authored — the engine never
+ * NLP-extracts claims (D2).
  */
 
+import { regionText } from "../algo/localize.ts";
 import { newId, propositionFingerprint } from "../core/ids.ts";
 import type {
+  Anchor,
   Assertion,
   AuthoredTrust,
+  BehaviorScope,
+  ClaimKind,
   Document,
+  Enforcement,
   Proposition,
   Region,
+  SelectorBundle,
+  Verifier,
 } from "../core/model.ts";
 import type { ClaimStore } from "../store/store.ts";
-import { type AnchorAnalyzer, buildAnchor, buildPathAnchor } from "./anchor.ts";
+import {
+  type AnchorAnalyzer,
+  buildGlobBundle,
+  buildPathBundle,
+  buildSelectorBundle,
+  composeAnchor,
+} from "./anchor.ts";
 import { languageForFile } from "./lang.ts";
 
 /** Stable document id derived from its repo-relative path. */
@@ -21,23 +37,70 @@ export function documentIdForPath(path: string): string {
   return `doc_${Bun.hash.xxHash64(path).toString(16).padStart(16, "0")}`;
 }
 
+/** How a record call locates a span inside a file (doc side or code side). */
+export interface RegionSpec {
+  /** A literal quote to find… */
+  quote?: string;
+  /** …or explicit char offsets… */
+  start?: number;
+  end?: number;
+  /** …or a 1-based line number… */
+  line?: number;
+  /** …or an inclusive 1-based line range (`L42:L44`). */
+  startLine?: number;
+  endLine?: number;
+}
+
+/**
+ * A code target this claim describes (§4). One bundle on the code side: a
+ * precise region (resolved from the file's content) or a coarse path/glob edge
+ * (navigation and blast-radius only, never reported as drift — §11.3).
+ */
+export interface CodeTarget {
+  /** Repo-relative path of the code file (or the glob's notional file). */
+  file: string;
+  /** The span inside `file`; omit for a coarse target. */
+  region?: RegionSpec;
+  /** true → coarse path bundle (`buildPathBundle`). */
+  coarse?: boolean;
+  /** set → coarse glob bundle (`buildGlobBundle`). */
+  glob?: string;
+  /** Optional structural-language override; else `languageForFile(file)`. */
+  language?: string;
+}
+
 export interface RecordInput {
   /** Repo-relative path of the document making the claim. */
   docPath: string;
-  /** The proposition text — the timeless meaning. */
-  text: string;
+  /** The documented sentence's span (preferred — the doc side is span-first). */
+  docSpec?: RegionSpec;
+  /** Optional owned-doc inline marker id that stabilizes re-anchoring (§4/§8). */
+  inlineId?: string;
+  /**
+   * LEGACY Model-A authoritative override only (pristine/migration): the
+   * confirmed text when no doc span resolves. The live doc span is otherwise
+   * authoritative (§18-B).
+   */
+  text?: string;
   authoredTrust: AuthoredTrust;
   owner: string;
   ref: string;
   ttl?: string;
-  /** Repo-relative path of the anchored code file (omit for a doc-internal claim). */
-  codeFile: string;
-  /** The region in the code file (already resolved to char offsets). */
-  region?: Region;
-  /** Coarse path anchor instead of a precise one (navigational). */
-  coarse?: boolean;
+  /** Zero or more code targets the claim describes. */
+  code: CodeTarget[];
+  /** Explicit enforcement override; else derived below (§9). */
+  enforcement?: Enforcement;
+  claimKind?: ClaimKind;
+  verifiers?: Verifier[];
+  behaviorScope?: BehaviorScope;
   analyzer?: AnchorAnalyzer;
   attrs?: Record<string, unknown>;
+}
+
+/** The on-disk content of the doc and each referenced code file (read by the shell). */
+export interface RecordContents {
+  docContent: string | null;
+  codeContents: Record<string, string | null>;
 }
 
 export interface RecordResult {
@@ -49,10 +112,106 @@ export interface RecordResult {
 
 export async function recordClaim(
   store: ClaimStore,
-  codeContent: string | null,
+  contents: RecordContents,
   input: RecordInput,
 ): Promise<RecordResult> {
-  // Document (upsert by path).
+  const { docContent, codeContents } = contents;
+
+  // ── Doc side: resolve the documented sentence's span (§18-B). ──
+  // The confirmed text is the live doc span; the legacy `text` is the override
+  // of last resort (pristine/migration). One of them must be present.
+  let docRegion: Region | undefined;
+  if (input.docSpec) {
+    if (docContent === null)
+      throw new Error(`Document not found on disk: ${input.docPath}`);
+    docRegion = resolveRegion(docContent, input.docSpec);
+  }
+
+  const confirmedText =
+    docRegion !== undefined && docContent !== null
+      ? regionText(docContent, docRegion)
+      : input.text;
+  if (confirmedText === undefined)
+    throw new Error(
+      "A claim requires a doc span (--doc-quote/-range/-line) or a legacy --text override.",
+    );
+
+  // ── Code side: a bundle per target. ──
+  const codeBundles: SelectorBundle[] = [];
+  /** Whether every *precise* code target resolved uniquely (enforcement gate). */
+  let allCodeResolved = true;
+  /** Whether at least one *precise* code anchor resolved — coarse edges don't count. */
+  let hasPreciseCode = false;
+  for (const target of input.code) {
+    if (target.glob !== undefined) {
+      codeBundles.push(buildGlobBundle(target.glob));
+      continue;
+    }
+    if (target.coarse) {
+      codeBundles.push(buildPathBundle(target.file));
+      continue;
+    }
+    // A precise target with no locator is a caller error, not a coarse edge —
+    // surface it rather than silently degrading (use `--coarse` for an edge).
+    if (target.region === undefined) {
+      throw new Error(
+        `code target ${target.file} has no locator — pass --code-quote/--code-range/--code-line, or --coarse for a navigational edge.`,
+      );
+    }
+    const content = codeContents[target.file];
+    if (content === undefined || content === null) {
+      // The file is missing on disk → it cannot be located precisely. Keep a
+      // coarse path edge so navigation survives, and mark the target unresolved
+      // so a `verified`/`enforced` claim is refused below.
+      allCodeResolved = false;
+      codeBundles.push(buildPathBundle(target.file));
+      continue;
+    }
+    const region = resolveRegion(content, target.region);
+    hasPreciseCode = true;
+    codeBundles.push(
+      buildSelectorBundle(target.file, content, region, {
+        language: target.language ?? languageForFile(target.file),
+        analyzer: input.analyzer,
+      }),
+    );
+  }
+
+  // Doc resolved uniquely iff a real span (not a legacy text-only override) was found.
+  const docResolved = docRegion !== undefined;
+
+  // `verified` authored trust requires a resolvable anchor + @ref (§10),
+  // regardless of how the record is enforced.
+  if (input.authoredTrust === "verified" && (!docResolved || !input.ref)) {
+    throw new Error(
+      "`verified` trust requires a resolvable doc span and a @ref.",
+    );
+  }
+
+  // ── Enforcement (§9). Explicit override wins; else derive. ──
+  const enforcement: Enforcement =
+    input.enforcement ??
+    (input.authoredTrust === "verified" &&
+    input.ref &&
+    docResolved &&
+    allCodeResolved &&
+    hasPreciseCode
+      ? "enforced"
+      : "suggested");
+
+  // ── Refusal (§9/§11.3/§18-B): an `enforced` (gating-eligible) claim must
+  // resolve BOTH sides to a precise span — whatever set that enforcement, an
+  // explicit `--enforce` included. Coarse path/glob edges are navigational only.
+  if (
+    enforcement === "enforced" &&
+    (!docResolved || !input.ref || !hasPreciseCode || !allCodeResolved)
+  ) {
+    throw new Error(
+      "an `enforced` claim requires a resolvable doc span, a @ref, and a precise code anchor (coarse path/glob edges are navigational only).",
+    );
+  }
+
+  // ── Document (upsert by path). ──
   const docId = documentIdForPath(input.docPath);
   let document = await store.getDocument(docId);
   if (!document) {
@@ -65,36 +224,42 @@ export async function recordClaim(
     await store.putDocument(document);
   }
 
-  // Proposition (dedup by fingerprint, the dedup unit — §5).
-  const fingerprint = propositionFingerprint(input.text);
+  // ── Proposition (dedup by fingerprint of the confirmed text — §5). ──
+  const fingerprint = propositionFingerprint(confirmedText);
   let proposition = await store.findPropositionByFingerprint(fingerprint);
   const deduped = proposition !== undefined;
   if (!proposition) {
     proposition = {
       id: newId("prop"),
-      text: input.text,
+      textCache: confirmedText,
       authoredTrust: input.authoredTrust,
       fingerprint,
     };
     await store.putProposition(proposition);
   }
 
-  // `verified` requires evidence: an anchor + @ref (§10).
-  if (
-    input.authoredTrust === "verified" &&
-    (input.coarse || !input.region || !input.ref)
-  ) {
-    throw new Error("`verified` trust requires a precise anchor and a @ref.");
+  // Dedup the assertion: one verification instance per (proposition, document).
+  // Re-running `record`/`suggest` on unchanged content must be idempotent (§6) —
+  // otherwise each run would accumulate a duplicate assertion in the store.
+  const existing = (await store.allAssertions()).find(
+    (x) => x.propositionId === proposition.id && x.documentId === docId,
+  );
+  if (existing) {
+    return {
+      document,
+      proposition,
+      assertion: existing,
+      dedupedProposition: deduped,
+    };
   }
 
-  // Anchor.
-  const anchor =
-    input.coarse || !input.region
-      ? buildPathAnchor(input.codeFile)
-      : buildAnchor(input.codeFile, codeContent ?? "", input.region, {
-          language: languageForFile(input.codeFile),
-          analyzer: input.analyzer,
-        });
+  // ── Anchor (bidirectional, composite — §4). ──
+  const docBundle: SelectorBundle = docRegion
+    ? buildSelectorBundle(input.docPath, docContent ?? "", docRegion, {
+        inlineId: input.inlineId,
+      })
+    : buildPathBundle(input.docPath);
+  const anchor: Anchor = composeAnchor(docBundle, codeBundles);
 
   const assertion: Assertion = {
     id: newId("asrt"),
@@ -103,6 +268,10 @@ export async function recordClaim(
     owner: input.owner,
     ref: input.ref,
     anchor,
+    enforcement,
+    claimKind: input.claimKind,
+    verifiers: input.verifiers ?? [],
+    behaviorScope: input.behaviorScope,
     ttl: input.ttl,
     attrs: input.attrs ?? {},
   };
@@ -111,21 +280,10 @@ export async function recordClaim(
   return { document, proposition, assertion, dedupedProposition: deduped };
 }
 
-/** How a record call locates the anchor region inside the code file. */
-export interface RegionSpec {
-  /** A literal quote to find… */
-  quote?: string;
-  /** …or explicit char offsets… */
-  start?: number;
-  end?: number;
-  /** …or a 1-based line number. */
-  line?: number;
-}
-
 /**
- * Plan a record: resolve the anchor region AND the 1-based line it starts on, in
- * one pure step (no I/O, no git). The line is the value a host needs to attribute
- * the anchor (e.g. `git blame`); deriving it lives HERE so the CLI shell and the
+ * Plan a record: resolve a span AND the 1-based line it starts on, in one pure
+ * step (no I/O, no git). The line is the value a host needs to attribute the
+ * anchor (e.g. `git blame`); deriving it lives HERE so the CLI shell and the
  * library shell can never drift on the off-by-one (§7.5, functional core).
  */
 export function planRecord(
@@ -137,7 +295,18 @@ export function planRecord(
   return { region, line };
 }
 
-/** Resolve a region from a literal quote, char offsets, or a 1-based line number. */
+/** Char offset of the first character of a 1-based `line` in `lines`. */
+function lineStartOffset(lines: string[], line: number): number {
+  let off = 0;
+  for (let i = 0; i < line - 1 && i < lines.length; i++)
+    off += (lines[i] ?? "").length + 1;
+  return off;
+}
+
+/**
+ * Resolve a region from a literal quote, char offsets, a 1-based line, or an
+ * inclusive 1-based line range. Throws on a malformed numeric spec (e.g. NaN).
+ */
 export function resolveRegion(content: string, spec: RegionSpec): Region {
   if (spec.quote !== undefined) {
     const idx = content.indexOf(spec.quote);
@@ -148,17 +317,30 @@ export function resolveRegion(content: string, spec: RegionSpec): Region {
     return { start: idx, end: idx + spec.quote.length };
   }
   if (spec.start !== undefined && spec.end !== undefined) {
+    if (!Number.isFinite(spec.start) || !Number.isFinite(spec.end))
+      throw new Error(`Malformed char range: ${spec.start}:${spec.end}`);
     return { start: spec.start, end: spec.end };
   }
-  if (spec.line !== undefined) {
+  if (spec.startLine !== undefined && spec.endLine !== undefined) {
+    if (!Number.isFinite(spec.startLine) || !Number.isFinite(spec.endLine))
+      throw new Error(
+        `Malformed line range: ${spec.startLine}:${spec.endLine}`,
+      );
     const lines = content.split("\n");
-    let off = 0;
-    for (let i = 0; i < spec.line - 1 && i < lines.length; i++)
-      off += (lines[i] ?? "").length + 1;
-    const lineText = lines[spec.line - 1] ?? "";
-    return { start: off, end: off + lineText.length };
+    const start = lineStartOffset(lines, spec.startLine);
+    const end =
+      lineStartOffset(lines, spec.endLine) +
+      (lines[spec.endLine - 1] ?? "").length;
+    return { start, end: Math.max(start, end) };
+  }
+  if (spec.line !== undefined) {
+    if (!Number.isFinite(spec.line))
+      throw new Error(`Malformed line number: ${spec.line}`);
+    const lines = content.split("\n");
+    const off = lineStartOffset(lines, spec.line);
+    return { start: off, end: off + (lines[spec.line - 1] ?? "").length };
   }
   throw new Error(
-    "A region requires one of: --quote, --start/--end, or --line.",
+    "A region requires one of: --quote, --start/--end, --line, or a line range.",
   );
 }

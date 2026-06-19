@@ -2,12 +2,17 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { resolveAssertion } from "../src/algo/resolve.ts";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
 import type { Assertion } from "../src/core/model.ts";
-import { buildAnchor } from "../src/engine/anchor.ts";
+import { buildSelectorBundle, composeAnchor } from "../src/engine/anchor.ts";
 
 let analyzer: Awaited<ReturnType<typeof getAnalyzer>>;
 beforeAll(async () => {
   analyzer = await getAnalyzer();
 });
+
+const region = (text: string, quote: string) => {
+  const start = text.indexOf(quote);
+  return { start, end: start + quote.length };
+};
 
 interface LangCase {
   language: string;
@@ -62,44 +67,68 @@ const CASES: LangCase[] = [
   },
 ];
 
+const DOC_TEXT = "The retry budget is five attempts.\n";
+const DOC_SENTENCE = "The retry budget is five attempts.";
+
 describe("all five first-party grammars (§16, §17.4)", () => {
   for (const c of CASES) {
-    test(`${c.language}: parses, fingerprints, extracts value, and detects drift`, () => {
+    test(`${c.language}: parses, fingerprints, extracts value, and a changed literal never grades code:unchanged`, () => {
       const start = c.original.indexOf(c.quote);
-      const region = { start, end: start + c.quote.length };
+      const r = { start, end: start + c.quote.length };
 
       // Parse + fingerprint succeed.
-      const fp = analyzer.analyze(c.original, c.language, region);
+      const fp = analyzer.analyze(c.original, c.language, r);
       expect(fp).not.toBeNull();
       expect(fp?.structuralHash).toMatch(/^[0-9a-f]{16}$/);
 
       // Value extraction per the language map.
-      expect(analyzer.extractValue(c.original, c.language, region)).toBe(
+      expect(analyzer.extractValue(c.original, c.language, r)).toBe(
         c.expectedValue,
       );
 
-      // The anchor carries an ast-node and a value selector.
-      const anchor = buildAnchor(c.file, c.original, region, {
+      // The code-side bundle carries an ast-node and a value selector.
+      const codeBundle = buildSelectorBundle(c.file, c.original, r, {
         language: c.language,
         analyzer,
       });
-      expect(anchor.selectors.some((s) => s.kind === "ast-node")).toBe(true);
-      expect(anchor.selectors.some((s) => s.kind === "value")).toBe(true);
+      expect(codeBundle.selectors.some((s) => s.kind === "ast-node")).toBe(
+        true,
+      );
+      expect(codeBundle.selectors.some((s) => s.kind === "value")).toBe(true);
 
-      // A changed literal is detected (never graded fresh).
+      const docBundle = buildSelectorBundle(
+        "README.md",
+        DOC_TEXT,
+        region(DOC_TEXT, DOC_SENTENCE),
+      );
+
       const a: Assertion = {
         id: "a",
         propositionId: "p",
         documentId: "d",
         owner: "o",
         ref: "r",
-        anchor,
+        anchor: composeAnchor(docBundle, [codeBundle]),
+        enforcement: "suggested",
+        verifiers: [],
         attrs: {},
       };
-      const fresh = resolveAssertion(a, c.original, { ast: analyzer });
-      expect(fresh.state).toBe("fresh");
-      const drift = resolveAssertion(a, c.drifted, { ast: analyzer });
-      expect(drift.state).not.toBe("fresh");
+
+      // The unchanged file grades code:unchanged.
+      const fresh = resolveAssertion(
+        a,
+        { doc: DOC_TEXT, code: new Map([[c.file, c.original]]) },
+        { ast: analyzer },
+      );
+      expect(fresh.code).toBe("unchanged");
+
+      // A changed literal is detected — never graded code:unchanged.
+      const drift = resolveAssertion(
+        a,
+        { doc: DOC_TEXT, code: new Map([[c.file, c.drifted]]) },
+        { ast: analyzer },
+      );
+      expect(drift.code).not.toBe("unchanged");
     });
   }
 });

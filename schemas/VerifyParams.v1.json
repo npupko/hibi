@@ -66,31 +66,7 @@
           "default": [],
           "type": "array",
           "items": {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "example",
-                  "snapshot",
-                  "contract",
-                  "property",
-                  "formal",
-                  "command"
-                ]
-              },
-              "ref": {
-                "type": "string"
-              },
-              "proves": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "kind",
-              "ref"
-            ],
-            "additionalProperties": false
+            "$ref": "#/$defs/__schema2"
           }
         },
         "behaviorScope": {
@@ -157,6 +133,9 @@
       ],
       "additionalProperties": false
     },
+    "verifier": {
+      "$ref": "#/$defs/__schema2"
+    },
     "files": {
       "type": "object",
       "properties": {
@@ -193,39 +172,34 @@
       ],
       "additionalProperties": false
     },
-    "proposition": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string"
+    "changedEvidence": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "string"
+          }
         },
-        "textCache": {
-          "type": "string"
-        },
-        "authoredTrust": {
-          "type": "string",
-          "enum": [
-            "verified",
-            "inferred",
-            "assumed"
-          ]
-        },
-        "fingerprint": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "id",
-        "textCache",
-        "authoredTrust",
-        "fingerprint"
-      ],
-      "additionalProperties": false
+        "required": [
+          "path",
+          "kind"
+        ],
+        "additionalProperties": false
+      }
     }
   },
   "required": [
     "assertion",
-    "files"
+    "verifier",
+    "changedEvidence"
   ],
   "additionalProperties": false,
   "$defs": {
@@ -409,6 +383,33 @@
           "additionalProperties": false
         }
       ]
+    },
+    "__schema2": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "example",
+            "snapshot",
+            "contract",
+            "property",
+            "formal",
+            "command"
+          ]
+        },
+        "ref": {
+          "type": "string"
+        },
+        "proves": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "additionalProperties": false
     }
   }
 }

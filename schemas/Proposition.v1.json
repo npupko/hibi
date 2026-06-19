@@ -5,7 +5,7 @@
     "id": {
       "type": "string"
     },
-    "text": {
+    "textCache": {
       "type": "string"
     },
     "authoredTrust": {
@@ -22,7 +22,7 @@
   },
   "required": [
     "id",
-    "text",
+    "textCache",
     "authoredTrust",
     "fingerprint"
   ],

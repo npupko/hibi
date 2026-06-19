@@ -2,11 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "doc": {
-      "$ref": "#/$defs/__schema0"
+    "file": {
+      "type": "string"
     },
-    "code": {
-      "default": [],
+    "selectors": {
+      "minItems": 1,
       "type": "array",
       "items": {
         "$ref": "#/$defs/__schema0"
@@ -14,32 +14,12 @@
     }
   },
   "required": [
-    "doc",
-    "code"
+    "file",
+    "selectors"
   ],
   "additionalProperties": false,
   "$defs": {
     "__schema0": {
-      "type": "object",
-      "properties": {
-        "file": {
-          "type": "string"
-        },
-        "selectors": {
-          "minItems": 1,
-          "type": "array",
-          "items": {
-            "$ref": "#/$defs/__schema1"
-          }
-        }
-      },
-      "required": [
-        "file",
-        "selectors"
-      ],
-      "additionalProperties": false
-    },
-    "__schema1": {
       "oneOf": [
         {
           "type": "object",
