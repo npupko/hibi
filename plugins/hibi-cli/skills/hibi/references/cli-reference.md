@@ -44,7 +44,7 @@ locators.
 | `--inline-id <id>` | — | A hidden marker that *identifies* the record near the paragraph; aids re-anchoring, never restates the claim. |
 | `--trust <level>` | — | `verified` \| `inferred` (default) \| `assumed`. `verified` requires a precise anchor **and** a ref. |
 | `--enforce` | — | Shorthand for `--enforcement enforced`. Only `enforced` claims gate. |
-| `--enforcement <e>` | — | `suggested` (default) \| `enforced` \| `retired` \| `unanchored-legacy`. Explicit value wins over `--enforce`. |
+| `--enforcement <e>` | — | `suggested` \| `enforced` \| `retired` \| `unanchored-legacy`. With neither flag the engine derives it: `verified` trust + a `@ref` + a precise anchor resolving on **both** sides → `enforced`, else `suggested`. An explicit value wins over `--enforce`. |
 | `--claim-kind <k>` | — | Behavioral kind: `ordering` \| `retry` \| `complexity` \| `concurrency` \| `caching` \| `validation` \| `error-handling`. Routes Tier-3 classification. |
 | `--verifier kind:ref` | — | Repeatable executable-evidence link (`kind` ∈ example/snapshot/contract/property/formal/command). A failing verifier → `refuted`. |
 | `--owner <name>` | — | Defaults to git-blame author of the anchored line, else `unknown`. |
@@ -68,15 +68,15 @@ payload.
 | `3` | warning only: `moved` (either side) or `behavior:at-risk` — re-anchorable, nothing gating |
 | `1` | operational error (no store, unknown command, bad input) |
 
-Any non-zero exit fails a CI step, so the default already gates on both the warning
-band (3) and gating band (2). `--fail-on` controls *classification*, not whether CI
-fails:
-- `gating` (default): gating → 2, warning-only → 3.
+Any non-zero exit fails a CI step, so under the default both the warning band (3) and
+the gating band (2) fail the build; only a clean tree (0) passes. `--fail-on` selects
+the exit threshold:
+- `gating` (default): gating → 2, warning-only → 3, clean → 0.
 - `warn`: escalate the warning band to 2 (treat re-anchorable drift as a hard failure).
-- `tamper`: also return 2 when a banner was hand-edited, and refuse to overwrite it.
-- `never`: report-only intent. **Caveat (current implementation):** gating drift still
-  exits 2 and warnings still exit 3 under `never`, so it does not make a drifted run
-  pass — for a truly non-failing run, read the JSON and ignore the code.
+- `tamper`: like `gating`, but a hand-edited banner also exits 2 (and hibi refuses to
+  overwrite it); a gating verdict still exits 2.
+- `never`: always exit 0, whatever the verdicts — a true report-only run; read the JSON
+  for the result.
 
 ## How a change is graded (two axes)
 

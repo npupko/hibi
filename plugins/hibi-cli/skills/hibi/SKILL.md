@@ -189,15 +189,17 @@ under an otherwise-unchanged line stays `moved`. Don't read `moved` as "fine" �
 means re-verify, just with less certainty than `changed`. **`moved` and `at-risk`
 never gate** (exit 3); only enforced claims gate at all.
 
-**Exit codes and CI — the part people get wrong.** Any drift is non-zero, so the
-default `hibi check` fails a CI step on *both* the exit-3 warning (`moved`/`at-risk`)
-and the exit-2 gate; only a fully clean tree returns 0. `--fail-on` doesn't decide
-whether CI fails — it decides how hibi *classifies* the result: `--fail-on warn`
-escalates a warning-only run from 3 to 2 (treat re-anchorable drift as a hard
-failure). Use it when you want the build red on *any* drift and don't want to depend
-on a reader distinguishing 2 from 3. Note: a gating verdict exits 2 even under
-`--fail-on never`/`tamper`, so those modes do **not** make a gated run pass — if you
-need a report-only run, read the JSON and ignore the exit code.
+**Exit codes and CI — the part people get wrong.** Under the default, any drift is
+non-zero, so `hibi check` fails a CI step on *both* the exit-3 warning
+(`moved`/`at-risk`) and the exit-2 gate; only a fully clean tree returns 0.
+`--fail-on` sets where that threshold falls:
+
+- **`warn`** escalates a warning-only run from 3 to 2 — use it to turn the build red on
+  *any* drift, without depending on a reader to distinguish 2 from 3.
+- **`tamper`** behaves like the default but also exits 2 (and refuses to overwrite) when
+  a banner body was hand-edited; a gating verdict still exits 2 under it.
+- **`never`** always exits 0, whatever the verdicts — the report-only mode. The exit
+  code tells you nothing; read the JSON for the result.
 
 A `check`/`diff` report carries a `summary` (counts), a `verdicts` array (each
 verdict-first: `{ doc, code, behavior?, expired, gates, evidence{…}, notes }`, where
