@@ -1,88 +1,116 @@
 ---
 title: "CLI reference"
-description: "Commands, exit codes, and strictness."
+description: "Every hibi command, its flags, the exit codes, and the strictness levels."
+icon: "terminal"
 ---
 
-Output is JSON by default. Add `--pretty` for human-readable output.
+`hibi` is a single self-contained executable. Every command prints **JSON by
+default** and stays quiet otherwise; add `--pretty` for human-readable output.
+Output leads with the decision (`status`, `gates`, `side`) and trails the bulky
+evidence, so a truncated read still surfaces the verdict.
+
+<Note>
+  All commands operate against a committed claim store (`.claims/`, one file per
+  claim) beside your docs. The anchor is its own baseline, so every command runs
+  offline and is correct under a shallow clone (`git clone --depth=1`).
+</Note>
 
 ## Commands
 
 | Command | What it does |
 |---------|--------------|
-| `hibi init` | Create `.claims/` (with a per-repo banner nonce). |
+| `hibi init` | Create `.claims/` with a per-repo banner nonce. |
 | `hibi record` | Record a span-first claim: a doc span, anchored to zero or more code spans. |
-| `hibi check` | Verify every claim. Add `--write` to stamp status banners into affected docs. |
-| `hibi diff --since <ref>` | Show what a change invalidated, relative to a base ref. |
-| `hibi status --doc <doc>` | Report whether a doc is still current. |
-| `hibi query --path <path>` | Before editing: list which claims cover a file. |
-| `hibi suggest --doc <doc>` | Propose anchorable claims from a document (creates `suggested` records). |
-| `hibi reanchor <claim-id>` | Re-resolve a drifted claim against current doc/code content. |
-| `hibi supersede --new <doc> --old <doc> --type <type>` | Record that one doc supersedes/amends another. |
+| `hibi check` | Verify every claim, emit verdicts and lifecycle, exit per the contract below. |
+| `hibi diff --since <ref>` | What did this change invalidate? Scopes to files touched since a base ref. |
+| `hibi status --doc <p>` | Read-time gate: is this one doc still current? |
+| `hibi query --path <p>` | Which claims cover this file? Both directions; includes coarse edges. |
+| `hibi suggest --doc <p>` | Propose anchorable candidate claims as `suggested` records. Never auto-enforces. |
+| `hibi reanchor <claim-id>` | Re-resolve both anchors against current content; reset state. |
+| `hibi supersede --new <p> --old <p> --type <type>` | Record that one doc supersedes or amends another. |
+| `hibi retract --doc <p>` | Mark that the author withdrew the claim. |
+| `hibi archive --doc <p>` | Move an obsolete doc out of the read path (tombstone). |
+| `hibi schema` | Emit the generated JSON Schema(s) for the data model and protocol. |
 
-### `hibi record`
+`version` and `help` round out the set.
 
-Span-first: the documented sentence's span supplies the claim text (the doc
-side), and you anchor zero or more code spans that back it. `--text` survives
-only as a legacy override for the rare pristine case where no doc span applies.
+## `hibi record`
+
+`record` is **span-first**: the documented sentence's span supplies the claim
+text (the doc side), and you anchor zero or more code spans that back it
+(the code side). `--text` survives only as a legacy override for the rare
+pristine case where no doc span applies.
 
 ```sh
 hibi record \
   --doc README.md --doc-quote "Retries are capped at 5 attempts" \
   --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" \
-  --trust verified --owner alice
+  --trust verified --ref PR-1234 --enforce --owner alice
 ```
 
 | Flag | Description |
 |------|-------------|
-| `--doc` | The document the claim lives in. |
-| `--doc-quote` / `--doc-range L42:L44` / `--doc-line <n>` | The doc span that supplies the claim text. |
-| `--code-file` | The source file the claim is anchored to. |
-| `--code-quote` / `--code-range L1:L9` / `--code-line <n>` | The code span to anchor on (matched fuzzily). |
-| `--coarse` / `--glob <g>` | Anchor to a whole file or glob (navigation / blast-radius only). |
-| `--trust` | Authored trust: `verified` \| `inferred` \| `assumed`. |
-| `--enforce` / `--enforcement <e>` | Mark `enforced` (gates) — or set `suggested` \| `enforced` \| `retired` \| `unanchored-legacy`. |
-| `--claim-kind <k>` | Declare a behavioral kind (e.g. `ordering`, `retry`, `concurrency`). |
-| `--verifier kind:ref` | Link an executable verifier (repeatable). |
+| `--doc <p>` | The document the claim lives in. |
+| `--doc-quote <s>` / `--doc-range L42:L44` / `--doc-line <n>` | The doc span that supplies the claim text (one of these). |
+| `--code-file <f>` | A source file the claim is anchored to. |
+| `--code-quote <s>` / `--code-range L1:L9` / `--code-line <n>` | The code span to anchor on (matched fuzzily). |
+| `--coarse` / `--glob <g>` | Anchor to a whole file or glob — navigation and blast-radius only; never reported as stale. |
+| `--trust verified\|inferred\|assumed` | Authored trust. `verified` requires an anchor plus a `--ref`. |
+| `--enforce` / `--enforcement <e>` | Mark `enforced`, or set `suggested` \| `enforced` \| `retired` \| `unanchored-legacy`. |
+| `--claim-kind <k>` | Declare a behavioral kind (`ordering`, `retry`, `complexity`, `concurrency`, `caching`, `validation`, `error-handling`). |
+| `--verifier kind:ref` | Link an executable verifier (repeatable). Kinds: `example`, `snapshot`, `contract`, `property`, `formal`, `command`. |
 | `--ttl <iso>` | Expire the claim after an ISO-8601 instant. |
-| `--owner` | Who vouches for the claim. |
-| `--text` | Legacy override: the claim sentence when no doc span applies. |
+| `--owner <name>` | Who vouches for the claim. |
+| `--ref <ref>` | The justification (PR, issue, commit). Required for `verified` trust. |
+| `--inline-id` | Write a hidden inline marker near the paragraph in an owned doc. |
+| `--text <s>` | Legacy override: the claim sentence when no doc span applies. |
 
-## The verdict model
+<Warning>
+  `record` **refuses** an enforced claim unless the doc side resolves, a `--ref`
+  is present, the code side is precise (not coarse or glob-only), and every code
+  target resolves. Otherwise the record lands as `suggested`. Coarse and
+  `--glob` targets are navigation-only and cannot back an enforced claim.
+</Warning>
 
-Hibi never collapses a claim into one word. A verdict is **two axes plus a
-flag** (no `fresh`/`stale`/`ghost` enum):
+## The verdict, in brief
 
-- **Anchor resolution**, reported per side as `doc:…` / `code:…`:
-  `unchanged` · `moved` · `changed` · `ambiguous` · `orphaned`.
-- **Behavioral belief** (only on behavioral claims):
-  `unverified` · `at-risk` · `supported` · `refuted`.
-- **`expired`** — an orthogonal TTL flag, not a state.
+Hibi never collapses a claim into one word. A verdict carries **two independent
+axes plus a flag**: anchor resolution per side (`doc:unchanged · code:changed`,
+from the vocabulary `unchanged · moved · changed · ambiguous · orphaned`), an
+optional behavioral belief on behavioral claims (`unverified · at-risk ·
+supported · refuted`), and an orthogonal `expired` TTL flag. The JSON is
+verdict-first — `{ doc, code, behavior?, expired, gates, evidence{…} }` — so a
+truncated read still surfaces the decision. "Drift" and "stale" are only the
+human roll-up for any claim needing attention, never machine states.
 
-A verdict reads, e.g., `doc:unchanged · code:changed · behavior:at-risk`. The
-JSON is verdict-first — `{ doc, code, behavior?, expired, gates, evidence{…} }`
-— so a truncated read still surfaces the decision. The words "drift" and "stale"
-are only the human banner roll-up, never machine states.
+<Card title="The full verdict model" icon="scale-balanced" href="/verdicts">
+  States, confidence bands, grading, and how a verdict becomes an exit code —
+  all live on the Verdicts page.
+</Card>
 
 ## Exit codes
 
-Hibi communicates results through its exit code so it slots straight into CI and
-git hooks:
+Hibi communicates results through its exit code, so it slots straight into CI
+and git hooks:
 
 | Code | Meaning |
 |------|---------|
 | `0` | All clean. |
-| `2` | Gating: `changed` / `orphaned` / `ambiguous` / `expired` / `refuted` on an **enforced** claim. |
-| `3` | `moved` / `at-risk` (re-anchorable warning). |
+| `2` | Gating: `changed` / `orphaned` / `ambiguous` (either side), `expired`, or `refuted` — on an **enforced** claim. |
+| `3` | Warning: `moved` or `at-risk` (re-anchorable / advisory). |
 | `1` | Operational error. |
 
-## Strictness
+`moved` and `at-risk` **never gate**. `suggested` claims never set a failing
+exit code — only `enforced` claims can.
 
-Tune which states fail the run with `--fail-on`:
+## Strictness — `--fail-on`
+
+`--fail-on` tunes which states fail the run:
 
 ```sh
 hibi check --fail-on gating    # default — fail on gating verdicts
 hibi check --fail-on warn      # also fail on moved / at-risk warnings
-hibi check --fail-on tamper    # fail only on tampering
+hibi check --fail-on tamper    # fail only on banner tampering
 hibi check --fail-on never     # report, never fail the run
 ```
 
@@ -90,3 +118,25 @@ hibi check --fail-on never     # report, never fail the run
   In CI, pair `hibi check` with `--fail-on` to choose how strict the gate is.
   The official GitHub Action wraps exactly this.
 </Tip>
+
+## Global options
+
+These apply to every command:
+
+| Option | Effect |
+|--------|--------|
+| `--pretty` | Human-readable output instead of JSON. |
+| `--cwd <dir>` | The anchor root all paths resolve against. |
+| `--store-dir <dir>` | Where the claim store lives (default `<anchor>/.claims`). |
+| `--no-ast` | Skip the tree-sitter structural tier (text selectors only). |
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Verdicts, states & exit codes" icon="scale-balanced" href="/verdicts">
+    The two-axis model in full: every state, the confidence bands, and gating.
+  </Card>
+  <Card title="CI, git hooks & agents" icon="robot" href="/ci">
+    Wire these commands into a GitHub Action, a git hook, or an agent's edit loop.
+  </Card>
+</CardGroup>

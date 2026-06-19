@@ -24,16 +24,31 @@
         "pages": ["index", "quickstart"]
       },
       {
-        "group": "Guides",
-        "pages": ["concepts", "cli-reference", "resolvers"]
+        "group": "Concepts",
+        "pages": [
+          "concepts",
+          "anchors",
+          "verdicts",
+          "behavioral",
+          "banners",
+          "lifecycle"
+        ]
+      },
+      {
+        "group": "Why Hibi",
+        "pages": ["design"]
+      },
+      {
+        "group": "Usage",
+        "pages": ["cli-reference", "ci"]
+      },
+      {
+        "group": "Extend",
+        "pages": ["resolvers", "sdks"]
       },
       {
         "group": "Integrations",
         "pages": ["claude-code"]
-      },
-      {
-        "group": "SDKs",
-        "pages": ["sdks"]
       }
     ]
   },
