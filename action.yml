@@ -9,9 +9,9 @@ inputs:
     required: false
     default: "check"
   fail-on:
-    description: "Strictness: suspect | moved | tamper | never."
+    description: "Strictness: gating | warn | tamper | never."
     required: false
-    default: "suspect"
+    default: "gating"
   since:
     description: "For `diff`: the base ref to compare against."
     required: false
