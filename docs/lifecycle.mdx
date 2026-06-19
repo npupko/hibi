@@ -8,8 +8,7 @@ A single word like "stale" hides several different questions. *Did the author
 mean this claim to be trustworthy?* *Is Hibi allowed to block a merge over it?*
 *Has the code under it moved?* *Has a newer document replaced it?* Hibi keeps
 those four questions in **four separate status kinds** and never collapses them
-into one flag. This page is the map of all four, plus how a document moves from
-`active` to `archived`, and what to do when a claim needs attention.
+into one flag.
 
 <Note>
   The four kinds answer four different questions and live on different objects.
@@ -23,11 +22,11 @@ into one flag. This page is the map of all four, plus how a document moves from
 |---|---|---|---|
 | **Authored trust** | How much did the author vouch for this claim? | the author, at `record` time | the Proposition |
 | **Enforcement** | Is Hibi allowed to gate or stamp a strong banner over it? | derived at `record`, then explicit | the Assertion |
-| **Computed** | Right now, has the evidence moved? | the engine, live on every `check` | nowhere — recomputed, never stored |
+| **Computed** | Right now, has the evidence moved? | the engine, live on every `check` | nowhere; recomputed, never stored |
 | **Document lifecycle** | Where is this document in its life? | authored edges + the engine | the Document |
 
-The first two are **authored** — you decide them when you write the claim. The
-third is **computed** — Hibi recalculates it on every run and keeps it out of the
+The first two are **authored**: you decide them when you write the claim. The
+third is **computed**: Hibi recalculates it on every run and keeps it out of the
 store. The fourth tracks the **document** itself, independent of any one claim.
 
 ## Authored trust
@@ -39,7 +38,7 @@ statement about your confidence, not about the code.
 |---|---|
 | `verified` | You confirmed the claim against the code; it carries an anchor and a `@ref`. |
 | `inferred` | Derived from the code but not directly confirmed. |
-| `assumed` | Stated without confirmation — a working assumption. |
+| `assumed` | Stated without confirmation: a working assumption. |
 
 <Info>
   `verified` is the only trust level that requires both an anchor and a `@ref`
@@ -47,15 +46,15 @@ statement about your confidence, not about the code.
   `--trust verified|inferred|assumed` on `hibi record`.
 </Info>
 
-## Enforcement — earning the right to gate
+## Enforcement: earning the right to gate
 
 Enforcement is the gate key. It decides whether a claim can fail your build or
 stamp a strong banner into a file, or whether it stays advisory.
 
 | Enforcement | Meaning |
 |---|---|
-| `suggested` | A candidate claim — advisory only. Never sets a failing exit code. |
-| `enforced` | A confirmed claim — may gate a build and may stamp a strong banner. |
+| `suggested` | A candidate claim, advisory only. Never sets a failing exit code. |
+| `enforced` | A confirmed claim: may gate a build and may stamp a strong banner. |
 | `retired` | Withdrawn from active enforcement, kept for history. |
 | `unanchored-legacy` | A pre-existing claim with no usable anchor yet. |
 
@@ -67,7 +66,7 @@ stamp a strong banner into a file, or whether it stays advisory.
 
 ### How `record` derives enforcement
 
-You do not pick `enforced` casually — Hibi earns it for you, and refuses it if
+You do not pick `enforced` yourself; Hibi earns it for you, and refuses it if
 the anchor is too weak to stand behind.
 
 <Steps>
@@ -77,7 +76,7 @@ the anchor is too weak to stand behind.
   </Step>
   <Step title="Anything weaker → suggested">
     Without verified trust, or without a precise resolvable anchor, the claim is
-    recorded as `suggested` — advisory until you confirm it.
+    recorded as `suggested`, advisory until you confirm it.
   </Step>
   <Step title="An enforced record is refused unless every condition holds">
     `record` throws rather than create a weak `enforced` claim. To be enforced,
@@ -87,14 +86,14 @@ the anchor is too weak to stand behind.
   </Step>
 </Steps>
 
-Coarse and `--glob` targets are navigation and blast-radius only — they map
+Coarse and `--glob` targets are navigation and blast-radius only: they map
 which files a claim touches, but they can never back an `enforced` claim. (Coarse
 anchors are never reported as stale either; see how anchors are scored on the
 [Anchors & selectors](/anchors) page.)
 
 ## Computed states
 
-The third kind — what the engine works out live on every `check` — is the
+The third kind, what the engine works out live on every `check`, is the
 **two-axis verdict** (`doc:…` / `code:…` resolution, plus a behavioral belief on
 behavioral claims) and the orthogonal `expired` flag. These are recomputed every
 run and never stored, so they are documented where they are graded rather than
@@ -107,8 +106,8 @@ repeated here.
 
 ## Document lifecycle
 
-A document is more than its claims — it has a life of its own. It can be amended,
-replaced wholesale, withdrawn, or moved out of the read path entirely.
+A document is more than its claims; it has a life of its own. It can be amended,
+replaced wholesale, withdrawn, or moved out of the read path.
 
 ```mermaid
 stateDiagram-v2
@@ -131,7 +130,7 @@ Caption: "Supersession is authored forward on the new document; Hibi derives the
 | `archived` | Moved out of the read path, with a tombstone or redirect to its successor. |
 | `retracted` | The author withdrew the claim. |
 
-## Supersession — replacing what a document said
+## Supersession: replacing what a document said
 
 When a newer document takes over from an older one, you author that relationship
 **forward on the new document**. Hibi derives the reverse edge, so the old
@@ -147,7 +146,7 @@ document knows it was replaced without you editing it twice.
     ```
   </Tab>
   <Tab title="amends (partial replacement)">
-    `amends` points at one or more named **Propositions** — the specific claims
+    `amends` points at one or more named **Propositions**: the specific claims
     the new document changes. The old document stays in the read path; only the
     named propositions flip, and its lifecycle becomes `amended`. Proposition ids
     are required.
@@ -159,13 +158,13 @@ document knows it was replaced without you editing it twice.
 </Tabs>
 
 <Note>
-  An old document can be **amended and code-drifted at the same time** — a newer
+  An old document can be **amended and code-drifted at the same time**: a newer
   doc replaced part of it, and the code under another part moved. Because the four
   status kinds are separate, both conditions surface together rather than masking
   each other.
 </Note>
 
-## Remediation — what to do when a claim needs attention
+## Remediation: what to do when a claim needs attention
 
 A flag is a request to **re-verify**, not a claim that the doc is wrong. The
 response is graduated by how dangerous it is to leave the document standing as-is.
@@ -173,10 +172,10 @@ response is graduated by how dangerous it is to leave the document standing as-i
 | Condition | Remediation |
 |---|---|
 | `amended` / superseded-in-part | Stamp a banner and flip the frontmatter status; keep the file. |
-| `superseded` / obsolete-in-full | Archive it — move it out of the read path with a tombstone or redirect to the successor. |
+| `superseded` / obsolete-in-full | Archive it: move it out of the read path with a tombstone or redirect to the successor. |
 | `code:changed` / `code:orphaned` / `expired` | Stamp a banner and flag the specific claims to re-verify. |
 | `doc:changed` / `doc:ambiguous` | Banner noting the prose diverged; re-confirm or retire the claim. |
-| `doc:orphaned` | The documented sentence was deleted — relocate or retire it. |
+| `doc:orphaned` | The documented sentence was deleted: relocate or retire it. |
 | `refuted` | Strong banner, with a configurable gate. |
 | `retracted` | Banner noting the author withdrew the claim. |
 
@@ -190,11 +189,11 @@ Hibi draws a hard line between the part it owns and the part it leaves to you.
 <CardGroup cols={2}>
   <Card title="The engine owns" icon="gears">
     Status, document edges, lifecycle stamping, archival, and flagging the
-    content that needs attention. Deterministic — no model runs in the check loop.
+    content that needs attention. Deterministic: no model runs in the check loop.
   </Card>
   <Card title="You (or your agent) own" icon="pen">
     Rewriting the prose, then re-running `hibi check`. **The engine never writes
-    prose** — it tells you what moved, and you decide what the doc should now say.
+    prose**: it tells you what moved, and you decide what the doc should now say.
   </Card>
 </CardGroup>
 

@@ -1,10 +1,10 @@
 ---
 title: "Claude Code skill"
-description: "Install the official Agent Skill so a coding agent uses Hibi correctly — from first claim to lifecycle."
+description: "Install the official Agent Skill so a coding agent uses Hibi correctly, from first claim to lifecycle."
 icon: "wand-magic-sparkles"
 ---
 
-Hibi ships a [Claude Code](https://claude.com/claude-code) **Agent Skill** — a
+Hibi ships a [Claude Code](https://claude.com/claude-code) **Agent Skill**: a
 bundle of instructions a coding agent loads on demand to learn how to use a tool
 the right way. The Hibi skill teaches the agent the whole loop: set up the store
 in a fresh repo, record well-anchored claims, run the everyday `check` / `diff` /
@@ -12,14 +12,14 @@ in a fresh repo, record well-anchored claims, run the everyday `check` / `diff` 
 silencing it, and manage the document lifecycle.
 
 The skill is the agent-facing half of the same idea the rest of these docs
-describe for humans. Hibi is **deterministic** — no model runs in the check loop —
+describe for humans. Hibi is **deterministic** (no model runs in the check loop),
 so the skill never asks the agent to judge whether a doc is stale. It teaches the
 agent to ask Hibi, and to act on the answer.
 
 ## Mental model: the deterministic half of the loop
 
 A coding agent edits code all day. Left alone, it reads a doc or an `AGENTS.md`
-file, trusts it, and edits against it — even when that doc has quietly fallen out
+file, trusts it, and edits against it, even when that doc has fallen out
 of sync. Hibi is the deterministic check that closes that gap. The skill wires the
 agent into two moments of its own session.
 
@@ -36,13 +36,13 @@ sequenceDiagram
   A->>A: drafts the prose fix; human merges
 ```
 
-What to notice: Hibi flags; the agent (or a human) rewrites the prose. A flag is a
+Hibi flags; the agent (or a human) rewrites the prose. A flag is a
 request to **re-verify**, not a claim that the doc is wrong. The engine never
-writes prose — it only tells the agent which sentences the change put at risk.
+writes prose; it only tells the agent which sentences the change put at risk.
 
 <Note>
   The skill guides the agent; it does not bundle the `hibi` binary. The agent
-  installs Hibi the usual way — a prebuilt binary or `bun add @npupko/hibi` — while
+  installs Hibi the usual way (a prebuilt binary or `bun add @npupko/hibi`) while
   it follows the skill.
 </Note>
 
@@ -70,7 +70,7 @@ version.
 
 ## What the skill teaches
 
-Claude loads the skill when you ask it to work with Hibi — and even when you don't
+Claude loads the skill when you ask it to work with Hibi, and even when you don't
 name the tool but describe the problem it solves: docs drifting from code, a stale
 `README` or `AGENTS.md`, "keep the docs honest when the code changes". You can also
 invoke it on demand as `/hibi-cli:hibi`.
@@ -80,26 +80,26 @@ invoke it on demand as `/hibi-cli:hibi`.
     Install Hibi, run `hibi init` to create the `.claims/` store (a committed
     directory beside your docs, one file per claim, with a per-repo banner nonce),
     commit the store, and seed the first claims. The agent learns that `.claims/`
-    is tracked in git, not ignored — the anchors are the baseline that makes
+    is tracked in git, not ignored: the anchors are the baseline that makes
     `check` work offline.
   </Accordion>
 
-  <Accordion title="Recording claims well — span-first" icon="anchor">
-    The skill's core lesson is to anchor precisely. You point Hibi at the
+  <Accordion title="Recording claims well: span-first" icon="anchor">
+    The skill's core lesson is precise anchoring. You point Hibi at the
     documented sentence (`--doc-quote`) and the exact code span that backs it
     (`--code-file` + `--code-quote`), so a real change trips the claim while a pure
     reformat does not. `hibi suggest --doc <p>` proposes anchorable candidate
-    claims from an existing document; the agent reviews them rather than enforcing
-    blindly. See [Anchors & selectors](/anchors) for how redundant selectors fuse
+    claims from an existing document; the agent reviews them before enforcing
+    any. See [Anchors & selectors](/anchors) for how redundant selectors fuse
     into a confidence score.
   </Accordion>
 
   <Accordion title="The everyday loops" icon="arrows-rotate">
     Four commands, each tied to a moment:
-    - `hibi query --path <p>` — **before** editing a file, ask which claims cover it.
-    - `hibi diff --since <ref>` — **after** editing, ask which claims the change invalidated.
-    - `hibi check` — verify every claim as a gate (in CI or a hook).
-    - `hibi status --doc <p>` — a read-time check before the agent trusts a single doc.
+    - `hibi query --path <p>`: **before** editing a file, ask which claims cover it.
+    - `hibi diff --since <ref>`: **after** editing, ask which claims the change invalidated.
+    - `hibi check`: verify every claim as a gate (in CI or a hook).
+    - `hibi status --doc <p>`: a read-time check before the agent trusts a single doc.
   </Accordion>
 
   <Accordion title="Reading the two-axis verdict" icon="scale-balanced">
@@ -112,12 +112,12 @@ invoke it on demand as `/hibi-cli:hibi`.
     [Verdicts, states & exit codes](/verdicts).
   </Accordion>
 
-  <Accordion title="Responding to a flag — re-verify, don't silence" icon="rotate">
+  <Accordion title="Responding to a flag: re-verify, don't silence" icon="rotate">
     When a claim is flagged, the agent re-resolves it with `hibi reanchor <claim-id>`
     against the current content rather than deleting the record to make the check
-    pass. If the documented sentence was truly removed (`doc:orphaned`), the agent
+    pass. If the documented sentence was removed (`doc:orphaned`), the agent
     relocates or retires the claim. The skill is explicit that a flag means the
-    evidence moved — suspect, not false — and that a human decides what the prose
+    evidence moved (suspect, not false) and that a human decides what the prose
     should now say.
   </Accordion>
 

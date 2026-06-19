@@ -6,20 +6,19 @@ icon: "robot"
 
 Hibi is the **deterministic half of a loop**: it flags claims whose evidence has
 moved, and a human or agent decides what the prose should now say. Hibi never
-rewrites prose — it only flags and, optionally, stamps a status banner. This page
-shows how to wire that flagging into the three places it earns its keep:
-continuous integration, a git hook, and an AI coding agent's edit loop.
+rewrites prose; it flags, and can stamp a status banner. It wires into three
+places: continuous integration, a git hook, and an AI coding agent's edit loop.
 
 The shape is the same everywhere. You run a Hibi command, it emits a verdict, and
 you act on its **exit code**: `0` is clean, `2` gates, `3` warns, `1` is an
 operational error. Because no model runs in the check loop, the same working tree
-always yields the same verdicts — that is what makes "is this doc stale?" a signal
+always yields the same verdicts. That is what makes "is this doc stale?" a signal
 you can gate a pipeline on rather than a probabilistic guess.
 
 <Note>
   A flag is a request to **re-verify**, not a claim that the doc is wrong. Hibi
   reports that the evidence under a claim moved; the person or agent who reads the
-  flag decides the fix. Suspect, not false.
+  flag decides the fix.
 </Note>
 
 ## The three consumer contexts
@@ -39,7 +38,7 @@ you can gate a pipeline on rather than a probabilistic guess.
     behind a stale page.
   </Card>
   <Card title="MCP shim" icon="plug">
-    A Model Context Protocol server that serves verdicts to a tool — re-computed
+    A Model Context Protocol server that serves verdicts to a tool, re-computed
     live on every request, never from a cached index.
   </Card>
 </CardGroup>
@@ -47,8 +46,8 @@ you can gate a pipeline on rather than a probabilistic guess.
 ## GitHub Action
 
 The Hibi repository is itself a published GitHub Action. Reference it by release
-tag — `npupko/hibi@v0.1.2` (pin to the latest release), or `@main` to track the
-tip — and pass its behavior through `with:` inputs. The action installs Bun and
+tag (`npupko/hibi@v0.1.2` to pin a release, or `@main` to track the
+tip) and pass its behavior through `with:` inputs. The action installs Bun and
 runs the `hibi` binary for you, so a minimal drift gate is a few lines:
 
 ```yaml
@@ -74,13 +73,13 @@ jobs:
 </ParamField>
 
 <ParamField path="fail-on" type="string" default="gating">
-  Strictness — when a non-zero exit should fail the job. Uses Hibi's canonical
+  Strictness: when a non-zero exit should fail the job. Uses Hibi's canonical
   `--fail-on` vocabulary: `gating` (default), `warn`, `tamper`, or `never`. See
   the table below.
 </ParamField>
 
 <ParamField path="since" type="string">
-  Base ref for `command: diff` — the point to compare against (a branch, tag, or
+  Base ref for `command: diff`: the point to compare against (a branch, tag, or
   commit). Ignored when the command is `check`.
 </ParamField>
 
@@ -91,7 +90,7 @@ jobs:
 </ParamField>
 
 <ParamField path="working-directory" type="string" default=".">
-  Directory to run Hibi in — the anchor root that contains the `.claims/` store.
+  Directory to run Hibi in: the anchor root that contains the `.claims/` store.
   Defaults to the repository root.
 </ParamField>
 
@@ -102,7 +101,7 @@ shared with the CLI's `--fail-on` flag, so a local run and the action agree.
 
 | `fail-on` | Build fails when… |
 |---|---|
-| `gating` | a gating verdict appears on an enforced claim — `changed`, `orphaned`, or `ambiguous` on either side, `expired`, or `refuted`. The default. |
+| `gating` | a gating verdict appears on an enforced claim: `changed`, `orphaned`, or `ambiguous` on either side, `expired`, or `refuted`. The default. |
 | `warn` | also fails on the warning verdicts `moved` and `at-risk`, not just gating ones. The strictest setting. |
 | `tamper` | fails only when a status banner has been hand-edited (its checksum no longer matches). |
 | `never` | reports every verdict but never fails the build. Useful while you are still building up your claim set. |
@@ -116,9 +115,9 @@ shared with the CLI's `--fail-on` flag, so a local run and the action agree.
 
 ## git hooks
 
-A git hook moves the same gate one step earlier — onto the developer's machine,
+A git hook moves the same gate one step earlier, onto the developer's machine,
 before a commit or push reaches the remote. Hibi has no hook manager of its own;
-it is just a command that exits non-zero on drift, so it drops into whatever you
+it is a command that exits non-zero on drift, so it drops into whatever you
 already use.
 
 <CodeGroup>
@@ -151,7 +150,7 @@ exactly as CI does.
   If you manage hooks with a tool like [lefthook](https://github.com/evilmartians/lefthook)
   or [husky](https://github.com/typicode/husky), register the same command there
   instead of hand-writing a hook file. Hibi does not care which manager invokes
-  it — it only reads files and reports an exit code.
+  it; it only reads files and reports an exit code.
 </Tip>
 
 <Warning>
@@ -163,8 +162,8 @@ exactly as CI does.
 ## Agent hooks
 
 The third context is an AI coding agent in an edit loop. The risk here is sharp: a
-naive agent reads a doc — often an always-loaded instruction file like `CLAUDE.md`
-— and trusts it as current. If the doc has drifted, the agent acts on a stale
+naive agent reads a doc (often an always-loaded instruction file like `CLAUDE.md`)
+and trusts it as current. If the doc has drifted, the agent acts on a stale
 page. Hibi closes that gap by sitting at two points in the agent's lifecycle.
 
 ```mermaid
@@ -184,7 +183,7 @@ Hibi is the deterministic half of the loop: it flags. The agent or human rewrite
 prose, then re-runs `check`.
 
 <Steps>
-  <Step title="SessionStart — gate before trusting a doc">
+  <Step title="SessionStart: gate before trusting a doc">
     At the start of a session the agent runs `hibi status --doc CLAUDE.md` (or
     whichever instruction file it is about to rely on). `status` is the read-time
     gate: it exits `2` if any claim in that doc is gating, `3` if a claim is
@@ -192,9 +191,9 @@ prose, then re-runs `check`.
     only on a clean result; on a stale one it sees the banner and the exit code
     and knows not to act on the page as written.
   </Step>
-  <Step title="Stop — report what an edit invalidated">
+  <Step title="Stop: report what an edit invalidated">
     After the agent edits code, a Stop hook runs `hibi diff --since <base>`. Hibi
-    reports exactly which claims that change invalidated, so the agent can draft
+    reports which claims that change invalidated, so the agent can draft
     the corresponding prose fix. The agent (or the human reviewing the change)
     writes the new wording; Hibi never writes prose itself.
   </Step>
@@ -205,16 +204,16 @@ prose, then re-runs `check`.
 </Steps>
 
 For instruction files specifically, the banner Hibi stamps collapses to a single
-line — `STALE — N claim(s); run hibi status --doc <p>` — so the always-loaded file
+line (`STALE — N claim(s); run hibi status --doc <p>`) so the always-loaded file
 stays lean and the full detail lives in the JSON that `status` returns. The
 mechanics of that banner are covered on the [status banners](/banners) page; the
 ready-made Agent Skill that teaches a coding agent these loops lives on the
 [Claude Code](/claude-code) page.
 
 <Note>
-  An MCP shim that exposes Hibi to a tool must serve **live-recomputed** verdicts —
+  An MCP shim that exposes Hibi to a tool must serve **live-recomputed** verdicts:
   it re-runs the resolution flow on every request and never returns a cached
-  index. A cache would re-introduce exactly the drift Hibi exists to kill: the
+  index. A cache would re-introduce the drift Hibi exists to kill: the
   stored answer would itself fall out of sync with the code.
 </Note>
 
@@ -227,12 +226,12 @@ for convenience; the full verdict model behind them lives on the
 | Code | Meaning |
 |---|---|
 | `0` | all clean |
-| `2` | gating: `changed`, `orphaned`, or `ambiguous` on either side, `expired`, or `refuted` — on an **enforced** claim |
-| `3` | warning: `moved` or `at-risk` — re-anchorable or advisory |
+| `2` | gating: `changed`, `orphaned`, or `ambiguous` on either side, `expired`, or `refuted`, on an **enforced** claim |
+| `3` | warning: `moved` or `at-risk`, re-anchorable or advisory |
 | `1` | operational error |
 
 `moved` and `at-risk` never gate, and `suggested` claims never set a failing exit
-code — so a build only breaks on a confirmed, enforced claim whose evidence truly
+code, so a build only breaks on a confirmed, enforced claim whose evidence
 moved. That keeps the suspect set tight: a gate you can trust, not noise you learn
 to ignore.
 
@@ -240,7 +239,7 @@ to ignore.
 
 <CardGroup cols={2}>
   <Card title="CLI reference" icon="terminal" href="/cli-reference">
-    Every command and flag behind these hooks — `check`, `diff`, `status` — and
+    Every command and flag behind these hooks (`check`, `diff`, `status`) and
     the `--fail-on` strictness levels in full.
   </Card>
   <Card title="Verdicts, states & exit codes" icon="scale-balanced" href="/verdicts">

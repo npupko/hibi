@@ -1,6 +1,6 @@
 ---
 title: "Anchors & selectors"
-description: "How Hibi binds a documented sentence to the code it describes — with redundant selectors fused into a single confidence score."
+description: "How Hibi binds a documented sentence to the code it describes, with redundant selectors fused into a single confidence score."
 icon: "anchor"
 ---
 
@@ -16,7 +16,7 @@ An anchor is a pair of pointers, not a copy of anything:
 Anchor = { doc: SelectorBundle, code: SelectorBundle[] }
 ```
 
-The **doc side** is the documented sentence — and it is the source of truth. The
+The **doc side** is the documented sentence, and it is the source of truth. The
 **code side** is one or more bundles describing the code the sentence is about. A
 claim can point at several places in the code (a function and the constant it
 reads, say), so the code side is a list of bundles; the doc side is always a
@@ -24,15 +24,15 @@ single bundle.
 
 <Note>
   The store holds the anchor, not the prose. The sentence Hibi recorded is kept
-  only as anchoring material and an audit cache — at check time Hibi re-reads the
+  only as anchoring material and an audit cache. At check time Hibi re-reads the
   live span from the document and works from that. The documented span is the
-  source of truth, so a doc that has been quietly reworded can't hide behind a
+  source of truth, so a doc that has been reworded can't hide behind a
   stale copy in the store.
 </Note>
 
 ## The bidirectional anchor
 
-Each side of the anchor is a **SelectorBundle** — a single file plus a list of
+Each side of the anchor is a **SelectorBundle**: a single file plus a list of
 **selectors**, each a different way of pointing at the same span. No one selector
 survives every kind of edit, so Hibi records several and weighs how well they
 agree.
@@ -52,7 +52,7 @@ flowchart TD
 edit; agreement across them sets confidence.*
 
 Two terms in that diagram are worth defining once. A **Proposition** is the
-timeless meaning of the claim — "retries use exponential backoff" — independent of
+timeless meaning of the claim ("retries use exponential backoff"), independent of
 where it lives. An **Assertion** is one instance of verifying that proposition in
 a specific doc against specific code; it is the Assertion that carries the anchor.
 One proposition can be asserted from more than one place.
@@ -65,37 +65,37 @@ no single kind is enough.
 
 | Selector | Side | What it pins | Survives | Notes |
 |---|---|---|---|---|
-| `text-quote` | both | the exact text plus a 32-character prefix and suffix | moves, small edits | Matched fuzzily (W3C TextQuoteSelector + Bitap). The base selector on both sides. |
-| `text-position` | both | a line / character range | nothing, really | A cheap hint and a tie-breaker only — never a span's sole identity. |
+| `text-quote` | both | the exact text plus a 48-character prefix and suffix | moves, small edits | Matched fuzzily (W3C TextQuoteSelector + Bitap). The base selector on both sides. |
+| `text-position` | both | a line / character range | nothing, really | A cheap hint and a tie-breaker only, never a span's sole identity. |
 | `ast-node` | both | the enclosing named syntax node | relocation, reformatting | On the code side, a code symbol (via tree-sitter). On the doc side, a markdown structural path. |
 | `value` | code | an extracted literal value | everything except a value edit | So changing `MAX_ATTEMPTS = 5` to `50` trips the claim even when nothing else moved. Which AST kinds carry a literal is configured per grammar. |
 | `inline-id` | doc (owned docs) | a hidden marker near the paragraph, e.g. `<!-- hibi:claim id=… -->` | edits around it | Optional. It identifies the record; it never restates the claim. If the marker and the prose disagree, the prose wins. |
 | `path` / `glob` | code | a file, directory, or glob | renames within scope | Coarse coverage for navigation and blast-radius only. |
 
 <Warning>
-  Coarse anchors — a bare `path` or `glob` — are **never reported as stale**. They
+  Coarse anchors (a bare `path` or `glob`) are **never reported as stale**. They
   exist to answer "which claims touch this area?" and to size the blast radius of a
   change, not to grade drift. A claim backed only by a coarse anchor cannot gate.
 </Warning>
 
 ## Why redundancy, not one perfect selector
 
-No single signal is robust on its own. Positions drift on every edit above them.
-Quoted text breaks the moment someone reformats. Syntax nodes move when code is
+No single signal is robust on its own. Positions drift on every edit above them,
+quoted text breaks the moment someone reformats, and syntax nodes move when code is
 restructured. If Hibi trusted any one of these alone, it would either miss real
 drift or cry wolf on every cosmetic change.
 
 Recording several selectors per side turns "did this match?" into "how much do my
 selectors agree?" That agreement is what lets Hibi tell a harmless reformat (the
 quote shifted but the syntax node and value are intact) from a meaningful change
-(the value differs, or the node is gone) — deterministically, with no model in the
+(the value differs, or the node is gone), deterministically, with no model in the
 check loop.
 
 ## Confidence fusion
 
 When Hibi localizes a side, each selector that resolves contributes a similarity
 score `s` between 0 and 1, weighted by how trustworthy that kind of selector is.
-The bundle's confidence is the weighted average over the selectors that actually
+The bundle's confidence is the weighted average over the selectors that
 resolved:
 
 ```
@@ -116,23 +116,23 @@ A few rules shape the outcome before the score becomes a state:
 <AccordionGroup>
   <Accordion title="At least two selectors must resolve">
     Fewer than **two** resolved selectors and the side is `orphaned` at confidence
-    0. A lone surviving selector is not corroboration — it could be a coincidental
-    match — so Hibi refuses to grade on it.
+    0. A lone surviving selector is not corroboration (it could be a coincidental
+    match), so Hibi refuses to grade on it.
   </Accordion>
   <Accordion title="Structural-only AST matches score 0.40">
-    If the `ast-node` matches only structurally — same shape after a rename or a
-    whitespace change, not an exact match — it scores `0.40` rather than a full
+    If the `ast-node` matches only structurally (same shape after a rename or a
+    whitespace change, not an exact match), it scores `0.40` rather than a full
     hit. The construct is still there; the text around it shifted.
   </Accordion>
   <Accordion title="The value veto">
     If a `value` selector changed (score 0) **and** the `text-quote` similarity is
     at least `0.9`, Hibi forces the side to `changed` at confidence `0.3`. The
-    prose still matches, but the literal it cites no longer does — the kind of
+    prose still matches, but the literal it cites no longer does: the kind of
     silent change (`5 → 50`) the value selector exists to catch.
   </Accordion>
   <Accordion title="Fuzzy-matching parameters">
     The `text-quote` selector matches with a Bitap fuzzy search: `Match_Threshold`
-    `0.4`, `Match_Distance` `100000`, with a 32-character context window on each
+    `0.4`, `Match_Distance` `100000`, with a 48-character context window on each
     side. These are fixed so the same tree always yields the same match.
   </Accordion>
 </AccordionGroup>
@@ -149,13 +149,13 @@ the full mechanics live on the verdicts page.
 
 ## Doc-first resolution
 
-The order matters. Hibi resolves the **doc** side first: it finds the sentence in
+Hibi resolves the **doc** side first: it finds the sentence in
 the current document and extracts the live claim text. Only then does it localize
 the code side.
 
 The reason is integrity. A claim whose source sentence has been deleted or
-rewritten must not be verified against code as if the sentence still existed —
-that would be checking a span that is no longer there. So if the doc side comes
+rewritten must not be verified against code as if the sentence still existed.
+That would be checking a span that is no longer there. So if the doc side comes
 back `changed` or `orphaned`, Hibi stops and reports that, rather than grading
 stale prose against the code. The documented span is the source of truth, all the
 way down.
@@ -166,18 +166,18 @@ Selectors live in a stack of tiers, from cheap text matching up to executable
 checks. The first two tiers are what anchors and fusion cover:
 
 <Steps>
-  <Step title="Tier 1 — text">
+  <Step title="Tier 1: text">
     Fuzzy `text-quote` localization plus normalized text similarity. Format- and
     language-agnostic; it is what makes Hibi work on any file.
   </Step>
-  <Step title="Tier 2 — structural">
+  <Step title="Tier 2: structural">
     The `ast-node` selector, parsed with tree-sitter and snapped to the smallest
     enclosing named node, plus a two-tier AST hash. The doc side uses the markdown
     structural path. Grammars: TypeScript, Python, Rust, Go, and Java.
   </Step>
-  <Step title="Tier 3 — behavioral">
+  <Step title="Tier 3: behavioral">
     Claims that structural matching can't prove ("retries with backoff", "sorts
-    ascending") need a different mechanism — change-gated attention and executable
+    ascending") need a different mechanism: change-gated attention and executable
     verifiers, still with no model on the verdict path.
   </Step>
 </Steps>

@@ -54,7 +54,7 @@ hibi record \
 | `--doc-quote <s>` / `--doc-range L42:L44` / `--doc-line <n>` | The doc span that supplies the claim text (one of these). |
 | `--code-file <f>` | A source file the claim is anchored to. |
 | `--code-quote <s>` / `--code-range L1:L9` / `--code-line <n>` | The code span to anchor on (matched fuzzily). |
-| `--coarse` / `--glob <g>` | Anchor to a whole file or glob — navigation and blast-radius only; never reported as stale. |
+| `--coarse` / `--glob <g>` | Anchor to a whole file or glob: navigation and blast-radius only; never reported as stale. |
 | `--trust verified\|inferred\|assumed` | Authored trust. `verified` requires an anchor plus a `--ref`. |
 | `--enforce` / `--enforcement <e>` | Mark `enforced`, or set `suggested` \| `enforced` \| `retired` \| `unanchored-legacy`. |
 | `--claim-kind <k>` | Declare a behavioral kind (`ordering`, `retry`, `complexity`, `concurrency`, `caching`, `validation`, `error-handling`). |
@@ -79,12 +79,12 @@ axes plus a flag**: anchor resolution per side (`doc:unchanged · code:changed`,
 from the vocabulary `unchanged · moved · changed · ambiguous · orphaned`), an
 optional behavioral belief on behavioral claims (`unverified · at-risk ·
 supported · refuted`), and an orthogonal `expired` TTL flag. The JSON is
-verdict-first — `{ doc, code, behavior?, expired, gates, evidence{…} }` — so a
+verdict-first (`{ doc, code, behavior?, expired, gates, evidence{…} }`) so a
 truncated read still surfaces the decision. "Drift" and "stale" are only the
 human roll-up for any claim needing attention, never machine states.
 
 <Card title="The full verdict model" icon="scale-balanced" href="/verdicts">
-  States, confidence bands, grading, and how a verdict becomes an exit code —
+  States, confidence bands, grading, and how a verdict becomes an exit code,
   all live on the Verdicts page.
 </Card>
 
@@ -96,14 +96,14 @@ and git hooks:
 | Code | Meaning |
 |------|---------|
 | `0` | All clean. |
-| `2` | Gating: `changed` / `orphaned` / `ambiguous` (either side), `expired`, or `refuted` — on an **enforced** claim. |
+| `2` | Gating: `changed` / `orphaned` / `ambiguous` (either side), `expired`, or `refuted`, on an **enforced** claim. |
 | `3` | Warning: `moved` or `at-risk` (re-anchorable / advisory). |
 | `1` | Operational error. |
 
 `moved` and `at-risk` **never gate**. `suggested` claims never set a failing
-exit code — only `enforced` claims can.
+exit code; only `enforced` claims can.
 
-## Strictness — `--fail-on`
+## Strictness: `--fail-on`
 
 `--fail-on` tunes which states fail the run:
 
@@ -116,7 +116,7 @@ hibi check --fail-on never     # report, never fail the run
 
 <Tip>
   In CI, pair `hibi check` with `--fail-on` to choose how strict the gate is.
-  The official GitHub Action wraps exactly this.
+  The official GitHub Action wraps this.
 </Tip>
 
 ## Global options
