@@ -3,9 +3,10 @@
 A Claude Code [Agent Skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview)
 that teaches coding agents to use the [hibi](https://github.com/npupko/hibi) CLI
 ([docs](https://npupko.mintlify.app)): bootstrap it in a fresh repo, record
-well-anchored documentation claims, run the everyday `check` / `diff` / `query` /
-`status` loops, read verdicts and exit codes, respond to flagged claims, wire hibi
-into CI, and manage doc lifecycle.
+well-anchored span-first documentation claims, run the everyday `check` / `diff` /
+`query` / `status` / `suggest` loops, read the two-axis verdicts and exit codes,
+respond to flagged claims (`reanchor` and the lifecycle verbs), wire hibi into CI,
+and manage doc lifecycle.
 
 ## Install
 

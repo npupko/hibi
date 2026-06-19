@@ -17,10 +17,12 @@ focus on the drift logic.
 
 ## Shared contract
 
-Both SDKs implement the same protocol, and every message type has a JSON Schema
-in [`schemas/`](https://github.com/npupko/hibi/tree/main/schemas) generated from
-Hibi's single Zod model (`src/core/model.ts`). That means a resolver in any
-language can validate its messages against the same canonical contract.
+Both SDKs implement the same three-method protocol — `describe`, `resolve`, and
+`verify` — and every message type has a JSON Schema in
+[`schemas/`](https://github.com/npupko/hibi/tree/main/schemas) generated from
+Hibi's single Zod model (`src/core/model.ts`) and protocol
+(`src/resolver/protocol.ts`). That means a resolver in any language can validate
+its messages against the same canonical contract.
 
 <Info>
   The Rust SDK builds independently of the CLI:

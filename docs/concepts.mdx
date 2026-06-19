@@ -3,21 +3,42 @@ title: "How it works"
 description: "Claims, redundant anchors, and how Hibi grades drift."
 ---
 
-A **claim** is a sentence in a doc that asserts how the code behaves. Each claim
-carries several redundant **anchors** to the code it describes:
+A **claim** is a sentence in a doc that asserts how the code behaves. Hibi splits
+it into a timeless **Proposition** (the meaning) and an **Assertion** that carries
+a **bidirectional anchor**: a **doc side** (the sentence itself) and one or more
+**code sides** (the code it describes). Each side is a *bundle* of several
+redundant **selectors**:
 
-- the **quoted code text**, matched fuzzily so it survives small edits and moves;
-- its **byte position**, as a cheap hint;
-- the **enclosing syntax node**, parsed with tree-sitter, so reformatting alone
-  does not trip it;
-- any **literal value** it mentions, so changing `MAX_ATTEMPTS = 5` to `50` flags
-  the claim even when nothing else moves;
+- the **quoted text** (`text-quote`), matched fuzzily so it survives small edits
+  and moves;
+- its **line/char position** (`text-position`), as a cheap hint;
+- the **enclosing syntax node** (`ast-node`), parsed with tree-sitter, so
+  reformatting alone does not trip it;
+- any **literal value** (`value`, code side) it mentions, so changing
+  `MAX_ATTEMPTS = 5` to `50` flags the claim even when nothing else moves;
+- an optional **`inline-id`** marker that aids re-anchoring but never restates
+  the claim;
 - an optional **`path` or `glob`** for coarse coverage, used to size blast radius.
+
+The documented span is the source of truth — the stored quote is anchoring
+material and an audit cache, re-read live at check time.
 
 ## Grading drift
 
-On `hibi check`, Hibi re-finds each anchor in your current files and grades how
-far it moved. When the anchors agree, you get a confident verdict; when they
+On `hibi check`, Hibi re-finds each side's selectors in your current files and
+grades them on **two independent axes**, not one flat status:
+
+- **Anchor resolution** — per side, reported `doc:…` / `code:…`: `unchanged`,
+  `moved`, `changed`, `ambiguous`, or `orphaned` ("can I still find the span, and
+  is it the same?").
+- **Behavioral belief** — only on behavioral claims: `unverified`, `at-risk`,
+  `supported`, or `refuted` ("do we still believe the documented behavior
+  holds?"), upgraded to a real verdict when an executable **verifier** runs.
+
+A verdict reads like `doc:unchanged · code:changed · behavior:at-risk`. An
+orthogonal **`expired`** flag (past a claim's TTL) rides alongside — it is a flag,
+not a state. "Drift" and "stale" are just the human roll-up wording in the banner
+headline. When the selectors agree, you get a confident verdict; when they
 disagree, Hibi asks you to re-verify instead of guessing. Verdicts are computed
 live and kept out of the store.
 
@@ -29,11 +50,11 @@ live and kept out of the store.
 
 ## Why redundant anchors
 
-No single signal is robust on its own: byte offsets drift on every edit, quoted
+No single signal is robust on its own: positions drift on every edit, quoted
 text breaks on reformatting, and syntax nodes move when code is restructured. By
-fusing several anchors, Hibi distinguishes a harmless reformat (anchors still
-agree) from a meaningful change (anchors disagree) — without running a model in
-the check loop.
+fusing several selectors per side, Hibi distinguishes a harmless reformat
+(selectors still agree) from a meaningful change (selectors disagree) — without
+running a model in the check loop.
 
 <Card title="Design rationale & data model" icon="book" href="https://github.com/npupko/hibi/blob/main/docs/PRD.md">
   The full data model, verdict algorithm, and design rationale live in the PRD.

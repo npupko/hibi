@@ -7,6 +7,13 @@ Hibi finds drift through an out-of-process **resolver protocol** (JSONL-RPC over
 stdio). The built-in code-anchor resolver speaks the same contract, so you can
 add your own in any language.
 
+The protocol has three methods: `describe` (announce the anchor `kinds` and
+`verifierKinds` you handle), `resolve` (grade an assertion's anchor into a
+verdict), and `verify` (run an executable verifier to upgrade a behavioral
+claim's belief to `supported` / `refuted`). The engine reads the files and
+passes them in `resolve` params as `files { doc, code: { path: content } }` —
+both sides of the bidirectional anchor — so your resolver stays pure.
+
 Resolvers stay off until you list them in `.claims/resolvers.json`:
 
 ```jsonc .claims/resolvers.json

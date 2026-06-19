@@ -41,12 +41,16 @@ but describe the problem: docs drifting from code, a stale `README` or `AGENTS.m
 "keep the docs honest". You can also run it on demand as `/hibi-cli:hibi`. It covers:
 
 - **Bootstrapping:** install, `hibi init`, tracking `.claims/`, seeding claims.
-- **Recording claims well:** anchoring on the token that backs a claim, so a real
-  change trips it while a reformat does not.
+- **Recording claims well:** span-first — anchoring the documented sentence
+  (`--doc-quote`) to the code that backs it (`--code-file --code-quote`), so a
+  real change trips it while a reformat does not. `suggest` proposes anchorable
+  claims from a document.
 - **The everyday loops:** `query` before editing, `diff --since` after, `check` as a
   gate, `status` as a read-time check.
-- **Responding to drift:** re-verifying a flagged claim instead of silencing it, and
-  retiring an obsolete claim without leaving the store inconsistent.
+- **Responding to verdicts:** reading the two-axis verdict
+  (`doc:… · code:… · behavior:…`), re-verifying a flagged claim with `reanchor`
+  instead of silencing it, and retiring an obsolete claim without leaving the
+  store inconsistent.
 - **Lifecycle:** `supersede`, `amends`, `retract`, `archive`.
 
 <Card title="Plugin source" icon="github" href="https://github.com/npupko/hibi/tree/main/plugins/hibi-cli">
