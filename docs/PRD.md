@@ -10,22 +10,19 @@
 > parameters below are final and migration-free; every design decision is recorded, with its
 > rationale, in the **Decision Log (§14)**.
 >
-> **Revision (research-grounded).** Two foundational decisions were re-opened under deliberate
-> "everything is challengeable" review and resolved against the prior-art and empirical evidence
-> surveyed in **§18**: (1) the *carrier* — the claim's source of truth moves from a copied prose
-> string in the store to the **current document span**, with the store holding **bidirectional
-> anchors** (doc-side + code-side), closing the previously-undetectable doc-side drift gap; (2) the
-> *semantic tier* — the wording-only regex advisor is replaced by deterministic, change-gated
-> **Behavioral Risk Routing** plus an optional **executable-evidence** seam. Notably, the
-> determinism thesis (§11.1) *survived* the challenge on the evidence rather than by assumption.
->
-> A second pass then aligned the spec against the **foundational documentation-practice research**
-> that motivated hibi (anti-staleness, small-corpus retrieval, context-engineering, lean formats,
-> agent-consumable density): top-of-file banner placement, a compact banner for attention-budget
-> instruction files, the agent-hook consumer story, verdict-first JSON, and a named cross-repo
-> boundary — recorded in **§18-D**, with separately-implementable resolvers/consumers catalogued in
-> **§19**. Everything is kept in this one file by design; the standalone state-vocabulary decision
-> record (`design/ADR-001-state-vocabulary.md`) is the one intentional exception.
+> **Research-grounded design.** Two foundational choices are settled against the prior-art and
+> empirical evidence in **§18**: (1) the *carrier* — the **current document span is the source of
+> truth**, with the store holding **bidirectional anchors** (doc-side + code-side) as pointers, not
+> copies, so drift is caught on both sides; (2) the *behavioral tier* — deterministic, change-gated
+> **Behavioral Risk Routing** plus an optional **executable-evidence** seam, with **no model on the
+> verdict path** (§11.1). The design is aligned with the **foundational documentation-practice
+> research** that informs hibi (anti-staleness, small-corpus retrieval, context-engineering, lean
+> formats, agent-consumable density): top-of-file banner placement, a compact banner for
+> attention-budget instruction files, the agent-hook consumer story, verdict-first JSON, and a named
+> cross-repo boundary (§18-D). Options weighed and **declined** are recorded in §18 and §14;
+> separately-implementable resolvers/consumers are catalogued in §19. Everything lives in this one
+> file; the standalone state-vocabulary decision record (`design/ADR-001-state-vocabulary.md`) is the
+> one intentional exception.
 >
 > **"Final product, no shortcuts" means no *architectural* compromise — not a big-bang build.** The
 > full architecture, contracts, and data model below are complete and migration-free; the
@@ -54,8 +51,8 @@ A document drifts out of sync in three distinct ways:
 loop — reads the **raw document file** and trusts it. Therefore staleness must be both **(a)
 detectable** by the tool *and* **(b) visible in the artifact itself**. A status that lives only in a
 side-channel the naive agent never consults provides zero protection. This threat model has a direct
-consequence the original design missed: *the current document span is the thing the agent reads, so
-it — not a copy in the store — must be the source of truth the engine verifies* (§6, §8, §18).
+consequence: *the current document span is the thing the agent reads, so it — not a copy in the
+store — must be the source of truth the engine verifies* (§6, §8, §18).
 
 ## 2. What it is (and isn't)
 
@@ -220,9 +217,10 @@ load. (Dependency rationale: §16.)
   doc span**, re-read at `check` time via the doc-side anchor (§4, §8, §18-B). **Identity is
   authored/explicit** (`id` / content `fingerprint` of the confirmed text), **never
   similarity-computed** (that would smuggle non-determinism back in).
-- **Assertion** `{ id, propositionId, documentId, owner, ref, anchor, enforcement, verifiers[],
-  behaviorScope?, ttl?, attrs }` — one verification instance. Carries the **bidirectional Anchor**
-  (value-object), the `enforcement` state (§4), the `@ref` last verified against, optional `ttl`, and:
+- **Assertion** `{ id, propositionId, documentId, owner, ref, anchor, enforcement, claimKind?,
+  verifiers[], behaviorScope?, ttl?, attrs }` — one verification instance. Carries the **bidirectional
+  Anchor** (value-object), the `enforcement` state (§4), the `@ref` last verified against, optional
+  `ttl`, and:
   - **`verifiers[]`** *(optional)* — executable-evidence links that upgrade behavioral risk to a real
     verdict: each is `{ kind, ref, proves? }` where `kind ∈ example | snapshot | contract | property |
     formal | command` and `ref` names a test/command. If a verifier runs and fails →
@@ -231,6 +229,12 @@ load. (Dependency rationale: §16.)
   - **`behaviorScope`** *(optional)* — for behavioral claims, the deterministic blast-radius the
     change-gate watches: `{ rootSymbols[], reachableDepth, include[], exclude[] }` (callees, imports,
     config files, literals). Absent → the change-gate falls back to the anchored node + its file.
+  - **`claimKind`** *(optional)* — the author's declaration that a claim is behavioral, and of what
+    kind (ordering / retry / complexity / concurrency / caching / validation / …). It drives the
+    Tier-3 behavioral classification explicitly (§17.6); absent, a deterministic keyword heuristic
+    classifies. A label, never a verdict.
+  - **`attrs`** — an open key/value bag for resolver-specific metadata the core does not interpret;
+    keeps the core contract small while letting resolvers carry their own state (§11.4).
 - **Anchor** *(value-object on the Assertion)* — `{ doc: SelectorBundle, code: SelectorBundle[] }`,
   the bidirectional bundle of §4. A `SelectorBundle` is the multi-selector list for one side.
 - **Verdict** *(ephemeral, never persisted)* — the three computed dimensions (§4), computed live on
@@ -294,8 +298,8 @@ if it still existed (§18-B):**
    set `at-risk` **only if** evidence in its `behaviorScope` actually changed (anchored node,
    reachable callees, imports, config, literals, or a linked verifier source); otherwise it stays
    `unverified` (resting). If the claim links `verifiers[]`, dispatch them to the runner resolver: any
-   failure → `refuted` (may gate); all pass → `supported`. **Wording alone never fires** — that
-   was the old advisor's defect (§7.4, §18-A).
+   failure → `refuted` (may gate); all pass → `supported`. **Wording alone never fires**: a keyword in
+   the prose, with nothing changed, is not a signal (§7.4, §18-A).
 
 **Precision tiers (all first-party; SCIP is *not* — §14). Tiers 1–2 run on *both* sides of the
 anchor:**
@@ -310,8 +314,8 @@ anchor:**
   examples, snapshots, contracts, properties, formal checks, or a command) to produce a real
   `refuted`/`supported`. No model is on this path. An LLM or formal-methods tool MAY
   additionally be registered as an **opt-in, out-of-process advisor** that only *explains* or
-  *triages* — it **never gates** a verdict and never marks a claim verified (§7.4, §11, §18-A). This
-  replaces the rejected wording-only "semantic advisor" (§14 D5).
+  *triages* — it **never gates** a verdict and never marks a claim verified (§7.4, §11, §18-A). A
+  wording-only keyword advisor is declined as too noisy to be useful (§14 D5).
 
 **Deterministic boundary.** Tiers 1–2 detect *structural* change — to an anchored name, type, value,
 signature, or its existence — on both sides. They do **not** judge whether a natural-language
@@ -423,9 +427,9 @@ package-splitting is over-engineering.
 banner.** Authored records live in a **claim store beside the docs** (e.g. `.claims/`),
 format-agnostic, mapping 1:1 to the §5 model. This is **not** the forbidden freshness-lockfile (§6) —
 it stores authored **records** (durable IDs, bidirectional anchors, verifier links, evidence,
-enforcement state), **not computed verdicts and not the authoritative claim prose**. The decisive
-correction over the original design: the store must **not** treat a copied sentence as canonical,
-because the artifact an agent actually reads is the *current* document — so a stale copy can outlive
+enforcement state), **not computed verdicts and not the authoritative claim prose**. The store must
+**not** treat a copied sentence as canonical: the artifact an agent actually reads is the *current*
+document — so a duplicated copy can outlive
 the sentence it claims to represent. The store holds **pointers**; the current document span supplies
 the claim text at `check` time (§4, §6, §18-B). This still lets the engine track **any** document —
 pristine, human-facing, or third-party — **without rewriting its prose** (the anchor points *into* the
@@ -473,11 +477,10 @@ boundary is named, not silently assumed.
   editor rule files.
 
 *(Inline line-microformat carriers — claims authored as machine syntax inside the doc, à la atlas —
-remain rejected **as the universal carrier**: they deface human/third-party prose and cannot track
-read-only or pristine files. The refinement from the §18-B survey: a single, hidden, prose-free
-**inline ID** (not authored claim syntax) is allowed as an *optional stabilizer* on owned docs. The
-sidecar bidirectional anchor is the universal carrier; inline IDs only strengthen re-anchoring where a
-team opts in. See §14 D3.)*
+are **declined as the universal carrier**: they deface human/third-party prose and cannot track
+read-only or pristine files. A single, hidden, prose-free **inline ID** (not authored claim syntax) is
+allowed as an *optional stabilizer* on owned docs. The sidecar bidirectional anchor is the universal
+carrier; inline IDs only strengthen re-anchoring where a team opts in. See §14 D3.)*
 
 ## 9. Interface
 
@@ -548,11 +551,11 @@ team opts in. See §14 D3.)*
   (time-based re-verification, independent of code drift).
 - **Grading parameters.** Selector-fusion confidence is `C = Σ(wᵢ·sᵢ) / Σ(wᵢ)` over the selectors
   that resolved, with weights `ast-node 0.35 · text-quote 0.30 · value 0.20 · text-position 0.15`, a
-  **minimum of two agreeing selectors** required (otherwise the verdict is `orphaned`), a structural-only
+  **minimum of two found selectors** required (otherwise the verdict is `orphaned`), a structural-only
   AST match credited as a partial `ast-node` score, and an active localization-gated **value veto**
   (both detailed in §17.3). Fuzzy
   matching (diff-match-patch) uses `Match_Threshold 0.4`, `Match_Distance 100000` (deliberately large,
-  so a region relocated by hundreds of characters is still found), and a 48-character `text-quote`
+  so a region relocated by hundreds of characters is still found), and a 32-character `text-quote`
   context window. Verdict bands: `C ≥ 0.8` → `unchanged`; `0.5 ≤ C < 0.8` → `moved`; `0.2 ≤ C < 0.5` →
   `changed`; `C < 0.2` → `orphaned`. The engine is tuned for **precision over recall**: it holds
   false-`changed` at or below ~2% and **never reports a drifted claim as `unchanged`** — every missed
@@ -562,23 +565,32 @@ team opts in. See §14 D3.)*
 
 ## 11. Principles & constraints (the discipline)
 
-1. **Determinism is the product.** No model on the verdict path. Tier-3 routes attention
-   deterministically and runs executable checks; any LLM/formal advisor explains or triages but never
-   decides. The moment "is it stale?" becomes probabilistic, the value — a trustworthy, repeatable
-   signal — is gone. *This principle was deliberately re-opened ("everything is challengeable") and
-   re-affirmed on the evidence, not by assumption:* model-based behavioral verification tops out at
-   F1 ≈ 0.58 and LLM judges are non-reproducible and trivially foolable (§18-A), so gating on one
-   would trade the product's only durable advantage for an unreliable signal.
-2. **Suspect, not false.** The engine computes "the evidence moved — re-verify," never "the claim is
-   false." Confirming falsity is a human/agent act.
-3. **Over-flagging is the #1 failure mode.** The valuable work is a **tight, trustworthy suspect
-   set**: coarse edges are navigational (never stale); grade with thresholds; **corroborate across
-   selectors and let agreement set confidence**; selector disagreement → re-verify, not hard-stale.
-4. **Tiny core; "if it isn't core, it's a resolver or a consumer."** Keep the data contract small.
-   Resist hook points and config that aren't earning their keep.
-5. **No AI-slop.** Every part must be small enough to be fully understood and owned.
-6. **Universal by construction.** Treat documents as text; never depend on a per-format parser in the
-   core.
+### 11.1 Determinism is the product
+No model on the verdict path. Tier-3 routes attention deterministically and runs executable checks;
+any LLM/formal advisor explains or triages but never decides. The moment "is it stale?" becomes
+probabilistic, the value — a trustworthy, repeatable signal — is gone. *This is a settled constraint,
+grounded in evidence rather than assumption:* model-based behavioral verification tops out at
+F1 ≈ 0.58 and LLM judges are
+non-reproducible and trivially foolable (§18-A), so gating on one would trade the product's only
+durable advantage for an unreliable signal.
+
+### 11.2 Suspect, not false
+The engine computes "the evidence moved — re-verify," never "the claim is false." Confirming falsity
+is a human/agent act.
+
+### 11.3 Over-flagging is the #1 failure mode
+The valuable work is a **tight, trustworthy suspect set**: coarse edges are navigational (never
+stale); grade with thresholds; **corroborate across selectors and let agreement set confidence**;
+selector disagreement → re-verify, not hard-stale.
+
+### 11.4 Tiny core — "if it isn't core, it's a resolver or a consumer"
+Keep the data contract small. Resist hook points and config that aren't earning their keep.
+
+### 11.5 No AI-slop
+Every part must be small enough to be fully understood and owned.
+
+### 11.6 Universal by construction
+Treat documents as text; never depend on a per-format parser in the core.
 
 ## 12. Distribution
 
@@ -632,46 +644,44 @@ correctness (especially the suspect-set precision of §11.3) at each step:
   the engine core to Rust (`dissimilar` + `tree-sitter` crates) behind the unchanged CLI/JSON
   contract. *Go and Zig are out of scope.* The JSON/CLI contract is language-agnostic, so consumers
   (including the Bun/TS *atlas*) are unaffected.
-- **D2 — Authoring → agent-authored, span-first, suggest-then-confirm. (Revised — §18-B.)** An agent
-  (or human) *authors* claims for existing prose; the engine never auto-*enforces* NLP-extracted
-  claims. Refined on the evidence: (a) `record` is **span-first** — it derives claim text from the
-  document, never from a passed string, so the doc stays the source of truth; (b) `suggest` may
-  propose candidates from prose, but they enter as `suggested` and require explicit confirmation
-  before becoming `enforced` — because unsupervised trace-link extraction is too noisy to gate
-  (LSI TLR ≈ 77% precision / 60% recall, or 100% recall at 16% precision; §18-B). Fully-auto durable
-  creation is allowed only for deterministic executable examples and explicit literal checks.
+- **D2 — Authoring → agent-authored, span-first, suggest-then-confirm.** An agent (or human)
+  *authors* claims for existing prose; the engine never auto-*enforces* NLP-extracted claims.
+  (a) `record` is **span-first** — it derives claim text from the document, never from a passed
+  string, so the doc stays the source of truth; (b) `suggest` may propose candidates from prose, but
+  they enter as `suggested` and require explicit confirmation before becoming `enforced`. Fully-auto
+  durable creation is allowed only for deterministic executable examples and explicit literal checks.
+  *Declined:* auto-enforcing unsupervised NLP-extracted claims — too noisy to gate (LSI trace-link
+  recovery ≈ 77% precision / 60% recall, or 100% recall at 16% precision; §18-B).
 - **D3 — Carrier → bidirectional sidecar anchors; the *document span* is the source of truth;
-  universal banner; inline ID & frontmatter optional. (Revised — §18-B.)** The store keeps a dedicated
-  claim record beside the docs, but it holds **pointers (doc-side + code-side anchor bundles), not an
-  authoritative copy of the claim prose** — the original "copy the sentence into the store" design
-  created a second truth that silently outlived doc edits/deletions (the doc-side drift gap). Options
-  weighed: **(A)** external text-copy + code-only anchor (today) — fails doc-side drift; **(B)** inline
-  microformat — single source but defaces prose and cannot track pristine/third-party/read-only docs;
-  **(C)** bidirectional sidecar anchors with the artifact authoritative — closes the gap, stays
-  universal. Resolved to the **hybrid: C default + optional inline ID for owned docs + legacy A for
-  migration/read-only** (weighted score 450/500 vs A 285, B 345, C 410 — §18-B). Prior art:
-  W3C Web Annotation + hypothes.is (side-channel selectors, ~22% real-world orphan rate → deletion must
-  be an explicit state), Fiberplane Drift (proven side-channel AST fingerprinting, but code-side only),
-  Swimm (moved external→inline for *owned* docs).
+  universal banner; inline ID & frontmatter optional.** The store keeps a dedicated claim record
+  beside the docs, holding **pointers (doc-side + code-side anchor bundles), not a copy of the claim
+  prose** — a duplicated sentence in the store would be a second truth that outlives the doc
+  edits/deletions it claims to represent (the doc-side drift gap). The carrier is the **hybrid: C
+  default + optional inline ID for owned docs + A for migration/read-only** (weighted 450/500).
+  *Options declined:* **(A)** external text-copy + code-only anchor (285) — cannot detect doc-side
+  drift; **(B)** inline microformat as the universal carrier (345) — defaces prose and cannot track
+  pristine/third-party/read-only docs; **(C)** pure bidirectional sidecar with no fallback (410) —
+  degrades on pristine/read-only docs. Prior art: W3C Web Annotation + hypothes.is (side-channel
+  selectors, ~22% real-world orphan rate → deletion must be an explicit state), Fiberplane Drift
+  (side-channel AST fingerprinting, code-side only), Swimm (inline for *owned* docs). (§18-B.)
 - **D4 — Data model → Document + Proposition + Assertion + *bidirectional* Anchor (value-object);
-  verdict ephemeral. (Revised — §18-B.)** *Flat rejected* (conflates the status kinds; no clean
-  `amends` target). *4-way (+Evidence +Run) rejected* (Run contradicts the never-persist-verdicts rule;
-  Evidence has no identity apart from its assertion). Revisions kept within the tiny core, not new
-  entities: the Anchor becomes `{ doc, code[] }`; `Proposition.text` becomes a **non-authoritative
-  `textCache`** (live text comes from the doc span); the Assertion gains `enforcement`, optional
-  `verifiers[]`, and optional `behaviorScope`. Verifiers and behavioral scope are *value-objects on the
-  Assertion*, not first-party entities — preserving "if it isn't core, it's a resolver or a consumer."
+  verdict ephemeral.** The Anchor is `{ doc, code[] }`; the Proposition carries a **non-authoritative
+  `textCache`** (live text comes from the doc span); the Assertion carries `enforcement`, optional
+  `claimKind`, `verifiers[]`, and `behaviorScope` — all **value-objects**, not first-party entities,
+  preserving "if it isn't core, it's a resolver or a consumer." *Declined:* a **flat** model
+  (conflates the status kinds; no clean `amends` target); a **+Evidence/+Run** model (a stored Run
+  contradicts the never-persist-verdicts rule; Evidence has no identity apart from its assertion).
 - **D5 — Precision → layered + corroborating: text → tree-sitter AST → change-gated behavioral risk
-  routing (+ executable evidence). (Revised — §18-A.)** Confidence from selector agreement. Tier-3 was
-  reconceived: the original **wording-only regex "semantic advisor" is removed** — it fired on the
-  presence of a keyword regardless of any change, generating permanent noise that erodes trust in the
-  deterministic verdicts (alert-fatigue; up to ~96% spurious-warning rates are documented for noisy
-  analyzers — §18-A). Replaced by **Behavioral Risk Routing**: deterministic, change-gated attention
-  (fire only when reachable evidence changed) plus optional **executable verifiers** that yield a real
-  `refuted`/`supported`. Options weighed (§18-A weighted table): keep-regex 270/500;
-  remove-entirely 360; **change-gated routing 395**; **execution-grounded 420**; advisory-LLM 305;
-  gating-LLM 240 (rejected — non-deterministic). Chosen: routing as the default tier + execution as the
-  evidence upgrade; LLM/formal only as advisory resolvers. "Truth requires an oracle": no model gates.
+  routing (+ executable evidence).** Confidence from selector agreement. Tier-3 is deterministic,
+  change-gated **Behavioral Risk Routing** — flag a behavioral claim only when reachable evidence
+  changed — plus optional **executable verifiers** that yield a real `refuted`/`supported`. "Truth
+  requires an oracle": no model gates. *Options declined* (§18-A weighted table): a **wording-only
+  regex advisor** (270) — fires on a keyword regardless of change, generating permanent noise that
+  erodes trust in the deterministic verdicts (up to ~96% spurious-warning rates for noisy analyzers);
+  **dropping behavioral handling entirely** (360) — leaves the gap; an **advisory LLM** (305) and a
+  **gating LLM** (240) — non-deterministic (best published behavioral-verification F1 ≈ 0.58). Chosen:
+  change-gated routing (395) as the default tier + execution-grounding (420) as the upgrade; LLM/formal
+  only as non-gating advisory resolvers.
 - **D6 — CLI surface → as §9.** JSON schema-as-source-of-truth; explicit exit-code contract;
   out-of-process JSONL-RPC resolver SDK.
 - **D7 — Enums → as §10.** Adds TTL→`expired` and `retracted` for the final product.
@@ -723,7 +733,7 @@ correctness (especially the suspect-set precision of §11.3) at each step:
   signature (**no git history needed**) and yields a **binary** stale/not-stale; we likewise need no
   git history to reach a verdict, but store a **richer per-claim baseline** (text-quote + AST + value,
   one file per claim, never a monolithic lock) that enables **fuzzy re-localization** and a graded
-  graded **`unchanged/moved/changed/ambiguous/orphaned`** (+ `expired`) verdict with corroboration-based confidence, plus **document
+  **`unchanged/moved/changed/ambiguous/orphaned`** (+ `expired`) verdict with corroboration-based confidence, plus **document
   supersession** + **in-file status stamping** — none of which Drift does.
 - **Doorstop** — the engine *shape*: fingerprint-per-link, recompute → "suspect", explicit
   re-baseline.
@@ -913,7 +923,7 @@ the value); if nothing matches, the `value` selector is omitted from the bundle.
 - **Checksum** `sha` = **FNV-1a (32-bit; offset basis `0x811c9dc5`, prime `0x01000193`), 8 hex chars**
   of the banner body, recorded on the END line (outside the body it covers). One canonical FNV-1a
   variant is used wherever a non-crypto checksum is needed. On re-stamp the engine recomputes it; on
-  mismatch the banner was hand-edited → refuse to overwrite under `--fail-on` tamper, else the fresh
+  mismatch the banner was hand-edited → refuse to overwrite under `--fail-on` tamper, else the new
   stamp wins (the engine owns the region).
 - **Comment styles:** markdown → HTML block `<!-- … -->`; `#`-per-line for python/shell/yaml/toml;
   `//`-per-line for ts/js/rust/c/go/java; none for plain `.txt`.
@@ -942,7 +952,7 @@ the value); if nothing matches, the `value` selector is omitted from the bundle.
   payload → restore pristine bytes) · `noop` (present and identical).
 
 ### 17.6 Behavioral risk routing (Tier-3, deterministic)
-- **Classification (not a verdict).** A claim is *behavioral-candidate* if `claim_kind` declares it,
+- **Classification (not a verdict).** A claim is *behavioral-candidate* if `claimKind` declares it,
   or a deterministic heuristic matches ordering/retry/complexity/concurrency/caching/validation/error
   language. Misclassification only changes whether the change-gate is *consulted*; it never produces a
   verdict by itself.
@@ -962,14 +972,14 @@ the value); if nothing matches, the `value` selector is omitted from the bundle.
 - **Advisor provenance.** If an opt-in LLM/formal advisor annotates a claim, its output is recorded
   with model/prompt-hash/context-hash and is marked non-gating; it can never set a computed state.
 
-## 18. Research basis (evidence for the re-opened decisions)
+## 18. Design rationale & evidence
 
-Two foundational decisions were deliberately re-opened under an "everything is challengeable" review
-and resolved against an exhaustive prior-art and empirical survey. This section records the options,
-the weighted tradeoffs, and the evidence, so the decisions are auditable rather than asserted. Both
-landed on designs that *strengthen* the determinism thesis rather than relax it.
+This section records the design rationale for the foundational choices — the options weighed, the
+tradeoffs, and the empirical evidence — so each decision is auditable rather than asserted. Each rests
+on an exhaustive prior-art and empirical survey, and each *strengthens* the determinism thesis rather
+than relaxing it.
 
-### 18-A. The behavioral/semantic tier — replace the regex advisor with change-gated routing
+### 18-A. The behavioral tier — change-gated routing + executable evidence
 
 **Question.** Should hibi verify natural-language *behavioral* claims ("retries with backoff", "sorts
 ascending", "O(n)", "thread-safe"), and if so how — given the structural tiers can be `unchanged` while a
@@ -980,12 +990,12 @@ behavioral truth; the academic best case is modest and the model-based options a
 
 | Option | Trust/precision | Behavioral recall | Determinism | Edit-loop cost | Noise control | Verdict |
 |---|---|---|---|---|---|---|
-| Keep regex advisor (today) | very low | low | high | low | very poor | **Remove** — fires on wording, never on change |
-| Remove behavioral handling | n/a | none | high | none | perfect | Honest but leaves the gap |
+| Wording-only regex advisor | very low | low | high | low | very poor | **Declined** — fires on wording, never on change |
+| No behavioral handling | n/a | none | high | none | perfect | **Declined** — honest but leaves the gap |
 | **Change-gated attention routing** | good | medium | **high** | low | **strong** | **Default tier** |
 | **Execution-grounded verifiers** | **highest where present** | medium | **high** | medium | strong | **Evidence upgrade** |
 | Advisory LLM | medium | high | low | high | medium | Opt-in plugin only |
-| Gating LLM | low | high | **none** | high | poor | **Rejected** |
+| Gating LLM | low | high | **none** | high | poor | **Declined** |
 | Formal verification | highest where spec exists | low | high | very high | strong | Resolver, not core |
 
 **Key evidence.** METAMON (arXiv 2502.02794): F1 **0.58** (P 0.72 / R 0.48) on 9,482 Defects4J pairs —
@@ -998,23 +1008,23 @@ docs (six-figure failures from inverted procedures; "hallucinating an architectu
 exists"). Division of labor: the engine *routes attention*, the agent (already in the loop, with the
 reasoning the engine omits) *judges truth*, executable checks *certify*.
 
-**Decision.** Remove the regex advisor; ship **deterministic, change-gated Behavioral Risk Routing**
-as the default Tier-3 (§17.6) with **executable evidence** as the upgrade path; keep LLM/formal as
-advisory-only resolvers. **What would change it:** a replicated, cross-language behavioral verifier at
-F1 > 0.85, or a locally-reproducible deterministic-decoding judge, would justify a stronger (still
-non-gating) advisory role.
+**Decision.** Ship **deterministic, change-gated Behavioral Risk Routing** as the default Tier-3
+(§17.6) with **executable evidence** as the upgrade path; LLM/formal only as advisory resolvers.
+*Declined:* a wording-only regex advisor, and any model on the verdict path. **What would change it:**
+a replicated, cross-language behavioral verifier at F1 > 0.85, or a locally-reproducible
+deterministic-decoding judge, would justify a stronger (still non-gating) advisory role.
 
-### 18-B. The carrier — invert the source of truth to the document span
+### 18-B. The carrier — the document span is the source of truth
 
-**Question.** Where should a claim's source of truth live, and how are claims created — given that
-editing or deleting the documented sentence is currently invisible (the store keeps a stale copy)?
+**Question.** Where should a claim's source of truth live, and how are claims created, so that editing
+or deleting the documented sentence is detectable?
 
-**Finding (decisive).** Copying prose into the store creates a *second truth* that outlives the
-sentence. The artifact an agent reads is the current document, so it must be authoritative; the store
-should hold pointers. No surveyed system does sentence-level *bidirectional* drift, but the building
-blocks are proven.
+**Finding.** A copied prose string in the store would be a *second truth* that outlives the sentence.
+The artifact an agent reads is the current document, so it must be authoritative and the store must
+hold pointers. No surveyed system does sentence-level *bidirectional* drift, but the building blocks
+are proven.
 
-| Criterion (weight) | A: external copy (today) | B: inline microformat | C: bidirectional anchors | **Hybrid C+** |
+| Criterion (weight) | A: external copy | B: inline microformat | C: bidirectional anchors | **Hybrid C+** |
 |---|---|---|---|---|
 | Detects doc-side drift (20) | ✗ | ✓ | ✓ | ✓ |
 | Detects code-side drift (15) | ✓ | ~ | ✓ | ✓ |
@@ -1034,8 +1044,8 @@ Trace-link extraction (LSI): ~**77% P / 60% R** (or 100% R at **16% P**) → aut
 auto-enforce. Human RTM vetting can even *degrade* a good matrix → keep confirmation small and
 precision-first.
 
-**Decision.** Adopt the **hybrid: Model C default** (bidirectional sidecar anchors; document span
-authoritative) **+ optional inline IDs for owned docs + legacy Model A for migration/read-only**;
+**Decision.** The **hybrid: Model C default** (bidirectional sidecar anchors; document span
+authoritative) **+ optional inline IDs for owned docs + Model A for migration/read-only**;
 **span-first `record`**, **suggest-then-confirm** creation with `suggested`/`enforced`/`retired`
 states, doc-first verification order, and explicit doc-side states incl. `doc:orphaned`. **What would
 change it:** if doc-side fuzzy anchoring proves too noisy in practice (orphan rate > ~30%), require
@@ -1044,24 +1054,20 @@ and simplify to pure C.
 
 ### 18-C. The state vocabulary — ubiquitous language for the computed model
 
-**Question.** The first-cut model named three computed enums by three different metaphors
-(`fresh`/`stale`/`ghost` food-and-spooky; `doc-edited`/`doc-orphaned` literal; `behavior-verified`
-literal). Is there a better, ubiquitous language — given no backwards-compatibility constraint?
+**Question.** What is the clearest ubiquitous language for the computed model?
 
-**Finding (decisive).** The three enums are really **two axes that answer two different questions**,
-and each question already has an established term-of-art vocabulary in prior art. Naming smell: the
-same concept appeared twice under different words (code `ghost` ≈ doc `doc-orphaned`; code `stale` ≈
-doc `doc-edited`), and a freshness metaphor (`fresh`) collided conceptually with the separate `expired`
-(TTL) axis.
+**Finding.** The computed model is **two axes that answer two different questions**, and each question
+has an established term-of-art vocabulary in prior art. Two smells to avoid: naming the *same* outcome
+differently on the doc and code sides, and letting a freshness metaphor collide with the separate
+`expired` (TTL) flag.
 
 - **Axis 1 — anchor resolution** ("can I find the span, unchanged?") is a *localization* question.
   One vocabulary, applied per side: **`unchanged · moved · changed · ambiguous · orphaned`**. Sources:
   git status (`unchanged`/`moved` — the most widely-understood "resolve a tracked thing" vocabulary),
   the W3C Web Annotation discussion (`ambiguous` for the multiple-match case), hypothes.is (`orphaned`
-  is its canonical term for an annotation that can no longer anchor — promoted here to *both* sides,
-  fixing the old asymmetry). Chosen the literal `changed` over `stale` so `unchanged`/`changed` form a
-  clean antonym pair and the word "drift/stale" is freed as the human roll-up rather than overloading a
-  leaf state.
+  is its canonical term for an annotation that can no longer anchor — applied to *both* sides).
+  `changed` is chosen over `stale` so `unchanged`/`changed` form a clean antonym pair and the word
+  "drift/stale" is freed as the human roll-up rather than overloading a leaf state.
 - **Axis 2 — behavioral belief** ("do we still believe it?") is an *epistemic/verification* question,
   so it gets a different vocabulary: **`unverified · at-risk · supported · refuted`**. Sources: the
   FEVER claim-verification standard (`supported`/`refuted` — our unit is literally a *claim*); the
@@ -1082,43 +1088,44 @@ The full options table, prior-art attribution, and the vocabulary invariants liv
 
 ### 18-D. Documentation-practice alignment (the foundational research)
 
-hibi was commissioned out of an earlier body of research on keeping a multi-repo, agent-driven
-documentation corpus honest and lean (anti-staleness architecture, small-corpus retrieval,
-Claude-Code context engineering, lean doc-format specs, agent-consumable doc density). A five-track
-re-audit confirmed the revised design is **strongly aligned** — in several places hibi is the
-*mechanized enforcement* of a principle that research could only state as a manual convention:
+hibi serves an established body of documentation-practice research on keeping a multi-repo,
+agent-driven documentation corpus honest and lean (anti-staleness architecture, small-corpus
+retrieval, Claude-Code context engineering, lean doc-format specs, agent-consumable doc density). The
+design embodies it — in several places hibi is the *mechanized enforcement* of a principle that
+research could only state as a manual convention:
 
 - **Single source of truth** ≡ the carrier inversion (§8): one canonical span, pointers not copies —
   which also makes hibi immune by construction to the research's "the index drifts from its source"
   failure mode (the store re-reads the live document, §6).
 - **"file:line → symbol names"** ≡ the tree-sitter named-node anchor (§4, §17.1).
 - **"executable beats prose"** ≡ the executable-verifier seam (§4, §17.6).
-- **Curation gate / never let the agent edit docs unreviewed** ≡ engine-never-authors +
-  suggest→enforce (§6, §4).
+- **Curation gate / never let the agent edit instruction files unreviewed** ≡ engine-never-authors +
+  suggest→enforce (§6, §4, §8).
+- **Path-coupling** ≡ the bidirectional code-side anchor + coarse `path`/`glob` edges (§4): a claim is
+  tied to the code it describes, so a change to that code surfaces the claim.
 - **Decision-vs-design / immutable supersession** ≡ the document lifecycle + typed edges (§4, §10).
 - **hibi *is* the re-verification a "freshness stamp" needs** — the research admits a `last_verified`
   date is rubber-stampable *because nothing re-verifies it*; hibi is that process, so a green hibi
   status is evidence-backed, not a hand-typed date.
 
-**Refinements adopted from this audit** (folded into the sections above): top-of-file banner placement
-as a load-bearing requirement (§17.5, lost-in-the-middle); a compact banner + side-channel detail for
-attention-budget instruction files (§8); the agent-hook consumer story and the "MCP serves live
-verdicts, not a cached index" clarification (§7); verdict-first JSON with `owner` and last-verified age
-in the side-channel, never the banner (§9); and a named cross-repo boundary (§8).
+**Documentation-practice refinements in the design:** top-of-file banner placement as a load-bearing
+requirement (§17.5, lost-in-the-middle); a compact banner + side-channel detail for attention-budget
+instruction files (§8); the agent-hook consumer story and the "MCP serves live verdicts, not a cached
+index" clarification (§7); verdict-first JSON with `owner` and last-verified age in the side-channel,
+never the banner (§9); and a named cross-repo boundary (§8).
 
-**Boundaries the research *validated* (do not change):** no embeddings/vector/RAG (a similarity tool
-for a change-over-versions problem); no doc-count / size / bloat linting *in core* (file-quality is a
-separate axis from claim-drift — keep it a consumer); TTL stays an orthogonal backstop, never a
-time-first `last_verified` governance field; no model on the verdict path. Every track independently
-confirmed hibi is right to refuse these.
+**Boundaries the research validates (deliberate refusals):** no embeddings/vector/RAG (a similarity
+tool for a change-over-versions problem); no doc-count / size / bloat linting *in core* (file-quality
+is a separate axis from claim-drift — keep it a consumer); TTL stays an orthogonal backstop, never a
+time-first `last_verified` governance field; no model on the verdict path.
 
-Items the audit raised that are genuinely *separate, opt-in capabilities* are catalogued in §19.
+Separate, opt-in capabilities are catalogued in §19.
 
 ## 19. Additional resolvers & consumers (opt-in, deferred)
 
 These are **not** core. Each is an independently-implementable unit behind an existing seam — an
-out-of-process **resolver** (§7.1) or a JSON-output **consumer** (§7) — surfaced by the §18-D audit and
-recorded here so it can be built later without touching the tiny core (§11.4). None of them gates a
+out-of-process **resolver** (§7.1) or a JSON-output **consumer** (§7) — recorded here so it can be
+built later without touching the tiny core (§11.4). None of them gates a
 verdict; the only gate remains a deterministic `refuted` (executable verifier) or an anchor-drift
 (`changed`/`orphaned`/…) on an `enforced` claim.
 
@@ -1153,7 +1160,7 @@ verdict; the only gate remains a deterministic `refuted` (executable verifier) o
 
 *This document is the complete and self-contained specification for the tool: the architecture, data
 model, contracts, algorithms, and parameters are final. The build is sequenced (§13) for validation,
-not scope reduction. Foundational decisions re-opened under research review are recorded with their
-evidence in §18 (new research) and §18-D (the foundational documentation-practice research);
-deferred, separately-implementable resolvers and consumers are catalogued in §19. The standalone
-state-vocabulary decision record is `design/ADR-001-state-vocabulary.md`.*
+not scope reduction. Design rationale — the options weighed and declined — is in §18; alignment with
+the foundational documentation-practice research is in §18-D; deferred, separately-implementable
+resolvers and consumers are in §19. The standalone state-vocabulary decision record is
+`design/ADR-001-state-vocabulary.md`.*
