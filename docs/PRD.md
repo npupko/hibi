@@ -19,6 +19,14 @@
 > **Behavioral Risk Routing** plus an optional **executable-evidence** seam. Notably, the
 > determinism thesis (§11.1) *survived* the challenge on the evidence rather than by assumption.
 >
+> A second pass then aligned the spec against the **foundational documentation-practice research**
+> that motivated hibi (anti-staleness, small-corpus retrieval, context-engineering, lean formats,
+> agent-consumable density): top-of-file banner placement, a compact banner for attention-budget
+> instruction files, the agent-hook consumer story, verdict-first JSON, and a named cross-repo
+> boundary — recorded in **§18-D**, with separately-implementable resolvers/consumers catalogued in
+> **§19**. Everything is kept in this one file by design; the standalone state-vocabulary decision
+> record (`design/ADR-001-state-vocabulary.md`) is the one intentional exception.
+>
 > **"Final product, no shortcuts" means no *architectural* compromise — not a big-bang build.** The
 > full architecture, contracts, and data model below are complete and migration-free; the
 > *implementation* is sequenced into corroboration-validated layers (§13), because shipping a large
@@ -143,7 +151,9 @@ the truth (§18-B). Selector kinds (each side draws the kinds that fit it):
   claim**, and is never required (§8, §18-B). If marker and prose disagree, the prose wins.
 - **`path` / `glob`** *(coarse)* — a file / directory / glob → an **edge**: navigation and
   blast-radius only ("which decisions bear on this module?"). **Coarse anchors are never reported as
-  stale** — the primary defense against over-flagging (§11).
+  stale** — the primary defense against over-flagging (§11). *(An **opt-in, non-gating**
+  "uncovered-change" advisory — a coarse edge whose code changed while **no** precise claim covers it —
+  is catalogued as a deferred resolver in §19; it surfaces a suggestion, never a gating `changed`.)*
 
 Selectors are a **discriminated union on `kind`**; the resolver registry (§7) dispatches on it. New
 kinds (e.g. a third-party `scip-symbol`) plug in without a migration.
@@ -349,7 +359,11 @@ pushed down into a registry**, **consumers stacked on top**, **strictly upward d
 ```
   CONSUMERS (read the JSON output / call the SDK; out of this repo's scope)
     ├─ CI gate            fail build on drift (exit codes)
-    ├─ MCP shim           serve verdicts to agents
+    ├─ agent hooks        SessionStart: `hibi status --doc CLAUDE.md` gates/injects before the
+    │                     agent trusts it;  Stop: `hibi diff` detects → agent drafts the prose
+    │                     edit a human merges (the deterministic half of the report's hook loop)
+    ├─ MCP shim           serve LIVE-recomputed verdicts to agents — never a cached index (a
+    │                     cached index would re-introduce the drift hibi exists to kill — §18-D)
     └─ a viewer (atlas)   consume claim records + verdicts as data
                 ▲
   ─────────────┼──────────────────────────────────────────────
@@ -429,6 +443,13 @@ file; it does not modify it).
   document; if no unique span is found it becomes `unanchored-legacy` and is **excluded from strong
   enforcement** rather than silently verified.
 
+**Cross-repo.** The store and the per-repo banner nonce (§17.5) are **per-repository** artifacts;
+`check` operates within one repo's working tree. A multi-repo workspace (the common agent setup) is
+served by the cheapest mechanism the foundational research endorses — **symlink a shared docs +
+`.claims/` location into each repo, or run hibi per-repo** — not by a bespoke cross-repo indexer
+(over-engineering, §18-D). First-class cross-repo claim resolution is explicitly out of v1 scope; the
+boundary is named, not silently assumed.
+
 **Stamping (satisfies the threat model regardless of carrier):**
 - A **universal banner** — sentinel-delimited (`BEGIN`/`END`), **idempotent** (the engine locates the
   region between the sentinels and replaces it, so re-stamping an unchanged status produces no diff),
@@ -444,6 +465,12 @@ file; it does not modify it).
   file to its exact pre-banner bytes — in any text format. (Exact sentinel strings, nonce derivation,
   locate regexes, comment styles, frontmatter placement, and the splice contract are in §17.5.)
 - For markdown, an **optional** machine-readable `frontmatterStatus` is also written.
+- **Attention-budget files** (agent-instruction files — `CLAUDE.md`/`AGENTS.md`/editor-rule files):
+  the banner collapses to a **single-line pointer** and the full suspect detail is served only via the
+  JSON/`status` side-channel (§9, §17.5). The always-loaded instruction file must stay lean — the
+  research is explicit that extra bytes in such a file dilute the model's instruction-following
+  (§18-D). The instruction-file path set is configurable; the default is `CLAUDE.md`, `AGENTS.md`, and
+  editor rule files.
 
 *(Inline line-microformat carriers — claims authored as machine syntax inside the doc, à la atlas —
 remain rejected **as the universal carrier**: they deface human/third-party prose and cannot track
@@ -480,8 +507,19 @@ team opts in. See §14 D3.)*
   - **`diff --since <ref>`** — "what did this change invalidate?" (the write-time loop), on either
     side.
   - **`supersede`** — author an `amends`/`supersedes` edge; derive the reverse; stamp status.
-  - **`status [--doc <p>]`** — a **read-time** check a harness calls *before* feeding a document to a
-    naive agent ("is this current?") — belt-and-suspenders to the in-file banner.
+  - **`status [--doc <p>]`** — a **read-time** check a harness or an **agent SessionStart hook** calls
+    *before* feeding a document to a naive agent ("is this current?"); it is the deterministic gate
+    the foundational research wants in a hook (guaranteed execution, not advisory) — belt-and-suspenders
+    to the in-file banner (§7, §18-D).
+
+  **Output shape (agent-consumable — §18-D).** JSON objects **lead with the decision** (`status`,
+  `gates`, `side`) and trail the bulky evidence (located regions, confidence, selector agreement,
+  changed-evidence list), so a truncated or transcript-embedded read still surfaces the verdict first.
+  Each claim's **`owner` and time-since-last-verified** are reported in the JSON/`status` side-channel
+  for triage — **never** stamped into the banner, which stays terse and timestamp-free for determinism
+  (§17.5). A standing **claims index / manifest** (an `llms.txt`-style map of tracked docs → claims →
+  code → status) is a **deferred consumer-side projection** of `check --json`, catalogued in §19 — not
+  a core verb.
 
   **Agent tool-call path.** `record`, `suggest`, and `reanchor` are designed to be called by an agent
   mid-edit (the lowest-friction creation mode); the engine still validates that the proposed doc and
@@ -879,8 +917,18 @@ the value); if nothing matches, the `value` selector is omitted from the bundle.
   stamp wins (the engine owns the region).
 - **Comment styles:** markdown → HTML block `<!-- … -->`; `#`-per-line for python/shell/yaml/toml;
   `//`-per-line for ts/js/rust/c/go/java; none for plain `.txt`.
-- **Placement:** for the HTML style only, if the file opens with a `---` YAML frontmatter fence, insert
-  the banner **after** the closing fence; otherwise at the top of the file.
+- **Placement (top-of-file is load-bearing, not cosmetic — §18-D):** the banner **MUST** occupy the
+  **first lines of the file** — within the first ~30 lines an agent reliably attends to. The
+  *lost-in-the-middle* attention curve means a warning buried mid-file is effectively invisible to the
+  very agents hibi protects (long `CLAUDE.md`/`AGENTS.md` files are read top-down and the middle is
+  skimmed). Concretely: if the file opens with a `---` YAML frontmatter fence, insert **immediately
+  after** the closing fence; otherwise at the very top. The banner is **never** placed in the middle or
+  at the end of a file, in any carrier.
+- **Compact body for attention-budget files (§8):** for agent-instruction files, the body MAY collapse
+  to a **single-line pointer** (`STALE — N claim(s); run \`hibi status --doc <p>\``), with the full
+  suspect list emitted only to the JSON/`status` side-channel — so the always-loaded instruction file
+  is not bloated with banner prose (the research shows added bytes in an instruction file dilute the
+  model's attention — §18-D).
 - **Idempotent splice (the engine owns all spacing):** the banner block carries no leading/trailing
   blank line; the splicer normalizes the head to end in exactly one `\n`, then the banner, then `\n\n`
   (or a single `\n` at EOF), then the remainder with leading newlines trimmed. Removal reverses this
@@ -1029,10 +1077,83 @@ doc `doc-edited`), and a freshness metaphor (`fresh`) collided conceptually with
 `doc:unchanged · code:changed · behavior:at-risk`. **What would change it:** if `at-risk`'s hyphen
 proves awkward in serialization, the single-token fallback is `unsupported` (FEVER-adjacent); if teams
 find `changed` too bland, `stale` is the cited runner-up (cost: it re-overloads the human roll-up).
+The full options table, prior-art attribution, and the vocabulary invariants live in the standalone
+**`design/ADR-001-state-vocabulary.md`** (kept as a separate record by design).
+
+### 18-D. Documentation-practice alignment (the foundational research)
+
+hibi was commissioned out of an earlier body of research on keeping a multi-repo, agent-driven
+documentation corpus honest and lean (anti-staleness architecture, small-corpus retrieval,
+Claude-Code context engineering, lean doc-format specs, agent-consumable doc density). A five-track
+re-audit confirmed the revised design is **strongly aligned** — in several places hibi is the
+*mechanized enforcement* of a principle that research could only state as a manual convention:
+
+- **Single source of truth** ≡ the carrier inversion (§8): one canonical span, pointers not copies —
+  which also makes hibi immune by construction to the research's "the index drifts from its source"
+  failure mode (the store re-reads the live document, §6).
+- **"file:line → symbol names"** ≡ the tree-sitter named-node anchor (§4, §17.1).
+- **"executable beats prose"** ≡ the executable-verifier seam (§4, §17.6).
+- **Curation gate / never let the agent edit docs unreviewed** ≡ engine-never-authors +
+  suggest→enforce (§6, §4).
+- **Decision-vs-design / immutable supersession** ≡ the document lifecycle + typed edges (§4, §10).
+- **hibi *is* the re-verification a "freshness stamp" needs** — the research admits a `last_verified`
+  date is rubber-stampable *because nothing re-verifies it*; hibi is that process, so a green hibi
+  status is evidence-backed, not a hand-typed date.
+
+**Refinements adopted from this audit** (folded into the sections above): top-of-file banner placement
+as a load-bearing requirement (§17.5, lost-in-the-middle); a compact banner + side-channel detail for
+attention-budget instruction files (§8); the agent-hook consumer story and the "MCP serves live
+verdicts, not a cached index" clarification (§7); verdict-first JSON with `owner` and last-verified age
+in the side-channel, never the banner (§9); and a named cross-repo boundary (§8).
+
+**Boundaries the research *validated* (do not change):** no embeddings/vector/RAG (a similarity tool
+for a change-over-versions problem); no doc-count / size / bloat linting *in core* (file-quality is a
+separate axis from claim-drift — keep it a consumer); TTL stays an orthogonal backstop, never a
+time-first `last_verified` governance field; no model on the verdict path. Every track independently
+confirmed hibi is right to refuse these.
+
+Items the audit raised that are genuinely *separate, opt-in capabilities* are catalogued in §19.
+
+## 19. Additional resolvers & consumers (opt-in, deferred)
+
+These are **not** core. Each is an independently-implementable unit behind an existing seam — an
+out-of-process **resolver** (§7.1) or a JSON-output **consumer** (§7) — surfaced by the §18-D audit and
+recorded here so it can be built later without touching the tiny core (§11.4). None of them gates a
+verdict; the only gate remains a deterministic `refuted` (executable verifier) or an anchor-drift
+(`changed`/`orphaned`/…) on an `enforced` claim.
+
+**Resolvers (out-of-process, default-deny manifest — §7.1):**
+- **`uncovered-change` advisory** — *trigger:* a coarse `path`/`glob` edge whose code changed while
+  **no precise claim** covers it. *Output:* a non-gating suggestion ("code in `<edge>` changed;
+  consider recording a claim"). *Deferred/opt-in because:* it closes the one coverage gap precise
+  anchors structurally cannot see, but it risks the over-flagging §11.3 guards against — so it ships
+  behind `--fail-on` opt-in, severity-3 at most, and never turns a coarse edge into a gating `changed`
+  (§4).
+- **`import-ref` drift resolver** — *trigger:* an `@path`-style import or pointer reference inside an
+  owned instruction file whose target moved or was deleted. *Output:* `orphaned` for the broken
+  reference. *Deferred because:* it edges toward the navigation territory §2 disclaims, so it stays a
+  third-party resolver, never core; it closes the context-engineering "@-import drift" gap.
+- **Behavioral advisor (LLM / formal)** — already defined as the quarantined Tier-3 advisor (§7.4): an
+  opt-in resolver that *explains/triages* a behavioral claim, recording model/prompt/context
+  provenance, and **never** sets a computed state. Listed here for completeness; its deterministic
+  siblings, the **verifier runners** (`example`/`snapshot`/`contract`/`property`/`formal`/`command` —
+  §4, §17.6), are the gating-eligible members of the same family (via `refuted`).
+
+**Consumers (read `check --json`; out of repo scope — §7):**
+- **Claims index / `llms.txt` emitter** — a standing manifest (tracked docs → claims → code anchors →
+  status) projected from `check --json`. *A consumer, not core:* it authors no prose, runs no model,
+  builds no semantic graph — a thin formatter, so per §7.5/§11.4 it stays a consumer (or a documented
+  `jq` recipe), promoted to a first-class verb only if a real consumer needs it. It strengthens the
+  threat model: one map an agent reads before trusting any doc.
+- **Doc-age / re-review roll-up** — a consumer-side report ("document X: N expired/at-risk claims; no
+  claim confirmed since `<ref>`") that drives the research's periodic-review practice without adding a
+  new core state; built over existing verdicts + `ttl`.
 
 ---
 
 *This document is the complete and self-contained specification for the tool: the architecture, data
 model, contracts, algorithms, and parameters are final. The build is sequenced (§13) for validation,
 not scope reduction. Foundational decisions re-opened under research review are recorded with their
-evidence in §18.*
+evidence in §18 (new research) and §18-D (the foundational documentation-practice research);
+deferred, separately-implementable resolvers and consumers are catalogued in §19. The standalone
+state-vocabulary decision record is `design/ADR-001-state-vocabulary.md`.*
