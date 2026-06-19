@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.0](https://github.com/npupko/hibi/compare/v0.1.2...v0.2.0) (2026-06-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* the computed-state enum, the unidirectional Anchor, the Proposition.text field, the single-axis Verdict, and the old --fail-on/--text CLI surface are all replaced with no compatibility shim (greenfield, per ADR-001).
+
+### Features
+
+* rewrite the engine to the two-axis state model (ADR-001) ([3775cc1](https://github.com/npupko/hibi/commit/3775cc145ed37cb4d42e0034d245ff811380bb6c))
+
+
+### Bug Fixes
+
+* **action:** correct the fail-on strictness vocabulary ([ba53b76](https://github.com/npupko/hibi/commit/ba53b76b0decc6d33399ccdbdbddba5c29bf5a11))
+* **sdk:** update Rust echo example to the two-axis verdict shape ([d3cdb49](https://github.com/npupko/hibi/commit/d3cdb494781a4c5ef01d2817cda67fd44f34852a))
+
 ## [0.1.2](https://github.com/npupko/hibi/compare/v0.1.1...v0.1.2) (2026-06-18)
 
 
