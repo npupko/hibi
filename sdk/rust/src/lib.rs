@@ -4,19 +4,65 @@
 //! [`Resolver`] trait and call [`serve`]; the SDK owns the JSONL-RPC framing and
 //! dispatch over stdio. The protocol types mirror the canonical Zod model
 //! (`schemas/*.v1.json`), the single source of truth.
+//!
+//! The model is two-axis (ADR-001): an anchor-resolution axis reported per side
+//! (`doc` / `code`, sharing one `AnchorState` vocabulary) and an optional
+//! behavioral-belief axis (`BehaviorState`). The side is a separate field, never
+//! baked into the state word. All wire keys are camelCase via serde rename.
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::io::{self, BufRead, Write};
 
-/// W3C-style anchor selector (discriminated on `kind`). Opaque payload beyond
-/// `kind` keeps the SDK forward-compatible with new selector kinds.
+/// One side of a bidirectional [`Anchor`]: a multi-selector bundle resolving
+/// against a single `file`. Selectors are kept opaque (`Value`) so the SDK stays
+/// forward-compatible with new selector kinds (§4).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Anchor {
+pub struct SelectorBundle {
     pub file: String,
     pub selectors: Vec<Value>,
 }
 
+/// Bidirectional, composite anchor (§4): a doc-side bundle (the documented
+/// sentence) plus zero or more code-side bundles (the code it describes).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Anchor {
+    pub doc: SelectorBundle,
+    #[serde(default)]
+    pub code: Vec<SelectorBundle>,
+}
+
+/// Executable-evidence link that upgrades behavioral risk to a real verdict
+/// (§5/§17.6). Run by an out-of-process runner resolver, never in core.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Verifier {
+    pub kind: String,
+    #[serde(rename = "ref")]
+    pub r#ref: String,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub proves: Option<String>,
+}
+
+/// Deterministic blast-radius the change-gate watches for a behavioral claim
+/// (§5/§17.6). Absent → the gate falls back to the anchored node + its file.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BehaviorScope {
+    #[serde(rename = "rootSymbols", default)]
+    pub root_symbols: Vec<String>,
+    #[serde(rename = "reachableDepth", default = "default_reachable_depth")]
+    pub reachable_depth: u64,
+    #[serde(default)]
+    pub include: Vec<String>,
+    #[serde(default)]
+    pub exclude: Vec<String>,
+}
+fn default_reachable_depth() -> u64 {
+    2
+}
+
+/// Assertion — one verification instance. Carries the bidirectional [`Anchor`],
+/// the record's `enforcement` lifecycle, and the behavioral declarations (§5).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Assertion {
     pub id: String,
@@ -26,29 +72,51 @@ pub struct Assertion {
     pub document_id: String,
     pub owner: String,
     #[serde(rename = "ref")]
-    pub ref_: String,
+    pub r#ref: String,
     pub anchor: Anchor,
+    /// suggested|enforced|retired|unanchored-legacy. Only `enforced` can gate.
+    #[serde(default = "default_enforcement")]
+    pub enforcement: String,
+    #[serde(rename = "claimKind", skip_serializing_if = "Option::is_none", default)]
+    pub claim_kind: Option<String>,
     #[serde(default)]
+    pub verifiers: Vec<Verifier>,
+    #[serde(
+        rename = "behaviorScope",
+        skip_serializing_if = "Option::is_none",
+        default
+    )]
+    pub behavior_scope: Option<BehaviorScope>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
     pub ttl: Option<String>,
     #[serde(default)]
     pub attrs: Value,
 }
+fn default_enforcement() -> String {
+    "suggested".to_string()
+}
 
+/// Proposition — the timeless meaning. `textCache` is a non-authoritative copy
+/// of the documented sentence (audit/diff/recovery only); the authoritative text
+/// is the live doc span re-read at check time (§4, §18-B).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Proposition {
     pub id: String,
-    pub text: String,
+    #[serde(rename = "textCache")]
+    pub text_cache: String,
     #[serde(rename = "authoredTrust")]
     pub authored_trust: String,
     pub fingerprint: String,
 }
 
+/// A located region in the current text.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Region {
     pub start: u64,
     pub end: u64,
 }
 
+/// Per-selector contribution to the fused confidence (§17.3).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SelectorScore {
     pub kind: String,
@@ -57,7 +125,28 @@ pub struct SelectorScore {
     pub weight: f64,
 }
 
-/// Per-Assertion verdict. `state` is one of fresh|moved|stale|ghost|expired.
+/// Bulky located evidence — trails the decision fields in the JSON shape (§9).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VerdictEvidence {
+    #[serde(rename = "docRegion", skip_serializing_if = "Option::is_none", default)]
+    pub doc_region: Option<Region>,
+    #[serde(rename = "codeRegions", default)]
+    pub code_regions: Vec<Region>,
+    pub confidence: f64,
+    #[serde(rename = "selectorScores", default)]
+    pub selector_scores: Vec<SelectorScore>,
+    #[serde(rename = "changedEvidence", default)]
+    pub changed_evidence: Vec<Value>,
+    #[serde(rename = "ref", skip_serializing_if = "Option::is_none", default)]
+    pub r#ref: Option<String>,
+}
+
+/// Per-Assertion verdict — verdict-first, two-axis (§9). Leads with the decision
+/// (the two per-side anchor states, the optional behavioral state, and the
+/// `expired`/`gates` flags) and trails the bulky `evidence`. `doc` and `code`
+/// share one `AnchorState` vocabulary (unchanged|moved|changed|ambiguous|
+/// orphaned); `behavior` is one of unverified|at-risk|supported|refuted, absent
+/// on non-behavioral claims.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Verdict {
     #[serde(rename = "assertionId")]
@@ -66,20 +155,25 @@ pub struct Verdict {
     pub proposition_id: String,
     #[serde(rename = "documentId")]
     pub document_id: String,
-    pub state: String,
-    pub confidence: f64,
+    /// Axis 1 — anchor resolution, doc side.
+    pub doc: String,
+    /// Axis 1 — anchor resolution, code side (aggregated worst over bundles).
+    pub code: String,
+    /// Axis 2 — behavioral belief; absent on non-behavioral claims.
     #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub region: Option<Region>,
-    #[serde(rename = "selectorScores", default)]
-    pub selector_scores: Vec<SelectorScore>,
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub r#ref: Option<String>,
+    pub behavior: Option<String>,
+    /// Orthogonal time flag: past the Assertion's `ttl`.
+    pub expired: bool,
+    /// Whether this verdict gates the build (exit 2). Only `enforced` claims gate.
+    pub gates: bool,
+    pub evidence: VerdictEvidence,
     #[serde(default)]
     pub notes: Vec<String>,
     #[serde(default)]
     pub advisories: Vec<Advisory>,
 }
 
+/// Advisory note from a quarantined Tier-3 resolver — advises, never gates (§7.4).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Advisory {
     pub resolver: String,
@@ -88,6 +182,8 @@ pub struct Advisory {
     pub confidence: Option<f64>,
 }
 
+/// Result of a `describe` call — advertises this resolver's identity and the
+/// claim kinds / verifier kinds it can handle.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DescribeResult {
     pub name: String,
@@ -97,15 +193,26 @@ pub struct DescribeResult {
     pub tier: i64,
     #[serde(default)]
     pub advisory: bool,
+    #[serde(rename = "verifierKinds", default)]
+    pub verifier_kinds: Vec<String>,
 }
 fn default_tier() -> i64 {
     1
 }
 
+/// The current artifact contents passed to `resolve`/`verify`: the doc file (or
+/// `null` if missing) plus a map of code path → contents (or `null` if missing).
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct ResolveFiles {
+    pub doc: Option<String>,
+    #[serde(default)]
+    pub code: HashMap<String, Option<String>>,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 pub struct ResolveParams {
     pub assertion: Assertion,
-    pub text: Option<String>,
+    pub files: ResolveFiles,
     #[serde(default)]
     pub proposition: Option<Proposition>,
 }
@@ -118,10 +225,37 @@ pub struct ResolveResult {
     pub advisories: Vec<Advisory>,
 }
 
-/// Implement this trait, then call [`serve`].
+/// Params for a `verify` call — run one [`Verifier`] for a behavioral claim and
+/// report the resulting [`BehaviorState`] (§5/§17.6).
+#[derive(Debug, Clone, Deserialize)]
+pub struct VerifyParams {
+    pub assertion: Assertion,
+    pub verifier: Verifier,
+    #[serde(default)]
+    pub files: Option<ResolveFiles>,
+    #[serde(rename = "changedEvidence", default)]
+    pub changed_evidence: Vec<Value>,
+}
+
+#[derive(Debug, Clone, Serialize, Default)]
+pub struct VerifyResult {
+    /// One of unverified|at-risk|supported|refuted.
+    pub behavior: String,
+    #[serde(default)]
+    pub advisories: Vec<Advisory>,
+    #[serde(default)]
+    pub notes: Vec<String>,
+}
+
+/// Implement this trait, then call [`serve`]. `verify` is optional: the default
+/// impl returns `None`, which the engine treats as a non-gating `unverified`
+/// (back-compat — a resolver that only does anchor resolution need not change).
 pub trait Resolver {
     fn describe(&self) -> DescribeResult;
     fn resolve(&self, params: ResolveParams) -> ResolveResult;
+    fn verify(&self, _params: VerifyParams) -> Option<VerifyResult> {
+        None
+    }
 }
 
 #[derive(Deserialize)]
@@ -190,6 +324,40 @@ pub fn serve<R: Resolver>(resolver: R) {
                 Err(e) => write_line(
                     &mut stdout,
                     &RpcResponse::<ResolveResult> {
+                        id: req.id,
+                        result: None,
+                        error: Some(RpcError {
+                            message: e.to_string(),
+                            code: -1,
+                        }),
+                    },
+                ),
+            },
+            "verify" => match serde_json::from_value::<VerifyParams>(req.params) {
+                Ok(params) => match resolver.verify(params) {
+                    Some(result) => write_line(
+                        &mut stdout,
+                        &RpcResponse {
+                            id: req.id,
+                            result: Some(result),
+                            error: None,
+                        },
+                    ),
+                    None => write_line(
+                        &mut stdout,
+                        &RpcResponse::<VerifyResult> {
+                            id: req.id,
+                            result: None,
+                            error: Some(RpcError {
+                                message: "verify not supported by this resolver".to_string(),
+                                code: -1,
+                            }),
+                        },
+                    ),
+                },
+                Err(e) => write_line(
+                    &mut stdout,
+                    &RpcResponse::<VerifyResult> {
                         id: req.id,
                         result: None,
                         error: Some(RpcError {

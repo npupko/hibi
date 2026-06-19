@@ -2,11 +2,11 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "type": "object",
   "properties": {
-    "file": {
-      "type": "string"
+    "doc": {
+      "$ref": "#/$defs/__schema0"
     },
-    "selectors": {
-      "minItems": 1,
+    "code": {
+      "default": [],
       "type": "array",
       "items": {
         "$ref": "#/$defs/__schema0"
@@ -14,12 +14,32 @@
     }
   },
   "required": [
-    "file",
-    "selectors"
+    "doc",
+    "code"
   ],
   "additionalProperties": false,
   "$defs": {
     "__schema0": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "selectors": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema1"
+          }
+        }
+      },
+      "required": [
+        "file",
+        "selectors"
+      ],
+      "additionalProperties": false
+    },
+    "__schema1": {
       "oneOf": [
         {
           "type": "object",
@@ -124,6 +144,23 @@
             "language",
             "nodeKind",
             "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "inline-id"
+            },
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "id"
           ],
           "additionalProperties": false
         },

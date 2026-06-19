@@ -8,8 +8,10 @@ import {
   textSimilarity,
 } from "../src/algo/normalize.ts";
 import { WEIGHTS } from "../src/algo/params.ts";
+import { resolveAssertion } from "../src/algo/resolve.ts";
 import { MATCH_MAX_BITS, matchMain } from "../src/vendor/bitap.ts";
 import { fnv1a32hex } from "../src/vendor/fnv1a.ts";
+import { makeRepo, record } from "./helpers.ts";
 
 describe("Bitap matcher (vendored diff-match-patch)", () => {
   test("exact match returns the location", () => {
@@ -120,7 +122,22 @@ describe("text-quote localization cascade (§17.1)", () => {
   });
 });
 
-describe("confidence fusion & grading (§17.3)", () => {
+// Convenience: a fully-specified GradeInput with one drift dimension overridden.
+function gradeInput(over: Partial<Parameters<typeof grade>[0]> = {}) {
+  return grade({
+    selectors: [],
+    coarseOnly: false,
+    ambiguous: false,
+    startDelta: 0,
+    textQuoteFound: true,
+    textQuoteSimilarity: 1,
+    valueFound: false,
+    valueScore: 0,
+    ...over,
+  });
+}
+
+describe("confidence fusion & grading (§17.3, two-axis AnchorState)", () => {
   test("fuses over found selectors only", () => {
     const c = fuseConfidence([
       {
@@ -134,81 +151,75 @@ describe("confidence fusion & grading (§17.3)", () => {
     ]);
     expect(c).toBeCloseTo(1, 5);
   });
-  test("verdict bands", () => {
-    expect(bandConfidence(0.95)).toBe("fresh");
-    expect(bandConfidence(0.8)).toBe("fresh");
+
+  // bandConfidence maps confidence → AnchorState (one vocabulary, both sides).
+  // Bands (§17.3): C ≥ 0.8 unchanged, ≥ 0.5 moved, ≥ 0.2 changed, else orphaned.
+  test("confidence bands → AnchorState", () => {
+    expect(bandConfidence(0.95)).toBe("unchanged");
+    expect(bandConfidence(0.8)).toBe("unchanged");
     expect(bandConfidence(0.65)).toBe("moved");
-    expect(bandConfidence(0.35)).toBe("stale");
-    expect(bandConfidence(0.1)).toBe("ghost");
+    expect(bandConfidence(0.5)).toBe("moved");
+    expect(bandConfidence(0.35)).toBe("changed");
+    expect(bandConfidence(0.2)).toBe("changed");
+    expect(bandConfidence(0.1)).toBe("orphaned");
+    expect(bandConfidence(0)).toBe("orphaned");
   });
-  test("fewer than two found selectors → ghost", () => {
+
+  test("fewer than two found selectors → orphaned (confidence forced to 0)", () => {
     const g = grade({
       selectors: [{ kind: "text-quote", found: true, score: 1, weight: 0.3 }],
-      expired: false,
       coarseOnly: false,
+      ambiguous: false,
       startDelta: 0,
       textQuoteFound: true,
       textQuoteSimilarity: 1,
       valueFound: false,
       valueScore: 0,
     });
-    expect(g.state).toBe("ghost");
+    expect(g.state).toBe("orphaned");
     expect(g.confidence).toBe(0);
   });
-  test("value veto forces stale at confidence 0.3", () => {
+
+  test("value veto forces changed at confidence 0.3", () => {
     const g = grade({
       selectors: [
         { kind: "text-quote", found: true, score: 0.95, weight: 0.3 },
         { kind: "value", found: true, score: 0, weight: 0.2 },
       ],
-      expired: false,
       coarseOnly: false,
+      ambiguous: false,
       startDelta: 0,
       textQuoteFound: true,
       textQuoteSimilarity: 0.95,
       valueFound: true,
       valueScore: 0,
     });
-    expect(g.state).toBe("stale");
+    expect(g.state).toBe("changed");
     expect(g.confidence).toBe(0.3);
   });
-  test("expired short-circuits before fusion", () => {
-    const g = grade({
-      selectors: [
-        { kind: "text-quote", found: true, score: 1, weight: 0.3 },
-        { kind: "ast-node", found: true, score: 1, weight: 0.35 },
-      ],
-      expired: true,
-      coarseOnly: false,
-      startDelta: 0,
-      textQuoteFound: true,
-      textQuoteSimilarity: 1,
-      valueFound: false,
-      valueScore: 0,
-    });
-    expect(g.state).toBe("expired");
-  });
-  test("coarse-only anchors are never stale", () => {
+
+  test("coarse-only anchors are never drift → unchanged", () => {
     const g = grade({
       selectors: [],
-      expired: false,
       coarseOnly: true,
+      ambiguous: false,
       startDelta: null,
       textQuoteFound: false,
       textQuoteSimilarity: 0,
       valueFound: false,
       valueScore: 0,
     });
-    expect(g.state).toBe("fresh");
+    expect(g.state).toBe("unchanged");
   });
-  test("fresh downgrades to moved when start drifts > 4 chars", () => {
+
+  test("move-awareness: unchanged → moved when start drifts > 4 chars", () => {
     const g = grade({
       selectors: [
         { kind: "text-quote", found: true, score: 1, weight: 0.3 },
         { kind: "ast-node", found: true, score: 1, weight: 0.35 },
       ],
-      expired: false,
       coarseOnly: false,
+      ambiguous: false,
       startDelta: 12,
       textQuoteFound: true,
       textQuoteSimilarity: 1,
@@ -216,5 +227,110 @@ describe("confidence fusion & grading (§17.3)", () => {
       valueScore: 0,
     });
     expect(g.state).toBe("moved");
+  });
+
+  test("ambiguous: a multiply-matched quote over a clean fuse → ambiguous", () => {
+    const g = grade({
+      selectors: [
+        { kind: "text-quote", found: true, score: 1, weight: 0.3 },
+        { kind: "ast-node", found: true, score: 1, weight: 0.35 },
+      ],
+      coarseOnly: false,
+      ambiguous: true,
+      startDelta: 0,
+      textQuoteFound: true,
+      textQuoteSimilarity: 1,
+      valueFound: false,
+      valueScore: 0,
+    });
+    expect(g.state).toBe("ambiguous");
+  });
+
+  test("ambiguous does not override a genuine content changed/orphaned", () => {
+    // Low-confidence fuse lands in `changed`; ambiguity must not mask it.
+    const g = grade({
+      selectors: [
+        { kind: "text-quote", found: true, score: 0.3, weight: 0.3 },
+        { kind: "ast-node", found: true, score: 0.3, weight: 0.35 },
+      ],
+      coarseOnly: false,
+      ambiguous: true,
+      startDelta: 0,
+      textQuoteFound: true,
+      textQuoteSimilarity: 0.3,
+      valueFound: false,
+      valueScore: 0,
+    });
+    expect(g.state).toBe("changed");
+  });
+
+  test("grade has no `expired` axis — expired is resolve-level only", () => {
+    // Sanity: the GradeResult type/keys never carry an expired flag; grade only
+    // emits an AnchorState (expired lives on the Verdict, asserted below).
+    const g = gradeInput({
+      selectors: [
+        { kind: "text-quote", found: true, score: 1, weight: 0.3 },
+        { kind: "ast-node", found: true, score: 1, weight: 0.35 },
+      ],
+    });
+    expect(g.state).toBe("unchanged");
+    expect(Object.keys(g)).toEqual(["state", "confidence", "notes"]);
+  });
+});
+
+describe("expired is a resolve-level orthogonal flag (§17.3, moved OUT of grade)", () => {
+  test("resolveAssertion sets verdict.expired without disturbing doc/code", async () => {
+    const repo = await makeRepo();
+    try {
+      await repo.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+      // A past TTL → the time flag must fire while both sides still resolve.
+      const { assertion } = await record(repo, {
+        doc: "README.md",
+        text: "Retries are capped at five attempts.",
+        file: "src/retry.ts",
+        quote: "export const MAX_ATTEMPTS = 5;",
+        trust: "verified",
+        ttl: "2000-01-01T00:00:00.000Z",
+      });
+
+      const docContent = await repo.read("README.md");
+      const codeContent = await repo.read("src/retry.ts");
+      const verdict = resolveAssertion(assertion, {
+        doc: docContent,
+        code: new Map([["src/retry.ts", codeContent]]),
+      });
+
+      // expired is orthogonal: set independently, doc/code resolve on their own.
+      expect(verdict.expired).toBe(true);
+      expect(verdict.doc).toBe("unchanged");
+      expect(verdict.code).toBe("unchanged");
+      // expired is not an AnchorState value — it never leaks into either side.
+      expect(verdict.doc).not.toBe("expired");
+      expect(verdict.code).not.toBe("expired");
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  test("an un-expired claim leaves verdict.expired false", async () => {
+    const repo = await makeRepo();
+    try {
+      await repo.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+      const { assertion } = await record(repo, {
+        doc: "README.md",
+        text: "Retries are capped at five attempts.",
+        file: "src/retry.ts",
+        quote: "export const MAX_ATTEMPTS = 5;",
+        trust: "verified",
+        // no ttl → never expires
+      });
+      const verdict = resolveAssertion(assertion, {
+        doc: await repo.read("README.md"),
+        code: new Map([["src/retry.ts", await repo.read("src/retry.ts")]]),
+      });
+      expect(verdict.expired).toBe(false);
+    } finally {
+      await repo.cleanup();
+    }
   });
 });

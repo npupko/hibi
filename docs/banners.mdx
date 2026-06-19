@@ -1,0 +1,176 @@
+---
+title: "Status banners"
+description: "How Hibi stamps staleness into the document itself, so a naive reader or agent can't miss it."
+icon: "stamp"
+---
+
+A **status banner** is a block of plain, visible text that Hibi writes into the
+top of a stale document. It exists for one reason: a naive consumer — a teammate
+skimming a README, or an AI agent reading `CLAUDE.md` before it edits — reads the
+raw file and trusts it. If the only signal that a doc has drifted lives in CI logs
+or a JSON report, that consumer never sees it. So the status has to be visible
+**in the file**, not only in a side channel.
+
+A banner is the in-artifact form of a flag. Like every flag, it is a request to
+**re-verify**, not a claim that the doc is wrong.
+
+<Note>
+  Stamping is opt-in: a banner is written only when you pass `--write` to `check`
+  or `diff`, and only an **enforced** claim (a confirmed, well-anchored one) can
+  stamp the strong banner. A merely suggested claim never stamps and never gates.
+</Note>
+
+## What a banner looks like
+
+A banner is delimited by two **sentinel** lines — fixed markers Hibi owns — with
+the suspect claims listed between them. In a Markdown file it reads like this:
+
+```markdown
+<!-- HIBI:BEGIN v1 7f3a9c2e -->
+> [!WARNING]
+> STALE DOCUMENT — 2 suspect claim(s) — re-verify before trusting.
+>
+> [code:changed] (retry-backoff) Failed uploads retry up to 5 times with backoff.
+> [doc:orphaned] (sort-order) Results are returned sorted ascending by score.
+<!-- HIBI:END v1 7f3a9c2e sha=1a2b3c4d -->
+```
+
+Everything between the two sentinels is engine-owned. Everything outside them is
+your prose, untouched.
+
+The pieces:
+
+- **`HIBI:BEGIN v1 <nonce>`** and **`HIBI:END v1 <nonce> sha=<8-hex>`** — the
+  sentinels. They are line-anchored and version-tagged (`v1`). `<nonce>` is a
+  per-repo value; `sha=<8-hex>` is a checksum over the body. Both are explained
+  below.
+- **Headline** — the default is `STALE DOCUMENT — N suspect claim(s) — re-verify
+  before trusting.`, where `N` is the count of suspect propositions.
+- **Body lines** — one per suspect proposition, **sorted by id**, in the form
+  `[STATUS] (id) text`. The status is side-tagged (`code:changed`,
+  `doc:orphaned`) and can carry a lifecycle marker (`superseded`, `amended`,
+  `retracted`). The text is the documented sentence.
+
+There are deliberately **no timestamps and no run-ids** in a banner. Hibi is
+deterministic — the same working tree must produce the same banner bytes — and a
+timestamp would break that.
+
+## The four guarantees
+
+A banner has to survive being committed, re-read, and re-stamped without ever
+corrupting the file or firing on the wrong one. Four properties make that safe.
+
+<AccordionGroup>
+  <Accordion title="Per-repo nonce — never stamps the wrong file" icon="fingerprint">
+    `init` generates a random **nonce** for the repository and stores it in the
+    claim store config. Every sentinel carries it (`HIBI:BEGIN v1 7f3a9c2e`). A
+    document that merely *quotes* the banner format — for instance, this very page
+    — uses a different (or no) nonce, so Hibi never mistakes it for a real banner
+    and never overwrites it.
+  </Accordion>
+  <Accordion title="FNV-1a checksum — detects hand-edits" icon="shield-halved">
+    The END sentinel ends with `sha=<8-hex>`: an **FNV-1a (32-bit)** checksum over
+    the banner body, rendered as 8 hex characters. If someone hand-edits the text
+    between the sentinels, the checksum no longer matches. Under
+    `--fail-on tamper`, Hibi refuses to overwrite the tampered region and reports
+    it; otherwise the freshly computed stamp wins and self-heals the banner.
+  </Accordion>
+  <Accordion title="Line-anchored and version-tagged" icon="lines-leaning">
+    Sentinels are matched on whole lines and carry the `v1` tag. That keeps
+    detection unambiguous and lets the format evolve without misreading an old
+    banner as a new one.
+  </Accordion>
+  <Accordion title="Whitespace is engine-owned — clean removal" icon="eraser">
+    All whitespace inside and around the banner region belongs to the engine.
+    Clearing a banner restores the **exact pre-banner bytes** — removing it leaves
+    no trailing blank line or stray newline behind.
+  </Accordion>
+</AccordionGroup>
+
+Because the region between the sentinels is simply replaced on each write,
+stamping is **idempotent**: re-stamping a document whose status hasn't changed
+produces no diff (it is byte-stable). Each write resolves to one of four actions
+— `insert`, `replace`, `remove`, or `noop`.
+
+## Where the banner goes
+
+The banner is always placed at the **top of the file**, within roughly the first
+30 lines. This is not cosmetic. Long inputs suffer from "lost in the middle" —
+readers and language models attend far less to content buried in the body than to
+the start. A warning the agent never reads is no warning at all, and agents are
+exactly the consumers Hibi protects.
+
+The one adjustment: if the file opens with a `---` frontmatter fence, the banner
+goes **immediately after** that fence so it doesn't break the frontmatter.
+Otherwise it goes at the very top. Never the middle, never the end.
+
+## Comment style per format
+
+Hibi treats docs as text, so the banner adapts its comment syntax to the file's
+format. The sentinels and body are wrapped so they read as a comment (or, in
+Markdown, as visible prose) rather than corrupting the document.
+
+| Format | Comment style |
+|---|---|
+| Markdown | `<!-- ... -->` |
+| Python, shell, YAML, TOML | `#` per line |
+| TypeScript, JavaScript, Rust, C, Go, Java | `//` per line |
+| `.txt` | none (plain lines) |
+
+## Attention-budget files
+
+`CLAUDE.md`, `AGENTS.md`, and editor rule files are loaded into an agent's context
+on **every** turn, so their length is a budget you pay continuously. A multi-line
+banner there is waste.
+
+For these files the banner collapses to a **single-line pointer**:
+
+```markdown
+<!-- HIBI:BEGIN v1 7f3a9c2e -->
+> STALE — 2 claim(s); run hibi status --doc CLAUDE.md
+<!-- HIBI:END v1 7f3a9c2e sha=9e8d7c6b -->
+```
+
+The pointer says only that the file is stale and how to get the detail; the full
+per-claim breakdown lives in the JSON output and `hibi status`. The
+always-loaded instruction file stays lean.
+
+<Tip>
+  Run `hibi status --doc <path>` to see the full suspect set for any file — it's
+  the read-time gate an agent calls before trusting a doc, and the side channel
+  the single-line pointer refers you to.
+</Tip>
+
+## Frontmatter status
+
+For Markdown files that already carry frontmatter, Hibi can optionally write a
+`frontmatterStatus` field alongside the banner. It only does this where
+frontmatter already exists, and it **never clobbers an author's own `status`
+key** — that field belongs to you.
+
+## What the engine writes, and what it doesn't
+
+A banner stamps **status** into a document: which claims are suspect, why, and a
+prompt to re-verify. It never edits your prose. Fixing the wording is the
+human's or agent's job — Hibi flags, you (or your agent) rewrite, then re-run
+`check`. The engine owns the banner region and the lifecycle marks; the prose
+between banners is always yours.
+
+<Warning>
+  A banner means *re-verify*, not *rewrite blindly*. The status tells you the
+  evidence under a claim moved; confirming whether the documented sentence is
+  still true is a human or agent decision.
+</Warning>
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Trust, enforcement & lifecycle" icon="arrows-spin" href="/lifecycle">
+    Which claims may stamp a strong banner, how supersession and remediation
+    drive the lifecycle marks you see in the body.
+  </Card>
+  <Card title="CI, git hooks & agents" icon="robot" href="/ci">
+    Wire `check --write` and the `status` read-time gate into CI, a git hook, or
+    an agent's pre-edit lookup.
+  </Card>
+</CardGroup>

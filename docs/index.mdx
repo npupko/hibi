@@ -2,31 +2,64 @@
 title: "Hibi"
 sidebarTitle: "Overview"
 description: "Catch documentation that no longer matches your code."
+icon: "house"
 ---
 
-Hibi tracks **claims**: sentences in your docs and AI-agent instructions that
-assert how the code behaves. You anchor each claim to the code it describes.
-When that code changes, `hibi check` flags the claim and can stamp a status
-banner into the doc — so no reader, and no agent, acts on a page that has
-fallen out of sync with the source.
+Hibi (日々, "day after day") tracks **claims**: sentences in your docs and
+AI-agent instruction files that assert how the code behaves. You anchor each
+claim to the code it describes. When either side drifts — the code changes, or
+the documented sentence itself changes — `hibi check` flags the claim and can
+stamp a status banner into the doc, so no reader, and no agent, acts on a page
+that has fallen out of sync with the source.
 
 Run it in CI, in a git hook, or as a pre-edit lookup an agent makes before it
 trusts a doc.
+
+## The mental model
+
+A **claim** is a binding between a documented sentence and the code it
+describes. You record one with `hibi record`, pointing at a span of prose and
+the code span(s) it asserts something about. Hibi stores a bidirectional
+**anchor** — pointers to both sides, not a copy of the prose — in a committed
+store beside your docs (`.claims/`, one file per claim).
+
+On every `hibi check`, Hibi resolves the **doc side first**: it re-reads the
+live sentence from the current document. If that sentence is gone or has been
+edited, the claim is flagged and Hibi stops — it will not verify a stale
+sentence against code as if it still existed. If the sentence is intact, Hibi
+localizes the code side and grades whether the code still matches.
+
+The result is a **verdict** with two independent axes, read like
+`doc:unchanged · code:changed · behavior:at-risk`. A flag is a request to
+**re-verify**, not a claim that the doc is wrong — the evidence under the
+sentence moved, and a human or agent decides what the prose should now say.
+Hibi never rewrites prose; it only flags and, optionally, stamps a banner.
+
+<Note>
+  Hibi is **deterministic** — no model runs in the check loop. The same working
+  tree always yields the same verdicts. An optional semantic resolver may advise
+  out-of-process, but it never decides a verdict and never gates.
+</Note>
+
+## Start here
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
     Install Hibi and record your first claim in a couple of minutes.
   </Card>
   <Card title="How it works" icon="diagram-project" href="/concepts">
-    Claims, anchors, and how verdicts are graded — deterministically.
+    Claims, anchors, and the doc-first flow that grades verdicts deterministically.
+  </Card>
+  <Card title="Why Hibi" icon="compass" href="/design">
+    The problem, the threat model, and why no model sits on the verdict path.
   </Card>
   <Card title="CLI reference" icon="terminal" href="/cli-reference">
-    Every command, exit code, and strictness level.
+    Every command, flag, exit code, and strictness level.
   </Card>
   <Card title="Resolvers & SDKs" icon="puzzle-piece" href="/resolvers">
     Extend drift detection with out-of-process resolvers in any language.
   </Card>
-  <Card title="Claude Code skill" icon="robot" href="/claude-code">
+  <Card title="Claude Code skill" icon="wand-magic-sparkles" href="/claude-code">
     Install the official Agent Skill so coding agents use Hibi correctly.
   </Card>
 </CardGroup>
@@ -39,15 +72,15 @@ trusts a doc.
     verdicts every time. The optional semantic resolver advises and nothing more.
   </Card>
   <Card title="A flag means re-verify" icon="flag">
-    Hibi reports that the evidence under a claim moved. It never declares a doc
-    wrong on its own.
+    Hibi reports that the evidence under a claim moved — suspect, not false. It
+    never declares a doc wrong on its own.
   </Card>
   <Card title="Any file format" icon="file-lines">
     Hibi treats docs as text, so Markdown, plain text, AsciiDoc, or anything
-    else works without a per-format parser.
+    else works without a per-format parser in the core.
   </Card>
   <Card title="Offline & shallow-clone safe" icon="wifi-slash">
     The anchor is its own baseline, so `check` reads your files, never git
-    history.
+    history — correct even under `git clone --depth=1`.
   </Card>
 </CardGroup>

@@ -1,9 +1,22 @@
 ---
 title: "Quickstart"
-description: "Install Hibi and anchor your first claim."
+description: "Install Hibi, anchor your first claim, and check it for drift in a few minutes."
+icon: "rocket"
 ---
 
+Hibi tracks **claims**: sentences in your docs or AI-agent instructions that
+assert how the code behaves. You anchor each claim to the code that backs it, and
+`hibi check` flags the claim whenever either side drifts — so no reader, and no
+agent, acts on a page that has fallen out of sync with the source.
+
+This page takes you from nothing to a checked claim. The whole loop is three
+verbs: **record** a claim, **check** it, and read the verdict. A flag is a request
+to **re-verify**, not a claim that the doc is wrong.
+
 ## Install
+
+Hibi ships as a single self-contained executable — no runtime to install. You can
+also add it to a Bun project from npm.
 
 <CodeGroup>
 
@@ -28,18 +41,34 @@ bun add @npupko/hibi
 
 <Steps>
   <Step title="Initialize the store">
+    `hibi init` creates a committed `.claims/` directory beside your docs, with a
+    per-repo banner nonce. Each claim becomes its own file in here, so merges stay
+    scoped — there is no monolithic lockfile.
+
     ```sh
-    hibi init   # creates .claims/ (with a per-repo banner nonce)
+    hibi init
     ```
   </Step>
   <Step title="Record a claim, anchored to the code that backs it">
+    Hibi is **span-first**: you point at the documented sentence and at the code
+    it describes, and the doc span supplies the claim text. The example below
+    binds a line of your README to the constant that enforces it.
+
     ```sh
     hibi record \
-      --doc README.md --text "Retries are capped at 5 attempts" \
-      --file src/retry.ts --quote "MAX_ATTEMPTS = 5" --trust verified --owner alice
+      --doc README.md --doc-quote "Retries are capped at 5 attempts" \
+      --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" \
+      --trust verified --ref PR-1024 --owner alice
     ```
+
+    Because the code side mentions the literal `5`, changing `MAX_ATTEMPTS` to
+    `50` later will trip this claim even if nothing else in the file moves.
   </Step>
   <Step title="Verify every claim">
+    `hibi check` re-finds each claim's anchors in your current files and computes
+    a verdict. Add `--write` to stamp a status banner into any doc whose claims
+    are now suspect, so the staleness is visible in the file itself.
+
     ```sh
     hibi check              # verify every claim
     hibi check --write      # verify, and stamp status banners into affected docs
@@ -47,18 +76,39 @@ bun add @npupko/hibi
   </Step>
 </Steps>
 
+A verdict reads like `doc:unchanged · code:changed · behavior:at-risk` — one
+short, side-prefixed status per axis. `hibi check` exits `0` when everything is
+clean, `2` when an enforced claim has a gating problem (changed, orphaned, or
+ambiguous on either side, expired, or refuted), and `3` for a re-anchorable
+warning (moved or at-risk). A `moved` claim never fails the build on its own.
+
 ## Everyday commands
 
 ```sh
-hibi diff --since origin/main   # what did this change invalidate?
-hibi query --path src/retry.ts  # before editing: which claims cover this file?
-hibi supersede --new v2.md --old v1.md --type supersedes
-hibi status --doc README.md     # is this doc still current?
+hibi diff --since origin/main     # what did this change invalidate?
+hibi query --path src/retry.ts    # before editing: which claims cover this file?
+hibi suggest --doc README.md      # propose anchorable candidate claims from a doc
+hibi reanchor <claim-id> --doc-quote "…" --code-file src/retry.ts  # re-resolve a drifted claim
+hibi supersede --new v2.md --old v1.md --type supersedes  # a newer doc replaces an old one
+hibi status --doc README.md       # is this one doc still current?
 ```
 
-Output is JSON by default. Add `--pretty` for human reading.
+`hibi status --doc <path>` is the read-time gate an agent runs before it trusts a
+doc; `hibi diff --since <ref>` is the write-time loop that reports what a change
+just invalidated. Both exit `2` on a gating problem and `3` on a warning, so they
+drop straight into CI or a git hook.
+
+<Note>
+  Output is JSON by default — quiet and machine-readable. Add `--pretty` for
+  human-friendly output when you run a command by hand.
+</Note>
 
 <Tip>
-  See the [CLI reference](/cli-reference) for every command, exit code, and
-  strictness level.
+  See the [CLI reference](/cli-reference) for every command, flag, exit code, and
+  strictness level (`--fail-on gating|warn|tamper|never`).
 </Tip>
+
+<Card title="How it works" icon="diagram-project" href="/concepts">
+  Claims, redundant anchors, the doc-first resolution flow, and how verdicts are
+  graded — deterministically, with no model in the check loop.
+</Card>

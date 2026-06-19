@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { resolveAssertion } from "../src/algo/resolve.ts";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
-import type { Assertion } from "../src/core/model.ts";
-import { buildAnchor } from "../src/engine/anchor.ts";
+import type { Assertion, SelectorBundle } from "../src/core/model.ts";
+import { buildSelectorBundle, composeAnchor } from "../src/engine/anchor.ts";
 
 let analyzer: Awaited<ReturnType<typeof getAnalyzer>>;
 beforeAll(async () => {
@@ -13,6 +13,31 @@ const region = (text: string, quote: string) => {
   const start = text.indexOf(quote);
   return { start, end: start + quote.length };
 };
+
+/** A trivial doc-side bundle whose sentence is present in `docText`. */
+function docBundle(docText: string, sentence: string): SelectorBundle {
+  return buildSelectorBundle("README.md", docText, region(docText, sentence));
+}
+
+/** Assemble an Assertion from a doc-side + code-side bundle. */
+function makeAssertion(
+  doc: SelectorBundle,
+  code: SelectorBundle,
+  overrides: Partial<Assertion> = {},
+): Assertion {
+  return {
+    id: "asrt_1",
+    propositionId: "p",
+    documentId: "d",
+    owner: "x",
+    ref: "r",
+    anchor: composeAnchor(doc, [code]),
+    enforcement: "suggested",
+    verifiers: [],
+    attrs: {},
+    ...overrides,
+  };
+}
 
 describe("tree-sitter snapping & two-tier hash (§17.2)", () => {
   test("structural hash is invariant under re-indentation", () => {
@@ -86,60 +111,55 @@ describe("value extraction (§17.4)", () => {
 });
 
 describe("end-to-end value veto: a 5 → 50 change trips even at the boundary (§4, §17.3)", () => {
+  const docText = "The retry budget is five attempts.\n";
+  const docSentence = "The retry budget is five attempts.";
+
   test("value selector catches a boundary insertion the text tier misses", () => {
     const original = "export const MAX_ATTEMPTS = 5;\n";
-    const anchor = buildAnchor(
+    const codeBundle = buildSelectorBundle(
       "src/retry.ts",
       original,
       region(original, "MAX_ATTEMPTS = 5"),
-      {
-        language: "typescript",
-        analyzer,
-      },
+      { language: "typescript", analyzer },
     );
-    // The anchor must carry both an ast-node and a value selector.
-    expect(anchor.selectors.some((s) => s.kind === "ast-node")).toBe(true);
-    const valueSel = anchor.selectors.find((s) => s.kind === "value");
+    // The code-side bundle must carry both an ast-node and a value selector.
+    expect(codeBundle.selectors.some((s) => s.kind === "ast-node")).toBe(true);
+    const valueSel = codeBundle.selectors.find((s) => s.kind === "value");
     expect(valueSel).toBeDefined();
 
-    const assertion: Assertion = {
-      id: "asrt_1",
-      propositionId: "p",
-      documentId: "d",
-      owner: "x",
-      ref: "r",
-      anchor,
-      attrs: {},
-    };
+    const assertion = makeAssertion(
+      docBundle(docText, docSentence),
+      codeBundle,
+    );
     const changed = "export const MAX_ATTEMPTS = 50;\n";
-    const verdict = resolveAssertion(assertion, changed, { ast: analyzer });
-    // Despite text similarity ~1.0, the value veto forces stale.
-    expect(verdict.state).toBe("stale");
+    const verdict = resolveAssertion(
+      assertion,
+      { doc: docText, code: new Map([["src/retry.ts", changed]]) },
+      { ast: analyzer },
+    );
+    // Despite text similarity ~1.0, the value veto forces a `changed` code side.
+    expect(verdict.code).toBe("changed");
     expect(verdict.notes.join(" ")).toContain("value veto");
   });
 
-  test("an unchanged file grades fresh with full corroboration", () => {
+  test("an unchanged file grades code:unchanged with full corroboration", () => {
     const original = "export const MAX_ATTEMPTS = 5;\n";
-    const anchor = buildAnchor(
+    const codeBundle = buildSelectorBundle(
       "src/retry.ts",
       original,
       region(original, "MAX_ATTEMPTS = 5"),
-      {
-        language: "typescript",
-        analyzer,
-      },
+      { language: "typescript", analyzer },
     );
-    const assertion: Assertion = {
-      id: "a",
-      propositionId: "p",
-      documentId: "d",
-      owner: "x",
-      ref: "r",
-      anchor,
-      attrs: {},
-    };
-    const verdict = resolveAssertion(assertion, original, { ast: analyzer });
-    expect(verdict.state).toBe("fresh");
-    expect(verdict.confidence).toBeCloseTo(1, 5);
+    const assertion = makeAssertion(
+      docBundle(docText, docSentence),
+      codeBundle,
+    );
+    const verdict = resolveAssertion(
+      assertion,
+      { doc: docText, code: new Map([["src/retry.ts", original]]) },
+      { ast: analyzer },
+    );
+    expect(verdict.code).toBe("unchanged");
+    expect(verdict.evidence.confidence).toBeCloseTo(1, 5);
   });
 });

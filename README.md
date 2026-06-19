@@ -37,15 +37,17 @@ bun add @npupko/hibi
 ```sh
 hibi init                       # create .claims/ (with a per-repo banner nonce)
 
-# Record a claim and anchor it to the constant that backs it
+# Record a claim: anchor the doc sentence to the constant that backs it (span-first)
 hibi record \
-  --doc README.md --text "Retries are capped at 5 attempts" \
-  --file src/retry.ts --quote "MAX_ATTEMPTS = 5" --trust verified --owner alice
+  --doc README.md --doc-quote "Retries are capped at 5 attempts" \
+  --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" --trust verified --owner alice
 
 hibi check                      # verify every claim
 hibi check --write              # verify, and stamp status banners into affected docs
 hibi diff --since origin/main   # what did this change invalidate?
 hibi query --path src/retry.ts  # before editing: which claims cover this file?
+hibi suggest --doc README.md    # propose anchorable claims from a doc (suggested records)
+hibi reanchor <claim-id> --doc-quote "…" --code-file src/retry.ts  # re-resolve a claim
 hibi supersede --new v2.md --old v1.md --type supersedes
 hibi status --doc README.md     # is this doc still current?
 ```
@@ -57,23 +59,23 @@ Output is JSON by default. Add `--pretty` for human reading.
 | code | meaning |
 |------|---------|
 | `0`  | all clean |
-| `2`  | suspect present (`stale` / `ghost` / `expired`) |
-| `3`  | `moved`-only (re-anchorable warning) |
+| `2`  | gating: `changed` / `orphaned` / `ambiguous` / `expired` / `refuted` on an enforced claim |
+| `3`  | warning: `moved` or `at-risk` (re-anchorable / advisory) |
 | `1`  | operational error |
 
-Tune strictness with `--fail-on suspect|moved|tamper|never`.
+Tune strictness with `--fail-on gating|warn|tamper|never`.
 
 ## How it works
 
-Each claim carries several redundant anchors to the code it describes:
+Each claim carries a **bidirectional anchor**: a doc-side bundle (the documented sentence) and one or more code-side bundles (the code it describes). Each side bundles several redundant selectors against one file:
 
-- the quoted code text, matched fuzzily so it survives small edits and moves;
+- the quoted text, matched fuzzily so it survives small edits and moves;
 - its byte position, as a cheap hint;
 - the enclosing syntax node, parsed with tree-sitter, so reformatting alone does not trip it;
 - any literal value it mentions, so changing `MAX_ATTEMPTS = 5` to `50` flags the claim even when nothing else moves;
 - an optional `path` or `glob` for coarse coverage, used to size blast radius.
 
-On `hibi check`, Hibi re-finds each anchor in your current files and grades how far it moved. When the anchors agree, you get a confident verdict; when they disagree, Hibi asks you to re-verify instead of guessing. Verdicts are computed live and kept out of the store.
+On `hibi check`, Hibi re-finds each side in your current files and grades the result on two independent axes: **anchor resolution** per side (`unchanged` · `moved` · `changed` · `ambiguous` · `orphaned`), and, on behavioral claims, a **behavioral belief** (`unverified` · `at-risk` · `supported` · `refuted`). A verdict reads e.g. `doc:unchanged · code:changed · behavior:at-risk`. When the selectors agree, you get a confident verdict; when they disagree, Hibi asks you to re-verify instead of guessing. Verdicts are computed live and kept out of the store.
 
 ## What you can rely on
 

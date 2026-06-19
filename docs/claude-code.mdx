@@ -1,17 +1,56 @@
 ---
 title: "Claude Code skill"
-description: "Install the official Agent Skill so coding agents use Hibi correctly."
+description: "Install the official Agent Skill so a coding agent uses Hibi correctly — from first claim to lifecycle."
+icon: "wand-magic-sparkles"
 ---
 
-Hibi ships a [Claude Code](https://claude.com/claude-code) **Agent Skill** that
-teaches coding agents to use it: set up the store in a fresh repo, record
-well-anchored claims, run the everyday `check` / `diff` / `query` / `status` loops,
-read verdicts and exit codes, respond to flagged claims, wire CI, and manage doc
-lifecycle. The Hibi repository doubles as a [plugin
-marketplace](https://docs.claude.com/en/docs/claude-code/plugin-marketplaces), so
-installing it takes two commands.
+Hibi ships a [Claude Code](https://claude.com/claude-code) **Agent Skill** — a
+bundle of instructions a coding agent loads on demand to learn how to use a tool
+the right way. The Hibi skill teaches the agent the whole loop: set up the store
+in a fresh repo, record well-anchored claims, run the everyday `check` / `diff` /
+`query` / `status` commands, read the two-axis verdict, respond to a flag without
+silencing it, and manage the document lifecycle.
+
+The skill is the agent-facing half of the same idea the rest of these docs
+describe for humans. Hibi is **deterministic** — no model runs in the check loop —
+so the skill never asks the agent to judge whether a doc is stale. It teaches the
+agent to ask Hibi, and to act on the answer.
+
+## Mental model: the deterministic half of the loop
+
+A coding agent edits code all day. Left alone, it reads a doc or an `AGENTS.md`
+file, trusts it, and edits against it — even when that doc has quietly fallen out
+of sync. Hibi is the deterministic check that closes that gap. The skill wires the
+agent into two moments of its own session.
+
+```mermaid
+sequenceDiagram
+  participant A as Coding agent
+  participant H as hibi
+  A->>H: before trusting a doc: status --doc CLAUDE.md
+  H-->>A: current? (exit 0) or STALE (exit 2/3)
+  Note over A,H: agent trusts only a current doc
+  A->>A: edits code
+  A->>H: after editing: diff --since base
+  H-->>A: which claims this change invalidated
+  A->>A: drafts the prose fix; human merges
+```
+
+What to notice: Hibi flags; the agent (or a human) rewrites the prose. A flag is a
+request to **re-verify**, not a claim that the doc is wrong. The engine never
+writes prose — it only tells the agent which sentences the change put at risk.
+
+<Note>
+  The skill guides the agent; it does not bundle the `hibi` binary. The agent
+  installs Hibi the usual way — a prebuilt binary or `bun add @npupko/hibi` — while
+  it follows the skill.
+</Note>
 
 ## Install
+
+The Hibi repository doubles as a [plugin
+marketplace](https://docs.claude.com/en/docs/claude-code/plugin-marketplaces), so
+installing the skill is two commands.
 
 <Steps>
   <Step title="Add the marketplace">
@@ -26,28 +65,91 @@ installing it takes two commands.
   </Step>
 </Steps>
 
-Run `/plugin marketplace update` after the repo changes to pull the latest version.
+Run `/plugin marketplace update` after the repository changes to pull the latest
+version.
 
-<Note>
-  The skill guides the agent; it does not bundle the `hibi` binary. The agent
-  installs Hibi the usual way (prebuilt binary or `bun add @npupko/hibi`) while it
-  follows the skill.
-</Note>
+## What the skill teaches
 
-## What the skill does
+Claude loads the skill when you ask it to work with Hibi — and even when you don't
+name the tool but describe the problem it solves: docs drifting from code, a stale
+`README` or `AGENTS.md`, "keep the docs honest when the code changes". You can also
+invoke it on demand as `/hibi-cli:hibi`.
 
-Claude loads it when you ask it to work with Hibi, even if you don't name the tool
-but describe the problem: docs drifting from code, a stale `README` or `AGENTS.md`,
-"keep the docs honest". You can also run it on demand as `/hibi-cli:hibi`. It covers:
+<AccordionGroup>
+  <Accordion title="Bootstrapping a repository" icon="seedling">
+    Install Hibi, run `hibi init` to create the `.claims/` store (a committed
+    directory beside your docs, one file per claim, with a per-repo banner nonce),
+    commit the store, and seed the first claims. The agent learns that `.claims/`
+    is tracked in git, not ignored — the anchors are the baseline that makes
+    `check` work offline.
+  </Accordion>
 
-- **Bootstrapping:** install, `hibi init`, tracking `.claims/`, seeding claims.
-- **Recording claims well:** anchoring on the token that backs a claim, so a real
-  change trips it while a reformat does not.
-- **The everyday loops:** `query` before editing, `diff --since` after, `check` as a
-  gate, `status` as a read-time check.
-- **Responding to drift:** re-verifying a flagged claim instead of silencing it, and
-  retiring an obsolete claim without leaving the store inconsistent.
-- **Lifecycle:** `supersede`, `amends`, `retract`, `archive`.
+  <Accordion title="Recording claims well — span-first" icon="anchor">
+    The skill's core lesson is to anchor precisely. You point Hibi at the
+    documented sentence (`--doc-quote`) and the exact code span that backs it
+    (`--code-file` + `--code-quote`), so a real change trips the claim while a pure
+    reformat does not. `hibi suggest --doc <p>` proposes anchorable candidate
+    claims from an existing document; the agent reviews them rather than enforcing
+    blindly. See [Anchors & selectors](/anchors) for how redundant selectors fuse
+    into a confidence score.
+  </Accordion>
+
+  <Accordion title="The everyday loops" icon="arrows-rotate">
+    Four commands, each tied to a moment:
+    - `hibi query --path <p>` — **before** editing a file, ask which claims cover it.
+    - `hibi diff --since <ref>` — **after** editing, ask which claims the change invalidated.
+    - `hibi check` — verify every claim as a gate (in CI or a hook).
+    - `hibi status --doc <p>` — a read-time check before the agent trusts a single doc.
+  </Accordion>
+
+  <Accordion title="Reading the two-axis verdict" icon="scale-balanced">
+    The skill teaches the agent to read a verdict like
+    `doc:unchanged · code:changed · behavior:at-risk`. The first axis is anchor
+    resolution per side (`doc:…` / `code:…`); the second appears only on behavioral
+    claims. The agent learns which results gate (`changed`, `orphaned`, `ambiguous`,
+    `expired`, `refuted` on an enforced claim → exit code `2`) and which are warnings
+    that never gate (`moved`, `at-risk` → exit code `3`). Full detail in
+    [Verdicts, states & exit codes](/verdicts).
+  </Accordion>
+
+  <Accordion title="Responding to a flag — re-verify, don't silence" icon="rotate">
+    When a claim is flagged, the agent re-resolves it with `hibi reanchor <claim-id>`
+    against the current content rather than deleting the record to make the check
+    pass. If the documented sentence was truly removed (`doc:orphaned`), the agent
+    relocates or retires the claim. The skill is explicit that a flag means the
+    evidence moved — suspect, not false — and that a human decides what the prose
+    should now say.
+  </Accordion>
+
+  <Accordion title="Managing the document lifecycle" icon="arrows-spin">
+    When a newer document replaces an older one, the agent records the relationship
+    with `hibi supersede --new <p> --old <p> --type supersedes|amends`, withdraws a
+    claim with `hibi retract`, and moves an obsolete document out of the read path
+    with `hibi archive`. See [Trust, enforcement & lifecycle](/lifecycle).
+  </Accordion>
+</AccordionGroup>
+
+<Warning>
+  The skill never teaches the agent to decide staleness itself. That judgment is
+  Hibi's deterministic job. The agent's role is to run the checks, read the
+  verdict, and draft the prose fix a human merges.
+</Warning>
+
+## Where this fits
+
+The skill is one consumer of Hibi among several. The same exit codes and verdicts
+drive a CI gate and git hooks, covered alongside the agent loop on the CI page.
+
+<CardGroup cols={2}>
+  <Card title="CI, git hooks & agents" icon="robot" href="/ci">
+    Wire Hibi into the SessionStart and Stop agent hooks, plus the GitHub Action
+    and pre-commit hooks that share the same exit codes.
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Install Hibi and record your first claim by hand to see what the skill
+    automates.
+  </Card>
+</CardGroup>
 
 <Card title="Plugin source" icon="github" href="https://github.com/npupko/hibi/tree/main/plugins/hibi-cli">
   `SKILL.md`, the CLI reference it loads on demand, and a drop-in CI workflow asset.

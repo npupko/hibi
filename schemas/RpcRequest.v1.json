@@ -11,7 +11,8 @@
       "type": "string",
       "enum": [
         "describe",
-        "resolve"
+        "resolve",
+        "verify"
       ]
     },
     "params": {}

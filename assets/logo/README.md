@@ -17,8 +17,8 @@ The mark is the lowercase wordmark **`hibi`** with a cinnabar seal carrying the 
 | File | Size | Use |
 |------|------|-----|
 | `hibi-wordmark.png` | 2048² | primary wordmark, light/paper background |
-| `hibi-wordmark-dark.png` | 2752×1536 | wordmark for dark backgrounds |
-| `hibi-wordmark-transparent.png` | 1955×652 | wordmark with **real alpha** — drop on any background |
+| `hibi-wordmark-dark.png` | 1955×652 | **cream** wordmark with **real alpha** — for dark backgrounds |
+| `hibi-wordmark-transparent.png` | 1955×652 | **sumi-ink** wordmark with **real alpha** — for light backgrounds |
 | `hibi-mark.png` | 2048² | square mark (seal only) — avatars, social |
 | `favicon-16/32/48.png` | 16/32/48 | browser favicons (PNG) |
 | `favicon.ico` | multi | legacy `.ico` (16+32+48) |
@@ -48,7 +48,9 @@ The mark is the lowercase wordmark **`hibi`** with a cinnabar seal carrying the 
 
 ## Regenerating / transparency
 
-PNGs are raster (Nano Banana Pro has no native alpha). The transparent wordmark is produced by
-generating on a **chroma-key green** screen, then keying with ImageMagick (HSV removal + green-channel
-de-spill + trim). Favicons are downscaled from `hibi-mark.png`. A clean vector (SVG) redraw is the
-recommended next step if infinitely-scalable output is needed.
+PNGs are raster (Nano Banana Pro has no native alpha). The transparent (sumi-ink) wordmark is produced
+by generating on a **chroma-key green** screen, then keying with ImageMagick (HSV removal + green-channel
+de-spill + trim). The dark-background wordmark reuses that clean, de-spilled alpha and recolors the ink to
+cream (`-fuzz 32% -fill '#F0E8D5' -opaque '#2d2d2c'`), so its anti-aliased edges carry the **content
+color, not a dark matte** — no halo on any background. Favicons are downscaled from `hibi-mark.png`.
+A clean vector (SVG) redraw is the recommended next step if infinitely-scalable output is needed.

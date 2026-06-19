@@ -112,6 +112,23 @@
       "properties": {
         "kind": {
           "type": "string",
+          "const": "inline-id"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "id"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
           "const": "path"
         },
         "path": {

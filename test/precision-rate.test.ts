@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { resolveAssertion } from "../src/algo/resolve.ts";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
 import type { Assertion } from "../src/core/model.ts";
-import { buildAnchor } from "../src/engine/anchor.ts";
+import { buildSelectorBundle, composeAnchor } from "../src/engine/anchor.ts";
 
 let analyzer: Awaited<ReturnType<typeof getAnalyzer>>;
 beforeAll(async () => {
@@ -20,10 +20,22 @@ function rng(seed: number) {
   };
 }
 
+// Fixed documented sentence: fuzz touches only the code side, so the doc side
+// must stay `unchanged`. Doc content is held constant across record/resolve.
+const DOC_FILE = "doc.md";
+const DOC_TEXT = "These constants and helpers behave as documented.";
+const DOC_CONTENT = `# Notes\n\n${DOC_TEXT}\n`;
+const CODE_FILE = "f.ts";
+
 function anchorOn(original: string, quote: string, language = "typescript") {
   const start = original.indexOf(quote);
-  const anchor = buildAnchor(
-    "f.ts",
+  const docStart = DOC_CONTENT.indexOf(DOC_TEXT);
+  const docBundle = buildSelectorBundle(DOC_FILE, DOC_CONTENT, {
+    start: docStart,
+    end: docStart + DOC_TEXT.length,
+  });
+  const codeBundle = buildSelectorBundle(
+    CODE_FILE,
     original,
     { start, end: start + quote.length },
     { language, analyzer },
@@ -34,10 +46,17 @@ function anchorOn(original: string, quote: string, language = "typescript") {
     documentId: "d",
     owner: "o",
     ref: "r",
-    anchor,
+    anchor: composeAnchor(docBundle, [codeBundle]),
+    enforcement: "enforced",
+    verifiers: [],
     attrs: {},
   };
-  return (modified: string) => resolveAssertion(a, modified, { ast: analyzer });
+  return (modified: string) =>
+    resolveAssertion(
+      a,
+      { doc: DOC_CONTENT, code: new Map([[CODE_FILE, modified]]) },
+      { ast: analyzer },
+    );
 }
 
 const BASES = [
@@ -96,8 +115,8 @@ function driftEdit(src: string, anchorQuote: string, r: () => number): string {
   return src.slice(0, idx) + mutated + src.slice(idx + anchorQuote.length);
 }
 
-describe("precision rate (§10 — false-stale ≤ ~2%, never fresh-on-drift)", () => {
-  test("neutral edits keep the false-positive (stale/ghost) rate at or below 2%", () => {
+describe("precision rate (§10 — false-(changed|orphaned) ≤ ~2%, never unchanged-on-drift)", () => {
+  test("neutral edits keep the false-positive (changed/orphaned) rate at or below 2%", () => {
     const r = rng(12345);
     let total = 0;
     let falsePositive = 0;
@@ -105,9 +124,11 @@ describe("precision rate (§10 — false-stale ≤ ~2%, never fresh-on-drift)", 
       const resolve = anchorOn(base.src, base.quote);
       for (let i = 0; i < 40; i++) {
         const edited = neutralEdit(base.src, base.quote, r);
-        const state = resolve(edited).state;
+        const v = resolve(edited);
         total++;
-        if (state === "stale" || state === "ghost") falsePositive++;
+        if (v.code === "changed" || v.code === "orphaned") falsePositive++;
+        // Doc side is never touched by the fuzz.
+        expect(v.doc).toBe("unchanged");
       }
     }
     const rate = falsePositive / total;
@@ -115,21 +136,22 @@ describe("precision rate (§10 — false-stale ≤ ~2%, never fresh-on-drift)", 
     expect(rate).toBeLessThanOrEqual(0.02);
   });
 
-  test("real drifts are NEVER graded fresh (every missed drift is at least re-verify)", () => {
+  test("real drifts are NEVER graded unchanged (every missed drift is at least re-verify)", () => {
     const r = rng(98765);
     let total = 0;
-    let falseFresh = 0;
+    let falseUnchanged = 0;
     for (const base of BASES) {
       const resolve = anchorOn(base.src, base.quote);
       for (let i = 0; i < 40; i++) {
         const drifted = driftEdit(base.src, base.quote, r);
         if (drifted === base.src) continue; // skip non-mutations
-        const state = resolve(drifted).state;
+        const v = resolve(drifted);
         total++;
-        if (state === "fresh") falseFresh++;
+        if (v.code === "unchanged") falseUnchanged++;
+        expect(v.doc).toBe("unchanged");
       }
     }
     expect(total).toBeGreaterThan(0);
-    expect(falseFresh).toBe(0);
+    expect(falseUnchanged).toBe(0);
   });
 });

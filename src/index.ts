@@ -4,8 +4,8 @@
  *
  * Architecture — functional core, imperative shell:
  *   • The functional core is `src/engine/*` + `src/store/*`: pure-ish operations
- *     (`planRecord`, `recordClaim`, `runCheck`, …) that take already-resolved
- *     values and never touch git or argv.
+ *     (`planRecord`, `recordClaim`, `runCheck`, `suggest`, `reanchor`, …) that
+ *     take already-resolved values and never touch git or argv.
  *   • `Engine` below is the imperative shell for in-process consumers; the CLI
  *     (`src/cli`) is a second, sibling shell. Both are thin and sit on the SAME
  *     core, so the verdict/lifecycle semantics and the returned JSON shapes are
@@ -20,6 +20,11 @@
  * that may spawn a declared subprocess via the resolver client; that is not git,
  * and never runs for a consumer with no resolver manifest.)
  *
+ * The model is two-axis (ADR-001): a claim resolves on a doc side AND a code side
+ * (`AnchorState`), with an optional behavioral belief (`BehaviorState`). A
+ * document is "current" iff none of its verdicts gate — never a single rollup
+ * state (§4/§10/§18-C).
+ *
  * Scope discipline (§2, §11.4): this exposes hibi's own model and verdicts only.
  * Consumer-specific concepts stay in the consumer; they map *down* onto the
  * Document/Proposition/Assertion/Anchor here, never *into* this core.
@@ -28,12 +33,16 @@
 import { readFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import type { AstAnalyzer } from "./algo/resolve.ts";
+import { removeBanner } from "./banner/banner.ts";
 import type {
   AuthoredTrust,
+  BehaviorScope,
+  ClaimKind,
   Document,
   DocumentLifecycle,
-  Region,
+  Enforcement,
   Verdict,
+  Verifier,
 } from "./core/model.ts";
 import type { AnchorAnalyzer } from "./engine/anchor.ts";
 import { type ArchiveResult, archiveDocument } from "./engine/archive.ts";
@@ -45,11 +54,23 @@ import {
 } from "./engine/check.ts";
 import { type QueryHit, queryByPath } from "./engine/query.ts";
 import {
+  type ReanchorInput,
+  type ReanchorResult,
+  reanchor,
+} from "./engine/reanchor.ts";
+import {
+  type CodeTarget,
   documentIdForPath,
-  planRecord,
+  type RecordContents,
+  type RecordInput,
   type RecordResult,
   recordClaim,
 } from "./engine/record.ts";
+import {
+  type SuggestInput,
+  type SuggestResult,
+  suggest,
+} from "./engine/suggest.ts";
 import {
   retract,
   type SupersedeInput,
@@ -60,25 +81,46 @@ import { DriftResolver, ResolverRegistry } from "./resolver/registry.ts";
 import { ClaimStore, type StoreLocation } from "./store/store.ts";
 
 export type { AstAnalyzer } from "./algo/resolve.ts";
+export {
+  computeGates,
+  isGatingAnchor,
+  isWarnAnchor,
+  isWarnVerdict,
+} from "./core/gating.ts";
 // ── Public re-exports: the §5 data model + the operation contracts ──
 export * from "./core/model.ts";
 export type { AnchorAnalyzer } from "./engine/anchor.ts";
 export type { ArchiveResult } from "./engine/archive.ts";
-export type {
-  CheckOptions,
-  CheckReport,
-  DocumentReport,
-  FailOn,
+export {
+  type CheckOptions,
+  type CheckReport,
+  type CheckSummary,
+  computeExitCode,
+  type DocumentReport,
+  type FailOn,
+  type SuspectEntry as CheckSuspectEntry,
 } from "./engine/check.ts";
 export type { QueryHit } from "./engine/query.ts";
 export {
+  type ReanchorInput,
+  type ReanchorResult,
+  reanchor as reanchorClaim,
+} from "./engine/reanchor.ts";
+export {
+  type CodeTarget,
   documentIdForPath,
   planRecord,
+  type RecordContents,
   type RecordInput,
   type RecordResult,
   type RegionSpec,
   resolveRegion,
 } from "./engine/record.ts";
+export {
+  type SuggestInput,
+  type SuggestResult,
+  suggest as suggestClaims,
+} from "./engine/suggest.ts";
 export {
   amendedPropositions,
   type SupersedeInput,
@@ -129,41 +171,110 @@ export interface EngineOptions {
   noAst?: boolean;
 }
 
-/** How `Engine.record` locates the region inside the anchored code file. */
+/**
+ * A span-first record call (§9 `record`). The documented sentence is located by
+ * its own span (`docQuote`/`docRange`/`docLine`) — the doc side of the anchor —
+ * and zero or more code targets pin the code it describes. The current artifact
+ * span is authoritative; `text` is a LEGACY Model-A override only (pristine
+ * migration), never the normal path (§18-B).
+ */
 export interface RecordCall {
   /** Repo-relative path of the document making the claim. */
   docPath: string;
-  /** The proposition text — the timeless meaning. */
-  text: string;
-  /** Repo-relative path of the anchored code file. */
-  codeFile: string;
-  /** Locate the region by a literal quote… */
-  quote?: string;
-  /** …or by explicit char offsets… */
-  start?: number;
-  end?: number;
-  /** …or by a 1-based line number. */
-  line?: number;
-  /** Record a coarse (navigational, never-stale) path anchor instead. */
-  coarse?: boolean;
-  /** Default `"inferred"`. `"verified"` requires a precise region + a ref. */
+  /** Locate the documented sentence by a literal quote… */
+  docQuote?: string;
+  /** …or by explicit char offsets / a 1-based line / a 1-based line range. */
+  docRange?: {
+    start?: number;
+    end?: number;
+    line?: number;
+    startLine?: number;
+    endLine?: number;
+  };
+  /** Optional owned-doc marker id that stabilizes re-anchoring (§4/§8). */
+  inlineId?: string;
+  /** LEGACY authoritative-text override only (migration); prefer the doc span. */
+  text?: string;
+  /** Zero or more code targets the claim pins. */
+  code?: {
+    file: string;
+    quote?: string;
+    start?: number;
+    end?: number;
+    line?: number;
+    startLine?: number;
+    endLine?: number;
+    /** Coarse (navigational) path anchor instead of a precise region. */
+    coarse?: boolean;
+    /** Coarse glob anchor (blast-radius). */
+    glob?: string;
+  }[];
+  /** Default `"inferred"`. `"verified"` requires both sides to resolve + a ref. */
   authoredTrust?: AuthoredTrust;
   /** Default `"unknown"` — the library does no git (attribution is a host concern). */
   owner?: string;
   /** The ref last verified against. Default `"WORKTREE"` — the host resolves git. */
   ref?: string;
   ttl?: string;
+  /** Explicit enforcement override; else derived (enforced iff verified + resolved). */
+  enforcement?: Enforcement;
+  /** Author's behavioral-kind declaration (§17.6). */
+  claimKind?: ClaimKind;
+  /** Executable-evidence links that upgrade behavioral risk (§5/§17.6). */
+  verifiers?: Verifier[];
+  /** Deterministic blast-radius for the behavioral change-gate (§5/§17.6). */
+  behaviorScope?: BehaviorScope;
   attrs?: Record<string, unknown>;
 }
 
-/** Read-time view of one document — the `status` verb as data. */
+/** One suspect claim in a status read — side-tagged banner status (§9). */
+export interface SuspectEntry {
+  propositionId: string;
+  status: string;
+}
+
+/**
+ * Read-time view of one document — the `status` verb as data. `current` is the
+ * two-axis answer: a document is current iff NONE of its verdicts gate. There is
+ * no single rollup state (ADR-001); the per-side answers live in `verdicts`.
+ */
 export interface StatusResult {
   doc: string;
   found: boolean;
   lifecycle: DocumentLifecycle | null;
+  /** No verdict gates the build (§9). */
   current: boolean;
-  suspect: { propositionId: string; state: string }[];
+  suspect: SuspectEntry[];
   verdicts: Verdict[];
+}
+
+/** Build a RegionSpec from a doc/code locator, or undefined when none is given. */
+function toRegionSpec(c: {
+  quote?: string;
+  start?: number;
+  end?: number;
+  line?: number;
+  startLine?: number;
+  endLine?: number;
+}): CodeTarget["region"] {
+  if (
+    c.quote === undefined &&
+    c.start === undefined &&
+    c.end === undefined &&
+    c.line === undefined &&
+    c.startLine === undefined &&
+    c.endLine === undefined
+  ) {
+    return undefined;
+  }
+  return {
+    quote: c.quote,
+    start: c.start,
+    end: c.end,
+    line: c.line,
+    startLine: c.startLine,
+    endLine: c.endLine,
+  };
 }
 
 /**
@@ -198,6 +309,33 @@ export class Engine {
     return this.options.noAst ? Promise.resolve(undefined) : loadAnalyzer();
   }
 
+  /** Read a repo-relative file from the anchor root, or `null` if it's missing. */
+  private async readAnchored(rel: string): Promise<string | null> {
+    const abs = isAbsolute(rel) ? rel : join(this.store.anchorRoot, rel);
+    try {
+      return await readFile(abs, "utf8");
+    } catch (e) {
+      // Only a missing file degrades to null (the resolve layer maps that to
+      // `orphaned`); surface EISDIR/EACCES/etc. so the real cause is never masked.
+      if ((e as { code?: string }).code === "ENOENT") return null;
+      throw e;
+    }
+  }
+
+  /**
+   * Read a *document* with hibi's own banner stripped out. Anchoring (record /
+   * reanchor) and candidate scanning (suggest) must see the real prose, never the
+   * stamped banner — which restates the documented sentence verbatim and would
+   * otherwise let a re-anchored quote latch onto the banner copy and self-orphan
+   * on the next check (the same hazard `check` guards against — §8/§18-B).
+   */
+  private async readDoc(rel: string): Promise<string | null> {
+    const raw = await this.readAnchored(rel);
+    if (raw === null) return null;
+    const nonce = (await this.store.config()).nonce;
+    return removeBanner(raw, rel, nonce).content;
+  }
+
   /**
    * Verify every claim against the working tree (§9 `check`). Banners are stamped
    * into documents only when `write` is set; otherwise this is a pure read that
@@ -230,8 +368,10 @@ export class Engine {
 
   /**
    * Read-time "is this current?" gate for one document (§9 `status`). Scoped to
-   * the document's own anchored files, so answering it costs work proportional to
-   * the one document, not the whole store.
+   * the document's own anchored files — both the doc file and every code file its
+   * claims pin — so answering it costs work proportional to the one document, not
+   * the whole store. `current` is true iff no verdict gates (ADR-001 two-axis;
+   * never a rollup state).
    */
   async status(
     docPath: string,
@@ -240,20 +380,22 @@ export class Engine {
     const docId = documentIdForPath(docPath);
     const doc = await this.store.getDocument(docId);
     const assertions = await this.store.allAssertions();
-    const onlyFiles = new Set(
-      assertions
-        .filter((a) => a.documentId === docId)
-        .map((a) => a.anchor.file),
-    );
+    const onlyFiles = new Set<string>([docPath]);
+    for (const a of assertions) {
+      if (a.documentId !== docId) continue;
+      onlyFiles.add(a.anchor.doc.file);
+      for (const bundle of a.anchor.code) onlyFiles.add(bundle.file);
+    }
     const report = await this.check({ write: false, ref: opts.ref, onlyFiles });
     const docReport = report.documents.find((d) => d.id === docId);
+    const verdicts = report.verdicts.filter((v) => v.documentId === docId);
     return {
       doc: docPath,
       found: Boolean(doc),
       lifecycle: doc?.lifecycle ?? null,
-      current: !docReport || docReport.suspect.length === 0,
+      current: !verdicts.some((v) => v.gates),
       suspect: docReport?.suspect ?? [],
-      verdicts: report.verdicts.filter((v) => v.documentId === docId),
+      verdicts,
     };
   }
 
@@ -263,50 +405,123 @@ export class Engine {
   }
 
   /**
-   * Record a code-anchored claim (§9 `record`). The anchored file is read from the
-   * store's anchor root and the region resolved (via the core `planRecord`) from
-   * quote / offsets / line. Attribution (`owner`) and the verifying `ref` are
-   * caller-supplied values; this shell never derives them from git.
+   * Record a claim (§9 `record`). Span-first: the documented sentence is located
+   * by its own span on the doc side, and each code target pins the code it
+   * describes. The doc file and every code file are read from the store's anchor
+   * root into `RecordContents`; the core `recordClaim` resolves the regions,
+   * composes the bidirectional anchor, and derives enforcement. Attribution
+   * (`owner`) and the verifying `ref` are caller-supplied values; this shell never
+   * derives them from git.
    */
   async record(call: RecordCall): Promise<RecordResult> {
-    const coarse = call.coarse ?? false;
-    let codeContent: string | null = null;
-    let region: Region | undefined;
-    if (!coarse) {
-      // A precise anchor needs a real file; without this guard the join below
-      // resolves to the anchor-root dir and readFile throws an opaque EISDIR.
-      if (!call.codeFile)
-        throw new Error("record requires a codeFile (or set coarse: true)");
-      const abs = isAbsolute(call.codeFile)
-        ? call.codeFile
-        : join(this.store.anchorRoot, call.codeFile);
-      try {
-        codeContent = await readFile(abs, "utf8");
-      } catch (e) {
-        // Only a missing file becomes the friendly message (mirrors the CLI's
-        // exists() pre-check); surface EISDIR/EACCES/etc. as-is so the library
-        // and the CLI agree and the real cause is never masked.
-        if ((e as { code?: string }).code === "ENOENT")
-          throw new Error(`Code file not found: ${call.codeFile}`);
-        throw e;
-      }
-      region = planRecord(codeContent, call).region;
+    const code: CodeTarget[] = (call.code ?? []).map((c) => ({
+      file: c.file,
+      region: toRegionSpec(c),
+      coarse: c.coarse,
+      glob: c.glob,
+    }));
+
+    // Read the doc (banner stripped) + every non-coarse, non-glob code file from
+    // disk into the RecordContents the core consumes (file-missing → null).
+    const docContent = await this.readDoc(call.docPath);
+    const codeContents: Record<string, string | null> = {};
+    for (const target of code) {
+      if (target.coarse || target.glob) continue;
+      if (target.file in codeContents) continue;
+      codeContents[target.file] = await this.readAnchored(target.file);
     }
-    return recordClaim(this.store, codeContent, {
+
+    const contents: RecordContents = { docContent, codeContents };
+    const input: RecordInput = {
       docPath: call.docPath,
+      docSpec:
+        call.docQuote !== undefined ? { quote: call.docQuote } : call.docRange,
+      inlineId: call.inlineId,
       text: call.text,
       authoredTrust: call.authoredTrust ?? "inferred",
       owner: call.owner ?? "unknown",
       ref: call.ref ?? "WORKTREE",
       ttl: call.ttl,
-      codeFile: coarse ? call.codeFile || call.docPath : call.codeFile,
-      region,
-      coarse,
-      // A coarse (path) anchor never consults the analyzer (buildPathAnchor
-      // ignores it), so don't pay the tree-sitter WASM load for it.
-      analyzer: coarse ? undefined : await this.analyzer(),
+      code,
+      enforcement: call.enforcement,
+      claimKind: call.claimKind,
+      verifiers: call.verifiers,
+      behaviorScope: call.behaviorScope,
+      // A precise code anchor consults the analyzer; coarse/glob ignore it, but
+      // passing it is harmless and lets a mixed call resolve its precise targets.
+      analyzer: await this.analyzer(),
       attrs: call.attrs,
-    });
+    };
+    return recordClaim(this.store, contents, input);
+  }
+
+  /**
+   * Suggest `suggested` doc-side records for the anchorable, verifiable sentences
+   * in a document (§9 `suggest`). Doc-only, never-gating; the agent later pins
+   * code targets via `reanchor`. The doc file is read from the anchor root.
+   */
+  async suggest(docPath: string): Promise<SuggestResult> {
+    const docContent = (await this.readDoc(docPath)) ?? "";
+    const input: SuggestInput = { docPath };
+    return suggest(this.store, docContent, input);
+  }
+
+  /**
+   * Re-anchor an existing claim against current content (§9 `reanchor`). Provided
+   * specs override; else the existing selectors re-localize. Reads the doc + each
+   * code file from the anchor root. Returns the post-reanchor per-side states.
+   */
+  async reanchor(
+    claimId: string,
+    opts: {
+      docQuote?: string;
+      docRange?: {
+        start?: number;
+        end?: number;
+        line?: number;
+        startLine?: number;
+        endLine?: number;
+      };
+      code?: RecordCall["code"];
+      ref?: string;
+    } = {},
+  ): Promise<ReanchorResult> {
+    const assertion = await this.store.getAssertion(claimId);
+    if (!assertion) throw new Error(`No claim ${claimId} in the store.`);
+    const document = await this.store.getDocument(assertion.documentId);
+
+    const code: CodeTarget[] | undefined = opts.code?.map((c) => ({
+      file: c.file,
+      region: toRegionSpec(c),
+      coarse: c.coarse,
+      glob: c.glob,
+    }));
+
+    // Read the doc side (from the assertion's doc bundle or the resolved
+    // document) plus every code file the claim already pins and any replacements.
+    const docFile = assertion.anchor.doc.file || document?.path;
+    const docContent = docFile ? await this.readDoc(docFile) : null;
+    const codeContents: Record<string, string | null> = {};
+    for (const bundle of assertion.anchor.code) {
+      if (bundle.file in codeContents) continue;
+      codeContents[bundle.file] = await this.readAnchored(bundle.file);
+    }
+    for (const target of code ?? []) {
+      if (target.coarse || target.glob) continue;
+      if (target.file in codeContents) continue;
+      codeContents[target.file] = await this.readAnchored(target.file);
+    }
+
+    const contents: RecordContents = { docContent, codeContents };
+    const input: ReanchorInput = {
+      claimId,
+      docSpec:
+        opts.docQuote !== undefined ? { quote: opts.docQuote } : opts.docRange,
+      code,
+      ref: opts.ref,
+      analyzer: await this.analyzer(),
+    };
+    return reanchor(this.store, contents, input);
   }
 
   /** Author an `amends`/`supersedes` edge and derive its reverse (§9 `supersede`). */

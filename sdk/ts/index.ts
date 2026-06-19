@@ -16,10 +16,18 @@
 export type {
   Advisory,
   Anchor,
+  AnchorState,
   Assertion,
+  BehaviorScope,
+  BehaviorState,
+  ChangedEvidence,
+  Enforcement,
   Proposition,
   Selector,
+  SelectorBundle,
   Verdict,
+  VerdictEvidence,
+  Verifier,
 } from "../../src/core/model.ts";
 export {
   type DescribeResult,
@@ -30,6 +38,8 @@ export {
   type ResolveResult,
   type RpcRequest,
   type RpcResponse,
+  type VerifyParams,
+  type VerifyResult,
 } from "../../src/resolver/protocol.ts";
 export {
   type ResolverHandler,

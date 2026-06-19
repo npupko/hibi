@@ -106,11 +106,14 @@ describe("supersession and code-drift are surfaced together (§4, §6)", () => {
       file: "src/a.ts",
       quote: "A = 1",
     });
+    // B is ENFORCED so its code-side drift banners on its own merit (a
+    // `code:changed` suspect entry), independent of any document lifecycle.
     const b = await record(r, {
       doc: "doc.md",
       text: "B is two",
       file: "src/a.ts",
       quote: "B = 2",
+      trust: "verified",
     });
 
     // Amend proposition A via a newer doc.
@@ -123,10 +126,51 @@ describe("supersession and code-drift are surfaced together (§4, §6)", () => {
     // Drift proposition B by changing its value.
     await r.write("src/a.ts", "export const A = 1;\nexport const B = 22;\n");
 
-    await runCheck(r.store, { ast: analyzer, write: true });
+    const report = await runCheck(r.store, { ast: analyzer, write: true });
+
+    // The old doc is amended at the lifecycle level, and B's enforced code side
+    // drifts: the machine report carries both signals.
+    const docReport = report.documents.find((d) => d.path === "doc.md");
+    expect(docReport?.lifecycle).toBe("amended");
+    const statuses = docReport?.suspect.map((s) => s.status) ?? [];
+    expect(statuses).toContain("code:changed"); // B's enforced drift
+
+    // The rendered banner surfaces both: the human `[amended]` lifecycle copy
+    // and the side-tagged code-drift entry, plus both proposition ids.
     const banner = await r.read("doc.md");
-    expect(banner).toContain("[amended]");
+    expect(banner).toContain("[amended]"); // human lifecycle copy
+    expect(banner).toContain("[code:changed]"); // B's side-tagged drift
     expect(banner).toContain(b.proposition.id); // the drifted claim
     expect(banner).toContain(a.proposition.id); // the amended claim
+  });
+
+  // A claim suspect ONLY because its document is amended (otherwise
+  // doc:unchanged / code:unchanged, not expired) must report the `amended`
+  // lifecycle tag as its suspect status — `worstStatus` folds the document's
+  // lifecycle tags in, rather than falling back to the literal `expired`.
+  test("an amended-only claim reports the `amended` suspect status, not `expired`", async () => {
+    const r = await repo();
+    await r.write("src/a.ts", "export const A = 1;\n");
+    await r.write("doc.md", "# Doc\n\nText.\n");
+    const a = await record(r, {
+      doc: "doc.md",
+      text: "A is one",
+      file: "src/a.ts",
+      quote: "A = 1",
+    });
+    await supersede(r.store, {
+      newDocPath: "newer.md",
+      oldDocPath: "doc.md",
+      type: "amends",
+      propositions: [a.proposition.id],
+    });
+
+    const report = await runCheck(r.store, { ast: analyzer, write: true });
+    const docReport = report.documents.find((d) => d.path === "doc.md");
+    const entry = docReport?.suspect.find(
+      (s) => s.propositionId === a.proposition.id,
+    );
+    // The claim is neither expired nor anchor-suspect — its status is lifecycle.
+    expect(entry?.status).toBe("amended");
   });
 });

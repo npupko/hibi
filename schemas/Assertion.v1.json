@@ -20,11 +20,11 @@
     "anchor": {
       "type": "object",
       "properties": {
-        "file": {
-          "type": "string"
+        "doc": {
+          "$ref": "#/$defs/__schema0"
         },
-        "selectors": {
-          "minItems": 1,
+        "code": {
+          "default": [],
           "type": "array",
           "items": {
             "$ref": "#/$defs/__schema0"
@@ -32,8 +32,100 @@
         }
       },
       "required": [
-        "file",
-        "selectors"
+        "doc",
+        "code"
+      ],
+      "additionalProperties": false
+    },
+    "enforcement": {
+      "default": "suggested",
+      "type": "string",
+      "enum": [
+        "suggested",
+        "enforced",
+        "retired",
+        "unanchored-legacy"
+      ]
+    },
+    "claimKind": {
+      "type": "string",
+      "enum": [
+        "ordering",
+        "retry",
+        "complexity",
+        "concurrency",
+        "caching",
+        "validation",
+        "error-handling"
+      ]
+    },
+    "verifiers": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "example",
+              "snapshot",
+              "contract",
+              "property",
+              "formal",
+              "command"
+            ]
+          },
+          "ref": {
+            "type": "string"
+          },
+          "proves": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "ref"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "behaviorScope": {
+      "type": "object",
+      "properties": {
+        "rootSymbols": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reachableDepth": {
+          "default": 2,
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "include": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exclude": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "rootSymbols",
+        "reachableDepth",
+        "include",
+        "exclude"
       ],
       "additionalProperties": false
     },
@@ -56,11 +148,33 @@
     "owner",
     "ref",
     "anchor",
+    "enforcement",
+    "verifiers",
     "attrs"
   ],
   "additionalProperties": false,
   "$defs": {
     "__schema0": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "selectors": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/__schema1"
+          }
+        }
+      },
+      "required": [
+        "file",
+        "selectors"
+      ],
+      "additionalProperties": false
+    },
+    "__schema1": {
       "oneOf": [
         {
           "type": "object",
@@ -165,6 +279,23 @@
             "language",
             "nodeKind",
             "value"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "inline-id"
+            },
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "id"
           ],
           "additionalProperties": false
         },

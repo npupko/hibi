@@ -10,14 +10,29 @@ interface Selector {
   kind?: string;
 }
 
-/** Minimal shape of the CLI's JSON output that these tests actually read. */
+/** One side of an anchor's selector bundle (doc side or one code bundle). */
+interface SelectorBundle {
+  file?: string;
+  selectors?: Selector[];
+}
+
+/**
+ * Minimal shape of the CLI's JSON output that these tests actually read — the
+ * two-axis, verdict-first model (§9). `assertion.anchor` is bidirectional:
+ * `code[]` is an array of per-target bundles, each with its own `selectors[]`.
+ */
 interface CliJson {
   ok?: boolean;
   nonce?: string;
   store?: string;
-  assertion?: { anchor?: { selectors?: Selector[] } };
-  summary?: { fresh?: number };
-  verdicts?: { state?: string }[];
+  assertion?: { anchor?: { doc?: SelectorBundle; code?: SelectorBundle[] } };
+  summary?: { clean?: number };
+  verdicts?: {
+    doc?: string;
+    code?: string;
+    expired?: boolean;
+    gates?: boolean;
+  }[];
   changedFiles?: string[];
   count?: number;
   current?: boolean;
@@ -68,25 +83,40 @@ afterEach(async () => {
   dirs = [];
 });
 
+/**
+ * Pull the kinds present in the code side's first bundle. Span-first record
+ * builds the doc-side bundle from the documented sentence and one code-side
+ * bundle from the pinned code span; the code bundle carries the `value`
+ * selector that trips a literal change (§4/§17.4).
+ */
+function codeSelectorKinds(json: CliJson): (string | undefined)[] {
+  return (json.assertion?.anchor?.code?.[0]?.selectors ?? []).map(
+    (s: Selector) => s.kind,
+  );
+}
+
 describe("CLI end-to-end (§9)", () => {
-  test("init → record → check clean → drift → exit 2", async () => {
+  test("init → record → check clean → drift → exit 2 (enforced gates)", async () => {
     const d = await repo();
     await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-    await write(d, "README.md", "# Doc\n\nProse.\n");
+    await write(d, "README.md", "# Doc\n\nCapped at 5 attempts.\n");
 
     const init = await run(d, ["init"]);
     expect(init.code).toBe(0);
     expect(init.json.nonce).toMatch(/^[0-9a-f]{8}$/);
 
+    // Span-first record: --doc-quote locates the documented sentence (doc side),
+    // --code-file/--code-quote pins the code (code side). `verified` trust makes
+    // the claim ENFORCED, so its drift gates.
     const rec = await run(d, [
       "record",
       "--doc",
       "README.md",
-      "--text",
+      "--doc-quote",
       "Capped at 5",
-      "--file",
+      "--code-file",
       "src/retry.ts",
-      "--quote",
+      "--code-quote",
       "MAX_ATTEMPTS = 5",
       "--trust",
       "verified",
@@ -94,35 +124,66 @@ describe("CLI end-to-end (§9)", () => {
       "alice",
     ]);
     expect(rec.code).toBe(0);
-    expect(
-      rec.json.assertion?.anchor?.selectors?.map((s: Selector) => s.kind),
-    ).toContain("value");
+    // The code-side bundle carries a `value` selector (5 → 50 trips it).
+    expect(codeSelectorKinds(rec.json)).toContain("value");
 
     const clean = await run(d, ["check"]);
     expect(clean.code).toBe(0);
-    expect(clean.json.summary?.fresh).toBe(1);
+    expect(clean.json.summary?.clean).toBe(1);
 
     await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
     const drifted = await run(d, ["check"]);
     expect(drifted.code).toBe(2);
-    expect(drifted.json.verdicts?.[0]?.state).toBe("stale");
+    // Verdict-first: the code side resolved but its content changed.
+    expect(drifted.json.verdicts?.[0]?.code).toBe("changed");
+    expect(drifted.json.verdicts?.[0]?.gates).toBe(true);
   });
 
-  test("check --write stamps a banner that the consumer can see in the raw file", async () => {
+  test("a NON-enforced (suggested) claim never gates — drift is exit 0", async () => {
+    // Precision-over-recall (§9/ADR-001): only ENFORCED claims gate. The default
+    // trust (`inferred`) derives `suggested`, which is advisory — the same code
+    // drift that gated above must NOT gate here.
     const d = await repo();
     await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-    await write(d, "README.md", "# Doc\n");
+    await write(d, "README.md", "# Doc\n\nCapped at 5 attempts.\n");
     await run(d, ["init"]);
     await run(d, [
       "record",
       "--doc",
       "README.md",
-      "--text",
+      "--doc-quote",
       "Capped at 5",
-      "--file",
+      "--code-file",
       "src/retry.ts",
-      "--quote",
+      "--code-quote",
       "MAX_ATTEMPTS = 5",
+    ]);
+
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
+    const drifted = await run(d, ["check"]);
+    expect(drifted.code).toBe(0);
+    // The drift is still computed and reported — it just does not gate.
+    expect(drifted.json.verdicts?.[0]?.code).toBe("changed");
+    expect(drifted.json.verdicts?.[0]?.gates).toBe(false);
+  });
+
+  test("check --write stamps a banner that the consumer can see in the raw file", async () => {
+    const d = await repo();
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+    await write(d, "README.md", "# Doc\n\nCapped at 5 attempts.\n");
+    await run(d, ["init"]);
+    // --enforce makes the claim gating so the banner stamps.
+    await run(d, [
+      "record",
+      "--doc",
+      "README.md",
+      "--doc-quote",
+      "Capped at 5",
+      "--code-file",
+      "src/retry.ts",
+      "--code-quote",
+      "MAX_ATTEMPTS = 5",
+      "--enforce",
     ]);
     await write(d, "src/retry.ts", "// removed\n");
     const res = await run(d, ["check", "--write"]);
@@ -136,28 +197,28 @@ describe("CLI end-to-end (§9)", () => {
     const d = await repo();
     await write(d, "src/a.ts", "export const A = 1;\n");
     await write(d, "src/b.ts", "export const B = 2;\n");
-    await write(d, "doc.md", "# Doc\n");
+    await write(d, "doc.md", "# Doc\n\nA is 1 and B is 2 here.\n");
     await run(d, ["init"]);
     await run(d, [
       "record",
       "--doc",
       "doc.md",
-      "--text",
+      "--doc-quote",
       "A is 1",
-      "--file",
+      "--code-file",
       "src/a.ts",
-      "--quote",
+      "--code-quote",
       "A = 1",
     ]);
     await run(d, [
       "record",
       "--doc",
       "doc.md",
-      "--text",
+      "--doc-quote",
       "B is 2",
-      "--file",
+      "--code-file",
       "src/b.ts",
-      "--quote",
+      "--code-quote",
       "B = 2",
     ]);
     await Bun.spawn(["git", "add", "-A"], { cwd: d }).exited;
@@ -175,16 +236,17 @@ describe("CLI end-to-end (§9)", () => {
   test("query --path reports claims covering a file", async () => {
     const d = await repo();
     await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "doc.md", "# Doc\n\nA is 1 here.\n");
     await run(d, ["init"]);
     await run(d, [
       "record",
       "--doc",
       "doc.md",
-      "--text",
+      "--doc-quote",
       "A is 1",
-      "--file",
+      "--code-file",
       "src/a.ts",
-      "--quote",
+      "--code-quote",
       "A = 1",
     ]);
     const res = await run(d, ["query", "--path", "src/a.ts"]);
@@ -195,23 +257,26 @@ describe("CLI end-to-end (§9)", () => {
   test("status --doc is a read-time gate returning non-zero when suspect", async () => {
     const d = await repo();
     await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "doc.md", "# Doc\n");
+    await write(d, "doc.md", "# Doc\n\nA is 1 here.\n");
     await run(d, ["init"]);
+    // Enforced so its drift gates the read-time check.
     await run(d, [
       "record",
       "--doc",
       "doc.md",
-      "--text",
+      "--doc-quote",
       "A is 1",
-      "--file",
+      "--code-file",
       "src/a.ts",
-      "--quote",
+      "--code-quote",
       "A = 1",
+      "--enforce",
     ]);
     expect((await run(d, ["status", "--doc", "doc.md"])).code).toBe(0);
     await write(d, "src/a.ts", "// gone\n");
     const after = await run(d, ["status", "--doc", "doc.md"]);
     expect(after.code).toBe(2);
+    // Two-axis: `current` is false iff a verdict gates (no single rollup state).
     expect(after.json.current).toBe(false);
   });
 
@@ -252,7 +317,7 @@ describe("CLI end-to-end (§9)", () => {
     dirs.push(storeHome);
     const storeDir = join(storeHome, "claims");
     await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "doc.md", "# Doc\n");
+    await write(d, "doc.md", "# Doc\n\nA is 1 here.\n");
 
     const init = await run(d, ["init", "--store-dir", storeDir]);
     expect(init.code).toBe(0);
@@ -264,11 +329,11 @@ describe("CLI end-to-end (§9)", () => {
       storeDir,
       "--doc",
       "doc.md",
-      "--text",
+      "--doc-quote",
       "A is 1",
-      "--file",
+      "--code-file",
       "src/a.ts",
-      "--quote",
+      "--code-quote",
       "A = 1",
     ]);
     expect(rec.code).toBe(0);
@@ -280,6 +345,6 @@ describe("CLI end-to-end (§9)", () => {
     // Anchors still resolve against the anchor root through the far store.
     const clean = await run(d, ["check", "--store-dir", storeDir]);
     expect(clean.code).toBe(0);
-    expect(clean.json.summary?.fresh).toBe(1);
+    expect(clean.json.summary?.clean).toBe(1);
   });
 });

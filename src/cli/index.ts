@@ -1,27 +1,30 @@
 #!/usr/bin/env bun
-import { readFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 /**
  * The Hibi CLI (§9) — JSON-first, quiet by default; the consumer is a machine.
- * Verbs: init · record · check · query · diff · supersede · retract · status ·
- * schema. Exit codes follow the §9 contract.
+ * Verbs: init · record · check · diff · status · query · supersede · retract ·
+ * archive · suggest · reanchor · schema · version · help. Exit codes follow the
+ * §9 two-axis contract (0 clean · 2 gating · 3 moved/at-risk warning · 1 error).
  *
  * This is a thin *imperative shell*: it parses argv, resolves the environment
  * (git ref / blame / changed-files) into plain values, delegates to the `Engine`
  * facade (the single in-process orchestration layer), and serializes the result.
- * The one exception is `record`, which composes the git-free core (`planRecord` +
- * `recordClaim`) directly so it can blame the resolved line between the two steps.
+ * Span-first by design — `record` reads the claim text from the documented span
+ * (doc side) and anchors zero or more code-side spans; git stays a host concern.
  */
 import { parseArgs } from "node:util";
 import pkg from "../../package.json" with { type: "json" };
-import type { AuthoredTrust, Region } from "../core/model.ts";
-import { planRecord, recordClaim } from "../engine/record.ts";
-import { exists } from "../fs.ts";
-import { blameAuthor, changedFiles, currentRef } from "../git/git.ts";
+import type {
+  AuthoredTrust,
+  ClaimKind,
+  Enforcement,
+  Verifier,
+} from "../core/model.ts";
+import { changedFiles, currentRef } from "../git/git.ts";
 import {
   Engine,
   type FailOn,
-  loadAnalyzer,
+  type RecordCall,
   type StoreLocation,
 } from "../index.ts";
 
@@ -47,11 +50,73 @@ function num(v: unknown): number | undefined {
   return v !== undefined ? Number(v) : undefined;
 }
 
+/**
+ * Parse a span flag pair into a RegionSpec fragment. The doc/code sides share
+ * the same three locators: `--*-quote <s>` (literal), `--*-range L42:L44` or
+ * `42:44` (1-based line range or char offsets), `--*-line N` (1-based line). The
+ * caller passes the already-read flag values; this returns `{quote?, start?,
+ * end?, line?}` or undefined when no locator was given (a coarse target).
+ */
+function spanSpec(
+  quote: unknown,
+  range: unknown,
+  line: unknown,
+):
+  | {
+      quote?: string;
+      start?: number;
+      end?: number;
+      line?: number;
+      startLine?: number;
+      endLine?: number;
+    }
+  | undefined {
+  if (quote !== undefined) return { quote: String(quote) };
+  if (range !== undefined) {
+    const raw = String(range).trim();
+    const colon = raw.indexOf(":");
+    if (colon < 0) {
+      throw new Error(
+        `--*-range expects start:end (e.g. L42:L44 for lines, or 100:130 for char offsets), got: ${raw}`,
+      );
+    }
+    const aRaw = raw.slice(0, colon);
+    const bRaw = raw.slice(colon + 1);
+    // The `L` prefix on either bound selects the 1-based line-range form.
+    const isLine = /^L/i.test(aRaw) || /^L/i.test(bRaw);
+    const a = Number(aRaw.replace(/^L/i, ""));
+    const b = Number(bRaw.replace(/^L/i, ""));
+    if (!Number.isFinite(a) || !Number.isFinite(b)) {
+      throw new Error(`--*-range expects numeric bounds, got: ${raw}`);
+    }
+    return isLine ? { startLine: a, endLine: b } : { start: a, end: b };
+  }
+  if (line !== undefined) return { line: num(line) };
+  return undefined;
+}
+
+/**
+ * Parse a repeatable `--verifier kind:ref` flag into Verifiers (§5/§17.6). The
+ * value may be a lone string (one verifier) or an array (parseArgs collects
+ * repeats). The first `:` splits kind from ref so a ref may itself contain `:`.
+ */
+function parseVerifiers(raw: unknown): Verifier[] {
+  if (raw === undefined) return [];
+  const items = Array.isArray(raw) ? raw : [raw];
+  return items.map((item) => {
+    const s = String(item);
+    const idx = s.indexOf(":");
+    const kind = (idx >= 0 ? s.slice(0, idx) : s) as Verifier["kind"];
+    const ref = idx >= 0 ? s.slice(idx + 1) : "";
+    return { kind, ref };
+  });
+}
+
 async function main(argv: string[]): Promise<number> {
   const cmd = argv[0];
   const rest = argv.slice(1);
 
-  const { values } = parseArgs({
+  const { values, positionals } = parseArgs({
     args: rest,
     allowPositionals: true,
     strict: false,
@@ -59,22 +124,32 @@ async function main(argv: string[]): Promise<number> {
       cwd: { type: "string" },
       "store-dir": { type: "string" },
       pretty: { type: "boolean", default: false },
-      // record
+      // record / reanchor — doc side (span-first)
       doc: { type: "string" },
-      text: { type: "string" },
-      file: { type: "string" },
-      quote: { type: "string" },
-      start: { type: "string" },
-      end: { type: "string" },
-      line: { type: "string" },
+      "doc-quote": { type: "string" },
+      "doc-range": { type: "string" },
+      "doc-line": { type: "string" },
+      "inline-id": { type: "string" },
+      // record / reanchor — code side
+      "code-file": { type: "string" },
+      "code-quote": { type: "string" },
+      "code-range": { type: "string" },
+      "code-line": { type: "string" },
+      coarse: { type: "boolean", default: false },
+      glob: { type: "string" },
+      // record — authored facets
+      text: { type: "string" }, // legacy override only
       trust: { type: "string", default: "inferred" },
+      enforce: { type: "boolean", default: false },
+      enforcement: { type: "string" },
+      "claim-kind": { type: "string" },
+      verifier: { type: "string", multiple: true },
       owner: { type: "string" },
       ref: { type: "string" },
       ttl: { type: "string" },
-      coarse: { type: "boolean", default: false },
-      // check / status
+      // check / diff / status
       write: { type: "boolean", default: false },
-      "fail-on": { type: "string", default: "suspect" },
+      "fail-on": { type: "string", default: "gating" },
       "no-ast": { type: "boolean", default: false },
       // query / diff
       path: { type: "string" },
@@ -123,56 +198,80 @@ async function main(argv: string[]): Promise<number> {
 
     case "record": {
       const engine = await open();
-      if (!values.doc || !values.text)
-        return fail("record requires --doc and --text", pretty);
-      const trust = String(values.trust) as AuthoredTrust;
+      if (!values.doc) return fail("record requires --doc", pretty);
+
+      // Doc side: the documented sentence's span supplies the claim text.
+      const docSpec = spanSpec(
+        values["doc-quote"],
+        values["doc-range"],
+        values["doc-line"],
+      );
+      const legacyText = values.text as string | undefined;
+      if (!docSpec && !legacyText)
+        return fail(
+          "record requires a doc span (--doc-quote/--doc-range/--doc-line) or legacy --text",
+          pretty,
+        );
+
+      // Code side: zero or more targets. One is enough; coarse/glob are coarse.
+      const code: NonNullable<RecordCall["code"]> = [];
       const coarse = Boolean(values.coarse);
-      const codeFile = (values.file as string) ?? "";
-      let codeContent: string | null = null;
-      let region: Region | undefined;
-      let owner = values.owner as string | undefined;
-      if (!coarse) {
-        if (!codeFile)
-          return fail("record requires --file (or --coarse)", pretty);
-        const abs = absPath(anchorRoot, codeFile);
-        if (!(await exists(abs)))
-          return fail(`Code file not found: ${codeFile}`, pretty);
-        codeContent = await readFile(abs, "utf8");
-        let plan: { region: Region; line: number };
-        try {
-          plan = planRecord(codeContent, {
-            quote: values.quote as string | undefined,
-            start: num(values.start),
-            end: num(values.end),
-            line: num(values.line),
-          });
-        } catch (e) {
-          return fail((e as Error).message, pretty);
-        }
-        region = plan.region;
-        // Advisory git attribution of the anchored line (a host concern, §6).
-        if (!owner)
-          owner =
-            (await blameAuthor(codeFile, plan.line, anchorRoot)) ?? undefined;
+      const glob = values.glob as string | undefined;
+      const codeFile = values["code-file"] as string | undefined;
+      if (glob) {
+        code.push({ file: glob, glob });
+      } else if (codeFile) {
+        const codeSpec = spanSpec(
+          values["code-quote"],
+          values["code-range"],
+          values["code-line"],
+        );
+        code.push({ file: codeFile, ...codeSpec, coarse });
+      } else if (coarse) {
+        return fail("--coarse requires --code-file or use --glob", pretty);
       }
+
+      // Enforcement: explicit --enforcement wins; --enforce is shorthand for
+      // "enforced"; otherwise the engine derives it from trust + resolution.
+      const enforcement = (values.enforcement as string | undefined)
+        ? (String(values.enforcement) as Enforcement)
+        : values.enforce
+          ? ("enforced" as Enforcement)
+          : undefined;
+
       const ref = (values.ref as string) ?? (await currentRef(anchorRoot));
+      const call: RecordCall = {
+        docPath: values.doc as string,
+        docQuote: docSpec?.quote,
+        docRange:
+          docSpec && docSpec.quote === undefined
+            ? {
+                start: docSpec.start,
+                end: docSpec.end,
+                line: docSpec.line,
+                startLine: docSpec.startLine,
+                endLine: docSpec.endLine,
+              }
+            : undefined,
+        inlineId: values["inline-id"] as string | undefined,
+        text: legacyText,
+        code,
+        authoredTrust: String(values.trust) as AuthoredTrust,
+        owner: values.owner as string | undefined,
+        ref,
+        ttl: values.ttl as string | undefined,
+        enforcement,
+        claimKind: values["claim-kind"] as ClaimKind | undefined,
+        verifiers: parseVerifiers(values.verifier),
+      };
+
       try {
-        const result = await recordClaim(engine.store, codeContent, {
-          docPath: values.doc as string,
-          text: values.text as string,
-          authoredTrust: trust,
-          owner: owner ?? "unknown",
-          ref,
-          ttl: values.ttl as string | undefined,
-          codeFile: coarse ? codeFile || (values.doc as string) : codeFile,
-          region,
-          coarse,
-          // Tier-1 only when coarse (path anchors ignore the analyzer) or --no-ast.
-          analyzer: coarse || noAst ? undefined : await loadAnalyzer(),
-        });
+        const result = await engine.record(call);
         out({ ok: true, action: "record", ...result }, pretty);
         return 0;
       } catch (e) {
+        // recordClaim throws when an `enforced` outcome can't resolve both
+        // sides (§9/§18-B) — surface it as an operational error (exit 1).
         return fail((e as Error).message, pretty);
       }
     }
@@ -186,34 +285,6 @@ async function main(argv: string[]): Promise<number> {
       });
       out({ ok: true, action: "check", ...report }, pretty);
       return report.exitCode;
-    }
-
-    case "status": {
-      const engine = await open();
-      if (!values.doc) return fail("status requires --doc", pretty);
-      const result = await engine.status(values.doc as string, {
-        ref: await currentRef(anchorRoot),
-      });
-      out({ ok: true, action: "status", ...result }, pretty);
-      // Read-time gate: non-zero when this doc is suspect.
-      return result.suspect.length > 0 ? 2 : 0;
-    }
-
-    case "query": {
-      const engine = await open();
-      if (!values.path) return fail("query requires --path", pretty);
-      const hits = await engine.query(values.path as string);
-      out(
-        {
-          ok: true,
-          action: "query",
-          path: values.path,
-          count: hits.length,
-          hits,
-        },
-        pretty,
-      );
-      return 0;
     }
 
     case "diff": {
@@ -237,6 +308,109 @@ async function main(argv: string[]): Promise<number> {
         pretty,
       );
       return report.exitCode;
+    }
+
+    case "status": {
+      const engine = await open();
+      if (!values.doc) return fail("status requires --doc", pretty);
+      const result = await engine.status(values.doc as string, {
+        ref: await currentRef(anchorRoot),
+      });
+      out({ ok: true, action: "status", ...result }, pretty);
+      // Read-time gate via the report's own verdicts: 2 if any gates, else 3
+      // when a moved/at-risk warning is present, else 0. `moved`/`at-risk`
+      // never gate (§9/ADR-001) — the suspect status strings carry the warning.
+      if (result.verdicts.some((v) => v.gates)) return 2;
+      const warn = result.suspect.some(
+        (s) =>
+          s.status === "code:moved" ||
+          s.status === "doc:moved" ||
+          s.status === "behavior:at-risk",
+      );
+      return warn ? 3 : 0;
+    }
+
+    case "query": {
+      const engine = await open();
+      if (!values.path) return fail("query requires --path", pretty);
+      const hits = await engine.query(values.path as string);
+      out(
+        {
+          ok: true,
+          action: "query",
+          path: values.path,
+          count: hits.length,
+          hits,
+        },
+        pretty,
+      );
+      return 0;
+    }
+
+    case "suggest": {
+      const engine = await open();
+      if (!values.doc) return fail("suggest requires --doc", pretty);
+      try {
+        const result = await engine.suggest(values.doc as string);
+        out(
+          {
+            ok: true,
+            action: "suggest",
+            doc: values.doc,
+            since: values.since,
+            count: result.created.length,
+            ...result,
+          },
+          pretty,
+        );
+        return 0;
+      } catch (e) {
+        return fail((e as Error).message, pretty);
+      }
+    }
+
+    case "reanchor": {
+      const engine = await open();
+      const claimId = positionals[0];
+      if (!claimId)
+        return fail("reanchor requires a <claim-id> positional", pretty);
+      const docSpec = spanSpec(
+        values["doc-quote"],
+        values["doc-range"],
+        values["doc-line"],
+      );
+      const code: NonNullable<RecordCall["code"]> = [];
+      const glob = values.glob as string | undefined;
+      const codeFile = values["code-file"] as string | undefined;
+      if (glob) {
+        code.push({ file: glob, glob });
+      } else if (codeFile) {
+        const codeSpec = spanSpec(
+          values["code-quote"],
+          values["code-range"],
+          values["code-line"],
+        );
+        code.push({
+          file: codeFile,
+          ...codeSpec,
+          coarse: Boolean(values.coarse),
+        });
+      }
+      try {
+        const result = await engine.reanchor(claimId, {
+          docQuote: docSpec?.quote,
+          docRange:
+            docSpec && docSpec.quote === undefined
+              ? { start: docSpec.start, end: docSpec.end, line: docSpec.line }
+              : undefined,
+          code: code.length > 0 ? code : undefined,
+          ref: values.ref as string | undefined,
+        });
+        out({ ok: true, action: "reanchor", ...result }, pretty);
+        return 0;
+      } catch (e) {
+        return fail((e as Error).message, pretty);
+      }
     }
 
     case "supersede": {
@@ -325,25 +499,30 @@ async function main(argv: string[]): Promise<number> {
   }
 }
 
-const USAGE = `hibi — deterministic doc-staleness tracking (JSON-first)
+const USAGE = `hibi — deterministic doc/code claim tracking (JSON-first)
 
 Usage: hibi <command> [options]
 
 Commands:
   init                              Initialize a claim store (.claims/) with a banner nonce
-  record   --doc <p> --text <t> --file <f> (--quote <q>|--start <n> --end <n>|--line <n>)
-                                    Record a code-anchored claim
-  check    [--write] [--fail-on suspect|moved|tamper|never]
+  record   --doc <p> (--doc-quote <s>|--doc-range L42:L44|--doc-line <n>)
+           [--code-file <f> (--code-quote <s>|--code-range L1:L9|--code-line <n>)]
+           [--coarse|--glob <g>] [--trust verified|inferred|assumed]
+           [--enforce|--enforcement <e>] [--claim-kind <k>] [--verifier kind:ref ...] [--ttl <iso>]
+                                    Record a span-first claim (doc span + zero or more code spans)
+  check    [--write] [--fail-on gating|warn|tamper|never]
                                     Verify all claims; emit verdicts; exit per contract
+  diff     --since <ref> [--write]  What did this change invalidate? (write-time loop)
   status   --doc <p>                Read-time "is this current?" gate for one document
   query    --path <p>               What claims are anchored to / cover this path?
-  diff     --since <ref> [--write]  What did this change invalidate? (write-time loop)
+  suggest  --doc <p> [--since <ref>]  Propose anchorable claims from a document (suggested records)
+  reanchor <claim-id> [--doc-quote …] [--code-file …]  Re-resolve a claim against current content
   supersede --new <p> --old <p> --type supersedes|amends [--propositions id,id]
   retract  --doc <p>                Mark a document retracted (author withdrew)
   archive  --doc <p> [--successor <p>]  Move an obsolete doc out of the read path (tombstone)
   schema   [--name <Name>]          Emit generated JSON Schema(s)
 
-Exit codes: 0 clean · 2 suspect (stale/ghost/expired) · 3 moved-only · 1 error
+Exit codes: 0 clean · 2 gating (changed/orphaned/ambiguous/expired/refuted on enforced) · 3 moved/at-risk · 1 error
 Options: --pretty (human output) · --cwd <dir> (anchor root) · --store-dir <dir> (store
   location, default <anchor>/.claims) · --no-ast (skip tree-sitter)
 `;
