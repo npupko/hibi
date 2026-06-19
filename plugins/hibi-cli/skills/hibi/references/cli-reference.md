@@ -1,7 +1,15 @@
 # hibi CLI reference
 
-Output is JSON by default; add `--pretty` for human-readable output. Global flags
-work on every command: `--pretty`, `--cwd <dir>` (anchor root — run against another
+**Output is TTY-aware.** The default is a rich human view when stdout is a terminal
+and compact JSON when piped/redirected/CI. **Agents and scripts should pass `--json`**
+to force the compact JSON contract regardless of environment — the JSON shape is
+byte-identical to the historical default, per command, and is what the SDKs and
+`action.yml` consume. Other output flags: `--json --pretty` (indented JSON),
+`--pretty` (force the rich human view even when piped), `--compact` (one line per
+claim), `--color auto|always|never` (honors `NO_COLOR` / `FORCE_COLOR`), `--simple`
+(ASCII symbols).
+
+Global flags work on every command: `--cwd <dir>` (anchor root — run against another
 repo root), `--store-dir <dir>` (store location, default `<anchor>/.claims`),
 `--no-ast` (skip the tree-sitter analyzer; text/position anchors still work).
 
@@ -13,8 +21,10 @@ repo root), `--store-dir <dir>` (store location, default `<anchor>/.claims`),
 | `record` | Write a span-first claim (Document upsert + Proposition + Assertion with a bidirectional Anchor). |
 | `check` | Verify every claim; emit verdicts + summary; exit per contract. `--write` stamps banners. |
 | `diff --since <ref>` | Same as check, but restricted to claims whose anchored file changed since `<ref>`. |
+| `status` | No `--doc`: a repo-wide document health overview (every tracked doc, worst status, claim counts, owner, lifecycle). |
 | `status --doc <p>` | "Is this one document current?" read-time gate (exit 2 if any verdict gates). |
 | `query --path <p>` | List the claims anchored to / covering a path. Read-only. |
+| `completions <zsh\|bash\|fish>` | Print a shell completion script. |
 | `suggest --doc <p>` | Propose anchorable claims from a document, written as `suggested` records. |
 | `reanchor <claim-id>` | Re-resolve a claim against current content (new doc/code spans). |
 | `supersede` | Author a `supersedes`/`amends` edge between two documents. |

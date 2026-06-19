@@ -311,6 +311,52 @@ describe("CLI end-to-end (§9)", () => {
     expect(res.json.ok).toBe(false);
   });
 
+  /**
+   * Lock the machine contract (§9): the CLI is run with stdout piped (non-TTY),
+   * so the *default* already resolves to compact JSON. Forcing `--json` must
+   * produce byte-identical output — and the historical default *was* that exact
+   * compact JSON, so this pins "`--json` ≡ pre-change default" for every command
+   * a machine reads. `--json --pretty` is the same bytes, just indented.
+   */
+  test("--json output is byte-identical to the piped default (the machine contract)", async () => {
+    const d = await repo();
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+    await write(d, "README.md", "# Doc\n\nCapped at 5 attempts.\n");
+    await run(d, ["init"]);
+    await run(d, [
+      "record",
+      "--doc",
+      "README.md",
+      "--doc-quote",
+      "Capped at 5",
+      "--code-file",
+      "src/retry.ts",
+      "--code-quote",
+      "MAX_ATTEMPTS = 5",
+      "--trust",
+      "verified",
+    ]);
+
+    // Read-only verbs: same store state, default-piped vs forced --json.
+    const readOnly: string[][] = [
+      ["check"],
+      ["status", "--doc", "README.md"],
+      ["status"], // the repo-wide overview path
+      ["query", "--path", "src/retry.ts"],
+      ["schema", "--name", "Assertion"],
+      ["version"],
+    ];
+    for (const args of readOnly) {
+      const def = await run(d, args);
+      const forced = await run(d, [...args, "--json"]);
+      expect(forced.stdout).toBe(def.stdout);
+      expect(forced.code).toBe(def.code);
+      // --json --pretty parses to the same object (indented, not different data).
+      const pretty = await run(d, [...args, "--json", "--pretty"]);
+      expect(JSON.parse(pretty.stdout)).toEqual(JSON.parse(def.stdout));
+    }
+  });
+
   test("--store-dir decouples the store from the anchor root", async () => {
     const d = await repo();
     const storeHome = await mkdtemp(join(tmpdir(), "ce-cli-store-"));
