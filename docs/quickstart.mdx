@@ -6,7 +6,7 @@ icon: "rocket"
 
 Hibi tracks **claims**: sentences in your docs or AI-agent instructions that
 assert how the code behaves. You anchor each claim to the code that backs it, and
-`hibi check` flags the claim whenever either side drifts — so no reader, and no
+`hibi check` flags the claim whenever either side drifts, so no reader, and no
 agent, acts on a page that has fallen out of sync with the source.
 
 This page takes you from nothing to a checked claim. The whole loop is three
@@ -15,8 +15,8 @@ to **re-verify**, not a claim that the doc is wrong.
 
 ## Install
 
-Hibi ships as a single self-contained executable — no runtime to install. You can
-also add it to a Bun project from npm.
+Hibi ships as a single self-contained executable, with no runtime to install. You
+can also add it to a Bun project from npm.
 
 <CodeGroup>
 
@@ -33,7 +33,7 @@ bun add @npupko/hibi
 </CodeGroup>
 
 <Note>
-  The npm package is **Bun-targeted** — it runs under [Bun](https://bun.sh). For
+  The npm package is **Bun-targeted**: it runs under [Bun](https://bun.sh). For
   a zero-runtime install on any machine, use the prebuilt binary above.
 </Note>
 
@@ -43,7 +43,7 @@ bun add @npupko/hibi
   <Step title="Initialize the store">
     `hibi init` creates a committed `.claims/` directory beside your docs, with a
     per-repo banner nonce. Each claim becomes its own file in here, so merges stay
-    scoped — there is no monolithic lockfile.
+    scoped: there is no monolithic lockfile.
 
     ```sh
     hibi init
@@ -76,7 +76,7 @@ bun add @npupko/hibi
   </Step>
 </Steps>
 
-A verdict reads like `doc:unchanged · code:changed · behavior:at-risk` — one
+A verdict reads like `doc:unchanged · code:changed · behavior:at-risk`: one
 short, side-prefixed status per axis. `hibi check` exits `0` when everything is
 clean, `2` when an enforced claim has a gating problem (changed, orphaned, or
 ambiguous on either side, expired, or refuted), and `3` for a re-anchorable
@@ -95,11 +95,11 @@ hibi status --doc README.md       # is this one doc still current?
 
 `hibi status --doc <path>` is the read-time gate an agent runs before it trusts a
 doc; `hibi diff --since <ref>` is the write-time loop that reports what a change
-just invalidated. Both exit `2` on a gating problem and `3` on a warning, so they
+invalidated. Both exit `2` on a gating problem and `3` on a warning, so they
 drop straight into CI or a git hook.
 
 <Note>
-  Output is JSON by default — quiet and machine-readable. Add `--pretty` for
+  Output is JSON by default: quiet and machine-readable. Add `--pretty` for
   human-friendly output when you run a command by hand.
 </Note>
 
@@ -110,5 +110,5 @@ drop straight into CI or a git hook.
 
 <Card title="How it works" icon="diagram-project" href="/concepts">
   Claims, redundant anchors, the doc-first resolution flow, and how verdicts are
-  graded — deterministically, with no model in the check loop.
+  graded, deterministically, with no model in the check loop.
 </Card>

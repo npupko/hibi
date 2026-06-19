@@ -5,13 +5,13 @@ icon: "cube"
 ---
 
 A **resolver** is an out-of-process program that Hibi calls to grade an anchor or run a
-verifier. Hibi talks to it in JSONL-RPC over stdio — one JSON message per line. The
+verifier. Hibi talks to it in JSONL-RPC over stdio, one JSON message per line. The
 SDKs exist so you don't have to hand-roll that framing or re-derive the message shapes:
 they give you typed scaffolding in TypeScript or Rust, and you fill in the drift logic.
 
-If you want the protocol itself — the methods, the request/response shapes, the
-default-deny manifest — start at [Resolvers](/resolvers). This page is about the
-language bindings that sit on top of it.
+For the protocol itself (the methods, the request/response shapes, the
+default-deny manifest), start at [Resolvers](/resolvers). The SDKs are the
+language bindings on top of it.
 
 <CardGroup cols={2}>
   <Card title="TypeScript SDK" icon="js" href="https://github.com/npupko/hibi/tree/main/sdk/ts">
@@ -24,7 +24,7 @@ language bindings that sit on top of it.
 
 ## What both SDKs implement
 
-Every resolver — whatever language it's written in — answers the same three-method
+Every resolver, whatever language it's written in, answers the same three-method
 protocol. Each SDK reads framed requests from stdin, dispatches to your handler, and
 writes framed responses to stdout.
 
@@ -35,14 +35,14 @@ writes framed responses to stdout.
 | `verify` | `supported` or `refuted` | run an executable verifier against a behavioral claim |
 
 On `resolve`, the engine reads the relevant files itself and passes them to you as
-`files { doc, code: { path: content } }` — your resolver never reaches into the working
+`files { doc, code: { path: content } }`; your resolver never reaches into the working
 tree. The verdict you return reads like the rest of Hibi's output:
 `doc:unchanged · code:changed · behavior:at-risk` (see [Verdicts](/verdicts) for the
 full vocabulary).
 
 <Note>
   A resolver that grades anchors is advisory unless it's the engine's own built-in drift
-  logic. An opt-in semantic advisor may explain or triage a verdict — it never gates and
+  logic. An opt-in semantic advisor may explain or triage a verdict; it never gates and
   never marks a claim supported. The line stays at [Resolvers](/resolvers).
 </Note>
 
@@ -56,7 +56,7 @@ single Zod model (`src/core/model.ts`) and the protocol definition
 
 That single generation step has two payoffs:
 
-- The TypeScript and Rust bindings stay in lockstep with the engine — when the model
+- The TypeScript and Rust bindings stay in lockstep with the engine: when the model
   changes, the schemas regenerate and both SDKs follow.
 - A resolver in **any** language with a JSON Schema toolchain can validate its messages
   against the same canonical contract, even without an SDK. The SDKs are a convenience,
@@ -71,7 +71,7 @@ hibi schema --name Verdict   # one named schema
 
 ## Building the Rust SDK
 
-The Rust SDK is a standalone crate — it builds without the CLI, so you can develop a
+The Rust SDK is a standalone crate: it builds without the CLI, so you can develop a
 native resolver in isolation and run the worked example:
 
 <Info>
@@ -84,7 +84,7 @@ native resolver in isolation and run the worked example:
 
 <CardGroup cols={2}>
   <Card title="Resolvers" icon="puzzle-piece" href="/resolvers">
-    The protocol the SDKs implement — methods, the JSONL-RPC seam, the default-deny manifest.
+    The protocol the SDKs implement: methods, the JSONL-RPC seam, the default-deny manifest.
   </Card>
   <Card title="Behavioral claims" icon="flask-vial" href="/behavioral">
     Where `verify` fits: executable verifiers, the change-gate, and the no-model boundary.

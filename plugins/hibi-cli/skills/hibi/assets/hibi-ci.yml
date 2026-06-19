@@ -25,7 +25,7 @@ jobs:
         uses: npupko/hibi@v0
         with:
           command: check # or: diff
-          fail-on: suspect # suspect | moved | tamper | never
+          fail-on: gating # gating | warn | tamper | never
           # since: origin/${{ github.base_ref }}   # only for `command: diff`
           # write: "false"                          # set true to stamp banners (commit them separately)
           # working-directory: "."                  # subdir holding the .claims store
