@@ -4,10 +4,19 @@ description: "Every hibi command, its flags, the exit codes, and the strictness 
 icon: "terminal"
 ---
 
-`hibi` is a single self-contained executable. Every command prints **JSON by
-default** and stays quiet otherwise; add `--pretty` for human-readable output.
-Output leads with the decision (`status`, `gates`, `side`) and trails the bulky
-evidence, so a truncated read still surfaces the verdict.
+`hibi` is a single self-contained executable. **Output is TTY-aware:** in a
+terminal you get a rich, grouped-by-document human view (color paired with
+symbols, honoring `NO_COLOR`); piped, redirected, or in CI you get compact JSON,
+so the machine contract is preserved. The JSON leads with the decision (`status`,
+`gates`, `side`) and trails the bulky evidence, so a truncated read still surfaces
+the verdict.
+
+Force a specific shape with the flag vocabulary: `--json` (compact JSON — the
+machine contract agents and SDKs read), `--json --pretty` (indented JSON),
+`--pretty` (rich human view even when piped), `--compact` (one line per claim),
+`--color auto|always|never` (also honors `NO_COLOR` / `FORCE_COLOR`), and
+`--simple` (ASCII symbols). `hibi completions <zsh|bash|fish>` prints a shell
+completion script.
 
 <Note>
   All commands operate against a committed claim store (`.claims/`, one file per
@@ -23,8 +32,10 @@ evidence, so a truncated read still surfaces the verdict.
 | `hibi record` | Record a span-first claim: a doc span, anchored to zero or more code spans. |
 | `hibi check` | Verify every claim, emit verdicts and lifecycle, exit per the contract below. |
 | `hibi diff --since <ref>` | What did this change invalidate? Scopes to files touched since a base ref. |
+| `hibi status` | A repo-wide document health overview: every tracked doc with its worst status, claim counts, owner, and lifecycle. |
 | `hibi status --doc <p>` | Read-time gate: is this one doc still current? |
 | `hibi query --path <p>` | Which claims cover this file? Both directions; includes coarse edges. |
+| `hibi completions <zsh\|bash\|fish>` | Print a shell completion script. |
 | `hibi suggest --doc <p>` | Propose anchorable candidate claims as `suggested` records. Never auto-enforces. |
 | `hibi reanchor <claim-id>` | Re-resolve both anchors against current content; reset state. |
 | `hibi supersede --new <p> --old <p> --type <type>` | Record that one doc supersedes or amends another. |

@@ -27,6 +27,13 @@ import {
   type RecordCall,
   type StoreLocation,
 } from "../index.ts";
+import { completionScript, isShell } from "./completions.ts";
+import { renderCheck } from "./render/check.ts";
+import { fileReader } from "./render/helpers.ts";
+import * as misc from "./render/misc.ts";
+import { type OutputMode, resolveMode } from "./render/mode.ts";
+import { renderOverview, renderStatusDetail } from "./render/status.ts";
+import { makeStyle } from "./render/style.ts";
 
 const EXIT_OPERATIONAL_ERROR = 1;
 
@@ -38,8 +45,62 @@ function out(value: unknown, pretty: boolean): void {
 function jsonReplacer(_k: string, v: unknown) {
   return typeof v === "bigint" ? v.toString() : v;
 }
-function fail(message: string, pretty: boolean): never {
-  out({ ok: false, error: message }, pretty);
+
+/** True when the resolved mode wants a human (non-JSON) rendering. */
+function isHuman(mode: OutputMode): boolean {
+  return mode.kind === "rich" || mode.kind === "compact";
+}
+
+/**
+ * Emit a command result honoring the resolved mode: a human renderer when the
+ * mode is rich/compact (the `human` closure runs only then, so its extra store
+ * reads never cost the machine path), else the byte-identical JSON the CLI has
+ * always emitted (`--json` ≡ the historical default).
+ */
+async function emit(
+  mode: OutputMode,
+  value: unknown,
+  human: () => string | Promise<string>,
+): Promise<void> {
+  if (isHuman(mode)) process.stdout.write(await human());
+  else out(value, mode.kind === "json-pretty");
+}
+
+/**
+ * Build the rich/compact `check`/`diff` render context: join the report's
+ * verdicts to their assertions (for `owner`/`ref`/`ttl`) and propositions (for
+ * the quoted sentence), and hand the renderer a file reader rooted at the anchor
+ * root so it can resolve `path:line` anchors. Only called in human mode.
+ */
+async function checkContext(
+  engine: Engine,
+  report: import("../index.ts").CheckReport,
+  mode: OutputMode,
+  verb: string,
+  lead?: string[],
+) {
+  const [assertions, propositions] = await Promise.all([
+    engine.store.allAssertions(),
+    engine.store.allPropositions(),
+  ]);
+  return {
+    report,
+    assertionsById: new Map(assertions.map((a) => [a.id, a])),
+    propsById: new Map(propositions.map((p) => [p.id, p])),
+    read: fileReader(engine.store.anchorRoot),
+    style: makeStyle(mode.color),
+    mode,
+    verb,
+    lead,
+  };
+}
+
+function fail(message: string, mode: OutputMode): never {
+  if (isHuman(mode)) {
+    process.stderr.write(`${makeStyle(mode.color).red("error:")} ${message}\n`);
+  } else {
+    out({ ok: false, error: message }, mode.kind === "json-pretty");
+  }
   process.exit(EXIT_OPERATIONAL_ERROR);
 }
 
@@ -123,7 +184,14 @@ async function main(argv: string[]): Promise<number> {
     options: {
       cwd: { type: "string" },
       "store-dir": { type: "string" },
+      // Output-mode vocabulary (§9): default auto (human on a TTY, else JSON);
+      // --json forces compact JSON; --json --pretty indents it; --pretty forces
+      // the rich human view even when piped; --compact is one line per claim.
       pretty: { type: "boolean", default: false },
+      json: { type: "boolean", default: false },
+      compact: { type: "boolean", default: false },
+      color: { type: "string" },
+      simple: { type: "boolean", default: false },
       // record / reanchor — doc side (span-first)
       doc: { type: "string" },
       "doc-quote": { type: "string" },
@@ -165,7 +233,20 @@ async function main(argv: string[]): Promise<number> {
     },
   });
 
-  const pretty = Boolean(values.pretty);
+  // Resolve the output mode once, from flags + TTY + env (§9). Machines pipe
+  // (non-TTY) → compact JSON, byte-identical to the historical default; only an
+  // interactive human (or `--pretty`) gets the rich rendering.
+  const mode = resolveMode(
+    {
+      json: Boolean(values.json),
+      pretty: Boolean(values.pretty),
+      compact: Boolean(values.compact),
+      color: values.color as string | undefined,
+      simple: Boolean(values.simple),
+    },
+    { isTTY: process.stdout.isTTY, env: process.env },
+  );
+  const style = makeStyle(mode.color);
   const anchorRoot = (values.cwd as string) ?? process.cwd();
   const noAst = Boolean(values["no-ast"]);
   // The store defaults to <anchorRoot>/.claims; --store-dir decouples it (§8).
@@ -176,29 +257,33 @@ async function main(argv: string[]): Promise<number> {
 
   const open = () =>
     Engine.open(loc, { noAst }).catch(() =>
-      fail("No claim store. Run `hibi init`.", pretty),
+      fail("No claim store. Run `hibi init`.", mode),
     );
 
   switch (cmd) {
     case "init": {
       const engine = await Engine.init(loc);
       const config = await engine.store.config();
-      out(
-        {
-          ok: true,
-          action: "init",
-          store: engine.store.dir,
-          nonce: config.nonce,
-          version: config.version,
-        },
-        pretty,
+      const value = {
+        ok: true,
+        action: "init",
+        store: engine.store.dir,
+        nonce: config.nonce,
+        version: config.version,
+      };
+      await emit(mode, value, () =>
+        misc.renderInit(
+          { store: value.store, nonce: value.nonce, version: value.version },
+          style,
+          mode,
+        ),
       );
       return 0;
     }
 
     case "record": {
       const engine = await open();
-      if (!values.doc) return fail("record requires --doc", pretty);
+      if (!values.doc) return fail("record requires --doc", mode);
 
       // Doc side: the documented sentence's span supplies the claim text.
       const docSpec = spanSpec(
@@ -210,7 +295,7 @@ async function main(argv: string[]): Promise<number> {
       if (!docSpec && !legacyText)
         return fail(
           "record requires a doc span (--doc-quote/--doc-range/--doc-line) or legacy --text",
-          pretty,
+          mode,
         );
 
       // Code side: zero or more targets. One is enough; coarse/glob are coarse.
@@ -228,7 +313,7 @@ async function main(argv: string[]): Promise<number> {
         );
         code.push({ file: codeFile, ...codeSpec, coarse });
       } else if (coarse) {
-        return fail("--coarse requires --code-file or use --glob", pretty);
+        return fail("--coarse requires --code-file or use --glob", mode);
       }
 
       // Enforcement: explicit --enforcement wins; --enforce is shorthand for
@@ -267,12 +352,14 @@ async function main(argv: string[]): Promise<number> {
 
       try {
         const result = await engine.record(call);
-        out({ ok: true, action: "record", ...result }, pretty);
+        await emit(mode, { ok: true, action: "record", ...result }, () =>
+          misc.renderRecord(result, String(values.trust), style, mode),
+        );
         return 0;
       } catch (e) {
         // recordClaim throws when an `enforced` outcome can't resolve both
         // sides (§9/§18-B) — surface it as an operational error (exit 1).
-        return fail((e as Error).message, pretty);
+        return fail((e as Error).message, mode);
       }
     }
 
@@ -283,13 +370,15 @@ async function main(argv: string[]): Promise<number> {
         failOn: String(values["fail-on"]) as FailOn,
         ref: await currentRef(anchorRoot),
       });
-      out({ ok: true, action: "check", ...report }, pretty);
+      await emit(mode, { ok: true, action: "check", ...report }, async () =>
+        renderCheck(await checkContext(engine, report, mode, "check")),
+      );
       return report.exitCode;
     }
 
     case "diff": {
       const engine = await open();
-      if (!values.since) return fail("diff requires --since <ref>", pretty);
+      if (!values.since) return fail("diff requires --since <ref>", mode);
       const files = await changedFiles(values.since as string, anchorRoot);
       const report = await engine.check({
         onlyFiles: files,
@@ -297,26 +386,47 @@ async function main(argv: string[]): Promise<number> {
         failOn: String(values["fail-on"]) as FailOn,
         ref: await currentRef(anchorRoot),
       });
-      out(
-        {
-          ok: true,
-          action: "diff",
-          since: values.since,
-          changedFiles: files,
-          ...report,
-        },
-        pretty,
-      );
+      const value = {
+        ok: true,
+        action: "diff",
+        since: values.since,
+        changedFiles: files,
+        ...report,
+      };
+      await emit(mode, value, async () => {
+        const lead = [
+          `${style.dim("since")} ${style.bold(String(values.since))}  ${style.dim(`${files.length} changed file${files.length === 1 ? "" : "s"}`)}`,
+        ];
+        return renderCheck(
+          await checkContext(engine, report, mode, "diff", lead),
+        );
+      });
       return report.exitCode;
     }
 
     case "status": {
       const engine = await open();
-      if (!values.doc) return fail("status requires --doc", pretty);
+      // No `--doc` → the repo-wide overview: a full check rendered as a table.
+      if (!values.doc) {
+        const report = await engine.check({
+          ref: await currentRef(anchorRoot),
+        });
+        await emit(mode, { ok: true, action: "status", ...report }, async () =>
+          renderOverview({
+            report,
+            assertions: await engine.store.allAssertions(),
+            style,
+            mode,
+          }),
+        );
+        return report.exitCode;
+      }
       const result = await engine.status(values.doc as string, {
         ref: await currentRef(anchorRoot),
       });
-      out({ ok: true, action: "status", ...result }, pretty);
+      await emit(mode, { ok: true, action: "status", ...result }, () =>
+        renderStatusDetail({ result, style, mode }),
+      );
       // Read-time gate via the report's own verdicts: 2 if any gates, else 3
       // when a moved/at-risk warning is present, else 0. `moved`/`at-risk`
       // never gate (§9/ADR-001) — the suspect status strings carry the warning.
@@ -332,40 +442,40 @@ async function main(argv: string[]): Promise<number> {
 
     case "query": {
       const engine = await open();
-      if (!values.path) return fail("query requires --path", pretty);
+      if (!values.path) return fail("query requires --path", mode);
       const hits = await engine.query(values.path as string);
-      out(
-        {
-          ok: true,
-          action: "query",
-          path: values.path,
-          count: hits.length,
-          hits,
-        },
-        pretty,
+      const value = {
+        ok: true,
+        action: "query",
+        path: values.path,
+        count: hits.length,
+        hits,
+      };
+      await emit(mode, value, () =>
+        misc.renderQuery(String(values.path), hits, style, mode),
       );
       return 0;
     }
 
     case "suggest": {
       const engine = await open();
-      if (!values.doc) return fail("suggest requires --doc", pretty);
+      if (!values.doc) return fail("suggest requires --doc", mode);
       try {
         const result = await engine.suggest(values.doc as string);
-        out(
-          {
-            ok: true,
-            action: "suggest",
-            doc: values.doc,
-            since: values.since,
-            count: result.created.length,
-            ...result,
-          },
-          pretty,
+        const value = {
+          ok: true,
+          action: "suggest",
+          doc: values.doc,
+          since: values.since,
+          count: result.created.length,
+          ...result,
+        };
+        await emit(mode, value, () =>
+          misc.renderSuggest(String(values.doc), result.created, style, mode),
         );
         return 0;
       } catch (e) {
-        return fail((e as Error).message, pretty);
+        return fail((e as Error).message, mode);
       }
     }
 
@@ -373,7 +483,7 @@ async function main(argv: string[]): Promise<number> {
       const engine = await open();
       const claimId = positionals[0];
       if (!claimId)
-        return fail("reanchor requires a <claim-id> positional", pretty);
+        return fail("reanchor requires a <claim-id> positional", mode);
       const docSpec = spanSpec(
         values["doc-quote"],
         values["doc-range"],
@@ -406,10 +516,12 @@ async function main(argv: string[]): Promise<number> {
           code: code.length > 0 ? code : undefined,
           ref: values.ref as string | undefined,
         });
-        out({ ok: true, action: "reanchor", ...result }, pretty);
+        await emit(mode, { ok: true, action: "reanchor", ...result }, () =>
+          misc.renderReanchor(result, style, mode),
+        );
         return 0;
       } catch (e) {
-        return fail((e as Error).message, pretty);
+        return fail((e as Error).message, mode);
       }
     }
 
@@ -418,7 +530,7 @@ async function main(argv: string[]): Promise<number> {
       if (!values.new || !values.old || !values.type) {
         return fail(
           "supersede requires --new, --old, and --type (supersedes|amends)",
-          pretty,
+          mode,
         );
       }
       try {
@@ -432,29 +544,35 @@ async function main(argv: string[]): Promise<number> {
                 .map((s) => s.trim())
             : undefined,
         });
-        out({ ok: true, action: "supersede", ...result }, pretty);
+        await emit(mode, { ok: true, action: "supersede", ...result }, () =>
+          misc.renderSupersede(result, String(values.type), style, mode),
+        );
         return 0;
       } catch (e) {
-        return fail((e as Error).message, pretty);
+        return fail((e as Error).message, mode);
       }
     }
 
     case "retract": {
       const engine = await open();
-      if (!values.doc) return fail("retract requires --doc", pretty);
+      if (!values.doc) return fail("retract requires --doc", mode);
       const doc = await engine.retract(values.doc as string);
-      out({ ok: true, action: "retract", document: doc }, pretty);
+      await emit(mode, { ok: true, action: "retract", document: doc }, () =>
+        misc.renderRetract(doc, style, mode),
+      );
       return 0;
     }
 
     case "archive": {
       const engine = await open();
-      if (!values.doc) return fail("archive requires --doc", pretty);
+      if (!values.doc) return fail("archive requires --doc", mode);
       const result = await engine.archive(
         values.doc as string,
         values.successor as string | undefined,
       );
-      out({ ok: true, action: "archive", ...result }, pretty);
+      await emit(mode, { ok: true, action: "archive", ...result }, () =>
+        misc.renderArchive(result, style, mode),
+      );
       return 0;
     }
 
@@ -462,6 +580,10 @@ async function main(argv: string[]): Promise<number> {
       const { SCHEMAS } = await import("../core/model.ts");
       const z = await import("zod");
       const name = values.name as string | undefined;
+      // `schema` is machine output by definition — it stays JSON in every mode,
+      // so the human paths emit the same indented (rich) / compact JSON a human
+      // reading a schema actually wants, never a prose rendering.
+      const schemaPretty = mode.kind !== "json";
       if (name) {
         const schema = (
           SCHEMAS as Record<string, (typeof SCHEMAS)[keyof typeof SCHEMAS]>
@@ -469,21 +591,35 @@ async function main(argv: string[]): Promise<number> {
         if (!schema)
           return fail(
             `Unknown schema: ${name}. Known: ${Object.keys(SCHEMAS).join(", ")}`,
-            pretty,
+            mode,
           );
         out(
           z.toJSONSchema(schema, { target: "draft-2020-12", reused: "ref" }),
-          pretty,
+          schemaPretty,
         );
       } else {
-        out({ ok: true, schemas: Object.keys(SCHEMAS) }, pretty);
+        out({ ok: true, schemas: Object.keys(SCHEMAS) }, schemaPretty);
       }
+      return 0;
+    }
+
+    case "completions": {
+      const shell = positionals[0];
+      if (!isShell(shell)) {
+        return fail(
+          `completions requires a shell: zsh | bash | fish (got: ${shell ?? "none"})`,
+          mode,
+        );
+      }
+      process.stdout.write(completionScript(shell));
       return 0;
     }
 
     case "version":
     case "--version": {
-      out({ name: "hibi", version: pkg.version }, pretty);
+      await emit(mode, { name: "hibi", version: pkg.version }, () =>
+        misc.renderVersion(pkg.version, style),
+      );
       return 0;
     }
 
@@ -495,11 +631,11 @@ async function main(argv: string[]): Promise<number> {
     }
 
     default:
-      return fail(`Unknown command: ${cmd}. Run \`hibi help\`.`, pretty);
+      return fail(`Unknown command: ${cmd}. Run \`hibi help\`.`, mode);
   }
 }
 
-const USAGE = `hibi — deterministic doc/code claim tracking (JSON-first)
+const USAGE = `hibi — deterministic doc/code claim tracking
 
 Usage: hibi <command> [options]
 
@@ -513,7 +649,7 @@ Commands:
   check    [--write] [--fail-on gating|warn|tamper|never]
                                     Verify all claims; emit verdicts; exit per contract
   diff     --since <ref> [--write]  What did this change invalidate? (write-time loop)
-  status   --doc <p>                Read-time "is this current?" gate for one document
+  status   [--doc <p>]              No --doc: repo-wide health overview. --doc: one-document gate.
   query    --path <p>               What claims are anchored to / cover this path?
   suggest  --doc <p> [--since <ref>]  Propose anchorable claims from a document (suggested records)
   reanchor <claim-id> [--doc-quote …] [--code-file …]  Re-resolve a claim against current content
@@ -521,10 +657,25 @@ Commands:
   retract  --doc <p>                Mark a document retracted (author withdrew)
   archive  --doc <p> [--successor <p>]  Move an obsolete doc out of the read path (tombstone)
   schema   [--name <Name>]          Emit generated JSON Schema(s)
+  completions <zsh|bash|fish>       Print a shell completion script
+
+Output: rich human view on a terminal, compact JSON when piped/redirected/CI.
+  --json            force compact JSON (the machine contract; what agents read)
+  --json --pretty   indented JSON
+  --pretty          force the rich human view, even when piped
+  --compact         one line per claim (human)
+  --color auto|always|never   (also honors NO_COLOR / FORCE_COLOR)
+  --simple          ASCII symbols instead of unicode
+
+Examples:
+  hibi check                      # rich, grouped-by-document drift report
+  hibi check --json | jq .summary # machine JSON for a script or agent
+  hibi status                     # repo-wide document health table
+  hibi diff --since origin/main   # what did my change invalidate?
 
 Exit codes: 0 clean · 2 gating (changed/orphaned/ambiguous/expired/refuted on enforced) · 3 moved/at-risk · 1 error
-Options: --pretty (human output) · --cwd <dir> (anchor root) · --store-dir <dir> (store
-  location, default <anchor>/.claims) · --no-ast (skip tree-sitter)
+Globals: --cwd <dir> (anchor root) · --store-dir <dir> (store location, default
+  <anchor>/.claims) · --no-ast (skip tree-sitter)
 `;
 
 main(process.argv.slice(2))

@@ -49,10 +49,25 @@ hibi query --path src/retry.ts  # before editing: which claims cover this file?
 hibi suggest --doc README.md    # propose anchorable claims from a doc (suggested records)
 hibi reanchor <claim-id> --doc-quote "…" --code-file src/retry.ts  # re-resolve a claim
 hibi supersede --new v2.md --old v1.md --type supersedes
-hibi status --doc README.md     # is this doc still current?
+hibi status                     # repo-wide document health overview
+hibi status --doc README.md     # is this one doc still current?
 ```
 
-Output is JSON by default. Add `--pretty` for human reading.
+**Output is TTY-aware.** Run hibi in a terminal and you get a rich, grouped-by-document
+report with color and symbols; pipe or redirect it (or run it in CI) and you get compact
+JSON — so the machine contract is unchanged. Override with the flag vocabulary:
+
+| flag | output |
+|------|--------|
+| _(default)_ | rich human view on a TTY, compact JSON when piped/redirected/CI |
+| `--json` | force compact JSON (the machine contract; what agents read) |
+| `--json --pretty` | indented JSON |
+| `--pretty` | force the rich human view, even when piped |
+| `--compact` | one line per claim (human) |
+| `--color auto\|always\|never` | color control (also honors `NO_COLOR` / `FORCE_COLOR`) |
+| `--simple` | ASCII symbols instead of unicode |
+
+`hibi completions <zsh\|bash\|fish>` prints a shell completion script.
 
 ### Exit codes
 
