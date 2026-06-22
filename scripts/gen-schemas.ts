@@ -16,9 +16,14 @@ export async function generateSchemas(outDir = OUT_DIR): Promise<string[]> {
   const written: string[] = [];
   const all = { ...SCHEMAS, ...PROTOCOL_SCHEMAS };
   for (const [name, schema] of Object.entries(all)) {
+    // Shared shapes are deduplicated into `$defs` by their registered `.meta({
+    // id })` (stable, human-readable keys like `Selector`/`Region`). We do NOT
+    // use `reused: "ref"`: it also hoists anonymous leaf scalars into churny
+    // `__schema0`/`__schema1` keys. `inline` keeps unnamed shapes inline and
+    // emits a `$defs` entry only for an explicitly-named schema.
     const jsonSchema = z.toJSONSchema(schema, {
       target: "draft-2020-12",
-      reused: "ref",
+      reused: "inline",
     });
     const file = join(outDir, `${name}.${MODEL_VERSION}.json`);
     await writeFile(file, `${JSON.stringify(jsonSchema, null, 2)}\n`);

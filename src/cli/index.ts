@@ -748,7 +748,9 @@ async function main(argv: string[]): Promise<number> {
             mode,
           );
         out(
-          z.toJSONSchema(schema, { target: "draft-2020-12", reused: "ref" }),
+          // `reused: "inline"` matches `scripts/gen-schemas.ts` so this output
+          // is byte-identical to the committed `schemas/*.json` artifact.
+          z.toJSONSchema(schema, { target: "draft-2020-12", reused: "inline" }),
           schemaPretty,
         );
       } else {

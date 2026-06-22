@@ -24,13 +24,13 @@
           "type": "object",
           "properties": {
             "doc": {
-              "$ref": "#/$defs/__schema0"
+              "$ref": "#/$defs/SelectorBundle"
             },
             "code": {
               "default": [],
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema0"
+                "$ref": "#/$defs/SelectorBundle"
               }
             }
           },
@@ -66,7 +66,7 @@
           "default": [],
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema2"
+            "$ref": "#/$defs/Verifier"
           }
         },
         "behaviorScope": {
@@ -134,7 +134,7 @@
       "additionalProperties": false
     },
     "verifier": {
-      "$ref": "#/$defs/__schema2"
+      "$ref": "#/$defs/Verifier"
     },
     "files": {
       "type": "object",
@@ -203,7 +203,7 @@
   ],
   "additionalProperties": false,
   "$defs": {
-    "__schema0": {
+    "SelectorBundle": {
       "type": "object",
       "properties": {
         "file": {
@@ -213,7 +213,7 @@
           "minItems": 1,
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema1"
+            "$ref": "#/$defs/Selector"
           }
         }
       },
@@ -223,7 +223,7 @@
       ],
       "additionalProperties": false
     },
-    "__schema1": {
+    "Selector": {
       "oneOf": [
         {
           "type": "object",
@@ -384,7 +384,7 @@
         }
       ]
     },
-    "__schema2": {
+    "Verifier": {
       "type": "object",
       "properties": {
         "kind": {

@@ -9,7 +9,7 @@
       "minItems": 1,
       "type": "array",
       "items": {
-        "$ref": "#/$defs/__schema0"
+        "$ref": "#/$defs/Selector"
       }
     }
   },
@@ -19,7 +19,7 @@
   ],
   "additionalProperties": false,
   "$defs": {
-    "__schema0": {
+    "Selector": {
       "oneOf": [
         {
           "type": "object",

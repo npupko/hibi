@@ -12,10 +12,10 @@
       "type": "string"
     },
     "doc": {
-      "$ref": "#/$defs/__schema0"
+      "$ref": "#/$defs/AnchorState"
     },
     "code": {
-      "$ref": "#/$defs/__schema0"
+      "$ref": "#/$defs/AnchorState"
     },
     "behavior": {
       "type": "string",
@@ -108,13 +108,13 @@
       "type": "object",
       "properties": {
         "docRegion": {
-          "$ref": "#/$defs/__schema1"
+          "$ref": "#/$defs/Region"
         },
         "codeRegions": {
           "default": [],
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema1"
+            "$ref": "#/$defs/Region"
           }
         },
         "confidence": {
@@ -194,23 +194,7 @@
       "default": [],
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "resolver": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "confidence": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "resolver",
-          "message"
-        ],
-        "additionalProperties": false
+        "$ref": "#/$defs/Advisory"
       }
     }
   },
@@ -229,7 +213,7 @@
   ],
   "additionalProperties": false,
   "$defs": {
-    "__schema0": {
+    "AnchorState": {
       "type": "string",
       "enum": [
         "unchanged",
@@ -239,7 +223,7 @@
         "orphaned"
       ]
     },
-    "__schema1": {
+    "Region": {
       "type": "object",
       "properties": {
         "start": {
@@ -256,6 +240,25 @@
       "required": [
         "start",
         "end"
+      ],
+      "additionalProperties": false
+    },
+    "Advisory": {
+      "type": "object",
+      "properties": {
+        "resolver": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "resolver",
+        "message"
       ],
       "additionalProperties": false
     }
