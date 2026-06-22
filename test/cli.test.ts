@@ -21,21 +21,59 @@ interface SelectorBundle {
  * two-axis, verdict-first model (§9). `assertion.anchor` is bidirectional:
  * `code[]` is an array of per-target bundles, each with its own `selectors[]`.
  */
+interface RemediationAction {
+  id?: string;
+  applicability?: string;
+  effect?: string;
+  command?: string;
+}
+interface Remediation {
+  recommended?: string | null;
+  actions?: RemediationAction[];
+}
+interface CliVerdict {
+  assertionId?: string;
+  doc?: string;
+  code?: string;
+  behavior?: string;
+  expired?: boolean;
+  gates?: boolean;
+  changed?: string;
+  remediation?: Remediation | null;
+  notes?: string[];
+  evidence?: unknown;
+  advisories?: unknown;
+  fingerprint?: string;
+}
+interface ListRow {
+  claimId?: string;
+  status?: string;
+  severity?: string;
+  gates?: boolean;
+  recommended?: string | null;
+  documentPath?: string | null;
+  codePath?: string | null;
+}
 interface CliJson {
   ok?: boolean;
+  action?: string;
+  schemaVersion?: string;
+  next?: string;
   nonce?: string;
   store?: string;
-  assertion?: { anchor?: { doc?: SelectorBundle; code?: SelectorBundle[] } };
+  claimId?: string;
+  alreadyRetired?: boolean;
+  assertion?: {
+    enforcement?: string;
+    anchor?: { doc?: SelectorBundle; code?: SelectorBundle[] };
+  };
   summary?: { clean?: number };
-  verdicts?: {
-    doc?: string;
-    code?: string;
-    expired?: boolean;
-    gates?: boolean;
-  }[];
+  verdicts?: CliVerdict[];
   changedFiles?: string[];
   count?: number;
   current?: boolean;
+  state?: string;
+  claims?: ListRow[];
   oldDoc?: { lifecycle?: string };
   type?: string;
   properties?: { anchor?: unknown };
@@ -392,5 +430,271 @@ describe("CLI end-to-end (§9)", () => {
     const clean = await run(d, ["check", "--store-dir", storeDir]);
     expect(clean.code).toBe(0);
     expect(clean.json.summary?.clean).toBe(1);
+  });
+
+  // ── New agent-facing surface (§9) ──────────────────────────────────────────
+
+  /**
+   * Seed an enforced claim against MAX_ATTEMPTS, then change the value so the
+   * single verdict gates with `code:changed`. Returns the claim id.
+   */
+  async function driftedRepo(): Promise<{ d: string; id: string }> {
+    const d = await repo();
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+    await write(d, "README.md", "# Doc\n\nRetries are capped at 5 attempts.\n");
+    await run(d, ["init"]);
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "README.md",
+      "--doc-quote",
+      "Retries are capped at 5 attempts",
+      "--code-file",
+      "src/retry.ts",
+      "--code-quote",
+      "5",
+      "--trust",
+      "verified",
+    ]);
+    const id = rec.json.claimId ?? "";
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
+    return { d, id };
+  }
+
+  test("every envelope is self-describing (schemaVersion) and mutations return the handle + next", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "doc.md", "# Doc\n\nA is 1 here.\n");
+
+    const init = await run(d, ["init"]);
+    expect(init.json.schemaVersion).toBe("v1");
+    expect(init.json.next).toBeDefined();
+
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "A is 1",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    expect(rec.json.schemaVersion).toBe("v1");
+    expect(rec.json.claimId).toMatch(/^asrt_/);
+    expect(rec.json.next).toBe("hibi check");
+
+    const check = await run(d, ["check"]);
+    expect(check.json.schemaVersion).toBe("v1");
+  });
+
+  test("concise check is lean (no evidence); --explain adds evidence + fingerprint", async () => {
+    const { d } = await driftedRepo();
+
+    const concise = await run(d, ["check"]);
+    const cv = concise.json.verdicts?.[0];
+    expect(cv?.code).toBe("changed");
+    expect(cv?.evidence).toBeUndefined(); // bulky evidence dropped on the hot path
+    expect(cv?.fingerprint).toBeUndefined();
+
+    const explained = await run(d, ["check", "--explain"]);
+    const ev = explained.json.verdicts?.[0];
+    expect(ev?.evidence).toBeDefined();
+    expect(ev?.fingerprint).toBeDefined();
+    expect(ev?.advisories).toBeDefined();
+  });
+
+  test("a gating verdict carries a remediation menu with the id pre-filled", async () => {
+    const { d, id } = await driftedRepo();
+    const check = await run(d, ["check"]);
+    const rem = check.json.verdicts?.[0]?.remediation;
+    expect(rem).toBeDefined();
+    expect(Array.isArray(rem?.actions)).toBe(true);
+    // retire/reanchor commands carry the claim id verbatim.
+    const retire = rem?.actions?.find((a) => a.id === "retire");
+    expect(retire?.command).toBe(`hibi retire ${id}`);
+    expect(retire?.effect).toBe("deterministic");
+    const reanchor = rem?.actions?.find((a) => a.id === "reanchor");
+    expect(reanchor?.command).toBe(`hibi reanchor ${id}`);
+  });
+
+  test("an orphan recommends retire and never pre-fills a bare reanchor command", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "doc.md", "# Doc\n\nA is 1 here.\n");
+    await run(d, ["init"]);
+    await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "A is 1",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+      "--enforce",
+    ]);
+    // Delete the code file → the code side orphans.
+    await rm(join(d, "src/a.ts"), { force: true });
+    const check = await run(d, ["check"]);
+    const rem = check.json.verdicts?.[0]?.remediation;
+    expect(rem?.recommended).toBe("retire");
+    const reanchor = rem?.actions?.find((a) => a.id === "reanchor");
+    expect(reanchor?.command).toBeUndefined(); // a bare reanchor cannot resolve an orphan
+  });
+
+  test("--no-hints / HIBI_ADVICE=0 strips the remediation block", async () => {
+    const { d } = await driftedRepo();
+    const flagged = await run(d, ["check", "--no-hints"]);
+    expect(flagged.json.verdicts?.[0]?.remediation).toBeUndefined();
+    expect(flagged.json.verdicts?.[0]?.gates).toBe(true); // the decision still leads
+  });
+
+  test("the behavioral carve-out keeps a 1-line `changed` summary on the concise path", async () => {
+    const { d } = await driftedRepo();
+    const check = await run(d, ["check"]);
+    const v = check.json.verdicts?.[0];
+    expect(v?.behavior).toBe("at-risk");
+    expect(v?.changed).toContain("src/retry.ts"); // path + kind, no --explain needed
+  });
+
+  test("retire flips enforcement, is idempotent, and stops the claim gating", async () => {
+    const { d, id } = await driftedRepo();
+    expect((await run(d, ["check"])).code).toBe(2);
+
+    const first = await run(d, ["retire", id]);
+    expect(first.code).toBe(0);
+    expect(first.json.action).toBe("retire");
+    expect(first.json.alreadyRetired).toBe(false);
+    expect(first.json.assertion?.enforcement).toBe("retired");
+    expect(first.json.next).toBe("hibi check");
+
+    // A retired claim no longer gates.
+    expect((await run(d, ["check"])).code).toBe(0);
+
+    // Idempotent: a second retire is a no-op success.
+    const second = await run(d, ["retire", id]);
+    expect(second.code).toBe(0);
+    expect(second.json.alreadyRetired).toBe(true);
+  });
+
+  test("retire requires a claim-id positional (operational error otherwise)", async () => {
+    const d = await repo();
+    await run(d, ["init"]);
+    const res = await run(d, ["retire"]);
+    expect(res.code).toBe(1);
+    expect(res.json.ok).toBe(false);
+  });
+
+  test("list returns lean triage rows and filters by --state", async () => {
+    const { d, id } = await driftedRepo();
+
+    const all = await run(d, ["list"]);
+    expect(all.code).toBe(0);
+    expect(all.json.action).toBe("list");
+    expect(all.json.count).toBe(1);
+    const row = all.json.claims?.[0];
+    expect(row?.claimId).toBe(id);
+    expect(row?.status).toBe("code:changed");
+    expect(row?.severity).toBe("gating");
+    expect(row?.gates).toBe(true);
+    expect(row?.documentPath).toBe("README.md");
+    expect(row?.codePath).toBe("src/retry.ts");
+
+    const gating = await run(d, ["list", "--state", "gating"]);
+    expect(gating.json.count).toBe(1);
+    const clean = await run(d, ["list", "--state", "clean"]);
+    expect(clean.json.count).toBe(0);
+  });
+
+  test("list --state rejects an unknown state (operational error)", async () => {
+    const d = await repo();
+    await run(d, ["init"]);
+    const res = await run(d, ["list", "--state", "bogus"]);
+    expect(res.code).toBe(1);
+    expect(res.json.ok).toBe(false);
+  });
+
+  test("list --no-hints drops the recommended action from rows", async () => {
+    // A `moved` verdict recommends `reanchor` (non-null), so --no-hints is observable.
+    const d = await repo();
+    await write(d, "src/a.ts", "export const MAX = 5;\n");
+    await write(d, "doc.md", "# Doc\n\nMax is 5 here.\n");
+    await run(d, ["init"]);
+    await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "Max is 5",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "MAX = 5",
+      "--trust",
+      "verified",
+    ]);
+    // Relocate the anchored line far (intact content) → code:moved.
+    await write(
+      d,
+      "src/a.ts",
+      `${"// prologue\n".repeat(4)}export const MAX = 5;\n`,
+    );
+    const withHints = await run(d, ["list", "--state", "warning"]);
+    expect(withHints.json.claims?.[0]?.status).toBe("code:moved");
+    expect(withHints.json.claims?.[0]?.recommended).toBe("reanchor");
+    const noHints = await run(d, ["list", "--state", "warning", "--no-hints"]);
+    expect(noHints.json.claims?.[0]?.recommended).toBeNull();
+  });
+
+  test("list reports a retired claim as `retired`, not as live drift", async () => {
+    const { d, id } = await driftedRepo();
+    await run(d, ["retire", id]);
+    const all = await run(d, ["list"]);
+    const row = all.json.claims?.find((r) => r.claimId === id);
+    expect(row?.status).toBe("retired");
+    expect(row?.severity).toBe("clean");
+    expect(row?.recommended).toBeNull();
+  });
+
+  test("list reflects document lifecycle in the status (not a bare `unchanged`)", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "v1.md", "# V1\n\nA is 1 here.\n");
+    await run(d, ["init"]);
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "v1.md",
+      "--doc-quote",
+      "A is 1",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    const id = rec.json.claimId ?? "";
+    // Supersede v1.md → its lifecycle flips to `superseded`; the anchor is intact.
+    await run(d, [
+      "supersede",
+      "--new",
+      "v2.md",
+      "--old",
+      "v1.md",
+      "--type",
+      "supersedes",
+    ]);
+    const all = await run(d, ["list"]);
+    const row = all.json.claims?.find((r) => r.claimId === id);
+    expect(row?.status).toBe("superseded");
+  });
+
+  test("list codePath reflects the code file that drifted", async () => {
+    const { d, id } = await driftedRepo();
+    const all = await run(d, ["list", "--state", "gating"]);
+    const row = all.json.claims?.find((r) => r.claimId === id);
+    expect(row?.codePath).toBe("src/retry.ts"); // the file changedEvidence names
   });
 });

@@ -339,6 +339,19 @@ describe("canonical model is the single source of truth (§5)", () => {
       behavior: "at-risk",
       expired: false,
       gates: false,
+      remediation: {
+        recommended: null,
+        actions: [
+          {
+            id: "retire",
+            title: "Retire the claim",
+            applicability: "manual",
+            effect: "deterministic",
+            rationale: "the claim is obsolete",
+            command: "hibi retire a",
+          },
+        ],
+      },
       evidence: {
         docRegion: { start: 0, end: 5 },
         codeRegions: [{ start: 10, end: 20 }],
@@ -362,10 +375,12 @@ describe("canonical model is the single source of truth (§5)", () => {
       code: "unchanged",
       expired: false,
       gates: false,
+      remediation: null,
       evidence: { confidence: 1, codeRegions: [], selectorScores: [] },
     });
     expect(v.behavior).toBeUndefined();
     expect(v.evidence.changedEvidence).toEqual([]); // default
+    expect(v.remediation).toBeNull(); // null on a clean verdict
   });
 
   test("Verdict rejects an out-of-enum anchor state", () => {
@@ -378,6 +393,7 @@ describe("canonical model is the single source of truth (§5)", () => {
         code: "unchanged",
         expired: false,
         gates: false,
+        remediation: null,
         evidence: { confidence: 1, codeRegions: [], selectorScores: [] },
       }).success,
     ).toBe(false);
