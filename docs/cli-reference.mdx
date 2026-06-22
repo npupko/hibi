@@ -48,7 +48,7 @@ Two flags tune how much each JSON payload carries — the agent hot path:
 | `hibi list [--state …]` | Triage: one lean row per claim (handle, status, severity, recommended action), most-severe-first. |
 | `hibi completions <zsh\|bash\|fish>` | Print a shell completion script. |
 | `hibi suggest --doc <p>` | Propose anchorable candidate claims as `suggested` records. Never auto-enforces. |
-| `hibi reanchor <claim-id>` | Re-resolve both anchors against current content; reset state. |
+| `hibi reanchor <claim-id>` | Re-resolve both anchors against current content; reset state. `--doc <p>` / `--code-file <f>` relocate a side to a **different file**. |
 | `hibi retire <claim-id>` | Withdraw one claim: flip its `enforcement` to `retired`. Idempotent; a retired claim never gates or warns. |
 | `hibi supersede --new <p> --old <p> --type <type>` | Record that one doc supersedes or amends another. |
 | `hibi retract --doc <p>` | Mark that the author withdrew the claim. |
@@ -94,6 +94,79 @@ hibi record \
   target resolves. Otherwise the record lands as `suggested`. Coarse and
   `--glob` targets are navigation-only and cannot back an enforced claim.
 </Warning>
+
+### Batch authoring — `--from-file`
+
+To author many claims at once — onboarding a repo, or an agent grounding a set
+of docs — pass a JSON array of claim specs instead of one claim's worth of
+flags. This avoids shell-quoting verbatim spans and records the whole set in one
+pass. `-` reads the array from stdin.
+
+```sh
+hibi record --from-file claims.json
+cat claims.json | hibi record --from-file -
+```
+
+Each item's keys mirror the flags in camelCase. `doc` plus one doc-span key are
+required; everything else is optional:
+
+```json
+[
+  {
+    "doc": "docs/retry.md",
+    "docQuote": "Retries are capped at 5 attempts",
+    "codeFile": "src/retry.ts",
+    "codeQuote": "MAX_ATTEMPTS = 5",
+    "trust": "verified",
+    "owner": "alice"
+  }
+]
+```
+
+Keys: `doc`, `docQuote` / `docRange` / `docLine` / `text`, `codeFile`,
+`codeQuote` / `codeRange` / `codeLine`, `glob`, `coarse`, `inlineId`, `trust`
+(default `inferred`), `enforce` / `enforcement`, `claimKind`, `verifier`,
+`owner`, `ref`, `ttl`.
+
+<Note>
+  Every spec is validated **before any write** — a malformed item fails the
+  whole batch, never leaving half of it recorded. Propositions still dedup by
+  fingerprint, so the same sentence recorded from two files shares one meaning.
+</Note>
+
+## `hibi reanchor`
+
+`reanchor` re-resolves a claim's anchors against the current working tree and
+resets its state to `unchanged` — the supported way to settle a `moved` claim or
+re-point one after an edit. It **preserves the claim's identity** (same id,
+owner, trust, and history); only its anchors and baseline change.
+
+```sh
+# Re-localize both sides in place (e.g. after a code move):
+hibi reanchor asrt_1a2b3c
+
+# Relocate the CODE anchor to a different file:
+hibi reanchor asrt_1a2b3c --code-file src/new/path.ts --code-quote "MAX_ATTEMPTS = 5"
+
+# Relocate the DOC anchor to a different file (the sentence moved docs):
+hibi reanchor asrt_1a2b3c --doc docs/subsystems/retry.md --doc-quote "Retries are capped at 5 attempts"
+```
+
+| Flag | Description |
+|------|-------------|
+| `--doc <p>` | Re-home the doc anchor onto a **different file**, updating the claim's document. Omit to keep it on the current file. |
+| `--doc-quote <s>` / `--doc-range` / `--doc-line` | The doc span to re-resolve (in the new file, if `--doc` is given). Omit to re-localize the existing selectors. |
+| `--code-file <f>` | Re-home the code anchor onto a different file. |
+| `--code-quote <s>` / `--code-range` / `--code-line` / `--glob` / `--coarse` | The code span to re-resolve. |
+| `--ref <ref>` | Stamp a new `@ref`; omit to keep the current one. |
+
+<Note>
+  Relocating a doc anchor (`--doc`) moves the claim, it does not copy it: the
+  source document is left intact as audit, and the claim no longer anchors to it
+  — so the old file can be deleted without orphaning anything. This is the
+  generic primitive behind doc splits, merges, renames, and promotions; it is
+  **not** [supersession](/lifecycle), which records a document-to-document edge.
+</Note>
 
 ## `hibi list`
 

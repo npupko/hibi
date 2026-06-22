@@ -42,12 +42,15 @@ hibi record \
   --doc README.md --doc-quote "Retries are capped at 5 attempts" \
   --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" --trust verified --owner alice
 
+hibi record --from-file claims.json  # batch-author many claims (a JSON array; - = stdin)
+
 hibi check                      # verify every claim
 hibi check --write              # verify, and stamp status banners into affected docs
 hibi diff --since origin/main   # what did this change invalidate?
 hibi query --path src/retry.ts  # before editing: which claims cover this file?
 hibi suggest --doc README.md    # propose anchorable claims from a doc (suggested records)
 hibi reanchor <claim-id> --doc-quote "…" --code-file src/retry.ts  # re-resolve a claim
+hibi reanchor <claim-id> --doc docs/retry.md --doc-quote "…"  # relocate it to another file
 hibi supersede --new v2.md --old v1.md --type supersedes
 hibi status                     # repo-wide document health overview
 hibi status --doc README.md     # is this one doc still current?
