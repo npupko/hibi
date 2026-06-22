@@ -10,10 +10,12 @@ rewrites prose; it flags, and can stamp a status banner. It wires into three
 places: continuous integration, a git hook, and an AI coding agent's edit loop.
 
 The shape is the same everywhere. You run a Hibi command, it emits a verdict, and
-you act on its **exit code**: `0` is clean, `2` gates, `3` warns, `1` is an
-operational error. Because no model runs in the check loop, the same working tree
-always yields the same verdicts. That is what makes "is this doc stale?" a signal
-you can gate a pipeline on rather than a probabilistic guess.
+you act on its **exit code**: `0` is clean, `2` **gates** (a confirmed problem
+that should block), `3` is **advisory** (a re-anchorable `moved` or a
+behavioral `at-risk` — it warns but never gates), and `1` is an operational error.
+Because no model runs in the check loop, the same working tree always yields the
+same verdicts. That is what makes "is this doc stale?" a signal you can gate a
+pipeline on rather than a probabilistic guess.
 
 <Note>
   A flag is a request to **re-verify**, not a claim that the doc is wrong. Hibi
@@ -226,14 +228,30 @@ for convenience; the full verdict model behind them lives on the
 | Code | Meaning |
 |---|---|
 | `0` | all clean |
-| `2` | gating: `changed`, `orphaned`, or `ambiguous` on either side, `expired`, or `refuted`, on an **enforced** claim |
-| `3` | warning: `moved` or `at-risk`, re-anchorable or advisory |
+| `2` | **gating**: `changed`, `orphaned`, or `ambiguous` on either side, `expired`, or `refuted`, on an **enforced** claim |
+| `3` | **advisory**: `moved` or `at-risk` — re-anchorable, **never gates** |
 | `1` | operational error |
+
+<Warning>
+  Exit **`3` is advisory and never gates.** A `moved` span is re-anchorable and a
+  behavioral `at-risk` claim has no failing verifier behind it — neither is strong
+  enough to fail a build on its own. Only exit **`2`** marks a confirmed, enforced
+  drift that should block. (Under the default `--fail-on gating`, both bands still
+  produce a non-zero exit, so a strict CI step fails on either; `--fail-on never`
+  reports without failing — read the JSON for the result.)
+</Warning>
 
 `moved` and `at-risk` never gate, and `suggested` claims never set a failing exit
 code, so a build only breaks on a confirmed, enforced claim whose evidence
 moved. That keeps the suspect set tight: a gate you can trust, not noise you learn
 to ignore.
+
+<Tip>
+  For quieter CI logs, add **`--no-hints`** (or set `HIBI_ADVICE=0`) to drop the
+  per-verdict `remediation` menu from the JSON. When a run fails and you need to
+  see *why* a claim was graded the way it was, re-run with **`--explain`** to get
+  the full evidence tail, advisories, and the proposition fingerprint.
+</Tip>
 
 ## Where to go next
 

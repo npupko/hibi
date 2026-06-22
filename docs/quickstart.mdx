@@ -4,6 +4,13 @@ description: "Install Hibi, anchor your first claim, and check it for drift in a
 icon: "rocket"
 ---
 
+You're about to edit `src/auth.ts`. Does any doc ride on it? `hibi query --path
+src/auth.ts` lists the two claims — one in `README.md`, one in `CLAUDE.md` — that
+both anchor to the 30-minute token TTL you're about to touch. You change the
+constant, run `hibi diff --since origin/main`, and Hibi tells you exactly which
+two sentences you just broke — and hands you the command to fix each. That is the
+whole point: docs that flag themselves the moment the code beneath them moves.
+
 Hibi tracks **claims**: sentences in your docs or AI-agent instructions that
 assert how the code behaves. You anchor each claim to the code that backs it, and
 `hibi check` flags the claim whenever either side drifts, so no reader, and no
@@ -87,20 +94,28 @@ warning (moved or at-risk). A `moved` claim never fails the build on its own.
 ```sh
 hibi diff --since origin/main     # what did this change invalidate?
 hibi query --path src/retry.ts    # before editing: which claims cover this file?
+hibi list --state gating          # triage: one lean row per drifting claim
 hibi suggest --doc README.md      # propose anchorable candidate claims from a doc
 hibi reanchor <claim-id> --doc-quote "…" --code-file src/retry.ts  # re-resolve a drifted claim
-hibi supersede --new v2.md --old v1.md --type supersedes  # a newer doc replaces an old one
+hibi retire <claim-id>            # withdraw a single obsolete claim
 hibi status --doc README.md       # is this one doc still current?
 ```
 
 `hibi status --doc <path>` is the read-time gate an agent runs before it trusts a
 doc; `hibi diff --since <ref>` is the write-time loop that reports what a change
-invalidated. Both exit `2` on a gating problem and `3` on a warning, so they
-drop straight into CI or a git hook.
+invalidated. Both exit `2` on a gating problem and `3` on an advisory warning, so
+they drop straight into CI or a git hook.
+
+Every drift verdict comes with a **remediation menu** — a `recommended` next step
+and a list of actions, each with a ready-to-run command where Hibi can perform the
+fix (`hibi reanchor asrt_…`, `hibi retire asrt_…`). You rarely have to figure out
+the fix yourself; the verdict hands it to you.
 
 <Note>
-  Output is JSON by default: quiet and machine-readable. Add `--pretty` for
-  human-friendly output when you run a command by hand.
+  Output is TTY-aware: a rich human view in a terminal, compact JSON when piped or
+  in CI. Pass `--json` to force the machine contract, `--pretty` to force the human
+  view. The JSON is **concise by default** — add `--explain` for the full evidence
+  tail, or `--no-hints` to drop the remediation menu.
 </Note>
 
 <Tip>

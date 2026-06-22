@@ -1,0 +1,117 @@
+---
+title: "Workflows"
+description: "Four moments where Hibi earns its place — the problem, the command, and the payoff."
+icon: "route"
+---
+
+Hibi is not a thing you run on a schedule and forget. It's a thing you reach for at
+specific *moments* — the instant before you trust a doc, the instant after you change
+code. Each moment below is a real problem, the one command that answers it, and what
+you do with the answer. (For the same four flows as an agent-facing playbook with raw
+JSON, see the [`hibi` skill cookbook](https://github.com/npupko/hibi/blob/main/plugins/hibi-cli/skills/hibi/references/cookbook.md).)
+
+The running example: a service with `src/retry.ts` (`MAX_ATTEMPTS = 5`) and
+`src/auth.ts` (`TOKEN_TTL_MIN = 30`), a `README.md`, and a `CLAUDE.md` telling an
+agent "Auth tokens expire after 30 minutes."
+
+## 1. Trust-check before you follow an instruction file
+
+**The problem.** Your `CLAUDE.md` / `AGENTS.md` / README tells you how the code
+behaves. But docs rot silently — the moment you act on a stale instruction, you ship a
+bug that the doc *told you* to ship. You can't eyeball every claim against the code
+before trusting it.
+
+**The command.**
+
+```sh
+hibi status --doc CLAUDE.md
+```
+
+**The payoff.** Hibi re-verifies every claim in that file against the current code and
+gives you a one-word decision: `current: false` (exit 2) means an instruction drifted.
+The verdict shows the shape — `doc: unchanged · code: changed` means the *sentence* is
+intact but the code it describes moved out from under it (someone changed the token TTL
+to 60 minutes; the file still says 30). You now know not to blindly trust the
+30-minute rule, and the verdict's `remediation` menu hands you the exact command to
+fix it. This is the natural **SessionStart** moment for an agent: check the instruction
+file before the session trusts it.
+
+## 2. Keep docs honest in the same PR as the code change
+
+**The problem.** You changed a constant. Somewhere in the docs, a sentence just became
+a lie — but you don't remember which, and "update the docs" is the step everyone
+skips. Drift accumulates one forgotten sentence at a time.
+
+**The command.**
+
+```sh
+hibi diff --since origin/main
+```
+
+**The payoff.** Hibi evaluates only the claims whose anchored file changed since the
+ref (the write-time loop — it lists the `changedFiles`), and its `documents` array
+names exactly which docs your edit broke. Each gating verdict carries a `remediation`
+menu with the fix command pre-filled. The doc fix lands in the same PR as the code
+change, while you still remember why. Add `--explain` to see *what* moved
+(`changedEvidence` points at the literal value), or read the concise `changed` field
+for a one-line summary. This is the natural **Stop / pre-commit** moment.
+
+## 3. See the blast radius before you refactor
+
+**The problem.** You're about to refactor `src/auth.ts`. What promises does the rest of
+the repo make about this file? Which sentences will quietly become wrong if you change
+its behavior? Grep won't tell you — the doc and the code live apart.
+
+**The command.**
+
+```sh
+hibi query --path src/auth.ts
+```
+
+**The payoff.** Every claim anchored to that path, on either side, with its
+`assertion.id`, the documented sentence, and which side matched. In the example, two
+enforced claims ride on `src/auth.ts` — one in `README.md`, one in `CLAUDE.md`, both
+asserting the 30-minute TTL. Now you refactor *knowing* the contracts you must not
+silently break, and you already hold the ids you'll `reanchor` (if still true) or
+`retire` (if now wrong) afterward.
+
+## 4. Go from zero to protected on an existing repo
+
+**The problem.** A repo has docs but no claims. Hand-authoring an anchor for every
+sentence is tedious enough that it never happens, so nothing is protected.
+
+**The commands.**
+
+```sh
+hibi init
+hibi suggest --doc README.md
+```
+
+**The payoff.** `init` creates the committed `.claims/` store; `suggest` proposes one
+advisory (`suggested`, never-gating) record per anchorable sentence — the doc side
+filled in, the code side waiting. You promote the ones worth enforcing by pinning their
+code and re-anchoring, then `hibi check` to confirm. You've gone from unprotected docs
+to a tracked, gating store without writing a single anchor from scratch.
+
+## Triage anytime
+
+Between those moments, one command answers "what's red right now?" without making you
+parse a full report:
+
+```sh
+hibi list --state gating
+```
+
+One lean row per claim — the `claimId`, the doc and code paths, the status, and the
+recommended action — most-severe-first. Decide intent, then act on the row's handle:
+`hibi reanchor <id>` if the claim still holds, `hibi retire <id>` if it's obsolete
+(idempotent, keeps the audit trail).
+
+## How to respond to a flag
+
+Across all of these, a flag is the **start of a decision, not a banner to silence**.
+Every drift verdict carries a deterministic [`remediation`](/verdicts#the-remediation-menu)
+menu: read `recommended` (the unambiguous next step, or `null` when intent matters),
+pick an action, and either run its pre-filled `command` (`reanchor`/`retire`) or do the
+prose work it names (fix the code, rewrite the sentence). You never rewrite a doc just
+to make a flag go away — you re-verify, then act.

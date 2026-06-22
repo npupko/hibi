@@ -8,8 +8,8 @@ Hibi ships a [Claude Code](https://claude.com/claude-code) **Agent Skill**: a
 bundle of instructions a coding agent loads on demand to learn how to use a tool
 the right way. The Hibi skill teaches the agent the whole loop: set up the store
 in a fresh repo, record well-anchored claims, run the everyday `check` / `diff` /
-`query` / `status` commands, read the two-axis verdict, respond to a flag without
-silencing it, and manage the document lifecycle.
+`query` / `status` / `list` commands, read the two-axis verdict, act on the
+remediation menu each flag carries, and manage the document lifecycle.
 
 The skill is the agent-facing half of the same idea the rest of these docs
 describe for humans. Hibi is **deterministic** (no model runs in the check loop),
@@ -32,13 +32,18 @@ sequenceDiagram
   Note over A,H: agent trusts only a current doc
   A->>A: edits code
   A->>H: after editing: diff --since base
-  H-->>A: which claims this change invalidated
-  A->>A: drafts the prose fix; human merges
+  H-->>A: verdict + remediation menu per flagged claim
+  A->>A: read recommended / actions[].command, then act
 ```
 
-Hibi flags; the agent (or a human) rewrites the prose. A flag is a
-request to **re-verify**, not a claim that the doc is wrong. The engine never
-writes prose; it only tells the agent which sentences the change put at risk.
+Hibi flags **and tells the agent what to do about it**. Every drift verdict
+carries a `remediation` menu: a `recommended` action id (or `null` when intent is
+ambiguous) and an ordered `actions` list. A `deterministic` action arrives with a
+ready-to-run `command` — claim id already filled in, like
+`hibi reanchor asrt_…` — so the agent runs it directly instead of re-deriving the
+next step. A `prose` action means the agent (or a human) rewrites the doc or code;
+the engine never writes prose itself. A flag is always a request to **re-verify**,
+not a claim that the doc is wrong.
 
 <Note>
   The skill guides the agent; it does not bundle the `hibi` binary. The agent
@@ -95,45 +100,79 @@ invoke it on demand as `/hibi-cli:hibi`.
   </Accordion>
 
   <Accordion title="The everyday loops" icon="arrows-rotate">
-    Four commands, each tied to a moment:
+    Five read-only commands, each tied to a moment:
     - `hibi query --path <p>`: **before** editing a file, ask which claims cover it.
     - `hibi diff --since <ref>`: **after** editing, ask which claims the change invalidated.
     - `hibi check`: verify every claim as a gate (in CI or a hook).
     - `hibi status --doc <p>`: a read-time check before the agent trusts a single doc.
+    - `hibi list --state gating`: triage the whole suspect set, one lean row per claim, most-severe-first.
+
+    These read-only verbs (`check`, `diff`, `status`, `query`, `list`) are
+    **pre-approved in the skill's `allowed-tools`**, so the agent can run them
+    without a per-call permission prompt. The mutating verbs (`record`, `reanchor`,
+    `retire`, …) are not, so a change to the store always passes through you.
   </Accordion>
 
-  <Accordion title="Reading the two-axis verdict" icon="scale-balanced">
+  <Accordion title="Reading the verdict and its remediation menu" icon="scale-balanced">
     The skill teaches the agent to read a verdict like
-    `doc:unchanged · code:changed · behavior:at-risk`. The first axis is anchor
-    resolution per side (`doc:…` / `code:…`); the second appears only on behavioral
-    claims. The agent learns which results gate (`changed`, `orphaned`, `ambiguous`,
-    `expired`, `refuted` on an enforced claim → exit code `2`) and which are warnings
-    that never gate (`moved`, `at-risk` → exit code `3`). Full detail in
-    [Verdicts, states & exit codes](/verdicts).
+    `doc:unchanged · code:changed · behavior:at-risk` — anchor resolution per side
+    (`doc:…` / `code:…`), plus the behavioral axis on behavioral claims — and which
+    results gate (`changed`, `orphaned`, `ambiguous`, `expired`, `refuted` on an
+    enforced claim → exit `2`) versus warn (`moved`, `at-risk` → exit `3`). But the
+    agent rarely has to map verdict→action itself: each flag carries a
+    `remediation` menu with a `recommended` action and an ordered `actions` list.
+    The agent reads `recommended` (or the safest applicable action when it is
+    `null`) and acts on it. Full detail in [Verdicts, states & exit codes](/verdicts).
   </Accordion>
 
-  <Accordion title="Responding to a flag: re-verify, don't silence" icon="rotate">
-    When a claim is flagged, the agent re-resolves it with `hibi reanchor <claim-id>`
-    against the current content rather than deleting the record to make the check
-    pass. If the documented sentence was removed (`doc:orphaned`), the agent
-    relocates or retires the claim. The skill is explicit that a flag means the
+  <Accordion title="Acting on a flag: follow the menu, don't silence it" icon="rotate">
+    When a claim is flagged, the agent reads the verdict's `remediation` block
+    rather than re-deriving a fix. A `deterministic` action carries a ready-to-run
+    `command` with the claim id pre-filled — `hibi reanchor asrt_…` for a clean
+    relocation, `hibi retire asrt_…` for a genuinely obsolete claim — which the
+    agent runs directly. A `prose` action has no command: the agent rewrites the
+    doc or code, then re-runs `check`. To withdraw a claim the agent calls
+    `hibi retire <claim-id>` (which keeps the audit trail), **never** deletes the
+    record file to make the check pass. The skill is explicit that a flag means the
     evidence moved (suspect, not false) and that a human decides what the prose
     should now say.
   </Accordion>
 
   <Accordion title="Managing the document lifecycle" icon="arrows-spin">
     When a newer document replaces an older one, the agent records the relationship
-    with `hibi supersede --new <p> --old <p> --type supersedes|amends`, withdraws a
-    claim with `hibi retract`, and moves an obsolete document out of the read path
-    with `hibi archive`. See [Trust, enforcement & lifecycle](/lifecycle).
+    with `hibi supersede --new <p> --old <p> --type supersedes|amends`, marks an
+    author-withdrawn document with `hibi retract --doc <p>`, and moves an obsolete
+    document out of the read path with `hibi archive`. (To withdraw a single
+    *claim* rather than a whole document, it uses `hibi retire <claim-id>`.) See
+    [Trust, enforcement & lifecycle](/lifecycle).
   </Accordion>
 </AccordionGroup>
 
 <Warning>
   The skill never teaches the agent to decide staleness itself. That judgment is
   Hibi's deterministic job. The agent's role is to run the checks, read the
-  verdict, and draft the prose fix a human merges.
+  verdict and its remediation menu, and either run the deterministic command or
+  draft the prose fix a human merges.
 </Warning>
+
+## Wiring it into the session lifecycle
+
+Beyond the skill's instructions, you can bind the two moments above to Claude
+Code's session hooks so they fire automatically:
+
+- **SessionStart** → `hibi status --doc CLAUDE.md` (or whichever instruction file
+  the agent is about to rely on): the read-time gate, so the agent only trusts a
+  doc that comes back clean.
+- **Stop** → `hibi diff --since origin/main`: re-verify only the claims the
+  session's edits could have touched, so a drift the agent introduced surfaces
+  before it leaves the loop.
+
+<Note>
+  This is a **pattern, not a packaged install.** Hibi ships no hook config of its
+  own; you register these commands in your own Claude Code settings (or your
+  team's shared config). Both are read-only `status` / `diff` calls, so they gate
+  and report without ever touching the store.
+</Note>
 
 ## Where this fits
 

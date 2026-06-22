@@ -103,25 +103,71 @@ changed."
 
 ## The verdict shape
 
-The JSON a verdict serializes to is **verdict-first**: the decision comes before
-the evidence, so a truncated or streamed read still surfaces what matters.
+The JSON a verdict serializes to is **decision-first**: the fields you act on
+come first, so even a truncated or streamed read surfaces the verdict and what to
+do about it before any supporting detail. The whole payload leads with
+`{ ok, action, schemaVersion, … }`, and `schemaVersion` (e.g. `"v1"`) rides
+*inside* the payload — not just in a filename — so a consumer can branch on the
+contract version without parsing anything else.
+
+A single verdict, on the concise default path, reads:
 
 ```json
 {
+  "assertionId": "asrt_897e054b48d040db",
+  "propositionId": "prop_d6185fc85e2a4e52",
+  "documentId": "doc_5c9e4f99d90e2cfd",
   "doc": "unchanged",
   "code": "changed",
-  "behavior": "at-risk",
   "expired": false,
   "gates": true,
-  "evidence": { }
+  "remediation": { "recommended": null, "actions": [ /* … */ ] },
+  "notes": ["structural-only AST match (rename/whitespace)"]
 }
 ```
 
-The `behavior` key is present only on behavioral claims. `gates` records whether
-this verdict alone is enough to fail the run (see exit codes below). `evidence`
-trails at the end and holds the bulky supporting detail (matched offsets,
-similarity scores, which selectors resolved) that you rarely need but can always
-inspect.
+The decision fields lead: the two axes (`doc`, `code`, and `behavior` when the
+claim is behavioral), the orthogonal `expired` flag, `gates` (whether this verdict
+alone is enough to fail the run — see exit codes below), and the
+[`remediation`](#the-remediation-menu) menu that tells you what to do next. The
+identifiers (`assertionId`, `propositionId`, `documentId`) let you act on the
+exact claim. `notes` explains why a side was graded the way it was.
+
+### Lean by default, `--explain` for the rest
+
+The default JSON is **concise**: decision fields plus the remediation menu, with
+the bulky located evidence dropped. That is the agent hot path — everything you
+need to decide and act, nothing you don't.
+
+Pass **`--explain`** (alias `--detailed`) to append the evidence tail to every
+verdict, plus a list of `advisories` and the proposition `fingerprint`:
+
+```json
+{
+  "evidence": {
+    "docRegion": { "start": 22, "end": 57 },
+    "codeRegions": [{ "start": 29, "end": 31 }],
+    "confidence": 0.446,
+    "selectorScores": [{ "kind": "text-quote", "found": true, "score": 0.5, "weight": 0.3 }],
+    "changedEvidence": [{ "path": "src/auth.ts", "kind": "value", "detail": "anchored value changed (was `30`)" }],
+    "ref": "WORKTREE"
+  },
+  "advisories": [],
+  "fingerprint": "cfe0afc35172d4af"
+}
+```
+
+This is the matched offsets, the per-selector similarity scores and weights, the
+specific evidence that changed, and the resolution reference — what you reach for
+when you want to understand *why*, not just *what*.
+
+<Note>
+  **The behavioral carve-out.** On the concise path, a `behavior:at-risk` or
+  `behavior:refuted` verdict still carries a one-line **`changed`** summary — a
+  "path kind" string naming what moved — even without `--explain`. You learn
+  *what* changed without paying for the full evidence tail, because for a
+  behavioral flag "what moved" is the first thing you need.
+</Note>
 
 ## How a code-side grade is computed
 
@@ -187,6 +233,90 @@ claim as `unchanged`**: every drift it misjudges grades `moved`, which still mea
 "re-verify." Over-flagging erodes trust, but a silent false `unchanged` would
 defeat the tool, so the thresholds err toward `moved` rather than toward
 a clean pass.
+
+## The remediation menu
+
+A verdict tells you a claim is suspect. The next question — *so what do I do about
+it?* — used to be left to the reader to re-derive. Every drift verdict (and every
+`hibi list` row) now carries a **remediation** block: a deterministic
+verdict→action menu, computed from the same grading that produced the verdict.
+
+```json
+"remediation": {
+  "recommended": "reanchor",
+  "actions": [
+    {
+      "id": "reanchor",
+      "title": "Re-anchor to the relocated span",
+      "applicability": "auto",
+      "effect": "deterministic",
+      "rationale": "the span moved but its content is identical",
+      "command": "hibi reanchor asrt_897e054b48d040db"
+    }
+  ]
+}
+```
+
+It is a **menu, not a prescription.** Hibi cannot know whether a code change was
+deliberate, so it does not pretend to. `recommended` names the single best action
+only when the next step is unambiguous; otherwise it is **`null`** and you choose
+from `actions`, which are ordered safest- and most-severe-first.
+
+Each action carries two fields that tell you how to apply it:
+
+| Field | Values | Meaning |
+|---|---|---|
+| `applicability` | `auto` · `needs-review` · `manual` | Borrowed from Rust's `Applicability`. `auto` is safe to apply; `needs-review` you apply then review; `manual` means decide intent first. |
+| `effect` | `deterministic` · `prose` | `deterministic`: **Hibi performs it**, and the action carries a ready-to-run `command` with the claim id already filled in (e.g. `hibi reanchor asrt_…`, `hibi retire asrt_…`). `prose`: **you rewrite** the doc or code — there is no command. |
+
+<Warning>
+  A `command` is **never** pre-filled when it cannot succeed. An orphan's
+  `reanchor`, for instance, needs an explicit `--doc-range` / `--code-file` target
+  Hibi can't infer, so that action carries no command and `recommended` points at
+  `retire` or `supersede` instead. A command in the menu is always runnable as-is.
+</Warning>
+
+### The verdict→action lookup
+
+The menu is deterministic: a given verdict always produces the same `recommended`
+and the same ordered `actions`. The table below is the full mapping.
+
+| Verdict | `recommended` | Actions (ordered) |
+|---|---|---|
+| `code:moved` / `doc:moved` | `reanchor` | **reanchor** (auto, deterministic) |
+| `*:ambiguous` | `reanchor` | **reanchor-tighten** (needs-review, deterministic) |
+| `code:changed` | `null` | **retire** · **fix-code** · **reanchor-if-true** |
+| `doc:changed` | `null` | **reverify-doc** · **retire** · **reanchor** |
+| `doc:changed` + `code:changed` | `null` | **reconcile** · **reanchor** · **retire** |
+| `*:orphaned` | `retire` | **retire** · **supersede** · **reanchor-to-target** (no command) |
+| `behavior:refuted` | `null` | **fix-code** · **fix-claim** (no reanchor) |
+| `behavior:at-risk` | `null` | **reverify-behavior** · **run-verifier** |
+| _any of the above_ + `expired` | _composed_ | the row's actions, plus an appended **reverify-and-rerecord** |
+
+A few patterns are worth reading off the table:
+
+- **A clean relocation is the only case Hibi recommends acting on automatically.**
+  `moved` is re-anchorable with no judgement call, so `recommended` is `reanchor`
+  with an `auto` command.
+- **`code:changed` leaves `recommended` null on purpose.** A changed literal could
+  be an intentional update (fix the doc / retire the claim) or an accidental
+  regression (fix the code). Hibi won't guess which, so it lays out all three and
+  lets you decide.
+- **`behavior:refuted` never offers `reanchor`.** A failing verifier means the
+  belief is wrong, not that the anchor moved; re-anchoring would only paper over a
+  real failure, so the menu offers `fix-code` or `fix-claim` instead.
+- **`expired` composes.** The TTL flag is orthogonal, so an expired verdict keeps
+  whatever menu its axes produced and *appends* a `reverify-and-rerecord` action.
+
+### Turning the menu off
+
+The menu is verbose by design, which a noise-sensitive harness may not want.
+
+<Tip>
+  Pass **`--no-hints`** (or set the environment variable `HIBI_ADVICE=0`) to drop
+  the whole `remediation` block from every verdict and `list` row. The verdict and
+  its `gates` flag stay; only the action menu is omitted.
+</Tip>
 
 ## Verdicts become exit codes
 
