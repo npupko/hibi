@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "applicability": {
+      "type": "string",
+      "enum": [
+        "auto",
+        "needs-review",
+        "manual"
+      ]
+    },
+    "effect": {
+      "type": "string",
+      "enum": [
+        "deterministic",
+        "prose"
+      ]
+    },
+    "rationale": {
+      "type": "string"
+    },
+    "command": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "applicability",
+    "effect",
+    "rationale"
+  ],
+  "additionalProperties": false
+}

@@ -421,12 +421,72 @@ export const VerdictEvidence = z.object({
 });
 export type VerdictEvidence = z.infer<typeof VerdictEvidence>;
 
+// ── Remediation menu (deterministic verdict→action lookup, §9) ───────────────
+
+/**
+ * How safely an action can be applied — Rust `Applicability`-style (§9):
+ *   - `auto`         — safe to apply mechanically (e.g. a pure relocation).
+ *   - `needs-review` — apply but review the result (the anchor/value may differ).
+ *   - `manual`       — a human/agent must decide intent before acting.
+ */
+export const RemediationApplicability = z.enum([
+  "auto",
+  "needs-review",
+  "manual",
+]);
+export type RemediationApplicability = z.infer<typeof RemediationApplicability>;
+
+/**
+ * What kind of work the action is:
+ *   - `deterministic` — hibi performs it via a `command` (e.g. `reanchor`/`retire`).
+ *   - `prose`         — a human/agent must rewrite the doc or code (no command).
+ */
+export const RemediationEffect = z.enum(["deterministic", "prose"]);
+export type RemediationEffect = z.infer<typeof RemediationEffect>;
+
+/**
+ * One entry in a verdict's remediation menu (§9). A `deterministic` action
+ * carries a ready-to-run `command` with the claim id pre-filled; a `prose`
+ * action carries none, because it needs a human/agent to edit text. A command
+ * is NEVER pre-filled when it cannot succeed (e.g. a bare `reanchor` on an
+ * orphan, which has no span to relocate to).
+ */
+export const RemediationAction = z.object({
+  /** Stable kebab token, machine-stable across releases (e.g. `reanchor`). */
+  id: z.string(),
+  /** One-line human label. */
+  title: z.string(),
+  applicability: RemediationApplicability,
+  effect: RemediationEffect,
+  /** Why this action applies, derived from the verdict's states/evidence. */
+  rationale: z.string(),
+  /** Ready-to-run command (deterministic, runnable actions only). */
+  command: z.string().optional(),
+});
+export type RemediationAction = z.infer<typeof RemediationAction>;
+
+/**
+ * The deterministic remediation menu for a verdict (§9). A *menu*, not a single
+ * prescription: hibi routes attention but cannot know developer intent (was the
+ * code change deliberate?), so `recommended` is set only when the next step is
+ * unambiguous, and `actions` is ordered safest/most-severe-first. The
+ * verdict→action mapping is a fixed lookup table (`remediationFor`), never a
+ * model decision (§7/§11).
+ */
+export const Remediation = z.object({
+  /** The single best action id, or `null` when intent is ambiguous. */
+  recommended: z.string().nullable(),
+  actions: z.array(RemediationAction).default([]),
+});
+export type Remediation = z.infer<typeof Remediation>;
+
 /**
  * Verdict — the engine's per-Assertion result, recomputed live, never stored.
  * **Verdict-first** (§9): leads with the decision (the two per-side anchor
- * states, the behavioral state, the `expired`/`gates` flags) and trails the
- * bulky `evidence`, so a truncated read still surfaces the verdict. Means
- * "suspect — re-verify", never "the claim is false" (§11).
+ * states, the behavioral state, the `expired`/`gates` flags, and the
+ * `remediation` menu) and trails the bulky `evidence`, so a truncated read still
+ * surfaces the verdict and what to do about it. Means "suspect — re-verify",
+ * never "the claim is false" (§11).
  */
 export const Verdict = z.object({
   assertionId: z.string(),
@@ -446,6 +506,14 @@ export const Verdict = z.object({
    * `behavior === "refuted"`). `moved`/`at-risk` never gate (§9/§17.3).
    */
   gates: z.boolean(),
+  /**
+   * Deterministic verdict→action menu (§9): a decision field that leads
+   * alongside `gates`. `null` on a clean verdict (nothing to remediate). hibi's
+   * own resolvers always set it; the default keeps the registry tolerant of a
+   * wire verdict from an external resolver that omits it (the registry recomputes
+   * the menu from the computed states regardless — §7.4).
+   */
+  remediation: Remediation.nullable().default(null),
   evidence: VerdictEvidence,
   /** Human-readable explanation crumbs (e.g. "value veto", "structural-only"). */
   notes: z.array(z.string()).default([]),
@@ -481,6 +549,8 @@ export const SCHEMAS = {
   Document,
   Proposition,
   Assertion,
+  RemediationAction,
+  Remediation,
   Verdict,
   StoreConfig,
 } as const;
