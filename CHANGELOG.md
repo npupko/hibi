@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.2.1](https://github.com/npupko/hibi/compare/v0.2.0...v0.2.1) (2026-06-22)
+
+
+### Features
+
+* agent-optimized JSON, remediation menu, retire/list, and a scenario-led skill ([481ac27](https://github.com/npupko/hibi/commit/481ac2717c0d8a4bd4a72da7be23bf0bc801bff4))
+* **cli:** lean decision-first JSON, --explain/--no-hints, retire + list ([ca4abd6](https://github.com/npupko/hibi/commit/ca4abd645fd44fb08de147db3283d263223af2f5))
+* **cli:** TTY-aware human output, repo-wide status overview, completions ([0773036](https://github.com/npupko/hibi/commit/0773036f19b43ac8535196e92466cbbb43b676e5))
+* **core:** deterministic remediation menu, retire + list engines ([91bcf6e](https://github.com/npupko/hibi/commit/91bcf6e7bb33166f964a30334bae033a0c240c79))
+
+
+### Bug Fixes
+
+* **docs:** use transparent cream wordmark for dark-mode logo ([ec1fa93](https://github.com/npupko/hibi/commit/ec1fa9386d7d9881e5e255a28e46e07f4cd10332))
+
 ## [0.2.0](https://github.com/npupko/hibi/compare/v0.1.2...v0.2.0) (2026-06-19)
 
 
