@@ -3,11 +3,20 @@
 **Output is TTY-aware.** The default is a rich human view when stdout is a terminal
 and compact JSON when piped/redirected/CI. **Agents and scripts should pass `--json`**
 to force the compact JSON contract regardless of environment — the JSON shape is
-byte-identical to the historical default, per command, and is what the SDKs and
-`action.yml` consume. Other output flags: `--json --pretty` (indented JSON),
-`--pretty` (force the rich human view even when piped), `--compact` (one line per
-claim), `--color auto|always|never` (honors `NO_COLOR` / `FORCE_COLOR`), `--simple`
-(ASCII symbols).
+consume. Other output flags: `--json --pretty` (indented JSON), `--pretty` (force
+the rich human view even when piped), `--compact` (one line per claim),
+`--color auto|always|never` (honors `NO_COLOR` / `FORCE_COLOR`), `--simple` (ASCII
+symbols).
+
+**Verbosity & advice** (the agent hot path): JSON is **concise by default** —
+decision-first fields plus the `remediation` menu, with the bulky located evidence
+dropped. Add **`--explain`** (alias `--detailed`) to append the `evidence` tail,
+`advisories`, and the proposition `fingerprint`. Add **`--no-hints`** (or set
+`HIBI_ADVICE=0`) to drop the `remediation` block entirely — the escape hatch for
+noise-sensitive harnesses.
+
+Every JSON payload carries `schemaVersion` (e.g. `"v1"`) so a consumer can branch on
+it without reading a filename.
 
 Global flags work on every command: `--cwd <dir>` (anchor root — run against another
 repo root), `--store-dir <dir>` (store location, default `<anchor>/.claims`),
@@ -24,9 +33,11 @@ repo root), `--store-dir <dir>` (store location, default `<anchor>/.claims`),
 | `status` | No `--doc`: a repo-wide document health overview (every tracked doc, worst status, claim counts, owner, lifecycle). |
 | `status --doc <p>` | "Is this one document current?" read-time gate (exit 2 if any verdict gates). |
 | `query --path <p>` | List the claims anchored to / covering a path. Read-only. |
+| `list [--state …]` | Triage: one lean row per claim (handle + status + severity + recommended). Read-only. `--state all\|gating\|warning\|clean`. |
 | `completions <zsh\|bash\|fish>` | Print a shell completion script. |
 | `suggest --doc <p>` | Propose anchorable claims from a document, written as `suggested` records. |
 | `reanchor <claim-id>` | Re-resolve a claim against current content (new doc/code spans). |
+| `retire <claim-id>` | Withdraw one claim (`enforcement` → `retired`); idempotent. A retired claim never gates/warns. |
 | `supersede` | Author a `supersedes`/`amends` edge between two documents. |
 | `retract --doc <p>` | Mark a document retracted (author withdrew it). |
 | `archive --doc <p>` | Tombstone a document out of the read path; optional `--successor`. |
@@ -114,49 +125,84 @@ behavior axis) gate; `moved` and `at-risk` are advisory warnings. Read `notes` f
 the reason a side was graded the way it was (e.g. `"value veto — anchored value
 changed"`, `"structural-only AST match (rename/whitespace)"`).
 
+## The remediation menu
+
+Every drift verdict (and `list` row) carries a **deterministic remediation menu** —
+the verdict→action lookup, surfaced so an agent doesn't re-derive next steps. It's a
+*menu*, not a prescription: hibi cannot know whether a code change was deliberate, so
+`recommended` is set only when the next step is unambiguous, and `actions` are ordered
+safest/most-severe-first.
+
+```
+remediation: {
+  recommended: "reanchor" | "retire" | … | null,   // the single best action id, or null
+  actions: [ { id, title, applicability, effect, rationale, command? } ]
+}
+```
+
+- **`applicability`** (Rust `Applicability`-style): `auto` (safe to apply) ·
+  `needs-review` (apply, then review) · `manual` (decide intent first).
+- **`effect`**: `deterministic` (hibi performs it — carries a ready-to-run
+  `command` with the claim id pre-filled) · `prose` (you rewrite doc/code — no command).
+- A `command` is **never** pre-filled when it cannot succeed: an orphan's `reanchor`
+  needs an explicit `--doc-range`/`--code-file` target, so it carries no command and
+  `recommended` points at `retire`/`supersede` instead.
+
+`--no-hints` / `HIBI_ADVICE=0` omits the whole `remediation` block.
+
 ## JSON output shapes
 
-**`record`** → `{ ok, action:"record", document, proposition, assertion, dedupedProposition }`.
-The Anchor is bidirectional: `assertion.anchor.doc` is the doc-side `SelectorBundle`
-(`{ file, selectors[] }`) and `assertion.anchor.code[]` is an array of code-side
-bundles, each `{ file, selectors[] }`. Selector kinds in a bundle: `text-quote`
+All payloads lead `{ ok, action, schemaVersion, … }`. Mutating verbs add `next` (the
+exact follow-up command) and the resulting `claimId` where one applies.
+
+**`record`** → `{ ok, action:"record", schemaVersion, document, proposition,
+assertion, dedupedProposition, claimId, next }`. The Anchor is bidirectional:
+`assertion.anchor.doc` is the doc-side `SelectorBundle` (`{ file, selectors[] }`) and
+`assertion.anchor.code[]` an array of code-side bundles. Selector kinds: `text-quote`
 (`exact`/`prefix`/`suffix`), `text-position` (`start`/`end`), `ast-node`
 (`language`/`nodeType`/`structuralHash`/`semanticHash`), `value`
-(`language`/`nodeKind`/`value`), `inline-id` (`id`), and the coarse `path`/`glob`.
-`dedupedProposition: true` means the claim text matched an existing proposition.
+(`language`/`nodeKind`/`value`), `inline-id` (`id`), and coarse `path`/`glob`.
+`dedupedProposition: true` means the claim text matched an existing proposition (the
+`record`-always-appends footgun made visible).
 
-**`check` / `diff`** → verdict-first per the model (`doc`/`code` lead, bulky
-`evidence` trails):
+**`check` / `diff` / `status`** → decision-first envelope. **Concise (default):**
 ```
-{ ok, action, ref,
+{ ok, action, schemaVersion, ref, exitCode,
+  summary: { total, gating, warning, clean, doc{…}, code{…}, behavior{…}, expired },
   verdicts: [ { assertionId, propositionId, documentId,
                 doc, code, behavior?, expired, gates,
-                evidence:{ docRegion?, codeRegions:[…], confidence,
-                           selectorScores:[{kind,found,score,weight}],
-                           changedEvidence:[{path,kind,detail?}], ref? },
-                notes:[…], advisories:[…] } ],
+                changed?,                 // 1-line "path kind" on at-risk/refuted
+                remediation,              // the menu (null when clean; absent under --no-hints)
+                notes:[…] } ],
   documents: [ { id, path, lifecycle, suspect:[{propositionId,status}],
-                 bannerAction?, tampered?, frontmatterStatus? } ],
-  summary: { … per-axis counts …, total },
-  exitCode }
+                 bannerAction?, tampered?, frontmatterStatus? } ] }
 ```
-`diff` also includes `since` and `changedFiles`. Each `verdict.doc` / `verdict.code`
-is an `AnchorState`; `verdict.behavior` is present only on behavioral claims. Read
-`evidence.changedEvidence` for what reachable evidence moved (`value`/`ast`/`text`/
-`callee`/`import`/`verifier-source`).
+**`--explain`** adds, per verdict: `evidence:{ docRegion?, codeRegions:[…], confidence,
+selectorScores:[{kind,found,score,weight}], changedEvidence:[{path,kind,detail?}],
+ref? }`, `advisories:[…]`, and `fingerprint`. `diff` also includes `since` and
+`changedFiles`. The behavioral carve-out: `at-risk`/`refuted` verdicts keep a 1-line
+`changed` summary (path + kind) on the **concise** path, so you learn *what* changed
+without `--explain`.
 
-**`query`** → `{ ok, action:"query", path, count, hits:[ { assertion, proposition,
-documentPath, coarse } ] }`. This is how you find the `assertion.id`.
+**`list`** → `{ ok, action:"list", schemaVersion, state, count, claims:[ { claimId,
+propositionId, documentPath, codePath, status, severity, gates, recommended } ] }`.
+Rows are most-severe-first; each carries the `claimId` the next command needs.
 
-**`suggest`** → `{ ok, action:"suggest", doc, since?, count, created:[…] }`. Proposes
-anchorable claims from the document and writes them as `suggested` records.
+**`query`** → `{ ok, action:"query", schemaVersion, path, count, hits:[ { assertion,
+proposition, documentPath, coarse, side } ] }`. This is how you find the
+`assertion.id` before an edit.
 
-**`reanchor`** → `{ ok, action:"reanchor", … }`. Re-resolves the named `<claim-id>`
-against current content from the new doc/code spans you pass.
+**`suggest`** → `{ ok, action:"suggest", schemaVersion, doc, since?, count, created:[…],
+next }`. Proposes anchorable claims as `suggested` records.
 
-**`status`** → `{ ok, action:"status", doc, found, lifecycle, current,
-suspect:[{propositionId,status}], verdicts:[…] }`; exit 2 when any verdict gates,
-exit 3 on a `doc:moved`/`code:moved`/`behavior:at-risk` warning, else 0.
+**`reanchor`** → `{ ok, action:"reanchor", schemaVersion, assertion, doc, code,
+claimId, next }`. Re-resolves `<claim-id>` against current content; `doc`/`code` are
+the post-reanchor `AnchorState`s (should settle to `unchanged`).
+
+**`retire`** → `{ ok, action:"retire", schemaVersion, assertion, alreadyRetired,
+claimId, next }`. Flips `enforcement` to `retired`; idempotent (`alreadyRetired: true`
+on a second call). `status` (single doc) reports exit 2 when any verdict gates, exit 3
+on a `moved`/`at-risk` warning, else 0.
 
 ## Store layout (`.claims/`)
 
@@ -170,14 +216,15 @@ exit 3 on a `doc:moved`/`code:moved`/`behavior:at-risk` warning, else 0.
 ```
 
 Commit everything except `cache/`. Records are plain JSON, one file each — safe to
-inspect, and editable by hand when you need to retire an individual assertion that no
-CLI verb targets. Note the Proposition's `textCache` is **non-authoritative**: the
-live doc span (re-read at check time via the doc-side anchor) is the truth.
+inspect. **To withdraw a single claim, use `hibi retire <claim-id>`** (flips
+`enforcement` to `retired`, keeping the audit trail) — never hand-delete a
+`claims/<id>.json` file. Note the Proposition's `textCache` is **non-authoritative**:
+the live doc span (re-read at check time via the doc-side anchor) is the truth.
 
 ## `schema`
 
 `hibi schema` lists the available schema names; `hibi schema --name Verdict` (or
 `Assertion`, `Anchor`, `SelectorBundle`, `Selector`, `Document`, `Proposition`,
-`Verifier`, `BehaviorScope`, `Edge`, `StoreConfig`) prints the draft-2020-12 JSON
-Schema generated from the Zod model. Useful when building tooling that produces or
+`Remediation`, `RemediationAction`, `Verifier`, `BehaviorScope`, `Edge`,
+`StoreConfig`) prints the draft-2020-12 JSON Schema generated from the Zod model. Useful when building tooling that produces or
 consumes store records.

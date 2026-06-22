@@ -11,6 +11,8 @@
  */
 
 import { isWarnVerdict } from "../../core/gating.ts";
+import type { Remediation } from "../../core/model.ts";
+import { topAction } from "../../core/remediation.ts";
 import type {
   Assertion,
   CheckReport,
@@ -24,7 +26,6 @@ import {
   type FileRead,
   freshness,
   oneLine,
-  remediation,
 } from "./helpers.ts";
 import type { OutputMode } from "./mode.ts";
 import type { Style } from "./style.ts";
@@ -160,8 +161,48 @@ function richBlock(claim: SuspectClaim, ctx: CheckRenderContext): string[] {
     facets.push(freshness(claim.verdict, claim.assertion));
     if (facets.length) lines.push(`     ${style.dim(facets.join("   "))}`);
   }
-  lines.push(`     ${style.dim(`help: ${remediation(claim.status)}`)}`);
+  // Honor --no-hints / HIBI_ADVICE=0 on the human surface too (mode.hints).
+  if (mode.hints) {
+    const help =
+      remediationLine(claim.verdict?.remediation ?? null) ??
+      lifecycleHint(claim.status);
+    if (help) lines.push(`     ${style.dim(`help: ${help}`)}`);
+  }
   return lines;
+}
+
+/**
+ * The one-line human help crumb for a verdict's remediation menu: the top action
+ * (recommended, else safest/first), shown as its ready-to-run command when it
+ * has one, else its title — always with the rationale. `null` when the verdict
+ * is clean (a lifecycle-only suspect; see `lifecycleHint`).
+ */
+function remediationLine(rem: Remediation | null): string | null {
+  const top = topAction(rem);
+  if (!top) return null;
+  return top.command
+    ? `${top.command}  (${top.rationale})`
+    : `${top.title} — ${top.rationale}`;
+}
+
+/**
+ * Help crumb for a lifecycle-only suspect (a clean verdict on a superseded /
+ * amended / retracted document, so it carries no `remediation`). The verdict
+ * model deliberately excludes document lifecycle, so this guidance lives here.
+ */
+function lifecycleHint(status: string): string | null {
+  switch (status) {
+    case "superseded":
+      return "this document was superseded — read its successor instead";
+    case "amended":
+      return "this claim was amended by a newer document";
+    case "retracted":
+      return "the author withdrew this document";
+    case "archived":
+      return "this document was archived — read its successor instead";
+    default:
+      return null;
+  }
 }
 
 /** A compact one-line summary for one suspect claim. */

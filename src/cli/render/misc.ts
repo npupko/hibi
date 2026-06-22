@@ -8,13 +8,18 @@
 import type {
   ArchiveResult,
   Assertion,
+  ListResult,
+  ListSeverity,
   QueryHit,
   ReanchorResult,
   RecordResult,
+  RetireResult,
   SupersedeResult,
 } from "../../index.ts";
 import type { OutputMode } from "./mode.ts";
 import type { Style } from "./style.ts";
+import { badge, type Severity } from "./symbols.ts";
+import { renderTable } from "./table.ts";
 
 /** The green check lead, ASCII `+` when unicode is off. */
 function ok(style: Style, mode: OutputMode): string {
@@ -121,6 +126,60 @@ export function renderQuery(
     return `  ${style.cyan(h.assertion.id)}  ${style.dim(`[${h.side}]`)} ${h.documentPath ?? "?"}${coarse}${text}`;
   });
   return `${head}\n${lines.join("\n")}\n`;
+}
+
+export function renderRetire(
+  result: RetireResult,
+  style: Style,
+  mode: OutputMode,
+): string {
+  const note = result.alreadyRetired ? style.dim(" (already retired)") : "";
+  return `${ok(style, mode)} retired  ${style.cyan(result.assertion.id)}${note}\n`;
+}
+
+/** Map a list row's severity onto the four-bucket badge vocabulary. */
+function listSeverity(s: ListSeverity): Severity {
+  return s === "warning" ? "warn" : s;
+}
+
+export function renderList(
+  result: ListResult,
+  style: Style,
+  mode: OutputMode,
+): string {
+  const out: string[] = [];
+  out.push(`${style.bold("hibi list")} ${style.dim(`(${result.state})`)}`);
+  out.push("");
+  if (result.claims.length === 0) {
+    out.push(style.dim("No claims match."));
+    return `${out.join("\n")}\n`;
+  }
+  const rows = result.claims.map((r) => [
+    badge(listSeverity(r.severity), mode.unicode, style),
+    r.status,
+    r.claimId,
+    r.documentPath ?? "—",
+    r.codePath ?? "—",
+    r.recommended ?? "—",
+  ]);
+  out.push(
+    ...renderTable(
+      [
+        { header: "" },
+        { header: "Status" },
+        { header: "Claim" },
+        { header: "Document", max: 32 },
+        { header: "Code", max: 32 },
+        { header: "Action" },
+      ],
+      rows,
+      { unicode: mode.unicode, indent: "  " },
+    ),
+  );
+  out.push("");
+  const n = result.count;
+  out.push(style.dim(`${n} claim${n === 1 ? "" : "s"}.`));
+  return `${out.join("\n")}\n`;
 }
 
 export function renderVersion(version: string, style: Style): string {

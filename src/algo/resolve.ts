@@ -27,6 +27,7 @@ import {
   type SelectorScore,
   type Verdict,
 } from "../core/model.ts";
+import { remediationFor } from "../core/remediation.ts";
 import { effectiveClaimKind } from "./behavioral.ts";
 import { grade, type ResolvedSelector } from "./fusion.ts";
 import { localizeTextQuote, positionBias, regionText } from "./localize.ts";
@@ -441,6 +442,8 @@ export function resolveAssertion(
     isBehavioral ? `behavioral claim${claimKind ? ` (${claimKind})` : ""}` : "",
   ].filter(Boolean);
 
+  const changedEvidence = [...docSide.changedEvidence, ...codeChanged];
+
   return {
     assertionId: assertion.id,
     propositionId: assertion.propositionId,
@@ -450,12 +453,21 @@ export function resolveAssertion(
     behavior,
     expired,
     gates,
+    // Deterministic next-action menu derived from the computed states (§9).
+    remediation: remediationFor({
+      assertionId: assertion.id,
+      doc: docSide.state,
+      code,
+      behavior,
+      expired,
+      changedEvidence,
+    }),
     evidence: {
       docRegion: docSide.region ?? undefined,
       codeRegions,
       confidence: primary.confidence,
       selectorScores: primary.selectorScores,
-      changedEvidence: [...docSide.changedEvidence, ...codeChanged],
+      changedEvidence,
       ref: assertion.ref,
     },
     notes,

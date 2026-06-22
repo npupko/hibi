@@ -152,7 +152,7 @@ function liveDocText(
  * behavioral axis and the `expired` flag add their own tags. Returns the
  * machine vocabulary only — banner headline copy lives elsewhere.
  */
-function verdictStatuses(v: Verdict): string[] {
+export function verdictStatuses(v: Verdict): string[] {
   const out: string[] = [];
   if (REPORTABLE_ANCHOR.has(v.code)) out.push(`code:${v.code}`);
   if (REPORTABLE_ANCHOR.has(v.doc)) out.push(`doc:${v.doc}`);
@@ -168,7 +168,7 @@ function verdictStatuses(v: Verdict): string[] {
  * has no verdict status of its own, so the document's lifecycle tags are folded
  * in — otherwise the status would wrongly default to `expired`.
  */
-function worstStatus(v: Verdict, lcTags: string[] = []): string {
+export function worstStatus(v: Verdict, lcTags: string[] = []): string {
   const statuses = [...verdictStatuses(v), ...lcTags];
   for (const s of STATUS_PRECEDENCE) if (statuses.includes(s)) return s;
   return statuses[0] ?? "unchanged";

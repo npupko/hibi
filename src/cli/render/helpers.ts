@@ -74,38 +74,6 @@ export function freshness(
   return parts.join(", ") || "—";
 }
 
-/** A one-line remediation hint keyed off the worst status of a suspect claim. */
-export function remediation(status: string): string {
-  switch (status) {
-    case "code:changed":
-    case "doc:changed":
-      return "content changed since anchoring — re-verify, then `hibi reanchor <id>`";
-    case "code:orphaned":
-    case "doc:orphaned":
-      return "the anchored span was deleted — re-anchor or retract the claim";
-    case "code:ambiguous":
-    case "doc:ambiguous":
-      return "the anchor matches several places — tighten it with `hibi reanchor <id>`";
-    case "code:moved":
-    case "doc:moved":
-      return "the span moved (content intact) — `hibi reanchor <id>` to update its position";
-    case "expired":
-      return "the claim's ttl has passed — re-verify and re-record";
-    case "behavior:refuted":
-      return "a linked verifier failed — the documented behavior may no longer hold";
-    case "behavior:at-risk":
-      return "reachable code changed — re-verify the documented behavior";
-    case "superseded":
-      return "this document was superseded — read its successor instead";
-    case "amended":
-      return "this claim was amended by a newer document";
-    case "retracted":
-      return "the author withdrew this document";
-    default:
-      return "re-verify this claim against the current code";
-  }
-}
-
 /** The documented sentence for a verdict (the non-authoritative cache, §5/§18-B). */
 export function docSentence(
   verdict: Verdict,

@@ -26,6 +26,7 @@ import type {
   Verdict,
   Verifier,
 } from "../core/model.ts";
+import { remediationForVerdict } from "../core/remediation.ts";
 import type { ClaimStore } from "../store/store.ts";
 import { OutOfProcessResolver } from "./client.ts";
 import { loadManifest } from "./manifest.ts";
@@ -269,6 +270,10 @@ export class ResolverRegistry {
       },
       assertion.enforcement,
     );
+
+    // 5 — Recompute the remediation menu: a verifier may have upgraded the
+    //     behavior axis in step 2, changing which actions apply (§9).
+    verdict.remediation = remediationForVerdict(verdict);
 
     return verdict;
   }

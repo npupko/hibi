@@ -52,6 +52,7 @@ import {
   type FailOn,
   runCheck,
 } from "./engine/check.ts";
+import { type ListResult, type ListState, toListRows } from "./engine/list.ts";
 import { type QueryHit, queryByPath } from "./engine/query.ts";
 import {
   type ReanchorInput,
@@ -66,6 +67,7 @@ import {
   type RecordResult,
   recordClaim,
 } from "./engine/record.ts";
+import { type RetireResult, retire } from "./engine/retire.ts";
 import {
   type SuggestInput,
   type SuggestResult,
@@ -100,6 +102,13 @@ export {
   type FailOn,
   type SuspectEntry as CheckSuspectEntry,
 } from "./engine/check.ts";
+export {
+  type ListResult,
+  type ListRow,
+  type ListSeverity,
+  type ListState,
+  toListRows,
+} from "./engine/list.ts";
 export type { QueryHit } from "./engine/query.ts";
 export {
   type ReanchorInput,
@@ -116,6 +125,7 @@ export {
   type RegionSpec,
   resolveRegion,
 } from "./engine/record.ts";
+export { type RetireResult, retire as retireClaim } from "./engine/retire.ts";
 export {
   type SuggestInput,
   type SuggestResult,
@@ -540,5 +550,31 @@ export class Engine {
     successorPath?: string,
   ): Promise<ArchiveResult> {
     return archiveDocument(this.store, docPath, successorPath);
+  }
+
+  /**
+   * Retire a single claim (§9 `retire`): flip its enforcement to `retired` so it
+   * no longer gates/warns. Idempotent — a second call is a no-op success.
+   */
+  async retire(claimId: string): Promise<RetireResult> {
+    return retire(this.store, claimId);
+  }
+
+  /**
+   * Triage list (§9 `list`): every tracked claim as a lean row (handle + status
+   * + severity + recommended action), filtered by `state`. Built from a live
+   * check so it shares the verdict/gating semantics exactly (never cached). The
+   * report already carries the per-document lifecycle, so only the assertions
+   * need a separate read. `hints: false` (—-no-hints) drops the recommendation.
+   */
+  async list(
+    opts: { state?: ListState; ref?: string; hints?: boolean } = {},
+  ): Promise<ListResult> {
+    const report = await this.check({ write: false, ref: opts.ref });
+    const assertions = await this.store.allAssertions();
+    return toListRows(report, assertions, report.documents, {
+      state: opts.state ?? "all",
+      hints: opts.hints ?? true,
+    });
   }
 }

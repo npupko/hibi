@@ -5,6 +5,11 @@ description: "Catch documentation that no longer matches your code."
 icon: "house"
 ---
 
+You changed a constant in `src/auth.ts`. Three sentences across your `README` and
+`CLAUDE.md` quietly became wrong, and nobody will notice until a teammate — or an
+AI agent — trusts one of them. Run `hibi diff --since origin/main` and Hibi names
+the exact sentences your change broke, then hands you the command to fix each.
+
 Hibi (日々, "day after day") tracks **claims**: sentences in your docs and
 AI-agent instruction files that assert how the code behaves. You anchor each
 claim to the code it describes. When either side drifts (you change the code, or

@@ -21,7 +21,7 @@
     "groups": [
       {
         "group": "Getting started",
-        "pages": ["index", "quickstart"]
+        "pages": ["index", "quickstart", "workflows"]
       },
       {
         "group": "Concepts",

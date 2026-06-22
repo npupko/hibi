@@ -7,9 +7,10 @@ icon: "terminal"
 `hibi` is a single self-contained executable. **Output is TTY-aware:** in a
 terminal you get a rich, grouped-by-document human view (color paired with
 symbols, honoring `NO_COLOR`); piped, redirected, or in CI you get compact JSON,
-so the machine contract is preserved. The JSON leads with the decision (`status`,
-`gates`, `side`) and trails the bulky evidence, so a truncated read still surfaces
-the verdict.
+so the machine contract is preserved. The JSON is **decision-first**: every
+payload leads `{ ok, action, schemaVersion, … }`, the verdict and its
+`remediation` menu come before any supporting detail, so a truncated read still
+surfaces the decision and what to do about it.
 
 Force a specific shape with the flag vocabulary: `--json` (compact JSON — the
 machine contract agents and SDKs read), `--json --pretty` (indented JSON),
@@ -17,6 +18,15 @@ machine contract agents and SDKs read), `--json --pretty` (indented JSON),
 `--color auto|always|never` (also honors `NO_COLOR` / `FORCE_COLOR`), and
 `--simple` (ASCII symbols). `hibi completions <zsh|bash|fish>` prints a shell
 completion script.
+
+Two flags tune how much each JSON payload carries — the agent hot path:
+
+- **`--explain`** (alias `--detailed`): the JSON is **concise by default**
+  (decision fields plus the remediation menu, bulky evidence dropped). `--explain`
+  appends the `evidence` tail, an `advisories` list, and the proposition
+  `fingerprint` to every verdict.
+- **`--no-hints`** (or `HIBI_ADVICE=0`): drop the `remediation` action menu from
+  every verdict and `list` row, for noise-sensitive harnesses.
 
 <Note>
   All commands operate against a committed claim store (`.claims/`, one file per
@@ -35,9 +45,11 @@ completion script.
 | `hibi status` | A repo-wide document health overview: every tracked doc with its worst status, claim counts, owner, and lifecycle. |
 | `hibi status --doc <p>` | Read-time gate: is this one doc still current? |
 | `hibi query --path <p>` | Which claims cover this file? Both directions; includes coarse edges. |
+| `hibi list [--state …]` | Triage: one lean row per claim (handle, status, severity, recommended action), most-severe-first. |
 | `hibi completions <zsh\|bash\|fish>` | Print a shell completion script. |
 | `hibi suggest --doc <p>` | Propose anchorable candidate claims as `suggested` records. Never auto-enforces. |
 | `hibi reanchor <claim-id>` | Re-resolve both anchors against current content; reset state. |
+| `hibi retire <claim-id>` | Withdraw one claim: flip its `enforcement` to `retired`. Idempotent; a retired claim never gates or warns. |
 | `hibi supersede --new <p> --old <p> --type <type>` | Record that one doc supersedes or amends another. |
 | `hibi retract --doc <p>` | Mark that the author withdrew the claim. |
 | `hibi archive --doc <p>` | Move an obsolete doc out of the read path (tombstone). |
@@ -83,6 +95,39 @@ hibi record \
   `--glob` targets are navigation-only and cannot back an enforced claim.
 </Warning>
 
+## `hibi list`
+
+`list` is the triage view: **one lean row per claim**, ordered most-severe-first,
+so you can see the whole suspect set at a glance and pick the next claim to act
+on. Narrow it with `--state`:
+
+```sh
+hibi list                  # every claim
+hibi list --state gating   # only claims that would fail a gate
+hibi list --state warning  # only re-anchorable warnings (moved / at-risk)
+hibi list --state clean    # only claims that resolve cleanly
+```
+
+Each row carries just the handle and the headline decision — `claimId`,
+`propositionId`, `documentPath`, `codePath`, `status`, `severity`, `gates`, and
+the `recommended` remediation action (or `null`). It is the fast path to "which
+claim, and what do I do," with the full verdict a `check` away.
+
+## `hibi retire`
+
+`retire` **withdraws a single claim**: it flips that claim's `enforcement` to
+`retired`, and a retired claim never gates or warns again. It is the supported way
+to silence a claim that is genuinely obsolete — never hand-delete the claim's
+file from `.claims/`, which loses the audit trail.
+
+```sh
+hibi retire asrt_897e054b48d040db
+```
+
+The call is **idempotent**: retiring an already-retired claim succeeds and reports
+`alreadyRetired: true`. Most drift verdicts that recommend retiring already hand
+you the exact command in their `remediation` menu, claim id pre-filled.
+
 ## The verdict, in brief
 
 Hibi never collapses a claim into one word. A verdict carries **two independent
@@ -90,14 +135,50 @@ axes plus a flag**: anchor resolution per side (`doc:unchanged · code:changed`,
 from the vocabulary `unchanged · moved · changed · ambiguous · orphaned`), an
 optional behavioral belief on behavioral claims (`unverified · at-risk ·
 supported · refuted`), and an orthogonal `expired` TTL flag. The JSON is
-verdict-first (`{ doc, code, behavior?, expired, gates, evidence{…} }`) so a
-truncated read still surfaces the decision. "Drift" and "stale" are only the
-human roll-up for any claim needing attention, never machine states.
+decision-first — the verdict and its `remediation` menu lead, the bulky evidence
+trails (and only appears under `--explain`) — so a truncated read still surfaces
+the decision and the next step. "Drift" and "stale" are only the human roll-up for
+any claim needing attention, never machine states.
 
 <Card title="The full verdict model" icon="scale-balanced" href="/verdicts">
-  States, confidence bands, grading, and how a verdict becomes an exit code,
-  all live on the Verdicts page.
+  States, confidence bands, grading, the remediation menu, and how a verdict
+  becomes an exit code, all live on the Verdicts page.
 </Card>
+
+## JSON output shapes
+
+Every payload leads `{ ok, action, schemaVersion, … }`, where `schemaVersion`
+(e.g. `"v1"`) is emitted *in the payload* so a consumer can branch on the contract
+version without reading a filename.
+
+**`check` / `diff` / `status`** return a decision-first envelope: an `ok`/`action`/
+`schemaVersion` header, a `summary` of counts, a `verdicts` array, and a
+`documents` roll-up. Each verdict is concise by default —
+`{ assertionId, propositionId, documentId, doc, code, behavior?, expired, gates,
+changed?, remediation, notes }` — with the `evidence` tail, `advisories`, and
+`fingerprint` added only under `--explain`. The `changed?` field is the one-line
+behavioral carve-out: it appears on `behavior:at-risk` / `refuted` verdicts even
+on the concise path so you learn *what* moved. `diff` additionally reports `since`
+and `changedFiles`.
+
+**Mutating verbs add a `next` field** — the exact follow-up command to run — and
+`record`, `reanchor`, and `retire` also return the resulting `claimId`:
+
+```json
+{
+  "ok": true,
+  "action": "retire",
+  "schemaVersion": "v1",
+  "claimId": "asrt_897e054b48d040db",
+  "alreadyRetired": false,
+  "next": "hibi check"
+}
+```
+
+**`list`** returns `{ ok, action, schemaVersion, state, count, claims[] }`, where
+each claim row is the lean handle described above. **`query`** returns
+`{ ok, action, schemaVersion, path, count, hits[] }` — the way you find a claim's
+id before editing.
 
 ## Exit codes
 
@@ -137,6 +218,8 @@ These apply to every command:
 | Option | Effect |
 |--------|--------|
 | `--pretty` | Human-readable output instead of JSON. |
+| `--explain` / `--detailed` | Append the `evidence` tail, `advisories`, and `fingerprint` to the otherwise-concise JSON. |
+| `--no-hints` (or `HIBI_ADVICE=0`) | Drop the `remediation` action menu from verdicts and `list` rows. |
 | `--cwd <dir>` | The anchor root all paths resolve against. |
 | `--store-dir <dir>` | Where the claim store lives (default `<anchor>/.claims`). |
 | `--no-ast` | Skip the tree-sitter structural tier (text selectors only). |

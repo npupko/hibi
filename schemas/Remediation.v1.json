@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "recommended": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "actions": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "applicability": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "needs-review",
+              "manual"
+            ]
+          },
+          "effect": {
+            "type": "string",
+            "enum": [
+              "deterministic",
+              "prose"
+            ]
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "command": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "applicability",
+          "effect",
+          "rationale"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "recommended",
+    "actions"
+  ],
+  "additionalProperties": false
+}

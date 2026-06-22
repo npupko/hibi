@@ -174,10 +174,16 @@ response is graduated by how dangerous it is to leave the document standing as-i
 | `amended` / superseded-in-part | Stamp a banner and flip the frontmatter status; keep the file. |
 | `superseded` / obsolete-in-full | Archive it: move it out of the read path with a tombstone or redirect to the successor. |
 | `code:changed` / `code:orphaned` / `expired` | Stamp a banner and flag the specific claims to re-verify. |
-| `doc:changed` / `doc:ambiguous` | Banner noting the prose diverged; re-confirm or retire the claim. |
-| `doc:orphaned` | The documented sentence was deleted: relocate or retire it. |
+| `doc:changed` / `doc:ambiguous` | Banner noting the prose diverged; re-confirm, or `hibi retire <claim-id>`. |
+| `doc:orphaned` | The documented sentence was deleted: `hibi reanchor` to a new target, or `hibi retire <claim-id>`. |
 | `refuted` | Strong banner, with a configurable gate. |
 | `retracted` | Banner noting the author withdrew the claim. |
+
+To withdraw a single obsolete claim, run **`hibi retire <claim-id>`** — it flips
+the claim's `enforcement` to `retired` and keeps the audit trail. Never hand-edit
+or delete the claim's file under `.claims/`. Every drift verdict carries a
+[`remediation`](/verdicts#the-remediation-menu) menu that names the right verb for
+its state and pre-fills the command, so you rarely pick from this table by hand.
 
 The mechanics of how a banner is written, made tamper-evident, and placed at the
 top of a file live on the [Status banners](/banners) page.
