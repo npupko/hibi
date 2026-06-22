@@ -63,11 +63,16 @@ interface CliJson {
   store?: string;
   claimId?: string;
   alreadyRetired?: boolean;
+  // reanchor result: the post-reanchor per-side states sit at the top level
+  doc?: string;
+  code?: string;
+  // record --from-file batch result
+  batch?: boolean;
   assertion?: {
     enforcement?: string;
     anchor?: { doc?: SelectorBundle; code?: SelectorBundle[] };
   };
-  summary?: { clean?: number };
+  summary?: { clean?: number; total?: number };
   verdicts?: CliVerdict[];
   changedFiles?: string[];
   count?: number;
@@ -696,5 +701,118 @@ describe("CLI end-to-end (§9)", () => {
     const all = await run(d, ["list", "--state", "gating"]);
     const row = all.json.claims?.find((r) => r.claimId === id);
     expect(row?.codePath).toBe("src/retry.ts"); // the file changedEvidence names
+  });
+
+  test("record --from-file batch-records a JSON array in one pass (§9)", async () => {
+    const d = await repo();
+    await write(
+      d,
+      "src/conf.ts",
+      "export const TTL_MS = 60000;\nexport const RETRIES = 3;\n",
+    );
+    await write(
+      d,
+      "docs/conf.md",
+      "# Config\n\nThe cache TTL is 60000ms.\nRetries default to 3.\n",
+    );
+    await run(d, ["init"]);
+    await write(
+      d,
+      "batch.json",
+      JSON.stringify([
+        {
+          doc: "docs/conf.md",
+          docQuote: "The cache TTL is 60000ms",
+          codeFile: "src/conf.ts",
+          codeQuote: "TTL_MS = 60000",
+          trust: "verified",
+          owner: "alice",
+        },
+        {
+          doc: "docs/conf.md",
+          docQuote: "Retries default to 3",
+          codeFile: "src/conf.ts",
+          codeQuote: "RETRIES = 3",
+          trust: "verified",
+          owner: "alice",
+        },
+      ]),
+    );
+    const rec = await run(d, ["record", "--from-file", "batch.json"]);
+    expect(rec.code).toBe(0);
+    expect(rec.json.batch).toBe(true);
+    expect(rec.json.count).toBe(2);
+
+    const chk = await run(d, ["check"]);
+    expect(chk.code).toBe(0);
+    expect(chk.json.summary?.clean).toBe(2);
+  });
+
+  test("record --from-file fails the whole batch on a malformed item, writing nothing (§9)", async () => {
+    const d = await repo();
+    await write(d, "src/conf.ts", "export const TTL_MS = 60000;\n");
+    await write(d, "docs/conf.md", "# Config\n\nThe cache TTL is 60000ms.\n");
+    await run(d, ["init"]);
+    await write(
+      d,
+      "batch.json",
+      JSON.stringify([
+        {
+          doc: "docs/conf.md",
+          docQuote: "The cache TTL is 60000ms",
+          codeFile: "src/conf.ts",
+          codeQuote: "TTL_MS = 60000",
+          trust: "verified",
+        },
+        { doc: "docs/conf.md" }, // malformed: no doc span
+      ]),
+    );
+    const rec = await run(d, ["record", "--from-file", "batch.json"]);
+    expect(rec.code).toBe(1);
+    expect(rec.json.ok).toBe(false);
+
+    // Phase-1 validation: the valid first item was NOT written.
+    const chk = await run(d, ["check"]);
+    expect(chk.json.summary?.total ?? 0).toBe(0);
+  });
+
+  test("reanchor --doc relocates the doc anchor to a different file, surviving deletion of the old one (§9)", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "wip.md", "# WIP\n\nThe A constant is one.\n");
+    await write(d, "docs/a.md", "# A\n\nThe A constant is one.\n");
+    await run(d, ["init"]);
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "wip.md",
+      "--doc-quote",
+      "The A constant is one",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+      "--trust",
+      "verified",
+    ]);
+    const id = rec.json.claimId ?? "";
+
+    const re = await run(d, [
+      "reanchor",
+      id,
+      "--doc",
+      "docs/a.md",
+      "--doc-quote",
+      "The A constant is one",
+    ]);
+    expect(re.code).toBe(0);
+    expect(re.json.doc).toBe("unchanged"); // re-resolved against the new file
+    expect(re.json.code).toBe("unchanged"); // code side untouched
+
+    // The claim moved off wip.md — deleting it no longer orphans the claim.
+    await rm(join(d, "wip.md"));
+    const chk = await run(d, ["check"]);
+    expect(chk.code).toBe(0);
+    expect(chk.json.verdicts?.[0]?.doc).toBe("unchanged");
   });
 });

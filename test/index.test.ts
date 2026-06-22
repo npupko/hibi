@@ -344,4 +344,56 @@ describe("regression guards (review fixes)", () => {
     expect(res.doc).toBe("unchanged");
     expect((await engine.check()).verdicts[0]?.doc).toBe("unchanged");
   });
+
+  test("reanchor --doc re-homes a claim onto a different file, preserving its identity (§9)", async () => {
+    const anchorRoot = await tmp();
+    await mkdir(join(anchorRoot, "src"), { recursive: true });
+    await mkdir(join(anchorRoot, "docs"), { recursive: true });
+    await writeFile(join(anchorRoot, "src/a.ts"), "export const A = 1;\n");
+    await writeFile(
+      join(anchorRoot, "wip.md"),
+      "# WIP\n\nThe A constant is one.\n",
+    );
+    await writeFile(
+      join(anchorRoot, "docs/a.md"),
+      "# A\n\nThe A constant is one.\n",
+    );
+    const engine = await Engine.init(anchorRoot);
+    const rec = await engine.record({
+      docPath: "wip.md",
+      docQuote: "The A constant is one",
+      code: [{ file: "src/a.ts", quote: "A = 1" }],
+      authoredTrust: "verified",
+      ref: "r",
+    });
+    const id = rec.assertion.id;
+    const beforeDocId = rec.assertion.documentId;
+
+    // Re-home the DOC side onto a different file; the code side is untouched.
+    const res = await engine.reanchor(id, {
+      doc: "docs/a.md",
+      docQuote: "The A constant is one",
+    });
+    expect(res.doc).toBe("unchanged");
+    expect(res.code).toBe("unchanged");
+
+    const moved = await engine.store.getAssertion(id);
+    expect(moved?.id).toBe(id); // same claim, not a fresh record
+    expect(moved?.documentId).not.toBe(beforeDocId); // documentId moved
+    expect(moved?.anchor.doc.file).toBe("docs/a.md");
+    expect(moved?.anchor.code[0]?.file).toBe("src/a.ts"); // code side intact
+
+    // Destination Document exists; the source is retained as audit (never deleted).
+    const paths = (await engine.store.allDocuments())
+      .map((dc) => dc.path)
+      .sort();
+    expect(paths).toContain("docs/a.md");
+    expect(paths).toContain("wip.md");
+
+    // Deleting the old file no longer orphans the claim — it lives on docs/a.md.
+    await rm(join(anchorRoot, "wip.md"));
+    const verdicts = (await engine.check()).verdicts;
+    expect(verdicts).toHaveLength(1);
+    expect(verdicts[0]?.doc).toBe("unchanged");
+  });
 });
