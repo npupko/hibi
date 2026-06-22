@@ -24,13 +24,13 @@
           "type": "object",
           "properties": {
             "doc": {
-              "$ref": "#/$defs/__schema0"
+              "$ref": "#/$defs/SelectorBundle"
             },
             "code": {
               "default": [],
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema0"
+                "$ref": "#/$defs/SelectorBundle"
               }
             }
           },
@@ -66,31 +66,7 @@
           "default": [],
           "type": "array",
           "items": {
-            "type": "object",
-            "properties": {
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "example",
-                  "snapshot",
-                  "contract",
-                  "property",
-                  "formal",
-                  "command"
-                ]
-              },
-              "ref": {
-                "type": "string"
-              },
-              "proves": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "kind",
-              "ref"
-            ],
-            "additionalProperties": false
+            "$ref": "#/$defs/Verifier"
           }
         },
         "behaviorScope": {
@@ -229,7 +205,7 @@
   ],
   "additionalProperties": false,
   "$defs": {
-    "__schema0": {
+    "SelectorBundle": {
       "type": "object",
       "properties": {
         "file": {
@@ -239,7 +215,7 @@
           "minItems": 1,
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema1"
+            "$ref": "#/$defs/Selector"
           }
         }
       },
@@ -249,7 +225,7 @@
       ],
       "additionalProperties": false
     },
-    "__schema1": {
+    "Selector": {
       "oneOf": [
         {
           "type": "object",
@@ -409,6 +385,33 @@
           "additionalProperties": false
         }
       ]
+    },
+    "Verifier": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "example",
+            "snapshot",
+            "contract",
+            "property",
+            "formal",
+            "command"
+          ]
+        },
+        "ref": {
+          "type": "string"
+        },
+        "proves": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "ref"
+      ],
+      "additionalProperties": false
     }
   }
 }

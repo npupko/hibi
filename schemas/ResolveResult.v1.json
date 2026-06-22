@@ -15,10 +15,10 @@
           "type": "string"
         },
         "doc": {
-          "$ref": "#/$defs/__schema0"
+          "$ref": "#/$defs/AnchorState"
         },
         "code": {
-          "$ref": "#/$defs/__schema0"
+          "$ref": "#/$defs/AnchorState"
         },
         "behavior": {
           "type": "string",
@@ -111,13 +111,13 @@
           "type": "object",
           "properties": {
             "docRegion": {
-              "$ref": "#/$defs/__schema1"
+              "$ref": "#/$defs/Region"
             },
             "codeRegions": {
               "default": [],
               "type": "array",
               "items": {
-                "$ref": "#/$defs/__schema1"
+                "$ref": "#/$defs/Region"
               }
             },
             "confidence": {
@@ -197,7 +197,7 @@
           "default": [],
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema2"
+            "$ref": "#/$defs/Advisory"
           }
         }
       },
@@ -220,7 +220,7 @@
       "default": [],
       "type": "array",
       "items": {
-        "$ref": "#/$defs/__schema2"
+        "$ref": "#/$defs/Advisory"
       }
     }
   },
@@ -229,7 +229,7 @@
   ],
   "additionalProperties": false,
   "$defs": {
-    "__schema0": {
+    "AnchorState": {
       "type": "string",
       "enum": [
         "unchanged",
@@ -239,7 +239,7 @@
         "orphaned"
       ]
     },
-    "__schema1": {
+    "Region": {
       "type": "object",
       "properties": {
         "start": {
@@ -259,7 +259,7 @@
       ],
       "additionalProperties": false
     },
-    "__schema2": {
+    "Advisory": {
       "type": "object",
       "properties": {
         "resolver": {

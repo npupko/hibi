@@ -52,13 +52,15 @@ export type Enforcement = z.infer<typeof Enforcement>;
  * hypothes.is (`orphaned`). The side is a *separate field*, never baked into the
  * word (ADR-001 parallelism invariant).
  */
-export const AnchorState = z.enum([
-  "unchanged", // found, identical
-  "moved", // found, relocated (same content)
-  "changed", // found, content differs
-  "ambiguous", // matches in several places
-  "orphaned", // span deleted / unresolvable
-]);
+export const AnchorState = z
+  .enum([
+    "unchanged", // found, identical
+    "moved", // found, relocated (same content)
+    "changed", // found, content differs
+    "ambiguous", // matches in several places
+    "orphaned", // span deleted / unresolvable
+  ])
+  .meta({ id: "AnchorState" });
 export type AnchorState = z.infer<typeof AnchorState>;
 
 /**
@@ -184,15 +186,17 @@ export const PRECISE_SELECTOR_KINDS = [
 /** The coarse selector kinds — navigational; never reported as drift (§11.3). */
 export const COARSE_SELECTOR_KINDS = ["path", "glob"] as const;
 
-export const Selector = z.discriminatedUnion("kind", [
-  TextQuoteSelector,
-  TextPositionSelector,
-  AstNodeSelector,
-  ValueSelector,
-  InlineIdSelector,
-  PathSelector,
-  GlobSelector,
-]);
+export const Selector = z
+  .discriminatedUnion("kind", [
+    TextQuoteSelector,
+    TextPositionSelector,
+    AstNodeSelector,
+    ValueSelector,
+    InlineIdSelector,
+    PathSelector,
+    GlobSelector,
+  ])
+  .meta({ id: "Selector" });
 export type Selector = z.infer<typeof Selector>;
 export type SelectorKind = Selector["kind"];
 
@@ -202,11 +206,13 @@ export type SelectorKind = Selector["kind"];
  * the engine resolves the most robust available, falls back down the chain, and
  * cross-corroborates. This *is* the baseline snapshot for that side (§6).
  */
-export const SelectorBundle = z.object({
-  /** The file this side's selectors resolve against. */
-  file: z.string(),
-  selectors: z.array(Selector).min(1),
-});
+export const SelectorBundle = z
+  .object({
+    /** The file this side's selectors resolve against. */
+    file: z.string(),
+    selectors: z.array(Selector).min(1),
+  })
+  .meta({ id: "SelectorBundle" });
 export type SelectorBundle = z.infer<typeof SelectorBundle>;
 
 /**
@@ -232,20 +238,22 @@ export type Anchor = z.infer<typeof Anchor>;
  * declared, a claim is never marked `supported`. Executed by an out-of-process
  * runner resolver (§7), never in core.
  */
-export const Verifier = z.object({
-  kind: z.enum([
-    "example",
-    "snapshot",
-    "contract",
-    "property",
-    "formal",
-    "command",
-  ]),
-  /** Names a test/command to run. */
-  ref: z.string(),
-  /** Optional human note on what this verifier proves. */
-  proves: z.string().optional(),
-});
+export const Verifier = z
+  .object({
+    kind: z.enum([
+      "example",
+      "snapshot",
+      "contract",
+      "property",
+      "formal",
+      "command",
+    ]),
+    /** Names a test/command to run. */
+    ref: z.string(),
+    /** Optional human note on what this verifier proves. */
+    proves: z.string().optional(),
+  })
+  .meta({ id: "Verifier" });
 export type Verifier = z.infer<typeof Verifier>;
 
 /**
@@ -374,10 +382,12 @@ export const SelectorScore = z.object({
 export type SelectorScore = z.infer<typeof SelectorScore>;
 
 /** A located region in the current text. */
-export const Region = z.object({
-  start: z.number().int().nonnegative(),
-  end: z.number().int().nonnegative(),
-});
+export const Region = z
+  .object({
+    start: z.number().int().nonnegative(),
+    end: z.number().int().nonnegative(),
+  })
+  .meta({ id: "Region" });
 export type Region = z.infer<typeof Region>;
 
 /**
@@ -396,12 +406,14 @@ export const ChangedEvidence = z.object({
 export type ChangedEvidence = z.infer<typeof ChangedEvidence>;
 
 /** Advisory note from a quarantined Tier-3 resolver — advises, never gates (§7.4). */
-export const Advisory = z.object({
-  resolver: z.string(),
-  message: z.string(),
-  /** Free-form confidence the advisor reports; never folded into the verdict. */
-  confidence: z.number().optional(),
-});
+export const Advisory = z
+  .object({
+    resolver: z.string(),
+    message: z.string(),
+    /** Free-form confidence the advisor reports; never folded into the verdict. */
+    confidence: z.number().optional(),
+  })
+  .meta({ id: "Advisory" });
 export type Advisory = z.infer<typeof Advisory>;
 
 /** Bulky located evidence — trails the decision fields in the JSON shape (§9). */

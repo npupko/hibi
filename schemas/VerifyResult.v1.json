@@ -15,23 +15,7 @@
       "default": [],
       "type": "array",
       "items": {
-        "type": "object",
-        "properties": {
-          "resolver": {
-            "type": "string"
-          },
-          "message": {
-            "type": "string"
-          },
-          "confidence": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "resolver",
-          "message"
-        ],
-        "additionalProperties": false
+        "$ref": "#/$defs/Advisory"
       }
     },
     "notes": {
@@ -47,5 +31,26 @@
     "advisories",
     "notes"
   ],
-  "additionalProperties": false
+  "additionalProperties": false,
+  "$defs": {
+    "Advisory": {
+      "type": "object",
+      "properties": {
+        "resolver": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "resolver",
+        "message"
+      ],
+      "additionalProperties": false
+    }
+  }
 }

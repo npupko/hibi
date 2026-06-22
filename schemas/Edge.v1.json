@@ -59,7 +59,7 @@
           "minItems": 1,
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema0"
+            "type": "string"
           }
         },
         "derived": {
@@ -89,7 +89,7 @@
           "minItems": 1,
           "type": "array",
           "items": {
-            "$ref": "#/$defs/__schema1"
+            "type": "string"
           }
         },
         "derived": {
@@ -105,13 +105,5 @@
       ],
       "additionalProperties": false
     }
-  ],
-  "$defs": {
-    "__schema0": {
-      "type": "string"
-    },
-    "__schema1": {
-      "type": "string"
-    }
-  }
+  ]
 }
