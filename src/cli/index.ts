@@ -18,6 +18,7 @@ import type {
   AuthoredTrust,
   ClaimKind,
   Enforcement,
+  Verdict,
   Verifier,
 } from "../core/model.ts";
 import { changedFiles, currentRef } from "../git/git.ts";
@@ -30,6 +31,12 @@ import {
 import { completionScript, isShell } from "./completions.ts";
 import { renderCheck } from "./render/check.ts";
 import { fileReader } from "./render/helpers.ts";
+import {
+  type ProjectionOptions,
+  projectCheckReport,
+  projectVerdict,
+  SCHEMA_VERSION,
+} from "./render/json.ts";
 import * as misc from "./render/misc.ts";
 import { type OutputMode, resolveMode } from "./render/mode.ts";
 import { renderOverview, renderStatusDetail } from "./render/status.ts";
@@ -93,6 +100,25 @@ async function checkContext(
     verb,
     lead,
   };
+}
+
+/** The verbosity/advice projection axes derived from the resolved mode (§9). */
+function projection(mode: OutputMode): ProjectionOptions {
+  return { explain: mode.explain, hints: mode.hints };
+}
+
+/**
+ * `propositionId → fingerprint` for the `--explain` projection (the SARIF-style
+ * stable fingerprint). Empty (undefined) on the concise path so the hot path
+ * never pays the extra store read.
+ */
+async function fingerprints(
+  engine: Engine,
+  mode: OutputMode,
+): Promise<Map<string, string> | undefined> {
+  if (!mode.explain) return undefined;
+  const props = await engine.store.allPropositions();
+  return new Map(props.map((p) => [p.id, p.fingerprint]));
 }
 
 function fail(message: string, mode: OutputMode): never {
@@ -192,6 +218,13 @@ async function main(argv: string[]): Promise<number> {
       compact: { type: "boolean", default: false },
       color: { type: "string" },
       simple: { type: "boolean", default: false },
+      // Verbosity + advice (§9): --explain (alias --detailed) adds the evidence
+      // tail; --no-hints (or HIBI_ADVICE=0) drops the remediation menu.
+      explain: { type: "boolean", default: false },
+      detailed: { type: "boolean", default: false },
+      "no-hints": { type: "boolean", default: false },
+      // list
+      state: { type: "string" },
       // record / reanchor — doc side (span-first)
       doc: { type: "string" },
       "doc-quote": { type: "string" },
@@ -243,6 +276,8 @@ async function main(argv: string[]): Promise<number> {
       compact: Boolean(values.compact),
       color: values.color as string | undefined,
       simple: Boolean(values.simple),
+      explain: Boolean(values.explain) || Boolean(values.detailed),
+      noHints: Boolean(values["no-hints"]),
     },
     { isTTY: process.stdout.isTTY, env: process.env },
   );
@@ -267,9 +302,11 @@ async function main(argv: string[]): Promise<number> {
       const value = {
         ok: true,
         action: "init",
+        schemaVersion: SCHEMA_VERSION,
         store: engine.store.dir,
         nonce: config.nonce,
         version: config.version,
+        next: "hibi suggest --doc <file>",
       };
       await emit(mode, value, () =>
         misc.renderInit(
@@ -352,7 +389,15 @@ async function main(argv: string[]): Promise<number> {
 
       try {
         const result = await engine.record(call);
-        await emit(mode, { ok: true, action: "record", ...result }, () =>
+        const value = {
+          ok: true,
+          action: "record",
+          schemaVersion: SCHEMA_VERSION,
+          ...result,
+          claimId: result.assertion.id,
+          next: "hibi check",
+        };
+        await emit(mode, value, () =>
           misc.renderRecord(result, String(values.trust), style, mode),
         );
         return 0;
@@ -370,7 +415,14 @@ async function main(argv: string[]): Promise<number> {
         failOn: String(values["fail-on"]) as FailOn,
         ref: await currentRef(anchorRoot),
       });
-      await emit(mode, { ok: true, action: "check", ...report }, async () =>
+      const value = projectCheckReport(
+        "check",
+        report,
+        projection(mode),
+        undefined,
+        await fingerprints(engine, mode),
+      );
+      await emit(mode, value, async () =>
         renderCheck(await checkContext(engine, report, mode, "check")),
       );
       return report.exitCode;
@@ -386,13 +438,13 @@ async function main(argv: string[]): Promise<number> {
         failOn: String(values["fail-on"]) as FailOn,
         ref: await currentRef(anchorRoot),
       });
-      const value = {
-        ok: true,
-        action: "diff",
-        since: values.since,
-        changedFiles: files,
-        ...report,
-      };
+      const value = projectCheckReport(
+        "diff",
+        report,
+        projection(mode),
+        { since: values.since, changedFiles: files },
+        await fingerprints(engine, mode),
+      );
       await emit(mode, value, async () => {
         const lead = [
           `${style.dim("since")} ${style.bold(String(values.since))}  ${style.dim(`${files.length} changed file${files.length === 1 ? "" : "s"}`)}`,
@@ -411,7 +463,14 @@ async function main(argv: string[]): Promise<number> {
         const report = await engine.check({
           ref: await currentRef(anchorRoot),
         });
-        await emit(mode, { ok: true, action: "status", ...report }, async () =>
+        const value = projectCheckReport(
+          "status",
+          report,
+          projection(mode),
+          undefined,
+          await fingerprints(engine, mode),
+        );
+        await emit(mode, value, async () =>
           renderOverview({
             report,
             assertions: await engine.store.allAssertions(),
@@ -424,7 +483,21 @@ async function main(argv: string[]): Promise<number> {
       const result = await engine.status(values.doc as string, {
         ref: await currentRef(anchorRoot),
       });
-      await emit(mode, { ok: true, action: "status", ...result }, () =>
+      const fps = await fingerprints(engine, mode);
+      const value = {
+        ok: true,
+        action: "status",
+        schemaVersion: SCHEMA_VERSION,
+        doc: result.doc,
+        found: result.found,
+        lifecycle: result.lifecycle,
+        current: result.current,
+        suspect: result.suspect,
+        verdicts: result.verdicts.map((v: Verdict) =>
+          projectVerdict(v, projection(mode), fps),
+        ),
+      };
+      await emit(mode, value, () =>
         renderStatusDetail({ result, style, mode }),
       );
       // Read-time gate via the report's own verdicts: 2 if any gates, else 3
@@ -447,6 +520,7 @@ async function main(argv: string[]): Promise<number> {
       const value = {
         ok: true,
         action: "query",
+        schemaVersion: SCHEMA_VERSION,
         path: values.path,
         count: hits.length,
         hits,
@@ -465,10 +539,12 @@ async function main(argv: string[]): Promise<number> {
         const value = {
           ok: true,
           action: "suggest",
+          schemaVersion: SCHEMA_VERSION,
           doc: values.doc,
           since: values.since,
           count: result.created.length,
           ...result,
+          next: "hibi check",
         };
         await emit(mode, value, () =>
           misc.renderSuggest(String(values.doc), result.created, style, mode),
@@ -516,9 +592,15 @@ async function main(argv: string[]): Promise<number> {
           code: code.length > 0 ? code : undefined,
           ref: values.ref as string | undefined,
         });
-        await emit(mode, { ok: true, action: "reanchor", ...result }, () =>
-          misc.renderReanchor(result, style, mode),
-        );
+        const value = {
+          ok: true,
+          action: "reanchor",
+          schemaVersion: SCHEMA_VERSION,
+          ...result,
+          claimId: result.assertion.id,
+          next: "hibi check",
+        };
+        await emit(mode, value, () => misc.renderReanchor(result, style, mode));
         return 0;
       } catch (e) {
         return fail((e as Error).message, mode);
@@ -544,7 +626,14 @@ async function main(argv: string[]): Promise<number> {
                 .map((s) => s.trim())
             : undefined,
         });
-        await emit(mode, { ok: true, action: "supersede", ...result }, () =>
+        const value = {
+          ok: true,
+          action: "supersede",
+          schemaVersion: SCHEMA_VERSION,
+          ...result,
+          next: "hibi check",
+        };
+        await emit(mode, value, () =>
           misc.renderSupersede(result, String(values.type), style, mode),
         );
         return 0;
@@ -557,9 +646,14 @@ async function main(argv: string[]): Promise<number> {
       const engine = await open();
       if (!values.doc) return fail("retract requires --doc", mode);
       const doc = await engine.retract(values.doc as string);
-      await emit(mode, { ok: true, action: "retract", document: doc }, () =>
-        misc.renderRetract(doc, style, mode),
-      );
+      const value = {
+        ok: true,
+        action: "retract",
+        schemaVersion: SCHEMA_VERSION,
+        document: doc,
+        next: "hibi check",
+      };
+      await emit(mode, value, () => misc.renderRetract(doc, style, mode));
       return 0;
     }
 
@@ -570,9 +664,69 @@ async function main(argv: string[]): Promise<number> {
         values.doc as string,
         values.successor as string | undefined,
       );
-      await emit(mode, { ok: true, action: "archive", ...result }, () =>
-        misc.renderArchive(result, style, mode),
-      );
+      const value = {
+        ok: true,
+        action: "archive",
+        schemaVersion: SCHEMA_VERSION,
+        ...result,
+        next: "hibi check",
+      };
+      await emit(mode, value, () => misc.renderArchive(result, style, mode));
+      return 0;
+    }
+
+    case "retire": {
+      const engine = await open();
+      const claimId = positionals[0];
+      if (!claimId)
+        return fail("retire requires a <claim-id> positional", mode);
+      try {
+        const result = await engine.retire(claimId);
+        const value = {
+          ok: true,
+          action: "retire",
+          schemaVersion: SCHEMA_VERSION,
+          ...result,
+          claimId: result.assertion.id,
+          next: "hibi check",
+        };
+        await emit(mode, value, () => misc.renderRetire(result, style, mode));
+        return 0;
+      } catch (e) {
+        return fail((e as Error).message, mode);
+      }
+    }
+
+    case "list": {
+      const engine = await open();
+      // Under parseArgs `strict:false`, `--state` with no value parses as the
+      // boolean `true`; catch that distinctly from a wrong value.
+      const rawState = values.state;
+      if (rawState === true) {
+        return fail(
+          "list --state expects a value: all|gating|warning|clean",
+          mode,
+        );
+      }
+      const state = (rawState as string | undefined) ?? "all";
+      if (!["all", "gating", "warning", "clean"].includes(state)) {
+        return fail(
+          `list --state expects all|gating|warning|clean (got: ${state})`,
+          mode,
+        );
+      }
+      const result = await engine.list({
+        state: state as "all" | "gating" | "warning" | "clean",
+        ref: await currentRef(anchorRoot),
+        hints: mode.hints,
+      });
+      const value = {
+        ok: true,
+        action: "list",
+        schemaVersion: SCHEMA_VERSION,
+        ...result,
+      };
+      await emit(mode, value, () => misc.renderList(result, style, mode));
       return 0;
     }
 
@@ -598,7 +752,14 @@ async function main(argv: string[]): Promise<number> {
           schemaPretty,
         );
       } else {
-        out({ ok: true, schemas: Object.keys(SCHEMAS) }, schemaPretty);
+        out(
+          {
+            ok: true,
+            schemaVersion: SCHEMA_VERSION,
+            schemas: Object.keys(SCHEMAS),
+          },
+          schemaPretty,
+        );
       }
       return 0;
     }
@@ -617,8 +778,10 @@ async function main(argv: string[]): Promise<number> {
 
     case "version":
     case "--version": {
-      await emit(mode, { name: "hibi", version: pkg.version }, () =>
-        misc.renderVersion(pkg.version, style),
+      await emit(
+        mode,
+        { name: "hibi", version: pkg.version, schemaVersion: SCHEMA_VERSION },
+        () => misc.renderVersion(pkg.version, style),
       );
       return 0;
     }
@@ -651,8 +814,10 @@ Commands:
   diff     --since <ref> [--write]  What did this change invalidate? (write-time loop)
   status   [--doc <p>]              No --doc: repo-wide health overview. --doc: one-document gate.
   query    --path <p>               What claims are anchored to / cover this path?
+  list     [--state all|gating|warning|clean]  Triage: one lean row per claim (handle + status)
   suggest  --doc <p> [--since <ref>]  Propose anchorable claims from a document (suggested records)
   reanchor <claim-id> [--doc-quote …] [--code-file …]  Re-resolve a claim against current content
+  retire   <claim-id>               Withdraw one claim (enforcement → retired); idempotent
   supersede --new <p> --old <p> --type supersedes|amends [--propositions id,id]
   retract  --doc <p>                Mark a document retracted (author withdrew)
   archive  --doc <p> [--successor <p>]  Move an obsolete doc out of the read path (tombstone)
@@ -664,6 +829,8 @@ Output: rich human view on a terminal, compact JSON when piped/redirected/CI.
   --json --pretty   indented JSON
   --pretty          force the rich human view, even when piped
   --compact         one line per claim (human)
+  --explain         add the full evidence tail to the JSON (alias --detailed)
+  --no-hints        drop the remediation menu (also via HIBI_ADVICE=0)
   --color auto|always|never   (also honors NO_COLOR / FORCE_COLOR)
   --simple          ASCII symbols instead of unicode
 

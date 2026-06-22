@@ -14,6 +14,10 @@ export interface OutputMode {
   kind: OutputKind;
   color: boolean;
   unicode: boolean;
+  /** Include the bulky `evidence`/`advisories`/`fingerprint` tail (§9 `--explain`). */
+  explain: boolean;
+  /** Emit the `remediation` menu; off via `--no-hints` / `HIBI_ADVICE=0` (§9). */
+  hints: boolean;
 }
 
 export interface ModeFlags {
@@ -23,6 +27,10 @@ export interface ModeFlags {
   /** `auto` | `always` | `never` (anything else is treated as `auto`). */
   color?: string;
   simple?: boolean;
+  /** `--explain` / `--detailed`: add the full evidence tail to the JSON. */
+  explain?: boolean;
+  /** `--no-hints`: drop the remediation menu (also via `HIBI_ADVICE=0`). */
+  noHints?: boolean;
 }
 
 export interface ModeEnv {
@@ -72,6 +80,16 @@ function resolveUnicode(
   return true;
 }
 
+/** Remediation hints on unless `--no-hints` or `HIBI_ADVICE=0` (git advice.* precedent). */
+function resolveHints(
+  flags: ModeFlags,
+  env: Record<string, string | undefined>,
+): boolean {
+  if (flags.noHints) return false;
+  if (env.HIBI_ADVICE === "0") return false;
+  return true;
+}
+
 export function resolveMode(flags: ModeFlags, ctx: ModeEnv = {}): OutputMode {
   const isTTY = Boolean(ctx.isTTY);
   const env = ctx.env ?? {};
@@ -80,5 +98,7 @@ export function resolveMode(flags: ModeFlags, ctx: ModeEnv = {}): OutputMode {
     kind,
     color: resolveColor(flags, kind, isTTY, env),
     unicode: resolveUnicode(flags, env),
+    explain: Boolean(flags.explain),
+    hints: resolveHints(flags, env),
   };
 }
