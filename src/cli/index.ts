@@ -199,6 +199,80 @@ function parseVerifiers(raw: unknown): Verifier[] {
   });
 }
 
+/**
+ * Build a `RecordCall` from a plain spec object — one item of a
+ * `record --from-file` batch (§9). Keys mirror the CLI long-flags in camelCase
+ * (`doc`, `docQuote`, `codeFile`, `codeQuote`, `trust`, `owner`, …). Reuses
+ * `spanSpec`/`parseVerifiers` so a batched item resolves identically to the same
+ * claim authored flag-by-flag. Throws on a malformed item so the batch fails
+ * loudly rather than recording a half-formed claim.
+ */
+function recordCallFromSpec(
+  spec: Record<string, unknown>,
+  fallbackRef: string,
+): RecordCall {
+  const doc = spec.doc;
+  if (typeof doc !== "string" || doc.length === 0)
+    throw new Error("each record item needs a `doc` path");
+
+  const docSpec = spanSpec(spec.docQuote, spec.docRange, spec.docLine);
+  const legacyText = spec.text as string | undefined;
+  if (!docSpec && legacyText === undefined)
+    throw new Error(
+      `record item for ${doc} needs a doc span (docQuote/docRange/docLine) or text`,
+    );
+
+  const code: NonNullable<RecordCall["code"]> = [];
+  const coarse = Boolean(spec.coarse);
+  const glob = spec.glob as string | undefined;
+  const codeFile = spec.codeFile as string | undefined;
+  if (glob) {
+    code.push({ file: glob, glob });
+  } else if (codeFile) {
+    const codeSpec = spanSpec(spec.codeQuote, spec.codeRange, spec.codeLine);
+    code.push({ file: codeFile, ...codeSpec, coarse });
+  } else if (coarse) {
+    throw new Error(
+      `record item for ${doc}: \`coarse\` requires \`codeFile\` or \`glob\``,
+    );
+  }
+
+  const enforcement = (spec.enforcement as string | undefined)
+    ? (String(spec.enforcement) as Enforcement)
+    : spec.enforce
+      ? ("enforced" as Enforcement)
+      : undefined;
+
+  return {
+    docPath: doc,
+    docQuote: docSpec?.quote,
+    docRange:
+      docSpec && docSpec.quote === undefined
+        ? {
+            start: docSpec.start,
+            end: docSpec.end,
+            line: docSpec.line,
+            startLine: docSpec.startLine,
+            endLine: docSpec.endLine,
+          }
+        : undefined,
+    inlineId: spec.inlineId as string | undefined,
+    text: legacyText,
+    code,
+    // Mirror the single-flag default (`inferred`); a batch never silently mints
+    // `verified` (which requires deliberate evidence) on the author's behalf.
+    authoredTrust: (spec.trust
+      ? String(spec.trust)
+      : "inferred") as AuthoredTrust,
+    owner: spec.owner as string | undefined,
+    ref: (spec.ref as string | undefined) ?? fallbackRef,
+    ttl: spec.ttl as string | undefined,
+    enforcement,
+    claimKind: spec.claimKind as ClaimKind | undefined,
+    verifiers: parseVerifiers(spec.verifier),
+  };
+}
+
 async function main(argv: string[]): Promise<number> {
   const cmd = argv[0];
   const rest = argv.slice(1);
@@ -238,6 +312,8 @@ async function main(argv: string[]): Promise<number> {
       "code-line": { type: "string" },
       coarse: { type: "boolean", default: false },
       glob: { type: "string" },
+      // record — batch authoring (a JSON array of claim specs; `-` = stdin)
+      "from-file": { type: "string" },
       // record — authored facets
       text: { type: "string" }, // legacy override only
       trust: { type: "string", default: "inferred" },
@@ -320,6 +396,88 @@ async function main(argv: string[]): Promise<number> {
 
     case "record": {
       const engine = await open();
+
+      // Batch authoring (§9): `--from-file <p|->` reads a JSON array of claim
+      // specs and records them in one pass — no shell-quoting of verbatim spans,
+      // no per-claim process spawn. The lowest-friction path for an agent
+      // grounding many docs at once. `-` reads the array from stdin.
+      const fromFile = values["from-file"] as string | undefined;
+      if (fromFile !== undefined) {
+        const raw =
+          fromFile === "-"
+            ? await Bun.stdin.text()
+            : await Bun.file(
+                isAbsolute(fromFile) ? fromFile : join(anchorRoot, fromFile),
+              ).text();
+        let items: unknown;
+        try {
+          items = JSON.parse(raw);
+        } catch (e) {
+          return fail(
+            `record --from-file: invalid JSON (${(e as Error).message})`,
+            mode,
+          );
+        }
+        if (!Array.isArray(items))
+          return fail(
+            "record --from-file expects a JSON array of claim specs",
+            mode,
+          );
+        const fallbackRef =
+          (values.ref as string) ?? (await currentRef(anchorRoot));
+        // Phase 1 — validate every spec before any write, so a malformed item
+        // fails the whole batch loudly rather than leaving a partial store.
+        const calls: RecordCall[] = [];
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (typeof item !== "object" || item === null)
+            return fail(`record --from-file: item ${i} is not an object`, mode);
+          try {
+            calls.push(
+              recordCallFromSpec(item as Record<string, unknown>, fallbackRef),
+            );
+          } catch (e) {
+            return fail(
+              `record --from-file item ${i}: ${(e as Error).message}`,
+              mode,
+            );
+          }
+        }
+        // Phase 2 — record. Serial by design: a shared one-file-per-claim store
+        // is not written concurrently (§6).
+        const results: { claimId: string; dedupedProposition: boolean }[] = [];
+        for (const [i, call] of calls.entries()) {
+          try {
+            const result = await engine.record(call);
+            results.push({
+              claimId: result.assertion.id,
+              dedupedProposition: result.dedupedProposition,
+            });
+          } catch (e) {
+            return fail(
+              `record --from-file item ${i} (${call.docPath}): ${(e as Error).message}`,
+              mode,
+            );
+          }
+        }
+        const value = {
+          ok: true,
+          action: "record",
+          schemaVersion: SCHEMA_VERSION,
+          batch: true,
+          count: results.length,
+          results,
+          next: "hibi check",
+        };
+        await emit(
+          mode,
+          value,
+          () =>
+            `recorded ${results.length} claim${results.length === 1 ? "" : "s"} from ${fromFile}\n`,
+        );
+        return 0;
+      }
+
       if (!values.doc) return fail("record requires --doc", mode);
 
       // Doc side: the documented sentence's span supplies the claim text.
@@ -584,6 +742,7 @@ async function main(argv: string[]): Promise<number> {
       }
       try {
         const result = await engine.reanchor(claimId, {
+          doc: values.doc as string | undefined,
           docQuote: docSpec?.quote,
           docRange:
             docSpec && docSpec.quote === undefined
@@ -811,6 +970,7 @@ Commands:
            [--coarse|--glob <g>] [--trust verified|inferred|assumed]
            [--enforce|--enforcement <e>] [--claim-kind <k>] [--verifier kind:ref ...] [--ttl <iso>]
                                     Record a span-first claim (doc span + zero or more code spans)
+  record   --from-file <p|->        Batch-record a JSON array of claim specs (- = stdin)
   check    [--write] [--fail-on gating|warn|tamper|never]
                                     Verify all claims; emit verdicts; exit per contract
   diff     --since <ref> [--write]  What did this change invalidate? (write-time loop)
@@ -818,7 +978,8 @@ Commands:
   query    --path <p>               What claims are anchored to / cover this path?
   list     [--state all|gating|warning|clean]  Triage: one lean row per claim (handle + status)
   suggest  --doc <p> [--since <ref>]  Propose anchorable claims from a document (suggested records)
-  reanchor <claim-id> [--doc-quote …] [--code-file …]  Re-resolve a claim against current content
+  reanchor <claim-id> [--doc <p>] [--doc-quote …] [--code-file …]  Re-resolve a claim, or relocate
+                                    either side to a different file (--doc moves the doc anchor)
   retire   <claim-id>               Withdraw one claim (enforcement → retired); idempotent
   supersede --new <p> --old <p> --type supersedes|amends [--propositions id,id]
   retract  --doc <p>                Mark a document retracted (author withdrew)

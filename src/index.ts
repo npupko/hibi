@@ -484,6 +484,8 @@ export class Engine {
   async reanchor(
     claimId: string,
     opts: {
+      /** Re-home the doc anchor to a different file (symmetric with --code-file). */
+      doc?: string;
       docQuote?: string;
       docRange?: {
         start?: number;
@@ -507,9 +509,10 @@ export class Engine {
       glob: c.glob,
     }));
 
-    // Read the doc side (from the assertion's doc bundle or the resolved
-    // document) plus every code file the claim already pins and any replacements.
-    const docFile = assertion.anchor.doc.file || document?.path;
+    // Read the doc side. `--doc` re-homes the anchor onto a new file; otherwise
+    // read the assertion's current document. Plus every code file the claim
+    // already pins and any replacements.
+    const docFile = opts.doc ?? (assertion.anchor.doc.file || document?.path);
     const docContent = docFile ? await this.readDoc(docFile) : null;
     const codeContents: Record<string, string | null> = {};
     for (const bundle of assertion.anchor.code) {
@@ -525,6 +528,7 @@ export class Engine {
     const contents: RecordContents = { docContent, codeContents };
     const input: ReanchorInput = {
       claimId,
+      docPath: opts.doc,
       docSpec:
         opts.docQuote !== undefined ? { quote: opts.docQuote } : opts.docRange,
       code,
