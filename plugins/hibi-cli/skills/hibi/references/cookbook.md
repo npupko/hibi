@@ -1,30 +1,25 @@
 # hibi cookbook — four worked workflows
 
-Each section is a *moment* you reach for hibi, the one command you run, the real
-output it returns, and how to act on it. All JSON below was captured by running
-the CLI; it is `--json --pretty` for readability — piped (non-TTY) output is the
-same shape, compact. The concise default is what an agent reads on the hot path;
-`--explain` adds the evidence tail.
+One section per *moment* you reach for hibi: when to use it, the command, the real
+output, and how to act. JSON is shown `--json --pretty` for readability; piped
+(non-TTY) output is the same shape, compact. Concise is the default an agent reads;
+`--explain` adds the evidence tail. `Setup` lines state the precondition that
+produced the output — without them a `changed`/`gates` verdict looks unmotivated.
 
-The scenario repo: a service with `src/retry.ts` (`MAX_ATTEMPTS = 5`) and
-`src/auth.ts` (`TOKEN_TTL_MIN = 30`), a `README.md`, and a `CLAUDE.md` that tells
-the agent "Auth tokens expire after 30 minutes." Claims are recorded enforced.
+Shared fixture: `src/retry.ts` (`MAX_ATTEMPTS = 5`), `src/auth.ts`
+(`TOKEN_TTL_MIN = 30`), a `README.md`, and a `CLAUDE.md` asserting "Auth tokens
+expire after 30 minutes." Claims recorded enforced.
 
 ---
 
 ## 1. Trust-check before following agent instructions
 
-**The moment.** You're about to act on `CLAUDE.md` / `AGENTS.md` / a README. Before
-you trust what it says about the code, confirm the code still backs it. (This is the
-SessionStart-hook moment — see SKILL.md.)
+**When** — about to act on `CLAUDE.md` / `AGENTS.md` / a README; confirm the code
+still backs it first. (SessionStart-hook moment.)
 
-**The command.**
+**Run** — `hibi status --doc CLAUDE.md`
 
-```sh
-hibi status --doc CLAUDE.md
-```
-
-**What you get** (after the token TTL changed from 30 → 60 in `src/auth.ts`):
+**Setup** — `TOKEN_TTL_MIN` in `src/auth.ts` changed 30 → 60 since the claim was recorded.
 
 ```json
 {
@@ -57,30 +52,22 @@ hibi status --doc CLAUDE.md
 }
 ```
 
-Exit code is **2**.
+Exit code **2**.
 
-**How to read it.** `current: false` and `gates: true` is the decision: the
-instruction drifted. The doc text is intact (`doc: unchanged`) but the code it
-points at changed (`code: changed`) — the file now says 60 minutes, the instruction
-still says 30. **Do not blindly follow the 30-minute rule.** `recommended` is
-`null` because hibi can't know intent: maybe the TTL change was deliberate (fix the
-doc), maybe accidental (fix the code). You decide, then run one of the menu's
-`command`s.
+**Act** — `current: false` + `gates: true` is the decision: the instruction drifted.
+`doc: unchanged` + `code: changed` means the sentence is intact but the code moved
+(now 60, the doc still says 30) — don't follow the 30-minute rule. `recommended:
+null` because hibi can't know intent (deliberate change → fix the doc; accidental →
+fix the code); decide, then run a menu `command`.
 
 ---
 
 ## 2. Keep docs honest after a code change
 
-**The moment.** You just edited code. Surface exactly which doc sentences your change
-invalidated, so the prose fix lands in the same PR. (This is the Stop-hook moment.)
+**When** — you just edited code; surface which doc sentences it invalidated so the
+prose fix lands in the same PR. (Stop-hook moment.)
 
-**The command.**
-
-```sh
-hibi diff --since origin/main        # here: --since HEAD after editing src/auth.ts
-```
-
-**What you get** (concise — one verdict shown; the change touched two auth claims):
+**Run** — `hibi diff --since origin/main` (here `--since HEAD`, after editing `src/auth.ts`)
 
 ```json
 {
@@ -115,11 +102,11 @@ hibi diff --since origin/main        # here: --since HEAD after editing src/auth
 }
 ```
 
-`diff` only evaluated claims touching `changedFiles` (the write-time loop), so the
-unchanged `retry` claim isn't in the report — just the two auth claims your edit
-broke. The `documents` array names exactly which files need a prose fix.
+**Act** — `diff` only evaluated claims touching `changedFiles`, so the unchanged
+`retry` claim is absent — just the two auth claims the edit broke. `documents[].path`
+names the files needing a prose fix.
 
-**Need the evidence?** Add `--explain`. The verdict then carries `evidence`:
+**Need the evidence?** `--explain` adds `evidence` to each verdict:
 
 ```json
 "evidence": {
@@ -137,23 +124,17 @@ broke. The `documents` array names exactly which files need a prose fix.
 "fingerprint": "cfe0afc35172d4af"
 ```
 
-`changedEvidence` tells you *what* moved (the literal `30`), so you can fix the
-sentence without re-reading the diff.
+`changedEvidence` names *what* moved (the literal `30`) — fix the sentence without
+re-reading the diff.
 
 ---
 
 ## 3. What does this code promise, before I touch it
 
-**The moment.** You're about to refactor `src/auth.ts`. Before you change it, list every
-doc claim anchored to it — the contracts you must not silently break.
+**When** — about to refactor `src/auth.ts`; list the doc claims anchored to it (the
+contracts you must not silently break).
 
-**The command.**
-
-```sh
-hibi query --path src/auth.ts
-```
-
-**What you get** (trimmed to the decision fields):
+**Run** — `hibi query --path src/auth.ts`
 
 ```json
 {
@@ -173,27 +154,21 @@ hibi query --path src/auth.ts
 }
 ```
 
-**How to read it.** Two enforced claims ride on this file — one in `README.md`, one in
-`CLAUDE.md`, both asserting the 30-minute TTL. If your refactor changes that value,
-both go red. `query` hands you the `assertion.id`s up front, so after the edit you
-already know which claims to `reanchor` (still true) or `retire` (now wrong) — no
-round-trip to discover them.
+**Act** — two enforced claims ride on this file (`README.md`, `CLAUDE.md`), both
+asserting the 30-minute TTL; changing that value reds both. `query` hands you the
+`assertion.id`s up front, so after the edit you already know which to `reanchor`
+(still true) or `retire` (now wrong).
 
 ---
 
 ## 4. Onboard an existing repo fast
 
-**The moment.** A repo has docs but no claims. Get from zero to protected without
-hand-authoring every anchor.
+**When** — a repo has docs but no claims; get to protected without hand-authoring
+every anchor.
 
-**The commands.**
+**Run** — `hibi init` then `hibi suggest --doc README.md`
 
-```sh
-hibi init
-hibi suggest --doc README.md
-```
-
-**What you get.** `init` returns the store handle and the next step:
+`init` returns the store handle and the next step:
 
 ```json
 { "ok": true, "action": "init", "schemaVersion": "v1",
@@ -201,9 +176,8 @@ hibi suggest --doc README.md
   "next": "hibi suggest --doc <file>" }
 ```
 
-`suggest` proposes one `suggested` (advisory, never-gating) doc-side record per
-anchorable sentence — the doc side is filled in, the code side is empty, waiting for
-you to pin it:
+`suggest` writes one `suggested` (advisory, never-gating) doc-side record per
+anchorable sentence — doc side filled, code side empty, awaiting a pin:
 
 ```json
 {
@@ -221,26 +195,20 @@ you to pin it:
 }
 ```
 
-**How to act.** For each suggestion worth enforcing, pin its code side and promote it:
+**Act** — for each suggestion worth enforcing, pin its code side and promote it, then
+`hibi check`:
 
 ```sh
 hibi reanchor asrt_db44… --code-file src/retry.ts --code-quote "5"
-# or re-record it precisely with --trust verified --enforce
+# or re-record precisely with --trust verified --enforce
 ```
-
-Then `hibi check` to confirm everything is clean. You've gone from unprotected docs
-to a tracked, gating store without hand-writing a single anchor from scratch.
 
 ---
 
 ## Triage: what needs attention right now
 
-Across all four workflows, `hibi list` is the fast "what's red?" view — one lean row
-per claim, no full report to parse:
-
-```sh
-hibi list --state gating
-```
+**Run** — `hibi list --state gating` (the fast "what's red?" view — one lean row per
+claim, no full report to parse):
 
 ```json
 {
@@ -255,8 +223,8 @@ hibi list --state gating
 }
 ```
 
-Each row carries the `claimId` the next command needs. Decide intent, then act —
-e.g. retire the obsolete CLAUDE.md claim:
+**Act** — each row carries the `claimId` the next command needs. Decide intent, then
+act — e.g. retire the obsolete CLAUDE.md claim:
 
 ```json
 $ hibi retire asrt_897e054b48d040db
