@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.2](https://github.com/npupko/hibi/compare/v0.2.1...v0.2.2) (2026-06-23)
+
+
+### Features
+
+* **cli:** cross-file claim relocation (reanchor --doc) + batch record --from-file ([5608dc0](https://github.com/npupko/hibi/commit/5608dc011f11845fcc75eaba14849e26be0384cb))
+* **cli:** relocate claims across files (reanchor --doc) + batch record --from-file ([975c68d](https://github.com/npupko/hibi/commit/975c68d521d40f2867e0fcd77645ba17ada5267d))
+
+
+### Bug Fixes
+
+* **cli:** harden doc relocation and batch record per review ([09602d4](https://github.com/npupko/hibi/commit/09602d49980780322fd1199c3599a1b6dce2160f))
+
 ## [0.2.1](https://github.com/npupko/hibi/compare/v0.2.0...v0.2.1) (2026-06-22)
 
 
