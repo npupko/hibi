@@ -1,6 +1,6 @@
 {
   "name": "@npupko/hibi",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "A deterministic, agent-facing CLI that keeps documentation and AI-agent-instruction files from silently going stale.",
   "license": "MIT",
   "author": "Nick Pupko <lazynick7@gmail.com>",
