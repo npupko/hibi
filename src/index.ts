@@ -514,6 +514,12 @@ export class Engine {
     // already pins and any replacements.
     const docFile = opts.doc ?? (assertion.anchor.doc.file || document?.path);
     const docContent = docFile ? await this.readDoc(docFile) : null;
+    // A relocation target (`--doc`) missing from disk is a wrong path, not an
+    // orphan — say so plainly, rather than letting the null read surface
+    // downstream as a misleading "orphaned" error.
+    if (opts.doc !== undefined && docContent === null) {
+      throw new Error(`Document not found on disk: ${opts.doc}`);
+    }
     const codeContents: Record<string, string | null> = {};
     for (const bundle of assertion.anchor.code) {
       if (bundle.file in codeContents) continue;

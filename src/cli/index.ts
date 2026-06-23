@@ -200,6 +200,40 @@ function parseVerifiers(raw: unknown): Verifier[] {
 }
 
 /**
+ * The `docRange` payload shared by the record and reanchor assemblies, so a
+ * locator (a line, a line range, or char offsets) can never reach one authoring
+ * path but be dropped on another. A quote or coarse span has no range → undefined.
+ */
+function docRangeOf(
+  docSpec: ReturnType<typeof spanSpec>,
+): RecordCall["docRange"] {
+  return docSpec && docSpec.quote === undefined
+    ? {
+        start: docSpec.start,
+        end: docSpec.end,
+        line: docSpec.line,
+        startLine: docSpec.startLine,
+        endLine: docSpec.endLine,
+      }
+    : undefined;
+}
+
+/**
+ * Resolve an enforcement override consistently across authoring paths; undefined
+ * lets the engine derive enforcement from trust and resolution (§9).
+ */
+function enforcementOf(
+  enforcement: unknown,
+  enforce: unknown,
+): Enforcement | undefined {
+  return enforcement
+    ? (String(enforcement) as Enforcement)
+    : enforce
+      ? ("enforced" as Enforcement)
+      : undefined;
+}
+
+/**
  * Build a `RecordCall` from a plain spec object — one item of a
  * `record --from-file` batch (§9). Keys mirror the CLI long-flags in camelCase
  * (`doc`, `docQuote`, `codeFile`, `codeQuote`, `trust`, `owner`, …). Reuses
@@ -217,7 +251,9 @@ function recordCallFromSpec(
 
   const docSpec = spanSpec(spec.docQuote, spec.docRange, spec.docLine);
   const legacyText = spec.text as string | undefined;
-  if (!docSpec && legacyText === undefined)
+  // An empty `text` is rejected like a missing one (`!legacyText`): otherwise the
+  // item would record a proposition with an empty fingerprint.
+  if (!docSpec && !legacyText)
     throw new Error(
       `record item for ${doc} needs a doc span (docQuote/docRange/docLine) or text`,
     );
@@ -237,25 +273,12 @@ function recordCallFromSpec(
     );
   }
 
-  const enforcement = (spec.enforcement as string | undefined)
-    ? (String(spec.enforcement) as Enforcement)
-    : spec.enforce
-      ? ("enforced" as Enforcement)
-      : undefined;
+  const enforcement = enforcementOf(spec.enforcement, spec.enforce);
 
   return {
     docPath: doc,
     docQuote: docSpec?.quote,
-    docRange:
-      docSpec && docSpec.quote === undefined
-        ? {
-            start: docSpec.start,
-            end: docSpec.end,
-            line: docSpec.line,
-            startLine: docSpec.startLine,
-            endLine: docSpec.endLine,
-          }
-        : undefined,
+    docRange: docRangeOf(docSpec),
     inlineId: spec.inlineId as string | undefined,
     text: legacyText,
     code,
@@ -444,7 +467,33 @@ async function main(argv: string[]): Promise<number> {
           }
         }
         // Phase 2 — record. Serial by design: a shared one-file-per-claim store
-        // is not written concurrently (§6).
+        // is not written concurrently (§6). Phase 1 validated structure only; a
+        // resolution failure (a quote absent from its file, an `enforced` claim
+        // that won't resolve) surfaces here, mid-write. To keep the all-or-nothing
+        // guarantee, roll back every record this batch introduced if any item throws.
+        const snapshot = async () => ({
+          assertions: new Set(
+            (await engine.store.allAssertions()).map((x) => x.id),
+          ),
+          propositions: new Set(
+            (await engine.store.allPropositions()).map((x) => x.id),
+          ),
+          documents: new Set(
+            (await engine.store.allDocuments()).map((x) => x.id),
+          ),
+        });
+        const before = await snapshot();
+        const rollback = async () => {
+          for (const x of await engine.store.allAssertions())
+            if (!before.assertions.has(x.id))
+              await engine.store.deleteAssertion(x.id);
+          for (const x of await engine.store.allPropositions())
+            if (!before.propositions.has(x.id))
+              await engine.store.deleteProposition(x.id);
+          for (const x of await engine.store.allDocuments())
+            if (!before.documents.has(x.id))
+              await engine.store.deleteDocument(x.id);
+        };
         const results: { claimId: string; dedupedProposition: boolean }[] = [];
         for (const [i, call] of calls.entries()) {
           try {
@@ -454,6 +503,7 @@ async function main(argv: string[]): Promise<number> {
               dedupedProposition: result.dedupedProposition,
             });
           } catch (e) {
+            await rollback();
             return fail(
               `record --from-file item ${i} (${call.docPath}): ${(e as Error).message}`,
               mode,
@@ -513,26 +563,13 @@ async function main(argv: string[]): Promise<number> {
 
       // Enforcement: explicit --enforcement wins; --enforce is shorthand for
       // "enforced"; otherwise the engine derives it from trust + resolution.
-      const enforcement = (values.enforcement as string | undefined)
-        ? (String(values.enforcement) as Enforcement)
-        : values.enforce
-          ? ("enforced" as Enforcement)
-          : undefined;
+      const enforcement = enforcementOf(values.enforcement, values.enforce);
 
       const ref = (values.ref as string) ?? (await currentRef(anchorRoot));
       const call: RecordCall = {
         docPath: values.doc as string,
         docQuote: docSpec?.quote,
-        docRange:
-          docSpec && docSpec.quote === undefined
-            ? {
-                start: docSpec.start,
-                end: docSpec.end,
-                line: docSpec.line,
-                startLine: docSpec.startLine,
-                endLine: docSpec.endLine,
-              }
-            : undefined,
+        docRange: docRangeOf(docSpec),
         inlineId: values["inline-id"] as string | undefined,
         text: legacyText,
         code,
@@ -744,10 +781,7 @@ async function main(argv: string[]): Promise<number> {
         const result = await engine.reanchor(claimId, {
           doc: values.doc as string | undefined,
           docQuote: docSpec?.quote,
-          docRange:
-            docSpec && docSpec.quote === undefined
-              ? { start: docSpec.start, end: docSpec.end, line: docSpec.line }
-              : undefined,
+          docRange: docRangeOf(docSpec),
           code: code.length > 0 ? code : undefined,
           ref: values.ref as string | undefined,
         });

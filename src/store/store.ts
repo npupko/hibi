@@ -113,11 +113,18 @@ export class ClaimStore {
     return exists(join(resolveLocation(location).dir, "config.json"));
   }
 
+  /** Parsed config, memoized: it is written once at `init` and immutable for the
+   *  life of an opened store, so re-reading and re-parsing it per call is pure
+   *  overhead. */
+  private configCache?: StoreConfig;
+
   async config(): Promise<StoreConfig> {
+    if (this.configCache) return this.configCache;
     const raw = JSON.parse(
       await readFile(join(this.dir, "config.json"), "utf8"),
     );
-    return StoreConfig.parse(raw);
+    this.configCache = StoreConfig.parse(raw);
+    return this.configCache;
   }
 
   // ── Documents ──
@@ -127,6 +134,10 @@ export class ClaimStore {
   async getDocument(id: string): Promise<Document | undefined> {
     return this.read(SUBDIRS.documents, id, Document);
   }
+  /** Remove a document record (used to roll back a failed batch record). */
+  async deleteDocument(id: string): Promise<void> {
+    await rm(join(this.dir, SUBDIRS.documents, `${id}.json`), { force: true });
+  }
   async allDocuments(): Promise<Document[]> {
     return this.readAll(SUBDIRS.documents, Document);
   }
@@ -134,6 +145,12 @@ export class ClaimStore {
   // ── Propositions ──
   async putProposition(p: Proposition): Promise<void> {
     await this.write(SUBDIRS.propositions, p.id, Proposition.parse(p));
+  }
+  /** Remove a proposition record (used to roll back a failed batch record). */
+  async deleteProposition(id: string): Promise<void> {
+    await rm(join(this.dir, SUBDIRS.propositions, `${id}.json`), {
+      force: true,
+    });
   }
   async getProposition(id: string): Promise<Proposition | undefined> {
     return this.read(SUBDIRS.propositions, id, Proposition);

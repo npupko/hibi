@@ -815,4 +815,105 @@ describe("CLI end-to-end (§9)", () => {
     expect(chk.code).toBe(0);
     expect(chk.json.verdicts?.[0]?.doc).toBe("unchanged");
   });
+
+  test("reanchor --doc-range re-resolves via a line range without dropping the bounds (§9)", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "doc.md", "# A\n\nThe A constant is one.\n");
+    await run(d, ["init"]);
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "The A constant is one",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+      "--trust",
+      "verified",
+    ]);
+    const id = rec.json.claimId ?? "";
+
+    // Line 3 holds the documented sentence; a line range must resolve to it.
+    const re = await run(d, ["reanchor", id, "--doc-range", "L3:L3"]);
+    expect(re.code).toBe(0);
+    expect(re.json.doc).toBe("unchanged");
+  });
+
+  test("reanchor --doc to a different file without an explicit span is rejected, not silently re-matched (§9)", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "wip.md", "# WIP\n\nThe A constant is one.\n");
+    await write(d, "docs/a.md", "# A\n\nThe A constant is one.\n");
+    await run(d, ["init"]);
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "wip.md",
+      "--doc-quote",
+      "The A constant is one",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+      "--trust",
+      "verified",
+    ]);
+    const id = rec.json.claimId ?? "";
+
+    // No --doc-quote: re-matching the old selectors against docs/a.md could
+    // coincidentally latch onto the wrong sentence — demand a deliberate span.
+    const re = await run(d, ["reanchor", id, "--doc", "docs/a.md"]);
+    expect(re.code).toBe(1);
+    expect(re.json.ok).toBe(false);
+  });
+
+  test("record --from-file rolls back fully when a later item fails to resolve (§9)", async () => {
+    const d = await repo();
+    await write(d, "src/conf.ts", "export const TTL_MS = 60000;\n");
+    await write(d, "docs/conf.md", "# Config\n\nThe cache TTL is 60000ms.\n");
+    await run(d, ["init"]);
+    await write(
+      d,
+      "batch.json",
+      JSON.stringify([
+        {
+          doc: "docs/conf.md",
+          docQuote: "The cache TTL is 60000ms",
+          codeFile: "src/conf.ts",
+          codeQuote: "TTL_MS = 60000",
+          trust: "verified",
+        },
+        // Passes phase-1 structural validation, but its quote is absent from the
+        // file, so it throws during phase-2 record — after item 0 was written.
+        { doc: "docs/conf.md", docQuote: "NOT PRESENT IN THE FILE" },
+      ]),
+    );
+    const rec = await run(d, ["record", "--from-file", "batch.json"]);
+    expect(rec.code).toBe(1);
+    expect(rec.json.ok).toBe(false);
+
+    // The valid first item must NOT survive — a failed batch leaves no partial store.
+    const chk = await run(d, ["check"]);
+    expect(chk.json.summary?.total ?? 0).toBe(0);
+  });
+
+  test("record --from-file rejects an item with an empty text and no doc span (§9)", async () => {
+    const d = await repo();
+    await write(d, "docs/x.md", "# X\n\nsomething.\n");
+    await run(d, ["init"]);
+    await write(
+      d,
+      "batch.json",
+      JSON.stringify([{ doc: "docs/x.md", text: "" }]),
+    );
+    const rec = await run(d, ["record", "--from-file", "batch.json"]);
+    expect(rec.code).toBe(1);
+    expect(rec.json.ok).toBe(false);
+
+    const chk = await run(d, ["check"]);
+    expect(chk.json.summary?.total ?? 0).toBe(0);
+  });
 });
