@@ -57,6 +57,7 @@ const VERB_FLAGS: Record<string, string[]> = {
     "--code-line",
     "--coarse",
     "--glob",
+    "--from-file",
     "--trust",
     "--enforce",
     "--enforcement",
@@ -73,6 +74,7 @@ const VERB_FLAGS: Record<string, string[]> = {
   list: ["--state"],
   suggest: ["--doc", "--since"],
   reanchor: [
+    "--doc",
     "--doc-quote",
     "--doc-range",
     "--doc-line",

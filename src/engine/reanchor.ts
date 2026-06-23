@@ -39,6 +39,7 @@ import {
 import { languageForFile } from "./lang.ts";
 import {
   type CodeTarget,
+  documentIdForPath,
   type RecordContents,
   type RegionSpec,
   resolveRegion,
@@ -48,6 +49,15 @@ export interface ReanchorInput {
   claimId: string;
   /** Replacement doc-side span; omit to re-localize via the existing selectors. */
   docSpec?: RegionSpec;
+  /**
+   * Re-home the doc anchor to a **different file** — symmetric with the code
+   * side's per-target `file`. Omit to keep the claim on its current document.
+   * When set, the doc span re-resolves against this file and the assertion's
+   * `documentId` moves with it: the same claim, relocated (split/merge/rename/
+   * extract), never an orphan-plus-fresh-record. The caller supplies the file's
+   * content as `contents.docContent`.
+   */
+  docPath?: string;
   /** Replacement code-side targets; omit to re-localize the existing bundles. */
   code?: CodeTarget[];
   /** New `@ref` to stamp; omit to keep the assertion's current ref. */
@@ -82,6 +92,18 @@ function relocateDoc(
       `claim ${assertion.id} orphaned — provide a new location or retire`,
     );
   }
+  // Relocating onto a different file must carry an explicit span: the existing
+  // selectors describe the old file, so re-matching them against the new file's
+  // content could latch onto a coincidentally similar sentence and mis-anchor.
+  if (
+    input.docPath !== undefined &&
+    input.docPath !== assertion.anchor.doc.file &&
+    !input.docSpec
+  ) {
+    throw new Error(
+      `relocating claim ${assertion.id} to ${input.docPath} requires an explicit doc span (--doc-quote/--doc-range/--doc-line); the existing selectors describe the old file and must not be re-matched against a different one`,
+    );
+  }
   const region = input.docSpec
     ? resolveRegion(docContent, input.docSpec)
     : located;
@@ -96,7 +118,9 @@ function relocateDoc(
       s.kind === "inline-id",
   )?.id;
   const bundle = buildSelectorBundle(
-    assertion.anchor.doc.file,
+    // Relocation (`--doc`) re-homes the bundle onto the new file; otherwise the
+    // doc bundle keeps its current file.
+    input.docPath ?? assertion.anchor.doc.file,
     docContent,
     region,
     {
@@ -177,9 +201,13 @@ export async function reanchor(
 
   const files = toResolveFiles(contents);
 
-  // ── Doc side ── re-localize the doc bundle against the current document.
-  const docLocated =
-    resolveSide(assertion.anchor.doc, contents.docContent).region ?? undefined;
+  // ── Doc side ── re-localize the doc bundle against the current document. Skip
+  // this when an explicit span is given: relocateDoc resolves that span directly
+  // and ignores the located region, so resolving it would be wasted work.
+  const docLocated = input.docSpec
+    ? undefined
+    : (resolveSide(assertion.anchor.doc, contents.docContent).region ??
+      undefined);
   const doc = relocateDoc(assertion, contents, input, docLocated);
 
   // ── Code side ── resolve each bundle INDEPENDENTLY (not via the aggregated
@@ -205,12 +233,37 @@ export async function reanchor(
   }
 
   // ── Rewrite the baseline and the confirmed proposition text ──
+  // Re-home to a new document when `--doc` relocates the doc anchor (§9). The
+  // claim keeps its id, proposition, code side, owner, trust, and history; only
+  // its `documentId` moves — no orphan-plus-fresh-record.
+  const documentId = input.docPath
+    ? documentIdForPath(input.docPath)
+    : assertion.documentId;
   const next: Assertion = {
     ...assertion,
+    documentId,
     anchor: composeAnchor(doc.bundle, codeBundles),
     ref: input.ref ?? assertion.ref,
   };
   await store.putAssertion(next);
+
+  // Ensure the destination Document exists and is active. A doc previously
+  // retracted/superseded/archived at this path would otherwise lend its stale
+  // lifecycle to the freshly-relocated live claim, so reactivate it. The source
+  // Document is left intact as audit — never auto-deleted (§6).
+  if (input.docPath && documentId !== assertion.documentId) {
+    const existing = await store.getDocument(documentId);
+    if (!existing) {
+      await store.putDocument({
+        id: documentId,
+        path: input.docPath,
+        lifecycle: "active",
+        edges: [],
+      });
+    } else if (existing.lifecycle !== "active") {
+      await store.putDocument({ ...existing, lifecycle: "active" });
+    }
+  }
 
   proposition.textCache = doc.confirmed;
   proposition.fingerprint = propositionFingerprint(doc.confirmed);

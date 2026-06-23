@@ -13,7 +13,12 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { exists } from "../src/fs.ts";
-import { type CheckReport, ClaimStore, Engine } from "../src/index.ts";
+import {
+  type CheckReport,
+  ClaimStore,
+  documentIdForPath,
+  Engine,
+} from "../src/index.ts";
 
 let dirs: string[] = [];
 async function tmp(): Promise<string> {
@@ -343,5 +348,104 @@ describe("regression guards (review fixes)", () => {
     const res = await engine.reanchor(rec.assertion.id);
     expect(res.doc).toBe("unchanged");
     expect((await engine.check()).verdicts[0]?.doc).toBe("unchanged");
+  });
+
+  test("reanchor --doc re-homes a claim onto a different file, preserving its identity (§9)", async () => {
+    const anchorRoot = await tmp();
+    await mkdir(join(anchorRoot, "src"), { recursive: true });
+    await mkdir(join(anchorRoot, "docs"), { recursive: true });
+    await writeFile(join(anchorRoot, "src/a.ts"), "export const A = 1;\n");
+    await writeFile(
+      join(anchorRoot, "wip.md"),
+      "# WIP\n\nThe A constant is one.\n",
+    );
+    await writeFile(
+      join(anchorRoot, "docs/a.md"),
+      "# A\n\nThe A constant is one.\n",
+    );
+    const engine = await Engine.init(anchorRoot);
+    const rec = await engine.record({
+      docPath: "wip.md",
+      docQuote: "The A constant is one",
+      code: [{ file: "src/a.ts", quote: "A = 1" }],
+      authoredTrust: "verified",
+      ref: "r",
+    });
+    const id = rec.assertion.id;
+    const beforeDocId = rec.assertion.documentId;
+
+    // Re-home the DOC side onto a different file; the code side is untouched.
+    const res = await engine.reanchor(id, {
+      doc: "docs/a.md",
+      docQuote: "The A constant is one",
+    });
+    expect(res.doc).toBe("unchanged");
+    expect(res.code).toBe("unchanged");
+
+    const moved = await engine.store.getAssertion(id);
+    expect(moved?.id).toBe(id); // same claim, not a fresh record
+    expect(moved?.documentId).not.toBe(beforeDocId); // documentId moved
+    expect(moved?.anchor.doc.file).toBe("docs/a.md");
+    expect(moved?.anchor.code[0]?.file).toBe("src/a.ts"); // code side intact
+
+    // Destination Document exists; the source is retained as audit (never deleted).
+    const paths = (await engine.store.allDocuments())
+      .map((dc) => dc.path)
+      .sort();
+    expect(paths).toContain("docs/a.md");
+    expect(paths).toContain("wip.md");
+
+    // Deleting the old file no longer orphans the claim — it lives on docs/a.md.
+    await rm(join(anchorRoot, "wip.md"));
+    const verdicts = (await engine.check()).verdicts;
+    expect(verdicts).toHaveLength(1);
+    expect(verdicts[0]?.doc).toBe("unchanged");
+  });
+
+  test("reanchor --doc onto a retracted destination reactivates it, so the relocated claim stays live (§9)", async () => {
+    const anchorRoot = await tmp();
+    await mkdir(join(anchorRoot, "src"), { recursive: true });
+    await mkdir(join(anchorRoot, "docs"), { recursive: true });
+    await writeFile(join(anchorRoot, "src/a.ts"), "export const A = 1;\n");
+    await writeFile(
+      join(anchorRoot, "wip.md"),
+      "# WIP\n\nThe A constant is one.\n",
+    );
+    await writeFile(
+      join(anchorRoot, "docs/a.md"),
+      "# A\n\nThe A constant is one.\n",
+    );
+    const engine = await Engine.init(anchorRoot);
+    const destId = documentIdForPath("docs/a.md");
+
+    // Seed docs/a.md as a Document, then retract it (author withdrew that doc).
+    await engine.record({
+      docPath: "docs/a.md",
+      docQuote: "The A constant is one",
+      code: [{ file: "src/a.ts", quote: "A = 1" }],
+      authoredTrust: "verified",
+      ref: "r",
+    });
+    await engine.retract("docs/a.md");
+    expect((await engine.store.getDocument(destId))?.lifecycle).toBe(
+      "retracted",
+    );
+
+    // A live claim on wip.md, relocated onto the previously-retracted docs/a.md.
+    const rec = await engine.record({
+      docPath: "wip.md",
+      docQuote: "The A constant is one",
+      code: [{ file: "src/a.ts", quote: "A = 1" }],
+      authoredTrust: "verified",
+      ref: "r",
+    });
+    await engine.reanchor(rec.assertion.id, {
+      doc: "docs/a.md",
+      docQuote: "The A constant is one",
+    });
+
+    // The destination is reactivated — the relocated claim must not inherit the
+    // stale `retracted` lifecycle and be reported as withdrawn.
+    expect((await engine.store.getDocument(destId))?.lifecycle).toBe("active");
   });
 });

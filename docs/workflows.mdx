@@ -93,6 +93,37 @@ filled in, the code side waiting. You promote the ones worth enforcing by pinnin
 code and re-anchoring, then `hibi check` to confirm. You've gone from unprotected docs
 to a tracked, gating store without writing a single anchor from scratch.
 
+When you (or an agent) already know the code that backs each sentence, author the whole
+set in one pass instead of one `record` per claim — no shell-quoting of verbatim spans:
+
+```sh
+hibi record --from-file claims.json   # a JSON array of claim specs; - reads stdin
+```
+
+Every spec is validated before any write, so a typo fails the batch loudly rather than
+half-recording it. See [`record --from-file`](/cli-reference#batch-authoring-from-file).
+
+## 5. Move a claim when its sentence changes files
+
+**The problem.** You split a doc in two, rename it, extract a section into its own page,
+or promote a draft into a permanent doc. The sentence a claim tracks now lives in a
+**different file** — but the claim still points at the old one.
+
+**The commands.**
+
+```sh
+hibi reanchor <claim-id> --doc docs/subsystems/retry.md \
+  --doc-quote "Retries are capped at 5 attempts"
+```
+
+**The payoff.** `--doc` re-homes the claim's doc anchor onto the new file, keeping the
+same claim id, owner, trust, history, and code side — it *moves* the claim, it doesn't
+retire-and-recreate it. The old file is left untouched as audit and no longer carries the
+claim, so you can delete it without orphaning anything. (`--code-file` does the same for
+the code side.) This is the generic primitive; it composes into any doc refactor —
+split, merge, rename, promote — and it is **not** [supersession](/lifecycle), which
+records a document-to-document edge rather than relocating a claim.
+
 ## Triage anytime
 
 Between those moments, one command answers "what's red right now?" without making you

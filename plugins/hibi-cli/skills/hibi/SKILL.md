@@ -114,14 +114,26 @@ hibi init
 hibi suggest --doc README.md
 ```
 
-`suggest` writes one `suggested` (advisory, never-gating) doc-side record per
-anchorable sentence, code side empty. For each one worth enforcing, pin its code and
-promote it:
+`suggest` is **doc-side only** — it proposes anchorable sentences and dedups them, but
+never finds the code (that's yours to point at). For each one worth enforcing, pin its
+code and promote it:
 
 ```sh
 hibi reanchor <claim-id> --code-file src/retry.ts --code-quote "5"
 hibi check        # confirm clean
 ```
+
+When you already know the code behind each sentence (e.g. you just read the source),
+skip the per-claim flags and author the whole set in one pass — a JSON array of specs,
+no shell-quoting of verbatim spans, validated before any write:
+
+```sh
+hibi record --from-file claims.json    # array of {doc, docQuote, codeFile, codeQuote, trust, …}; - = stdin
+```
+
+Each spec's keys mirror the flags in camelCase; `doc` + one doc-span key are required.
+Propositions still dedup by fingerprint, so the same sentence from two files shares one
+meaning. This is the low-friction path when an agent grounds many docs at once.
 
 ---
 
@@ -153,7 +165,7 @@ The common shapes:
 | `code:changed` | `null` | code changed on purpose? fix prose / retire. Still true? reanchor |
 | `doc:changed` | `null` | prose edited — **meaning may have inverted**; re-read the span and re-verify |
 | `doc:changed` + `code:changed` | `null` | both moved → **reconcile** doc vs code; don't auto-decide |
-| `*:orphaned` | `retire` | span deleted → retire/supersede (a bare reanchor can't resolve it) |
+| `*:orphaned` | `retire` | span gone from this file → if it **moved to another file**, `hibi reanchor <id> --doc <new>` (or `--code-file <new>`) relocates it; if truly deleted, retire/supersede |
 | `behavior:refuted` | `null` | a verifier failed → fix code or fix claim — **never reanchor** (it clears the gate without fixing the behavior) |
 | `behavior:at-risk` | `null` | reachable code changed → re-verify the behavior |
 | `+ expired` | (composed) | ttl passed → re-verify and re-record, on top of the above |
@@ -165,12 +177,26 @@ a specific, deterministic command rather than rewriting prose to quiet a flag.
 
 `hibi record` **always appends** a new assertion (it only dedupes the *proposition* by
 content fingerprint). It never updates the old one, so a stale assertion left behind
-keeps flagging forever. Two clean responses:
+keeps flagging forever. Three clean responses:
 
 - The claim still holds, its anchor is just stale → **`hibi reanchor <claim-id>`**.
+- The claim still holds but its sentence (or code) **moved to a different file** →
+  **`hibi reanchor <claim-id> --doc <new-file> --doc-quote "…"`** (and/or `--code-file
+  <new-file>`). This *relocates* the same claim — same id, owner, trust, history, and the
+  other side untouched — so you never retire-and-recreate across a doc split, rename,
+  extraction, or promotion. The old file is left intact as audit and no longer carries
+  the claim, so deleting it orphans nothing.
 - The claim is obsolete → **`hibi retire <claim-id>`** (flips `enforcement` to
-  `retired`, keeps the audit trail, idempotent). **Do not** hand-delete
-  `.claims/claims/<id>.json` — `retire` is the supported, reversible verb.
+  `retired`, keeps the audit trail, idempotent).
+
+**`retire` is terminal, and a retired claim is inert.** `check` ignores it entirely — it
+never gates, never warns, and never reports drift, even if the file it pointed at is
+later deleted (a retired-then-orphaned record is harmless audit, not a problem to fix).
+So **do not hand-delete `.claims/**`** to "clean up" retired records: there is nothing to
+clean — the records are already invisible to every verdict, and they are your audit
+trail. If you genuinely must remove a record (the rare exception — e.g. it captured a
+secret), `git rm` the file in a commit so history retains the trail; never live-edit the
+store. `retire` is the supported, reversible verb.
 
 For a whole document going out of service, use the lifecycle verbs (auditable
 banner/edge):
@@ -181,6 +207,11 @@ hibi supersede --new v2.md --old v1.md --type amends --propositions prop_abc,pro
 hibi retract --doc draft.md           # author withdrew it
 hibi archive  --doc old.md --successor new.md   # tombstone out of the read path
 ```
+
+These record a **document-to-document edge** and flip lifecycle — they do **not** move
+the claims anchored to the old doc. If those claims should *follow* to the new doc (e.g.
+you promoted a draft and will delete the old file), relocate each one with `hibi reanchor
+<id> --doc <new-file>` first; `supersede`/`archive` only mark the document.
 
 ## Recording a claim well
 
@@ -209,6 +240,10 @@ hibi record \
 - **Behavioral claims** (ordering/retry/complexity/…): `--claim-kind <k>` plus
   repeatable `--verifier kind:ref`. A passing verifier → `supported`; a failing one →
   `refuted`.
+- **Recording many at once?** Use `hibi record --from-file <p|->` with a JSON array of
+  specs instead of one `record` per claim — it dodges shell-quoting of verbatim spans and
+  validates every item before writing any. The lowest-friction path for grounding a doc
+  set (see "Onboard an existing repo fast").
 - **`--coarse` / `--glob`** anchor for blast-radius only; never graded as drift.
 
 Ask: *"If this code changed, should a reader re-check this sentence?"* If yes, anchor
