@@ -37,6 +37,11 @@ output in `references/cookbook.md`.)
    anchored to it — the contracts you must not silently break.
 4. **Onboarding a repo with docs but no claims?** `hibi init` then
    `hibi suggest --doc README.md` proposes anchorable claims so you don't hand-author them.
+5. **About to delete, rename, split, or merge a doc that has claims?** Enumerate them
+   first — `hibi query --path <doc>` lists every claim anchored to it. Relocate the
+   survivors and retire the rest *before* you `rm` the file ("Deleting, renaming, or
+   consolidating a doc" below), so the deletion orphans nothing. The claims are content;
+   migrate them in the same change as the prose.
 
 To triage at any time, `hibi list --state gating` is the lean "what's red?" view.
 
@@ -106,6 +111,10 @@ Each hit is a claim anchored to that path, with its `assertion.id`, the document
 `proposition.textCache`, and which `side` matched. These are the contracts riding on
 the file. Note the ids: after your edit you'll `reanchor` the ones still true and
 `retire` the ones now wrong — no round-trip to rediscover them.
+
+`--path` is **side-agnostic**: point it at a **doc** (`hibi query --path docs/design.md`)
+and the hits are the claims that *live on* that doc (`side: "doc"`) — the exact set you
+must relocate or retire before you delete, rename, or consolidate it (next section).
 
 ### 4. Onboard an existing repo fast
 
@@ -213,6 +222,37 @@ the claims anchored to the old doc. If those claims should *follow* to the new d
 you promoted a draft and will delete the old file), relocate each one with `hibi reanchor
 <id> --doc <new-file>` first; `supersede`/`archive` only mark the document.
 
+## Deleting, renaming, or consolidating a doc
+
+The most-missed workflow. When a doc with claims is removed, renamed, split, or folded
+into another file, **its claims are content** — migrate them in the *same change* as the
+prose, in this order. **Relocate before you `rm`:**
+
+1. **Enumerate** the claims on the doomed doc — `hibi query --path <old-doc>` lists every
+   one (`side: "doc"` hits) with its `assertion.id`. Read the count; don't guess it.
+2. **Resolve each** — loop over the ids (many is *normal*, not a reason to defer or
+   abandon the set):
+   - the proposition survives in the new doc → `hibi reanchor <id> --doc <new-doc>
+     --doc-quote "<span in new doc>"`. This relocates the **same** claim — id, owner,
+     trust, history intact — and re-homes its `documentId`. Promote it with `--enforce`
+     if it should now gate.
+   - obsolete → `hibi retire <id>`.
+3. **Mark the document** — `hibi supersede --new <new-doc> --old <old-doc> --type
+   supersedes` (or `archive`/`retract`). This records the doc-to-doc edge **but moves no
+   claims** — step 2 is what moves them.
+4. **Now delete the file.** Every claim already lives on the new doc or is retired, so the
+   `rm` orphans nothing.
+
+> **Don't author fresh claims for propositions that already exist on a doc you're
+> retiring** — that duplicates the record and discards the original's id, trust, and
+> history. Relocate the existing claim instead.
+
+**Orphaned is not retired.** Skip step 2 and the claims become `*:orphaned`: a non-enforced
+orphan happens not to gate, but it is **dead cruft pointing at a file that no longer
+exists** — not the intended audit trail (that's what `retire` leaves). The only clean
+terminal states are *relocated* (still true) or *retired* (obsolete) — never *orphaned by
+a deletion you could have handled in the same change*.
+
 ## Recording a claim well
 
 A good claim is a **falsifiable sentence about code behavior**, anchored to the
@@ -232,6 +272,10 @@ hibi record \
   several selectors matching, so a changed value can grade `code:moved` instead of
   `code:changed` — and only `changed`/`orphaned`/`ambiguous` gate.
 - The quote must appear **verbatim** at record time, or `record` fails.
+- **Confirm the anchor is load-bearing.** After recording an `enforced` claim, perturb the
+  anchored token (e.g. flip the value), run `hibi check` — it should exit **2** — then
+  revert. A claim that *doesn't* flip the gate is anchored to the wrong span and protects
+  nothing.
 - **`--trust`**: `verified` (you checked it; requires a precise anchor + a ref hibi
   fills from the current commit) · `inferred` (default) · `assumed`.
 - **Only `enforced` claims gate.** `--enforce` forces it; else the engine derives
@@ -289,8 +333,9 @@ own that policy.
 
 ## Going deeper
 
-- **`references/cookbook.md`** — the four workflows as full worked examples with real
-  captured JSON (concise *and* `--explain`) and how to read each verdict.
+- **`references/cookbook.md`** — the workflows as full worked examples with real
+  captured JSON (concise *and* `--explain`), the doc-consolidation playbook, and how to
+  read each verdict.
 - **`references/cli-reference.md`** — every command, all flags, the concise vs
   `--explain` JSON shapes, the `remediation` block, `schemaVersion`, `--no-hints` /
   `HIBI_ADVICE`, exit-code edge cases, and store layout.

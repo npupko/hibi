@@ -1,4 +1,4 @@
-# hibi cookbook — four worked workflows
+# hibi cookbook — worked workflows
 
 One section per *moment* you reach for hibi: when to use it, the command, the real
 output, and how to act. JSON is shown `--json --pretty` for readability; piped
@@ -235,3 +235,61 @@ $ hibi retire asrt_897e054b48d040db
 
 A retired claim no longer gates; `retire` is idempotent (`alreadyRetired: true` on a
 second call).
+
+---
+
+## 5. Consolidate or delete a doc without orphaning its claims
+
+**When** — you're folding `design-v1.md` into `design-v2.md` and deleting the old file
+(a rename, split, or merge is the same shape). The claims anchored to the old doc are
+content; they must move with it or the deletion strands them.
+
+**Run** — first enumerate what lives on the doomed doc: `hibi query --path design-v1.md`
+
+```json
+{
+  "ok": true, "action": "query", "schemaVersion": "v1",
+  "path": "design-v1.md", "count": 2,
+  "hits": [
+    { "assertion": { "id": "asrt_a1b2…", "enforcement": "enforced" },
+      "proposition": { "textCache": "Retries are capped at 5 attempts." },
+      "documentPath": "design-v1.md", "coarse": false, "side": "doc" },
+    { "assertion": { "id": "asrt_c3d4…", "enforcement": "enforced" },
+      "proposition": { "textCache": "Tokens expire after 30 minutes." },
+      "documentPath": "design-v1.md", "coarse": false, "side": "doc" }
+  ]
+}
+```
+
+`side: "doc"` confirms these are claims *on* the doc (not code that the doc describes).
+Two ids to resolve — read the count, don't guess it.
+
+**Act** — relocate each survivor to the new doc, retire the obsolete, then mark the doc.
+The relocation re-homes the *same* claim (id, owner, trust, history intact):
+
+```sh
+# the retry sentence survived verbatim in design-v2.md → relocate it
+hibi reanchor asrt_a1b2… --doc design-v2.md --doc-quote "Retries are capped at 5 attempts."
+# the 30-minute TTL was cut from the new design → retire it
+hibi retire asrt_c3d4…
+# record the document-to-document edge (moves no claims — the steps above did that)
+hibi supersede --new design-v2.md --old design-v1.md --type supersedes
+# only now is it safe to delete the old file — nothing is left anchored to it
+rm design-v1.md
+hibi check        # exit 0 — no orphans
+```
+
+`reanchor` settles the relocated claim to `doc: unchanged` against the new file:
+
+```json
+{ "ok": true, "action": "reanchor", "schemaVersion": "v1",
+  "claimId": "asrt_a1b2…", "doc": "unchanged", "code": "unchanged",
+  "next": "hibi check" }
+```
+
+**The trap to avoid:** skipping the `reanchor`/`retire` step and deleting `design-v1.md`
+anyway. The claims become `doc:orphaned` — and a non-enforced orphan *looks* harmless
+(it won't gate) but it's dead cruft pointing at a deleted file, not an audit trail.
+Equally wrong: hand-authoring brand-new claims on `design-v2.md` for propositions that
+already existed on `design-v1.md` — that duplicates the record and drops its history.
+Relocate; don't re-create.
