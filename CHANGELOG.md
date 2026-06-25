@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/npupko/hibi/compare/v0.2.2...v0.2.3) (2026-06-25)
+
+
+### Features
+
+* harden against silent-orphan failures ([#27](https://github.com/npupko/hibi/issues/27)) ([251582f](https://github.com/npupko/hibi/commit/251582fb45e1ddb32b9e87dd3e3d7a37758c0f1c))
+
 ## [0.2.2](https://github.com/npupko/hibi/compare/v0.2.1...v0.2.2) (2026-06-23)
 
 
