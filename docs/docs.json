@@ -1,17 +1,18 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "luma",
+  "theme": "mint",
   "name": "Hibi",
   "description": "Catch documentation that no longer matches your code.",
   "colors": {
-    "primary": "#04dc83",
-    "light": "#040404",
-    "dark": "#0c3454"
+    "primary": "#D6452F",
+    "light": "#E97A66",
+    "dark": "#B83A28"
   },
-  "favicon": "https://media.brand.dev/caf44685-1600-4f0b-979f-9c708c9024ef.png",
+  "favicon": "/favicon.ico",
   "logo": {
-    "light": "https://media.brand.dev/b79baf67-627e-484d-a1e3-8e0f77c9036f.svg",
-    "dark": "https://media.brand.dev/b79baf67-627e-484d-a1e3-8e0f77c9036f.svg"
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png",
+    "href": "https://github.com/npupko/hibi"
   },
   "contextual": {
     "options": ["copy", "view", "chatgpt", "claude", "mcp"]
@@ -59,13 +60,19 @@
       }
     ],
     "primary": {
-      "type": "github",
-      "href": "https://github.com/npupko/hibi"
+      "type": "button",
+      "label": "Get started",
+      "href": "/quickstart"
     }
   },
   "footer": {
     "socials": {
       "github": "https://github.com/npupko/hibi"
+    }
+  },
+  "seo": {
+    "metatags": {
+      "og:image": "/logo/og.png"
     }
   }
 }
