@@ -6,19 +6,20 @@
  * An old document can legitimately receive both supersession and code-drift.
  */
 
-import type { Document, Edge } from "../core/model.ts";
+import type { Assertion, Document, Edge } from "../core/model.ts";
 import type { ClaimStore } from "../store/store.ts";
 import { documentIdForPath } from "./record.ts";
 
 async function upsertDocument(
   store: ClaimStore,
   path: string,
+  dryRun = false,
 ): Promise<Document> {
   const id = documentIdForPath(path);
   let doc = await store.getDocument(id);
   if (!doc) {
     doc = { id, path, lifecycle: "active", edges: [] };
-    await store.putDocument(doc);
+    if (!dryRun) await store.putDocument(doc);
   }
   return doc;
 }
@@ -35,19 +36,50 @@ export interface SupersedeInput {
   type: "supersedes" | "amends";
   /** Required for `amends`: the proposition ids being amended. */
   propositions?: string[];
+  /** Preview only: compute edges + stranded claims without persisting (§9 `--dry-run`). */
+  dryRun?: boolean;
 }
 
 export interface SupersedeResult {
   newDoc: Document;
   oldDoc: Document;
+  /**
+   * Live claim ids still anchored to the *old* document after this op — they are
+   * stranded on a document that has left the read path and will quietly rot
+   * unless relocated. Reported, never auto-fixed: the remedy is `hibi relocate`
+   * (Tier-1 silent-orphan hardening).
+   */
+  strandedClaims: string[];
+}
+
+/**
+ * The single stranding predicate (§6 silent-orphan hardening): a claim is
+ * stranded on a document that has left the read path when it still names that
+ * `documentId` and has not been retired. `retired` claims are withdrawn and
+ * excluded — they are inert by design and need no relocation. Shared by every
+ * lifecycle op and by `relocate`, so "what counts as live/stranded" is defined
+ * exactly once.
+ */
+export function isLiveClaimOn(a: Assertion, docId: string): boolean {
+  return a.documentId === docId && a.enforcement !== "retired";
+}
+
+/** Live claim ids still anchored to a document — the id-only stranding probe. */
+export async function liveClaimsOnDocument(
+  store: ClaimStore,
+  docId: string,
+): Promise<string[]> {
+  return (await store.allAssertions())
+    .filter((a) => isLiveClaimOn(a, docId))
+    .map((a) => a.id);
 }
 
 export async function supersede(
   store: ClaimStore,
   input: SupersedeInput,
 ): Promise<SupersedeResult> {
-  const newDoc = await upsertDocument(store, input.newDocPath);
-  const oldDoc = await upsertDocument(store, input.oldDocPath);
+  const newDoc = await upsertDocument(store, input.newDocPath, input.dryRun);
+  const oldDoc = await upsertDocument(store, input.oldDocPath, input.dryRun);
 
   if (input.type === "supersedes") {
     const forward: Edge = {
@@ -85,20 +117,32 @@ export async function supersede(
     if (oldDoc.lifecycle === "active") oldDoc.lifecycle = "amended";
   }
 
-  await store.putDocument(newDoc);
-  await store.putDocument(oldDoc);
-  return { newDoc, oldDoc };
+  if (!input.dryRun) {
+    await store.putDocument(newDoc);
+    await store.putDocument(oldDoc);
+  }
+  const strandedClaims = await liveClaimsOnDocument(store, oldDoc.id);
+  return { newDoc, oldDoc, strandedClaims };
+}
+
+export interface RetractResult {
+  document: Document;
+  /** Live claim ids still anchored to the retracted document (see SupersedeResult). */
+  strandedClaims: string[];
 }
 
 /** Mark a document retracted — the author withdrew it (§10). */
 export async function retract(
   store: ClaimStore,
   docPath: string,
-): Promise<Document> {
-  const doc = await upsertDocument(store, docPath);
+  opts: { dryRun?: boolean } = {},
+): Promise<RetractResult> {
+  const doc = await upsertDocument(store, docPath, opts.dryRun);
   doc.lifecycle = "retracted";
-  await store.putDocument(doc);
-  return doc;
+  // --dry-run: report the would-retract result + stranded claims without writing.
+  if (!opts.dryRun) await store.putDocument(doc);
+  const strandedClaims = await liveClaimsOnDocument(store, doc.id);
+  return { document: doc, strandedClaims };
 }
 
 /** Set of proposition ids amended within a document (from derived edges). */

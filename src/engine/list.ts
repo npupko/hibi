@@ -15,8 +15,19 @@ import { worstStatus } from "./check.ts";
 /** The triage severity buckets, matching the `check` summary vocabulary. */
 export type ListSeverity = "gating" | "warning" | "clean";
 
-/** Which claims to include. `all` (default) lists every tracked claim. */
-export type ListState = "all" | "gating" | "warning" | "clean";
+/**
+ * Which claims to include. `all` (default) lists every tracked claim; the
+ * severity buckets (`gating`/`warning`/`clean`) filter by `check` severity; the
+ * two health filters cut across severity — `orphaned` selects claims with an
+ * un-relocatable side, `suggested` selects non-gating advisory claims.
+ */
+export type ListState =
+  | "all"
+  | "gating"
+  | "warning"
+  | "clean"
+  | "orphaned"
+  | "suggested";
 
 /** One lean triage row — decision fields + the handles for the next command. */
 export interface ListRow {
@@ -45,6 +56,32 @@ function severityOf(
   if (v.gates) return "gating";
   if (isWarnVerdict(v, enforcement)) return "warning";
   return "clean";
+}
+
+/**
+ * Does this row match the requested `state`? The severity buckets compare against
+ * the computed severity; the two health filters cut across it — `orphaned` keys
+ * off an un-relocatable side from the live verdict, `suggested` off the authored
+ * enforcement (a `retired` claim carries enforcement `retired`, so it is
+ * naturally excluded from `suggested`).
+ */
+function matchesState(
+  state: ListState,
+  v: Verdict,
+  enforcement: Assertion["enforcement"],
+  severity: ListSeverity,
+): boolean {
+  if (state === "all") return true;
+  // A retired claim is withdrawn — never surface it as an actionable orphan, or
+  // the `--state orphaned --ids-only | retire` cleanup loop never drains (retire
+  // flips enforcement but leaves the orphaned anchor in place).
+  if (state === "orphaned")
+    return (
+      enforcement !== "retired" &&
+      (v.doc === "orphaned" || v.code === "orphaned")
+    );
+  if (state === "suggested") return enforcement === "suggested";
+  return severity === state;
 }
 
 /** Lifecycle status tags a document carries (for the worst-status string). */
@@ -100,7 +137,7 @@ export function toListRows(
     const retired = enforcement === "retired";
 
     const severity = retired ? "clean" : severityOf(v, enforcement);
-    if (state !== "all" && severity !== state) continue;
+    if (!matchesState(state, v, enforcement, severity)) continue;
 
     // A retired claim is withdrawn — report it as such, never as live drift.
     const status = retired

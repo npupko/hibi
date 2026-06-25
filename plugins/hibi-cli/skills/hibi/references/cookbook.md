@@ -264,32 +264,141 @@ content; they must move with it or the deletion strands them.
 `side: "doc"` confirms these are claims *on* the doc (not code that the doc describes).
 Two ids to resolve — read the count, don't guess it.
 
-**Act** — relocate each survivor to the new doc, retire the obsolete, then mark the doc.
-The relocation re-homes the *same* claim (id, owner, trust, history intact):
+**Act** — batch-relocate every live claim onto the new doc in one pass. `relocate`
+re-homes each claim whose documented sentence appears **verbatim** in `--to`, and
+reports the rest as `misses` (never silently dropped):
+
+```json
+$ hibi relocate --from design-v1.md --to design-v2.md
+{
+  "ok": true, "action": "relocate", "schemaVersion": "v1",
+  "from": "design-v1.md", "to": "design-v2.md",
+  "relocated": [
+    { "claimId": "asrt_a1b2…", "doc": "design-v2.md", "code": "src/retry.ts" }
+  ],
+  "misses": [
+    { "claimId": "asrt_c3d4…", "reason": "sentence not found verbatim in design-v2.md" }
+  ],
+  "next": "hibi reanchor or retire the 1 missed claim, then hibi supersede"
+}
+```
+
+The retry sentence carried over verbatim → moved (same id, code side, trust, history;
+only `documentId` changed). The 30-minute TTL was reworded or cut in the new design, so
+it's a **miss** — `relocate` left it on the old doc rather than guess. **Handle each
+miss by hand:** here the TTL was dropped, so retire it (had it merely been reworded, you'd
+`hibi reanchor asrt_c3d4… --doc design-v2.md --doc-quote "<new wording>"` instead):
 
 ```sh
-# the retry sentence survived verbatim in design-v2.md → relocate it
-hibi reanchor asrt_a1b2… --doc design-v2.md --doc-quote "Retries are capped at 5 attempts."
-# the 30-minute TTL was cut from the new design → retire it
 hibi retire asrt_c3d4…
-# record the document-to-document edge (moves no claims — the steps above did that)
+# the document edge — now reports an empty strandedClaims, so the doc is clear to delete
 hibi supersede --new design-v2.md --old design-v1.md --type supersedes
 # only now is it safe to delete the old file — nothing is left anchored to it
 rm design-v1.md
 hibi check        # exit 0 — no orphans
 ```
 
-`reanchor` settles the relocated claim to `doc: unchanged` against the new file:
+`supersede` confirms nothing was left behind — `strandedClaims` is empty because
+`relocate` + `retire` cleared the old doc. Had you skipped them, it would list the live
+ids and point `next` at `hibi relocate --from design-v1.md --to design-v2.md`:
 
 ```json
-{ "ok": true, "action": "reanchor", "schemaVersion": "v1",
-  "claimId": "asrt_a1b2…", "doc": "unchanged", "code": "unchanged",
-  "next": "hibi check" }
+{ "ok": true, "action": "supersede", "schemaVersion": "v1",
+  "edge": { "from": "design-v1.md", "to": "design-v2.md", "type": "supersedes" },
+  "strandedClaims": [], "next": "hibi check" }
 ```
 
-**The trap to avoid:** skipping the `reanchor`/`retire` step and deleting `design-v1.md`
-anyway. The claims become `doc:orphaned` — and a non-enforced orphan *looks* harmless
-(it won't gate) but it's dead cruft pointing at a deleted file, not an audit trail.
-Equally wrong: hand-authoring brand-new claims on `design-v2.md` for propositions that
-already existed on `design-v1.md` — that duplicates the record and drops its history.
-Relocate; don't re-create.
+**The trap to avoid:** skipping `relocate`/`retire` and deleting `design-v1.md` anyway.
+The claims become `doc:orphaned` — and a non-enforced orphan *looks* harmless (it won't
+gate) but it's dead cruft pointing at a deleted file, not an audit trail. Equally wrong:
+hand-authoring brand-new claims on `design-v2.md` for propositions that already existed
+on `design-v1.md` — that duplicates the record and drops its history. Relocate; don't
+re-create.
+
+---
+
+## 6. Store-health triage with `hibi doctor`
+
+**When** — periodically, or before a cleanup pass: you want the dead state `check`
+can't show. `check` only grades *live* claims against the *current* tree; `doctor`
+sweeps the whole store for accumulated cruft. It is **purely informational and always
+exits 0** — safe to run unconditionally.
+
+**Run** — `hibi doctor`
+
+**Setup** — `design-v1.md` was superseded but one live claim was never relocated; a
+`suggest`-created claim never got a code pin; and a sentence was recorded twice.
+
+```json
+{
+  "ok": true, "action": "doctor", "schemaVersion": "v1",
+  "healthy": false,
+  "counts": { "orphanedAnchors": 1, "suggestedNoCode": 1, "staleDocClaims": 1, "duplicatePropositions": 1 },
+  "orphanedAnchors":     [{ "claimId": "asrt_77aa…", "side": "code", "path": "src/old.ts" }],
+  "suggestedNoCode":     [{ "claimId": "asrt_db44…", "docPath": "README.md" }],
+  "staleDocClaims":      [{ "claimId": "asrt_c3d4…", "docPath": "design-v1.md", "lifecycle": "superseded" }],
+  "duplicatePropositions": [
+    { "fingerprint": "cfe0afc35172d4af", "propositionIds": ["prop_d618…"], "claimIds": ["asrt_897e…", "asrt_63f3…"] }
+  ],
+  "next": "hibi list --state orphaned"
+}
+```
+
+Exit code **0** (always — `doctor` never gates).
+
+**Act** — work the categories, top of `next` first:
+
+- `orphanedAnchors` → the side stopped resolving; relocate it (`reanchor … --code-file
+  <new>`) if it moved, or `retire` if the code's gone.
+- `suggestedNoCode` → a `suggest` record awaiting a code pin: `reanchor … --code-file …
+  --code-quote …` (and `--enforce` to gate), or `retire` if it'll never be backed.
+- `staleDocClaims` → live claims on a superseded/retracted/archived doc — exactly what
+  the lifecycle verbs leave behind; `hibi relocate --from design-v1.md --to design-v2.md`
+  re-homes them.
+- `duplicatePropositions` → the same sentence claimed twice; `retire` the redundant id.
+
+`healthy: false` says the store has work; an all-zero `counts` with `healthy: true` is a
+clean store.
+
+---
+
+## 7. Preview a bulk change with `--dry-run`
+
+**When** — you're about to reanchor (or relocate/retire/supersede) many claims at once
+and want to see the outcome before any write. `--dry-run` runs the full resolution and
+returns the *would-be* result, but writes nothing.
+
+**Run** — preview, loop, then apply. Drive the loop off `--ids-only` (bare,
+newline-delimited claim ids — no JSON to parse):
+
+```sh
+# what's orphaned? — bare ids, ready for a shell loop
+$ hibi list --state orphaned --ids-only
+asrt_a1b2c3d4e5f60718
+asrt_99887766aabbccdd
+
+# preview the reanchor for each before touching the store
+$ hibi reanchor asrt_a1b2c3d4e5f60718 --doc design-v2.md \
+    --doc-quote "Retries are capped at 5 attempts." --dry-run
+{ "ok": true, "action": "reanchor", "schemaVersion": "v1",
+  "dryRun": true,
+  "claimId": "asrt_a1b2…", "doc": "unchanged", "code": "unchanged",
+  "next": "re-run without --dry-run to apply" }
+```
+
+`dryRun: true` and the `next: "re-run without --dry-run to apply"` mark it as a preview —
+the store is untouched. The verdict (`doc: unchanged`) is the real result you'd get, so
+you can confirm the new span resolves cleanly before committing to it.
+
+**Act** — once the previews look right, replay without `--dry-run` (the same `--ids-only`
+loop applies the change for real):
+
+```sh
+for id in $(hibi list --state orphaned --ids-only); do
+  hibi reanchor "$id" --doc design-v2.md --doc-quote "…"   # add the matching span per id
+done
+hibi check
+```
+
+`--dry-run` is available on `reanchor`, `retire`, `supersede`, and `relocate` — the
+write verbs — so any bulk migration can be rehearsed before it lands.

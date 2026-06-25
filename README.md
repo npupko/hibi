@@ -51,7 +51,9 @@ hibi query --path src/retry.ts  # before editing: which claims cover this file?
 hibi suggest --doc README.md    # propose anchorable claims from a doc (suggested records)
 hibi reanchor <claim-id> --doc-quote "…" --code-file src/retry.ts  # re-resolve a claim
 hibi reanchor <claim-id> --doc docs/retry.md --doc-quote "…"  # relocate it to another file
+hibi relocate --from v1.md --to v2.md  # batch-move every live claim from one doc to another
 hibi supersede --new v2.md --old v1.md --type supersedes
+hibi doctor                     # store-health report (orphans, stale, duplicates; always exits 0)
 hibi status                     # repo-wide document health overview
 hibi status --doc README.md     # is this one doc still current?
 ```

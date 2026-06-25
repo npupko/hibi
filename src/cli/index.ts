@@ -2,9 +2,10 @@
 import { isAbsolute, join } from "node:path";
 /**
  * The Hibi CLI (§9) — JSON-first, quiet by default; the consumer is a machine.
- * Verbs: init · record · check · diff · status · query · supersede · retract ·
- * archive · suggest · reanchor · schema · version · help. Exit codes follow the
- * §9 two-axis contract (0 clean · 2 gating · 3 moved/at-risk warning · 1 error).
+ * Verbs: init · record · check · diff · status · query · list · supersede ·
+ * retract · archive · relocate · doctor · suggest · reanchor · retire · schema ·
+ * version · help. Exit codes follow the §9 two-axis contract (0 clean · 2 gating
+ * · 3 moved/at-risk warning · 1 error); `doctor` is purely informational (always 0).
  *
  * This is a thin *imperative shell*: it parses argv, resolves the environment
  * (git ref / blame / changed-files) into plain values, delegates to the `Engine`
@@ -51,6 +52,22 @@ function out(value: unknown, pretty: boolean): void {
 }
 function jsonReplacer(_k: string, v: unknown) {
   return typeof v === "bigint" ? v.toString() : v;
+}
+
+/**
+ * `--ids-only` (§9 query/list): a bare, de-duplicated, newline-delimited list of
+ * claim ids on stdout — mode-independent, for `for id in $(hibi … --ids-only)`
+ * shell loops. Bypasses `emit` entirely (no JSON envelope, no human rendering).
+ */
+function emitIds(ids: string[]): void {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of ids) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  if (out.length > 0) process.stdout.write(`${out.join("\n")}\n`);
 }
 
 /** True when the resolved mode wants a human (non-JSON) rendering. */
@@ -320,8 +337,9 @@ async function main(argv: string[]): Promise<number> {
       explain: { type: "boolean", default: false },
       detailed: { type: "boolean", default: false },
       "no-hints": { type: "boolean", default: false },
-      // list
+      // list / query
       state: { type: "string" },
+      "ids-only": { type: "boolean", default: false },
       // record / reanchor — doc side (span-first)
       doc: { type: "string" },
       "doc-quote": { type: "string" },
@@ -360,6 +378,11 @@ async function main(argv: string[]): Promise<number> {
       type: { type: "string" },
       propositions: { type: "string" },
       successor: { type: "string" },
+      // relocate (batch re-home of stranded claims; neither collides with from-file)
+      from: { type: "string" },
+      to: { type: "string" },
+      // lifecycle / reanchor / relocate — preview without writing
+      "dry-run": { type: "boolean", default: false },
       // schema
       name: { type: "string" },
     },
@@ -584,13 +607,23 @@ async function main(argv: string[]): Promise<number> {
 
       try {
         const result = await engine.record(call);
+        // A `suggested` claim is advisory — it never gates. Surface that, plus a
+        // duplicate-proposition hint when the same proposition is already claimed.
+        const suggestedWarning =
+          result.assertion.enforcement === "suggested"
+            ? "recorded as suggested — won't gate the build; pass --enforce to make it gating"
+            : undefined;
         const value = {
           ok: true,
           action: "record",
           schemaVersion: SCHEMA_VERSION,
           ...result,
           claimId: result.assertion.id,
-          next: "hibi check",
+          ...(suggestedWarning ? { warning: suggestedWarning } : {}),
+          next:
+            result.existingClaims.length > 0
+              ? "this proposition is already claimed — did you mean `hibi reanchor`?"
+              : "hibi check",
         };
         await emit(mode, value, () =>
           misc.renderRecord(result, String(values.trust), style, mode),
@@ -712,6 +745,10 @@ async function main(argv: string[]): Promise<number> {
       const engine = await open();
       if (!values.path) return fail("query requires --path", mode);
       const hits = await engine.query(values.path as string);
+      if (values["ids-only"]) {
+        emitIds(hits.map((h) => h.assertion.id));
+        return 0;
+      }
       const value = {
         ok: true,
         action: "query",
@@ -777,6 +814,7 @@ async function main(argv: string[]): Promise<number> {
           coarse: Boolean(values.coarse),
         });
       }
+      const dryRun = Boolean(values["dry-run"]);
       try {
         const result = await engine.reanchor(claimId, {
           doc: values.doc as string | undefined,
@@ -784,6 +822,7 @@ async function main(argv: string[]): Promise<number> {
           docRange: docRangeOf(docSpec),
           code: code.length > 0 ? code : undefined,
           ref: values.ref as string | undefined,
+          dryRun,
         });
         const value = {
           ok: true,
@@ -791,9 +830,13 @@ async function main(argv: string[]): Promise<number> {
           schemaVersion: SCHEMA_VERSION,
           ...result,
           claimId: result.assertion.id,
-          next: "hibi check",
+          ...(dryRun
+            ? { dryRun: true, next: "re-run without --dry-run to apply" }
+            : { next: "hibi check" }),
         };
-        await emit(mode, value, () => misc.renderReanchor(result, style, mode));
+        await emit(mode, value, () =>
+          misc.renderReanchor(result, style, mode, dryRun),
+        );
         return 0;
       } catch (e) {
         return fail((e as Error).message, mode);
@@ -808,6 +851,7 @@ async function main(argv: string[]): Promise<number> {
           mode,
         );
       }
+      const dryRun = Boolean(values["dry-run"]);
       try {
         const result = await engine.supersede({
           newDocPath: values.new as string,
@@ -818,16 +862,34 @@ async function main(argv: string[]): Promise<number> {
                 .split(",")
                 .map((s) => s.trim())
             : undefined,
+          dryRun,
         });
+        // Stranded live claims still anchor the old doc — point at relocation
+        // rather than letting them quietly rot (Tier-1 silent-orphan hardening).
+        const stranded = result.strandedClaims.length > 0;
         const value = {
           ok: true,
           action: "supersede",
           schemaVersion: SCHEMA_VERSION,
           ...result,
-          next: "hibi check",
+          ...(dryRun ? { dryRun: true } : {}),
+          next: dryRun
+            ? "re-run without --dry-run to apply"
+            : stranded
+              ? misc.supersedeRelocateHint(
+                  String(values.old),
+                  String(values.new),
+                )
+              : "hibi check",
         };
         await emit(mode, value, () =>
-          misc.renderSupersede(result, String(values.type), style, mode),
+          misc.renderSupersede(
+            result,
+            String(values.type),
+            style,
+            mode,
+            dryRun,
+          ),
         );
         return 0;
       } catch (e) {
@@ -838,33 +900,118 @@ async function main(argv: string[]): Promise<number> {
     case "retract": {
       const engine = await open();
       if (!values.doc) return fail("retract requires --doc", mode);
-      const doc = await engine.retract(values.doc as string);
+      const dryRun = Boolean(values["dry-run"]);
+      const result = await engine.retract(values.doc as string, { dryRun });
+      const stranded = result.strandedClaims.length > 0;
       const value = {
         ok: true,
         action: "retract",
         schemaVersion: SCHEMA_VERSION,
-        document: doc,
-        next: "hibi check",
+        ...result,
+        ...(dryRun ? { dryRun: true } : {}),
+        // A retract has no successor doc, so the relocation target is the
+        // author's call — offer the shape and the retire alternative.
+        next: dryRun
+          ? "re-run without --dry-run to apply"
+          : stranded
+            ? misc.retractRelocateHint(String(values.doc))
+            : "hibi check",
       };
-      await emit(mode, value, () => misc.renderRetract(doc, style, mode));
+      await emit(mode, value, () =>
+        misc.renderRetract(result, style, mode, dryRun),
+      );
       return 0;
     }
 
     case "archive": {
       const engine = await open();
       if (!values.doc) return fail("archive requires --doc", mode);
+      const dryRun = Boolean(values["dry-run"]);
       const result = await engine.archive(
         values.doc as string,
         values.successor as string | undefined,
+        { dryRun },
       );
+      const stranded = result.strandedClaims.length > 0;
       const value = {
         ok: true,
         action: "archive",
         schemaVersion: SCHEMA_VERSION,
         ...result,
-        next: "hibi check",
+        ...(dryRun ? { dryRun: true } : {}),
+        next: dryRun
+          ? "re-run without --dry-run to apply"
+          : stranded
+            ? misc.archiveRelocateHint(
+                String(values.doc),
+                values.successor as string | undefined,
+              )
+            : "hibi check",
       };
-      await emit(mode, value, () => misc.renderArchive(result, style, mode));
+      await emit(mode, value, () =>
+        misc.renderArchive(result, style, mode, dryRun),
+      );
+      return 0;
+    }
+
+    case "relocate": {
+      const engine = await open();
+      if (!values.from || !values.to) {
+        return fail(
+          "relocate requires --from <oldDoc> and --to <newDoc>",
+          mode,
+        );
+      }
+      const dryRun = Boolean(values["dry-run"]);
+      try {
+        const result = await engine.relocate(
+          values.from as string,
+          values.to as string,
+          { dryRun, ref: values.ref as string | undefined },
+        );
+        const value = {
+          ok: true,
+          action: "relocate",
+          schemaVersion: SCHEMA_VERSION,
+          ...result,
+          next: dryRun ? "re-run without --dry-run to apply" : "hibi check",
+        };
+        await emit(mode, value, () => misc.renderRelocate(result, style, mode));
+        return 0;
+      } catch (e) {
+        return fail((e as Error).message, mode);
+      }
+    }
+
+    case "doctor": {
+      const engine = await open();
+      const report = await engine.doctor({
+        ref: await currentRef(anchorRoot),
+      });
+      // Route the `next` hint to the most pressing non-empty category. The
+      // relocate hint reuses the single-sourced builder so the flag names can
+      // never drift from the lifecycle ops' hints. Duplicate propositions are
+      // collapsed by *retiring* the redundant claim (reanchor recomputes the same
+      // fingerprint, so it does not merge them).
+      const next =
+        report.counts.orphanedAnchors > 0
+          ? "hibi list --state orphaned"
+          : report.counts.staleDocClaims > 0
+            ? misc.supersedeRelocateHint("<oldDoc>", "<newDoc>")
+            : report.counts.suggestedNoCode > 0
+              ? "hibi list --state suggested"
+              : report.counts.duplicatePropositions > 0
+                ? "hibi retire <id>  # drop a duplicate-proposition claim"
+                : "store is healthy";
+      const value = {
+        ok: true,
+        action: "doctor",
+        schemaVersion: SCHEMA_VERSION,
+        ...report,
+        next,
+      };
+      await emit(mode, value, () => misc.renderDoctor(report, style, mode));
+      // Purely informational — `doctor` never gates (locked user decision).
       return 0;
     }
 
@@ -873,17 +1020,22 @@ async function main(argv: string[]): Promise<number> {
       const claimId = positionals[0];
       if (!claimId)
         return fail("retire requires a <claim-id> positional", mode);
+      const dryRun = Boolean(values["dry-run"]);
       try {
-        const result = await engine.retire(claimId);
+        const result = await engine.retire(claimId, { dryRun });
         const value = {
           ok: true,
           action: "retire",
           schemaVersion: SCHEMA_VERSION,
           ...result,
           claimId: result.assertion.id,
-          next: "hibi check",
+          ...(dryRun
+            ? { dryRun: true, next: "re-run without --dry-run to apply" }
+            : { next: "hibi check" }),
         };
-        await emit(mode, value, () => misc.renderRetire(result, style, mode));
+        await emit(mode, value, () =>
+          misc.renderRetire(result, style, mode, dryRun),
+        );
         return 0;
       } catch (e) {
         return fail((e as Error).message, mode);
@@ -895,24 +1047,36 @@ async function main(argv: string[]): Promise<number> {
       // Under parseArgs `strict:false`, `--state` with no value parses as the
       // boolean `true`; catch that distinctly from a wrong value.
       const rawState = values.state;
+      const VALID_STATES = [
+        "all",
+        "gating",
+        "warning",
+        "clean",
+        "orphaned",
+        "suggested",
+      ] as const;
       if (rawState === true) {
         return fail(
-          "list --state expects a value: all|gating|warning|clean",
+          `list --state expects a value: ${VALID_STATES.join("|")}`,
           mode,
         );
       }
       const state = (rawState as string | undefined) ?? "all";
-      if (!["all", "gating", "warning", "clean"].includes(state)) {
+      if (!(VALID_STATES as readonly string[]).includes(state)) {
         return fail(
-          `list --state expects all|gating|warning|clean (got: ${state})`,
+          `list --state expects ${VALID_STATES.join("|")} (got: ${state})`,
           mode,
         );
       }
       const result = await engine.list({
-        state: state as "all" | "gating" | "warning" | "clean",
+        state: state as (typeof VALID_STATES)[number],
         ref: await currentRef(anchorRoot),
         hints: mode.hints,
       });
+      if (values["ids-only"]) {
+        emitIds(result.claims.map((c) => c.claimId));
+        return 0;
+      }
       const value = {
         ok: true,
         action: "list",
@@ -1009,8 +1173,8 @@ Commands:
                                     Verify all claims; emit verdicts; exit per contract
   diff     --since <ref> [--write]  What did this change invalidate? (write-time loop)
   status   [--doc <p>]              No --doc: repo-wide health overview. --doc: one-document gate.
-  query    --path <p>               What claims are anchored to / cover this path?
-  list     [--state all|gating|warning|clean]  Triage: one lean row per claim (handle + status)
+  query    --path <p>               What claims are anchored to / cover this doc OR code path?
+  list     [--state all|gating|warning|clean|orphaned|suggested]  Triage: one lean row per claim
   suggest  --doc <p> [--since <ref>]  Propose anchorable claims from a document (suggested records)
   reanchor <claim-id> [--doc <p>] [--doc-quote …] [--code-file …]  Re-resolve a claim, or relocate
                                     either side to a different file (--doc moves the doc anchor)
@@ -1018,6 +1182,8 @@ Commands:
   supersede --new <p> --old <p> --type supersedes|amends [--propositions id,id]
   retract  --doc <p>                Mark a document retracted (author withdrew)
   archive  --doc <p> [--successor <p>]  Move an obsolete doc out of the read path (tombstone)
+  relocate --from <p> --to <p>      Re-home every live claim stranded on --from to --to (one pass)
+  doctor                            Store-health report (orphans, stranded, duplicates); always exit 0
   schema   [--name <Name>]          Emit generated JSON Schema(s)
   completions <zsh|bash|fish>       Print a shell completion script
 
@@ -1030,6 +1196,8 @@ Output: rich human view on a terminal, compact JSON when piped/redirected/CI.
   --no-hints        drop the remediation menu (also via HIBI_ADVICE=0)
   --color auto|always|never   (also honors NO_COLOR / FORCE_COLOR)
   --simple          ASCII symbols instead of unicode
+  --dry-run         preview without writing (reanchor/retire/supersede/relocate)
+  --ids-only        emit a bare, newline-delimited claim-id list (query/list)
 
 Examples:
   hibi check                      # rich, grouped-by-document drift report

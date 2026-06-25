@@ -90,8 +90,62 @@ describe("supersession edges: forward-authored, reverse-derived (§4, §6)", () 
 
   test("retract marks lifecycle retracted (§10)", async () => {
     const r = await repo();
-    const doc = await retract(r.store, "old.md");
-    expect(doc.lifecycle).toBe("retracted");
+    const { document } = await retract(r.store, "old.md");
+    expect(document.lifecycle).toBe("retracted");
+  });
+});
+
+describe("lifecycle ops report stranded claims (Tier-1 silent-orphan hardening)", () => {
+  test("supersede lists the live claims left on the old document", async () => {
+    const r = await repo();
+    await r.write("src/a.ts", "export const A = 1;\n");
+    await r.write("v1.md", "# V1\n\nA is one.\n");
+    const claim = await record(r, {
+      doc: "v1.md",
+      text: "A is one.",
+      file: "src/a.ts",
+      quote: "A = 1",
+    });
+    const { strandedClaims } = await supersede(r.store, {
+      newDocPath: "v2.md",
+      oldDocPath: "v1.md",
+      type: "supersedes",
+    });
+    expect(strandedClaims).toEqual([claim.assertion.id]);
+  });
+
+  test("retract lists the live claims left on the retracted document", async () => {
+    const r = await repo();
+    await r.write("src/a.ts", "export const A = 1;\n");
+    await r.write("gone.md", "# Gone\n\nA is one.\n");
+    const claim = await record(r, {
+      doc: "gone.md",
+      text: "A is one.",
+      file: "src/a.ts",
+      quote: "A = 1",
+    });
+    const { strandedClaims } = await retract(r.store, "gone.md");
+    expect(strandedClaims).toEqual([claim.assertion.id]);
+  });
+
+  test("a retired claim is not counted as stranded", async () => {
+    const r = await repo();
+    await r.write("src/a.ts", "export const A = 1;\n");
+    await r.write("v1.md", "# V1\n\nA is one.\n");
+    const claim = await record(r, {
+      doc: "v1.md",
+      text: "A is one.",
+      file: "src/a.ts",
+      quote: "A = 1",
+    });
+    // Retire the only claim, then supersede — it must not be reported as stranded.
+    await r.store.putAssertion({ ...claim.assertion, enforcement: "retired" });
+    const { strandedClaims } = await supersede(r.store, {
+      newDocPath: "v2.md",
+      oldDocPath: "v1.md",
+      type: "supersedes",
+    });
+    expect(strandedClaims).toEqual([]);
   });
 });
 

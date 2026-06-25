@@ -11,6 +11,7 @@ import type { Document } from "../core/model.ts";
 import { exists } from "../fs.ts";
 import type { ClaimStore } from "../store/store.ts";
 import { documentIdForPath } from "./record.ts";
+import { liveClaimsOnDocument } from "./supersede.ts";
 
 function tombstone(docPath: string, successorPath?: string): string {
   const redirect = successorPath
@@ -32,12 +33,15 @@ export interface ArchiveResult {
   document: Document;
   archivedTo: string | null;
   successor?: string;
+  /** Live claim ids still anchored to the archived document (see SupersedeResult). */
+  strandedClaims: string[];
 }
 
 export async function archiveDocument(
   store: ClaimStore,
   docPath: string,
   successorPath?: string,
+  opts: { dryRun?: boolean } = {},
 ): Promise<ArchiveResult> {
   const root = store.anchorRoot;
   const id = documentIdForPath(docPath);
@@ -52,15 +56,25 @@ export async function archiveDocument(
   let archivedTo: string | null = null;
   if (await exists(abs)) {
     const relDest = join("archive", docPath);
-    const dest = join(root, relDest);
-    await mkdir(dirname(dest), { recursive: true });
-    const content = await readFile(abs, "utf8");
-    await writeFile(dest, content);
-    await writeFile(abs, tombstone(docPath, successorPath));
+    // --dry-run: report where the file *would* move (and that the doc would flip
+    // to archived) without moving it, writing the tombstone, or touching the store.
+    if (!opts.dryRun) {
+      const dest = join(root, relDest);
+      await mkdir(dirname(dest), { recursive: true });
+      const content = await readFile(abs, "utf8");
+      await writeFile(dest, content);
+      await writeFile(abs, tombstone(docPath, successorPath));
+    }
     archivedTo = relDest;
   }
 
   doc.lifecycle = "archived";
-  await store.putDocument(doc);
-  return { document: doc, archivedTo, successor: successorPath };
+  if (!opts.dryRun) await store.putDocument(doc);
+  const strandedClaims = await liveClaimsOnDocument(store, doc.id);
+  return {
+    document: doc,
+    archivedTo,
+    successor: successorPath,
+    strandedClaims,
+  };
 }

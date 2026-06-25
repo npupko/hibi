@@ -158,7 +158,7 @@ describe("library facade (§7.5)", () => {
     expect(await exists(join(anchorRoot, "archive", "v1.md"))).toBe(true);
 
     const ret = await e.retract("v2.md");
-    expect(ret.lifecycle).toBe("retracted");
+    expect(ret.document.lifecycle).toBe("retracted");
   });
 
   test("opening a store that was never initialized rejects", async () => {
@@ -447,5 +447,37 @@ describe("regression guards (review fixes)", () => {
     // The destination is reactivated — the relocated claim must not inherit the
     // stale `retracted` lifecycle and be reported as withdrawn.
     expect((await engine.store.getDocument(destId))?.lifecycle).toBe("active");
+  });
+});
+
+describe("record duplicate-proposition detection (§9)", () => {
+  test("existingClaims lists the prior claims sharing a deduped proposition", async () => {
+    const root = await tmp();
+    await mkdir(join(root, "src"), { recursive: true });
+    await writeFile(join(root, "src/a.ts"), "export const A = 1;\n");
+    await writeFile(join(root, "a.md"), "# A\n\nThe A constant is one.\n");
+    await writeFile(join(root, "b.md"), "# B\n\nThe A constant is one.\n");
+    const engine = await Engine.init(root);
+
+    const first = await engine.record({
+      docPath: "a.md",
+      docQuote: "The A constant is one.",
+      code: [{ file: "src/a.ts", quote: "A = 1" }],
+      authoredTrust: "verified",
+      ref: "r",
+    });
+    // Brand-new proposition → nothing pre-existing.
+    expect(first.existingClaims).toEqual([]);
+
+    // Same sentence on a different doc dedups onto the same proposition.
+    const second = await engine.record({
+      docPath: "b.md",
+      docQuote: "The A constant is one.",
+      code: [{ file: "src/a.ts", quote: "A = 1" }],
+      authoredTrust: "verified",
+      ref: "r",
+    });
+    expect(second.dedupedProposition).toBe(true);
+    expect(second.existingClaims).toEqual([first.assertion.id]);
   });
 });

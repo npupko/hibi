@@ -108,6 +108,13 @@ export interface RecordResult {
   proposition: Proposition;
   assertion: Assertion;
   dedupedProposition: boolean;
+  /**
+   * Other claim ids that already assert the *same proposition* (this proposition
+   * was reached by fingerprint dedup), excluding the one just recorded/returned.
+   * Empty when the proposition is brand new. Surfaced so the author can spot a
+   * re-record of an existing claim and reach for `reanchor` instead (§9).
+   */
+  existingClaims: string[];
 }
 
 export async function recordClaim(
@@ -241,15 +248,22 @@ export async function recordClaim(
   // Dedup the assertion: one verification instance per (proposition, document).
   // Re-running `record`/`suggest` on unchanged content must be idempotent (§6) —
   // otherwise each run would accumulate a duplicate assertion in the store.
-  const existing = (await store.allAssertions()).find(
-    (x) => x.propositionId === proposition.id && x.documentId === docId,
+  const allAssertions = await store.allAssertions();
+  /** Claims already asserting this proposition (the duplicate-proposition signal). */
+  const sharingProposition = allAssertions.filter(
+    (x) => x.propositionId === proposition.id,
   );
+  const existing = sharingProposition.find((x) => x.documentId === docId);
   if (existing) {
     return {
       document,
       proposition,
       assertion: existing,
       dedupedProposition: deduped,
+      // Exclude the returned (existing) claim — the rest already share its proposition.
+      existingClaims: sharingProposition
+        .filter((x) => x.id !== existing.id)
+        .map((x) => x.id),
     };
   }
 
@@ -277,7 +291,15 @@ export async function recordClaim(
   };
   await store.putAssertion(assertion);
 
-  return { document, proposition, assertion, dedupedProposition: deduped };
+  return {
+    document,
+    proposition,
+    assertion,
+    dedupedProposition: deduped,
+    // The fresh assertion is not yet in `sharingProposition`; every id there is a
+    // pre-existing claim on the same (deduped) proposition.
+    existingClaims: sharingProposition.map((x) => x.id),
+  };
 }
 
 /**

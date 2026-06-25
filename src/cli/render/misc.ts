@@ -8,12 +8,15 @@
 import type {
   ArchiveResult,
   Assertion,
+  DoctorReport,
   ListResult,
   ListSeverity,
   QueryHit,
   ReanchorResult,
   RecordResult,
+  RelocateResult,
   RetireResult,
+  RetractResult,
   SupersedeResult,
 } from "../../index.ts";
 import type { OutputMode } from "./mode.ts";
@@ -55,15 +58,30 @@ export function renderRecord(
   const code = codeFile(a);
   const sides = code ? `${doc} ${arrow(mode)} ${code}` : doc;
   const deduped = result.dedupedProposition ? style.dim(" (deduped)") : "";
-  return `${ok(style, mode)} recorded  ${style.cyan(a.id)}   ${sides}  ${style.dim(`(${trust}, ${a.enforcement})`)}${deduped}\n`;
+  let out = `${ok(style, mode)} recorded  ${style.cyan(a.id)}   ${sides}  ${style.dim(`(${trust}, ${a.enforcement})`)}${deduped}\n`;
+  // A suggested claim is advisory; a duplicate proposition likely wants reanchor.
+  if (a.enforcement === "suggested") {
+    out += `  ${style.yellow(mode.unicode ? "⚠" : "!")} ${style.dim("suggested — won't gate; pass --enforce to make it gating")}\n`;
+  }
+  if (result.existingClaims.length > 0) {
+    out += `  ${style.dim(`already claimed by ${result.existingClaims.join(", ")} — did you mean reanchor?`)}\n`;
+  }
+  return out;
+}
+
+/** A "preview only" tag for the dry-run renderings. */
+function dryTag(style: Style, dryRun: boolean): string {
+  return dryRun ? `${style.dim(" (dry-run — nothing written)")}` : "";
 }
 
 export function renderReanchor(
   result: ReanchorResult,
   style: Style,
   mode: OutputMode,
+  dryRun = false,
 ): string {
-  return `${ok(style, mode)} reanchored  ${style.cyan(result.assertion.id)}   ${style.dim(`doc:${result.doc}  code:${result.code}`)}\n`;
+  const verb = dryRun ? "would reanchor" : "reanchored";
+  return `${ok(style, mode)} ${verb}  ${style.cyan(result.assertion.id)}   ${style.dim(`doc:${result.doc}  code:${result.code}`)}${dryTag(style, dryRun)}\n`;
 }
 
 export function renderSuggest(
@@ -82,32 +100,177 @@ export function renderSuggest(
   return `${head}\n${lines.join("\n")}\n`;
 }
 
+// ── Stranded-claim relocate hints (single-sourced — §6 silent-orphan hardening) ──
+// Built once here so the JSON `next` envelope (cli/index.ts) and the human
+// stranded line (below) emit the byte-identical command, never a drifted copy.
+
+/** The relocate hint for a stranded supersede/amend: old → new document. */
+export function supersedeRelocateHint(
+  oldPath: string,
+  newPath: string,
+): string {
+  return `hibi relocate --from ${oldPath} --to ${newPath}`;
+}
+
+/** The relocate hint for a stranded archive: doc → successor (placeholder if none). */
+export function archiveRelocateHint(
+  docPath: string,
+  successor?: string,
+): string {
+  return `hibi relocate --from ${docPath} --to ${successor ?? "<newDoc>"}`;
+}
+
+/** The relocate hint for a stranded retract: no successor, so offer retire too. */
+export function retractRelocateHint(docPath: string): string {
+  return `hibi relocate --from ${docPath} --to <newDoc>  # or: hibi retire <id>`;
+}
+
+/**
+ * The stranded-claims warning line shared by the lifecycle ops: when live claims
+ * remain on a document that just left the read path, point at `hibi relocate`
+ * rather than letting them silently rot (Tier-1 silent-orphan hardening).
+ */
+function strandedLine(
+  strandedClaims: string[],
+  relocateHint: string,
+  style: Style,
+  mode: OutputMode,
+): string {
+  if (strandedClaims.length === 0) return "";
+  const n = strandedClaims.length;
+  const mark = style.yellow(mode.unicode ? "⚠" : "!");
+  return (
+    `  ${mark} ${n} claim${n === 1 ? "" : "s"} stranded on the old document — ` +
+    `${style.dim(relocateHint)}\n`
+  );
+}
+
 export function renderSupersede(
   result: SupersedeResult,
   type: string,
   style: Style,
   mode: OutputMode,
+  dryRun = false,
 ): string {
-  return `${ok(style, mode)} ${style.bold(result.newDoc.path)} ${type} ${style.bold(result.oldDoc.path)}  ${style.dim(`(${result.oldDoc.path} → ${result.oldDoc.lifecycle})`)}\n`;
+  const verb = dryRun ? "would supersede" : type;
+  const head = `${ok(style, mode)} ${style.bold(result.newDoc.path)} ${verb} ${style.bold(result.oldDoc.path)}  ${style.dim(`(${result.oldDoc.path} → ${result.oldDoc.lifecycle})`)}${dryTag(style, dryRun)}\n`;
+  return (
+    head +
+    strandedLine(
+      result.strandedClaims,
+      supersedeRelocateHint(result.oldDoc.path, result.newDoc.path),
+      style,
+      mode,
+    )
+  );
 }
 
 export function renderRetract(
-  doc: { path: string; lifecycle: string },
+  result: RetractResult,
   style: Style,
   mode: OutputMode,
+  dryRun = false,
 ): string {
-  return `${ok(style, mode)} retracted  ${style.bold(doc.path)}  ${style.dim(`(${doc.lifecycle})`)}\n`;
+  const doc = result.document;
+  const verb = dryRun ? "would retract" : "retracted";
+  const head = `${ok(style, mode)} ${verb}  ${style.bold(doc.path)}  ${style.dim(`(${doc.lifecycle})`)}${dryTag(style, dryRun)}\n`;
+  return (
+    head +
+    strandedLine(
+      result.strandedClaims,
+      retractRelocateHint(doc.path),
+      style,
+      mode,
+    )
+  );
 }
 
 export function renderArchive(
   result: ArchiveResult,
   style: Style,
   mode: OutputMode,
+  dryRun = false,
 ): string {
   const succ = result.successor
     ? style.dim(`  → successor ${result.successor}`)
     : "";
-  return `${ok(style, mode)} archived  ${style.bold(result.document.path)}${succ}\n`;
+  const verb = dryRun ? "would archive" : "archived";
+  const head = `${ok(style, mode)} ${verb}  ${style.bold(result.document.path)}${succ}${dryTag(style, dryRun)}\n`;
+  return (
+    head +
+    strandedLine(
+      result.strandedClaims,
+      archiveRelocateHint(result.document.path, result.successor),
+      style,
+      mode,
+    )
+  );
+}
+
+export function renderRelocate(
+  result: RelocateResult,
+  style: Style,
+  mode: OutputMode,
+): string {
+  const verb = result.dryRun ? "would relocate" : "relocated";
+  const n = result.relocated.length;
+  const m = result.misses.length;
+  const head = `${ok(style, mode)} ${verb} ${n}, ${m} need${m === 1 ? "s" : ""} manual attention  ${style.dim(`${result.from} → ${result.to}`)}${dryTag(style, result.dryRun)}\n`;
+  if (m === 0) return head;
+  const lines = result.misses.map(
+    (miss) =>
+      `  ${style.yellow(mode.unicode ? "⚠" : "!")} ${style.cyan(miss.claimId)}  ${style.dim(miss.reason)}`,
+  );
+  return `${head}${lines.join("\n")}\n`;
+}
+
+export function renderDoctor(
+  report: DoctorReport,
+  style: Style,
+  mode: OutputMode,
+): string {
+  const out: string[] = [];
+  const mark = report.healthy
+    ? style.green(mode.unicode ? "✓" : "+")
+    : style.yellow(mode.unicode ? "⚠" : "!");
+  out.push(
+    `${mark} ${style.bold("hibi doctor")} ${style.dim(report.healthy ? "(healthy)" : "(needs attention)")}`,
+  );
+  out.push("");
+  const rows = [
+    ["orphaned anchors", report.counts.orphanedAnchors],
+    ["suggested, no code", report.counts.suggestedNoCode],
+    ["stranded on stale doc", report.counts.staleDocClaims],
+    ["duplicate propositions", report.counts.duplicatePropositions],
+  ] as const;
+  for (const [label, count] of rows) {
+    const padded = String(count).padStart(3);
+    const c = count === 0 ? style.dim(padded) : style.yellow(padded);
+    out.push(`  ${c}  ${label}`);
+  }
+  // The claim ids per non-empty category, so the next command is one copy away.
+  const detail: string[] = [];
+  for (const o of report.orphanedAnchors)
+    detail.push(
+      `  ${style.dim(`orphaned ${o.side}:`)} ${style.cyan(o.claimId)} ${style.dim(o.path)}`,
+    );
+  for (const s of report.suggestedNoCode)
+    detail.push(
+      `  ${style.dim("suggested-no-code:")} ${style.cyan(s.claimId)} ${style.dim(s.docPath ?? "—")}`,
+    );
+  for (const s of report.staleDocClaims)
+    detail.push(
+      `  ${style.dim(`stranded (${s.lifecycle}):`)} ${style.cyan(s.claimId)} ${style.dim(s.docPath ?? "—")}`,
+    );
+  for (const d of report.duplicatePropositions)
+    detail.push(
+      `  ${style.dim("duplicate prop:")} ${style.cyan(d.claimIds.join(", "))}`,
+    );
+  if (detail.length > 0) {
+    out.push("");
+    out.push(...detail);
+  }
+  return `${out.join("\n")}\n`;
 }
 
 export function renderQuery(
@@ -132,9 +295,11 @@ export function renderRetire(
   result: RetireResult,
   style: Style,
   mode: OutputMode,
+  dryRun = false,
 ): string {
   const note = result.alreadyRetired ? style.dim(" (already retired)") : "";
-  return `${ok(style, mode)} retired  ${style.cyan(result.assertion.id)}${note}\n`;
+  const verb = dryRun && !result.alreadyRetired ? "would retire" : "retired";
+  return `${ok(style, mode)} ${verb}  ${style.cyan(result.assertion.id)}${note}${dryTag(style, dryRun)}\n`;
 }
 
 /** Map a list row's severity onto the four-bucket badge vocabulary. */
