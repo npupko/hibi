@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { exists } from "../src/fs.ts";
@@ -82,6 +89,24 @@ interface CliJson {
   oldDoc?: { lifecycle?: string };
   type?: string;
   properties?: { anchor?: unknown };
+  // lifecycle stranded-claim reporting + relocate / doctor envelopes
+  warning?: string;
+  existingClaims?: string[];
+  strandedClaims?: string[];
+  dryRun?: boolean;
+  from?: string;
+  to?: string;
+  relocated?: { claimId?: string; doc?: string; code?: string }[];
+  misses?: { claimId?: string; reason?: string }[];
+  healthy?: boolean;
+  counts?: {
+    orphanedAnchors?: number;
+    suggestedNoCode?: number;
+    staleDocClaims?: number;
+    duplicatePropositions?: number;
+  };
+  orphanedAnchors?: { claimId?: string; side?: string; path?: string }[];
+  staleDocClaims?: { claimId?: string }[];
 }
 
 interface RunResult {
@@ -915,5 +940,245 @@ describe("CLI end-to-end (§9)", () => {
 
     const chk = await run(d, ["check"]);
     expect(chk.json.summary?.total ?? 0).toBe(0);
+  });
+
+  // ── Tier-1/2/3 silent-orphan hardening ──
+
+  test("supersede reports strandedClaims and points next at relocate", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "v1.md", "# V1\n\nA is one.\n");
+    await run(d, ["init"]);
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "v1.md",
+      "--doc-quote",
+      "A is one.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    const sup = await run(d, [
+      "supersede",
+      "--new",
+      "v2.md",
+      "--old",
+      "v1.md",
+      "--type",
+      "supersedes",
+    ]);
+    expect(sup.code).toBe(0);
+    expect(sup.json.strandedClaims).toEqual([rec.json.claimId ?? ""]);
+    expect(sup.json.next).toContain("relocate");
+  });
+
+  test("relocate re-homes a stranded claim, then check settles clean", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "v1.md", "# V1\n\nA is one.\n");
+    await run(d, ["init"]);
+    await run(d, [
+      "record",
+      "--doc",
+      "v1.md",
+      "--doc-quote",
+      "A is one.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    // Copy the documented sentence into the successor.
+    await write(d, "v2.md", "# V2\n\nA is one.\n");
+    const rel = await run(d, [
+      "relocate",
+      "--from",
+      "v1.md",
+      "--to",
+      "v2.md",
+      "--json",
+    ]);
+    expect(rel.code).toBe(0);
+    expect(rel.json.relocated?.length).toBe(1);
+    expect(rel.json.misses?.length).toBe(0);
+    const chk = await run(d, ["check"]);
+    expect(chk.code).toBe(0);
+  });
+
+  test("doctor exits 0 even with an orphan, and populates categories", async () => {
+    const d = await repo();
+    await write(d, "src/gone.ts", "export const X = 1;\n");
+    await write(d, "o.md", "# O\n\nOrphan here.\n");
+    await run(d, ["init"]);
+    await run(d, [
+      "record",
+      "--doc",
+      "o.md",
+      "--doc-quote",
+      "Orphan here.",
+      "--code-file",
+      "src/gone.ts",
+      "--code-quote",
+      "X = 1",
+    ]);
+    await rm(join(d, "src/gone.ts"));
+    const doc = await run(d, ["doctor", "--json"]);
+    // Purely informational — never gates.
+    expect(doc.code).toBe(0);
+    expect(doc.json.healthy).toBe(false);
+    expect(doc.json.counts?.orphanedAnchors).toBeGreaterThan(0);
+  });
+
+  test("record warns when a claim lands suggested, and flags a duplicate proposition", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "a.md", "# A\n\nA is one.\n");
+    await write(d, "b.md", "# B\n\nA is one.\n");
+    await run(d, ["init"]);
+    // Default trust (inferred) → suggested → warning present.
+    const first = await run(d, [
+      "record",
+      "--doc",
+      "a.md",
+      "--doc-quote",
+      "A is one.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    expect(first.json.warning).toContain("suggested");
+    expect(first.json.existingClaims).toEqual([]);
+
+    // Same sentence on a different doc → duplicate proposition surfaced.
+    const second = await run(d, [
+      "record",
+      "--doc",
+      "b.md",
+      "--doc-quote",
+      "A is one.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    expect(second.json.existingClaims).toEqual([first.json.claimId ?? ""]);
+    expect(second.json.next).toContain("reanchor");
+  });
+
+  test("list --state orphaned and --state suggested filter correctly", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "src/gone.ts", "export const X = 1;\n");
+    await write(d, "ok.md", "# OK\n\nA is one.\n");
+    await write(d, "o.md", "# O\n\nOrphan here.\n");
+    await run(d, ["init"]);
+    // A healthy suggested claim.
+    await run(d, [
+      "record",
+      "--doc",
+      "ok.md",
+      "--doc-quote",
+      "A is one.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    // An orphan-to-be.
+    const orphan = await run(d, [
+      "record",
+      "--doc",
+      "o.md",
+      "--doc-quote",
+      "Orphan here.",
+      "--code-file",
+      "src/gone.ts",
+      "--code-quote",
+      "X = 1",
+    ]);
+    await rm(join(d, "src/gone.ts"));
+
+    const orphaned = await run(d, ["list", "--state", "orphaned"]);
+    expect(orphaned.json.claims?.map((c) => c.claimId)).toEqual([
+      orphan.json.claimId ?? "",
+    ]);
+
+    const suggested = await run(d, ["list", "--state", "suggested"]);
+    // Both records are `suggested` (default inferred trust).
+    expect(suggested.json.claims?.length).toBe(2);
+  });
+
+  test("--ids-only emits a bare newline-delimited id list", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "a.md", "# A\n\nA is one.\n");
+    await run(d, ["init"]);
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "a.md",
+      "--doc-quote",
+      "A is one.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    const ids = await run(d, ["list", "--ids-only"]);
+    expect(ids.code).toBe(0);
+    expect(ids.stdout.trim()).toBe(rec.json.claimId ?? "");
+  });
+
+  test("--dry-run leaves the .claims/ store byte-identical", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "a.md", "# A\n\nA is one.\n");
+    await run(d, ["init"]);
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "a.md",
+      "--doc-quote",
+      "A is one.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    const id = rec.json.claimId ?? "";
+
+    const snapshot = async (): Promise<Map<string, string>> => {
+      const out = new Map<string, string>();
+      const walk = async (dir: string) => {
+        for (const ent of await readdir(dir, { withFileTypes: true })) {
+          const abs = join(dir, ent.name);
+          if (ent.isDirectory()) await walk(abs);
+          else out.set(abs, await readFile(abs, "utf8"));
+        }
+      };
+      await walk(join(d, ".claims"));
+      return out;
+    };
+
+    const before = await snapshot();
+    // A dry-run reanchor must not touch the store.
+    const dry = await run(d, [
+      "reanchor",
+      id,
+      "--doc-quote",
+      "A is one.",
+      "--dry-run",
+    ]);
+    expect(dry.code).toBe(0);
+    expect(dry.json.dryRun).toBe(true);
+    // And a dry-run retire likewise.
+    await run(d, ["retire", id, "--dry-run"]);
+    const after = await snapshot();
+
+    expect([...after.keys()].sort()).toEqual([...before.keys()].sort());
+    for (const [k, v] of before) expect(after.get(k)).toBe(v);
   });
 });

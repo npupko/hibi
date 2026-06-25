@@ -182,6 +182,13 @@ The common shapes:
 This counters the #1 mistake (silencing banners): you always re-verify, and you act on
 a specific, deterministic command rather than rewriting prose to quiet a flag.
 
+To triage a *category* rather than a single verdict, `hibi list --state <s>` filters the
+store: `gating` (what's red), `warning`, `clean`, `orphaned` (claims with an orphaned doc
+**or** code side — the ones to relocate or retire), and `suggested` (non-gating advisory
+claims awaiting a code pin), plus `all`. Add `--ids-only` to any `list` (or `query`) to
+get a bare, newline-delimited, deduped claim-id list with no JSON — feed it straight into
+a shell loop (e.g. `for id in $(hibi list --state orphaned --ids-only); do …`).
+
 ## Store hygiene: retiring a claim
 
 `hibi record` **always appends** a new assertion (it only dedupes the *proposition* by
@@ -207,6 +214,14 @@ trail. If you genuinely must remove a record (the rare exception — e.g. it cap
 secret), `git rm` the file in a commit so history retains the trail; never live-edit the
 store. `retire` is the supported, reversible verb.
 
+When **many** claims must move at once — a whole doc folded into another — don't loop
+`reanchor` by hand. **`hibi relocate --from <old-doc> --to <new-doc>`** re-homes every
+live (non-retired) claim stranded on `--from` onto `--to` in one pass: each claim whose
+documented sentence appears **verbatim** in `--to` is moved (id, code side, trust,
+history kept; only `documentId` changes), and any whose sentence is absent is reported in
+`misses[]` for a manual `reanchor`/`retire` — never silently dropped. Supports
+`--dry-run`. This is the batch tool for the consolidation playbook below.
+
 For a whole document going out of service, use the lifecycle verbs (auditable
 banner/edge):
 
@@ -218,9 +233,32 @@ hibi archive  --doc old.md --successor new.md   # tombstone out of the read path
 ```
 
 These record a **document-to-document edge** and flip lifecycle — they do **not** move
-the claims anchored to the old doc. If those claims should *follow* to the new doc (e.g.
-you promoted a draft and will delete the old file), relocate each one with `hibi reanchor
-<id> --doc <new-file>` first; `supersede`/`archive` only mark the document.
+the claims anchored to the old doc. They now **report** any live claims left behind in
+`strandedClaims: string[]`; when non-empty, `next` points at `hibi relocate --from <old>
+--to <new>` (`retract` has no successor, so its `next` is `hibi relocate --from <doc>
+--to <newDoc>  # or: hibi retire <id>`). The report is advisory — these verbs never
+auto-move claims, so an empty `strandedClaims` confirms nothing was left behind. If the
+claims should *follow* to the new doc (e.g. you promoted a draft and will delete the old
+file), `relocate` them first; `supersede`/`archive`/`retract` only mark the document.
+
+### Store health: `hibi doctor`
+
+`hibi check` only grades *live* claims against the *current* tree, so dead state stays
+invisible to it. **`hibi doctor`** is the periodic store-health sweep that surfaces what
+`check` hides. It is **purely informational and always exits 0** — it never gates a build
+or hook, so it's safe to run unconditionally. It reports, with `counts` and a
+`healthy:boolean`:
+
+- `orphanedAnchors[{claimId,side,path}]` — claims whose doc or code side no longer
+  resolves.
+- `suggestedNoCode[{claimId,docPath}]` — `suggest`-created claims still missing a code pin.
+- `staleDocClaims[{claimId,docPath,lifecycle}]` — live claims sitting on a superseded /
+  retracted / amended / archived doc (the ones lifecycle verbs left behind).
+- `duplicatePropositions[{fingerprint,propositionIds,claimIds}]` — the same proposition
+  recorded more than once.
+
+`next` routes to the most pressing category (e.g. `hibi list --state orphaned`). Run it
+when you want a full picture of accumulated cruft rather than the per-tree `check` view.
 
 ## Deleting, renaming, or consolidating a doc
 
@@ -228,24 +266,34 @@ The most-missed workflow. When a doc with claims is removed, renamed, split, or 
 into another file, **its claims are content** — migrate them in the *same change* as the
 prose, in this order. **Relocate before you `rm`:**
 
-1. **Enumerate** the claims on the doomed doc — `hibi query --path <old-doc>` lists every
-   one (`side: "doc"` hits) with its `assertion.id`. Read the count; don't guess it.
-2. **Resolve each** — loop over the ids (many is *normal*, not a reason to defer or
-   abandon the set):
-   - the proposition survives in the new doc → `hibi reanchor <id> --doc <new-doc>
-     --doc-quote "<span in new doc>"`. This relocates the **same** claim — id, owner,
-     trust, history intact — and re-homes its `documentId`. Promote it with `--enforce`
-     if it should now gate.
-   - obsolete → `hibi retire <id>`.
+1. **Batch-relocate** every live claim from the doomed doc onto its successor in one pass:
+
+   ```sh
+   hibi relocate --from <old-doc> --to <new-doc>     # add --dry-run to preview first
+   ```
+
+   `relocate` re-homes each claim whose current documented sentence appears **verbatim**
+   in `<new-doc>` — keeping the claim id, code side, trust, and history, only moving the
+   `documentId`. It never silently drops anything: a claim whose sentence is **absent**
+   from the new doc lands in `misses[{claimId,reason}]` instead of `relocated[]`. The
+   envelope is `{ ok, action:"relocate", from, to, relocated, misses, next }`.
+2. **Resolve the misses by hand** — each is a sentence that *didn't* carry over verbatim
+   (reworded, split, or cut). For each `misses[].claimId`, decide and run one:
+   - the proposition survives under different wording in the new doc → `hibi reanchor
+     <id> --doc <new-doc> --doc-quote "<span in new doc>"` (add `--enforce` to promote).
+   - the proposition was dropped → `hibi retire <id>`.
 3. **Mark the document** — `hibi supersede --new <new-doc> --old <old-doc> --type
    supersedes` (or `archive`/`retract`). This records the doc-to-doc edge **but moves no
-   claims** — step 2 is what moves them.
+   claims** — steps 1–2 are what move them. These lifecycle verbs **report** any live
+   claims still on the old doc in `strandedClaims[]` and point `next` back at `hibi
+   relocate` — they never auto-fix, so an empty `strandedClaims` is your confirmation the
+   doc is clear to delete.
 4. **Now delete the file.** Every claim already lives on the new doc or is retired, so the
    `rm` orphans nothing.
 
 > **Don't author fresh claims for propositions that already exist on a doc you're
 > retiring** — that duplicates the record and discards the original's id, trust, and
-> history. Relocate the existing claim instead.
+> history. `relocate` (or `reanchor`) the existing claim instead.
 
 **Orphaned is not retired.** Skip step 2 and the claims become `*:orphaned`: a non-enforced
 orphan happens not to gate, but it is **dead cruft pointing at a file that no longer
@@ -280,7 +328,14 @@ hibi record \
   fills from the current commit) · `inferred` (default) · `assumed`.
 - **Only `enforced` claims gate.** `--enforce` forces it; else the engine derives
   enforcement from trust + resolution. Ladder: `suggested` · `enforced` · `retired` ·
-  `unanchored-legacy`.
+  `unanchored-legacy`. When a claim lands `suggested`, the JSON carries
+  `warning:"recorded as suggested — won't gate the build; pass --enforce to make it
+  gating"` — heed it and re-record (or `reanchor … --enforce`) if you meant it to gate.
+- **Mind the dedup hint.** Propositions dedup by fingerprint, so recording a sentence
+  that's already claimed reuses the existing proposition: the JSON then carries
+  `existingClaims: string[]` and `next:"this proposition is already claimed — did you
+  mean \`hibi reanchor\`?"`. That's the signal you were about to duplicate a claim —
+  `reanchor` the existing id (relocating/re-pinning it) instead of authoring a second.
 - **Behavioral claims** (ordering/retry/complexity/…): `--claim-kind <k>` plus
   repeatable `--verifier kind:ref`. A passing verifier → `supported`; a failing one →
   `refuted`.

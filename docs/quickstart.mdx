@@ -99,6 +99,8 @@ hibi list --state gating          # triage: one lean row per drifting claim
 hibi suggest --doc README.md      # propose anchorable candidate claims from a doc
 hibi reanchor <claim-id> --doc-quote "…" --code-file src/retry.ts  # re-resolve a drifted claim
 hibi retire <claim-id>            # withdraw a single obsolete claim
+hibi relocate --from docs/old.md --to docs/merged.md  # re-home every claim onto the merged doc
+hibi doctor                       # store-health report (informational; always exits 0)
 hibi status --doc README.md       # is this one doc still current?
 ```
 

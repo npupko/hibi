@@ -1,7 +1,7 @@
 ---
 title: "Hibi CLI Reference: Every Command, Flag, and Exit Code"
 sidebarTitle: "CLI Reference"
-description: "Complete reference for all hibi commands: record, check, diff, status, query, list, reanchor, retire, supersede, retract, archive, schema, and more."
+description: "Complete reference for all hibi commands: record, check, diff, status, query, list, reanchor, retire, relocate, supersede, retract, archive, doctor, schema, and more."
 icon: "terminal"
 ---
 
@@ -45,15 +45,17 @@ Two flags tune how much each JSON payload carries — the agent hot path:
 | `hibi diff --since <ref>` | What did this change invalidate? Scopes to files touched since a base ref. |
 | `hibi status` | A repo-wide document health overview: every tracked doc with its worst status, claim counts, owner, and lifecycle. |
 | `hibi status --doc <p>` | Read-time gate: is this one doc still current? |
-| `hibi query --path <p>` | Which claims cover this file? Both directions; includes coarse edges. |
-| `hibi list [--state …]` | Triage: one lean row per claim (handle, status, severity, recommended action), most-severe-first. |
+| `hibi query --path <p>` | What claims are anchored to / cover this **doc OR code path**? Both directions; includes coarse edges. |
+| `hibi list [--state …]` | Triage: one lean row per claim (handle, status, severity, recommended action), most-severe-first. `--state` accepts `all\|gating\|warning\|clean\|orphaned\|suggested`. |
 | `hibi completions <zsh\|bash\|fish>` | Print a shell completion script. |
 | `hibi suggest --doc <p>` | Propose anchorable candidate claims as `suggested` records. Never auto-enforces. |
 | `hibi reanchor <claim-id>` | Re-resolve both anchors against current content; reset state. `--doc <p>` / `--code-file <f>` relocate a side to a **different file**. |
 | `hibi retire <claim-id>` | Withdraw one claim: flip its `enforcement` to `retired`. Idempotent; a retired claim never gates or warns. |
+| `hibi relocate --from <p> --to <p>` | Re-home every live claim stranded on `--from` onto `--to`, in one pass; claims whose sentence is absent from `--to` are reported as misses. |
 | `hibi supersede --new <p> --old <p> --type <type>` | Record that one doc supersedes or amends another. |
 | `hibi retract --doc <p>` | Mark that the author withdrew the claim. |
 | `hibi archive --doc <p>` | Move an obsolete doc out of the read path (tombstone). |
+| `hibi doctor` | Store-health report: orphaned anchors, anchorless `suggested` claims, stranded claims, duplicate propositions. Informational; always exits `0`. |
 | `hibi schema` | Emit the generated JSON Schema(s) for the data model and protocol. |
 
 `version` and `help` round out the set.
@@ -95,6 +97,15 @@ hibi record \
   target resolves. Otherwise the record lands as `suggested`. Coarse and
   `--glob` targets are navigation-only and cannot back an enforced claim.
 </Warning>
+
+When a recorded claim lands `suggested`, its JSON carries a `warning` —
+*"recorded as suggested — won't gate the build; pass `--enforce` to make it
+gating"* — so the advisory status never passes silently. And when the claim's
+proposition was reached by **fingerprint dedup** (the same sentence is already
+claimed), the JSON adds `existingClaims` (the other claims asserting that
+proposition) and a `next` hint — *"this proposition is already claimed — did you
+mean `hibi reanchor`?"* — so you re-point the existing claim instead of recording
+a duplicate.
 
 ### Batch authoring — `--from-file`
 
@@ -160,6 +171,7 @@ hibi reanchor asrt_1a2b3c --doc docs/subsystems/retry.md --doc-quote "Retries ar
 | `--code-file <f>` | Re-home the code anchor onto a different file. |
 | `--code-quote <s>` / `--code-range` / `--code-line` / `--glob` / `--coarse` | The code span to re-resolve. |
 | `--ref <ref>` | Stamp a new `@ref`; omit to keep the current one. |
+| `--dry-run` | Compute the would-be result and write nothing. The envelope gains `dryRun: true` and `next: "re-run without --dry-run to apply"`. |
 
 <Note>
   Relocating a doc anchor (`--doc`) moves the claim, it does not copy it: the
@@ -169,6 +181,54 @@ hibi reanchor asrt_1a2b3c --doc docs/subsystems/retry.md --doc-quote "Retries ar
   **not** [supersession](/lifecycle), which records a document-to-document edge.
 </Note>
 
+## `hibi relocate`
+
+`relocate` is the **batch consolidation primitive**: it re-homes *every* live
+(non-retired) claim stranded on `--from` onto `--to` in one pass, instead of
+making you `reanchor` each one by hand. A claim is re-homed when its current
+documented sentence appears **verbatim** in `--to`; each move rides the same
+`reanchor` machinery, so it keeps the claim id, code side, and history, and only
+the `documentId` changes. Claims whose sentence is **absent** from `--to` are
+never silently dropped — they are reported as **misses** for you to `reanchor` or
+`retire` by hand.
+
+```sh
+# Fold every claim from the old doc into the merged one:
+hibi relocate --from docs/old.md --to docs/merged.md
+
+# Preview without writing:
+hibi relocate --from docs/old.md --to docs/merged.md --dry-run
+```
+
+| Flag | Description |
+|------|-------------|
+| `--from <p>` | The document the claims are stranded on. Must differ from `--to`. |
+| `--to <p>` | The document to re-home them onto. Must exist on disk, or `relocate` throws `Document not found on disk: <to>`. |
+| `--dry-run` | Compute the would-be result and write nothing. The envelope gains `dryRun: true` and `next: "re-run without --dry-run to apply"`. |
+
+The JSON reports what moved and what did not:
+
+```json
+{
+  "ok": true,
+  "action": "relocate",
+  "schemaVersion": "v1",
+  "from": "docs/old.md",
+  "to": "docs/merged.md",
+  "relocated": [
+    { "claimId": "asrt_1a2b3c", "doc": "unchanged", "code": "unchanged" }
+  ],
+  "misses": [
+    { "claimId": "asrt_9f8e7d", "reason": "documented sentence not found in docs/merged.md — reanchor or retire by hand" }
+  ],
+  "next": "hibi check"
+}
+```
+
+`doc` and `code` on each `relocated` entry are the post-reanchor per-side
+`AnchorState`s (e.g. `unchanged`). `misses` lists the claims that need a manual
+`reanchor` or `retire`.
+
 ## `hibi list`
 
 `list` is the triage view: **one lean row per claim**, ordered most-severe-first,
@@ -176,16 +236,26 @@ so you can see the whole suspect set at a glance and pick the next claim to act
 on. Narrow it with `--state`:
 
 ```sh
-hibi list                  # every claim
-hibi list --state gating   # only claims that would fail a gate
-hibi list --state warning  # only re-anchorable warnings (moved / at-risk)
-hibi list --state clean    # only claims that resolve cleanly
+hibi list                    # every claim
+hibi list --state gating     # only claims that would fail a gate
+hibi list --state warning    # only re-anchorable warnings (moved / at-risk)
+hibi list --state clean      # only claims that resolve cleanly
+hibi list --state orphaned   # only claims with an orphaned doc OR code side (un-relocatable)
+hibi list --state suggested  # only non-gating advisory claims (enforcement === suggested)
 ```
 
 Each row carries just the handle and the headline decision — `claimId`,
 `propositionId`, `documentPath`, `codePath`, `status`, `severity`, `gates`, and
 the `recommended` remediation action (or `null`). It is the fast path to "which
 claim, and what do I do," with the full verdict a `check` away.
+
+Pass **`--ids-only`** (on `list` or `query`) to drop the JSON envelope entirely
+and emit a bare, de-duplicated, newline-delimited list of claim ids to stdout —
+the shape a shell loop wants:
+
+```sh
+for id in $(hibi list --state orphaned --ids-only); do hibi retire "$id"; done
+```
 
 ## `hibi retire`
 
@@ -200,7 +270,57 @@ hibi retire asrt_897e054b48d040db
 
 The call is **idempotent**: retiring an already-retired claim succeeds and reports
 `alreadyRetired: true`. Most drift verdicts that recommend retiring already hand
-you the exact command in their `remediation` menu, claim id pre-filled.
+you the exact command in their `remediation` menu, claim id pre-filled. Pass
+`--dry-run` to see what *would* be withdrawn without writing — the envelope gains
+`dryRun: true` and `next: "re-run without --dry-run to apply"`.
+
+## `hibi doctor`
+
+`doctor` is a **store-health report**: it surfaces the dead state that `check`
+hides — claims and propositions that are not *drifting* but are nonetheless
+broken or redundant. It is **purely informational and always exits `0`**, so it
+never gates a build; run it to triage the store, not to guard it.
+
+```sh
+hibi doctor
+```
+
+It reports four categories:
+
+| Category | What it flags |
+|----------|---------------|
+| `orphanedAnchors` | `[{ claimId, side, path }]` — a side (`doc` or `code`) whose span is deleted or unresolvable. |
+| `suggestedNoCode` | `[{ claimId, docPath }]` — a `suggested` claim with no precise code anchor. |
+| `staleDocClaims` | `[{ claimId, docPath, lifecycle }]` — a live claim stranded on a superseded / retracted / amended / archived document. |
+| `duplicatePropositions` | `[{ fingerprint, propositionIds, claimIds }]` — distinct propositions sharing one content fingerprint. |
+
+The envelope adds a `counts` object (one tally per category), a
+`healthy: boolean` (true iff every category is empty), and a `next` hint that
+routes to the most pressing category (e.g. `hibi list --state orphaned`):
+
+```json
+{
+  "ok": true,
+  "action": "doctor",
+  "schemaVersion": "v1",
+  "orphanedAnchors": [
+    { "claimId": "asrt_1a2b3c", "side": "code", "path": "src/retry.ts" }
+  ],
+  "suggestedNoCode": [],
+  "staleDocClaims": [
+    { "claimId": "asrt_9f8e7d", "docPath": "docs/old.md", "lifecycle": "superseded" }
+  ],
+  "duplicatePropositions": [],
+  "counts": {
+    "orphanedAnchors": 1,
+    "suggestedNoCode": 0,
+    "staleDocClaims": 1,
+    "duplicatePropositions": 0
+  },
+  "healthy": false,
+  "next": "hibi list --state orphaned"
+}
+```
 
 ## The verdict, in brief
 

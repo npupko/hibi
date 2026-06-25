@@ -101,17 +101,19 @@ invoke it on demand as `/hibi-cli:hibi`.
   </Accordion>
 
   <Accordion title="The everyday loops" icon="arrows-rotate">
-    Five read-only commands, each tied to a moment:
+    Six read-only commands, each tied to a moment:
     - `hibi query --path <p>`: **before** editing a file, ask which claims cover it.
     - `hibi diff --since <ref>`: **after** editing, ask which claims the change invalidated.
     - `hibi check`: verify every claim as a gate (in CI or a hook).
     - `hibi status --doc <p>`: a read-time check before the agent trusts a single doc.
-    - `hibi list --state gating`: triage the whole suspect set, one lean row per claim, most-severe-first.
+    - `hibi list --state gating`: triage the whole suspect set, one lean row per claim, most-severe-first — swap in `--state orphaned` for un-relocatable claims or `--state suggested` for advisory ones.
+    - `hibi doctor`: a store-health sweep (orphaned anchors, stranded and duplicate claims); informational, always exits `0`.
 
-    These read-only verbs (`check`, `diff`, `status`, `query`, `list`) are
-    **pre-approved in the skill's `allowed-tools`**, so the agent can run them
+    These read-only verbs (`check`, `diff`, `status`, `query`, `list`, `doctor`)
+    are **pre-approved in the skill's `allowed-tools`**, so the agent can run them
     without a per-call permission prompt. The mutating verbs (`record`, `reanchor`,
-    `retire`, …) are not, so a change to the store always passes through you.
+    `retire`, `relocate`, …) are not, so a change to the store always passes through
+    you.
   </Accordion>
 
   <Accordion title="Reading the verdict and its remediation menu" icon="scale-balanced">

@@ -104,26 +104,31 @@ hibi record --from-file claims.json   # a JSON array of claim specs; - reads std
 Every spec is validated before any write, so a typo fails the batch loudly rather than
 half-recording it. See [`record --from-file`](/cli-reference#batch-authoring-from-file).
 
-## 5. Move a claim when its sentence changes files
+## 5. Consolidate a doc and bring its claims along
 
-**The problem.** You split a doc in two, rename it, extract a section into its own page,
-or promote a draft into a permanent doc. The sentence a claim tracks now lives in a
-**different file** — but the claim still points at the old one.
+**The problem.** You merged a doc into another, renamed it, or folded a draft into a
+permanent page. Every sentence those claims tracked now lives in a **different file** —
+but the claims still point at the old one. Re-anchoring each by hand is exactly the
+tedious step that gets skipped.
 
-**The commands.**
+**The command.**
 
 ```sh
-hibi reanchor <claim-id> --doc docs/subsystems/retry.md \
-  --doc-quote "Retries are capped at 5 attempts"
+hibi relocate --from docs/old.md --to docs/merged.md
 ```
 
-**The payoff.** `--doc` re-homes the claim's doc anchor onto the new file, keeping the
-same claim id, owner, trust, history, and code side — it *moves* the claim, it doesn't
-retire-and-recreate it. The old file is left untouched as audit and no longer carries the
-claim, so you can delete it without orphaning anything. (`--code-file` does the same for
-the code side.) This is the generic primitive; it composes into any doc refactor —
-split, merge, rename, promote — and it is **not** [supersession](/lifecycle), which
-records a document-to-document edge rather than relocating a claim.
+**The payoff.** `relocate` re-homes *every* live claim stranded on `--from` onto `--to`
+in one pass. A claim is moved when its documented sentence appears **verbatim** in the
+target; each move rides the same `reanchor` machinery, so it keeps the claim id, owner,
+trust, history, and code side — it *moves* the claims, it doesn't retire-and-recreate
+them. The old file is left untouched as audit and no longer carries the claims, so you
+can delete it without orphaning anything. Add `--dry-run` to preview first. Claims whose
+sentence is **absent** from the target are never dropped silently — they come back in
+the `misses` list for you to `hibi reanchor` (to a different target) or `hibi retire` by
+hand. This is the batch companion to the single-claim
+[`hibi reanchor <id> --doc …`](/cli-reference#hibi-reanchor); it is **not**
+[supersession](/lifecycle), which records a document-to-document edge rather than
+relocating claims.
 
 ## Triage anytime
 
@@ -137,7 +142,10 @@ hibi list --state gating
 One lean row per claim — the `claimId`, the doc and code paths, the status, and the
 recommended action — most-severe-first. Decide intent, then act on the row's handle:
 `hibi reanchor <id>` if the claim still holds, `hibi retire <id>` if it's obsolete
-(idempotent, keeps the audit trail).
+(idempotent, keeps the audit trail). Swap the filter for the cut you need —
+`--state orphaned` for un-relocatable claims whose span was deleted, `--state suggested`
+for the advisory claims that never got enforced — and add `--ids-only` to pipe the bare
+id list straight into a `for id in $(…)` loop.
 
 ## How to respond to a flag
 

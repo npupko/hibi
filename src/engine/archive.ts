@@ -11,6 +11,7 @@ import type { Document } from "../core/model.ts";
 import { exists } from "../fs.ts";
 import type { ClaimStore } from "../store/store.ts";
 import { documentIdForPath } from "./record.ts";
+import { liveClaimsOnDocument } from "./supersede.ts";
 
 function tombstone(docPath: string, successorPath?: string): string {
   const redirect = successorPath
@@ -32,6 +33,8 @@ export interface ArchiveResult {
   document: Document;
   archivedTo: string | null;
   successor?: string;
+  /** Live claim ids still anchored to the archived document (see SupersedeResult). */
+  strandedClaims: string[];
 }
 
 export async function archiveDocument(
@@ -62,5 +65,11 @@ export async function archiveDocument(
 
   doc.lifecycle = "archived";
   await store.putDocument(doc);
-  return { document: doc, archivedTo, successor: successorPath };
+  const strandedClaims = await liveClaimsOnDocument(store, doc.id);
+  return {
+    document: doc,
+    archivedTo,
+    successor: successorPath,
+    strandedClaims,
+  };
 }

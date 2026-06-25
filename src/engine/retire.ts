@@ -21,6 +21,7 @@ export interface RetireResult {
 export async function retire(
   store: ClaimStore,
   claimId: string,
+  opts: { dryRun?: boolean } = {},
 ): Promise<RetireResult> {
   const assertion = await store.getAssertion(claimId);
   if (!assertion) throw new Error(`No claim ${claimId} in the store.`);
@@ -28,6 +29,7 @@ export async function retire(
     return { assertion, alreadyRetired: true };
   }
   const next: Assertion = { ...assertion, enforcement: "retired" };
-  await store.putAssertion(next);
+  // --dry-run: report the would-retire result without persisting it (§9).
+  if (!opts.dryRun) await store.putAssertion(next);
   return { assertion: next, alreadyRetired: false };
 }

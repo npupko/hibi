@@ -32,13 +32,13 @@
 
 import { readFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
-import type { AstAnalyzer } from "./algo/resolve.ts";
+import { regionText } from "./algo/localize.ts";
+import { type AstAnalyzer, resolveSide } from "./algo/resolve.ts";
 import { removeBanner } from "./banner/banner.ts";
 import type {
   AuthoredTrust,
   BehaviorScope,
   ClaimKind,
-  Document,
   DocumentLifecycle,
   Enforcement,
   Verdict,
@@ -52,6 +52,7 @@ import {
   type FailOn,
   runCheck,
 } from "./engine/check.ts";
+import { buildDoctorReport, type DoctorReport } from "./engine/doctor.ts";
 import { type ListResult, type ListState, toListRows } from "./engine/list.ts";
 import { type QueryHit, queryByPath } from "./engine/query.ts";
 import {
@@ -67,6 +68,7 @@ import {
   type RecordResult,
   recordClaim,
 } from "./engine/record.ts";
+import { planRelocation, type RelocateResult } from "./engine/relocate.ts";
 import { type RetireResult, retire } from "./engine/retire.ts";
 import {
   type SuggestInput,
@@ -74,6 +76,8 @@ import {
   suggest,
 } from "./engine/suggest.ts";
 import {
+  isLiveClaimOn,
+  type RetractResult,
   retract,
   type SupersedeInput,
   type SupersedeResult,
@@ -103,6 +107,10 @@ export {
   type SuspectEntry as CheckSuspectEntry,
 } from "./engine/check.ts";
 export {
+  buildDoctorReport,
+  type DoctorReport,
+} from "./engine/doctor.ts";
+export {
   type ListResult,
   type ListRow,
   type ListSeverity,
@@ -125,6 +133,13 @@ export {
   type RegionSpec,
   resolveRegion,
 } from "./engine/record.ts";
+export {
+  planRelocation,
+  type RelocateResult,
+  type RelocationMatch,
+  type RelocationMiss,
+  type RelocationPlan,
+} from "./engine/relocate.ts";
 export { type RetireResult, retire as retireClaim } from "./engine/retire.ts";
 export {
   type SuggestInput,
@@ -133,6 +148,9 @@ export {
 } from "./engine/suggest.ts";
 export {
   amendedPropositions,
+  isLiveClaimOn,
+  liveClaimsOnDocument,
+  type RetractResult,
   type SupersedeInput,
   type SupersedeResult,
 } from "./engine/supersede.ts";
@@ -496,6 +514,8 @@ export class Engine {
       };
       code?: RecordCall["code"];
       ref?: string;
+      /** Preview only — compute the result without persisting any write (§9). */
+      dryRun?: boolean;
     } = {},
   ): Promise<ReanchorResult> {
     const assertion = await this.store.getAssertion(claimId);
@@ -540,8 +560,88 @@ export class Engine {
       code,
       ref: opts.ref,
       analyzer: await this.analyzer(),
+      dryRun: opts.dryRun,
     };
     return reanchor(this.store, contents, input);
+  }
+
+  /**
+   * Re-home every live claim stranded on `fromDoc` to `toDoc` in one pass (§9
+   * `relocate`, Tier-1 silent-orphan hardening). A claim is re-homed when its
+   * current documented sentence appears verbatim in the destination; the rest are
+   * reported as misses for manual `reanchor`/`retire`. Each match rides the same
+   * `reanchor` machinery (code-side re-localization, file reads, `--dry-run`).
+   */
+  async relocate(
+    fromDoc: string,
+    toDoc: string,
+    opts: { dryRun?: boolean; ref?: string } = {},
+  ): Promise<RelocateResult> {
+    if (fromDoc === toDoc) {
+      throw new Error("relocate --from and --to must differ.");
+    }
+    const toContent = await this.readDoc(toDoc);
+    if (toContent === null) {
+      throw new Error(`Document not found on disk: ${toDoc}`);
+    }
+
+    const fromId = documentIdForPath(fromDoc);
+    const fromContent = await this.readDoc(fromDoc);
+    const assertions = await this.store.allAssertions();
+    const live = assertions.filter((a) => isLiveClaimOn(a, fromId));
+
+    // Each claim's CURRENT documented text: the live span on `--from` if that
+    // file still exists, else the proposition's cached sentence (robust to a
+    // consolidation that already deleted the old doc).
+    const claims = await Promise.all(
+      live.map(async (a) => {
+        let text: string | undefined;
+        if (fromContent !== null) {
+          const located = resolveSide(a.anchor.doc, fromContent).region;
+          if (located) text = regionText(fromContent, located);
+        }
+        if (text === undefined) {
+          const prop = await this.store.getProposition(a.propositionId);
+          text = prop?.textCache ?? "";
+        }
+        return { claimId: a.id, text };
+      }),
+    );
+
+    const plan = planRelocation(claims, toContent, toDoc);
+
+    const relocated: RelocateResult["relocated"] = [];
+    const misses: RelocateResult["misses"] = plan.misses.map((m) => ({
+      claimId: m.claimId,
+      reason: m.reason,
+    }));
+    for (const match of plan.matches) {
+      try {
+        const result = await this.reanchor(match.claimId, {
+          doc: toDoc,
+          docQuote: match.quote,
+          ref: opts.ref,
+          dryRun: opts.dryRun,
+        });
+        relocated.push({
+          claimId: match.claimId,
+          doc: result.doc,
+          code: result.code,
+        });
+      } catch (e) {
+        // A reanchor that throws (e.g. an orphaned code side) downgrades to a
+        // miss carrying its message — never a silent drop.
+        misses.push({ claimId: match.claimId, reason: (e as Error).message });
+      }
+    }
+
+    return {
+      from: fromDoc,
+      to: toDoc,
+      relocated,
+      misses,
+      dryRun: Boolean(opts.dryRun),
+    };
   }
 
   /** Author an `amends`/`supersedes` edge and derive its reverse (§9 `supersede`). */
@@ -550,7 +650,7 @@ export class Engine {
   }
 
   /** Mark a document retracted — the author withdrew it (§9 `retract`). */
-  async retract(docPath: string): Promise<Document> {
+  async retract(docPath: string): Promise<RetractResult> {
     return retract(this.store, docPath);
   }
 
@@ -566,8 +666,27 @@ export class Engine {
    * Retire a single claim (§9 `retire`): flip its enforcement to `retired` so it
    * no longer gates/warns. Idempotent — a second call is a no-op success.
    */
-  async retire(claimId: string): Promise<RetireResult> {
-    return retire(this.store, claimId);
+  async retire(
+    claimId: string,
+    opts: { dryRun?: boolean } = {},
+  ): Promise<RetireResult> {
+    return retire(this.store, claimId, opts);
+  }
+
+  /**
+   * Store-health report (§9 `doctor`, Tier-1 silent-orphan hardening): the dead
+   * state `check` hides — orphaned anchors, `suggested` claims with no precise
+   * code side, claims stranded on a lifecycle-flagged document, duplicate
+   * propositions. Purely informational; the CLI always exits 0.
+   */
+  async doctor(opts: { ref?: string } = {}): Promise<DoctorReport> {
+    const report = await this.check({ write: false, ref: opts.ref });
+    const [assertions, documents, propositions] = await Promise.all([
+      this.store.allAssertions(),
+      this.store.allDocuments(),
+      this.store.allPropositions(),
+    ]);
+    return buildDoctorReport(report, assertions, documents, propositions);
   }
 
   /**

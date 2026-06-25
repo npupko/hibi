@@ -63,6 +63,12 @@ export interface ReanchorInput {
   /** New `@ref` to stamp; omit to keep the assertion's current ref. */
   ref?: string;
   analyzer?: AnchorAnalyzer;
+  /**
+   * Preview only: compute the would-be result (the post-reanchor per-side states)
+   * without persisting any `put*` write (§9 `--dry-run`). The in-memory `next`
+   * assertion is still resolved, so the preview is accurate.
+   */
+  dryRun?: boolean;
 }
 
 export interface ReanchorResult {
@@ -245,13 +251,15 @@ export async function reanchor(
     anchor: composeAnchor(doc.bundle, codeBundles),
     ref: input.ref ?? assertion.ref,
   };
-  await store.putAssertion(next);
+  // --dry-run: every `put*` below is guarded so the preview leaves the store
+  // byte-identical. The post-state resolve still runs on the in-memory `next`.
+  if (!input.dryRun) await store.putAssertion(next);
 
   // Ensure the destination Document exists and is active. A doc previously
   // retracted/superseded/archived at this path would otherwise lend its stale
   // lifecycle to the freshly-relocated live claim, so reactivate it. The source
   // Document is left intact as audit — never auto-deleted (§6).
-  if (input.docPath && documentId !== assertion.documentId) {
+  if (!input.dryRun && input.docPath && documentId !== assertion.documentId) {
     const existing = await store.getDocument(documentId);
     if (!existing) {
       await store.putDocument({
@@ -267,7 +275,7 @@ export async function reanchor(
 
   proposition.textCache = doc.confirmed;
   proposition.fingerprint = propositionFingerprint(doc.confirmed);
-  await store.putProposition(proposition);
+  if (!input.dryRun) await store.putProposition(proposition);
 
   // Confirm the post-reanchor states (should settle to `unchanged`).
   const after = resolveAssertion(next, files);
