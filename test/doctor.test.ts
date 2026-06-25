@@ -183,6 +183,105 @@ describe("buildDoctorReport (pure projection)", () => {
     expect(out.healthy).toBe(false);
   });
 
+  test("retired claims are excluded from every category (remediation converges)", () => {
+    const report = {
+      ref: "WORKTREE",
+      verdicts: [
+        // A retired claim whose code side is gone — must NOT count as an orphan.
+        verdict({ assertionId: "asrt_ret_orphan", code: "orphaned" }),
+      ],
+      documents: [],
+      summary: {} as CheckReport["summary"],
+      exitCode: 0,
+    } satisfies CheckReport;
+
+    const assertions: Assertion[] = [
+      assertion({
+        id: "asrt_ret_orphan",
+        propositionId: "p_ro",
+        enforcement: "retired",
+      }),
+      // One live + one retired claim on two propositions sharing a fingerprint:
+      // only ONE proposition still has a live claim, so it is not a live duplicate.
+      assertion({ id: "asrt_dup_live", propositionId: "p_d1" }),
+      assertion({
+        id: "asrt_dup_ret",
+        propositionId: "p_d2",
+        enforcement: "retired",
+      }),
+    ];
+    const propositions: Proposition[] = [
+      proposition({ id: "p_ro", fingerprint: "f_ro" }),
+      proposition({ id: "p_d1", fingerprint: "shared" }),
+      proposition({ id: "p_d2", fingerprint: "shared" }),
+    ];
+
+    const out = buildDoctorReport(report, assertions, [], propositions);
+    expect(out.orphanedAnchors).toEqual([]);
+    expect(out.duplicatePropositions).toEqual([]);
+    expect(out.healthy).toBe(true);
+  });
+
+  test("an orphaned non-first code bundle is reported, not code[0]", () => {
+    const report = {
+      ref: "WORKTREE",
+      verdicts: [
+        verdict({
+          assertionId: "asrt_multi",
+          code: "orphaned",
+          evidence: {
+            codeRegions: [],
+            confidence: 0,
+            selectorScores: [],
+            // The SECOND bundle's file is the one that went missing.
+            changedEvidence: [
+              { path: "src/gone.ts", kind: "text", detail: "file missing" },
+            ],
+          },
+        }),
+      ],
+      documents: [],
+      summary: {} as CheckReport["summary"],
+      exitCode: 0,
+    } satisfies CheckReport;
+    const assertions: Assertion[] = [
+      assertion({
+        id: "asrt_multi",
+        propositionId: "p_m",
+        anchor: {
+          doc: {
+            file: "a.md",
+            selectors: [
+              { kind: "text-quote", exact: "x", prefix: "", suffix: "" },
+            ],
+          },
+          code: [
+            {
+              file: "src/here.ts",
+              selectors: [
+                { kind: "text-quote", exact: "y", prefix: "", suffix: "" },
+              ],
+            },
+            {
+              file: "src/gone.ts",
+              selectors: [
+                { kind: "text-quote", exact: "z", prefix: "", suffix: "" },
+              ],
+            },
+          ],
+        },
+      }),
+    ];
+    const out = buildDoctorReport(
+      report,
+      assertions,
+      [],
+      [proposition({ id: "p_m", fingerprint: "f_m" })],
+    );
+    const codeRow = out.orphanedAnchors.find((o) => o.side === "code");
+    expect(codeRow?.path).toBe("src/gone.ts"); // not src/here.ts (code[0])
+  });
+
   test("an empty store is healthy", () => {
     const report = {
       ref: "WORKTREE",

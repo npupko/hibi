@@ -900,29 +900,37 @@ async function main(argv: string[]): Promise<number> {
     case "retract": {
       const engine = await open();
       if (!values.doc) return fail("retract requires --doc", mode);
-      const result = await engine.retract(values.doc as string);
+      const dryRun = Boolean(values["dry-run"]);
+      const result = await engine.retract(values.doc as string, { dryRun });
       const stranded = result.strandedClaims.length > 0;
       const value = {
         ok: true,
         action: "retract",
         schemaVersion: SCHEMA_VERSION,
         ...result,
+        ...(dryRun ? { dryRun: true } : {}),
         // A retract has no successor doc, so the relocation target is the
         // author's call — offer the shape and the retire alternative.
-        next: stranded
-          ? misc.retractRelocateHint(String(values.doc))
-          : "hibi check",
+        next: dryRun
+          ? "re-run without --dry-run to apply"
+          : stranded
+            ? misc.retractRelocateHint(String(values.doc))
+            : "hibi check",
       };
-      await emit(mode, value, () => misc.renderRetract(result, style, mode));
+      await emit(mode, value, () =>
+        misc.renderRetract(result, style, mode, dryRun),
+      );
       return 0;
     }
 
     case "archive": {
       const engine = await open();
       if (!values.doc) return fail("archive requires --doc", mode);
+      const dryRun = Boolean(values["dry-run"]);
       const result = await engine.archive(
         values.doc as string,
         values.successor as string | undefined,
+        { dryRun },
       );
       const stranded = result.strandedClaims.length > 0;
       const value = {
@@ -930,14 +938,19 @@ async function main(argv: string[]): Promise<number> {
         action: "archive",
         schemaVersion: SCHEMA_VERSION,
         ...result,
-        next: stranded
-          ? misc.archiveRelocateHint(
-              String(values.doc),
-              values.successor as string | undefined,
-            )
-          : "hibi check",
+        ...(dryRun ? { dryRun: true } : {}),
+        next: dryRun
+          ? "re-run without --dry-run to apply"
+          : stranded
+            ? misc.archiveRelocateHint(
+                String(values.doc),
+                values.successor as string | undefined,
+              )
+            : "hibi check",
       };
-      await emit(mode, value, () => misc.renderArchive(result, style, mode));
+      await emit(mode, value, () =>
+        misc.renderArchive(result, style, mode, dryRun),
+      );
       return 0;
     }
 
@@ -975,16 +988,20 @@ async function main(argv: string[]): Promise<number> {
       const report = await engine.doctor({
         ref: await currentRef(anchorRoot),
       });
-      // Route the `next` hint to the most pressing non-empty category.
+      // Route the `next` hint to the most pressing non-empty category. The
+      // relocate hint reuses the single-sourced builder so the flag names can
+      // never drift from the lifecycle ops' hints. Duplicate propositions are
+      // collapsed by *retiring* the redundant claim (reanchor recomputes the same
+      // fingerprint, so it does not merge them).
       const next =
         report.counts.orphanedAnchors > 0
           ? "hibi list --state orphaned"
           : report.counts.staleDocClaims > 0
-            ? "hibi relocate --from <oldDoc> --to <newDoc>"
+            ? misc.supersedeRelocateHint("<oldDoc>", "<newDoc>")
             : report.counts.suggestedNoCode > 0
               ? "hibi list --state suggested"
               : report.counts.duplicatePropositions > 0
-                ? "hibi reanchor <id>  # collapse duplicate propositions"
+                ? "hibi retire <id>  # drop a duplicate-proposition claim"
                 : "store is healthy";
       const value = {
         ok: true,

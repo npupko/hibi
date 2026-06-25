@@ -72,8 +72,14 @@ function matchesState(
   severity: ListSeverity,
 ): boolean {
   if (state === "all") return true;
+  // A retired claim is withdrawn — never surface it as an actionable orphan, or
+  // the `--state orphaned --ids-only | retire` cleanup loop never drains (retire
+  // flips enforcement but leaves the orphaned anchor in place).
   if (state === "orphaned")
-    return v.doc === "orphaned" || v.code === "orphaned";
+    return (
+      enforcement !== "retired" &&
+      (v.doc === "orphaned" || v.code === "orphaned")
+    );
   if (state === "suggested") return enforcement === "suggested";
   return severity === state;
 }

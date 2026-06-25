@@ -10,13 +10,9 @@
  * verdict computation.
  */
 
-import {
-  type Assertion,
-  COARSE_SELECTOR_KINDS,
-  type Document,
-  type Proposition,
-} from "../core/model.ts";
+import type { Assertion, Document, Proposition } from "../core/model.ts";
 import type { CheckReport } from "./check.ts";
+import { isCoarseBundle } from "./query.ts";
 
 /** A side of a claim's anchor that resolved to `orphaned` (deleted/unresolvable). */
 export interface OrphanedAnchorRow {
@@ -62,12 +58,37 @@ export interface DoctorReport {
 
 /** True when no bundle on the code side carries a precise (gradeable) selector. */
 function lacksPreciseCode(assertion: Assertion): boolean {
-  if (assertion.anchor.code.length === 0) return true;
-  return assertion.anchor.code.every((bundle) =>
-    bundle.selectors.every((s) =>
-      (COARSE_SELECTOR_KINDS as readonly string[]).includes(s.kind),
-    ),
+  // Reuse query's coarse-bundle test so "precise vs navigational" is defined once.
+  return (
+    assertion.anchor.code.length === 0 ||
+    assertion.anchor.code.every(isCoarseBundle)
   );
+}
+
+/**
+ * The code-side files that actually went orphaned for a verdict, derived from the
+ * change evidence (a missing file / a deleted span), so a multi-bundle claim
+ * points at the bundle that disappeared — never blindly at `code[0]`. Falls back
+ * to the first code file only when the evidence names none.
+ */
+function orphanedCodeFiles(
+  v: CheckReport["verdicts"][number],
+  a?: Assertion,
+): string[] {
+  const codeFiles = new Set(a?.anchor.code.map((b) => b.file) ?? []);
+  const hit = [
+    ...new Set(
+      v.evidence.changedEvidence
+        .filter(
+          (c) =>
+            codeFiles.has(c.path) &&
+            (c.detail === "file missing" ||
+              (c.detail?.includes("orphaned") ?? false)),
+        )
+        .map((c) => c.path),
+    ),
+  ];
+  return hit.length > 0 ? hit : [a?.anchor.code[0]?.file ?? "?"];
 }
 
 /**
@@ -86,9 +107,13 @@ export function buildDoctorReport(
   const docById = new Map(documents.map((d) => [d.id, d]));
 
   // ── orphanedAnchors: a side whose span is deleted/unresolvable (from the live check). ──
+  // A retired claim is withdrawn — its orphaned anchor is inert and must NOT be
+  // counted, or retiring an orphan (the recommended remedy) would never let the
+  // store report healthy and the `--state orphaned` cleanup loop would never drain.
   const orphanedAnchors: OrphanedAnchorRow[] = [];
   for (const v of report.verdicts) {
     const assertion = assertById.get(v.assertionId);
+    if (assertion?.enforcement === "retired") continue;
     if (v.doc === "orphaned") {
       orphanedAnchors.push({
         claimId: v.assertionId,
@@ -97,11 +122,9 @@ export function buildDoctorReport(
       });
     }
     if (v.code === "orphaned") {
-      orphanedAnchors.push({
-        claimId: v.assertionId,
-        side: "code",
-        path: assertion?.anchor.code[0]?.file ?? "?",
-      });
+      for (const path of orphanedCodeFiles(v, assertion)) {
+        orphanedAnchors.push({ claimId: v.assertionId, side: "code", path });
+      }
     }
   }
 
@@ -128,25 +151,31 @@ export function buildDoctorReport(
   }
 
   // ── duplicatePropositions: distinct propositions sharing one content fingerprint. ──
-  const claimsByProp = new Map<string, string[]>();
+  // Count only LIVE (non-retired) claims, and only propositions that still have
+  // one — so retiring the redundant claim drops the group below 2 and the finding
+  // clears. (The advertised remedy must actually make `doctor` report healthy; a
+  // proposition whose every claim is retired is inert and never a live duplicate.)
+  const liveClaimsByProp = new Map<string, string[]>();
   for (const a of assertions) {
-    const list = claimsByProp.get(a.propositionId) ?? [];
+    if (a.enforcement === "retired") continue;
+    const list = liveClaimsByProp.get(a.propositionId) ?? [];
     list.push(a.id);
-    claimsByProp.set(a.propositionId, list);
+    liveClaimsByProp.set(a.propositionId, list);
   }
-  const propsByFingerprint = new Map<string, Proposition[]>();
+  const livePropsByFingerprint = new Map<string, Proposition[]>();
   for (const p of propositions) {
-    const list = propsByFingerprint.get(p.fingerprint) ?? [];
+    if (!liveClaimsByProp.has(p.id)) continue;
+    const list = livePropsByFingerprint.get(p.fingerprint) ?? [];
     list.push(p);
-    propsByFingerprint.set(p.fingerprint, list);
+    livePropsByFingerprint.set(p.fingerprint, list);
   }
   const duplicatePropositions: DuplicatePropositionRow[] = [];
-  for (const [fingerprint, group] of propsByFingerprint) {
+  for (const [fingerprint, group] of livePropsByFingerprint) {
     if (group.length < 2) continue;
     duplicatePropositions.push({
       fingerprint,
       propositionIds: group.map((p) => p.id),
-      claimIds: group.flatMap((p) => claimsByProp.get(p.id) ?? []),
+      claimIds: group.flatMap((p) => liveClaimsByProp.get(p.id) ?? []),
     });
   }
 

@@ -1109,6 +1109,58 @@ describe("CLI end-to-end (§9)", () => {
     const suggested = await run(d, ["list", "--state", "suggested"]);
     // Both records are `suggested` (default inferred trust).
     expect(suggested.json.claims?.length).toBe(2);
+
+    // Retiring the orphan must drain it from `--state orphaned` AND from doctor —
+    // otherwise the documented cleanup loop never converges (review finding).
+    await run(d, ["retire", orphan.json.claimId ?? ""]);
+    const afterRetire = await run(d, ["list", "--state", "orphaned"]);
+    expect(afterRetire.json.claims?.length).toBe(0);
+    const doc = await run(d, ["doctor", "--json"]);
+    expect(doc.json.counts?.orphanedAnchors).toBe(0);
+  });
+
+  test("retract --dry-run and archive --dry-run leave the store + docs untouched", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "a.md", "# A\n\nA is one.\n");
+    await run(d, ["init"]);
+    await run(d, [
+      "record",
+      "--doc",
+      "a.md",
+      "--doc-quote",
+      "A is one.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+
+    const snapshot = async (): Promise<Map<string, string>> => {
+      const out = new Map<string, string>();
+      const walk = async (dir: string) => {
+        for (const ent of await readdir(dir, { withFileTypes: true })) {
+          const abs = join(dir, ent.name);
+          if (ent.isDirectory()) await walk(abs);
+          else out.set(abs, await readFile(abs, "utf8"));
+        }
+      };
+      await walk(join(d, ".claims"));
+      out.set("a.md", await readFile(join(d, "a.md"), "utf8"));
+      return out;
+    };
+
+    const before = await snapshot();
+    const ret = await run(d, ["retract", "--doc", "a.md", "--dry-run"]);
+    expect(ret.json.dryRun).toBe(true);
+    const arch = await run(d, ["archive", "--doc", "a.md", "--dry-run"]);
+    expect(arch.json.dryRun).toBe(true);
+    const after = await snapshot();
+
+    expect([...after.keys()].sort()).toEqual([...before.keys()].sort());
+    for (const [k, v] of before) expect(after.get(k)).toBe(v);
+    // The archive tombstone/move must not have happened.
+    expect(await exists(join(d, "archive", "a.md"))).toBe(false);
   });
 
   test("--ids-only emits a bare newline-delimited id list", async () => {

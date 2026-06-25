@@ -615,33 +615,61 @@ export class Engine {
       claimId: m.claimId,
       reason: m.reason,
     }));
+
+    // Phase 1 — classify every planned match with a NON-writing dry-run reanchor.
+    // A claim that would throw (e.g. an orphaned code side) becomes a miss here,
+    // before any write. This keeps a real relocate consistent: the commit phase
+    // only runs reanchors that already previewed clean, so a single un-relocatable
+    // claim can never leave the store partially relocated (and is never silently
+    // dropped — it carries its message into `misses`).
+    const previews: {
+      quote: string;
+      claimId: string;
+      doc: string;
+      code: string;
+    }[] = [];
     for (const match of plan.matches) {
       try {
         const result = await this.reanchor(match.claimId, {
           doc: toDoc,
           docQuote: match.quote,
           ref: opts.ref,
-          dryRun: opts.dryRun,
+          dryRun: true,
         });
-        relocated.push({
+        previews.push({
+          quote: match.quote,
           claimId: match.claimId,
           doc: result.doc,
           code: result.code,
         });
       } catch (e) {
-        // A reanchor that throws (e.g. an orphaned code side) downgrades to a
-        // miss carrying its message — never a silent drop.
         misses.push({ claimId: match.claimId, reason: (e as Error).message });
       }
     }
 
-    return {
-      from: fromDoc,
-      to: toDoc,
-      relocated,
-      misses,
-      dryRun: Boolean(opts.dryRun),
-    };
+    // A dry-run stops at the preview — report what would move, write nothing.
+    if (opts.dryRun) {
+      for (const p of previews) {
+        relocated.push({ claimId: p.claimId, doc: p.doc, code: p.code });
+      }
+      return { from: fromDoc, to: toDoc, relocated, misses, dryRun: true };
+    }
+
+    // Phase 2 — commit only the claims that previewed clean.
+    for (const p of previews) {
+      const result = await this.reanchor(p.claimId, {
+        doc: toDoc,
+        docQuote: p.quote,
+        ref: opts.ref,
+      });
+      relocated.push({
+        claimId: p.claimId,
+        doc: result.doc,
+        code: result.code,
+      });
+    }
+
+    return { from: fromDoc, to: toDoc, relocated, misses, dryRun: false };
   }
 
   /** Author an `amends`/`supersedes` edge and derive its reverse (§9 `supersede`). */
@@ -650,16 +678,20 @@ export class Engine {
   }
 
   /** Mark a document retracted — the author withdrew it (§9 `retract`). */
-  async retract(docPath: string): Promise<RetractResult> {
-    return retract(this.store, docPath);
+  async retract(
+    docPath: string,
+    opts: { dryRun?: boolean } = {},
+  ): Promise<RetractResult> {
+    return retract(this.store, docPath, opts);
   }
 
   /** Move an obsolete document out of the read path, leaving a tombstone (§9 `archive`). */
   async archive(
     docPath: string,
     successorPath?: string,
+    opts: { dryRun?: boolean } = {},
   ): Promise<ArchiveResult> {
-    return archiveDocument(this.store, docPath, successorPath);
+    return archiveDocument(this.store, docPath, successorPath, opts);
   }
 
   /**

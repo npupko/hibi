@@ -169,9 +169,11 @@ export function renderRetract(
   result: RetractResult,
   style: Style,
   mode: OutputMode,
+  dryRun = false,
 ): string {
   const doc = result.document;
-  const head = `${ok(style, mode)} retracted  ${style.bold(doc.path)}  ${style.dim(`(${doc.lifecycle})`)}\n`;
+  const verb = dryRun ? "would retract" : "retracted";
+  const head = `${ok(style, mode)} ${verb}  ${style.bold(doc.path)}  ${style.dim(`(${doc.lifecycle})`)}${dryTag(style, dryRun)}\n`;
   return (
     head +
     strandedLine(
@@ -187,11 +189,13 @@ export function renderArchive(
   result: ArchiveResult,
   style: Style,
   mode: OutputMode,
+  dryRun = false,
 ): string {
   const succ = result.successor
     ? style.dim(`  → successor ${result.successor}`)
     : "";
-  const head = `${ok(style, mode)} archived  ${style.bold(result.document.path)}${succ}\n`;
+  const verb = dryRun ? "would archive" : "archived";
+  const head = `${ok(style, mode)} ${verb}  ${style.bold(result.document.path)}${succ}${dryTag(style, dryRun)}\n`;
   return (
     head +
     strandedLine(

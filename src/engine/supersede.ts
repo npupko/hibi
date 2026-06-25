@@ -135,10 +135,12 @@ export interface RetractResult {
 export async function retract(
   store: ClaimStore,
   docPath: string,
+  opts: { dryRun?: boolean } = {},
 ): Promise<RetractResult> {
-  const doc = await upsertDocument(store, docPath);
+  const doc = await upsertDocument(store, docPath, opts.dryRun);
   doc.lifecycle = "retracted";
-  await store.putDocument(doc);
+  // --dry-run: report the would-retract result + stranded claims without writing.
+  if (!opts.dryRun) await store.putDocument(doc);
   const strandedClaims = await liveClaimsOnDocument(store, doc.id);
   return { document: doc, strandedClaims };
 }

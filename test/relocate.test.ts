@@ -5,6 +5,8 @@
  */
 
 import { afterEach, describe, expect, test } from "bun:test";
+import { rm } from "node:fs/promises";
+import { join } from "node:path";
 import { documentIdForPath } from "../src/engine/record.ts";
 import { planRelocation } from "../src/engine/relocate.ts";
 import { Engine } from "../src/index.ts";
@@ -110,6 +112,42 @@ describe("Engine.relocate (§9)", () => {
     // Nothing was persisted: the claim is still on a.md.
     const still = await r.store.getAssertion(rec.assertion.id);
     expect(still?.documentId).toBe(documentIdForPath("a.md"));
+  });
+
+  test("an un-relocatable claim becomes a miss while the rest still commit cleanly", async () => {
+    const r = await repo();
+    await r.write("src/a.ts", "export const A = 1;\n");
+    await r.write("src/gone.ts", "export const G = 1;\n");
+    await r.write("a.md", "# A\n\nGood claim.\nBad claim.\n");
+    const good = await record(r, {
+      doc: "a.md",
+      text: "Good claim.",
+      file: "src/a.ts",
+      quote: "A = 1",
+    });
+    const bad = await record(r, {
+      doc: "a.md",
+      text: "Bad claim.",
+      file: "src/gone.ts",
+      quote: "G = 1",
+    });
+    // Both sentences exist in the destination, so both PLAN as matches…
+    await r.write("b.md", "# B\n\nGood claim.\nBad claim.\n");
+    // …but the bad claim's code side is now gone, so its reanchor would orphan.
+    await rm(join(r.root, "src/gone.ts"));
+
+    const engine = await Engine.open(r.root);
+    const result = await engine.relocate("a.md", "b.md");
+    expect(result.relocated.map((x) => x.claimId)).toEqual([good.assertion.id]);
+    expect(result.misses.map((m) => m.claimId)).toEqual([bad.assertion.id]);
+
+    // The good claim is fully committed; the bad claim never moved (no partial state).
+    expect((await r.store.getAssertion(good.assertion.id))?.documentId).toBe(
+      documentIdForPath("b.md"),
+    );
+    expect((await r.store.getAssertion(bad.assertion.id))?.documentId).toBe(
+      documentIdForPath("a.md"),
+    );
   });
 
   test("--from === --to is rejected, and a missing destination throws", async () => {

@@ -27,7 +27,7 @@ export interface QueryHit {
 }
 
 /** True when every selector in the bundle is a coarse (path/glob) edge (§11.3). */
-function isCoarseBundle(bundle: SelectorBundle): boolean {
+export function isCoarseBundle(bundle: SelectorBundle): boolean {
   return bundle.selectors.every((s) =>
     (COARSE_SELECTOR_KINDS as readonly string[]).includes(s.kind),
   );

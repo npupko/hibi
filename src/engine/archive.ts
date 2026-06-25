@@ -41,6 +41,7 @@ export async function archiveDocument(
   store: ClaimStore,
   docPath: string,
   successorPath?: string,
+  opts: { dryRun?: boolean } = {},
 ): Promise<ArchiveResult> {
   const root = store.anchorRoot;
   const id = documentIdForPath(docPath);
@@ -55,16 +56,20 @@ export async function archiveDocument(
   let archivedTo: string | null = null;
   if (await exists(abs)) {
     const relDest = join("archive", docPath);
-    const dest = join(root, relDest);
-    await mkdir(dirname(dest), { recursive: true });
-    const content = await readFile(abs, "utf8");
-    await writeFile(dest, content);
-    await writeFile(abs, tombstone(docPath, successorPath));
+    // --dry-run: report where the file *would* move (and that the doc would flip
+    // to archived) without moving it, writing the tombstone, or touching the store.
+    if (!opts.dryRun) {
+      const dest = join(root, relDest);
+      await mkdir(dirname(dest), { recursive: true });
+      const content = await readFile(abs, "utf8");
+      await writeFile(dest, content);
+      await writeFile(abs, tombstone(docPath, successorPath));
+    }
     archivedTo = relDest;
   }
 
   doc.lifecycle = "archived";
-  await store.putDocument(doc);
+  if (!opts.dryRun) await store.putDocument(doc);
   const strandedClaims = await liveClaimsOnDocument(store, doc.id);
   return {
     document: doc,
