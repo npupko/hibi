@@ -1,18 +1,17 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
+  "theme": "luma",
   "name": "Hibi",
   "description": "Catch documentation that no longer matches your code.",
   "colors": {
-    "primary": "#D6452F",
-    "light": "#E97A66",
-    "dark": "#B83A28"
+    "primary": "#04dc83",
+    "light": "#040404",
+    "dark": "#0c3454"
   },
-  "favicon": "/favicon.ico",
+  "favicon": "https://media.brand.dev/caf44685-1600-4f0b-979f-9c708c9024ef.png",
   "logo": {
-    "light": "/logo/light.png",
-    "dark": "/logo/dark.png",
-    "href": "https://github.com/npupko/hibi"
+    "light": "https://media.brand.dev/b79baf67-627e-484d-a1e3-8e0f77c9036f.svg",
+    "dark": "https://media.brand.dev/b79baf67-627e-484d-a1e3-8e0f77c9036f.svg"
   },
   "contextual": {
     "options": ["copy", "view", "chatgpt", "claude", "mcp"]
@@ -20,7 +19,7 @@
   "navigation": {
     "groups": [
       {
-        "group": "Getting started",
+        "group": "Get Started",
         "pages": ["index", "quickstart", "workflows"]
       },
       {
@@ -60,19 +59,13 @@
       }
     ],
     "primary": {
-      "type": "button",
-      "label": "Get started",
-      "href": "/quickstart"
+      "type": "github",
+      "href": "https://github.com/npupko/hibi"
     }
   },
   "footer": {
     "socials": {
       "github": "https://github.com/npupko/hibi"
-    }
-  },
-  "seo": {
-    "metatags": {
-      "og:image": "/logo/og.png"
     }
   }
 }
