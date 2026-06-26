@@ -100,9 +100,11 @@ It is **not**:
 **Non-goals (permanent — these are deliberate rejections, not deferrals)**
 - Rewriting document prose to "fix" it (that is the *agent's* job; the engine flags + the agent edits).
 - Any **embedding / vector** judgment of staleness (wrong tool — see §14).
-- **NLP/LLM claim *extraction* that auto-enforces** — the engine may *suggest* candidate claims from
-  prose, but a durable, enforced claim requires explicit confirmation (agent tool-call or human); the
-  evidence shows unsupervised extraction is too noisy to gate on (§18-B).
+- **NLP/LLM claim *extraction*, in the engine** — claim *extraction* from prose is delegated to the
+  agent in the loop (which records what it grounds); the engine never extracts. `coverage` surfaces
+  which doc blocks no claim backs, but never authors one — a durable, enforced claim still requires
+  explicit confirmation (agent tool-call or human). The evidence shows unsupervised extraction is too
+  noisy to gate on (§18-B).
 - Any **LLM/semantic judgment on the verdict path** (an optional, clearly-quarantined advisor may
   *explain* or *triage*, but never *gates* a deterministic verdict — §7.4, §11.1, §18-A).
 - A first-party **SCIP / semantic-symbol indexer** (the structural tier is tree-sitter; SCIP serves
@@ -496,11 +498,12 @@ carrier; inline IDs only strengthen re-anchoring where a team opts in. See §14 
     `enforced` record unless both sides resolve uniquely. (`--text` as an authoritative input is
     removed — the doc is the source of truth, §8, §18-B; a free-text override survives only for
     legacy/pristine Model-A records.)
-  - **`suggest [--doc <p>] [--since <ref>]`** — scan new or changed docs for **atomic, anchorable,
-    verifiable** candidate claims (code identifiers, config defaults, literals, CLI/code examples,
-    RFC-2119 normative sentences), skipping rationale/opinion/background, and emit them as
-    `suggested` records for confirmation. Never auto-enforces (extraction is too noisy to gate —
-    §18-B); the one exception is deterministic executable examples and explicit literal checks.
+  - **`coverage --doc <p>`** — segment a document into blocks and report each as **covered** (a live
+    claim's doc anchor resolves into it) or **uncovered**, with a grounding ratio. The deterministic
+    worklist for an **agent-driven grounding audit**: the agent grounds an uncovered block a code span
+    backs (via `record`) or prunes it as ungrounded/stale prose. Read-only and inverse to `query --path
+    <doc>`; it reports a *structural fact*, never which block *should* be a claim — claim *extraction*
+    is delegated to the agent in the loop, not done by the engine (§3/§18-B).
   - **`reanchor <claim-id>`** — re-resolve both anchors against the current doc and code, update the
     selectors, and reset state to `unchanged`; for an `orphaned` claim, require a new location or
     `retire`.
@@ -524,9 +527,10 @@ carrier; inline IDs only strengthen re-anchoring where a team opts in. See §14 
   code → status) is a **deferred consumer-side projection** of `check --json`, catalogued in §19 — not
   a core verb.
 
-  **Agent tool-call path.** `record`, `suggest`, and `reanchor` are designed to be called by an agent
-  mid-edit (the lowest-friction creation mode); the engine still validates that the proposed doc and
-  code spans resolve before accepting an `enforced` record (§18-B). **Executable verifiers** declared
+  **Agent tool-call path.** `record` and `reanchor` are designed to be called by an agent mid-edit
+  (the lowest-friction creation mode), with `coverage` surfacing the grounding-audit worklist; the
+  engine still validates that the proposed doc and code spans resolve before accepting an `enforced`
+  record (§18-B). **Executable verifiers** declared
   on a claim run through the out-of-process runner resolver (§7), never in core.
 - **Exit-code contract:** `0` = all clean; `2` = suspect present — any of `changed`/`orphaned`/`ambiguous`
   (either side), `expired`, or `refuted` — on an `enforced` claim; `3` = `moved`/`at-risk`-only
@@ -628,7 +632,7 @@ correctness (especially the suspect-set precision of §11.3) at each step:
    & confidence grading across selectors; `value` selector.
 6. **Tier-3 behavioral + onboarding** — deterministic change-gated **Behavioral Risk Routing**
    (call-graph/dependency reachability over `behaviorScope`); executable-verifier orchestration
-   (`example`/`snapshot`/`contract`/`property`/`formal`/`command`); `suggest` for new-doc onboarding;
+   (`example`/`snapshot`/`contract`/`property`/`formal`/`command`); `coverage` for new-doc onboarding;
    optional LLM/formal **advisor** resolvers (advisory-only); additional language SDKs.
 
 ## 14. Decision Log (resolved; do not silently re-open)
@@ -644,11 +648,12 @@ correctness (especially the suspect-set precision of §11.3) at each step:
   the engine core to Rust (`dissimilar` + `tree-sitter` crates) behind the unchanged CLI/JSON
   contract. *Go and Zig are out of scope.* The JSON/CLI contract is language-agnostic, so consumers
   (including the Bun/TS *atlas*) are unaffected.
-- **D2 — Authoring → agent-authored, span-first, suggest-then-confirm.** An agent (or human)
-  *authors* claims for existing prose; the engine never auto-*enforces* NLP-extracted claims.
-  (a) `record` is **span-first** — it derives claim text from the document, never from a passed
-  string, so the doc stays the source of truth; (b) `suggest` may propose candidates from prose, but
-  they enter as `suggested` and require explicit confirmation before becoming `enforced`. Fully-auto
+- **D2 — Authoring → agent-authored, span-first, ground-or-prune audit.** An agent (or human)
+  *authors* claims for existing prose; the engine never extracts or auto-*enforces* NLP-extracted
+  claims. (a) `record` is **span-first** — it derives claim text from the document, never from a passed
+  string, so the doc stays the source of truth; (b) `coverage` reports which doc blocks no claim backs,
+  and the agent in the loop grounds the ones a code span supports (entering as `suggested` until
+  confirmed `enforced`) or prunes the rest — extraction is the agent's, not the engine's. Fully-auto
   durable creation is allowed only for deterministic executable examples and explicit literal checks.
   *Declined:* auto-enforcing unsupervised NLP-extracted claims — too noisy to gate (LSI trace-link
   recovery ≈ 77% precision / 60% recall, or 100% recall at 16% precision; §18-B).
@@ -1046,8 +1051,9 @@ precision-first.
 
 **Decision.** The **hybrid: Model C default** (bidirectional sidecar anchors; document span
 authoritative) **+ optional inline IDs for owned docs + Model A for migration/read-only**;
-**span-first `record`**, **suggest-then-confirm** creation with `suggested`/`enforced`/`retired`
-states, doc-first verification order, and explicit doc-side states incl. `doc:orphaned`. **What would
+**span-first `record`**, **ground-or-prune** creation (agent-authored, `coverage`-driven) with
+`suggested`/`enforced`/`retired` states, doc-first verification order, and explicit doc-side states
+incl. `doc:orphaned`. **What would
 change it:** if doc-side fuzzy anchoring proves too noisy in practice (orphan rate > ~30%), require
 inline IDs for high-severity claims; if pristine-doc tracking proves rare, drop the Model-A fallback
 and simplify to pure C.
@@ -1100,7 +1106,7 @@ research could only state as a manual convention:
 - **"file:line → symbol names"** ≡ the tree-sitter named-node anchor (§4, §17.1).
 - **"executable beats prose"** ≡ the executable-verifier seam (§4, §17.6).
 - **Curation gate / never let the agent edit instruction files unreviewed** ≡ engine-never-authors +
-  suggest→enforce (§6, §4, §8).
+  suggested→enforced confirmation (§6, §4, §8).
 - **Path-coupling** ≡ the bidirectional code-side anchor + coarse `path`/`glob` edges (§4): a claim is
   tied to the code it describes, so a change to that code surfaces the claim.
 - **Decision-vs-design / immutable supersession** ≡ the document lifecycle + typed edges (§4, §10).

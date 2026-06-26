@@ -2,8 +2,8 @@
 import { isAbsolute, join } from "node:path";
 /**
  * The Hibi CLI (§9) — JSON-first, quiet by default; the consumer is a machine.
- * Verbs: init · record · check · diff · status · query · list · supersede ·
- * retract · archive · relocate · doctor · suggest · reanchor · retire · schema ·
+ * Verbs: init · record · check · diff · status · query · list · coverage ·
+ * supersede · retract · archive · relocate · doctor · reanchor · retire · schema ·
  * version · help. Exit codes follow the §9 two-axis contract (0 clean · 2 gating
  * · 3 moved/at-risk warning · 1 error); `doctor` is purely informational (always 0).
  *
@@ -428,7 +428,7 @@ async function main(argv: string[]): Promise<number> {
         store: engine.store.dir,
         nonce: config.nonce,
         version: config.version,
-        next: "hibi suggest --doc <file>",
+        next: "hibi coverage --doc <file>",
       };
       await emit(mode, value, () =>
         misc.renderInit(
@@ -763,23 +763,27 @@ async function main(argv: string[]): Promise<number> {
       return 0;
     }
 
-    case "suggest": {
+    case "coverage": {
       const engine = await open();
-      if (!values.doc) return fail("suggest requires --doc", mode);
+      if (!values.doc) return fail("coverage requires --doc", mode);
       try {
-        const result = await engine.suggest(values.doc as string);
+        const result = await engine.coverage(values.doc as string);
         const value = {
           ok: true,
-          action: "suggest",
+          action: "coverage",
           schemaVersion: SCHEMA_VERSION,
           doc: values.doc,
-          since: values.since,
-          count: result.created.length,
-          ...result,
-          next: "hibi check",
+          summary: result.summary,
+          regions: result.regions,
+          // The uncovered blocks are the audit worklist: ground each one a code
+          // span backs (record), or prune it as ungrounded prose.
+          next:
+            result.summary.uncoveredBlocks > 0
+              ? "ground or prune the uncovered regions — `hibi record --from-file <specs.json>`"
+              : "hibi check",
         };
         await emit(mode, value, () =>
-          misc.renderSuggest(String(values.doc), result.created, style, mode),
+          misc.renderCoverage(String(values.doc), result, style, mode),
         );
         return 0;
       } catch (e) {
@@ -1175,7 +1179,7 @@ Commands:
   status   [--doc <p>]              No --doc: repo-wide health overview. --doc: one-document gate.
   query    --path <p>               What claims are anchored to / cover this doc OR code path?
   list     [--state all|gating|warning|clean|orphaned|suggested]  Triage: one lean row per claim
-  suggest  --doc <p> [--since <ref>]  Propose anchorable claims from a document (suggested records)
+  coverage --doc <p>                What regions of a doc are backed by a claim vs uncovered?
   reanchor <claim-id> [--doc <p>] [--doc-quote …] [--code-file …]  Re-resolve a claim, or relocate
                                     either side to a different file (--doc moves the doc anchor)
   retire   <claim-id>               Withdraw one claim (enforcement → retired); idempotent

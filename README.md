@@ -48,7 +48,7 @@ hibi check                      # verify every claim
 hibi check --write              # verify, and stamp status banners into affected docs
 hibi diff --since origin/main   # what did this change invalidate?
 hibi query --path src/retry.ts  # before editing: which claims cover this file?
-hibi suggest --doc README.md    # propose anchorable claims from a doc (suggested records)
+hibi coverage --doc README.md   # which blocks of a doc are backed by a claim vs uncovered?
 hibi reanchor <claim-id> --doc-quote "…" --code-file src/retry.ts  # re-resolve a claim
 hibi reanchor <claim-id> --doc docs/retry.md --doc-quote "…"  # relocate it to another file
 hibi relocate --from v1.md --to v2.md  # batch-move every live claim from one doc to another
