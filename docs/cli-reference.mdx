@@ -48,7 +48,7 @@ Two flags tune how much each JSON payload carries — the agent hot path:
 | `hibi query --path <p>` | What claims are anchored to / cover this **doc OR code path**? Both directions; includes coarse edges. |
 | `hibi list [--state …]` | Triage: one lean row per claim (handle, status, severity, recommended action), most-severe-first. `--state` accepts `all\|gating\|warning\|clean\|orphaned\|suggested`. |
 | `hibi completions <zsh\|bash\|fish>` | Print a shell completion script. |
-| `hibi suggest --doc <p>` | Propose anchorable candidate claims as `suggested` records. Never auto-enforces. |
+| `hibi coverage --doc <p>` | Report which blocks of a doc are backed by a claim vs uncovered (the grounding-audit worklist). Read-only. |
 | `hibi reanchor <claim-id>` | Re-resolve both anchors against current content; reset state. `--doc <p>` / `--code-file <f>` relocate a side to a **different file**. |
 | `hibi retire <claim-id>` | Withdraw one claim: flip its `enforcement` to `retired`. Idempotent; a retired claim never gates or warns. |
 | `hibi relocate --from <p> --to <p>` | Re-home every live claim stranded on `--from` onto `--to`, in one pass; claims whose sentence is absent from `--to` are reported as misses. |

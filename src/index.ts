@@ -52,6 +52,7 @@ import {
   type FailOn,
   runCheck,
 } from "./engine/check.ts";
+import { type CoverageResult, coverage } from "./engine/coverage.ts";
 import { buildDoctorReport, type DoctorReport } from "./engine/doctor.ts";
 import { type ListResult, type ListState, toListRows } from "./engine/list.ts";
 import { type QueryHit, queryByPath } from "./engine/query.ts";
@@ -70,11 +71,6 @@ import {
 } from "./engine/record.ts";
 import { planRelocation, type RelocateResult } from "./engine/relocate.ts";
 import { type RetireResult, retire } from "./engine/retire.ts";
-import {
-  type SuggestInput,
-  type SuggestResult,
-  suggest,
-} from "./engine/suggest.ts";
 import {
   isLiveClaimOn,
   type RetractResult,
@@ -106,6 +102,13 @@ export {
   type FailOn,
   type SuspectEntry as CheckSuspectEntry,
 } from "./engine/check.ts";
+export {
+  type CoverageInput,
+  type CoverageRegion,
+  type CoverageResult,
+  type CoverageSummary,
+  coverage as docCoverage,
+} from "./engine/coverage.ts";
 export {
   buildDoctorReport,
   type DoctorReport,
@@ -141,11 +144,6 @@ export {
   type RelocationPlan,
 } from "./engine/relocate.ts";
 export { type RetireResult, retire as retireClaim } from "./engine/retire.ts";
-export {
-  type SuggestInput,
-  type SuggestResult,
-  suggest as suggestClaims,
-} from "./engine/suggest.ts";
 export {
   amendedPropositions,
   isLiveClaimOn,
@@ -352,7 +350,7 @@ export class Engine {
 
   /**
    * Read a *document* with hibi's own banner stripped out. Anchoring (record /
-   * reanchor) and candidate scanning (suggest) must see the real prose, never the
+   * reanchor) and coverage measurement must see the real prose, never the
    * stamped banner — which restates the documented sentence verbatim and would
    * otherwise let a re-anchored quote latch onto the banner copy and self-orphan
    * on the next check (the same hazard `check` guards against — §8/§18-B).
@@ -484,14 +482,16 @@ export class Engine {
   }
 
   /**
-   * Suggest `suggested` doc-side records for the anchorable, verifiable sentences
-   * in a document (§9 `suggest`). Doc-only, never-gating; the agent later pins
-   * code targets via `reanchor`. The doc file is read from the anchor root.
+   * Report doc-side coverage for a document (§9 `coverage`): which blocks are
+   * backed by a live claim's doc anchor and which are not. Read-only; the doc is
+   * read banner-stripped from the anchor root. The ground-or-prune judgment on an
+   * uncovered block is the caller's — this only reports the structural fact.
    */
-  async suggest(docPath: string): Promise<SuggestResult> {
+  async coverage(docPath: string): Promise<CoverageResult> {
     const docContent = (await this.readDoc(docPath)) ?? "";
-    const input: SuggestInput = { docPath };
-    return suggest(this.store, docContent, input);
+    // No `ast`: coverage resolves only doc-side (prose) anchors, which never hit
+    // the ast-node/value branches — loading tree-sitter here would be dead cost.
+    return coverage(this.store, docContent, { docPath });
   }
 
   /**

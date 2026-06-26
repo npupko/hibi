@@ -161,46 +161,49 @@ asserting the 30-minute TTL; changing that value reds both. `query` hands you th
 
 ---
 
-## 4. Onboard an existing repo fast
+## 4. Onboard an existing repo fast — the grounding audit
 
 **When** — a repo has docs but no claims; get to protected without hand-authoring
-every anchor.
+every anchor. hibi never auto-extracts claims from prose (no model in the loop) — **you**
+do the audit; `coverage` gives you the worklist.
 
-**Run** — `hibi init` then `hibi suggest --doc README.md`
+**Run** — `hibi init` then `hibi coverage --doc README.md`
 
 `init` returns the store handle and the next step:
 
 ```json
 { "ok": true, "action": "init", "schemaVersion": "v1",
   "store": "…/.claims", "nonce": "34144670", "version": "v1",
-  "next": "hibi suggest --doc <file>" }
+  "next": "hibi coverage --doc <file>" }
 ```
 
-`suggest` writes one `suggested` (advisory, never-gating) doc-side record per
-anchorable sentence — doc side filled, code side empty, awaiting a pin:
+`coverage` segments the doc into blocks and reports each as covered (a claim's doc anchor
+lands in it) or uncovered, with a grounding ratio:
 
 ```json
 {
-  "ok": true, "action": "suggest", "schemaVersion": "v1",
-  "doc": "README.md", "count": 2,
-  "created": [
-    { "proposition": { "textCache": "Requests are retried up to 5 times before failing." },
-      "assertion":   { "id": "asrt_db44…", "enforcement": "suggested",
-                       "anchor": { "doc": { "file": "README.md" }, "code": [] } } },
-    { "proposition": { "textCache": "Auth tokens expire after 30 minutes." },
-      "assertion":   { "id": "asrt_71cc…", "enforcement": "suggested",
-                       "anchor": { "doc": { "file": "README.md" }, "code": [] } } }
+  "ok": true, "action": "coverage", "schemaVersion": "v1",
+  "doc": "README.md",
+  "summary": { "blocks": 3, "coveredBlocks": 0, "uncoveredBlocks": 3, "coverageRatio": 0 },
+  "regions": [
+    { "range": { "start": 0, "end": 9 }, "preview": "# Title", "covered": false, "claimIds": [] },
+    { "range": { "start": 11, "end": 58 }, "preview": "Requests are retried up to 5 times before failing.", "covered": false, "claimIds": [] },
+    { "range": { "start": 60, "end": 96 }, "preview": "We think retries improve reliability.", "covered": false, "claimIds": [] }
   ],
-  "next": "hibi check"
+  "next": "ground or prune the uncovered regions — `hibi record --from-file <specs.json>`"
 }
 ```
 
-**Act** — for each suggestion worth enforcing, pin its code side and promote it, then
-`hibi check`:
+**Act** — walk the `covered:false` regions and decide **ground-or-prune** per block:
+ground the ones a code span backs; prune ungrounded/stale prose (the third block above is
+rationale, not a claim — cut it). Author the grounded set in one pass, then re-check
+coverage:
 
 ```sh
-hibi reanchor asrt_db44… --code-file src/retry.ts --code-quote "5"
-# or re-record precisely with --trust verified --enforce
+hibi record --from-file claims.json   # [{ "doc":"README.md", "docQuote":"Requests are retried up to 5 times before failing.",
+                                       #    "codeFile":"src/retry.ts", "codeQuote":"5", "trust":"verified" }]
+hibi coverage --doc README.md         # ratio climbed; the rationale block is gone after pruning
+hibi check                            # confirm clean
 ```
 
 ---
@@ -327,7 +330,7 @@ exits 0** — safe to run unconditionally.
 **Run** — `hibi doctor`
 
 **Setup** — `design-v1.md` was superseded but one live claim was never relocated; a
-`suggest`-created claim never got a code pin; and a sentence was recorded twice.
+doc-only claim never got a code pin; and a sentence was recorded twice.
 
 ```json
 {
@@ -350,7 +353,7 @@ Exit code **0** (always — `doctor` never gates).
 
 - `orphanedAnchors` → the side stopped resolving; relocate it (`reanchor … --code-file
   <new>`) if it moved, or `retire` if the code's gone.
-- `suggestedNoCode` → a `suggest` record awaiting a code pin: `reanchor … --code-file …
+- `suggestedNoCode` → a `suggested` claim awaiting a code pin: `reanchor … --code-file …
   --code-quote …` (and `--enforce` to gate), or `retire` if it'll never be backed.
 - `staleDocClaims` → live claims on a superseded/retracted/archived doc — exactly what
   the lifecycle verbs leave behind; `hibi relocate --from design-v1.md --to design-v2.md`

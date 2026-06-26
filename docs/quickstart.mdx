@@ -96,7 +96,7 @@ warning (moved or at-risk). A `moved` claim never fails the build on its own.
 hibi diff --since origin/main     # what did this change invalidate?
 hibi query --path src/retry.ts    # before editing: which claims cover this file?
 hibi list --state gating          # triage: one lean row per drifting claim
-hibi suggest --doc README.md      # propose anchorable candidate claims from a doc
+hibi coverage --doc README.md     # which blocks of a doc are backed by a claim vs uncovered?
 hibi reanchor <claim-id> --doc-quote "…" --code-file src/retry.ts  # re-resolve a drifted claim
 hibi retire <claim-id>            # withdraw a single obsolete claim
 hibi relocate --from docs/old.md --to docs/merged.md  # re-home every claim onto the merged doc

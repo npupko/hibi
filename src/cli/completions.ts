@@ -16,7 +16,7 @@ const VERBS = [
   "status",
   "query",
   "list",
-  "suggest",
+  "coverage",
   "reanchor",
   "retire",
   "supersede",
@@ -72,7 +72,7 @@ const VERB_FLAGS: Record<string, string[]> = {
   status: ["--doc"],
   query: ["--path"],
   list: ["--state"],
-  suggest: ["--doc", "--since"],
+  coverage: ["--doc"],
   reanchor: [
     "--doc",
     "--doc-quote",

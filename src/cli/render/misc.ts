@@ -8,6 +8,7 @@
 import type {
   ArchiveResult,
   Assertion,
+  CoverageResult,
   DoctorReport,
   ListResult,
   ListSeverity,
@@ -84,19 +85,26 @@ export function renderReanchor(
   return `${ok(style, mode)} ${verb}  ${style.cyan(result.assertion.id)}   ${style.dim(`doc:${result.doc}  code:${result.code}`)}${dryTag(style, dryRun)}\n`;
 }
 
-export function renderSuggest(
+export function renderCoverage(
   doc: string,
-  created: RecordResult[],
+  result: CoverageResult,
   style: Style,
   mode: OutputMode,
 ): string {
-  const n = created.length;
-  const head = `${ok(style, mode)} suggested ${n} claim${n === 1 ? "" : "s"} from ${style.bold(doc)}`;
-  if (n === 0) return `${head}\n`;
-  const lines = created.map(
-    (r) =>
-      `  ${style.cyan(r.assertion.id)}  ${style.dim(`"${oneLine(r.proposition.textCache)}"`)}`,
-  );
+  const { blocks, coveredBlocks, uncoveredBlocks, coverageRatio } =
+    result.summary;
+  const pct = Math.round(coverageRatio * 100);
+  const head = `${ok(style, mode)} ${style.bold(doc)}  ${style.dim(`${coveredBlocks}/${blocks} blocks grounded (${pct}%)`)}`;
+  if (uncoveredBlocks === 0) return `${head}\n`;
+  // List the uncovered blocks — the audit worklist (ground or prune each).
+  // `preview` is already collapsed to one line and capped by the engine; render it
+  // verbatim so the terminal and the JSON payload show the identical text.
+  const lines = result.regions
+    .filter((r) => !r.covered)
+    .map(
+      (r) =>
+        `  ${style.yellow(mode.unicode ? "○" : "o")} ${style.dim(`[${r.range.start}-${r.range.end}]`)} ${style.dim(`"${r.preview}"`)}`,
+    );
   return `${head}\n${lines.join("\n")}\n`;
 }
 

@@ -35,7 +35,7 @@ repo root), `--store-dir <dir>` (store location, default `<anchor>/.claims`),
 | `query --path <p>` | List the claims anchored to / covering a path. Read-only. |
 | `list [--state …]` | Triage: one lean row per claim (handle + status + severity + recommended). Read-only. `--state all\|gating\|warning\|clean`. |
 | `completions <zsh\|bash\|fish>` | Print a shell completion script. |
-| `suggest --doc <p>` | Propose anchorable claims from a document, written as `suggested` records. |
+| `coverage --doc <p>` | Report which blocks of a doc are backed by a claim vs uncovered (the grounding-audit worklist). Read-only. |
 | `reanchor <claim-id>` | Re-resolve a claim against current content (new doc/code spans). |
 | `retire <claim-id>` | Withdraw one claim (`enforcement` → `retired`); idempotent. A retired claim never gates/warns. |
 | `supersede` | Author a `supersedes`/`amends` edge between two documents. |
@@ -192,8 +192,14 @@ Rows are most-severe-first; each carries the `claimId` the next command needs.
 proposition, documentPath, coarse, side } ] }`. This is how you find the
 `assertion.id` before an edit.
 
-**`suggest`** → `{ ok, action:"suggest", schemaVersion, doc, since?, count, created:[…],
-next }`. Proposes anchorable claims as `suggested` records.
+**`coverage`** → `{ ok, action:"coverage", schemaVersion, doc, summary:{ blocks,
+coveredBlocks, uncoveredBlocks, coverageRatio }, regions:[ { range:{start,end}, preview,
+covered, claimIds } ], next }`. Reports a structural fact per block: `covered:true` iff a
+live, **code-grounded** claim's doc anchor resolves cleanly into it (a doc-only `suggested`
+placeholder or a drifted anchor does not count — that's `check`'s concern). The
+`covered:false` regions are the ground-or-prune worklist. `range` offsets are in
+banner-normalized coordinates (the HIBI banner is stripped first), so identify a block by
+its `preview`/sentence text, not by byte-slicing the raw file at `range`.
 
 **`reanchor`** → `{ ok, action:"reanchor", schemaVersion, assertion, doc, code,
 claimId, next }`. Re-resolves `<claim-id>` against current content; `doc`/`code` are
