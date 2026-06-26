@@ -350,7 +350,7 @@ export class Engine {
 
   /**
    * Read a *document* with hibi's own banner stripped out. Anchoring (record /
-   * reanchor) and candidate scanning (suggest) must see the real prose, never the
+   * reanchor) and coverage measurement must see the real prose, never the
    * stamped banner — which restates the documented sentence verbatim and would
    * otherwise let a re-anchored quote latch onto the banner copy and self-orphan
    * on the next check (the same hazard `check` guards against — §8/§18-B).
@@ -489,14 +489,9 @@ export class Engine {
    */
   async coverage(docPath: string): Promise<CoverageResult> {
     const docContent = (await this.readDoc(docPath)) ?? "";
-    return coverage(
-      this.store,
-      docContent,
-      { docPath },
-      {
-        ast: await this.analyzer(),
-      },
-    );
+    // No `ast`: coverage resolves only doc-side (prose) anchors, which never hit
+    // the ast-node/value branches — loading tree-sitter here would be dead cost.
+    return coverage(this.store, docContent, { docPath });
   }
 
   /**

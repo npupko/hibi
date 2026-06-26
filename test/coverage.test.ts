@@ -122,4 +122,54 @@ describe("coverage", () => {
     expect(result.summary.coveredBlocks).toBe(2);
     expect(result.summary.coverageRatio).toBe(1);
   });
+
+  test("a doc-only claim with no code pin grounds nothing", async () => {
+    const engine = await repoWithDoc();
+    // A `suggested`, doc-side-only claim (code: []) — not grounded to any code.
+    await engine.record({
+      docPath: "README.md",
+      docQuote: "The retry limit is five attempts",
+      authoredTrust: "inferred",
+      enforcement: "suggested",
+    });
+
+    const result = await engine.coverage("README.md");
+    expect(result.summary.coveredBlocks).toBe(0);
+    expect(result.regions.every((r) => !r.covered)).toBe(true);
+  });
+
+  test("a claim whose doc sentence drifted off no longer covers its block", async () => {
+    const engine = await repoWithDoc();
+    await engine.record({
+      docPath: "README.md",
+      docQuote: "The retry limit is five attempts",
+      code: [{ file: "src/x.ts", quote: "5" }],
+      authoredTrust: "verified",
+      ref: "r",
+    });
+    expect((await engine.coverage("README.md")).summary.coveredBlocks).toBe(1);
+
+    // Rewrite the doc so the claimed sentence is gone — its anchor drifts off
+    // `unchanged`/`moved`, so coverage must stop counting it (it's `check`'s job).
+    await writeFile(
+      join(engine.store.anchorRoot, "README.md"),
+      "# Heading\n\nA totally unrelated paragraph about something else entirely.\n\nSome background prose with no code behind it.\n",
+    );
+    const after = await engine.coverage("README.md");
+    expect(after.summary.coveredBlocks).toBe(0);
+  });
+
+  test("a fenced code block with a blank line stays one block", async () => {
+    const root = await tmp();
+    await writeFile(
+      join(root, "README.md"),
+      "Intro paragraph.\n\n```ts\nconst a = 1;\n\nconst b = 2;\n```\n\nOutro paragraph.\n",
+    );
+    const engine = await Engine.init(root);
+    const result = await engine.coverage("README.md");
+    // Intro, the whole fenced block (blank line inside and all), outro = 3 blocks.
+    expect(result.summary.blocks).toBe(3);
+    const fenced = result.regions.find((r) => r.preview.includes("const a"));
+    expect(fenced?.preview).toContain("const b");
+  });
 });

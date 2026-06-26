@@ -194,8 +194,12 @@ proposition, documentPath, coarse, side } ] }`. This is how you find the
 
 **`coverage`** → `{ ok, action:"coverage", schemaVersion, doc, summary:{ blocks,
 coveredBlocks, uncoveredBlocks, coverageRatio }, regions:[ { range:{start,end}, preview,
-covered, claimIds } ], next }`. Reports a structural fact per block (a claim's doc anchor
-lands in it, or not); the `covered:false` regions are the ground-or-prune worklist.
+covered, claimIds } ], next }`. Reports a structural fact per block: `covered:true` iff a
+live, **code-grounded** claim's doc anchor resolves cleanly into it (a doc-only `suggested`
+placeholder or a drifted anchor does not count — that's `check`'s concern). The
+`covered:false` regions are the ground-or-prune worklist. `range` offsets are in
+banner-normalized coordinates (the HIBI banner is stripped first), so identify a block by
+its `preview`/sentence text, not by byte-slicing the raw file at `range`.
 
 **`reanchor`** → `{ ok, action:"reanchor", schemaVersion, assertion, doc, code,
 claimId, next }`. Re-resolves `<claim-id>` against current content; `doc`/`code` are

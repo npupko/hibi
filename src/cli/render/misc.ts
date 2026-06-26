@@ -97,11 +97,13 @@ export function renderCoverage(
   const head = `${ok(style, mode)} ${style.bold(doc)}  ${style.dim(`${coveredBlocks}/${blocks} blocks grounded (${pct}%)`)}`;
   if (uncoveredBlocks === 0) return `${head}\n`;
   // List the uncovered blocks — the audit worklist (ground or prune each).
+  // `preview` is already collapsed to one line and capped by the engine; render it
+  // verbatim so the terminal and the JSON payload show the identical text.
   const lines = result.regions
     .filter((r) => !r.covered)
     .map(
       (r) =>
-        `  ${style.yellow(mode.unicode ? "○" : "o")} ${style.dim(`[${r.range.start}-${r.range.end}]`)} ${style.dim(`"${oneLine(r.preview)}"`)}`,
+        `  ${style.yellow(mode.unicode ? "○" : "o")} ${style.dim(`[${r.range.start}-${r.range.end}]`)} ${style.dim(`"${r.preview}"`)}`,
     );
   return `${head}\n${lines.join("\n")}\n`;
 }
