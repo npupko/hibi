@@ -204,8 +204,8 @@ proposition, documentPath, coarse, side } ] }`. This is how you find the
 `assertion.id` before an edit.
 
 **`coverage`** → `{ ok, action:"coverage", schemaVersion, doc, summary:{ blocks,
-coveredBlocks, uncoveredBlocks, coverageRatio }, regions:[ { range:{start,end}, preview,
-covered, executable, claimIds } ], next }`. Reports a structural fact per block:
+coveredBlocks, uncoveredBlocks, uncoveredExecutableBlocks, coverageRatio }, regions:[ {
+range:{start,end}, preview, covered, executable, claimIds } ], next }`. Reports a structural fact per block:
 `covered:true` iff a live, **code-grounded** claim's doc anchor resolves cleanly into it (a
 doc-only `suggested` placeholder or a drifted anchor does not count — that's `check`'s
 concern). `executable:true` iff the block is or contains a fenced code block whose info

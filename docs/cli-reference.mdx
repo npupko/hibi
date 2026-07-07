@@ -292,7 +292,7 @@ hibi coverage --doc README.md
   "action": "coverage",
   "schemaVersion": "v1",
   "doc": "README.md",
-  "summary": { "blocks": 12, "coveredBlocks": 7, "uncoveredBlocks": 5, "coverageRatio": 0.58 },
+  "summary": { "blocks": 12, "coveredBlocks": 7, "uncoveredBlocks": 5, "uncoveredExecutableBlocks": 1, "coverageRatio": 0.58 },
   "regions": [
     {
       "range": { "start": 120, "end": 244 },
@@ -302,7 +302,7 @@ hibi coverage --doc README.md
       "claimIds": ["asrt_897e054b48d040db"]
     }
   ],
-  "next": "ground or prune the uncovered regions — hibi record --from-file <specs.json>"
+  "next": "1 uncovered block(s) are executable — record them with --verifier command:\"…\"; ground or prune the rest — hibi record --from-file <specs.json>"
 }
 ```
 
@@ -321,9 +321,10 @@ code block** whose info string is one of the exact set `sh`, `bash`, `zsh`, `she
 `console` — the whole detection rule, no other heuristics (a ` ```json ` or ` ```ts `
 block is not executable). An **uncovered executable** block is the highest-value
 grounding target: it can carry a `command:` verifier and reach a `supported`/`refuted`
-behavioral verdict, so when any exist the `next` hint leads with them
-(`"N uncovered block(s) are executable — record them with --verifier command:"…""`).
-`coverage` still only tags — it never records a claim; creation stays explicit.
+behavioral verdict, so when any exist the `next` hint leads with them and
+`summary.uncoveredExecutableBlocks` counts them; the general ground-or-prune steer
+for any remaining prose blocks still follows. `coverage` only tags — it never
+records a claim; creation stays explicit.
 
 ## `hibi retire`
 
@@ -482,7 +483,7 @@ verdict is surfaced but never affects exit codes. `diff` additionally reports
 each claim row is the lean handle described above. **`query`** returns
 `{ ok, action, schemaVersion, path, count, hits[] }` — the way you find a claim's
 id before editing. **`coverage`** returns `{ ok, action, schemaVersion, doc,
-summary: { blocks, coveredBlocks, uncoveredBlocks, coverageRatio }, regions[], next }`
+summary: { blocks, coveredBlocks, uncoveredBlocks, uncoveredExecutableBlocks, coverageRatio }, regions[], next }`
 — see [`hibi coverage`](#hibi-coverage) above.
 
 ## Exit codes

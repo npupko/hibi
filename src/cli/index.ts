@@ -802,12 +802,14 @@ async function main(argv: string[]): Promise<number> {
       if (!values.doc) return fail("coverage requires --doc", mode);
       try {
         const result = await engine.coverage(values.doc as string);
-        // Uncovered executable blocks (```sh/bash/… — coverage.ts) are the
-        // highest-value grounding targets: they can carry a `command:` verifier and
-        // reach `supported`/`refuted`, so steer the agent to them first.
-        const uncoveredExecutable = result.regions.filter(
-          (r) => !r.covered && r.executable,
-        ).length;
+        // The uncovered blocks are the audit worklist: ground each one a code span
+        // backs (record), or prune it as ungrounded prose. Executable blocks
+        // (```sh/bash/… — coverage.ts) lead the hint — they can carry a `command:`
+        // verifier and reach a behavioral verdict — but the general ground-or-prune
+        // steer still follows when other uncovered blocks remain (never dropped).
+        const { uncoveredBlocks, uncoveredExecutableBlocks } = result.summary;
+        const groundOrPrune =
+          "ground or prune the rest — `hibi record --from-file <specs.json>`";
         const value = {
           ok: true,
           action: "coverage",
@@ -815,13 +817,14 @@ async function main(argv: string[]): Promise<number> {
           doc: values.doc,
           summary: result.summary,
           regions: result.regions,
-          // The uncovered blocks are the audit worklist: ground each one a code
-          // span backs (record), or prune it as ungrounded prose. Executable blocks
-          // lead — they are the ones a verifier can drive to a behavioral verdict.
           next:
-            uncoveredExecutable > 0
-              ? `${uncoveredExecutable} uncovered block(s) are executable — record them with --verifier command:"…"`
-              : result.summary.uncoveredBlocks > 0
+            uncoveredExecutableBlocks > 0
+              ? `${uncoveredExecutableBlocks} uncovered block(s) are executable — record them with --verifier command:"…"${
+                  uncoveredBlocks > uncoveredExecutableBlocks
+                    ? `; ${groundOrPrune}`
+                    : ""
+                }`
+              : uncoveredBlocks > 0
                 ? "ground or prune the uncovered regions — `hibi record --from-file <specs.json>`"
                 : "hibi check",
         };

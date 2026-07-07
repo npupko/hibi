@@ -62,6 +62,12 @@ export interface CoverageSummary {
   blocks: number;
   coveredBlocks: number;
   uncoveredBlocks: number;
+  /**
+   * Uncovered blocks that are executable (a `sh`/`bash`/… fence) — the
+   * highest-value grounding targets, since they can carry a `command:` verifier.
+   * A subset of `uncoveredBlocks`; drives the `coverage` `next` hint.
+   */
+  uncoveredExecutableBlocks: number;
   /** `coveredBlocks / blocks` — 0 when the document has no blocks. */
   coverageRatio: number;
 }
@@ -112,29 +118,12 @@ export const EXECUTABLE_INFO_STRINGS: ReadonlySet<string> = new Set([
   "console",
 ]);
 
-/**
- * True iff `blockText` is (or contains) a fenced code block whose info-string
- * language token is in {@link EXECUTABLE_INFO_STRINGS}. Scans fence *openers* only
- * (a bare closing fence carries no info string), using the same marker-char fence
- * tracking as `splitBlocks` so the two agree on where fences open and close.
- */
-function hasExecutableFence(blockText: string): boolean {
-  let fenceChar = ""; // the open fence's marker char, or "" when outside a fence
-  for (const rawLine of blockText.split("\n")) {
-    const trimmed = rawLine.trim();
-    const fence = FENCE.exec(trimmed);
-    if (!fence) continue;
-    const marker = fence[0][0] as string;
-    if (fenceChar === "") {
-      // Opener: the info string is the token right after the run of markers.
-      fenceChar = marker;
-      const lang = trimmed.slice(fence[0].length).trim().split(/\s+/)[0] ?? "";
-      if (EXECUTABLE_INFO_STRINGS.has(lang.toLowerCase())) return true;
-    } else if (marker === fenceChar) {
-      fenceChar = ""; // Closer: same marker char re-closes the open fence.
-    }
-  }
-  return false;
+/** One segmented block: its char span and whether it carries an executable fence. */
+interface Block {
+  start: number;
+  end: number;
+  /** True iff the block opened a fence whose info-string language is executable. */
+  executable: boolean;
 }
 
 /**
@@ -147,11 +136,17 @@ function hasExecutableFence(blockText: string): boolean {
  * Fenced code blocks are kept whole: a blank line *inside* a ```/~~~ fence does
  * not split the block, so a code example with blank lines stays one block (and
  * one coverage region) instead of being over-counted as several.
+ *
+ * The same pass tags each block `executable` when it opens a fence whose info
+ * string is in {@link EXECUTABLE_INFO_STRINGS} — computed here rather than in a
+ * second scan so the fence state machine lives in exactly one place (a block is
+ * never split across a fence, so per-block is the right granularity).
  */
-function splitBlocks(text: string): { start: number; end: number }[] {
-  const out: { start: number; end: number }[] = [];
+function splitBlocks(text: string): Block[] {
+  const out: Block[] = [];
   let start = -1; // content start of the open block, or -1 when between blocks
   let end = -1; // content end (exclusive) of the last non-blank line seen
+  let executable = false; // did the open block open an executable fence?
   let fenceChar = ""; // the open fence's marker char ("`"/"~"), or "" when outside
   let cursor = 0;
   const len = text.length;
@@ -164,13 +159,21 @@ function splitBlocks(text: string): { start: number; end: number }[] {
     if (fence) {
       // A fence line is block content; it opens a fence, or closes the open one.
       const marker = fence[0][0] as string;
-      if (fenceChar === "") fenceChar = marker;
-      else if (marker === fenceChar) fenceChar = "";
+      if (fenceChar === "") {
+        // Opener: the info string is the token right after the run of markers.
+        fenceChar = marker;
+        const lang =
+          trimmed.slice(fence[0].length).trim().split(/\s+/)[0] ?? "";
+        if (EXECUTABLE_INFO_STRINGS.has(lang.toLowerCase())) executable = true;
+      } else if (marker === fenceChar) {
+        fenceChar = ""; // Closer: same marker char re-closes the open fence.
+      }
     }
     if (trimmed.length === 0 && fenceChar === "") {
       if (start >= 0) {
-        out.push({ start, end });
+        out.push({ start, end, executable });
         start = -1;
+        executable = false;
       }
     } else {
       if (start < 0) start = cursor + (line.length - line.trimStart().length);
@@ -179,7 +182,7 @@ function splitBlocks(text: string): { start: number; end: number }[] {
     if (nl === len) break;
     cursor = nl + 1;
   }
-  if (start >= 0) out.push({ start, end });
+  if (start >= 0) out.push({ start, end, executable });
   return out;
 }
 
@@ -222,20 +225,22 @@ export async function coverage(
 
   const blocks = splitBlocks(docContent);
   const regions: CoverageRegion[] = blocks.map((b) => {
-    const blockText = docContent.slice(b.start, b.end);
     const claimIds = spans
       .filter((s) => overlaps(s.region, b.start, b.end))
       .map((s) => s.claimId);
     return {
       range: { start: b.start, end: b.end },
-      preview: preview(blockText),
+      preview: preview(docContent.slice(b.start, b.end)),
       covered: claimIds.length > 0,
-      executable: hasExecutableFence(blockText),
+      executable: b.executable,
       claimIds,
     };
   });
 
   const coveredBlocks = regions.filter((r) => r.covered).length;
+  const uncoveredExecutableBlocks = regions.filter(
+    (r) => !r.covered && r.executable,
+  ).length;
   const total = regions.length;
   return {
     regions,
@@ -243,6 +248,7 @@ export async function coverage(
       blocks: total,
       coveredBlocks,
       uncoveredBlocks: total - coveredBlocks,
+      uncoveredExecutableBlocks,
       coverageRatio: total === 0 ? 0 : coveredBlocks / total,
     },
   };
