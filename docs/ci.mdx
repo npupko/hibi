@@ -49,7 +49,7 @@ pipeline on rather than a probabilistic guess.
 ## GitHub Action
 
 The Hibi repository is itself a published GitHub Action. Reference it by release
-tag (`npupko/hibi@v0.1.2` to pin a release, or `@main` to track the
+tag (`npupko/hibi@v0.2.3` to pin a release, or `@main` to track the
 tip) and pass its behavior through `with:` inputs. The action installs Bun and
 runs the `hibi` binary for you, so a minimal drift gate is a few lines:
 
@@ -62,7 +62,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: npupko/hibi@v0.1.2
+      - uses: npupko/hibi@v0.2.3
         with:
           command: check
           fail-on: gating
@@ -92,6 +92,13 @@ jobs:
   also mark the artifacts.
 </ParamField>
 
+<ParamField path="run-verifiers" type="boolean" default="false">
+  When `true`, the action passes `--run-verifiers` to the command, so declared
+  verifiers execute during the run and behavioral claims can reach `supported`
+  or `refuted`. Off by default: verifiers execute repo-committed commands — a
+  supply-chain surface — and Hibi never runs them without this explicit opt-in.
+</ParamField>
+
 <ParamField path="working-directory" type="string" default=".">
   Directory to run Hibi in: the anchor root that contains the `.claims/` store.
   Defaults to the repository root.
@@ -114,6 +121,17 @@ shared with the CLI's `--fail-on` flag, so a local run and the action agree.
   `since` on pull requests, so PR runs only re-verify the claims a change could
   have touched. `diff` scopes its work through `git diff --name-only`, so it stays
   fast on large repositories.
+</Tip>
+
+<Tip>
+  When a pull request flags a behavioral claim `at-risk` and you have checked
+  that the behavior still holds, the sanctioned acknowledgment is
+  `hibi ignore --claim <id> --reason <text>` (the reason is required). The
+  suppression is recorded in the store; while it holds, the at-risk is
+  non-gating, does not affect the exit code, and is surfaced as
+  `suppressed: true` in the JSON. It **lapses automatically** the moment any
+  acknowledged evidence file changes again or a new evidence path appears — an
+  acknowledgment never becomes a permanent mute.
 </Tip>
 
 ## git hooks

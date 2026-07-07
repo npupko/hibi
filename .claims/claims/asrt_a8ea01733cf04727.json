@@ -1,0 +1,59 @@
+{
+  "id": "asrt_a8ea01733cf04727",
+  "propositionId": "prop_4d6babefe42e42c5",
+  "documentId": "doc_de9871be3edeb80d",
+  "owner": "hibi-dogfood",
+  "ref": "ADR-002",
+  "anchor": {
+    "doc": {
+      "file": "docs/cli-reference.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "unchanged · moved · changed · ambiguous · orphaned",
+          "prefix": "unchanged · code:changed`,\nfrom the vocabulary `",
+          "suffix": "`), an\noptional behavioral belief on behavioral "
+        },
+        {
+          "kind": "text-position",
+          "start": 19454,
+          "end": 19504
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/core/model.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "\"orphaned\", // span deleted / unresolvable",
+            "prefix": "  \"ambiguous\", // matches in several places\n    ",
+            "suffix": "\n  ])\n  .meta({ id: \"AnchorState\" });\nexport typ"
+          },
+          {
+            "kind": "text-position",
+            "start": 2595,
+            "end": 2637
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "array",
+            "structuralHash": "c60db945f7b10227",
+            "semanticHash": "8743864f821018c7"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "array",
+            "value": "[\"unchanged\",//found,identical\"moved\",//found,relocated(samecontent)\"changed\",//found,contentdiffers\"ambiguous\",//matchesinseveralplaces\"orphaned\",//spandeleted/unresolvable]"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verifiers": [],
+  "attrs": {}
+}

@@ -70,8 +70,9 @@ grades the result on **two independent axes**, not one flat status:
   `ambiguous`, or `orphaned`.
 - **Behavioral belief**: *"do we still believe the documented behavior holds?"* Present only
   on behavioral claims (absent otherwise): `unverified`, `at-risk`, `supported`, or
-  `refuted`. It moves from a resting `unverified` to `at-risk` when reachable evidence
-  changes, and becomes `supported` or `refuted` when an executable **verifier** runs.
+  `refuted`. It moves from a resting `unverified` to `at-risk` when the claim's evidence
+  set changes, and becomes `supported` or `refuted` when an executable **verifier** runs
+  under `hibi check --run-verifiers`.
 
 Hibi keeps the two apart on purpose. The code under a claim can move without the documented
 behavior coming into question, and a behavior can come into doubt without the prose changing a
@@ -105,7 +106,7 @@ flowchart TD
   D -->|span gone / changed| DG["doc:orphaned / doc:changed<br/>stop — do not verify stale text"]
   D -->|span found| K["localize CODE side<br/>fuse redundant selectors"]
   K --> G["grade by confidence band<br/>code:unchanged/moved/changed/…"]
-  G --> B["behavioral? change-gate<br/>+ run verifiers"]
+  G --> B["behavioral? change-gate<br/>+ verifiers (--run-verifiers)"]
   B --> V["verdict<br/>doc:… · code:… · behavior:…"]
   V --> O["exit code + optional banner"]
 ```
@@ -117,8 +118,9 @@ code as if it still existed.
   <Step title="Record">
     You record a claim with `hibi record`, pointing at a documented span and the code span(s)
     it describes. The anchors land in the committed claim store under `.claims/` (one file
-    per claim) and become the baseline. The anchor *is* the baseline, so `check` runs
-    offline and stays correct under a shallow clone.
+    per claim) and become the baseline; on a behavioral claim, Hibi also captures an
+    `evidenceBaseline` — a hash per file in the claim's evidence set. The anchor *is* the
+    baseline, so `check` runs offline and stays correct under a shallow clone.
   </Step>
   <Step title="Resolve the doc side">
     On `check`, Hibi first finds the documented sentence in the current document and extracts
@@ -136,9 +138,11 @@ code as if it still existed.
     verdict for the code side.
   </Step>
   <Step title="Behavioral routing">
-    If the claim is behavioral, a change-gate decides whether reachable evidence
-    changed; only then does the belief go `at-risk`. Any linked verifiers run out-of-process
-    and can push the belief to `supported` or `refuted`.
+    If the claim is behavioral, a change-gate compares its evidence set — the anchored
+    file, the files it imports, and any scoped globs — against the recorded
+    `evidenceBaseline`; only when evidence changed does the belief go `at-risk`. When
+    `check` is invoked with `--run-verifiers`, linked verifiers run out-of-process and can
+    push the belief to `supported` or `refuted`.
   </Step>
   <Step title="Verdict & exit">
     Hibi emits the two-axis verdict, sets the process exit code per its contract, and, when

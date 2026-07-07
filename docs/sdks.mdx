@@ -41,6 +41,12 @@ tree. The verdict you return reads like the rest of Hibi's output:
 `doc:unchanged · code:changed · behavior:at-risk` (see [Verdicts](/verdicts) for the
 full vocabulary).
 
+Verifier `kind`s are **open strings**, not a schema enum: the engine routes a
+`verify` call to your resolver by exact string match, so a verifier reaches you only
+when its `kind` appears in the `verifierKinds` you returned from `describe`. Declare
+`"command"`, `"snapshot"`, or any string you invent — the `verify` request and
+response contract is the same for every kind; only the routing key varies.
+
 <Note>
   A resolver that grades anchors is advisory unless it's the engine's own built-in drift
   logic. An opt-in semantic advisor may explain or triage a verdict; it never gates and

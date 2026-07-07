@@ -1,14 +1,14 @@
 ---
-title: "Four Workflows Where Hibi Catches Documentation Drift"
+title: "Six Workflows Where Hibi Catches Documentation Drift"
 sidebarTitle: "Workflows"
-description: "Four key moments: trust-check before following a doc, keep docs honest in a PR, see blast radius before a refactor, and onboard an existing repo fast."
+description: "Six key moments: trust-check before following a doc, keep docs honest in a PR, see blast radius before a refactor, onboard an existing repo, consolidate docs, and silence a known-good at-risk."
 icon: "route"
 ---
 
 Hibi is not a thing you run on a schedule and forget. It's a thing you reach for at
 specific *moments* — the instant before you trust a doc, the instant after you change
 code. Each moment below is a real problem, the one command that answers it, and what
-you do with the answer. (For the same four flows as an agent-facing playbook with raw
+you do with the answer. (For the same flows as an agent-facing playbook with raw
 JSON, see the [`hibi` skill cookbook](https://github.com/npupko/hibi/blob/main/plugins/hibi-cli/skills/hibi/references/cookbook.md).)
 
 The running example: a service with `src/retry.ts` (`MAX_ATTEMPTS = 5`) and
@@ -92,7 +92,10 @@ hibi suggest --doc README.md
 advisory (`suggested`, never-gating) record per anchorable sentence — the doc side
 filled in, the code side waiting. You promote the ones worth enforcing by pinning their
 code and re-anchoring, then `hibi check` to confirm. You've gone from unprotected docs
-to a tracked, gating store without writing a single anchor from scratch.
+to a tracked, gating store without writing a single anchor from scratch. Where claims
+declare verifiers, `hibi check --run-verifiers` also executes them — a pass upgrades
+the behavioral belief to `supported`, a fail gates as `refuted`; plain `check` never
+spawns a verifier process.
 
 When you (or an agent) already know the code that backs each sentence, author the whole
 set in one pass instead of one `record` per claim — no shell-quoting of verbatim spans:
@@ -129,6 +132,28 @@ hand. This is the batch companion to the single-claim
 [`hibi reanchor <id> --doc …`](/cli-reference#hibi-reanchor); it is **not**
 [supersession](/lifecycle), which records a document-to-document edge rather than
 relocating claims.
+
+## 6. Silence a known-good at-risk
+
+**The problem.** A behavioral claim went `at-risk` because a file in its evidence set
+changed — say a helper that `src/retry.ts` imports. You re-verified by hand: the
+behavior still holds. But the flag keeps resurfacing on every run, and `reanchor` is
+the wrong verb — nothing about the anchor moved.
+
+**The command.**
+
+```sh
+hibi ignore --claim asrt_1a2b3c --reason "retry cap re-verified by hand against PR-1301"
+```
+
+**The payoff.** `ignore` acknowledges the *current* changed evidence: it records the
+acknowledged `{ path → hash }` map and your reason (required) on the claim. While that
+evidence stands still, the at-risk is non-gating and surfaces as `suppressed: true` in
+the JSON. The suppression **lapses on its own** the moment any acknowledged path
+changes again or a new evidence path appears — you silenced one inspected change-set,
+not the claim. If you find yourself ignoring the same claim repeatedly, that's the cue
+to declare a verifier and let `hibi check --run-verifiers` do the re-verification for
+you.
 
 ## Triage anytime
 

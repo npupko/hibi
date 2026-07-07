@@ -118,7 +118,11 @@ A few rules shape the outcome before the score becomes a state:
   <Accordion title="At least two selectors must resolve">
     Fewer than **two** resolved selectors and the side is `orphaned` at confidence
     0. A lone surviving selector is not corroboration (it could be a coincidental
-    match), so Hibi refuses to grade on it.
+    match), so Hibi refuses to grade on it. One exception: a single **near-exact
+    `text-quote` match (similarity ≥ 0.9)** satisfies the minimum on its own —
+    that is what lets a relocated prose sentence grade `moved` instead of
+    `orphaned`. Quotes shorter than **8 characters** are too common to trust for
+    multi-match detection and are ineligible for `ambiguous`.
   </Accordion>
   <Accordion title="Structural-only AST matches score 0.40">
     If the `ast-node` matches only structurally (same shape after a rename or a
@@ -178,8 +182,10 @@ checks. The first two tiers are what anchors and fusion cover:
   </Step>
   <Step title="Tier 3: behavioral">
     Claims that structural matching can't prove ("retries with backoff", "sorts
-    ascending") need a different mechanism: change-gated attention and executable
-    verifiers, still with no model on the verdict path.
+    ascending") need a different mechanism: a change-gate over the claim's evidence
+    set, hashed at record time into an `evidenceBaseline`, plus executable verifiers
+    dispatched only under `check --run-verifiers` — still with no model on the
+    verdict path.
   </Step>
 </Steps>
 

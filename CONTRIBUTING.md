@@ -87,6 +87,34 @@ When adding a page, create the `.mdx` file under `docs/` and add its slug to a g
 in `docs/docs.json` → `navigation.groups`. Do not name a navigation entry `api`. The
 `/api` path is reserved by Mintlify and 404s in production.
 
+## When `hibi check` fails in CI
+
+Hibi **dogfoods itself**: this repo has a committed `.claims/` store binding
+sentences in `docs/` to the constants and enums in `src/` they describe (state
+vocabularies → `src/core/model.ts`, grading constants → `src/algo/params.ts`,
+exit codes → `src/core/gating.ts`). CI runs the **in-tree** engine, read-only:
+
+```sh
+bun run src/cli/index.ts check --fail-on gating
+```
+
+If your change edits one of those anchored constants or doc sentences, this step
+turns the build **red** — that is the gate working, not CI flakiness. It means a
+documented claim and the code it describes have drifted apart. To fix it:
+
+1. **See what drifted:** `bun run src/cli/index.ts status --doc <the-doc>` — it
+   names the suspect claims and their remediation menu.
+2. **Decide which side is right.** If the *doc* is the spec, fix the code to
+   match; if the *code* is now correct, update the sentence in `docs/`.
+3. **Re-anchor the claim** at its new location, attesting the re-verification:
+   `bun run src/cli/index.ts reanchor <claim-id> --ref <your-PR>`. Re-anchoring
+   **with** `--ref` retains authored trust; **without** it, `verified` trust is
+   downgraded to `inferred` (the anti-gaming rule — you must attest the claim is
+   still true, not just relink it to clear the gate).
+
+Re-run `check` locally until it is green, then push. A genuinely obsolete claim
+is withdrawn with `retire <claim-id>`, not by hand-deleting its `.claims/` file.
+
 ## Commit conventions
 
 Hibi uses **[Conventional Commits](https://www.conventionalcommits.org/)**, and

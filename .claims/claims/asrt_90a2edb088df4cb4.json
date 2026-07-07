@@ -1,0 +1,59 @@
+{
+  "id": "asrt_90a2edb088df4cb4",
+  "propositionId": "prop_a72d2c48159349eb",
+  "documentId": "doc_25887c67cd18d901",
+  "owner": "hibi-dogfood",
+  "ref": "ADR-002",
+  "anchor": {
+    "doc": {
+      "file": "docs/verdicts.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "48-character context window",
+          "prefix": "hold 0.4` and\n  `Match_Distance 100000`, over a ",
+          "suffix": ". The full selector\n  model, weights, and tiers "
+        },
+        {
+          "kind": "text-position",
+          "start": 10441,
+          "end": 10468
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/algo/params.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "TEXT_QUOTE_CONTEXT = 48",
+            "prefix": ": 0.4,\n  matchDistance: 100000,\n};\nexport const ",
+            "suffix": ";\n\n/** A minimum of two agreeing selectors is re"
+          },
+          {
+            "kind": "text-position",
+            "start": 560,
+            "end": 583
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "variable_declarator",
+            "structuralHash": "de0dbd0a8e84411f",
+            "semanticHash": "3e47faab960c1c6f"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "number",
+            "value": "48"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verifiers": [],
+  "attrs": {}
+}

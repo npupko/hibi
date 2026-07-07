@@ -122,17 +122,22 @@ Markdown, as visible prose) rather than corrupting the document.
 on **every** turn, so their length is a running budget. A multi-line
 banner there is waste.
 
-For these files the banner collapses to a **single-line pointer**:
+Which files qualify is store configuration: **`StoreConfig.instructionFiles`**
+is a list of globs, defaulting to `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, and
+`.github/copilot-instructions.md`. For a document matching any of them, the
+banner body collapses to a **single-line pointer**:
 
 ```markdown
 <!-- HIBI:BEGIN v1 7f3a9c2e -->
-> STALE — 2 claim(s); run hibi status --doc CLAUDE.md
+> STALE — 2 claim(s); run `hibi status --doc CLAUDE.md`
 <!-- HIBI:END v1 7f3a9c2e sha=9e8d7c6b -->
 ```
 
-The pointer says only that the file is stale and how to get the detail; the full
-per-claim breakdown lives in the JSON output and `hibi status`. The
-always-loaded instruction file stays lean.
+Only the body shrinks. The single line is still sentinel-wrapped, still
+checksummed in the END sentinel, and still placed at the top of the file; every
+guarantee above applies unchanged. The pointer says only that the file is stale
+and how to get the detail; the full per-claim breakdown lives in the JSON output
+and `hibi status`. The always-loaded instruction file stays lean.
 
 <Tip>
   Run `hibi status --doc <path>` to see the full suspect set for any file: it's
@@ -146,6 +151,26 @@ For Markdown files that already carry frontmatter, Hibi can also write a
 `frontmatterStatus` field alongside the banner. It only does this where
 frontmatter already exists, and it **never clobbers an author's own `status`
 key**: that field belongs to you.
+
+## Pristine documents
+
+Some documents should never be written to at all: a vendored spec, a
+third-party README, a read-only file you track but do not own. Mark these
+**pristine** and Hibi never stamps them — no banner, no `frontmatterStatus`,
+even under `--write`. A `check --write` over a pristine document leaves its
+bytes exactly as they were; its verdicts surface only through the JSON output,
+`hibi status`, and exit codes.
+
+A document becomes pristine in either of two ways:
+
+- **Per document** — record it with `hibi record --pristine`.
+- **By pattern** — list globs in **`StoreConfig.pristine`**. The globs are
+  evaluated **at stamp time**, so adding `vendor/**` to the config later
+  protects documents whose claims were recorded before the glob existed.
+
+The protection story for a pristine document is the read-time gate: a reader or
+agent runs `hibi status --doc <path>` before trusting it, exactly as with any
+other file. The verdict just never lives in the artifact itself.
 
 ## What the engine writes, and what it doesn't
 
