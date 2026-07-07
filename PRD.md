@@ -755,6 +755,19 @@ correctness (especially the suspect-set precision of §11.3) at each step:
   gating claims, paragraph first-class); `doctor` reports the doc-side orphan rate as the
   research's kill-switch metric. **D20** this PRD is demoted to a design record; `docs/` +
   `schemas/` + tests are the living contract, and hibi dogfoods itself on this repo's own docs.
+- **D21 — Onboarding → deterministic `coverage` grounding-audit; the `suggest` extraction verb is
+  removed; `record --from-file` is transactional.** `suggest`'s sentence extraction — even at the
+  research's best-case ~77% precision (LSI trace recovery, §18-B) — hands the agent a proposal
+  stream that is one-in-four noise, and the evidence says human vetting of noisy matrices can
+  *degrade* them (Cuddeback, §18-B). **`coverage --doc <p>`** instead reports a purely structural
+  fact — which blocks of a document a live, code-grounded claim's doc anchor resolves into
+  (per-block `covered`, `coverageRatio`) — and the agent in the loop judges each uncovered block:
+  **ground** it (anchor doc-span + code-span) or **prune** it. No extraction, no proposal noise,
+  nothing NLP-ish in core; D2's principle (the engine never auto-enforces; the agent confirms) and
+  the `suggested → enforced` ladder are unchanged — only the *mechanism* that produces the
+  worklist moved from noisy extraction to deterministic coverage reporting. `record --from-file`
+  validates every spec before any write and rolls the whole batch back on any failure, so a bad
+  item can never half-record a set.
 - **SCIP — rejected as first-party.** Its differentiator over tree-sitter (cross-file semantic symbol
   graph) serves navigation/blast-radius, which §2 says this tool is not; its costs (heavy per-language
   indexer, code-only, two-commit indexing) are permanent. The kinded-anchor seam leaves the door open

@@ -261,7 +261,7 @@ export async function recordClaim(
   }
 
   // Dedup the assertion: one verification instance per (proposition, document).
-  // Re-running `record`/`suggest` on unchanged content must be idempotent (§6) —
+  // Re-running `record` on unchanged content must be idempotent (§6) —
   // otherwise each run would accumulate a duplicate assertion in the store.
   const allAssertions = await store.allAssertions();
   /** Claims already asserting this proposition (the duplicate-proposition signal). */

@@ -156,6 +156,18 @@ code as if it still existed.
   you can trust in CI, not a probabilistic guess.
 </Tip>
 
+## The grounding audit
+
+Claims enter the store deliberately — Hibi never extracts them from prose (extraction is
+noise, and no model runs in the loop). To take an existing document from unprotected to
+tracked, **`hibi coverage --doc <p>`** reports the structural fact: which blocks of the
+document a live, code-grounded claim already backs, and which are uncovered. You (or the
+agent in the loop) walk the uncovered blocks and decide **ground-or-prune** — anchor the
+ones a code span backs with `hibi record`, cut the prose nothing backs. The judgment stays
+with the reader; the worklist and the `coverageRatio` are Hibi's. See the
+[onboarding workflow](/workflows#4-go-from-zero-to-protected-on-an-existing-repo) for the
+full loop.
+
 ## Where to go next
 
 <CardGroup cols={2}>
