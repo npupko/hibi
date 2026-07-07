@@ -27,27 +27,27 @@
         "selectors": [
           {
             "kind": "text-quote",
-            "exact": "DEFAULT_VERIFIER_TIMEOUT_MS = 120_000",
+            "exact": "DEFAULT_VERIFIER_TIMEOUT_MS = 120_000;\n\n/**\n * The argv to run a verifier `ref` as a shell command, per platform: `sh -c` on\n * POSIX, `cmd /c` on Windows (hibi ships Windows binaries, PRD §12). Pure, so the\n * platform branch is unit-testable without spawning. The two shells differ, so\n * cross-platform repos should keep verifier refs shell-neutral (e.g. a runner\n * invocation like `bun test retry`, not a shell builtin or `&&` chain).\n */\nexport function verifierArgv(platform: NodeJS.Platform, ref: string): string[] {\n  return platform === \"win32\" ? [\"cmd\", \"/c\", ref] : [\"sh\", \"-c\", ref];\n",
             "prefix": "r more than the 5s RPC timeout. */\nexport const ",
-            "suffix": ";\n\nexport class CommandRunnerResolver implements"
+            "suffix": "}\n\nexport class CommandRunnerResolver implements"
           },
           {
             "kind": "text-position",
             "start": 1216,
-            "end": 1253
+            "end": 1813
           },
           {
             "kind": "ast-node",
             "language": "typescript",
-            "nodeType": "variable_declarator",
-            "structuralHash": "de0dbd0a8e84411f",
-            "semanticHash": "d796ae9fc33237c4"
+            "nodeType": "program",
+            "structuralHash": "9ed012d5c8e6a952",
+            "semanticHash": "4d2bc470ad188552"
           },
           {
             "kind": "value",
             "language": "typescript",
-            "nodeKind": "number",
-            "value": "120_000"
+            "nodeKind": "string",
+            "value": "\"../../algo/resolve.ts\""
           }
         ]
       }

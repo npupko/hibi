@@ -528,8 +528,10 @@ hibi check --run-verifiers --verifier-timeout 300  # raise the per-verifier time
 ```
 
 The built-in **command runner** handles `kind: "command"`: it runs the
-verifier's `ref` as a shell command (`sh -c`, cwd = repo root). Exit `0` →
-`supported`; non-zero → `refuted`; a timeout or spawn failure produces no
+verifier's `ref` as a shell command via `sh -c` on POSIX or `cmd /c` on Windows
+(cwd = repo root), so cross-platform repos should keep verifier refs
+shell-neutral (e.g. `bun test retry`, not a shell builtin or `&&` chain). Exit
+`0` → `supported`; non-zero → `refuted`; a timeout or spawn failure produces no
 result, so the belief stays at the deterministic baseline. The per-verifier
 timeout defaults to **120 seconds**; tune it with `--verifier-timeout
 <seconds>`. External runner resolvers still require the default-deny manifest

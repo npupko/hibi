@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { Engine } from "../src/index.ts";
+import { verifierArgv } from "../src/resolver/builtin/command-runner.ts";
 import { makeRepo } from "./helpers.ts";
 
 /**
@@ -76,5 +77,31 @@ describe("command verifier runner (D13)", () => {
     await engine.check({ runVerifiers: true });
     expect(existsSync(sentinel)).toBe(true);
     await repo.cleanup();
+  });
+});
+
+describe("verifierArgv — cross-platform shell dispatch (PRD §12)", () => {
+  test("Windows dispatches via cmd /c", () => {
+    expect(verifierArgv("win32", "bun test retry")).toEqual([
+      "cmd",
+      "/c",
+      "bun test retry",
+    ]);
+  });
+
+  test("POSIX platforms dispatch via sh -c", () => {
+    for (const platform of ["linux", "darwin"] as const) {
+      expect(verifierArgv(platform, "bun test retry")).toEqual([
+        "sh",
+        "-c",
+        "bun test retry",
+      ]);
+    }
+  });
+
+  test("the ref is passed through verbatim as the single command arg", () => {
+    const ref = 'bun test --filter "retry & backoff"';
+    expect(verifierArgv("darwin", ref)[2]).toBe(ref);
+    expect(verifierArgv("win32", ref)[2]).toBe(ref);
   });
 });
