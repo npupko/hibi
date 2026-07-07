@@ -388,6 +388,9 @@ async function main(argv: string[]): Promise<number> {
       write: { type: "boolean", default: false },
       "fail-on": { type: "string", default: "gating" },
       "no-ast": { type: "boolean", default: false },
+      // check — execute declared verifiers (D13); repo-committed commands, opt-in only.
+      "run-verifiers": { type: "boolean", default: false },
+      "verifier-timeout": { type: "string" },
       // query / diff
       path: { type: "string" },
       since: { type: "string" },
@@ -656,10 +659,17 @@ async function main(argv: string[]): Promise<number> {
 
     case "check": {
       const engine = await open();
+      const verifierTimeout = values["verifier-timeout"];
       const report = await engine.check({
         write: Boolean(values.write),
         failOn: String(values["fail-on"]) as FailOn,
         ref: await currentRef(anchorRoot),
+        // Verifiers execute repo-committed commands — opt-in only (D13).
+        runVerifiers: Boolean(values["run-verifiers"]),
+        verifierTimeoutMs:
+          verifierTimeout !== undefined
+            ? Number(verifierTimeout) * 1000
+            : undefined,
       });
       const value = projectCheckReport(
         "check",
@@ -1187,8 +1197,9 @@ Commands:
            [--enforce|--enforcement <e>] [--behavioral|--no-behavioral] [--verifier kind:ref ...] [--pristine] [--ttl <iso>]
                                     Record a span-first claim (doc span + zero or more code spans)
   record   --from-file <p|->        Batch-record a JSON array of claim specs (- = stdin)
-  check    [--write] [--fail-on gating|warn|tamper|never]
+  check    [--write] [--fail-on gating|warn|tamper|never] [--run-verifiers [--verifier-timeout <s>]]
                                     Verify all claims; emit verdicts; exit per contract
+                                    (--run-verifiers executes declared verifiers — repo-committed commands)
   diff     --since <ref> [--write]  What did this change invalidate? (write-time loop)
   status   [--doc <p>]              No --doc: repo-wide health overview. --doc: one-document gate.
   query    --path <p>               What claims are anchored to / cover this doc OR code path?

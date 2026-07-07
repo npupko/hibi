@@ -85,6 +85,7 @@ import {
   type SupersedeResult,
   supersede,
 } from "./engine/supersede.ts";
+import { CommandRunnerResolver } from "./resolver/builtin/command-runner.ts";
 import { DriftResolver, ResolverRegistry } from "./resolver/registry.ts";
 import { ClaimStore, type StoreLocation } from "./store/store.ts";
 
@@ -183,13 +184,24 @@ export async function loadAnalyzer(): Promise<Analyzer | undefined> {
   return analyzerPromise;
 }
 
-/** Build the resolver registry: built-in drift + manifest-gated externals (§7). */
+/**
+ * Build the resolver registry: built-in drift + the built-in command verifier
+ * runner + manifest-gated externals (§7/§17.6). `runVerifiers` (default false)
+ * gates whether verifiers are dispatched at all — the command runner is always
+ * *registered*, but the registry only *invokes* a verifier under the explicit
+ * `check --run-verifiers` opt-in (D13 security model).
+ */
 async function buildRegistry(
   store: ClaimStore,
   analyzer?: AstAnalyzer,
+  opts: { runVerifiers?: boolean; verifierTimeoutMs?: number } = {},
 ): Promise<ResolverRegistry> {
   const registry = new ResolverRegistry();
+  registry.runVerifiers = opts.runVerifiers ?? false;
   registry.register(new DriftResolver(analyzer));
+  registry.register(
+    new CommandRunnerResolver(store.anchorRoot, opts.verifierTimeoutMs),
+  );
   await registry.loadFromManifest(store);
   return registry;
 }
@@ -377,10 +389,21 @@ export class Engine {
       failOn?: FailOn;
       onlyFiles?: Iterable<string>;
       ref?: string;
+      /**
+       * Execute declared verifiers (§17.6, D13). Default false. Only the
+       * `check --run-verifiers` path sets it; `status`/`query`/`list`/`doctor`
+       * never do, so no verifier process spawns outside this opt-in.
+       */
+      runVerifiers?: boolean;
+      /** Per-verifier timeout in ms (default 120s). */
+      verifierTimeoutMs?: number;
     } = {},
   ): Promise<CheckReport> {
     const analyzer = await this.analyzer();
-    const registry = await buildRegistry(this.store, analyzer);
+    const registry = await buildRegistry(this.store, analyzer, {
+      runVerifiers: opts.runVerifiers ?? false,
+      verifierTimeoutMs: opts.verifierTimeoutMs,
+    });
     try {
       const options: CheckOptions = {
         // The analyzer is also handed to `check` directly: it drives the

@@ -167,6 +167,13 @@ export class ResolverRegistry {
   private resolvers: Resolver[] = [];
   private disposers: Array<() => void> = [];
   private driftResolver: DriftResolver;
+  /**
+   * Whether to dispatch verifiers (§17.6, D13). Default **false** — verifiers
+   * execute repo-committed commands, so they run only under the explicit
+   * `check --run-verifiers` opt-in. `status`/`query`/`list`/`doctor`/plain
+   * `check` leave this false, so no verifier process ever spawns.
+   */
+  runVerifiers = false;
 
   constructor(ast?: AstAnalyzer, now?: number) {
     this.driftResolver = new DriftResolver(ast, now);
@@ -257,11 +264,12 @@ export class ResolverRegistry {
     //     documented sentence is locatable (unchanged/moved). A non-behavioral
     //     claim never gains a behavior state, so the two resolve paths agree (§10).
     if (
+      this.runVerifiers &&
       assertion.verifiers.length > 0 &&
       verdict.behavior !== undefined &&
       (verdict.doc === "unchanged" || verdict.doc === "moved")
     ) {
-      verdict.behavior = await this.runVerifiers(
+      verdict.behavior = await this.dispatchVerifiers(
         assertion,
         files,
         verdict.behavior,
@@ -300,7 +308,7 @@ export class ResolverRegistry {
    * `supported`; otherwise the deterministic baseline (`at-risk`/`unverified`)
    * is preserved.
    */
-  private async runVerifiers(
+  private async dispatchVerifiers(
     assertion: Assertion,
     files: ResolveFiles,
     baseline: BehaviorState | undefined,
