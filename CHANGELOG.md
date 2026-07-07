@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.0](https://github.com/npupko/hibi/compare/v0.3.0...v0.4.0) (2026-07-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* schema v2 — claimKind and unanchored-legacy are removed.
+
+### Features
+
+* ADR-002 research realignment — real behavioral tier (D12–D20) ([#34](https://github.com/npupko/hibi/issues/34)) ([a488da7](https://github.com/npupko/hibi/commit/a488da72687cd89fabf587f13df8ee1bb904808d))
+
+
+### Bug Fixes
+
+* **ci:** let release-please's tag push trigger the release workflow ([#37](https://github.com/npupko/hibi/issues/37)) ([1049ab5](https://github.com/npupko/hibi/commit/1049ab5dcfee4917fecbb48c1c8bcf500ef66c93))
+
 ## [0.3.0](https://github.com/npupko/hibi/compare/v0.2.3...v0.3.0) (2026-06-26)
 
 
