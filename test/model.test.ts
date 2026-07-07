@@ -379,6 +379,7 @@ describe("canonical model is the single source of truth (§5)", () => {
       behavior: "at-risk",
       expired: false,
       gates: false,
+      suppressed: false,
       remediation: {
         recommended: null,
         actions: [

@@ -37,6 +37,8 @@ export interface VerdictDimensions {
   code: AnchorState;
   behavior?: BehaviorState;
   expired: boolean;
+  /** An authored `hibi ignore` neutralizes an active behavioral `at-risk` (D14). */
+  suppressed?: boolean;
 }
 
 /**
@@ -68,7 +70,8 @@ export function isWarnVerdict(
 ): boolean {
   if (enforcement !== "enforced") return false;
   if (v.gates) return false;
-  return (
-    isWarnAnchor(v.doc) || isWarnAnchor(v.code) || v.behavior === "at-risk"
-  );
+  // A suppressed at-risk is acknowledged — it warns no longer (D14); a `moved`
+  // anchor on either side still does.
+  const behaviorWarns = v.behavior === "at-risk" && !v.suppressed;
+  return isWarnAnchor(v.doc) || isWarnAnchor(v.code) || behaviorWarns;
 }

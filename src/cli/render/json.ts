@@ -50,6 +50,9 @@ export function projectVerdict(
   if (v.behavior !== undefined) out.behavior = v.behavior;
   out.expired = v.expired;
   out.gates = v.gates;
+  // A behavioral at-risk acknowledged via `hibi ignore` (§17.6, D14): surfaced,
+  // but it never affects exit codes.
+  if (v.suppressed) out.suppressed = true;
 
   // Behavioral carve-out: a 1-line "what changed" summary survives concise output.
   if (v.behavior === "at-risk" || v.behavior === "refuted") {

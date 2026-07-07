@@ -35,6 +35,7 @@ import { isAbsolute, join } from "node:path";
 import { isBehavioral } from "./algo/behavioral.ts";
 import { regionText } from "./algo/localize.ts";
 import { type AstAnalyzer, resolveSide } from "./algo/resolve.ts";
+import { hashContent } from "./ast/hash.ts";
 import { removeBanner } from "./banner/banner.ts";
 import type {
   AuthoredTrust,
@@ -53,7 +54,12 @@ import {
   runCheck,
 } from "./engine/check.ts";
 import { buildDoctorReport, type DoctorReport } from "./engine/doctor.ts";
-import { buildEvidenceBaselineFor } from "./engine/evidence.ts";
+import {
+  buildEvidenceBaselineFor,
+  evidenceSetPaths,
+  readEvidenceContents,
+} from "./engine/evidence.ts";
+import { type IgnoreResult, ignoreClaim } from "./engine/ignore.ts";
 import { type ListResult, type ListState, toListRows } from "./engine/list.ts";
 import { type QueryHit, queryByPath } from "./engine/query.ts";
 import {
@@ -113,6 +119,7 @@ export {
   buildDoctorReport,
   type DoctorReport,
 } from "./engine/doctor.ts";
+export { type IgnoreResult, ignoreClaim } from "./engine/ignore.ts";
 export {
   type ListResult,
   type ListRow,
@@ -779,6 +786,39 @@ export class Engine {
   /** Author an `amends`/`supersedes` edge and derive its reverse (§9 `supersede`). */
   async supersede(input: SupersedeInput): Promise<SupersedeResult> {
     return supersede(this.store, input);
+  }
+
+  /**
+   * Acknowledge a behavioral `at-risk` you re-verified by hand (§17.6, D14
+   * `ignore`). Computes the acknowledged `{path → hash}` map — the current
+   * hashes of the currently-changed evidence — and records it plus the required
+   * reason on the claim. The suppression lapses automatically when any
+   * acknowledged path's hash moves again or a new evidence path appears.
+   */
+  async ignore(claimId: string, reason: string): Promise<IgnoreResult> {
+    const assertion = await this.store.getAssertion(claimId);
+    if (!assertion) throw new Error(`No claim ${claimId} in the store.`);
+    const analyzer = await this.analyzer();
+    const readFile = (rel: string) => this.readAnchored(rel);
+    const paths = await evidenceSetPaths(assertion, {
+      analyzer,
+      readFile,
+      root: this.store.anchorRoot,
+    });
+    const evidence = await readEvidenceContents(paths, readFile);
+    // The acknowledged set: every evidence path whose current hash differs from
+    // its baseline entry (or that has none) — exactly the currently-changed
+    // evidence the at-risk is firing on.
+    const baseline = assertion.evidenceBaseline ?? {};
+    const acknowledged: Record<string, string> = {};
+    for (const [p, content] of evidence) {
+      if (content === null) continue;
+      const cur = hashContent(content);
+      if (baseline[p] === undefined || cur !== baseline[p]) {
+        acknowledged[p] = cur;
+      }
+    }
+    return ignoreClaim(this.store, claimId, reason, acknowledged);
   }
 
   /** Mark a document retracted — the author withdrew it (§9 `retract`). */

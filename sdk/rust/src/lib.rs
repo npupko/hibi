@@ -186,6 +186,9 @@ pub struct Verdict {
     pub expired: bool,
     /// Whether this verdict gates the build (exit 2). Only `enforced` claims gate.
     pub gates: bool,
+    /// A behavioral `at-risk` acknowledged via `hibi ignore` (§17.6, D14).
+    #[serde(default)]
+    pub suppressed: bool,
     pub evidence: VerdictEvidence,
     #[serde(default)]
     pub notes: Vec<String>,

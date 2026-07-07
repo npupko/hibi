@@ -143,6 +143,29 @@ function computeBehaviorRisk(
     : { state: "unverified", changed: [] };
 }
 
+/**
+ * Whether an authored `hibi ignore` suppression is still active (§17.6, D14).
+ * Active iff every acknowledged path still hashes to its acknowledged value AND
+ * no currently-changed evidence path lies outside the acknowledged set (a new
+ * path appearing lapses it). Any mismatch → lapsed, and the at-risk resurfaces.
+ */
+function suppressionActive(
+  suppressed: Assertion["suppressed"],
+  evidence: ReadonlyMap<string, string | null> | undefined,
+  behaviorChanged: ChangedEvidence[],
+): boolean {
+  if (!suppressed) return false;
+  for (const [path, ackHash] of Object.entries(suppressed.paths)) {
+    const content = evidence?.get(path);
+    const cur = content == null ? null : hashContent(content);
+    if (cur !== ackHash) return false; // an acknowledged path moved → lapsed
+  }
+  for (const c of behaviorChanged) {
+    if (!(c.path in suppressed.paths)) return false; // a new path → lapsed
+  }
+  return true;
+}
+
 /** Worst-wins precedence when aggregating code-side bundle states. */
 const STATE_RANK: Record<AnchorState, number> = {
   orphaned: 4,
@@ -493,12 +516,22 @@ export function resolveAssertion(
   );
   let behavior: BehaviorState | undefined;
   let behaviorChanged: ChangedEvidence[] = [];
+  let suppressed = false;
   if (behavioral) {
     // Change-gate v2 (§17.6, D14): the anchored-node signal + evidence-set drift.
     // A linked verifier may later upgrade this to supported/refuted (§17.6).
     const risk = computeBehaviorRisk(assertion, codeChanged, opts.evidence);
     behavior = risk.state;
     behaviorChanged = risk.changed;
+    // An authored `hibi ignore` neutralizes an active at-risk (D14): still
+    // surfaced (`suppressed: true`), but contributes nothing to exit codes.
+    if (behavior === "at-risk") {
+      suppressed = suppressionActive(
+        assertion.suppressed,
+        opts.evidence,
+        behaviorChanged,
+      );
+    }
   }
 
   const expired =
@@ -536,6 +569,7 @@ export function resolveAssertion(
     behavior,
     expired,
     gates,
+    suppressed,
     // Deterministic next-action menu derived from the computed states (§9).
     remediation: remediationFor({
       assertionId: assertion.id,

@@ -550,6 +550,13 @@ export const Verdict = z.object({
    * the menu from the computed states regardless — §7.4).
    */
   remediation: Remediation.nullable().default(null),
+  /**
+   * Computed (never persisted): the behavioral `at-risk` was acknowledged via
+   * `hibi ignore` and the acknowledged evidence still stands (§17.6, D14). While
+   * true the at-risk contributes nothing to exit codes; it lapses automatically
+   * when any acknowledged evidence path's hash moves or a new one appears.
+   */
+  suppressed: z.boolean().default(false),
   evidence: VerdictEvidence,
   /** Human-readable explanation crumbs (e.g. "value veto", "structural-only"). */
   notes: z.array(z.string()).default([]),

@@ -41,6 +41,23 @@ export interface DuplicatePropositionRow {
   claimIds: string[];
 }
 
+/**
+ * Rate metrics from the read-only resolution pass (§17.6/D14/D19). Observability,
+ * not gates: the behavioral flag-rate carries the research's >30% tighten-the-gate
+ * trigger; the doc-side rates carry D19's orphan-rate kill-switch (>30% → require
+ * inline IDs). All are shares in [0,1]; 0 when there are no claims.
+ */
+export interface DoctorRates {
+  /** Share of behavioral claims currently `at-risk` or `refuted` (>30% → tighten the gate). */
+  behavioralFlagRate: number;
+  /** Share of all claims whose doc side is `orphaned` (>30% → require inline IDs). */
+  docOrphanedRate: number;
+  /** Share of all claims whose doc side is `moved`. */
+  docMovedRate: number;
+  /** Share of all claims whose doc side is `changed`. */
+  docChangedRate: number;
+}
+
 export interface DoctorReport {
   orphanedAnchors: OrphanedAnchorRow[];
   suggestedNoCode: SuggestedNoCodeRow[];
@@ -52,8 +69,38 @@ export interface DoctorReport {
     staleDocClaims: number;
     duplicatePropositions: number;
   };
+  /** Observability rates (never gate) — the tighten-the-gate / kill-switch triggers. */
+  rates: DoctorRates;
   /** True iff every category is empty — the store has no hidden rot. */
   healthy: boolean;
+}
+
+/** Compute the observability rates over a live check's verdicts (§17.6/D14/D19). */
+function computeRates(report: CheckReport): DoctorRates {
+  const verdicts = report.verdicts;
+  const total = verdicts.length;
+  const share = (n: number, d: number) => (d === 0 ? 0 : n / d);
+
+  const behavioral = verdicts.filter((v) => v.behavior !== undefined);
+  const flagged = behavioral.filter(
+    (v) => v.behavior === "at-risk" || v.behavior === "refuted",
+  );
+
+  return {
+    behavioralFlagRate: share(flagged.length, behavioral.length),
+    docOrphanedRate: share(
+      verdicts.filter((v) => v.doc === "orphaned").length,
+      total,
+    ),
+    docMovedRate: share(
+      verdicts.filter((v) => v.doc === "moved").length,
+      total,
+    ),
+    docChangedRate: share(
+      verdicts.filter((v) => v.doc === "changed").length,
+      total,
+    ),
+  };
 }
 
 /** True when no bundle on the code side carries a precise (gradeable) selector. */
@@ -193,6 +240,7 @@ export function buildDoctorReport(
     staleDocClaims,
     duplicatePropositions,
     counts,
+    rates: computeRates(report),
     healthy,
   };
 }

@@ -356,6 +356,9 @@ async function main(argv: string[]): Promise<number> {
       // list / query
       state: { type: "string" },
       "ids-only": { type: "boolean", default: false },
+      // ignore — acknowledge a behavioral at-risk (D14)
+      claim: { type: "string" },
+      reason: { type: "string" },
       // record / reanchor — doc side (span-first)
       doc: { type: "string" },
       "doc-quote": { type: "string" },
@@ -1070,6 +1073,36 @@ async function main(argv: string[]): Promise<number> {
       }
     }
 
+    case "ignore": {
+      const engine = await open();
+      const claimId = (values.claim as string | undefined) ?? positionals[0];
+      if (!claimId) return fail("ignore requires --claim <id>", mode);
+      const reason = values.reason as string | undefined;
+      if (!reason) return fail("ignore requires --reason <text>", mode);
+      try {
+        const result = await engine.ignore(String(claimId), String(reason));
+        const paths = Object.keys(result.paths);
+        const value = {
+          ok: true,
+          action: "ignore",
+          schemaVersion: SCHEMA_VERSION,
+          claimId: result.assertion.id,
+          suppressedPaths: paths,
+          reason: result.reason,
+          next: "hibi check",
+        };
+        await emit(
+          mode,
+          value,
+          () =>
+            `ignored ${result.assertion.id} — acknowledged ${paths.length} evidence path(s); lapses when they move again\n`,
+        );
+        return 0;
+      } catch (e) {
+        return fail((e as Error).message, mode);
+      }
+    }
+
     case "list": {
       const engine = await open();
       // Under parseArgs `strict:false`, `--state` with no value parses as the
@@ -1208,6 +1241,7 @@ Commands:
   reanchor <claim-id> [--doc <p>] [--doc-quote …] [--code-file …]  Re-resolve a claim, or relocate
                                     either side to a different file (--doc moves the doc anchor)
   retire   <claim-id>               Withdraw one claim (enforcement → retired); idempotent
+  ignore   --claim <id> --reason <text>  Acknowledge a behavioral at-risk (non-gating until evidence moves again)
   supersede --new <p> --old <p> --type supersedes|amends [--propositions id,id]
   retract  --doc <p>                Mark a document retracted (author withdrew)
   archive  --doc <p> [--successor <p>]  Move an obsolete doc out of the read path (tombstone)
