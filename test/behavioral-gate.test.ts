@@ -84,4 +84,45 @@ describe("behavioral change-gate v2 (anti-facade)", () => {
     expect(v?.behavior).toBe("unverified");
     await repo.cleanup();
   });
+
+  test("a changed verifier source ⇒ behavior:at-risk, changedEvidence kind verifier-source", async () => {
+    const repo = await makeRepo();
+    // A verifier `ref` that is itself a file enters the evidence set, so its
+    // baseline hash is captured at record time (§17.6, D14).
+    await repo.write("verify-rate.sh", "#!/bin/sh\ntest 5 -eq 5\n");
+    await repo.write("src/rate.ts", "export const RATE = 5;\n");
+    await repo.write("doc.md", "# Doc\n\nThe rate holds at five.\n");
+    const engine = await Engine.open(repo.root);
+    const rec = await engine.record({
+      docPath: "doc.md",
+      docQuote: "The rate holds at five.",
+      code: [{ file: "src/rate.ts", quote: "export const RATE = 5;" }],
+      behavioral: true,
+      verifiers: [{ kind: "command", ref: "verify-rate.sh" }],
+      authoredTrust: "verified",
+      ref: "PR-1",
+      enforcement: "enforced",
+    });
+    // The verifier source is part of the evidence set's baseline.
+    const a = await engine.store.getAssertion(rec.assertion.id);
+    expect(Object.keys(a?.evidenceBaseline ?? {})).toContain("verify-rate.sh");
+
+    // Change ONLY the verifier source; the anchored file is byte-identical. Plain
+    // check (no --run-verifiers) exercises the evidence-set gate, not execution.
+    await repo.write("verify-rate.sh", "#!/bin/sh\ntest 50 -eq 50\n");
+    const report = await engine.check();
+    const v = report.verdicts.find((x) => x.assertionId === rec.assertion.id);
+    expect(v?.code).toBe("unchanged");
+    expect(v?.behavior).toBe("at-risk");
+    // The change is attributed to its provenance — a verifier source, not a
+    // plain import (the honest fix: the gate names *what kind* of evidence moved).
+    const vs = v?.evidence.changedEvidence.find(
+      (c) => c.path === "verify-rate.sh",
+    );
+    expect(vs?.kind).toBe("verifier-source");
+    expect(vs?.detail).toBe("verifier source changed");
+    // at-risk warns, never gates.
+    expect(v?.gates).toBe(false);
+    await repo.cleanup();
+  });
 });
