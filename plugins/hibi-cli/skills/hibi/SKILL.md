@@ -6,7 +6,7 @@ description: >-
   "claims" (doc sentences anchored to specific code) in a committed .claims/ store
   and grades drift without running a model. Use this skill whenever the user wants
   to install or initialize hibi in a repo (`hibi init`), record/anchor a claim,
-  run `hibi check` / `diff` / `query` / `status` / `list` / `suggest`, wire hibi
+  run `hibi check` / `diff` / `query` / `status` / `list` / `coverage`, wire hibi
   into CI or a git hook, respond to a flagged claim (changed / orphaned / moved /
   at-risk / expired) using its remediation menu, reanchor, retire, or suppress it
   (`hibi ignore`), or manage
@@ -36,8 +36,9 @@ output in `references/cookbook.md`.)
    doc sentences your change invalidated, so the prose fix lands in the same PR.
 3. **About to refactor a file?** `hibi query --path src/auth.ts` lists every doc claim
    anchored to it — the contracts you must not silently break.
-4. **Onboarding a repo with docs but no claims?** `hibi init` then
-   `hibi suggest --doc README.md` proposes anchorable claims so you don't hand-author them.
+4. **Onboarding a repo with docs but no claims?** Run the **grounding audit**: `hibi init`
+   then `hibi coverage --doc README.md` shows which blocks no claim backs — ground the ones
+   code supports, prune the rest (workflow 4 below).
 5. **About to delete, rename, split, or merge a doc that has claims?** Enumerate them
    first — `hibi query --path <doc>` lists every claim anchored to it. Relocate the
    survivors and retire the rest *before* you `rm` the file ("Deleting, renaming, or
@@ -117,33 +118,44 @@ the file. Note the ids: after your edit you'll `reanchor` the ones still true an
 and the hits are the claims that *live on* that doc (`side: "doc"`) — the exact set you
 must relocate or retire before you delete, rename, or consolidate it (next section).
 
-### 4. Onboard an existing repo fast
+### 4. Onboard an existing repo fast — the grounding audit
+
+hibi does **not** auto-extract claims from prose (it's deterministic — no model in the
+loop). **You** do the audit; `coverage` gives you the deterministic worklist, and `check`
+guards the result forever after.
 
 ```sh
 hibi init
-hibi suggest --doc README.md
+hibi coverage --doc README.md
 ```
 
-`suggest` is **doc-side only** — it proposes anchorable sentences and dedups them, but
-never finds the code (that's yours to point at). For each one worth enforcing, pin its
-code and promote it:
+`coverage` segments the doc into blocks and reports each as **covered** (a claim's doc
+anchor lands in it) or **uncovered** — with a `coverageRatio` that climbs as you ground or
+trim. It reports a *structural fact*; the judgment on each uncovered block is yours. Walk
+the `regions` where `covered:false` and decide **ground-or-prune**:
 
-```sh
-hibi reanchor <claim-id> --code-file src/retry.ts --code-quote "5"
-hibi check        # confirm clean
-```
+- **Ground it** — the block states a checkable rule a code span backs (a normative rule,
+  a specific value/identifier, a behavior). Read the code, then anchor doc-span *and*
+  code-span together. Skip blocks that are pure rationale, opinion, or background — those
+  aren't claims.
+- **Prune it** — nothing in the code backs it, or the code contradicts it → it's
+  ungrounded/stale prose. Remove or rewrite it (you're the editor — §"the agent edits"),
+  and say what you cut and why. This is how the doc gets shorter and everything left is
+  confirmed.
 
-When you already know the code behind each sentence (e.g. you just read the source),
-skip the per-claim flags and author the whole set in one pass — a JSON array of specs,
-no shell-quoting of verbatim spans, validated before any write:
+Author the grounded blocks in **one pass** — a JSON array of specs, no shell-quoting of
+verbatim spans, validated and transactional (the whole batch rolls back on any bad item):
 
 ```sh
 hibi record --from-file claims.json    # array of {doc, docQuote, codeFile, codeQuote, trust, …}; - = stdin
 ```
 
 Each spec's keys mirror the flags in camelCase; `doc` + one doc-span key are required.
-Propositions still dedup by fingerprint, so the same sentence from two files shares one
-meaning. This is the low-friction path when an agent grounds many docs at once.
+Choose `trust` honestly per block: `verified` (you confirmed the code backs it → gating)
+or `inferred` (→ `suggested`, advisory). Propositions dedup by fingerprint, so the same
+sentence from two files shares one meaning. Re-run `hibi coverage --doc README.md` to watch
+the ratio climb, then `hibi check` to confirm clean. This is the low-friction path when an
+agent grounds many docs at once.
 
 ---
 
@@ -256,7 +268,8 @@ or hook, so it's safe to run unconditionally. It reports, with `counts` and a
 
 - `orphanedAnchors[{claimId,side,path}]` — claims whose doc or code side no longer
   resolves.
-- `suggestedNoCode[{claimId,docPath}]` — `suggest`-created claims still missing a code pin.
+- `suggestedNoCode[{claimId,docPath}]` — any live claim that landed `suggested` with no
+  precise code pin (e.g. recorded doc-only, or its code anchor never resolved).
 - `staleDocClaims[{claimId,docPath,lifecycle}]` — live claims sitting on a superseded /
   retracted / amended / archived doc (the ones lifecycle verbs left behind).
 - `duplicatePropositions[{fingerprint,propositionIds,claimIds}]` — the same proposition

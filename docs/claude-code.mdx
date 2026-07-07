@@ -94,9 +94,9 @@ invoke it on demand as `/hibi-cli:hibi`.
     The skill's core lesson is precise anchoring. You point Hibi at the
     documented sentence (`--doc-quote`) and the exact code span that backs it
     (`--code-file` + `--code-quote`), so a real change trips the claim while a pure
-    reformat does not. `hibi suggest --doc <p>` proposes anchorable candidate
-    claims from an existing document; the agent reviews them before enforcing
-    any. See [Anchors & selectors](/anchors) for how redundant selectors fuse
+    reformat does not. `hibi coverage --doc <p>` reports which blocks of an
+    existing document are backed by a claim vs uncovered, so the agent grounds the
+    uncovered prose or prunes it. See [Anchors & selectors](/anchors) for how redundant selectors fuse
     into a confidence score.
   </Accordion>
 

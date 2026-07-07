@@ -269,24 +269,6 @@ describe("library facade (§7.5)", () => {
 });
 
 describe("regression guards (review fixes)", () => {
-  test("suggest is idempotent — re-running on unchanged content adds no duplicate claims (§6)", async () => {
-    const anchorRoot = await tmp();
-    await writeFile(
-      join(anchorRoot, "SPEC.md"),
-      "# Spec\n\nThe client MUST retry on timeout.\nRequests are capped at 5 attempts.\n",
-    );
-    const engine = await Engine.init(anchorRoot);
-
-    const first = await engine.suggest("SPEC.md");
-    expect(first.created.length).toBeGreaterThan(0);
-    const afterFirst = (await engine.store.allAssertions()).length;
-
-    // Same content → every proposition dedups and no new assertion is written.
-    const second = await engine.suggest("SPEC.md");
-    expect(second.created.length).toBe(0);
-    expect((await engine.store.allAssertions()).length).toBe(afterFirst);
-  });
-
   test("reanchor re-points a moved claim back to unchanged (§9)", async () => {
     const anchorRoot = await tmp();
     await mkdir(join(anchorRoot, "src"), { recursive: true });

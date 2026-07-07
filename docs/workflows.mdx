@@ -85,17 +85,18 @@ sentence is tedious enough that it never happens, so nothing is protected.
 
 ```sh
 hibi init
-hibi suggest --doc README.md
+hibi coverage --doc README.md
 ```
 
-**The payoff.** `init` creates the committed `.claims/` store; `suggest` proposes one
-advisory (`suggested`, never-gating) record per anchorable sentence — the doc side
-filled in, the code side waiting. You promote the ones worth enforcing by pinning their
-code and re-anchoring, then `hibi check` to confirm. You've gone from unprotected docs
-to a tracked, gating store without writing a single anchor from scratch. Where claims
-declare verifiers, `hibi check --run-verifiers` also executes them — a pass upgrades
-the behavioral belief to `supported`, a fail gates as `refuted`; plain `check` never
-spawns a verifier process.
+**The payoff.** `init` creates the committed `.claims/` store; `coverage` segments the
+doc into blocks and reports which are backed by a claim vs uncovered — the deterministic
+worklist for a grounding audit. You (or an agent) walk the uncovered blocks and decide
+ground-or-prune: anchor the ones a code span backs, cut the ungrounded prose. Hibi never
+auto-extracts claims (no model in the loop); the judgment stays with you, and `check`
+guards the result. You've gone from unprotected docs to a tracked, gating store with
+every remaining sentence confirmed in code. Where claims declare verifiers, `hibi check
+--run-verifiers` also executes them — a pass upgrades the behavioral belief to
+`supported`, a fail gates as `refuted`; plain `check` never spawns a verifier process.
 
 When you (or an agent) already know the code that backs each sentence, author the whole
 set in one pass instead of one `record` per claim — no shell-quoting of verbatim spans:

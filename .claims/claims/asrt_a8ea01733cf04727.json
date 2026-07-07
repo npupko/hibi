@@ -3,7 +3,7 @@
   "propositionId": "prop_4d6babefe42e42c5",
   "documentId": "doc_de9871be3edeb80d",
   "owner": "hibi-dogfood",
-  "ref": "ADR-002",
+  "ref": "merge-main-0.3.0",
   "anchor": {
     "doc": {
       "file": "docs/cli-reference.mdx",
@@ -16,8 +16,8 @@
         },
         {
           "kind": "text-position",
-          "start": 19454,
-          "end": 19504
+          "start": 19481,
+          "end": 19531
         }
       ]
     },

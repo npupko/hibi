@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.3.0](https://github.com/npupko/hibi/compare/v0.2.3...v0.3.0) (2026-06-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* replace `suggest` with deterministic `coverage` + agent grounding audit ([#31](https://github.com/npupko/hibi/issues/31))
+
+### Features
+
+* replace `suggest` with deterministic `coverage` + agent grounding audit ([#31](https://github.com/npupko/hibi/issues/31)) ([bb535c7](https://github.com/npupko/hibi/commit/bb535c70a065c031f2f8242cfeaa2a683051948e))
+
+
+### Reverts
+
+* **docs:** restore Hibi brand theme, logo, and favicon ([#29](https://github.com/npupko/hibi/issues/29)) ([c6f8f7e](https://github.com/npupko/hibi/commit/c6f8f7e6e5832c64f07533772e14ec13a238cfb2))
+
 ## [0.2.3](https://github.com/npupko/hibi/compare/v0.2.2...v0.2.3) (2026-06-25)
 
 
