@@ -46,6 +46,14 @@ export interface CoverageRegion {
   preview: string;
   /** True iff a live, code-grounded claim's doc anchor resolves cleanly into this block. */
   covered: boolean;
+  /**
+   * True iff this block is (or contains) a fenced code block whose info string is
+   * in {@link EXECUTABLE_INFO_STRINGS}. A structural fact, not a judgment: an
+   * uncovered executable block is the highest-value grounding target because it
+   * can carry a `command:` verifier and reach `supported`/`refuted` (§17.6, D13) —
+   * `coverage` flags it, but never creates a claim (creation stays explicit, D2/D21).
+   */
+  executable: boolean;
   /** Claim ids whose doc anchor overlaps this block (empty when uncovered). */
   claimIds: string[];
 }
@@ -86,6 +94,48 @@ function preview(s: string): string {
 
 /** A fenced-code opener/closer: 3+ backticks or tildes at the line start. */
 const FENCE = /^(`{3,}|~{3,})/;
+
+/**
+ * The info-string language tokens that mark a fenced code block as an **executable
+ * shell** block — the one region kind that can carry a `command:` verifier and reach
+ * `supported`/`refuted` (§17.6, D13). This exact set is the WHOLE detection rule for
+ * `CoverageRegion.executable`; there are no other heuristics (no prose keywords, no
+ * `$`-prompt sniffing). Adding a language here is a deliberate product decision — it
+ * changes which blocks `coverage` steers agents to ground with a verifier — not a
+ * formatting tweak, so change it by editing this constant, with a test.
+ */
+export const EXECUTABLE_INFO_STRINGS: ReadonlySet<string> = new Set([
+  "sh",
+  "bash",
+  "zsh",
+  "shell",
+  "console",
+]);
+
+/**
+ * True iff `blockText` is (or contains) a fenced code block whose info-string
+ * language token is in {@link EXECUTABLE_INFO_STRINGS}. Scans fence *openers* only
+ * (a bare closing fence carries no info string), using the same marker-char fence
+ * tracking as `splitBlocks` so the two agree on where fences open and close.
+ */
+function hasExecutableFence(blockText: string): boolean {
+  let fenceChar = ""; // the open fence's marker char, or "" when outside a fence
+  for (const rawLine of blockText.split("\n")) {
+    const trimmed = rawLine.trim();
+    const fence = FENCE.exec(trimmed);
+    if (!fence) continue;
+    const marker = fence[0][0] as string;
+    if (fenceChar === "") {
+      // Opener: the info string is the token right after the run of markers.
+      fenceChar = marker;
+      const lang = trimmed.slice(fence[0].length).trim().split(/\s+/)[0] ?? "";
+      if (EXECUTABLE_INFO_STRINGS.has(lang.toLowerCase())) return true;
+    } else if (marker === fenceChar) {
+      fenceChar = ""; // Closer: same marker char re-closes the open fence.
+    }
+  }
+  return false;
+}
 
 /**
  * Segment `text` into blocks on blank-line boundaries, preserving each block's
@@ -172,13 +222,15 @@ export async function coverage(
 
   const blocks = splitBlocks(docContent);
   const regions: CoverageRegion[] = blocks.map((b) => {
+    const blockText = docContent.slice(b.start, b.end);
     const claimIds = spans
       .filter((s) => overlaps(s.region, b.start, b.end))
       .map((s) => s.claimId);
     return {
       range: { start: b.start, end: b.end },
-      preview: preview(docContent.slice(b.start, b.end)),
+      preview: preview(blockText),
       covered: claimIds.length > 0,
+      executable: hasExecutableFence(blockText),
       claimIds,
     };
   });

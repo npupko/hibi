@@ -172,4 +172,56 @@ describe("coverage", () => {
     const fenced = result.regions.find((r) => r.preview.includes("const a"));
     expect(fenced?.preview).toContain("const b");
   });
+
+  test("an uncovered ```sh block is tagged executable; a ```json block is not", async () => {
+    const root = await tmp();
+    await writeFile(
+      join(root, "README.md"),
+      [
+        "Prose with no code.",
+        "",
+        "```sh",
+        "hibi check --fail-on gating",
+        "```",
+        "",
+        "```json",
+        '{ "ok": true }',
+        "```",
+        "",
+      ].join("\n"),
+    );
+    const engine = await Engine.init(root);
+    const result = await engine.coverage("README.md");
+
+    const shBlock = result.regions.find((r) =>
+      r.preview.includes("hibi check"),
+    );
+    expect(shBlock?.executable).toBe(true);
+    expect(shBlock?.covered).toBe(false); // executable is a structural fact, not coverage
+
+    const jsonBlock = result.regions.find((r) => r.preview.includes('"ok"'));
+    expect(jsonBlock?.executable).toBe(false);
+
+    const prose = result.regions.find((r) => r.preview.includes("Prose"));
+    expect(prose?.executable).toBe(false);
+  });
+
+  test("every info string in the executable set tags; a fence-less block never does", async () => {
+    const root = await tmp();
+    // One block per shell dialect, plus a plain prose block.
+    const doc = ["bash", "zsh", "shell", "console"]
+      .map((lang) => `\`\`\`${lang}\nrun me\n\`\`\``)
+      .concat(["Just prose, no fence."])
+      .join("\n\n");
+    await writeFile(join(root, "README.md"), `${doc}\n`);
+    const engine = await Engine.init(root);
+    const result = await engine.coverage("README.md");
+
+    const fenced = result.regions.filter((r) => r.preview.includes("run me"));
+    expect(fenced).toHaveLength(4);
+    expect(fenced.every((r) => r.executable)).toBe(true);
+
+    const prose = result.regions.find((r) => r.preview.includes("Just prose"));
+    expect(prose?.executable).toBe(false);
+  });
 });

@@ -131,8 +131,10 @@ hibi coverage --doc README.md
 
 `coverage` segments the doc into blocks and reports each as **covered** (a claim's doc
 anchor lands in it) or **uncovered** — with a `coverageRatio` that climbs as you ground or
-trim. It reports a *structural fact*; the judgment on each uncovered block is yours. Walk
-the `regions` where `covered:false` and decide **ground-or-prune**:
+trim. It reports a *structural fact*; the judgment on each uncovered block is yours. Ground
+the uncovered `executable:true` blocks first (fenced `sh`/`bash`/… examples — the `next`
+hint leads with them): they can carry a `command:` verifier and reach `supported`/`refuted`.
+Then walk the `regions` where `covered:false` and decide **ground-or-prune**:
 
 - **Ground it** — the block states a checkable rule a code span backs (a normative rule,
   a specific value/identifier, a behavior). Read the code, then anchor doc-span *and*

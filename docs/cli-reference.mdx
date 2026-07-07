@@ -298,10 +298,11 @@ hibi coverage --doc README.md
       "range": { "start": 120, "end": 244 },
       "preview": "Retries are capped at 5 attempts…",
       "covered": true,
+      "executable": false,
       "claimIds": ["asrt_897e054b48d040db"]
     }
   ],
-  "next": "ground or prune the uncovered regions, then hibi check"
+  "next": "ground or prune the uncovered regions — hibi record --from-file <specs.json>"
 }
 ```
 
@@ -314,6 +315,15 @@ never extracts claims from prose — the judgment on every uncovered block stays
 you. Note `range` offsets are banner-normalized (the HIBI banner is stripped before
 segmenting), so identify a block by its `preview` text rather than byte-slicing the
 raw file at `range`.
+
+Each region also carries `executable: true` when its block **is or contains a fenced
+code block** whose info string is one of the exact set `sh`, `bash`, `zsh`, `shell`,
+`console` — the whole detection rule, no other heuristics (a ` ```json ` or ` ```ts `
+block is not executable). An **uncovered executable** block is the highest-value
+grounding target: it can carry a `command:` verifier and reach a `supported`/`refuted`
+behavioral verdict, so when any exist the `next` hint leads with them
+(`"N uncovered block(s) are executable — record them with --verifier command:"…""`).
+`coverage` still only tags — it never records a claim; creation stays explicit.
 
 ## `hibi retire`
 

@@ -90,8 +90,11 @@ hibi coverage --doc README.md
 
 **The payoff.** `init` creates the committed `.claims/` store; `coverage` segments the
 doc into blocks and reports which are backed by a claim vs uncovered — the deterministic
-worklist for a grounding audit. You (or an agent) walk the uncovered blocks and decide
-ground-or-prune: anchor the ones a code span backs, cut the ungrounded prose. Hibi never
+worklist for a grounding audit. Ground the uncovered `executable: true` blocks first
+(fenced `sh`/`bash`/… examples): they can carry a `command:` verifier and reach a
+behavioral verdict, so `coverage` flags them as the highest-value targets. Then walk the
+rest and decide ground-or-prune: anchor the ones a code span backs, cut the ungrounded
+prose. Hibi never
 auto-extracts claims (no model in the loop); the judgment stays with you, and `check`
 guards the result. You've gone from unprotected docs to a tracked, gating store with
 every remaining sentence confirmed in code. Where claims declare verifiers, `hibi check
