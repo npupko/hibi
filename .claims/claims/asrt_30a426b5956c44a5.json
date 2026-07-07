@@ -3,7 +3,7 @@
   "propositionId": "prop_81eec159546d4108",
   "documentId": "doc_25887c67cd18d901",
   "owner": "hibi-dogfood",
-  "ref": "ADR-002",
+  "ref": "feat/post-adr-002-refinements",
   "anchor": {
     "doc": {
       "file": "docs/verdicts.mdx",
@@ -16,8 +16,8 @@
         },
         {
           "kind": "text-position",
-          "start": 15764,
-          "end": 15808
+          "start": 15818,
+          "end": 15862
         }
       ]
     },

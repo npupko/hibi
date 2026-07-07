@@ -1,0 +1,60 @@
+{
+  "id": "asrt_30b951878e3444a7",
+  "propositionId": "prop_c5b97f0c05fd4223",
+  "documentId": "doc_a8b3f9165caba304",
+  "owner": "hibi-dogfood",
+  "ref": "feat/post-adr-002-refinements",
+  "anchor": {
+    "doc": {
+      "file": "plugins/hibi-cli/skills/hibi/references/cli-reference.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`--verifier-timeout <s>`, default 120",
+          "prefix": "verifiers` executes declared verifiers (opt-in; ",
+          "suffix": "). |\n| `diff --since <ref>` | Same as check, but"
+        },
+        {
+          "kind": "text-position",
+          "start": 1742,
+          "end": 1779
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/resolver/builtin/command-runner.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "DEFAULT_VERIFIER_TIMEOUT_MS = 120_000",
+            "prefix": "r more than the 5s RPC timeout. */\nexport const ",
+            "suffix": ";\n\nexport class CommandRunnerResolver implements"
+          },
+          {
+            "kind": "text-position",
+            "start": 1216,
+            "end": 1253
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "variable_declarator",
+            "structuralHash": "de0dbd0a8e84411f",
+            "semanticHash": "d796ae9fc33237c4"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "number",
+            "value": "120_000"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "behavioral": false,
+  "verifiers": [],
+  "attrs": {}
+}
