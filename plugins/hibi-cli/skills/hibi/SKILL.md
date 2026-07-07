@@ -8,7 +8,8 @@ description: >-
   to install or initialize hibi in a repo (`hibi init`), record/anchor a claim,
   run `hibi check` / `diff` / `query` / `status` / `list` / `suggest`, wire hibi
   into CI or a git hook, respond to a flagged claim (changed / orphaned / moved /
-  at-risk / expired) using its remediation menu, reanchor or retire it, or manage
+  at-risk / expired) using its remediation menu, reanchor, retire, or suppress it
+  (`hibi ignore`), or manage
   doc lifecycle (supersede / amend / retract / archive). Trigger this skill even
   when the user does not say "hibi" but describes the problem it solves: docs
   drifting out of sync with code, stale READMEs or AGENTS.md/CLAUDE.md files,
@@ -176,7 +177,7 @@ The common shapes:
 | `doc:changed` + `code:changed` | `null` | both moved → **reconcile** doc vs code; don't auto-decide |
 | `*:orphaned` | `retire` | span gone from this file → if it **moved to another file**, `hibi reanchor <id> --doc <new>` (or `--code-file <new>`) relocates it; if truly deleted, retire/supersede |
 | `behavior:refuted` | `null` | a verifier failed → fix code or fix claim — **never reanchor** (it clears the gate without fixing the behavior) |
-| `behavior:at-risk` | `null` | reachable code changed → re-verify the behavior |
+| `behavior:at-risk` | `null` | the claim's evidence set changed → re-verify; still true? `hibi ignore --claim <id> --reason "…"` acknowledges it (auto-lapses on the next evidence change) |
 | `+ expired` | (composed) | ttl passed → re-verify and re-record, on top of the above |
 
 This counters the #1 mistake (silencing banners): you always re-verify, and you act on
@@ -196,6 +197,10 @@ content fingerprint). It never updates the old one, so a stale assertion left be
 keeps flagging forever. Three clean responses:
 
 - The claim still holds, its anchor is just stale → **`hibi reanchor <claim-id>`**.
+  Reanchoring is an **attestation**: pass `--ref <commit|pr>` when you actually
+  re-verified the claim and trust is retained; without `--ref` the re-anchor still
+  lands but `verified` trust downgrades to `inferred` (recorded and surfaced) — a bare
+  reanchor can't silently clear a gate.
 - The claim still holds but its sentence (or code) **moved to a different file** →
   **`hibi reanchor <claim-id> --doc <new-file> --doc-quote "…"`** (and/or `--code-file
   <new-file>`). This *relocates* the same claim — same id, owner, trust, history, and the
@@ -256,6 +261,10 @@ or hook, so it's safe to run unconditionally. It reports, with `counts` and a
   retracted / amended / archived doc (the ones lifecycle verbs left behind).
 - `duplicatePropositions[{fingerprint,propositionIds,claimIds}]` — the same proposition
   recorded more than once.
+- `rates` — the behavioral **flag-rate** (`behavioralFlagRate`) and doc-side drift
+  rates (`docOrphanedRate`/`docMovedRate`/`docChangedRate`). Sustained >30% is the
+  documented signal to tighten `behaviorScope` (flag-rate) or add inline IDs to
+  high-severity claims (orphan rate).
 
 `next` routes to the most pressing category (e.g. `hibi list --state orphaned`). Run it
 when you want a full picture of accumulated cruft rather than the per-tree `check` view.
@@ -327,8 +336,8 @@ hibi record \
 - **`--trust`**: `verified` (you checked it; requires a precise anchor + a ref hibi
   fills from the current commit) · `inferred` (default) · `assumed`.
 - **Only `enforced` claims gate.** `--enforce` forces it; else the engine derives
-  enforcement from trust + resolution. Ladder: `suggested` · `enforced` · `retired` ·
-  `unanchored-legacy`. When a claim lands `suggested`, the JSON carries
+  enforcement from trust + resolution. Ladder: `suggested` · `enforced` · `retired`.
+  When a claim lands `suggested`, the JSON carries
   `warning:"recorded as suggested — won't gate the build; pass --enforce to make it
   gating"` — heed it and re-record (or `reanchor … --enforce`) if you meant it to gate.
 - **Mind the dedup hint.** Propositions dedup by fingerprint, so recording a sentence
@@ -336,9 +345,14 @@ hibi record \
   `existingClaims: string[]` and `next:"this proposition is already claimed — did you
   mean \`hibi reanchor\`?"`. That's the signal you were about to duplicate a claim —
   `reanchor` the existing id (relocating/re-pinning it) instead of authoring a second.
-- **Behavioral claims** (ordering/retry/complexity/…): `--claim-kind <k>` plus
-  repeatable `--verifier kind:ref`. A passing verifier → `supported`; a failing one →
-  `refuted`.
+- **Behavioral claims** ("retries", "sorts ascending", …): the keyword heuristic
+  classifies these automatically; `--behavioral` declares it explicitly and
+  `--no-behavioral` opts out. Declaring a `--verifier` also marks the claim behavioral,
+  so `--no-behavioral` plus a verifier is rejected as contradictory. Attach evidence
+  with repeatable `--verifier kind:ref` (`kind` is an open string matched against
+  runner-declared kinds; `command` has a built-in runner). Verifiers execute **only**
+  under `hibi check --run-verifiers` — a deliberate supply-chain gate; plain
+  `check`/`status` never spawn one. Pass → `supported`; fail → `refuted`.
 - **Recording many at once?** Use `hibi record --from-file <p|->` with a JSON array of
   specs instead of one `record` per claim — it dodges shell-quoting of verbatim spans and
   validates every item before writing any. The lowest-friction path for grounding a doc
@@ -364,6 +378,8 @@ Under the default, *any* drift is non-zero (3 and 2 both fail CI). `--fail-on` m
 the threshold: `warn` escalates warnings to 2; `tamper` also fails on a hand-edited
 banner; `never` always exits 0 (report-only — read the JSON). Note **`3` is
 advisory** — don't treat it as a hard failure unless you opted into `--fail-on warn`.
+A **suppressed** at-risk (`hibi ignore`) drops out of exit codes entirely — even under
+`--fail-on warn` — and shows as `suppressed: true` in the JSON until it lapses.
 
 ## Setting up & committing the store
 

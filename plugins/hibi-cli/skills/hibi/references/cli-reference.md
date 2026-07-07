@@ -28,7 +28,7 @@ repo root), `--store-dir <dir>` (store location, default `<anchor>/.claims`),
 |---------|---------|
 | `init` | Create `.claims/` (config.json with version + nonce, and a cache `.gitignore`). |
 | `record` | Write a span-first claim (Document upsert + Proposition + Assertion with a bidirectional Anchor). |
-| `check` | Verify every claim; emit verdicts + summary; exit per contract. `--write` stamps banners. |
+| `check` | Verify every claim; emit verdicts + summary; exit per contract. `--write` stamps banners; `--run-verifiers` executes declared verifiers (opt-in; `--verifier-timeout <s>`, default 120). |
 | `diff --since <ref>` | Same as check, but restricted to claims whose anchored file changed since `<ref>`. |
 | `status` | No `--doc`: a repo-wide document health overview (every tracked doc, worst status, claim counts, owner, lifecycle). |
 | `status --doc <p>` | "Is this one document current?" read-time gate (exit 2 if any verdict gates). |
@@ -38,6 +38,9 @@ repo root), `--store-dir <dir>` (store location, default `<anchor>/.claims`),
 | `suggest --doc <p>` | Propose anchorable claims from a document, written as `suggested` records. |
 | `reanchor <claim-id>` | Re-resolve a claim against current content (new doc/code spans). |
 | `retire <claim-id>` | Withdraw one claim (`enforcement` → `retired`); idempotent. A retired claim never gates/warns. |
+| `relocate --from <p> --to <p>` | Batch re-home every live claim from one doc onto another (verbatim sentence matches move; the rest land in `misses[]`). Supports `--dry-run`. |
+| `ignore --claim <id> --reason <t>` | Suppress a known-good behavioral `at-risk`: acknowledges the current changed evidence (`{path → hash}`) and auto-lapses when evidence moves again or a new path appears. Reason required. |
+| `doctor` | Store-health sweep: orphaned anchors, unpinned suggests, stale-doc claims, duplicates, plus flag/drift `rates`. Purely informational; always exits 0. |
 | `supersede` | Author a `supersedes`/`amends` edge between two documents. |
 | `retract --doc <p>` | Mark a document retracted (author withdrew it). |
 | `archive --doc <p>` | Tombstone a document out of the read path; optional `--successor`. |
@@ -65,16 +68,16 @@ locators.
 | `--inline-id <id>` | — | A hidden marker that *identifies* the record near the paragraph; aids re-anchoring, never restates the claim. |
 | `--trust <level>` | — | `verified` \| `inferred` (default) \| `assumed`. `verified` requires a precise anchor **and** a ref. |
 | `--enforce` | — | Shorthand for `--enforcement enforced`. Only `enforced` claims gate. |
-| `--enforcement <e>` | — | `suggested` \| `enforced` \| `retired` \| `unanchored-legacy`. With neither flag the engine derives it: `verified` trust + a `@ref` + a precise anchor resolving on **both** sides → `enforced`, else `suggested`. An explicit value wins over `--enforce`. |
-| `--claim-kind <k>` | — | Behavioral kind: `ordering` \| `retry` \| `complexity` \| `concurrency` \| `caching` \| `validation` \| `error-handling`. Routes Tier-3 classification. |
-| `--verifier kind:ref` | — | Repeatable executable-evidence link (`kind` ∈ example/snapshot/contract/property/formal/command). A failing verifier → `refuted`. |
+| `--enforcement <e>` | — | `suggested` \| `enforced` \| `retired`. With neither flag the engine derives it: `verified` trust + a `@ref` + a precise anchor resolving on **both** sides → `enforced`, else `suggested`. An explicit value wins over `--enforce`. |
+| `--behavioral` / `--no-behavioral` | — | Declare the claim behavioral (or opt out of the keyword heuristic). Mutually exclusive. Absent → the heuristic decides; a declared `--verifier` also marks it behavioral. `--no-behavioral` **with** a verifier is a contradiction and is rejected. |
+| `--verifier kind:ref` | — | Repeatable executable-evidence link. `kind` is an **open string** matched against runner-declared kinds (conventional: `command` (built-in runner), `example`, `snapshot`, `contract`, `property`, `metamorphic`, `formal`). Verifiers execute only under `check --run-verifiers`; a failing one → `refuted`. |
+| `--pristine` | — | Mark the document pristine: hibi never stamps a banner or frontmatter into it; verdicts surface via JSON/`status`/exit codes only (for third-party/read-only docs). |
 | `--owner <name>` | — | Defaults to git-blame author of the anchored line, else `unknown`. |
 | `--ref <ref>` | — | The commit verified against. Defaults to the current ref (or `WORKTREE`). |
 | `--ttl <iso>` | — | Expiry instant; past it the verdict sets the orthogonal `expired` flag. |
-| `--text <sentence>` | legacy | Override that supplies the claim text directly instead of reading the doc span. Use only when no doc locator applies. |
 
-A doc locator (`--doc-quote`, `--doc-range`, or `--doc-line`) is required, or the
-legacy `--text` override. The code side is optional — a doc-only `suggested` claim
+A doc locator (`--doc-quote`, `--doc-range`, or `--doc-line`) is required — the doc
+span is the only source of the claim text. The code side is optional — a doc-only `suggested` claim
 may await a code target — but an **`enforced` claim must resolve both sides**, so
 `record` throws (exit 1) when an enforced outcome can't anchor doc and code. If a
 quote isn't found, record fails with a non-zero exit and an `{ ok: false, error }`
@@ -99,6 +102,10 @@ the exit threshold:
 - `never`: always exit 0, whatever the verdicts — a true report-only run; read the JSON
   for the result.
 
+A behavioral `at-risk` under an active suppression (`hibi ignore`) contributes
+**nothing** to the exit code — even under `--fail-on warn` — and carries
+`suppressed: true` in its verdict until the suppression lapses.
+
 ## How a change is graded (two axes)
 
 A verdict carries two independent axes plus an orthogonal flag — there is no single
@@ -109,8 +116,11 @@ fresh/moved/stale enum:
   `changed` (found, content differs) · `ambiguous` (matches several places) ·
   `orphaned` (span deleted / unresolvable).
 - **Behavioral belief** (Axis 2), only on behavioral claims:
-  `unverified` (resting) · `at-risk` (reachable evidence changed) ·
-  `supported` (a verifier passed) · `refuted` (a verifier failed).
+  `unverified` (resting) · `at-risk` (the claim's evidence set changed — anchored node,
+  an imported/included file's hash off its recorded baseline, or a verifier source) ·
+  `supported` (a verifier passed) · `refuted` (a verifier failed). Verifiers run only
+  under `check --run-verifiers`; a doc-side edit is Axis 1's job and never fires this
+  axis.
 - **`expired`** — an orthogonal TTL flag, never a state.
 
 A verdict reads e.g. `doc:unchanged · code:changed · behavior:at-risk`. The words
@@ -172,6 +182,7 @@ assertion, dedupedProposition, claimId, next }`. The Anchor is bidirectional:
   verdicts: [ { assertionId, propositionId, documentId,
                 doc, code, behavior?, expired, gates,
                 changed?,                 // 1-line "path kind" on at-risk/refuted
+                suppressed?,              // true while an active `hibi ignore` covers this at-risk
                 remediation,              // the menu (null when clean; absent under --no-hints)
                 notes:[…] } ],
   documents: [ { id, path, lifecycle, suspect:[{propositionId,status}],
@@ -197,7 +208,9 @@ next }`. Proposes anchorable claims as `suggested` records.
 
 **`reanchor`** → `{ ok, action:"reanchor", schemaVersion, assertion, doc, code,
 claimId, next }`. Re-resolves `<claim-id>` against current content; `doc`/`code` are
-the post-reanchor `AnchorState`s (should settle to `unchanged`).
+the post-reanchor `AnchorState`s (should settle to `unchanged`). Reanchoring is an
+**attestation**: with `--ref <r>` authored trust is retained and the ref recorded;
+without it, `verified` trust downgrades to `inferred` (recorded on the assertion).
 
 **`retire`** → `{ ok, action:"retire", schemaVersion, assertion, alreadyRetired,
 claimId, next }`. Flips `enforcement` to `retired`; idempotent (`alreadyRetired: true`
@@ -208,7 +221,7 @@ on a `moved`/`at-risk` warning, else 0.
 
 ```
 .claims/
-  config.json                  { version, nonce, instructionFiles? }
+  config.json                  { version, nonce, instructionFiles?, pristine? }
   documents/<id>.json          one per document (path, lifecycle, edges)
   propositions/<id>.json       one per claim text (textCache, authoredTrust, fingerprint)
   claims/<assertionId>.json    the Assertion + its bidirectional Anchor

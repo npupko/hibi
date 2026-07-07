@@ -280,7 +280,12 @@ phase is the sweep): `behavioral.mdx` (D12/D13/D14 — full rewrite of the claim
 `cli-reference.mdx` (flags), `concepts.mdx`, `anchors.mdx` (behaviorScope), `verdicts.mdx` (gate
 semantics), `banners.mdx` (compact + pristine), `resolvers.mdx` (runner + security model),
 `lifecycle.mdx` (reanchor attestation), `workflows.mdx`/`ci.mdx` (`--run-verifiers`, `ignore`),
-`quickstart.mdx`. Fix `src/algo/localize.ts`'s stale "32 chars" comments while there.
+`quickstart.mdx`. Fix `src/algo/localize.ts`'s stale "32 chars" comments while there. The
+**agent-facing skill** (`plugins/hibi-cli/skills/hibi/` — SKILL.md, references, `hibi-ci.yml`)
+also updates **in this phase and no earlier**: unlike `docs/`, the skill is operational
+instructions executed against the installed binary, so it must track the shipped CLI, never the
+aspirational spec. It then joins the Phase-6 dogfood claim set (skill flag docs →
+`src/cli/index.ts`), so the next such drift is caught by hibi, not by hand.
 
 **Phase 6 — PRD demotion + dogfooding (D20).**
 Rewrite the PRD header/§14 framing as the design record; record hibi claims on hibi's own docs
