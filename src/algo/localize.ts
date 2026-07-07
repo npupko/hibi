@@ -17,7 +17,14 @@ type TextPosition = z.infer<typeof TextPositionSelector>;
 
 /**
  * Locate a `text-quote` in `text` near `bias`, returning the region or null.
- * Implements the §17.1 Bitap cascade with the 32-char word-size cap:
+ *
+ * Implements the §17.1 Bitap cascade with the **32-char Bitap word-size cap**
+ * (`MATCH_MAX_BITS`) — the width of one machine word the bitap algorithm matches
+ * per pass. This is a matching-algorithm limit and is NOT the 48-char stored
+ * text-quote *context window* (`TEXT_QUOTE_CONTEXT` in `params.ts`), which is how
+ * much prefix/suffix a selector *stores* at record time. They are independent
+ * numbers that happen to both bound text-quote handling.
+ *
  *   1. exact ≤ 32 chars → match directly, region `[at, at+len(exact))`.
  *   2. exact > 32 chars → match the first 32 chars to fix the start, set the end
  *      to `at+len(exact)`, then refine the end against up to 32 chars of suffix.

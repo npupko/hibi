@@ -167,14 +167,15 @@ function reverifyBehavior(detail: string | undefined): RemediationAction {
   };
 }
 
-/** Reserved for the future execution-grounding seam; no command yet. */
+/** Execution-grounding seam (D13): run the linked verifier(s) out-of-process. */
 function runVerifier(): RemediationAction {
   return {
     id: "run-verifier",
     title: "Run the linked verifier",
-    applicability: "manual",
+    applicability: "needs-review",
     effect: "deterministic",
     rationale: "executable evidence can confirm or refute the behavior",
+    command: "hibi check --run-verifiers",
   };
 }
 

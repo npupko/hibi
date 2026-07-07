@@ -40,6 +40,7 @@ import { languageForFile } from "./lang.ts";
 import {
   type CodeTarget,
   documentIdForPath,
+  newDocument,
   type RecordContents,
   type RegionSpec,
   resolveRegion,
@@ -62,6 +63,11 @@ export interface ReanchorInput {
   code?: CodeTarget[];
   /** New `@ref` to stamp; omit to keep the assertion's current ref. */
   ref?: string;
+  /**
+   * Refreshed change-gate baseline (§17.6, D14/D15), computed by the shell.
+   * Undefined → the existing baseline carries forward unchanged.
+   */
+  evidenceBaseline?: Record<string, string>;
   analyzer?: AnchorAnalyzer;
   /**
    * Preview only: compute the would-be result (the post-reanchor per-side states)
@@ -75,6 +81,8 @@ export interface ReanchorResult {
   assertion: Assertion;
   doc: AnchorState;
   code: AnchorState;
+  /** D15: present iff `verified` trust was downgraded (reanchored without `--ref`). */
+  reanchorDowngrade?: { from: string; to: string; reason: string };
 }
 
 /** Build the ResolveFiles view (doc + code map) from the supplied contents. */
@@ -245,11 +253,33 @@ export async function reanchor(
   const documentId = input.docPath
     ? documentIdForPath(input.docPath)
     : assertion.documentId;
+
+  // D15 — reanchor attestation (anti-gaming). `--ref` asserts re-verification:
+  // selectors + evidence baseline refresh, authored trust is retained, the new
+  // ref is recorded. WITHOUT `--ref` the claim is still re-anchored (the
+  // doc:moved repair loop is legitimately evidence-free), but `verified` authored
+  // trust is downgraded to `inferred` and the downgrade is recorded on the
+  // assertion — the claim is findable again, but nobody re-attested it is *true*.
+  // The shared-proposition caveat: downgrade only when currently `verified`.
+  const downgrade =
+    input.ref === undefined && proposition.authoredTrust === "verified";
+  const downgradeRecord = {
+    from: "verified",
+    to: "inferred",
+    reason: "reanchored without --ref — no re-attestation of truth",
+  };
+
+  const attrs = downgrade
+    ? { ...assertion.attrs, reanchorDowngrade: downgradeRecord }
+    : assertion.attrs;
+
   const next: Assertion = {
     ...assertion,
     documentId,
     anchor: composeAnchor(doc.bundle, codeBundles),
     ref: input.ref ?? assertion.ref,
+    evidenceBaseline: input.evidenceBaseline ?? assertion.evidenceBaseline,
+    attrs,
   };
   // --dry-run: every `put*` below is guarded so the preview leaves the store
   // byte-identical. The post-state resolve still runs on the in-memory `next`.
@@ -262,12 +292,7 @@ export async function reanchor(
   if (!input.dryRun && input.docPath && documentId !== assertion.documentId) {
     const existing = await store.getDocument(documentId);
     if (!existing) {
-      await store.putDocument({
-        id: documentId,
-        path: input.docPath,
-        lifecycle: "active",
-        edges: [],
-      });
+      await store.putDocument(newDocument(documentId, input.docPath));
     } else if (existing.lifecycle !== "active") {
       await store.putDocument({ ...existing, lifecycle: "active" });
     }
@@ -275,9 +300,16 @@ export async function reanchor(
 
   proposition.textCache = doc.confirmed;
   proposition.fingerprint = propositionFingerprint(doc.confirmed);
+  // D15: withdraw the `verified` attestation when re-anchored without a `--ref`.
+  if (downgrade) proposition.authoredTrust = "inferred";
   if (!input.dryRun) await store.putProposition(proposition);
 
   // Confirm the post-reanchor states (should settle to `unchanged`).
   const after = resolveAssertion(next, files);
-  return { assertion: next, doc: after.doc, code: after.code };
+  return {
+    assertion: next,
+    doc: after.doc,
+    code: after.code,
+    reanchorDowngrade: downgrade ? downgradeRecord : undefined,
+  };
 }

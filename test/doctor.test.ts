@@ -340,4 +340,34 @@ describe("Engine.doctor (§9 integration)", () => {
       report.staleDocClaims.some((s) => s.claimId === stranded.assertion.id),
     ).toBe(true);
   });
+
+  test("exposes the observability rate metrics (D14/D19)", async () => {
+    const r = await repo();
+    await r.write("src/a.ts", "export const A = 1;\n");
+    await r.write("a.md", "# A\n\nThe cache is invalidated on write.\n");
+    // A behavioral claim (heuristic: "cache"/"invalidated") anchored precisely.
+    await record(r, {
+      doc: "a.md",
+      text: "The cache is invalidated on write.",
+      file: "src/a.ts",
+      quote: "A = 1",
+      trust: "verified",
+    });
+    const engine = await Engine.open(r.root);
+    const report = await engine.doctor();
+    // All four rates are present and in [0,1].
+    for (const key of [
+      "behavioralFlagRate",
+      "docOrphanedRate",
+      "docMovedRate",
+      "docChangedRate",
+    ] as const) {
+      expect(typeof report.rates[key]).toBe("number");
+      expect(report.rates[key]).toBeGreaterThanOrEqual(0);
+      expect(report.rates[key]).toBeLessThanOrEqual(1);
+    }
+    // A clean tree → nothing flagged.
+    expect(report.rates.behavioralFlagRate).toBe(0);
+    expect(report.rates.docOrphanedRate).toBe(0);
+  });
 });

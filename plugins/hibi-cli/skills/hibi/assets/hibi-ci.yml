@@ -28,4 +28,5 @@ jobs:
           fail-on: gating # gating | warn | tamper | never
           # since: origin/${{ github.base_ref }}   # only for `command: diff`
           # write: "false"                          # set true to stamp banners (commit them separately)
+          # run-verifiers: "false"                  # set true to execute declared verifiers (supply-chain opt-in)
           # working-directory: "."                  # subdir holding the .claims store

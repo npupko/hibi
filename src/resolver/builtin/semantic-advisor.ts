@@ -11,11 +11,11 @@
  * the deterministic AnchorState verdict always stands.
  *
  * This implementation is itself deterministic (keyword surfacing via
- * `classifyClaimKind`). An LLM-backed "is it still true?" advisor would plug in
+ * `classifyBehavioral`). An LLM-backed "is it still true?" advisor would plug in
  * identically behind this same contract, out-of-process — but the core has no
  * model in the loop (§11.1).
  */
-import { classifyClaimKind } from "../../algo/behavioral.ts";
+import { classifyBehavioral } from "../../algo/behavioral.ts";
 import type {
   DescribeResult,
   ResolveParams,
@@ -38,13 +38,13 @@ export function semanticAdvisorHandler(): ResolverHandler {
     },
     resolve(params: ResolveParams): ResolveResult {
       const text = params.proposition?.textCache ?? "";
-      const kind = classifyClaimKind(text);
-      if (!kind) return { advisories: [] };
+      if (!classifyBehavioral(text)) return { advisories: [] };
       return {
         advisories: [
           {
             resolver: "semantic-advisor",
-            message: `behavioral claim (${kind}) — the structural AnchorState tiers cannot judge this; its BehaviorState needs semantic re-verification`,
+            message:
+              "behavioral claim — the structural AnchorState tiers cannot judge this; its BehaviorState needs semantic re-verification",
           },
         ],
       };

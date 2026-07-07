@@ -45,7 +45,9 @@ There are three methods.
 <ParamField path="describe" type="method">
   Announce what this resolver handles: the anchor `kinds` it can grade and the
   `verifierKinds` it can run. The engine calls `describe` first and routes work
-  only to resolvers that claim it.
+  only to resolvers that claim it. Verifier kinds are **open strings**: the
+  engine dispatches a verifier to a runner by exact string match between the
+  verifier's `kind` and the `verifierKinds` declared here.
 </ParamField>
 
 <ParamField path="resolve" type="method">
@@ -61,7 +63,7 @@ There are three methods.
   passed. A pass contributes `supported`; a failure contributes `refuted` (the
   only behavioral state that may gate, and only on an enforced claim). The engine
   itself never executes verifiers in-process; it dispatches them to a runner
-  resolver through this method.
+  resolver through this method, and only under `check --run-verifiers`.
 </ParamField>
 
 A round-trip for one claim looks like this:
@@ -116,7 +118,7 @@ them apart:
 | Role | Method | Effect on the verdict |
 |---|---|---|
 | Anchor grader | `resolve` | Produces the `doc:…` / `code:…` resolution state; deterministic; can gate via `changed` / `orphaned` / `ambiguous`. |
-| Verifier runner | `verify` | Runs an executable check; a failure yields `refuted` (may gate on an enforced claim); a pass yields `supported`. |
+| Verifier runner | `verify` | Runs an executable check; a failure yields `refuted` (may gate on an enforced claim); a pass yields `supported`. Dispatched only under `check --run-verifiers`. |
 | Advisor (opt-in) | `resolve` / `verify` | Explains or triages only; never gates, never marks `supported`. |
 
 The verifier runner is how Hibi proves behavioral claims that structural checks
@@ -129,6 +131,42 @@ belief. The full behavioral model lives on its own page.
   How the change-gate routes attention and how verifiers push a belief to
   supported or refuted, without a model on the verdict path.
 </Card>
+
+## Verifier kinds and the built-in command runner
+
+A verifier's `kind` is an **open string** — any non-empty value. It is not an
+enum in the schema; it is a routing key, matched against the `verifierKinds` a
+runner resolver declares in `describe`. The conventional kinds — a
+recommendation, not schema — are `command`, `example`, `snapshot`, `contract`,
+`property`, `metamorphic`, and `formal`.
+
+One runner ships in-tree: the built-in **command runner**. It handles
+`kind: "command"` and executes the verifier's `ref` as a shell command via
+`sh -c`, with the working directory set to the repository root:
+
+```sh
+hibi record ... --verifier command:"bun test retry"   # kind:ref
+```
+
+| Outcome | Behavioral state |
+|---|---|
+| exit `0` | `supported` |
+| non-zero exit | `refuted` |
+| timeout or spawn failure | no result — the state stays at the deterministic baseline |
+
+The command runner has its own timeout, **120 seconds** by default, set with
+`--verifier-timeout <seconds>`.
+
+<Warning>
+  **Verifiers are a supply-chain surface.** A verifier executes a command
+  committed to the repository, so whoever can commit to the repo decides what
+  runs on the machine of whoever checks. Hibi therefore never runs a verifier
+  implicitly: verifiers execute **only** under `check --run-verifiers`.
+  `status`, `query`, `list`, `doctor`, and plain `check` never spawn a
+  verifier process. External runner resolvers still require the default-deny
+  manifest (`.claims/resolvers.json`) on top of the flag — the flag opts in to
+  running verifiers, the manifest opts in to the program that runs them.
+</Warning>
 
 ## Writing your own
 

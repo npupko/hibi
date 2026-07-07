@@ -1,0 +1,59 @@
+{
+  "id": "asrt_dda5dd7dcfb448e7",
+  "propositionId": "prop_69640b32874840a0",
+  "documentId": "doc_84263e2579006d07",
+  "owner": "hibi-dogfood",
+  "ref": "ADR-002",
+  "anchor": {
+    "doc": {
+      "file": "docs/anchors.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "shorter than **8 characters**",
+          "prefix": "grade `moved` instead of\n    `orphaned`. Quotes ",
+          "suffix": " are too common to trust for\n    multi-match det"
+        },
+        {
+          "kind": "text-position",
+          "start": 6024,
+          "end": 6053
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/algo/params.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "AMBIGUOUS_MIN_QUOTE_LENGTH = 8",
+            "prefix": "mbiguity signal (§17.1/§17.3).\n */\nexport const ",
+            "suffix": ";\n\n/** text-position is \"found\" when content at "
+          },
+          {
+            "kind": "text-position",
+            "start": 1414,
+            "end": 1444
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "variable_declarator",
+            "structuralHash": "de0dbd0a8e84411f",
+            "semanticHash": "9820350616af141e"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "number",
+            "value": "8"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verifiers": [],
+  "attrs": {}
+}

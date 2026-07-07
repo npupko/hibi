@@ -38,6 +38,11 @@ jobs:
         run: |
           bun run build:schemas
           git diff --exit-code schemas/ || (echo "schemas/ is stale — run bun run build:schemas" && exit 1)
+      - name: Dogfood — hibi checks its own docs (in-tree engine, read-only)
+        # Runs the current tree's engine, NOT a published release, so a drift
+        # this PR introduces between docs/ and src/ fails the build via hibi
+        # itself (D20). Read-only: no --write. See CONTRIBUTING.md for the fix loop.
+        run: bun run src/cli/index.ts check --fail-on gating
 
   rust-sdk:
     runs-on: ubuntu-latest

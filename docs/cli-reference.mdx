@@ -1,7 +1,7 @@
 ---
 title: "Hibi CLI Reference: Every Command, Flag, and Exit Code"
 sidebarTitle: "CLI Reference"
-description: "Complete reference for all hibi commands: record, check, diff, status, query, list, reanchor, retire, relocate, supersede, retract, archive, doctor, schema, and more."
+description: "Complete reference for all hibi commands: record, check, diff, status, query, list, ignore, reanchor, retire, relocate, supersede, retract, archive, doctor, schema, and more."
 icon: "terminal"
 ---
 
@@ -41,7 +41,7 @@ Two flags tune how much each JSON payload carries — the agent hot path:
 |---------|--------------|
 | `hibi init` | Create `.claims/` with a per-repo banner nonce. |
 | `hibi record` | Record a span-first claim: a doc span, anchored to zero or more code spans. |
-| `hibi check` | Verify every claim, emit verdicts and lifecycle, exit per the contract below. |
+| `hibi check` | Verify every claim, emit verdicts and lifecycle, exit per the contract below. `--run-verifiers` additionally executes declared verifiers. |
 | `hibi diff --since <ref>` | What did this change invalidate? Scopes to files touched since a base ref. |
 | `hibi status` | A repo-wide document health overview: every tracked doc with its worst status, claim counts, owner, and lifecycle. |
 | `hibi status --doc <p>` | Read-time gate: is this one doc still current? |
@@ -51,11 +51,12 @@ Two flags tune how much each JSON payload carries — the agent hot path:
 | `hibi coverage --doc <p>` | Report which blocks of a doc are backed by a claim vs uncovered (the grounding-audit worklist). Read-only. |
 | `hibi reanchor <claim-id>` | Re-resolve both anchors against current content; reset state. `--doc <p>` / `--code-file <f>` relocate a side to a **different file**. |
 | `hibi retire <claim-id>` | Withdraw one claim: flip its `enforcement` to `retired`. Idempotent; a retired claim never gates or warns. |
+| `hibi ignore --claim <id> --reason <text>` | Acknowledge a behavioral `at-risk` you re-verified by hand: non-gating while the acknowledged evidence stands, lapses automatically when it moves again. |
 | `hibi relocate --from <p> --to <p>` | Re-home every live claim stranded on `--from` onto `--to`, in one pass; claims whose sentence is absent from `--to` are reported as misses. |
 | `hibi supersede --new <p> --old <p> --type <type>` | Record that one doc supersedes or amends another. |
 | `hibi retract --doc <p>` | Mark that the author withdrew the claim. |
 | `hibi archive --doc <p>` | Move an obsolete doc out of the read path (tombstone). |
-| `hibi doctor` | Store-health report: orphaned anchors, anchorless `suggested` claims, stranded claims, duplicate propositions. Informational; always exits `0`. |
+| `hibi doctor` | Store-health report: orphaned anchors, anchorless `suggested` claims, stranded claims, duplicate propositions, plus the behavioral flag-rate and doc-side drift rates. Informational; always exits `0`. |
 | `hibi schema` | Emit the generated JSON Schema(s) for the data model and protocol. |
 
 `version` and `help` round out the set.
@@ -64,8 +65,8 @@ Two flags tune how much each JSON payload carries — the agent hot path:
 
 `record` is **span-first**: the documented sentence's span supplies the claim
 text (the doc side), and you anchor zero or more code spans that back it
-(the code side). `--text` survives only as a legacy override for the rare
-pristine case where no doc span applies.
+(the code side). The doc span is the only source of the claim text — there is
+no side-channel override.
 
 ```sh
 hibi record \
@@ -82,14 +83,28 @@ hibi record \
 | `--code-quote <s>` / `--code-range L1:L9` / `--code-line <n>` | The code span to anchor on (matched fuzzily). |
 | `--coarse` / `--glob <g>` | Anchor to a whole file or glob: navigation and blast-radius only; never reported as stale. |
 | `--trust verified\|inferred\|assumed` | Authored trust. `verified` requires an anchor plus a `--ref`. |
-| `--enforce` / `--enforcement <e>` | Mark `enforced`, or set `suggested` \| `enforced` \| `retired` \| `unanchored-legacy`. |
-| `--claim-kind <k>` | Declare a behavioral kind (`ordering`, `retry`, `complexity`, `concurrency`, `caching`, `validation`, `error-handling`). |
-| `--verifier kind:ref` | Link an executable verifier (repeatable). Kinds: `example`, `snapshot`, `contract`, `property`, `formal`, `command`. |
+| `--enforce` / `--enforcement <e>` | Mark `enforced`, or set `suggested` \| `enforced` \| `retired`. |
+| `--behavioral` / `--no-behavioral` | Declare the claim behavioral, or opt out of behavioral classification. Mutually exclusive — passing both is an error. Omit both and the deterministic heuristic decides (see the note below). |
+| `--verifier <kind>:<ref>` | Link an executable verifier (repeatable), e.g. `--verifier command:"bun test retry"`. `kind` is any non-empty string, matched against the `verifierKinds` a runner resolver declares. Conventional kinds (recommendation, not schema): `command`, `example`, `snapshot`, `contract`, `property`, `metamorphic`, `formal`. |
+| `--pristine` | Mark the document pristine: hibi never stamps a banner or frontmatter into it — verdicts surface via JSON, `status`, and exit codes only. For third-party, vendored, or read-only docs. |
 | `--ttl <iso>` | Expire the claim after an ISO-8601 instant. |
 | `--owner <name>` | Who vouches for the claim. |
 | `--ref <ref>` | The justification (PR, issue, commit). Required for `verified` trust. |
 | `--inline-id` | Write a hidden inline marker near the paragraph in an owned doc. |
-| `--text <s>` | Legacy override: the claim sentence when no doc span applies. |
+
+<Note>
+  **How a claim becomes behavioral.** `--behavioral` makes it behavioral,
+  wording irrelevant. With neither flag, the claim is behavioral iff the
+  deterministic keyword heuristic matches (keyword, comparison/ordering,
+  temporal/sequencing, or exception/error language) **or** it declares at least
+  one verifier. `--no-behavioral` skips the heuristic entirely and requires the
+  verifier list to be empty — a verifier is itself a behavioral declaration, so
+  the combination is a contradictory record, rejected by the schema at `record`
+  time and at store load. The error names the two legitimate noise levers:
+  narrow `behaviorScope` (exclude globs, or `depth: 0`) or
+  `hibi ignore --claim <id> --reason <text>`. Free-form kind labels (e.g.
+  "retry") belong in the open `attrs` bag; the engine does not interpret them.
+</Note>
 
 <Warning>
   `record` **refuses** an enforced claim unless the doc side resolves, a `--ref`
@@ -135,10 +150,10 @@ required; everything else is optional:
 ]
 ```
 
-Keys: `doc`, `docQuote` / `docRange` / `docLine` / `text`, `codeFile`,
+Keys: `doc`, `docQuote` / `docRange` / `docLine`, `codeFile`,
 `codeQuote` / `codeRange` / `codeLine`, `glob`, `coarse`, `inlineId`, `trust`
-(default `inferred`), `enforce` / `enforcement`, `claimKind`, `verifier`,
-`owner`, `ref`, `ttl`.
+(default `inferred`), `enforce` / `enforcement`, `behavioral`, `verifier`,
+`pristine`, `owner`, `ref`, `ttl`.
 
 <Note>
   Every spec is validated **before any write** — a malformed item fails the
@@ -151,7 +166,10 @@ Keys: `doc`, `docQuote` / `docRange` / `docLine` / `text`, `codeFile`,
 `reanchor` re-resolves a claim's anchors against the current working tree and
 resets its state to `unchanged` — the supported way to settle a `moved` claim or
 re-point one after an edit. It **preserves the claim's identity** (same id,
-owner, trust, and history); only its anchors and baseline change.
+owner, and history); only its anchors and evidence baseline change. Whether
+authored trust survives depends on `--ref` — reanchoring **with** `--ref`
+asserts "I re-verified this" and retains trust; reanchoring **without** it
+downgrades `verified` trust to `inferred` (see the flag table).
 
 ```sh
 # Re-localize both sides in place (e.g. after a code move):
@@ -170,7 +188,7 @@ hibi reanchor asrt_1a2b3c --doc docs/subsystems/retry.md --doc-quote "Retries ar
 | `--doc-quote <s>` / `--doc-range` / `--doc-line` | The doc span to re-resolve (in the new file, if `--doc` is given). Omit to re-localize the existing selectors. |
 | `--code-file <f>` | Re-home the code anchor onto a different file. |
 | `--code-quote <s>` / `--code-range` / `--code-line` / `--glob` / `--coarse` | The code span to re-resolve. |
-| `--ref <ref>` | Stamp a new `@ref`; omit to keep the current one. |
+| `--ref <ref>` | Attest re-verification: records the new `@ref` and **retains authored trust**. Omitted, the re-anchor still lands, but `verified` authored trust is **downgraded to `inferred`**; the downgrade is recorded and surfaced in `status` and the JSON. |
 | `--dry-run` | Compute the would-be result and write nothing. The envelope gains `dryRun: true` and `next: "re-run without --dry-run to apply"`. |
 
 <Note>
@@ -274,6 +292,28 @@ you the exact command in their `remediation` menu, claim id pre-filled. Pass
 `--dry-run` to see what *would* be withdrawn without writing — the envelope gains
 `dryRun: true` and `next: "re-run without --dry-run to apply"`.
 
+## `hibi ignore`
+
+`ignore` **acknowledges a behavioral `at-risk` you have re-verified by hand**:
+it stores the acknowledged evidence — the current `{ path → hash }` map — plus
+your reason on the assertion (`suppressed`). While every acknowledged path
+still carries its acknowledged hash, the at-risk is non-gating: the verdict
+surfaces `suppressed: true` in JSON and does not affect exit codes.
+
+```sh
+hibi ignore --claim asrt_1a2b3c --reason "retry cap re-verified by hand against PR-1301"
+```
+
+| Flag | Description |
+|------|-------------|
+| `--claim <id>` | The claim whose current `at-risk` you are acknowledging. |
+| `--reason <text>` | Why this flag is safe to suppress. **Required** — an unexplained suppression is refused. |
+
+The suppression **lapses automatically**: the moment any acknowledged evidence
+path's hash moves past the acknowledged one, or a new evidence path appears,
+the claim flags again. `ignore` silences one specific, inspected change-set —
+never the claim itself. To withdraw a claim for good, use `hibi retire`.
+
 ## `hibi doctor`
 
 `doctor` is a **store-health report**: it surfaces the dead state that `check`
@@ -293,6 +333,17 @@ It reports four categories:
 | `suggestedNoCode` | `[{ claimId, docPath }]` — a `suggested` claim with no precise code anchor. |
 | `staleDocClaims` | `[{ claimId, docPath, lifecycle }]` — a live claim stranded on a superseded / retracted / amended / archived document. |
 | `duplicatePropositions` | `[{ fingerprint, propositionIds, claimIds }]` — distinct propositions sharing one content fingerprint. |
+
+Beyond the categories, `doctor` reports two **rate metrics**, computed from a
+read-only resolution pass (`doctor` never runs verifiers, and it still always
+exits `0`):
+
+- **Behavioral flag-rate** — the share of behavioral claims currently
+  `at-risk` or `refuted`. Guidance: above ~30% on a typical commit, tighten the
+  change gate — narrow `behaviorScope` with `exclude` globs or a smaller
+  `depth`.
+- **Doc-side orphaned / moved / changed rates**. Guidance: above ~30% orphan
+  rate on typical edits, use inline IDs for high-severity claims.
 
 The envelope adds a `counts` object (one tally per category), a
 `healthy: boolean` (true iff every category is empty), and a `next` hint that
@@ -316,6 +367,12 @@ routes to the most pressing category (e.g. `hibi list --state orphaned`):
     "suggestedNoCode": 0,
     "staleDocClaims": 1,
     "duplicatePropositions": 0
+  },
+  "rates": {
+    "behavioralFlagRate": 0.08,
+    "docOrphanedRate": 0.02,
+    "docMovedRate": 0.05,
+    "docChangedRate": 0.11
   },
   "healthy": false,
   "next": "hibi list --state orphaned"
@@ -348,12 +405,14 @@ version without reading a filename.
 **`check` / `diff` / `status`** return a decision-first envelope: an `ok`/`action`/
 `schemaVersion` header, a `summary` of counts, a `verdicts` array, and a
 `documents` roll-up. Each verdict is concise by default —
-`{ assertionId, propositionId, documentId, doc, code, behavior?, expired, gates,
-changed?, remediation, notes }` — with the `evidence` tail, `advisories`, and
-`fingerprint` added only under `--explain`. The `changed?` field is the one-line
-behavioral carve-out: it appears on `behavior:at-risk` / `refuted` verdicts even
-on the concise path so you learn *what* moved. `diff` additionally reports `since`
-and `changedFiles`.
+`{ assertionId, propositionId, documentId, doc, code, behavior?, expired,
+suppressed?, gates, changed?, remediation, notes }` — with the `evidence` tail,
+`advisories`, and `fingerprint` added only under `--explain`. The `changed?`
+field is the one-line behavioral carve-out: it appears on `behavior:at-risk` /
+`refuted` verdicts even on the concise path so you learn *what* moved.
+`suppressed?` is `true` on an `at-risk` acknowledged via `hibi ignore` — the
+verdict is surfaced but never affects exit codes. `diff` additionally reports
+`since` and `changedFiles`.
 
 **Mutating verbs add a `next` field** — the exact follow-up command to run — and
 `record`, `reanchor`, and `retire` also return the resulting `claimId`:
@@ -404,6 +463,29 @@ hibi check --fail-on never     # report, never fail the run
   In CI, pair `hibi check` with `--fail-on` to choose how strict the gate is.
   The official GitHub Action wraps this.
 </Tip>
+
+## Running verifiers: `check --run-verifiers`
+
+Verifiers execute **repo-committed commands** — a supply-chain surface — so
+they run **only** under `check --run-verifiers`. `status`, `query`, `list`,
+`doctor`, and plain `check` never spawn a verifier process.
+
+```sh
+hibi check --run-verifiers                         # also execute declared verifiers
+hibi check --run-verifiers --verifier-timeout 300  # raise the per-verifier timeout
+```
+
+The built-in **command runner** handles `kind: "command"`: it runs the
+verifier's `ref` as a shell command (`sh -c`, cwd = repo root). Exit `0` →
+`supported`; non-zero → `refuted`; a timeout or spawn failure produces no
+result, so the belief stays at the deterministic baseline. The per-verifier
+timeout defaults to **120 seconds**; tune it with `--verifier-timeout
+<seconds>`. External runner resolvers still require the default-deny manifest
+(`.claims/resolvers.json`).
+
+Verifier results beat change-gate routing: any failing verifier → `refuted`
+(gating on an enforced claim); all passing → `supported`; otherwise the gate
+result stands.
 
 ## Global options
 

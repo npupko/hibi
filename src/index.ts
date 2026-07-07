@@ -4,7 +4,7 @@
  *
  * Architecture — functional core, imperative shell:
  *   • The functional core is `src/engine/*` + `src/store/*`: pure-ish operations
- *     (`planRecord`, `recordClaim`, `runCheck`, `suggest`, `reanchor`, …) that
+ *     (`planRecord`, `recordClaim`, `runCheck`, `coverage`, `reanchor`, …) that
  *     take already-resolved values and never touch git or argv.
  *   • `Engine` below is the imperative shell for in-process consumers; the CLI
  *     (`src/cli`) is a second, sibling shell. Both are thin and sit on the SAME
@@ -32,13 +32,14 @@
 
 import { readFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
+import { isBehavioral } from "./algo/behavioral.ts";
 import { regionText } from "./algo/localize.ts";
 import { type AstAnalyzer, resolveSide } from "./algo/resolve.ts";
+import { hashContent } from "./ast/hash.ts";
 import { removeBanner } from "./banner/banner.ts";
 import type {
   AuthoredTrust,
   BehaviorScope,
-  ClaimKind,
   DocumentLifecycle,
   Enforcement,
   Verdict,
@@ -54,6 +55,14 @@ import {
 } from "./engine/check.ts";
 import { type CoverageResult, coverage } from "./engine/coverage.ts";
 import { buildDoctorReport, type DoctorReport } from "./engine/doctor.ts";
+import {
+  buildEvidenceBaselineFor,
+  type EvidenceDeps,
+  evidenceSetPaths,
+  readEvidenceContents,
+  seedFiles,
+} from "./engine/evidence.ts";
+import { type IgnoreResult, ignoreClaim } from "./engine/ignore.ts";
 import { type ListResult, type ListState, toListRows } from "./engine/list.ts";
 import { type QueryHit, queryByPath } from "./engine/query.ts";
 import {
@@ -68,6 +77,7 @@ import {
   type RecordInput,
   type RecordResult,
   recordClaim,
+  resolveRegion,
 } from "./engine/record.ts";
 import { planRelocation, type RelocateResult } from "./engine/relocate.ts";
 import { type RetireResult, retire } from "./engine/retire.ts";
@@ -79,6 +89,7 @@ import {
   type SupersedeResult,
   supersede,
 } from "./engine/supersede.ts";
+import { CommandRunnerResolver } from "./resolver/builtin/command-runner.ts";
 import { DriftResolver, ResolverRegistry } from "./resolver/registry.ts";
 import { ClaimStore, type StoreLocation } from "./store/store.ts";
 
@@ -113,6 +124,7 @@ export {
   buildDoctorReport,
   type DoctorReport,
 } from "./engine/doctor.ts";
+export { type IgnoreResult, ignoreClaim } from "./engine/ignore.ts";
 export {
   type ListResult,
   type ListRow,
@@ -179,13 +191,24 @@ export async function loadAnalyzer(): Promise<Analyzer | undefined> {
   return analyzerPromise;
 }
 
-/** Build the resolver registry: built-in drift + manifest-gated externals (§7). */
+/**
+ * Build the resolver registry: built-in drift + the built-in command verifier
+ * runner + manifest-gated externals (§7/§17.6). `runVerifiers` (default false)
+ * gates whether verifiers are dispatched at all — the command runner is always
+ * *registered*, but the registry only *invokes* a verifier under the explicit
+ * `check --run-verifiers` opt-in (D13 security model).
+ */
 async function buildRegistry(
   store: ClaimStore,
   analyzer?: AstAnalyzer,
+  opts: { runVerifiers?: boolean; verifierTimeoutMs?: number } = {},
 ): Promise<ResolverRegistry> {
   const registry = new ResolverRegistry();
+  registry.runVerifiers = opts.runVerifiers ?? false;
   registry.register(new DriftResolver(analyzer));
+  registry.register(
+    new CommandRunnerResolver(store.anchorRoot, opts.verifierTimeoutMs),
+  );
   await registry.loadFromManifest(store);
   return registry;
 }
@@ -201,8 +224,7 @@ export interface EngineOptions {
  * A span-first record call (§9 `record`). The documented sentence is located by
  * its own span (`docQuote`/`docRange`/`docLine`) — the doc side of the anchor —
  * and zero or more code targets pin the code it describes. The current artifact
- * span is authoritative; `text` is a LEGACY Model-A override only (pristine
- * migration), never the normal path (§18-B).
+ * span is authoritative; there is no side-channel text override (§18-B, D16).
  */
 export interface RecordCall {
   /** Repo-relative path of the document making the claim. */
@@ -219,8 +241,6 @@ export interface RecordCall {
   };
   /** Optional owned-doc marker id that stabilizes re-anchoring (§4/§8). */
   inlineId?: string;
-  /** LEGACY authoritative-text override only (migration); prefer the doc span. */
-  text?: string;
   /** Zero or more code targets the claim pins. */
   code?: {
     file: string;
@@ -244,12 +264,14 @@ export interface RecordCall {
   ttl?: string;
   /** Explicit enforcement override; else derived (enforced iff verified + resolved). */
   enforcement?: Enforcement;
-  /** Author's behavioral-kind declaration (§17.6). */
-  claimKind?: ClaimKind;
+  /** Author's behavioral declaration (§17.6, D12); undefined → heuristic decides. */
+  behavioral?: boolean;
   /** Executable-evidence links that upgrade behavioral risk (§5/§17.6). */
   verifiers?: Verifier[];
   /** Deterministic blast-radius for the behavioral change-gate (§5/§17.6). */
   behaviorScope?: BehaviorScope;
+  /** Mark the document pristine — hibi never stamps it (§8, D17). */
+  pristine?: boolean;
   attrs?: Record<string, unknown>;
 }
 
@@ -272,6 +294,17 @@ export interface StatusResult {
   current: boolean;
   suspect: SuspectEntry[];
   verdicts: Verdict[];
+  /**
+   * Reanchor trust downgrades on this doc's claims (§15/D15): a claim
+   * re-anchored without `--ref`, whose `verified` trust was withdrawn. Surfaced
+   * here so a reader sees the un-attested claims at a glance.
+   */
+  downgrades: {
+    claimId: string;
+    from: string;
+    to: string;
+    reason: string;
+  }[];
 }
 
 /** Build a RegionSpec from a doc/code locator, or undefined when none is given. */
@@ -363,6 +396,41 @@ export class Engine {
   }
 
   /**
+   * The change-gate evidence deps for a one-shot command (§17.6, D14), with a
+   * per-operation read cache so each file is read at most once across the walk +
+   * hash passes — the same memoization the `check` loop uses.
+   */
+  private evidenceDeps(analyzer: Analyzer | undefined): EvidenceDeps {
+    const cache = new Map<string, string | null>();
+    const readFile = async (rel: string): Promise<string | null> => {
+      if (cache.has(rel)) return cache.get(rel) ?? null;
+      const content = await this.readAnchored(rel);
+      cache.set(rel, content);
+      return content;
+    };
+    return { analyzer, readFile, root: this.store.anchorRoot };
+  }
+
+  /**
+   * Capture the change-gate baseline for a behavioral claim (§17.6, D14), shared
+   * by `record` and `reanchor`. Returns undefined when the claim carries no gate
+   * (not behavioral, or no anchored code seeds) — nothing to baseline.
+   */
+  private async captureBaseline(
+    gated: boolean,
+    seeds: string[],
+    behaviorScope: BehaviorScope | undefined,
+    verifiers: Verifier[] | undefined,
+    analyzer: Analyzer | undefined,
+  ): Promise<Record<string, string> | undefined> {
+    if (!gated || seeds.length === 0) return undefined;
+    return buildEvidenceBaselineFor(
+      { seeds, behaviorScope, verifiers },
+      this.evidenceDeps(analyzer),
+    );
+  }
+
+  /**
    * Verify every claim against the working tree (§9 `check`). Banners are stamped
    * into documents only when `write` is set; otherwise this is a pure read that
    * returns verdicts as data — the mode a consumer rendering its own status uses.
@@ -374,12 +442,27 @@ export class Engine {
       failOn?: FailOn;
       onlyFiles?: Iterable<string>;
       ref?: string;
+      /**
+       * Execute declared verifiers (§17.6, D13). Default false. Only the
+       * `check --run-verifiers` path sets it; `status`/`query`/`list`/`doctor`
+       * never do, so no verifier process spawns outside this opt-in.
+       */
+      runVerifiers?: boolean;
+      /** Per-verifier timeout in ms (default 120s). */
+      verifierTimeoutMs?: number;
     } = {},
   ): Promise<CheckReport> {
     const analyzer = await this.analyzer();
-    const registry = await buildRegistry(this.store, analyzer);
+    const registry = await buildRegistry(this.store, analyzer, {
+      runVerifiers: opts.runVerifiers ?? false,
+      verifierTimeoutMs: opts.verifierTimeoutMs,
+    });
     try {
       const options: CheckOptions = {
+        // The analyzer is also handed to `check` directly: it drives the
+        // change-gate's import extraction (§17.6, D14), separately from the
+        // registry's anchor-resolution analyzer.
+        ast: analyzer,
         registry,
         write: opts.write ?? false,
         failOn: opts.failOn,
@@ -415,6 +498,17 @@ export class Engine {
     const report = await this.check({ write: false, ref: opts.ref, onlyFiles });
     const docReport = report.documents.find((d) => d.id === docId);
     const verdicts = report.verdicts.filter((v) => v.documentId === docId);
+    // D15 — surface reanchor trust downgrades on this document's claims.
+    const downgrades = assertions
+      .filter((a) => a.documentId === docId && a.attrs.reanchorDowngrade)
+      .map((a) => {
+        const d = a.attrs.reanchorDowngrade as {
+          from: string;
+          to: string;
+          reason: string;
+        };
+        return { claimId: a.id, from: d.from, to: d.to, reason: d.reason };
+      });
     return {
       doc: docPath,
       found: Boolean(doc),
@@ -422,6 +516,7 @@ export class Engine {
       current: !verdicts.some((v) => v.gates),
       suspect: docReport?.suspect ?? [],
       verdicts,
+      downgrades,
     };
   }
 
@@ -457,28 +552,64 @@ export class Engine {
       codeContents[target.file] = await this.readAnchored(target.file);
     }
 
+    const analyzer = await this.analyzer();
+
+    // Capture the change-gate baseline for a behavioral claim (§17.6, D14): the
+    // shell owns FS + analyzer, so it computes the evidence set here and hands
+    // the baseline to the pure core. Non-behavioral claims carry no baseline.
+    const docText = this.docTextForClassify(docContent, call);
+    const hasVerifiers = (call.verifiers?.length ?? 0) > 0;
+    const evidenceBaseline = await this.captureBaseline(
+      isBehavioral(call.behavioral, docText, hasVerifiers),
+      code.filter((t) => !t.glob).map((t) => t.file),
+      call.behaviorScope,
+      call.verifiers,
+      analyzer,
+    );
+
     const contents: RecordContents = { docContent, codeContents };
     const input: RecordInput = {
       docPath: call.docPath,
       docSpec:
         call.docQuote !== undefined ? { quote: call.docQuote } : call.docRange,
       inlineId: call.inlineId,
-      text: call.text,
       authoredTrust: call.authoredTrust ?? "inferred",
       owner: call.owner ?? "unknown",
       ref: call.ref ?? "WORKTREE",
       ttl: call.ttl,
       code,
       enforcement: call.enforcement,
-      claimKind: call.claimKind,
+      pristine: call.pristine,
+      behavioral: call.behavioral,
       verifiers: call.verifiers,
       behaviorScope: call.behaviorScope,
+      evidenceBaseline,
       // A precise code anchor consults the analyzer; coarse/glob ignore it, but
       // passing it is harmless and lets a mixed call resolve its precise targets.
-      analyzer: await this.analyzer(),
+      analyzer,
       attrs: call.attrs,
     };
     return recordClaim(this.store, contents, input);
+  }
+
+  /**
+   * Best-effort documented text for behavioral classification at record time: the
+   * quote when given, else the resolved range text. A malformed range surfaces
+   * later in `recordClaim` (the real error path), so here it just skips capture.
+   */
+  private docTextForClassify(
+    docContent: string | null,
+    call: RecordCall,
+  ): string | null {
+    if (call.docQuote !== undefined) return call.docQuote;
+    if (docContent !== null && call.docRange) {
+      try {
+        return regionText(docContent, resolveRegion(docContent, call.docRange));
+      } catch {
+        return null;
+      }
+    }
+    return null;
   }
 
   /**
@@ -551,6 +682,25 @@ export class Engine {
       codeContents[target.file] = await this.readAnchored(target.file);
     }
 
+    const analyzer = await this.analyzer();
+
+    // D14/D15 — refresh the change-gate baseline for a behavioral claim (one that
+    // already has a baseline, or is behavioral via the shared `isBehavioral`
+    // rule). Seeds are the new code files (replacement targets if given, else the
+    // current ones, via the shared `seedFiles`).
+    const gated =
+      assertion.evidenceBaseline !== undefined ||
+      isBehavioral(assertion.behavioral, null, assertion.verifiers.length > 0);
+    const evidenceBaseline = await this.captureBaseline(
+      gated,
+      code
+        ? code.filter((t) => !t.glob).map((t) => t.file)
+        : seedFiles(assertion),
+      assertion.behaviorScope,
+      assertion.verifiers,
+      analyzer,
+    );
+
     const contents: RecordContents = { docContent, codeContents };
     const input: ReanchorInput = {
       claimId,
@@ -559,7 +709,8 @@ export class Engine {
         opts.docQuote !== undefined ? { quote: opts.docQuote } : opts.docRange,
       code,
       ref: opts.ref,
-      analyzer: await this.analyzer(),
+      evidenceBaseline,
+      analyzer,
       dryRun: opts.dryRun,
     };
     return reanchor(this.store, contents, input);
@@ -675,6 +826,35 @@ export class Engine {
   /** Author an `amends`/`supersedes` edge and derive its reverse (§9 `supersede`). */
   async supersede(input: SupersedeInput): Promise<SupersedeResult> {
     return supersede(this.store, input);
+  }
+
+  /**
+   * Acknowledge a behavioral `at-risk` you re-verified by hand (§17.6, D14
+   * `ignore`). Computes the acknowledged `{path → hash}` map — the current
+   * hashes of the currently-changed evidence — and records it plus the required
+   * reason on the claim. The suppression lapses automatically when any
+   * acknowledged path's hash moves again or a new evidence path appears.
+   */
+  async ignore(claimId: string, reason: string): Promise<IgnoreResult> {
+    const assertion = await this.store.getAssertion(claimId);
+    if (!assertion) throw new Error(`No claim ${claimId} in the store.`);
+    // One cached reader across the walk + read passes, so each file reads once.
+    const deps = this.evidenceDeps(await this.analyzer());
+    const paths = await evidenceSetPaths(assertion, deps);
+    const evidence = await readEvidenceContents(paths, deps.readFile);
+    // The acknowledged set: every evidence path whose current hash differs from
+    // its baseline entry (or that has none) — exactly the currently-changed
+    // evidence the at-risk is firing on.
+    const baseline = assertion.evidenceBaseline ?? {};
+    const acknowledged: Record<string, string> = {};
+    for (const [p, content] of evidence) {
+      if (content === null) continue;
+      const cur = hashContent(content);
+      if (baseline[p] === undefined || cur !== baseline[p]) {
+        acknowledged[p] = cur;
+      }
+    }
+    return ignoreClaim(this.store, claimId, reason, acknowledged);
   }
 
   /** Mark a document retracted — the author withdrew it (§9 `retract`). */

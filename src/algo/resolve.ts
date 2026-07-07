@@ -14,6 +14,7 @@
  * runner resolver upgrades it to `supported`/`refuted` out-of-process (§17.6).
  */
 
+import { hashContent } from "../ast/hash.ts";
 import { computeGates } from "../core/gating.ts";
 import {
   type AnchorState,
@@ -28,7 +29,7 @@ import {
   type Verdict,
 } from "../core/model.ts";
 import { remediationFor } from "../core/remediation.ts";
-import { effectiveClaimKind } from "./behavioral.ts";
+import { isBehavioral } from "./behavioral.ts";
 import { grade, type ResolvedSelector } from "./fusion.ts";
 import { localizeTextQuote, positionBias, regionText } from "./localize.ts";
 import { collapseWhitespace, textSimilarity } from "./normalize.ts";
@@ -62,6 +63,8 @@ export interface AstAnalyzer {
     region: Region,
     nodeKind: string,
   ): string | null;
+  /** List the import specifiers of a file (§17.6, D14); [] if unparseable. */
+  extractImports(text: string, language: string): string[];
 }
 
 /** Current content of every file an anchor points into (null = file missing). */
@@ -76,6 +79,85 @@ export interface ResolveOptions {
   ast?: AstAnalyzer;
   /** Current time for ttl evaluation; defaults to Date.now() at call site. */
   now?: number;
+  /**
+   * The change-gate evidence (§17.6, D14): current contents of every
+   * evidence-set path, keyed by path (null = file missing). Supplied by the
+   * engine shell (`check.ts`); absent → the gate falls back to the
+   * anchored-node signal only.
+   */
+  evidence?: ReadonlyMap<string, string | null>;
+}
+
+/**
+ * The behavioral change-gate (§17.6, D14). `docSide.state` is consulted NOWHERE
+ * here — a doc-side edit is Axis 1's job, so the two axes never double-fire on
+ * one signal. Fires `at-risk` when the anchored node's semantics changed (an
+ * `ast`/`value` change on the code side) or any evidence path drifted from its
+ * baseline (a changed hash, or a newly-added import with no baseline entry).
+ *
+ * Baseline handling is precision-critical (§11.3):
+ *   - baseline **exists** but an evidence path is missing from it → that path is
+ *     changed evidence (a newly added import);
+ *   - baseline **absent entirely** (recorded `--no-ast`, analyzer failure) →
+ *     fall back to the anchored-node signal, never flag every path.
+ */
+function computeBehaviorRisk(
+  assertion: Assertion,
+  codeChanged: ChangedEvidence[],
+  evidence: ReadonlyMap<string, string | null> | undefined,
+): { state: BehaviorState; changed: ChangedEvidence[] } {
+  const changed: ChangedEvidence[] = [];
+
+  // (1) Anchored-node signal: a semantic (ast) or literal (value) change of the
+  //     anchored span — a rename/whitespace-only edit is structural-only and
+  //     surfaces neither, so it correctly never fires.
+  for (const c of codeChanged) {
+    if (c.kind === "ast" || c.kind === "value") changed.push(c);
+  }
+
+  // (2) Evidence-set drift — only when a baseline exists (baseline-absent → (1)).
+  const baseline = assertion.evidenceBaseline;
+  if (baseline && evidence) {
+    for (const [path, content] of evidence) {
+      const cur = content === null ? null : hashContent(content);
+      const base = baseline[path];
+      if (base === undefined) {
+        changed.push({ path, kind: "import", detail: "new evidence path" });
+      } else if (cur !== base) {
+        changed.push({ path, kind: "import", detail: "evidence file changed" });
+      }
+    }
+  }
+
+  // No dedupe here: the caller merges `changed` into the verdict's
+  // `changedEvidence` through `dedupeEvidence`, and `suppressionActive` keys on
+  // `path` alone — so a duplicate entry changes neither the state nor the output.
+  return changed.length > 0
+    ? { state: "at-risk", changed }
+    : { state: "unverified", changed: [] };
+}
+
+/**
+ * Whether an authored `hibi ignore` suppression is still active (§17.6, D14).
+ * Active iff every acknowledged path still hashes to its acknowledged value AND
+ * no currently-changed evidence path lies outside the acknowledged set (a new
+ * path appearing lapses it). Any mismatch → lapsed, and the at-risk resurfaces.
+ */
+function suppressionActive(
+  suppressed: Assertion["suppressed"],
+  evidence: ReadonlyMap<string, string | null> | undefined,
+  behaviorChanged: ChangedEvidence[],
+): boolean {
+  if (!suppressed) return false;
+  for (const [path, ackHash] of Object.entries(suppressed.paths)) {
+    const content = evidence?.get(path);
+    const cur = content == null ? null : hashContent(content);
+    if (cur !== ackHash) return false; // an acknowledged path moved → lapsed
+  }
+  for (const c of behaviorChanged) {
+    if (!(c.path in suppressed.paths)) return false; // a new path → lapsed
+  }
+  return true;
 }
 
 /** Worst-wins precedence when aggregating code-side bundle states. */
@@ -96,6 +178,17 @@ export interface SideResult {
   changedEvidence: ChangedEvidence[];
   /** The live text at the located region (the authoritative span when found). */
   liveText: string | null;
+}
+
+/** Dedupe changed-evidence entries by (path, kind, detail). */
+function dedupeEvidence(entries: ChangedEvidence[]): ChangedEvidence[] {
+  const seen = new Set<string>();
+  return entries.filter((c) => {
+    const key = `${c.path}|${c.kind}|${c.detail ?? ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function bySelectorKind(selectors: Selector[]) {
@@ -407,22 +500,32 @@ export function resolveAssertion(
 
   // ── Behavioral risk routing (deterministic baseline — §17.6) ──
   // The live documented span is authoritative for classification. A claim that
-  // links executable verifiers is behavioral by construction, even if neither a
-  // declared `claimKind` nor the keyword heuristic classifies it — so the
+  // links executable verifiers is behavioral by construction, even if neither an
+  // author `behavioral` flag nor the keyword heuristic classifies it — so the
   // verifier-dispatch path and this inline path agree on the behavior axis (§10).
-  const claimKind = effectiveClaimKind(assertion.claimKind, docSide.liveText);
-  const isBehavioral =
-    claimKind !== undefined || assertion.verifiers.length > 0;
+  const behavioral = isBehavioral(
+    assertion.behavioral,
+    docSide.liveText,
+    assertion.verifiers.length > 0,
+  );
   let behavior: BehaviorState | undefined;
-  if (isBehavioral) {
-    // Change-gate: anchored node + its file (fallback for absent behaviorScope).
+  let behaviorChanged: ChangedEvidence[] = [];
+  let suppressed = false;
+  if (behavioral) {
+    // Change-gate v2 (§17.6, D14): the anchored-node signal + evidence-set drift.
     // A linked verifier may later upgrade this to supported/refuted (§17.6).
-    const reachableChanged =
-      code === "changed" ||
-      code === "orphaned" ||
-      codeChanged.length > 0 ||
-      docSide.state === "changed";
-    behavior = reachableChanged ? "at-risk" : "unverified";
+    const risk = computeBehaviorRisk(assertion, codeChanged, opts.evidence);
+    behavior = risk.state;
+    behaviorChanged = risk.changed;
+    // An authored `hibi ignore` neutralizes an active at-risk (D14): still
+    // surfaced (`suppressed: true`), but contributes nothing to exit codes.
+    if (behavior === "at-risk") {
+      suppressed = suppressionActive(
+        assertion.suppressed,
+        opts.evidence,
+        behaviorChanged,
+      );
+    }
   }
 
   const expired =
@@ -439,10 +542,17 @@ export function resolveAssertion(
   const notes = [
     ...docSide.notes.map((n) => `doc: ${n}`),
     ...codeNotes,
-    isBehavioral ? `behavioral claim${claimKind ? ` (${claimKind})` : ""}` : "",
+    behavioral ? "behavioral claim" : "",
   ].filter(Boolean);
 
-  const changedEvidence = [...docSide.changedEvidence, ...codeChanged];
+  // Merge the behavioral evidence-path changes (imports/verifier sources) in,
+  // deduped by (path, kind) — so each behavioral banner line names the changed
+  // evidence path even when the anchored span itself is untouched (D14).
+  const changedEvidence = dedupeEvidence([
+    ...docSide.changedEvidence,
+    ...codeChanged,
+    ...behaviorChanged,
+  ]);
 
   return {
     assertionId: assertion.id,
@@ -453,6 +563,7 @@ export function resolveAssertion(
     behavior,
     expired,
     gates,
+    suppressed,
     // Deterministic next-action menu derived from the computed states (§9).
     remediation: remediationFor({
       assertionId: assertion.id,

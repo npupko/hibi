@@ -10,7 +10,7 @@ import { dirname, join } from "node:path";
 import type { Document } from "../core/model.ts";
 import { exists } from "../fs.ts";
 import type { ClaimStore } from "../store/store.ts";
-import { documentIdForPath } from "./record.ts";
+import { documentIdForPath, newDocument } from "./record.ts";
 import { liveClaimsOnDocument } from "./supersede.ts";
 
 function tombstone(docPath: string, successorPath?: string): string {
@@ -45,12 +45,8 @@ export async function archiveDocument(
 ): Promise<ArchiveResult> {
   const root = store.anchorRoot;
   const id = documentIdForPath(docPath);
-  const doc: Document = (await store.getDocument(id)) ?? {
-    id,
-    path: docPath,
-    lifecycle: "active",
-    edges: [],
-  };
+  const doc: Document =
+    (await store.getDocument(id)) ?? newDocument(id, docPath);
 
   const abs = join(root, docPath);
   let archivedTo: string | null = null;

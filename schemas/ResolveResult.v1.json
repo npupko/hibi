@@ -107,6 +107,10 @@
             }
           ]
         },
+        "suppressed": {
+          "default": false,
+          "type": "boolean"
+        },
         "evidence": {
           "type": "object",
           "properties": {
@@ -210,6 +214,7 @@
         "expired",
         "gates",
         "remediation",
+        "suppressed",
         "evidence",
         "notes",
         "advisories"

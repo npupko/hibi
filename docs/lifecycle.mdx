@@ -47,6 +47,23 @@ statement about your confidence, not about the code.
   `--trust verified|inferred|assumed` on `hibi record`.
 </Info>
 
+### Reanchoring is an attestation
+
+Re-pointing a claim's anchors is not the same as re-verifying the claim, and
+`hibi reanchor` keeps the two honest:
+
+- `hibi reanchor <id> --ref <new-ref>` asserts "I re-verified this": selectors
+  and evidence baselines refresh, authored trust is **retained**, and the new
+  ref is recorded.
+- `hibi reanchor <id>` **without** `--ref` still re-anchors — the claim is
+  findable again — but **downgrades authored trust `verified` → `inferred`**:
+  nobody has re-attested that the claim is *true*. The downgrade is recorded on
+  the assertion and surfaced in `status` and the JSON.
+
+This closes the gaming hole where re-linking an anchor clears CI without anyone
+re-checking the claim: a `verified` badge always means someone attested it,
+with a `@ref`, against the code it points at now.
+
 ## Enforcement: earning the right to gate
 
 Enforcement is the gate key. It decides whether a claim can fail your build or
@@ -57,7 +74,6 @@ stamp a strong banner into a file, or whether it stays advisory.
 | `suggested` | A candidate claim, advisory only. Never sets a failing exit code. |
 | `enforced` | A confirmed claim: may gate a build and may stamp a strong banner. |
 | `retired` | Withdrawn from active enforcement, kept for history. |
-| `unanchored-legacy` | A pre-existing claim with no usable anchor yet. |
 
 <Warning>
   **Only an `enforced` claim gates or stamps a strong banner.** A `suggested`
@@ -153,7 +169,7 @@ document knows it was replaced without you editing it twice.
     are required.
 
     ```bash
-    hibi supersede --new docs/new.md --old docs/old.md --type amends --propositions p-12,p-19
+    hibi supersede --new docs/new.md --old docs/old.md --type amends --propositions prop_d6185fc85e2a4e52,prop_f31b0a927c440e19
     ```
   </Tab>
 </Tabs>

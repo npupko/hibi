@@ -33,6 +33,7 @@ impl Resolver for EchoResolver {
                 behavior: None,
                 expired: false,
                 gates: false,
+                suppressed: false,
                 evidence: VerdictEvidence {
                     doc_region: None,
                     code_regions: vec![],

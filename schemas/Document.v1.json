@@ -133,13 +133,18 @@
     },
     "frontmatterStatus": {
       "type": "string"
+    },
+    "pristine": {
+      "default": false,
+      "type": "boolean"
     }
   },
   "required": [
     "id",
     "path",
     "lifecycle",
-    "edges"
+    "edges",
+    "pristine"
   ],
   "additionalProperties": false
 }

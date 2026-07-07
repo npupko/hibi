@@ -5,10 +5,13 @@
 > automated agents never read a **superseded or outdated** document and act on it as if it were
 > current.
 >
-> **Status:** complete, self-contained specification — the sole input for building the tool from
-> scratch in a fresh, empty repository. The architecture, data model, contracts, algorithms, and
-> parameters below are final and migration-free; every design decision is recorded, with its
-> rationale, in the **Decision Log (§14)**.
+> **Status:** design record — problem, principles, decision log, and evidence (demoted from
+> "final specification" by **D20**). The living behavioral contract is `docs/` +
+> `schemas/*.v1.json` + the test suite; where this document and the shipped code disagree, the
+> code and docs win. Every design decision is recorded, with its rationale, in the **Decision Log
+> (§14)**; the 2026-07-07 research realignment (**D12–D20**, recorded in
+> **`design/ADR-002-research-realignment.md`**) amends §4, §5, §6, §7.1, §8, §9, §10, §13, and
+> §17.6 below.
 >
 > **Research-grounded design.** Two foundational choices are settled against the prior-art and
 > empirical evidence in **§18**: (1) the *carrier* — the **current document span is the source of
@@ -134,8 +137,8 @@ closes the doc-side drift gap and satisfies the single-source-of-truth principle
 artifact span is authoritative, the stored quote is only anchoring material and an audit cache, never
 the truth (§18-B). Selector kinds (each side draws the kinds that fit it):
 
-- **`text-quote`** — exact + prefix + suffix snippet (W3C TextQuoteSelector; 32-char context per the
-  hypothes.is fuzzy-anchoring model — §17.1); fuzzy-matchable, survives moves. *The base selector on
+- **`text-quote`** — exact + prefix + suffix snippet (W3C TextQuoteSelector; **48-char context**,
+  widened from the hypothes.is model's 32 for robustness — §17.1); fuzzy-matchable, survives moves. *The base selector on
   both sides; always present for a precise anchor.*
 - **`text-position`** — line/char range; a cheap first guess and corroboration hint **only** (never
   sole identity — it is brittle under insertions, §18-B).
@@ -200,8 +203,9 @@ with the **reverse edge derived** by the engine:
 An old document can legitimately receive **both** signals at once — *superseded in part* **and**
 *code-drift* — and both are surfaced.
 
-**Resolver.** The single extension concept: a unit that handles one or more anchor `kind`s, locates
-them in the current repo, and returns a `Verdict`. Built-in resolvers ship in-tree; third parties
+**Resolver.** The single extension concept: a **pure** unit that handles one or more anchor
+`kind`s, locates them in the file contents the engine supplies (a resolver never reads the repo
+itself), and returns a `Verdict`. Built-in resolvers ship in-tree; third parties
 add more **out-of-process, in any language**, against the same wire protocol (§7).
 
 ## 5. Data model
@@ -219,22 +223,32 @@ load. (Dependency rationale: §16.)
   doc span**, re-read at `check` time via the doc-side anchor (§4, §8, §18-B). **Identity is
   authored/explicit** (`id` / content `fingerprint` of the confirmed text), **never
   similarity-computed** (that would smuggle non-determinism back in).
-- **Assertion** `{ id, propositionId, documentId, owner, ref, anchor, enforcement, claimKind?,
-  verifiers[], behaviorScope?, ttl?, attrs }` — one verification instance. Carries the **bidirectional
+- **Assertion** `{ id, propositionId, documentId, owner, ref, anchor, enforcement, behavioral?,
+  verifiers[], behaviorScope?, evidenceBaseline?, ttl?, attrs }` — one verification instance. Carries the **bidirectional
   Anchor** (value-object), the `enforcement` state (§4), the `@ref` last verified against, optional
   `ttl`, and:
   - **`verifiers[]`** *(optional)* — executable-evidence links that upgrade behavioral risk to a real
-    verdict: each is `{ kind, ref, proves? }` where `kind ∈ example | snapshot | contract | property |
-    formal | command` and `ref` names a test/command. If a verifier runs and fails →
-    `refuted`; if none is declared, a claim is **never** marked `supported` (§7.4,
-    §18-A). Verifiers are executed by an out-of-process runner resolver (§7), never in core.
+    verdict: each is `{ kind, ref, proves? }` where `kind` is an **open string** matched against the
+    `verifierKinds` a runner resolver declares (conventional kinds: `command`, `example`, `snapshot`,
+    `contract`, `property`, `metamorphic`, `formal`; a built-in `command` runner ships in-tree — D13)
+    and `ref` names a test/command. If a verifier runs and fails → `refuted`; if none is declared, a
+    claim is **never** marked `supported` (§7.4, §18-A). Verifiers are executed by an out-of-process
+    runner resolver (§7), never in core, and **only** under explicit `check --run-verifiers` —
+    committed commands are a supply-chain surface, so no read-time path may execute them (D13).
   - **`behaviorScope`** *(optional)* — for behavioral claims, the deterministic blast-radius the
-    change-gate watches: `{ rootSymbols[], reachableDepth, include[], exclude[] }` (callees, imports,
-    config files, literals). Absent → the change-gate falls back to the anchored node + its file.
-  - **`claimKind`** *(optional)* — the author's declaration that a claim is behavioral, and of what
-    kind (ordering / retry / complexity / concurrency / caching / validation / …). It drives the
-    Tier-3 behavioral classification explicitly (§17.6); absent, a deterministic keyword heuristic
-    classifies. A label, never a verdict.
+    change-gate watches: `{ include[], exclude[], depth? }` — the anchored file plus the files it
+    imports to `depth` (default 1; per-grammar tree-sitter import extraction, **no call graph** —
+    D14), plus `include` globs (config, fixtures), minus `exclude`. The Assertion stores an
+    **`evidenceBaseline`** (path → xxHash64, captured at record/reanchor) so the gate is computed
+    offline like every other baseline (§6). Absent → the anchored node + its file + depth-1 imports.
+  - **`behavioral`** *(optional boolean)* — the author's declaration that a claim is (or is not)
+    behavioral. `true` → behavioral regardless of wording; `false` → declares non-behavioral, the
+    heuristic is skipped, and `verifiers[]` **must be empty** (a verifier is itself a behavioral
+    declaration, so the combination is a contradictory record — schema-rejected at record and load
+    time, §17.6); absent → a deterministic keyword heuristic classifies (§17.6). A routing flag,
+    never a verdict. *(Replaces the fixed `claimKind` enum — no research source supports a closed taxonomy
+    of behavioral kinds over open prose, and the engine never had per-kind semantics; free-form
+    kind labels belong in `attrs` — D12.)*
   - **`attrs`** — an open key/value bag for resolver-specific metadata the core does not interpret;
     keeps the core contract small while letting resolvers carry their own state (§11.4).
 - **Anchor** *(value-object on the Assertion)* — `{ doc: SelectorBundle, code: SelectorBundle[] }`,
@@ -297,11 +311,14 @@ if it still existed (§18-B):**
    unlocatable → `orphaned`; past `ttl` → the `expired` flag. Selector **disagreement** lowers
    confidence and yields `moved`/re-verify, **never** a hard `changed` — keeping the suspect set tight.
 4. **Behavioral risk routing (change-gated, deterministic)** — for a claim classified behavioral,
-   set `at-risk` **only if** evidence in its `behaviorScope` actually changed (anchored node,
-   reachable callees, imports, config, literals, or a linked verifier source); otherwise it stays
-   `unverified` (resting). If the claim links `verifiers[]`, dispatch them to the runner resolver: any
-   failure → `refuted` (may gate); all pass → `supported`. **Wording alone never fires**: a keyword in
-   the prose, with nothing changed, is not a signal (§7.4, §18-A).
+   set `at-risk` **only if** code evidence actually changed: the anchored node's semantic hash, a
+   file in its `behaviorScope` evidence set (anchored file + imports to `depth` + `include` globs,
+   compared against the stored `evidenceBaseline`; a file with no stored baseline — a newly added
+   import — counts as changed), or a linked verifier source; otherwise it stays `unverified`
+   (resting). Doc-side edits never fire this gate — they are Axis 1's job (D14). If the claim links
+   `verifiers[]` and `--run-verifiers` is set, dispatch them to the runner resolver: any failure →
+   `refuted` (may gate); all pass → `supported`. **Wording alone never fires**: a keyword in the
+   prose, with nothing changed, is not a signal (§7.4, §18-A).
 
 **Precision tiers (all first-party; SCIP is *not* — §14). Tiers 1–2 run on *both* sides of the
 anchor:**
@@ -384,7 +401,10 @@ pushed down into a registry**, **consumers stacked on top**, **strictly upward d
 
 ### 7.1 The Resolver seam is a wire protocol, not a language-locked plugin API
 Extension is **out-of-process**: a resolver is a process that speaks **JSONL-RPC over stdio**,
-declares the anchor `kind`s it handles, and answers `localize` / `detect` requests with `Verdict`s.
+declares the anchor `kind`s (and `verifierKinds`) it handles via `describe`, and answers
+`resolve` / `verify` requests with `Verdict`s. The engine reads the repo and passes file contents
+in (`files { doc, code: { path: content } }`); a resolver is pure and never touches the
+filesystem.
 This makes the tool **extensible for everyone in any language** (an in-process plugin API would only
 admit plugins in the host language — *less* "for everyone"), and isolates third-party code (a slow/crashing resolver
 is timed-out and cannot corrupt a determinism-critical engine). Resolvers are declared via a
@@ -444,10 +464,12 @@ file; it does not modify it).
 - **Optional — inline IDs (Model B) for *owned* docs:** a hidden `<!-- hibi:claim id=… -->` marker
   may stabilize re-anchoring for high-value owned docs. Never required; identifies the record, never
   restates the claim; if marker and prose disagree, the prose wins.
-- **Legacy — Model A (external text copy) for migration / read-only only:** retained solely to import
-  old records and to track files hibi cannot anchor into. A migrated copy is reanchored into the
-  document; if no unique span is found it becomes `unanchored-legacy` and is **excluded from strong
-  enforcement** rather than silently verified.
+- **Model A (external text copy) — removed (D16).** There is no migration corpus (alpha) and
+  pristine docs are trackable by sidecar anchors without modification, so the legacy text-copy
+  path, the `--text` flag, and the `unanchored-legacy` enforcement state are deleted — §18-B's own
+  escape hatch ("if pristine-doc tracking proves rare, drop the Model-A fallback and simplify to
+  pure C"). Pristine/read-only documents are **never stamped**; their status surfaces via
+  JSON/`status`/exit codes only (D17).
 
 **Cross-repo.** The store and the per-repo banner nonce (§17.5) are **per-repository** artifacts;
 `check` operates within one repo's working tree. A multi-repo workspace (the common agent setup) is
@@ -493,11 +515,11 @@ carrier; inline IDs only strengthen re-anchoring where a team opts in. See §14 
   - **`check`** — verify a repo's claims (doc side first, then code, then behavioral risk/verifiers);
     emit per-Assertion verdicts + per-Document lifecycle; exit-code per the contract below.
   - **`record`** — write a new claim. **Span-first:** it takes a **document span** (e.g.
-    `--doc README.md --doc-range L42:L44`) plus a code target (`--file src/x.ts --code-quote "…"`),
-    **reads the claim text from the document**, builds both anchor bundles, and refuses to create an
-    `enforced` record unless both sides resolve uniquely. (`--text` as an authoritative input is
-    removed — the doc is the source of truth, §8, §18-B; a free-text override survives only for
-    legacy/pristine Model-A records.)
+    `--doc README.md --doc-quote "…"` or `--doc-range L42:L44`) plus a code target
+    (`--code-file src/x.ts --code-quote "…"`), **reads the claim text from the document**, builds
+    both anchor bundles, and refuses to create an `enforced` record unless both sides resolve
+    uniquely. (`--text` is removed entirely with Model A — the doc is the source of truth, §8,
+    §18-B, D16.)
   - **`coverage --doc <p>`** — segment a document into blocks and report each as **covered** (a live
     claim's doc anchor resolves into it) or **uncovered**, with a grounding ratio. The deterministic
     worklist for an **agent-driven grounding audit**: the agent grounds an uncovered block a code span
@@ -517,6 +539,9 @@ carrier; inline IDs only strengthen re-anchoring where a team opts in. See §14 
     *before* feeding a document to a naive agent ("is this current?"); it is the deterministic gate
     the foundational research wants in a hook (guaranteed execution, not advisory) — belt-and-suspenders
     to the in-file banner (§7, §18-D).
+  - **Operational verbs shipped beyond this original list** — `init`, `list`, `retire`, `relocate`,
+    `retract`, `archive`, `doctor`, `schema`, `completions`, plus the planned `ignore` (suppression
+    with a recorded reason — D14). `docs/cli-reference.mdx` is the authoritative CLI contract (D20).
 
   **Output shape (agent-consumable — §18-D).** JSON objects **lead with the decision** (`status`,
   `gates`, `side`) and trail the bulky evidence (located regions, confidence, selector agreement,
@@ -541,8 +566,8 @@ carrier; inline IDs only strengthen re-anchoring where a team opts in. See §14 
 ## 10. Status, lifecycle & TTL enums (final)
 
 - **Authored trust:** `verified` · `inferred` · `assumed`. (`verified` requires an anchor + `@ref`.)
-- **Enforcement (record lifecycle):** `suggested` · `enforced` · `retired` (plus `unanchored-legacy`
-  for un-reanchorable migrated copies). Only `enforced` may gate or stamp a strong banner.
+- **Enforcement (record lifecycle):** `suggested` · `enforced` · `retired` (`unanchored-legacy`
+  removed with Model A — D16). Only `enforced` may gate or stamp a strong banner.
 - **Computed — anchor resolution (engine-only, ephemeral; one vocabulary per side, `doc:…`/`code:…`):**
   `unchanged` · `moved` · `changed` · `ambiguous` · `orphaned`.
 - **Computed — behavioral belief (engine-only, ephemeral; absent on non-behavioral claims):**
@@ -559,7 +584,7 @@ carrier; inline IDs only strengthen re-anchoring where a team opts in. See §14 
   AST match credited as a partial `ast-node` score, and an active localization-gated **value veto**
   (both detailed in §17.3). Fuzzy
   matching (diff-match-patch) uses `Match_Threshold 0.4`, `Match_Distance 100000` (deliberately large,
-  so a region relocated by hundreds of characters is still found), and a 32-character `text-quote`
+  so a region relocated by hundreds of characters is still found), and a 48-character `text-quote`
   context window. Verdict bands: `C ≥ 0.8` → `unchanged`; `0.5 ≤ C < 0.8` → `moved`; `0.2 ≤ C < 0.5` →
   `changed`; `C < 0.2` → `orphaned`. The engine is tuned for **precision over recall**: it holds
   false-`changed` at or below ~2% and **never reports a drifted claim as `unchanged`** — every missed
@@ -631,9 +656,11 @@ correctness (especially the suspect-set precision of §11.3) at each step:
    two-tier normalized-AST hash; the markdown structural-path selector for the doc side; corroboration
    & confidence grading across selectors; `value` selector.
 6. **Tier-3 behavioral + onboarding** — deterministic change-gated **Behavioral Risk Routing**
-   (call-graph/dependency reachability over `behaviorScope`); executable-verifier orchestration
-   (`example`/`snapshot`/`contract`/`property`/`formal`/`command`); `coverage` for new-doc onboarding;
-   optional LLM/formal **advisor** resolvers (advisory-only); additional language SDKs.
+   (file-level import reachability over the redefined `behaviorScope`, with stored evidence
+   baselines — D14); the built-in `command` verifier runner behind `check --run-verifiers` (D13);
+   `coverage` for new-doc onboarding; optional LLM/formal **advisor** resolvers (advisory-only);
+   additional language SDKs. *(Sequencing note: at v0.2.3 the schema fields shipped ahead of this
+   layer — the facade ADR-002 exists to close; its roadmap is the completion plan.)*
 
 ## 14. Decision Log (resolved; do not silently re-open)
 
@@ -672,7 +699,8 @@ correctness (especially the suspect-set precision of §11.3) at each step:
 - **D4 — Data model → Document + Proposition + Assertion + *bidirectional* Anchor (value-object);
   verdict ephemeral.** The Anchor is `{ doc, code[] }`; the Proposition carries a **non-authoritative
   `textCache`** (live text comes from the doc span); the Assertion carries `enforcement`, optional
-  `claimKind`, `verifiers[]`, and `behaviorScope` — all **value-objects**, not first-party entities,
+  `claimKind` *(since replaced by the `behavioral` flag — D12)*, `verifiers[]`, and
+  `behaviorScope` — all **value-objects**, not first-party entities,
   preserving "if it isn't core, it's a resolver or a consumer." *Declined:* a **flat** model
   (conflates the status kinds; no clean `amends` target); a **+Evidence/+Run** model (a stored Run
   contradicts the never-persist-verdicts rule; Evidence has no identity apart from its assertion).
@@ -711,6 +739,22 @@ correctness (especially the suspect-set precision of §11.3) at each step:
   `assets/logo/` (see `assets/logo/README.md`). Assets are **raster** — Nano Banana Pro has no native
   alpha, so transparency comes from a chroma-key green screen keyed with ImageMagick; a hand-drawn
   **SVG redraw is the reserved next step** if infinitely-scalable output is later required.
+- **D12–D20 — the 2026-07-07 research realignment** (full rationale, evidence, and implementation
+  roadmap in **`design/ADR-002-research-realignment.md`**): **D12** `claimKind` fixed enum →
+  `behavioral` boolean flag (no research source supports a closed behavioral taxonomy over open
+  prose; the engine never had per-kind semantics; kind labels live in `attrs`). **D13** verifier
+  `kind` becomes an open string matched against resolver-declared `verifierKinds`; a built-in
+  `command` runner ships; verifiers execute only under explicit `check --run-verifiers`
+  (supply-chain surface). **D14** change-gate v2: file-level import reachability with stored
+  `evidenceBaseline` hashes; `doc:changed` removed from the behavioral gate; `hibi ignore`
+  suppression + flag-rate observability. **D15** `reanchor` attestation: without `--ref`, authored
+  trust downgrades `verified` → `inferred` (closes the Fiberplane relink-to-clear-CI hole).
+  **D16** carrier simplified to pure Model C: `--text`, Model A, and `unanchored-legacy` deleted.
+  **D17** pristine documents are never stamped. **D18** the compact instruction-file banner is
+  implemented, not optional. **D19** span granularity is the author's choice (atomic sentence for
+  gating claims, paragraph first-class); `doctor` reports the doc-side orphan rate as the
+  research's kill-switch metric. **D20** this PRD is demoted to a design record; `docs/` +
+  `schemas/` + tests are the living contract, and hibi dogfoods itself on this repo's own docs.
 - **SCIP — rejected as first-party.** Its differentiator over tree-sitter (cross-file semantic symbol
   graph) serves navigation/blast-radius, which §2 says this tool is not; its costs (heavy per-language
   indexer, code-only, two-commit indexing) are permanent. The kinded-anchor seam leaves the door open
@@ -804,7 +848,7 @@ included as evidence of health.
 | Schema → types + validation | **dep (single source)** | `zod` v4 ~43k★, 0 runtime deps | TypeBox + ajv; json-schema-to-typescript (9 deps) + ajv | one source for types + runtime validation + `z.toJSONSchema` (JSON-Schema export) |
 | Frontmatter (optional) | **vendor (+ opt dep)** | `---` splitter; `js-yaml` 6.6k★ only if a YAML body must be parsed | gray-matter (just wraps js-yaml) | frontmatter is optional (§7.3); keep it dep-light |
 | Resolver protocol (JSONL-RPC) | **vendor** | line-framing + dispatch | jsonrpc-lite (dormant 2022), vscode-jsonrpc (heavy, LSP-coupled) | trivial and on the isolation boundary |
-| SDK codegen (deferred, Layer 6) | **dep (dev-time)** | `quicktype` ~14k★ | hand-rolled templates | build-time only, never on the verdict path |
+| SDK codegen | **built-in (as shipped)** | direct Zod → `z.toJSONSchema` (`scripts/gen-schemas.ts`) + hand-authored thin SDKs (`sdk/ts`, `sdk/rust`) | `quicktype` ~14k★ (the original plan; unused) | build-time only, never on the verdict path |
 | UUID / TTL / git / logging | **built-in + CLI** | `crypto.randomUUID`, `Date`, `git` CLI, `console` | uuid, dayjs, simple-git | git is CLI-only and advisory (§6) |
 
 **Vendored** (small, owned per §11.5; no healthy dependency exists for these): the Bitap fuzzy-locate
@@ -849,8 +893,8 @@ must reproduce. Where any value here would differ from a prototype, this section
   what makes the chosen node — and therefore its hash — invariant to re-indentation.
 - **Doc-side cascade & outcome classification** (resolve the doc-side bundle in the *current*
   document; the hypothes.is fuzzy-anchoring order — §15): (1) structural-path selector (markdown
-  heading/block path) → (2) `text-position` hint → (3) context-first fuzzy (Bitap on 32-char
-  prefix/suffix, then verify the intervening exact text) → (4) exact-only fuzzy. Classify the result:
+  heading/block path) → (2) `text-position` hint → (3) context-first fuzzy (Bitap on the stored 48-char
+  prefix/suffix, matched in ≤32-char Bitap windows, then verify the intervening exact text) → (4) exact-only fuzzy. Classify the result:
   exact unique hit, identical text → `doc:unchanged` (extract the live span as the authoritative claim
   text); same quote at a new offset → `doc:moved` (rewrite selectors); only a fuzzy hit, or the exact
   text differs from the stored quote → `doc:changed`; >1 acceptable hit → `doc:ambiguous`; no hit at any
@@ -956,24 +1000,42 @@ the value); if nothing matches, the `value` selector is omitted from the bundle.
 - **Actions:** `insert` (no banner present) · `replace` (present, content changed) · `remove` (empty
   payload → restore pristine bytes) · `noop` (present and identical).
 
-### 17.6 Behavioral risk routing (Tier-3, deterministic)
-- **Classification (not a verdict).** A claim is *behavioral-candidate* if `claimKind` declares it,
-  or a deterministic heuristic matches ordering/retry/complexity/concurrency/caching/validation/error
-  language. Misclassification only changes whether the change-gate is *consulted*; it never produces a
-  verdict by itself.
-- **Change-gate (the firing rule).** Set `at-risk` **iff** the claim is behavioral-candidate
-  **and** at least one of: the anchored code node's semantic hash changed; a node within the claim's
-  `behaviorScope` changed (direct callees + transitive callees to `reachableDepth`, default 2; included
-  imports/config/literals); or a linked verifier's source changed. A clean working tree, or a change
-  outside scope, leaves the claim `unverified` (resting). Wording alone never fires.
-- **Verifier dispatch.** If `verifiers[]` is present, dispatch each to its runner resolver over
-  JSONL-RPC (§7): any non-pass → `refuted` (gating-eligible on an `enforced` claim); all pass →
-  `supported`; runner absent/not-run → stay at `at-risk` (or `unverified` if the gate did not fire).
-  The engine never executes verifiers in-process.
+### 17.6 Behavioral risk routing (Tier-3, deterministic — v2 per D12/D13/D14)
+- **Classification (not a verdict).** A claim is *behavioral* if `behavioral: true`, or
+  `behavioral` is absent and a deterministic keyword heuristic matches (keyword,
+  comparison/ordering, temporal/sequencing, or exception/error language), or `verifiers[]` is
+  non-empty. `behavioral: false` declares the claim non-behavioral and skips the heuristic; it is
+  **incompatible with `verifiers[]`** — the combination is rejected by a schema refinement at
+  `record` time and at store load, never resolved by precedence (to keep a verifier but silence
+  change-gate noise, narrow `behaviorScope` or use `hibi ignore` instead). Misclassification only
+  changes whether the change-gate is *consulted*; it never produces a verdict by itself.
+- **Evidence set (computed at check time).** The anchored node + the anchored file + the files it
+  imports to `behaviorScope.depth` (default 1; per-grammar tree-sitter import extraction — no call
+  graph) + `include` globs − `exclude` globs + declared verifier source paths.
+- **Change-gate (the firing rule).** Set `at-risk` **iff** the claim is behavioral **and** at least
+  one of: the anchored code node's semantic hash changed; an evidence file's xxHash64 differs from
+  the Assertion's stored `evidenceBaseline` (a file with no stored baseline — a newly added
+  import — counts as changed); or a linked verifier's source changed. Baselines refresh on `record`
+  and `reanchor`. Doc-side outcomes never fire this gate — Axis 1 owns them (D14). A clean working
+  tree, or a change outside the evidence set, leaves the claim `unverified` (resting). Wording
+  alone never fires.
+- **Verifier dispatch.** Only under `check --run-verifiers` (D13 — committed commands are a
+  supply-chain surface; `status`/`query`/plain `check` never execute them): dispatch each verifier
+  to a runner resolver whose declared `verifierKinds` match its open-string `kind` over JSONL-RPC
+  (§7); any non-pass → `refuted` (gating-eligible on an `enforced` claim); all pass → `supported`;
+  runner absent/not-run → stay at `at-risk` (or `unverified` if the gate did not fire). The
+  built-in runner handles `command` (child process + timeout; exit 0 → pass). The engine never
+  executes verifiers in-process.
 - **Noise controls (normative).** One banner entry per claim per change-set (dedupe, not per-run);
   `at-risk` is advisory severity, `refuted` may gate; every behavioral banner line names
-  the **changed evidence path** that triggered it and suggests adding/running a verifier; a route may
-  be suppressed only with `--ignore at-risk --claim <id> --until <hash>` plus a recorded reason.
+  the **changed evidence path** that triggered it and suggests adding/running a verifier; a route
+  may be suppressed only with `hibi ignore --claim <id> --reason <text>` — it records the
+  acknowledged `{path → hash}` map of the currently-changed evidence plus the required reason, and
+  lapses automatically when any acknowledged path's hash moves again or a new evidence path
+  appears; while active, the at-risk contributes nothing to exit codes (including `--fail-on
+  warn`) and is surfaced as `suppressed: true` in JSON; `doctor` reports the behavioral flag-rate,
+  and >30% of behavioral claims flagging on a typical commit is the recorded trigger to tighten
+  the gate.
 - **Advisor provenance.** If an opt-in LLM/formal advisor annotates a claim, its output is recorded
   with model/prompt-hash/context-hash and is marked non-gating; it can never set a computed state.
 
@@ -1149,8 +1211,9 @@ verdict; the only gate remains a deterministic `refuted` (executable verifier) o
 - **Behavioral advisor (LLM / formal)** — already defined as the quarantined Tier-3 advisor (§7.4): an
   opt-in resolver that *explains/triages* a behavioral claim, recording model/prompt/context
   provenance, and **never** sets a computed state. Listed here for completeness; its deterministic
-  siblings, the **verifier runners** (`example`/`snapshot`/`contract`/`property`/`formal`/`command` —
-  §4, §17.6), are the gating-eligible members of the same family (via `refuted`).
+  siblings, the **verifier runners** (open-string kinds; built-in `command`, conventional
+  `example`/`snapshot`/`contract`/`property`/`metamorphic`/`formal` — §5, §17.6, D13), are the
+  gating-eligible members of the same family (via `refuted`).
 
 **Consumers (read `check --json`; out of repo scope — §7):**
 - **Claims index / `llms.txt` emitter** — a standing manifest (tracked docs → claims → code anchors →
@@ -1164,9 +1227,13 @@ verdict; the only gate remains a deterministic `refuted` (executable verifier) o
 
 ---
 
-*This document is the complete and self-contained specification for the tool: the architecture, data
-model, contracts, algorithms, and parameters are final. The build is sequenced (§13) for validation,
-not scope reduction. Design rationale — the options weighed and declined — is in §18; alignment with
-the foundational documentation-practice research is in §18-D; deferred, separately-implementable
-resolvers and consumers are in §19. The standalone state-vocabulary decision record is
-`design/ADR-001-state-vocabulary.md`.*
+*This document is the **design record** — the problem, principles, decision log, and evidence
+behind the tool — not the living specification (demoted from "final specification" by **D20**). The
+behavioral contract that ships is `docs/` + `schemas/*.v1.json` + the executable test suite
+(`test/precision-rate.test.ts` is the §10 precision contract in code); where this document and the
+shipped code disagree, the code and docs win, and hibi dogfoods its own repo to keep them honest
+(**D20**). The build is sequenced (§13) for validation, not scope reduction. Design rationale — the
+options weighed and declined — is in §18; alignment with the foundational documentation-practice
+research is in §18-D; deferred, separately-implementable resolvers and consumers are in §19. The
+standalone decision records are `design/ADR-001-state-vocabulary.md` and
+`design/ADR-002-research-realignment.md`.*

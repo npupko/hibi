@@ -256,6 +256,17 @@ export function renderDoctor(
     const c = count === 0 ? style.dim(padded) : style.yellow(padded);
     out.push(`  ${c}  ${label}`);
   }
+  // Observability rates (never gate): the tighten-the-gate / kill-switch signals.
+  const pct = (r: number) => `${Math.round(r * 100)}%`;
+  const rate = (r: number) =>
+    r > 0.3 ? style.yellow(pct(r)) : style.dim(pct(r));
+  out.push("");
+  out.push(
+    `  ${style.dim("behavioral flag-rate")} ${rate(report.rates.behavioralFlagRate)} ${style.dim("(>30% → tighten the gate)")}`,
+  );
+  out.push(
+    `  ${style.dim("doc orphaned/moved/changed")} ${rate(report.rates.docOrphanedRate)} / ${style.dim(pct(report.rates.docMovedRate))} / ${style.dim(pct(report.rates.docChangedRate))} ${style.dim("(>30% orphaned → require inline IDs)")}`,
+  );
   // The claim ids per non-empty category, so the next command is one copy away.
   const detail: string[] = [];
   for (const o of report.orphanedAnchors)

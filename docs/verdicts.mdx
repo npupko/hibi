@@ -78,14 +78,19 @@ appears only on behavioral claims; on every other claim it is absent
 | State | Meaning |
 |---|---|
 | `unverified` | behavioral, untested, nothing changed (resting) |
-| `at-risk` | reachable evidence changed; belief no longer justified, re-verify |
-| `supported` | a linked verifier passed |
+| `at-risk` | the claim's evidence set changed; belief no longer justified, re-verify |
+| `supported` | a linked verifier passed (under `--run-verifiers`) |
 | `refuted` | a linked verifier failed (the only behavioral state that may gate) |
 
-This axis goes `at-risk` only when reachable evidence changes. Wording
-alone never moves it. How that change-gate decides, and how executable verifiers
-turn `at-risk` into `supported` or `refuted`, is covered on the
-[Behavioral claims](/behavioral) page.
+This axis goes `at-risk` only when the claim's **evidence set** changes: the
+anchored node's semantic hash, an evidence file whose hash moved off its
+recorded baseline, a newly appeared evidence path, or a verifier's source.
+Wording alone never moves it — a doc-side edit is Axis 1's job
+(`doc:changed`) and never fires the behavioral gate, so the two axes never
+double-fire on one signal. How that change-gate decides, how `hibi ignore`
+suppresses an acknowledged flag, and how executable verifiers run under
+`check --run-verifiers` turn `at-risk` into `supported` or `refuted`, is
+covered on the [Behavioral claims](/behavioral) page.
 
 ### The `expired` flag
 
@@ -164,10 +169,18 @@ when you want to understand *why*, not just *what*.
 
 <Note>
   **The behavioral carve-out.** On the concise path, a `behavior:at-risk` or
-  `behavior:refuted` verdict still carries a one-line **`changed`** summary — a
-  "path kind" string naming what moved — even without `--explain`. You learn
-  *what* changed without paying for the full evidence tail, because for a
-  behavioral flag "what moved" is the first thing you need.
+  `behavior:refuted` verdict still carries its **`changedEvidence`** entries —
+  the evidence path(s) that moved — and a suggested verifier, even without
+  `--explain`. You learn *what* changed without paying for the full evidence
+  tail, because for a behavioral flag "what moved" is the first thing you need.
+</Note>
+
+<Note>
+  **Suppressed flags.** An `at-risk` acknowledged via `hibi ignore` carries
+  **`suppressed: true`** in the verdict JSON. A suppressed at-risk is
+  non-gating and does not affect exit codes; the suppression lapses on its own
+  the moment any acknowledged evidence path changes again or a new evidence
+  path appears.
 </Note>
 
 ## How a code-side grade is computed
@@ -188,8 +201,10 @@ flowchart LR
   H -->|no| OR["orphaned"]
 ```
 
-Fewer than two selectors resolve → orphaned. An unchanged hit that relocated by
-more than 4 characters is downgraded to moved.
+Fewer than two selectors resolve → orphaned — with one exception: a single
+near-exact `text-quote` match (similarity ≥ 0.9) satisfies the minimum on its
+own, so a relocated prose sentence grades `moved`, not `orphaned`. An unchanged
+hit that relocated by more than 4 characters is downgraded to moved.
 
 The bands are fixed:
 
@@ -205,7 +220,10 @@ Confidence is a weighted average over the selectors that **resolved**:
 `value 0.20`, `text-position 0.15`. A few rules sharpen the result:
 
 - **Two-selector minimum.** With fewer than two selectors resolved, the result is
-  `orphaned` at confidence 0. One lone signal is not enough to trust.
+  `orphaned` at confidence 0. One lone signal is not enough to trust — unless
+  that signal is a near-exact `text-quote` match (similarity ≥ 0.9), which is
+  strong enough to stand alone; this is what keeps a relocated sentence from
+  grading `orphaned`.
 - **Move-awareness.** A result that would grade `unchanged` is downgraded to
   `moved` if the located start differs from the baseline start by more than **4
   characters**. The content is the same, only relocated.
@@ -306,6 +324,10 @@ A few patterns are worth reading off the table:
 - **`behavior:refuted` never offers `reanchor`.** A failing verifier means the
   belief is wrong, not that the anchor moved; re-anchoring would only paper over a
   real failure, so the menu offers `fix-code` or `fix-claim` instead.
+- **`run-verifier` carries a runnable command.** On a claim with linked
+  verifiers, the action emits `hibi check --run-verifiers`, which dispatches
+  the claim's verifiers out-of-process — a passing run clears the flag to
+  `supported`, a failing one settles it at `refuted`.
 - **`expired` composes.** The TTL flag is orthogonal, so an expired verdict keeps
   whatever menu its axes produced and *appends* a `reverify-and-rerecord` action.
 
@@ -337,7 +359,9 @@ Two rules keep the suspect set tight and trustworthy:
 <Warning>
   **`moved` and `at-risk` never gate.** A relocated span is re-anchorable and a
   behavioral claim without a failing verifier is only advisory. Neither is strong
-  enough to fail a build on its own. They surface as the warning code `3`.
+  enough to fail a build on its own. They surface as the warning code `3` — except
+  a **suppressed** at-risk (acknowledged via `hibi ignore`), which does not affect
+  exit codes at all.
 </Warning>
 
 <Check>
@@ -373,8 +397,8 @@ turn into a failing exit code.
 
 <CardGroup cols={2}>
   <Card title="Behavioral claims & verifiers" icon="flask-vial" href="/behavioral">
-    The change-gate, the no-model boundary, and how verifiers turn `at-risk` into
-    `supported` or `refuted`.
+    The change-gate, the no-model boundary, and how verifiers, run under
+    `--run-verifiers`, turn `at-risk` into `supported` or `refuted`.
   </Card>
   <Card title="Anchors & selectors" icon="anchor" href="/anchors">
     The selector kinds, redundancy, and the confidence fusion behind every grade.

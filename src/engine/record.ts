@@ -14,14 +14,13 @@ import type {
   Assertion,
   AuthoredTrust,
   BehaviorScope,
-  ClaimKind,
-  Document,
   Enforcement,
   Proposition,
   Region,
   SelectorBundle,
   Verifier,
 } from "../core/model.ts";
+import { Document } from "../core/model.ts";
 import type { ClaimStore } from "../store/store.ts";
 import {
   type AnchorAnalyzer,
@@ -35,6 +34,20 @@ import { languageForFile } from "./lang.ts";
 /** Stable document id derived from its repo-relative path. */
 export function documentIdForPath(path: string): string {
   return `doc_${Bun.hash.xxHash64(path).toString(16).padStart(16, "0")}`;
+}
+
+/**
+ * A fresh active Document with schema defaults applied once (§4). Routing every
+ * construction site through `Document.parse` keeps a defaulted field (e.g.
+ * `pristine`) defined in exactly one place — the schema — instead of repeated in
+ * each object literal, so adding a field is not an N-call-site edit.
+ */
+export function newDocument(
+  id: string,
+  path: string,
+  pristine = false,
+): Document {
+  return Document.parse({ id, path, pristine });
 }
 
 /** How a record call locates a span inside a file (doc side or code side). */
@@ -76,12 +89,6 @@ export interface RecordInput {
   docSpec?: RegionSpec;
   /** Optional owned-doc inline marker id that stabilizes re-anchoring (§4/§8). */
   inlineId?: string;
-  /**
-   * LEGACY Model-A authoritative override only (pristine/migration): the
-   * confirmed text when no doc span resolves. The live doc span is otherwise
-   * authoritative (§18-B).
-   */
-  text?: string;
   authoredTrust: AuthoredTrust;
   owner: string;
   ref: string;
@@ -90,9 +97,17 @@ export interface RecordInput {
   code: CodeTarget[];
   /** Explicit enforcement override; else derived below (§9). */
   enforcement?: Enforcement;
-  claimKind?: ClaimKind;
+  /** Mark the document pristine — `check --write` never stamps it (§8, D17). */
+  pristine?: boolean;
+  /** Author's behavioral declaration (§17.6, D12); undefined → heuristic decides. */
+  behavioral?: boolean;
   verifiers?: Verifier[];
   behaviorScope?: BehaviorScope;
+  /**
+   * The change-gate evidence baseline (§17.6, D14), computed by the shell (which
+   * has FS + analyzer) and stored on the Assertion. Undefined → not captured.
+   */
+  evidenceBaseline?: Record<string, string>;
   analyzer?: AnchorAnalyzer;
   attrs?: Record<string, unknown>;
 }
@@ -125,8 +140,8 @@ export async function recordClaim(
   const { docContent, codeContents } = contents;
 
   // ── Doc side: resolve the documented sentence's span (§18-B). ──
-  // The confirmed text is the live doc span; the legacy `text` is the override
-  // of last resort (pristine/migration). One of them must be present.
+  // The confirmed text is the live doc span — the only source of the claim text
+  // (there is no side-channel override; D16).
   let docRegion: Region | undefined;
   if (input.docSpec) {
     if (docContent === null)
@@ -137,10 +152,10 @@ export async function recordClaim(
   const confirmedText =
     docRegion !== undefined && docContent !== null
       ? regionText(docContent, docRegion)
-      : input.text;
+      : undefined;
   if (confirmedText === undefined)
     throw new Error(
-      "A claim requires a doc span (--doc-quote/-range/-line) or a legacy --text override.",
+      "A claim requires a doc span (--doc-quote/--doc-range/--doc-line).",
     );
 
   // ── Code side: a bundle per target. ──
@@ -218,16 +233,16 @@ export async function recordClaim(
     );
   }
 
-  // ── Document (upsert by path). ──
+  // ── Document (upsert by path). ── `--pristine` persists the per-document flag
+  // (§8, D17): set it on a new document, and promote an existing one to pristine
+  // when the flag is passed (never silently un-pristine it).
   const docId = documentIdForPath(input.docPath);
   let document = await store.getDocument(docId);
   if (!document) {
-    document = {
-      id: docId,
-      path: input.docPath,
-      lifecycle: "active",
-      edges: [],
-    };
+    document = newDocument(docId, input.docPath, input.pristine ?? false);
+    await store.putDocument(document);
+  } else if (input.pristine && !document.pristine) {
+    document = { ...document, pristine: true };
     await store.putDocument(document);
   }
 
@@ -283,9 +298,10 @@ export async function recordClaim(
     ref: input.ref,
     anchor,
     enforcement,
-    claimKind: input.claimKind,
+    behavioral: input.behavioral,
     verifiers: input.verifiers ?? [],
     behaviorScope: input.behaviorScope,
+    evidenceBaseline: input.evidenceBaseline,
     ttl: input.ttl,
     attrs: input.attrs ?? {},
   };

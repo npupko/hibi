@@ -1,0 +1,59 @@
+{
+  "id": "asrt_30a426b5956c44a5",
+  "propositionId": "prop_81eec159546d4108",
+  "documentId": "doc_25887c67cd18d901",
+  "owner": "hibi-dogfood",
+  "ref": "ADR-002",
+  "anchor": {
+    "doc": {
+      "file": "docs/verdicts.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "gating: `changed` / `orphaned` / `ambiguous`",
+          "prefix": "Meaning |\n|---|---|\n| `0` | all clean |\n| `2` | ",
+          "suffix": " (either side), `expired`, or `refuted`, on an *"
+        },
+        {
+          "kind": "text-position",
+          "start": 15764,
+          "end": 15808
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/core/gating.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "GATING_ANCHOR: ReadonlySet<AnchorState>",
+            "prefix": "at gate (exit 2) on an enforced claim. */\nconst ",
+            "suffix": " = new Set<AnchorState>([\n  \"changed\",\n  \"orphan"
+          },
+          {
+            "kind": "text-position",
+            "start": 725,
+            "end": 764
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "variable_declarator",
+            "structuralHash": "39f2cfb611db3f8e",
+            "semanticHash": "3573e047110aca73"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "array",
+            "value": "[\"changed\",\"orphaned\",\"ambiguous\",]"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verifiers": [],
+  "attrs": {}
+}

@@ -20,6 +20,10 @@ inputs:
     description: "Stamp banners into affected documents (true|false)."
     required: false
     default: "false"
+  run-verifiers:
+    description: "Execute declared verifiers (repo-committed commands). Opt-in (true|false)."
+    required: false
+    default: "false"
   working-directory:
     description: "Repo subdirectory holding the .claims store."
     required: false
@@ -35,6 +39,7 @@ runs:
       run: |
         ARGS="${{ inputs.command }} --fail-on ${{ inputs.fail-on }}"
         if [ "${{ inputs.write }}" = "true" ]; then ARGS="$ARGS --write"; fi
+        if [ "${{ inputs.run-verifiers }}" = "true" ]; then ARGS="$ARGS --run-verifiers"; fi
         if [ -n "${{ inputs.since }}" ]; then ARGS="$ARGS --since ${{ inputs.since }}"; fi
         # Use a published binary if present, else run via bunx from npm.
         if command -v hibi >/dev/null 2>&1; then

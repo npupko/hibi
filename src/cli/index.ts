@@ -17,7 +17,6 @@ import { parseArgs } from "node:util";
 import pkg from "../../package.json" with { type: "json" };
 import type {
   AuthoredTrust,
-  ClaimKind,
   Enforcement,
   Verdict,
   Verifier,
@@ -210,10 +209,28 @@ function parseVerifiers(raw: unknown): Verifier[] {
   return items.map((item) => {
     const s = String(item);
     const idx = s.indexOf(":");
-    const kind = (idx >= 0 ? s.slice(0, idx) : s) as Verifier["kind"];
+    const kind = idx >= 0 ? s.slice(0, idx) : s;
     const ref = idx >= 0 ? s.slice(idx + 1) : "";
     return { kind, ref };
   });
+}
+
+/**
+ * Resolve the behavioral tri-state (§17.6, D12) from the two mutually-exclusive
+ * flags/keys. `undefined` → the heuristic decides; passing both is an error.
+ */
+function behavioralOf(
+  behavioral: unknown,
+  noBehavioral: unknown,
+): boolean | undefined {
+  if (behavioral && noBehavioral) {
+    throw new Error(
+      "--behavioral and --no-behavioral are mutually exclusive; pass at most one.",
+    );
+  }
+  if (behavioral) return true;
+  if (noBehavioral) return false;
+  return undefined;
 }
 
 /**
@@ -267,12 +284,9 @@ function recordCallFromSpec(
     throw new Error("each record item needs a `doc` path");
 
   const docSpec = spanSpec(spec.docQuote, spec.docRange, spec.docLine);
-  const legacyText = spec.text as string | undefined;
-  // An empty `text` is rejected like a missing one (`!legacyText`): otherwise the
-  // item would record a proposition with an empty fingerprint.
-  if (!docSpec && !legacyText)
+  if (!docSpec)
     throw new Error(
-      `record item for ${doc} needs a doc span (docQuote/docRange/docLine) or text`,
+      `record item for ${doc} needs a doc span (docQuote/docRange/docLine)`,
     );
 
   const code: NonNullable<RecordCall["code"]> = [];
@@ -297,7 +311,6 @@ function recordCallFromSpec(
     docQuote: docSpec?.quote,
     docRange: docRangeOf(docSpec),
     inlineId: spec.inlineId as string | undefined,
-    text: legacyText,
     code,
     // Mirror the single-flag default (`inferred`); a batch never silently mints
     // `verified` (which requires deliberate evidence) on the author's behalf.
@@ -308,8 +321,11 @@ function recordCallFromSpec(
     ref: (spec.ref as string | undefined) ?? fallbackRef,
     ttl: spec.ttl as string | undefined,
     enforcement,
-    claimKind: spec.claimKind as ClaimKind | undefined,
+    // A batch item carries a single `behavioral` boolean (not the two flags).
+    behavioral:
+      spec.behavioral === undefined ? undefined : Boolean(spec.behavioral),
     verifiers: parseVerifiers(spec.verifier),
+    pristine: Boolean(spec.pristine),
   };
 }
 
@@ -340,6 +356,9 @@ async function main(argv: string[]): Promise<number> {
       // list / query
       state: { type: "string" },
       "ids-only": { type: "boolean", default: false },
+      // ignore — acknowledge a behavioral at-risk (D14)
+      claim: { type: "string" },
+      reason: { type: "string" },
       // record / reanchor — doc side (span-first)
       doc: { type: "string" },
       "doc-quote": { type: "string" },
@@ -356,11 +375,14 @@ async function main(argv: string[]): Promise<number> {
       // record — batch authoring (a JSON array of claim specs; `-` = stdin)
       "from-file": { type: "string" },
       // record — authored facets
-      text: { type: "string" }, // legacy override only
       trust: { type: "string", default: "inferred" },
       enforce: { type: "boolean", default: false },
       enforcement: { type: "string" },
-      "claim-kind": { type: "string" },
+      // Behavioral tri-state (§17.6, D12): two mutually-exclusive booleans map to
+      // true/false/undefined (parseArgs booleans don't accept `=false`).
+      behavioral: { type: "boolean", default: false },
+      "no-behavioral": { type: "boolean", default: false },
+      pristine: { type: "boolean", default: false },
       verifier: { type: "string", multiple: true },
       owner: { type: "string" },
       ref: { type: "string" },
@@ -369,6 +391,9 @@ async function main(argv: string[]): Promise<number> {
       write: { type: "boolean", default: false },
       "fail-on": { type: "string", default: "gating" },
       "no-ast": { type: "boolean", default: false },
+      // check — execute declared verifiers (D13); repo-committed commands, opt-in only.
+      "run-verifiers": { type: "boolean", default: false },
+      "verifier-timeout": { type: "string" },
       // query / diff
       path: { type: "string" },
       since: { type: "string" },
@@ -559,10 +584,9 @@ async function main(argv: string[]): Promise<number> {
         values["doc-range"],
         values["doc-line"],
       );
-      const legacyText = values.text as string | undefined;
-      if (!docSpec && !legacyText)
+      if (!docSpec)
         return fail(
-          "record requires a doc span (--doc-quote/--doc-range/--doc-line) or legacy --text",
+          "record requires a doc span (--doc-quote/--doc-range/--doc-line)",
           mode,
         );
 
@@ -594,15 +618,15 @@ async function main(argv: string[]): Promise<number> {
         docQuote: docSpec?.quote,
         docRange: docRangeOf(docSpec),
         inlineId: values["inline-id"] as string | undefined,
-        text: legacyText,
         code,
         authoredTrust: String(values.trust) as AuthoredTrust,
         owner: values.owner as string | undefined,
         ref,
         ttl: values.ttl as string | undefined,
         enforcement,
-        claimKind: values["claim-kind"] as ClaimKind | undefined,
+        behavioral: behavioralOf(values.behavioral, values["no-behavioral"]),
         verifiers: parseVerifiers(values.verifier),
+        pristine: Boolean(values.pristine),
       };
 
       try {
@@ -638,10 +662,17 @@ async function main(argv: string[]): Promise<number> {
 
     case "check": {
       const engine = await open();
+      const verifierTimeout = values["verifier-timeout"];
       const report = await engine.check({
         write: Boolean(values.write),
         failOn: String(values["fail-on"]) as FailOn,
         ref: await currentRef(anchorRoot),
+        // Verifiers execute repo-committed commands — opt-in only (D13).
+        runVerifiers: Boolean(values["run-verifiers"]),
+        verifierTimeoutMs:
+          verifierTimeout !== undefined
+            ? Number(verifierTimeout) * 1000
+            : undefined,
       });
       const value = projectCheckReport(
         "check",
@@ -721,6 +752,9 @@ async function main(argv: string[]): Promise<number> {
         lifecycle: result.lifecycle,
         current: result.current,
         suspect: result.suspect,
+        ...(result.downgrades.length > 0
+          ? { downgrades: result.downgrades }
+          : {}),
         verdicts: result.verdicts.map((v: Verdict) =>
           projectVerdict(v, projection(mode), fps),
         ),
@@ -1046,6 +1080,36 @@ async function main(argv: string[]): Promise<number> {
       }
     }
 
+    case "ignore": {
+      const engine = await open();
+      const claimId = (values.claim as string | undefined) ?? positionals[0];
+      if (!claimId) return fail("ignore requires --claim <id>", mode);
+      const reason = values.reason as string | undefined;
+      if (!reason) return fail("ignore requires --reason <text>", mode);
+      try {
+        const result = await engine.ignore(String(claimId), String(reason));
+        const paths = Object.keys(result.paths);
+        const value = {
+          ok: true,
+          action: "ignore",
+          schemaVersion: SCHEMA_VERSION,
+          claimId: result.assertion.id,
+          suppressedPaths: paths,
+          reason: result.reason,
+          next: "hibi check",
+        };
+        await emit(
+          mode,
+          value,
+          () =>
+            `ignored ${result.assertion.id} — acknowledged ${paths.length} evidence path(s); lapses when they move again\n`,
+        );
+        return 0;
+      } catch (e) {
+        return fail((e as Error).message, mode);
+      }
+    }
+
     case "list": {
       const engine = await open();
       // Under parseArgs `strict:false`, `--state` with no value parses as the
@@ -1170,11 +1234,12 @@ Commands:
   record   --doc <p> (--doc-quote <s>|--doc-range L42:L44|--doc-line <n>)
            [--code-file <f> (--code-quote <s>|--code-range L1:L9|--code-line <n>)]
            [--coarse|--glob <g>] [--trust verified|inferred|assumed]
-           [--enforce|--enforcement <e>] [--claim-kind <k>] [--verifier kind:ref ...] [--ttl <iso>]
+           [--enforce|--enforcement <e>] [--behavioral|--no-behavioral] [--verifier kind:ref ...] [--pristine] [--ttl <iso>]
                                     Record a span-first claim (doc span + zero or more code spans)
   record   --from-file <p|->        Batch-record a JSON array of claim specs (- = stdin)
-  check    [--write] [--fail-on gating|warn|tamper|never]
+  check    [--write] [--fail-on gating|warn|tamper|never] [--run-verifiers [--verifier-timeout <s>]]
                                     Verify all claims; emit verdicts; exit per contract
+                                    (--run-verifiers executes declared verifiers — repo-committed commands)
   diff     --since <ref> [--write]  What did this change invalidate? (write-time loop)
   status   [--doc <p>]              No --doc: repo-wide health overview. --doc: one-document gate.
   query    --path <p>               What claims are anchored to / cover this doc OR code path?
@@ -1183,6 +1248,7 @@ Commands:
   reanchor <claim-id> [--doc <p>] [--doc-quote …] [--code-file …]  Re-resolve a claim, or relocate
                                     either side to a different file (--doc moves the doc anchor)
   retire   <claim-id>               Withdraw one claim (enforcement → retired); idempotent
+  ignore   --claim <id> --reason <text>  Acknowledge a behavioral at-risk (non-gating until evidence moves again)
   supersede --new <p> --old <p> --type supersedes|amends [--propositions id,id]
   retract  --doc <p>                Mark a document retracted (author withdrew)
   archive  --doc <p> [--successor <p>]  Move an obsolete doc out of the read path (tombstone)

@@ -7,7 +7,6 @@ import {
   Assertion,
   AuthoredTrust,
   BehaviorState,
-  ClaimKind,
   Document,
   DocumentLifecycle,
   Enforcement,
@@ -16,6 +15,7 @@ import {
   Selector,
   SelectorBundle,
   Verdict,
+  Verifier,
 } from "../src/core/model.ts";
 import { PROTOCOL_SCHEMAS } from "../src/resolver/protocol.ts";
 
@@ -40,12 +40,7 @@ describe("canonical model is the single source of truth (§5)", () => {
   });
 
   test("Enforcement options (§4/§9/§10)", () => {
-    expect(Enforcement.options).toEqual([
-      "suggested",
-      "enforced",
-      "retired",
-      "unanchored-legacy",
-    ]);
+    expect(Enforcement.options).toEqual(["suggested", "enforced", "retired"]);
   });
 
   test("AnchorState options — one vocabulary, both sides (§10, ADR-001)", () => {
@@ -64,18 +59,6 @@ describe("canonical model is the single source of truth (§5)", () => {
       "at-risk",
       "supported",
       "refuted",
-    ]);
-  });
-
-  test("ClaimKind options (§5/§17.6)", () => {
-    expect(ClaimKind.options).toEqual([
-      "ordering",
-      "retry",
-      "complexity",
-      "concurrency",
-      "caching",
-      "validation",
-      "error-handling",
     ]);
   });
 
@@ -235,7 +218,7 @@ describe("canonical model is the single source of truth (§5)", () => {
     ).toBe(false);
   });
 
-  test("Assertion accepts claimKind, verifiers and behaviorScope", () => {
+  test("Assertion accepts behavioral, verifiers and the redefined behaviorScope", () => {
     const a = Assertion.parse({
       id: "a",
       propositionId: "p",
@@ -250,13 +233,70 @@ describe("canonical model is the single source of truth (§5)", () => {
           ],
         },
       },
-      claimKind: "retry",
+      behavioral: true,
       verifiers: [{ kind: "command", ref: "bun test" }],
-      behaviorScope: { rootSymbols: ["fn"] },
+      behaviorScope: { include: ["fixtures/**"] },
+      evidenceBaseline: { "src/x.ts": "deadbeef" },
     });
-    expect(a.claimKind).toBe("retry");
+    expect(a.behavioral).toBe(true);
     expect(a.verifiers[0]?.ref).toBe("bun test");
-    expect(a.behaviorScope?.reachableDepth).toBe(2); // default
+    expect(a.behaviorScope?.depth).toBe(1); // default
+    expect(a.evidenceBaseline?.["src/x.ts"]).toBe("deadbeef");
+  });
+
+  test("Verifier.kind is an open string (no closed taxonomy — D13)", () => {
+    // Any non-empty string is accepted; there is no enum of kinds.
+    for (const kind of ["command", "metamorphic", "my-custom-runner"]) {
+      expect(Verifier.safeParse({ kind, ref: "x" }).success).toBe(true);
+    }
+    // Empty kind is still rejected (min length 1).
+    expect(Verifier.safeParse({ kind: "", ref: "x" }).success).toBe(false);
+    // The model exports no ClaimKind / behavioral-kind enum.
+    const model = z as unknown as Record<string, unknown>;
+    expect("ClaimKind" in model).toBe(false);
+  });
+
+  test("no-contradiction invariant: behavioral:false + verifiers[] is rejected (D12)", () => {
+    const base = {
+      id: "a",
+      propositionId: "p",
+      documentId: "d",
+      owner: "x",
+      ref: "r",
+      anchor: {
+        doc: {
+          file: "README.md",
+          selectors: [
+            { kind: "text-quote", exact: "x", prefix: "", suffix: "" },
+          ],
+        },
+      },
+    } as const;
+
+    const bad = Assertion.safeParse({
+      ...base,
+      behavioral: false,
+      verifiers: [{ kind: "command", ref: "bun test" }],
+    });
+    expect(bad.success).toBe(false);
+    // The record-time error names BOTH legitimate noise levers.
+    const message = bad.success ? "" : (bad.error.issues[0]?.message ?? "");
+    expect(message).toContain("behaviorScope");
+    expect(message).toContain("hibi ignore");
+
+    // behavioral:false with an EMPTY verifiers[] is fine (the opt-out path).
+    expect(
+      Assertion.safeParse({ ...base, behavioral: false, verifiers: [] })
+        .success,
+    ).toBe(true);
+    // behavioral:true with verifiers[] is fine.
+    expect(
+      Assertion.safeParse({
+        ...base,
+        behavioral: true,
+        verifiers: [{ kind: "command", ref: "bun test" }],
+      }).success,
+    ).toBe(true);
   });
 
   test("an invalid selector kind inside an anchor bundle is rejected", () => {
@@ -339,6 +379,7 @@ describe("canonical model is the single source of truth (§5)", () => {
       behavior: "at-risk",
       expired: false,
       gates: false,
+      suppressed: false,
       remediation: {
         recommended: null,
         actions: [
@@ -429,7 +470,6 @@ describe("ADR-001 fitness functions", () => {
       ...BehaviorState.options,
       ...AuthoredTrust.options,
       ...Enforcement.options,
-      ...ClaimKind.options,
       ...DocumentLifecycle.options,
     ];
     for (const value of allEnumValues) {
@@ -472,7 +512,7 @@ describe("ADR-001 fitness functions", () => {
     ).toBe(true);
   });
 
-  test("only ENFORCED claims gate; suggested/retired/unanchored-legacy never gate", () => {
+  test("only ENFORCED claims gate; suggested/retired never gate", () => {
     const gating = {
       doc: "changed",
       code: "orphaned",
@@ -480,7 +520,7 @@ describe("ADR-001 fitness functions", () => {
       behavior: "refuted",
     } as const;
     expect(computeGates(gating, "enforced")).toBe(true);
-    for (const e of ["suggested", "retired", "unanchored-legacy"] as const) {
+    for (const e of ["suggested", "retired"] as const) {
       expect(computeGates(gating, e)).toBe(false);
       expect(isWarnVerdict({ ...gating, gates: false }, e)).toBe(false);
     }

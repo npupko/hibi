@@ -4,7 +4,6 @@ import { dirname, join } from "node:path";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
 import type {
   AuthoredTrust,
-  ClaimKind,
   Enforcement,
   Verifier,
 } from "../src/core/model.ts";
@@ -61,7 +60,7 @@ export async function record(
     coarse?: boolean;
     glob?: string;
     enforcement?: Enforcement;
-    claimKind?: ClaimKind;
+    behavioral?: boolean;
     verifiers?: Verifier[];
   },
 ) {
@@ -113,7 +112,7 @@ export async function record(
       ttl: opts.ttl,
       code,
       enforcement,
-      claimKind: opts.claimKind,
+      behavioral: opts.behavioral,
       verifiers: opts.verifiers,
       analyzer,
     },

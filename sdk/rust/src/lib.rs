@@ -45,20 +45,20 @@ pub struct Verifier {
 }
 
 /// Deterministic blast-radius the change-gate watches for a behavioral claim
-/// (§5/§17.6). Absent → the gate falls back to the anchored node + its file.
+/// (§5/§17.6, D14): the anchored file + its imports followed to `depth`, plus
+/// `include` globs, minus `exclude` globs. Absent → `depth: 1`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BehaviorScope {
-    #[serde(rename = "rootSymbols", default)]
-    pub root_symbols: Vec<String>,
-    #[serde(rename = "reachableDepth", default = "default_reachable_depth")]
-    pub reachable_depth: u64,
     #[serde(default)]
     pub include: Vec<String>,
     #[serde(default)]
     pub exclude: Vec<String>,
+    /// Import hops to follow: 0, 1, or 2 (default 1).
+    #[serde(default = "default_depth")]
+    pub depth: u64,
 }
-fn default_reachable_depth() -> u64 {
-    2
+fn default_depth() -> u64 {
+    1
 }
 
 /// Assertion — one verification instance. Carries the bidirectional [`Anchor`],
@@ -74,11 +74,12 @@ pub struct Assertion {
     #[serde(rename = "ref")]
     pub r#ref: String,
     pub anchor: Anchor,
-    /// suggested|enforced|retired|unanchored-legacy. Only `enforced` can gate.
+    /// suggested|enforced|retired. Only `enforced` can gate.
     #[serde(default = "default_enforcement")]
     pub enforcement: String,
-    #[serde(rename = "claimKind", skip_serializing_if = "Option::is_none", default)]
-    pub claim_kind: Option<String>,
+    /// Author's behavioral declaration (§17.6, D12); absent → heuristic decides.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub behavioral: Option<bool>,
     #[serde(default)]
     pub verifiers: Vec<Verifier>,
     #[serde(
@@ -87,10 +88,29 @@ pub struct Assertion {
         default
     )]
     pub behavior_scope: Option<BehaviorScope>,
+    /// The change-gate evidence baseline (§17.6, D14): path → xxHash64 hex.
+    #[serde(
+        rename = "evidenceBaseline",
+        skip_serializing_if = "Option::is_none",
+        default
+    )]
+    pub evidence_baseline: Option<HashMap<String, String>>,
+    /// Authored suppression of a behavioral `at-risk` (§17.6, D14; `hibi ignore`).
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub suppressed: Option<Suppressed>,
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub ttl: Option<String>,
     #[serde(default)]
     pub attrs: Value,
+}
+
+/// Authored suppression of a behavioral `at-risk` (§17.6, D14). `paths` is the
+/// acknowledged `{path → hash}` map; the suppression lapses when any path's hash
+/// moves or a new evidence path appears.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Suppressed {
+    pub paths: HashMap<String, String>,
+    pub reason: String,
 }
 fn default_enforcement() -> String {
     "suggested".to_string()
@@ -166,6 +186,9 @@ pub struct Verdict {
     pub expired: bool,
     /// Whether this verdict gates the build (exit 2). Only `enforced` claims gate.
     pub gates: bool,
+    /// A behavioral `at-risk` acknowledged via `hibi ignore` (§17.6, D14).
+    #[serde(default)]
+    pub suppressed: bool,
     pub evidence: VerdictEvidence,
     #[serde(default)]
     pub notes: Vec<String>,

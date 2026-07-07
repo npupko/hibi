@@ -198,7 +198,11 @@ export class ClaimStore {
   ): Promise<T | undefined> {
     const path = join(this.dir, sub, `${id}.json`);
     if (!(await exists(path))) return undefined;
-    return schema.parse(JSON.parse(await readFile(path, "utf8")));
+    return this.parseRecord(
+      schema,
+      `${sub}/${id}.json`,
+      await readFile(path, "utf8"),
+    );
   }
 
   private async readAll<T>(
@@ -210,8 +214,34 @@ export class ClaimStore {
     const files = (await readdir(dir)).filter((f) => f.endsWith(".json"));
     const out: T[] = [];
     for (const f of files.sort()) {
-      out.push(schema.parse(JSON.parse(await readFile(join(dir, f), "utf8"))));
+      out.push(
+        this.parseRecord(
+          schema,
+          `${sub}/${f}`,
+          await readFile(join(dir, f), "utf8"),
+        ),
+      );
     }
     return out;
+  }
+
+  /**
+   * Parse one stored record against the current schema. A validation failure on
+   * a store written by an older schema (e.g. carrying the removed `claimKind` /
+   * `unanchored-legacy` fields) surfaces plainly — there is no migration shim
+   * (alpha; zero external users). Re-initialize with `hibi init`.
+   */
+  private parseRecord<T>(
+    schema: { parse(v: unknown): T },
+    where: string,
+    raw: string,
+  ): T {
+    try {
+      return schema.parse(JSON.parse(raw));
+    } catch (e) {
+      throw new Error(
+        `Claim store record ${where} failed schema validation — the store may predate schema v2 (the ADR-002 rewrite). Re-initialize with \`hibi init\` (no migration shim; alpha). Cause: ${(e as Error).message}`,
+      );
+    }
   }
 }
