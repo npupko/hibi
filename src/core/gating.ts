@@ -5,8 +5,8 @@
  * The rule is deterministic and narrow: **only an `enforced` claim can gate**,
  * and only `changed` / `orphaned` / `ambiguous` (either side), `expired`, or a
  * behavioral `refuted` may do so. `moved` and `at-risk` are *warnings*
- * (exit 3) and **never** gate. `suggested` / `retired` / `unanchored-legacy`
- * claims never gate. Keeping this logic in one pure module is what lets the
+ * (exit 3) and **never** gate. `suggested` / `retired` claims never gate.
+ * Keeping this logic in one pure module is what lets the
  * resolver, the registry, and `check` agree on the same predicate.
  */
 import type { AnchorState, BehaviorState, Enforcement } from "./model.ts";
@@ -60,7 +60,7 @@ export function computeGates(
 /**
  * Whether a verdict is a non-gating warning (exit 3) — a `moved` anchor on
  * either side, or a behavioral `at-risk`, on an enforced claim that does not
- * already gate. `suggested`/`retired`/`unanchored-legacy` claims never warn.
+ * already gate. `suggested`/`retired` claims never warn.
  */
 export function isWarnVerdict(
   v: VerdictDimensions & { gates: boolean },

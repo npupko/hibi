@@ -267,6 +267,7 @@ export async function reanchor(
         path: input.docPath,
         lifecycle: "active",
         edges: [],
+        pristine: false,
       });
     } else if (existing.lifecycle !== "active") {
       await store.putDocument({ ...existing, lifecycle: "active" });

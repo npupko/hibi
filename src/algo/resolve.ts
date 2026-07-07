@@ -28,7 +28,7 @@ import {
   type Verdict,
 } from "../core/model.ts";
 import { remediationFor } from "../core/remediation.ts";
-import { effectiveClaimKind } from "./behavioral.ts";
+import { isBehavioral } from "./behavioral.ts";
 import { grade, type ResolvedSelector } from "./fusion.ts";
 import { localizeTextQuote, positionBias, regionText } from "./localize.ts";
 import { collapseWhitespace, textSimilarity } from "./normalize.ts";
@@ -407,14 +407,16 @@ export function resolveAssertion(
 
   // ── Behavioral risk routing (deterministic baseline — §17.6) ──
   // The live documented span is authoritative for classification. A claim that
-  // links executable verifiers is behavioral by construction, even if neither a
-  // declared `claimKind` nor the keyword heuristic classifies it — so the
+  // links executable verifiers is behavioral by construction, even if neither an
+  // author `behavioral` flag nor the keyword heuristic classifies it — so the
   // verifier-dispatch path and this inline path agree on the behavior axis (§10).
-  const claimKind = effectiveClaimKind(assertion.claimKind, docSide.liveText);
-  const isBehavioral =
-    claimKind !== undefined || assertion.verifiers.length > 0;
+  const behavioral = isBehavioral(
+    assertion.behavioral,
+    docSide.liveText,
+    assertion.verifiers.length > 0,
+  );
   let behavior: BehaviorState | undefined;
-  if (isBehavioral) {
+  if (behavioral) {
     // Change-gate: anchored node + its file (fallback for absent behaviorScope).
     // A linked verifier may later upgrade this to supported/refuted (§17.6).
     const reachableChanged =
@@ -439,7 +441,7 @@ export function resolveAssertion(
   const notes = [
     ...docSide.notes.map((n) => `doc: ${n}`),
     ...codeNotes,
-    isBehavioral ? `behavioral claim${claimKind ? ` (${claimKind})` : ""}` : "",
+    behavioral ? "behavioral claim" : "",
   ].filter(Boolean);
 
   const changedEvidence = [...docSide.changedEvidence, ...codeChanged];

@@ -17,7 +17,6 @@ import { parseArgs } from "node:util";
 import pkg from "../../package.json" with { type: "json" };
 import type {
   AuthoredTrust,
-  ClaimKind,
   Enforcement,
   Verdict,
   Verifier,
@@ -210,10 +209,28 @@ function parseVerifiers(raw: unknown): Verifier[] {
   return items.map((item) => {
     const s = String(item);
     const idx = s.indexOf(":");
-    const kind = (idx >= 0 ? s.slice(0, idx) : s) as Verifier["kind"];
+    const kind = idx >= 0 ? s.slice(0, idx) : s;
     const ref = idx >= 0 ? s.slice(idx + 1) : "";
     return { kind, ref };
   });
+}
+
+/**
+ * Resolve the behavioral tri-state (§17.6, D12) from the two mutually-exclusive
+ * flags/keys. `undefined` → the heuristic decides; passing both is an error.
+ */
+function behavioralOf(
+  behavioral: unknown,
+  noBehavioral: unknown,
+): boolean | undefined {
+  if (behavioral && noBehavioral) {
+    throw new Error(
+      "--behavioral and --no-behavioral are mutually exclusive; pass at most one.",
+    );
+  }
+  if (behavioral) return true;
+  if (noBehavioral) return false;
+  return undefined;
 }
 
 /**
@@ -308,8 +325,11 @@ function recordCallFromSpec(
     ref: (spec.ref as string | undefined) ?? fallbackRef,
     ttl: spec.ttl as string | undefined,
     enforcement,
-    claimKind: spec.claimKind as ClaimKind | undefined,
+    // A batch item carries a single `behavioral` boolean (not the two flags).
+    behavioral:
+      spec.behavioral === undefined ? undefined : Boolean(spec.behavioral),
     verifiers: parseVerifiers(spec.verifier),
+    pristine: Boolean(spec.pristine),
   };
 }
 
@@ -360,7 +380,11 @@ async function main(argv: string[]): Promise<number> {
       trust: { type: "string", default: "inferred" },
       enforce: { type: "boolean", default: false },
       enforcement: { type: "string" },
-      "claim-kind": { type: "string" },
+      // Behavioral tri-state (§17.6, D12): two mutually-exclusive booleans map to
+      // true/false/undefined (parseArgs booleans don't accept `=false`).
+      behavioral: { type: "boolean", default: false },
+      "no-behavioral": { type: "boolean", default: false },
+      pristine: { type: "boolean", default: false },
       verifier: { type: "string", multiple: true },
       owner: { type: "string" },
       ref: { type: "string" },
@@ -601,8 +625,9 @@ async function main(argv: string[]): Promise<number> {
         ref,
         ttl: values.ttl as string | undefined,
         enforcement,
-        claimKind: values["claim-kind"] as ClaimKind | undefined,
+        behavioral: behavioralOf(values.behavioral, values["no-behavioral"]),
         verifiers: parseVerifiers(values.verifier),
+        pristine: Boolean(values.pristine),
       };
 
       try {
@@ -1166,7 +1191,7 @@ Commands:
   record   --doc <p> (--doc-quote <s>|--doc-range L42:L44|--doc-line <n>)
            [--code-file <f> (--code-quote <s>|--code-range L1:L9|--code-line <n>)]
            [--coarse|--glob <g>] [--trust verified|inferred|assumed]
-           [--enforce|--enforcement <e>] [--claim-kind <k>] [--verifier kind:ref ...] [--ttl <iso>]
+           [--enforce|--enforcement <e>] [--behavioral|--no-behavioral] [--verifier kind:ref ...] [--pristine] [--ttl <iso>]
                                     Record a span-first claim (doc span + zero or more code spans)
   record   --from-file <p|->        Batch-record a JSON array of claim specs (- = stdin)
   check    [--write] [--fail-on gating|warn|tamper|never]

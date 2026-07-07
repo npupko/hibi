@@ -34,15 +34,9 @@ export type AuthoredTrust = z.infer<typeof AuthoredTrust>;
 /**
  * Enforcement — the record's creation-lifecycle, set by the workflow (§4/§9/§10).
  * Only `enforced` can produce a gating verdict or a strong banner; `suggested`
- * is advisory; `retired` is withdrawn; `unanchored-legacy` is an un-reanchorable
- * migrated copy, excluded from strong enforcement.
+ * is advisory; `retired` is withdrawn.
  */
-export const Enforcement = z.enum([
-  "suggested",
-  "enforced",
-  "retired",
-  "unanchored-legacy",
-]);
+export const Enforcement = z.enum(["suggested", "enforced", "retired"]);
 export type Enforcement = z.infer<typeof Enforcement>;
 
 /**
@@ -77,22 +71,6 @@ export const BehaviorState = z.enum([
   "refuted", // a linked verifier failed
 ]);
 export type BehaviorState = z.infer<typeof BehaviorState>;
-
-/**
- * Claim kind — the author's declaration that a claim is behavioral, and of what
- * kind (§5/§17.6). Drives Tier-3 classification explicitly; absent, a
- * deterministic keyword heuristic classifies. A label, never a verdict.
- */
-export const ClaimKind = z.enum([
-  "ordering",
-  "retry",
-  "complexity",
-  "concurrency",
-  "caching",
-  "validation",
-  "error-handling",
-]);
-export type ClaimKind = z.infer<typeof ClaimKind>;
 
 /** Document lifecycle — set by the engine from edges/actions (§4/§10). */
 export const DocumentLifecycle = z.enum([
@@ -240,14 +218,14 @@ export type Anchor = z.infer<typeof Anchor>;
  */
 export const Verifier = z
   .object({
-    kind: z.enum([
-      "example",
-      "snapshot",
-      "contract",
-      "property",
-      "formal",
-      "command",
-    ]),
+    /**
+     * A dispatch key, not a taxonomy: a runner resolver declares the
+     * `verifierKinds` it handles and the engine routes by string match. The
+     * conventional kinds (a recommendation, not schema) are `command`,
+     * `example`, `snapshot`, `contract`, `property`, `metamorphic`, `formal`.
+     * The built-in command runner handles `command`.
+     */
+    kind: z.string().min(1),
     /** Names a test/command to run. */
     ref: z.string(),
     /** Optional human note on what this verifier proves. */
@@ -258,15 +236,17 @@ export type Verifier = z.infer<typeof Verifier>;
 
 /**
  * BehaviorScope — the deterministic blast-radius the change-gate watches for a
- * behavioral claim (§5/§17.6). Absent → the change-gate falls back to the
- * anchored node + its file.
+ * behavioral claim (§5/§17.6, D14). Bounds the evidence set: the anchored file +
+ * its imports followed to `depth`, plus `include` globs, minus `exclude` globs.
+ * Absent → the default is `depth: 1` (the anchored file + its direct imports).
  */
 export const BehaviorScope = z.object({
-  rootSymbols: z.array(z.string()).default([]),
-  /** Transitive-callee depth the change-gate walks (default 2 — §17.6). */
-  reachableDepth: z.number().int().nonnegative().default(2),
+  /** Extra paths/globs to fold into the evidence set (config, fixtures, tables). */
   include: z.array(z.string()).default([]),
+  /** Paths/globs to drop from the evidence set (silence unrelated nearby churn). */
   exclude: z.array(z.string()).default([]),
+  /** Import hops out from the anchored file to follow: 0, 1, or 2 (default 1). */
+  depth: z.union([z.literal(0), z.literal(1), z.literal(2)]).default(1),
 });
 export type BehaviorScope = z.infer<typeof BehaviorScope>;
 
@@ -323,6 +303,13 @@ export const Document = z.object({
   lifecycle: DocumentLifecycle.default("active"),
   edges: z.array(Edge).default([]),
   frontmatterStatus: z.string().optional(),
+  /**
+   * Pristine (§8, D17) — a doc hibi does not own (vendored, third-party,
+   * read-only). `check --write` never stamps a banner or frontmatter into it;
+   * verdicts surface via JSON/`status`/exit codes only. Also matchable via
+   * `StoreConfig.pristine` globs at stamp time.
+   */
+  pristine: z.boolean().default(false),
 });
 export type Document = z.infer<typeof Document>;
 
@@ -343,28 +330,65 @@ export const Proposition = z.object({
 });
 export type Proposition = z.infer<typeof Proposition>;
 
-/** Assertion — one verification instance. Carries the bidirectional Anchor. */
-export const Assertion = z.object({
-  id: z.string(),
-  propositionId: z.string(),
-  documentId: z.string(),
-  owner: z.string(),
-  /** The `@ref` (commit) last verified against. */
-  ref: z.string(),
-  anchor: Anchor,
-  /** The record's creation-lifecycle (§4/§9). */
-  enforcement: Enforcement.default("suggested"),
-  /** Author's behavioral-kind declaration; drives Tier-3 routing (§17.6). */
-  claimKind: ClaimKind.optional(),
-  /** Executable-evidence links that upgrade behavioral risk (§5/§17.6). */
-  verifiers: z.array(Verifier).default([]),
-  /** Deterministic blast-radius for the behavioral change-gate (§5/§17.6). */
-  behaviorScope: BehaviorScope.optional(),
-  /** Optional ISO-8601 instant; past it the computed `expired` flag is set. */
-  ttl: z.string().optional(),
-  /** Open key/value bag for resolver-specific metadata the core does not interpret. */
-  attrs: z.record(z.string(), z.unknown()).default({}),
-});
+/**
+ * Assertion — one verification instance. Carries the bidirectional Anchor.
+ *
+ * The `behavioral` tri-state and `verifiers[]` together decide Tier-3 routing
+ * (§17.6, D12/D13). The no-contradiction invariant is enforced here (a
+ * `.refine`, run at `record` time AND at every store load): `behavioral: false`
+ * cannot be combined with a non-empty `verifiers[]` — a verifier is itself a
+ * behavioral declaration.
+ */
+export const Assertion = z
+  .object({
+    id: z.string(),
+    propositionId: z.string(),
+    documentId: z.string(),
+    owner: z.string(),
+    /** The `@ref` (commit) last verified against. */
+    ref: z.string(),
+    anchor: Anchor,
+    /** The record's creation-lifecycle (§4/§9). */
+    enforcement: Enforcement.default("suggested"),
+    /**
+     * Author's behavioral declaration (§17.6, D12). `true` → behavioral,
+     * wording irrelevant; `false` → not behavioral, heuristic skipped
+     * (`verifiers[]` must be empty); absent → the keyword heuristic classifies,
+     * or a non-empty `verifiers[]` makes it behavioral.
+     */
+    behavioral: z.boolean().optional(),
+    /** Executable-evidence links that upgrade behavioral risk (§5/§17.6). */
+    verifiers: z.array(Verifier).default([]),
+    /** Deterministic blast-radius for the behavioral change-gate (§5/§17.6). */
+    behaviorScope: BehaviorScope.optional(),
+    /**
+     * The change-gate baseline (§17.6, D14): each evidence-set path → its
+     * xxHash64 hex, captured at `record`/`reanchor` time. A current hash that
+     * differs, or a path missing from this map, counts as changed evidence.
+     */
+    evidenceBaseline: z.record(z.string(), z.string()).optional(),
+    /**
+     * Authored suppression of a behavioral `at-risk` (§17.6, D14; `hibi
+     * ignore`). `paths` is the acknowledged `{path → hash}` map of the
+     * currently-changed evidence; the suppression lapses when any path's current
+     * hash differs from its acknowledged entry (or a new evidence path appears).
+     * Workflow state captured at ignore time — never a computed verdict field.
+     */
+    suppressed: z
+      .object({
+        paths: z.record(z.string(), z.string()),
+        reason: z.string(),
+      })
+      .optional(),
+    /** Optional ISO-8601 instant; past it the computed `expired` flag is set. */
+    ttl: z.string().optional(),
+    /** Open key/value bag for resolver-specific metadata the core does not interpret. */
+    attrs: z.record(z.string(), z.unknown()).default({}),
+  })
+  .refine((a) => !(a.behavioral === false && a.verifiers.length > 0), {
+    message:
+      "behavioral: false cannot be combined with verifiers[] — a verifier is itself a behavioral declaration. Remove the verifiers or drop behavioral: false. To keep the verifier but silence at-risk noise, narrow behaviorScope (exclude globs / depth: 0) or use hibi ignore --claim <id> --reason <text>.",
+  });
 export type Assertion = z.infer<typeof Assertion>;
 
 // ── Verdict (ephemeral — never persisted, §5/§6) ─────────────────────────────
@@ -547,6 +571,12 @@ export const StoreConfig = z.object({
    * editor rule files.
    */
   instructionFiles: z.array(z.string()).optional(),
+  /**
+   * Globs marking pristine docs (§8, D17). A document whose path matches any of
+   * these is treated pristine at stamp time — `check --write` never banners it —
+   * so adding a glob here protects already-recorded docs without re-recording.
+   */
+  pristine: z.array(z.string()).optional(),
 });
 export type StoreConfig = z.infer<typeof StoreConfig>;
 

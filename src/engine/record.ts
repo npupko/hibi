@@ -14,7 +14,6 @@ import type {
   Assertion,
   AuthoredTrust,
   BehaviorScope,
-  ClaimKind,
   Document,
   Enforcement,
   Proposition,
@@ -90,9 +89,17 @@ export interface RecordInput {
   code: CodeTarget[];
   /** Explicit enforcement override; else derived below (§9). */
   enforcement?: Enforcement;
-  claimKind?: ClaimKind;
+  /** Mark the document pristine — `check --write` never stamps it (§8, D17). */
+  pristine?: boolean;
+  /** Author's behavioral declaration (§17.6, D12); undefined → heuristic decides. */
+  behavioral?: boolean;
   verifiers?: Verifier[];
   behaviorScope?: BehaviorScope;
+  /**
+   * The change-gate evidence baseline (§17.6, D14), computed by the shell (which
+   * has FS + analyzer) and stored on the Assertion. Undefined → not captured.
+   */
+  evidenceBaseline?: Record<string, string>;
   analyzer?: AnchorAnalyzer;
   attrs?: Record<string, unknown>;
 }
@@ -218,7 +225,9 @@ export async function recordClaim(
     );
   }
 
-  // ── Document (upsert by path). ──
+  // ── Document (upsert by path). ── `--pristine` persists the per-document flag
+  // (§8, D17): set it on a new document, and promote an existing one to pristine
+  // when the flag is passed (never silently un-pristine it).
   const docId = documentIdForPath(input.docPath);
   let document = await store.getDocument(docId);
   if (!document) {
@@ -227,7 +236,11 @@ export async function recordClaim(
       path: input.docPath,
       lifecycle: "active",
       edges: [],
+      pristine: input.pristine ?? false,
     };
+    await store.putDocument(document);
+  } else if (input.pristine && !document.pristine) {
+    document = { ...document, pristine: true };
     await store.putDocument(document);
   }
 
@@ -283,9 +296,10 @@ export async function recordClaim(
     ref: input.ref,
     anchor,
     enforcement,
-    claimKind: input.claimKind,
+    behavioral: input.behavioral,
     verifiers: input.verifiers ?? [],
     behaviorScope: input.behaviorScope,
+    evidenceBaseline: input.evidenceBaseline,
     ttl: input.ttl,
     attrs: input.attrs ?? {},
   };

@@ -4,14 +4,7 @@
   "properties": {
     "kind": {
       "type": "string",
-      "enum": [
-        "example",
-        "snapshot",
-        "contract",
-        "property",
-        "formal",
-        "command"
-      ]
+      "minLength": 1
     },
     "ref": {
       "type": "string"

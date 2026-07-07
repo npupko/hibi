@@ -18,7 +18,7 @@ async function upsertDocument(
   const id = documentIdForPath(path);
   let doc = await store.getDocument(id);
   if (!doc) {
-    doc = { id, path, lifecycle: "active", edges: [] };
+    doc = { id, path, lifecycle: "active", edges: [], pristine: false };
     if (!dryRun) await store.putDocument(doc);
   }
   return doc;

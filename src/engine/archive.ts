@@ -50,6 +50,7 @@ export async function archiveDocument(
     path: docPath,
     lifecycle: "active",
     edges: [],
+    pristine: false,
   };
 
   const abs = join(root, docPath);

@@ -38,7 +38,6 @@ import { removeBanner } from "./banner/banner.ts";
 import type {
   AuthoredTrust,
   BehaviorScope,
-  ClaimKind,
   DocumentLifecycle,
   Enforcement,
   Verdict,
@@ -246,12 +245,14 @@ export interface RecordCall {
   ttl?: string;
   /** Explicit enforcement override; else derived (enforced iff verified + resolved). */
   enforcement?: Enforcement;
-  /** Author's behavioral-kind declaration (§17.6). */
-  claimKind?: ClaimKind;
+  /** Author's behavioral declaration (§17.6, D12); undefined → heuristic decides. */
+  behavioral?: boolean;
   /** Executable-evidence links that upgrade behavioral risk (§5/§17.6). */
   verifiers?: Verifier[];
   /** Deterministic blast-radius for the behavioral change-gate (§5/§17.6). */
   behaviorScope?: BehaviorScope;
+  /** Mark the document pristine — hibi never stamps it (§8, D17). */
+  pristine?: boolean;
   attrs?: Record<string, unknown>;
 }
 
@@ -472,7 +473,8 @@ export class Engine {
       ttl: call.ttl,
       code,
       enforcement: call.enforcement,
-      claimKind: call.claimKind,
+      pristine: call.pristine,
+      behavioral: call.behavioral,
       verifiers: call.verifiers,
       behaviorScope: call.behaviorScope,
       // A precise code anchor consults the analyzer; coarse/glob ignore it, but
