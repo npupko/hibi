@@ -75,12 +75,6 @@ export interface RecordInput {
   docSpec?: RegionSpec;
   /** Optional owned-doc inline marker id that stabilizes re-anchoring (§4/§8). */
   inlineId?: string;
-  /**
-   * LEGACY Model-A authoritative override only (pristine/migration): the
-   * confirmed text when no doc span resolves. The live doc span is otherwise
-   * authoritative (§18-B).
-   */
-  text?: string;
   authoredTrust: AuthoredTrust;
   owner: string;
   ref: string;
@@ -132,8 +126,8 @@ export async function recordClaim(
   const { docContent, codeContents } = contents;
 
   // ── Doc side: resolve the documented sentence's span (§18-B). ──
-  // The confirmed text is the live doc span; the legacy `text` is the override
-  // of last resort (pristine/migration). One of them must be present.
+  // The confirmed text is the live doc span — the only source of the claim text
+  // (there is no side-channel override; D16).
   let docRegion: Region | undefined;
   if (input.docSpec) {
     if (docContent === null)
@@ -144,10 +138,10 @@ export async function recordClaim(
   const confirmedText =
     docRegion !== undefined && docContent !== null
       ? regionText(docContent, docRegion)
-      : input.text;
+      : undefined;
   if (confirmedText === undefined)
     throw new Error(
-      "A claim requires a doc span (--doc-quote/-range/-line) or a legacy --text override.",
+      "A claim requires a doc span (--doc-quote/--doc-range/--doc-line).",
     );
 
   // ── Code side: a bundle per target. ──

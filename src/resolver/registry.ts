@@ -32,6 +32,16 @@ import { OutOfProcessResolver } from "./client.ts";
 import { loadManifest } from "./manifest.ts";
 import type { VerifyResult } from "./protocol.ts";
 
+/** Per-call extras the engine hands a resolver alongside the anchored files. */
+export interface ResolveExtra {
+  /**
+   * The change-gate evidence (§17.6, D14): current contents of every
+   * evidence-set path. Only the built-in drift resolver consumes it; external
+   * out-of-process resolvers compute their own verdict and ignore it.
+   */
+  evidence?: ReadonlyMap<string, string | null>;
+}
+
 export interface Resolver {
   name: string;
   kinds: string[];
@@ -43,6 +53,7 @@ export interface Resolver {
     assertion: Assertion,
     files: ResolveFiles,
     proposition?: Proposition,
+    extra?: ResolveExtra,
   ): Promise<{ verdict?: Verdict; advisories?: Advisory[] }>;
   /** Run one verifier; null = unable to run (caller keeps the baseline). */
   verify?(
@@ -81,11 +92,13 @@ export class DriftResolver implements Resolver {
     assertion: Assertion,
     files: ResolveFiles,
     _proposition?: Proposition,
+    extra?: ResolveExtra,
   ) {
     return {
       verdict: resolveAssertion(assertion, files, {
         ast: this.ast,
         now: this.now,
+        evidence: extra?.evidence,
       }),
     };
   }
@@ -222,14 +235,17 @@ export class ResolverRegistry {
     assertion: Assertion,
     files: ResolveFiles,
     proposition?: Proposition,
+    extra?: ResolveExtra,
   ): Promise<Verdict> {
     // 1 — base verdict from the primary deterministic resolver (defaults to the
     //     built-in drift resolver, which never returns a hand-built fallback).
     const primary = this.primaryFor(assertion) ?? this.driftResolver;
-    const base = (await primary.resolve(assertion, files, proposition)).verdict;
+    const base = (await primary.resolve(assertion, files, proposition, extra))
+      .verdict;
     const verdict =
       base ??
-      (await this.driftResolver.resolve(assertion, files, proposition)).verdict;
+      (await this.driftResolver.resolve(assertion, files, proposition, extra))
+        .verdict;
     if (!verdict) {
       // The drift resolver always returns a verdict; this is unreachable, but
       // keeps the type total without a hand-built state literal.

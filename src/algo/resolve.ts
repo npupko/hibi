@@ -14,6 +14,7 @@
  * runner resolver upgrades it to `supported`/`refuted` out-of-process (§17.6).
  */
 
+import { hashContent } from "../ast/hash.ts";
 import { computeGates } from "../core/gating.ts";
 import {
   type AnchorState,
@@ -62,6 +63,8 @@ export interface AstAnalyzer {
     region: Region,
     nodeKind: string,
   ): string | null;
+  /** List the import specifiers of a file (§17.6, D14); [] if unparseable. */
+  extractImports(text: string, language: string): string[];
 }
 
 /** Current content of every file an anchor points into (null = file missing). */
@@ -76,6 +79,68 @@ export interface ResolveOptions {
   ast?: AstAnalyzer;
   /** Current time for ttl evaluation; defaults to Date.now() at call site. */
   now?: number;
+  /**
+   * The change-gate evidence (§17.6, D14): current contents of every
+   * evidence-set path, keyed by path (null = file missing). Supplied by the
+   * engine shell (`check.ts`); absent → the gate falls back to the
+   * anchored-node signal only.
+   */
+  evidence?: ReadonlyMap<string, string | null>;
+}
+
+/**
+ * The behavioral change-gate (§17.6, D14). `docSide.state` is consulted NOWHERE
+ * here — a doc-side edit is Axis 1's job, so the two axes never double-fire on
+ * one signal. Fires `at-risk` when the anchored node's semantics changed (an
+ * `ast`/`value` change on the code side) or any evidence path drifted from its
+ * baseline (a changed hash, or a newly-added import with no baseline entry).
+ *
+ * Baseline handling is precision-critical (§11.3):
+ *   - baseline **exists** but an evidence path is missing from it → that path is
+ *     changed evidence (a newly added import);
+ *   - baseline **absent entirely** (recorded `--no-ast`, analyzer failure) →
+ *     fall back to the anchored-node signal, never flag every path.
+ */
+function computeBehaviorRisk(
+  assertion: Assertion,
+  codeChanged: ChangedEvidence[],
+  evidence: ReadonlyMap<string, string | null> | undefined,
+): { state: BehaviorState; changed: ChangedEvidence[] } {
+  const changed: ChangedEvidence[] = [];
+
+  // (1) Anchored-node signal: a semantic (ast) or literal (value) change of the
+  //     anchored span — a rename/whitespace-only edit is structural-only and
+  //     surfaces neither, so it correctly never fires.
+  for (const c of codeChanged) {
+    if (c.kind === "ast" || c.kind === "value") changed.push(c);
+  }
+
+  // (2) Evidence-set drift — only when a baseline exists (baseline-absent → (1)).
+  const baseline = assertion.evidenceBaseline;
+  if (baseline && evidence) {
+    for (const [path, content] of evidence) {
+      const cur = content === null ? null : hashContent(content);
+      const base = baseline[path];
+      if (base === undefined) {
+        changed.push({ path, kind: "import", detail: "new evidence path" });
+      } else if (cur !== base) {
+        changed.push({ path, kind: "import", detail: "evidence file changed" });
+      }
+    }
+  }
+
+  // Dedupe by (path, kind) so one file never contributes two identical entries.
+  const seen = new Set<string>();
+  const uniq = changed.filter((c) => {
+    const key = `${c.path}|${c.kind}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return uniq.length > 0
+    ? { state: "at-risk", changed: uniq }
+    : { state: "unverified", changed: [] };
 }
 
 /** Worst-wins precedence when aggregating code-side bundle states. */
@@ -96,6 +161,17 @@ export interface SideResult {
   changedEvidence: ChangedEvidence[];
   /** The live text at the located region (the authoritative span when found). */
   liveText: string | null;
+}
+
+/** Dedupe changed-evidence entries by (path, kind, detail). */
+function dedupeEvidence(entries: ChangedEvidence[]): ChangedEvidence[] {
+  const seen = new Set<string>();
+  return entries.filter((c) => {
+    const key = `${c.path}|${c.kind}|${c.detail ?? ""}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 function bySelectorKind(selectors: Selector[]) {
@@ -416,15 +492,13 @@ export function resolveAssertion(
     assertion.verifiers.length > 0,
   );
   let behavior: BehaviorState | undefined;
+  let behaviorChanged: ChangedEvidence[] = [];
   if (behavioral) {
-    // Change-gate: anchored node + its file (fallback for absent behaviorScope).
+    // Change-gate v2 (§17.6, D14): the anchored-node signal + evidence-set drift.
     // A linked verifier may later upgrade this to supported/refuted (§17.6).
-    const reachableChanged =
-      code === "changed" ||
-      code === "orphaned" ||
-      codeChanged.length > 0 ||
-      docSide.state === "changed";
-    behavior = reachableChanged ? "at-risk" : "unverified";
+    const risk = computeBehaviorRisk(assertion, codeChanged, opts.evidence);
+    behavior = risk.state;
+    behaviorChanged = risk.changed;
   }
 
   const expired =
@@ -444,7 +518,14 @@ export function resolveAssertion(
     behavioral ? "behavioral claim" : "",
   ].filter(Boolean);
 
-  const changedEvidence = [...docSide.changedEvidence, ...codeChanged];
+  // Merge the behavioral evidence-path changes (imports/verifier sources) in,
+  // deduped by (path, kind) — so each behavioral banner line names the changed
+  // evidence path even when the anchored span itself is untouched (D14).
+  const changedEvidence = dedupeEvidence([
+    ...docSide.changedEvidence,
+    ...codeChanged,
+    ...behaviorChanged,
+  ]);
 
   return {
     assertionId: assertion.id,

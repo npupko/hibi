@@ -22,6 +22,8 @@ import {
   type BannerAction,
   type BannerEntry,
   DEFAULT_HEADLINE,
+  DEFAULT_INSTRUCTION_FILES,
+  isInstructionFile,
   removeBanner,
   stampBanner,
 } from "../banner/banner.ts";
@@ -40,6 +42,7 @@ import type {
 import { exists } from "../fs.ts";
 import type { ResolverRegistry } from "../resolver/registry.ts";
 import type { ClaimStore } from "../store/store.ts";
+import { evidenceSetPaths, readEvidenceContents } from "./evidence.ts";
 
 /**
  * Side-tagged status precedence for the single-valued frontmatter status (most
@@ -281,9 +284,31 @@ export async function runCheck(
     for (const f of codeFiles) code.set(f, await readFileText(f));
     const files: ResolveFiles = { doc: docContent, code };
 
+    // Change-gate evidence (§17.6, D14): the current contents of every
+    // evidence-set path. Skipped for a claim that can never be behavioral
+    // (`behavioral: false`, which the schema guarantees has no verifiers).
+    let evidence: Map<string, string | null> | undefined;
+    if (a.behavioral !== false) {
+      const paths = await evidenceSetPaths(a, {
+        analyzer: options.ast,
+        readFile: readFileText,
+        root,
+      });
+      evidence = await readEvidenceContents(paths, readFileText);
+    }
+
     const verdict = options.registry
-      ? await options.registry.resolve(a, files, propsById.get(a.propositionId))
-      : resolveAssertion(a, files, { ast: options.ast, now: options.now });
+      ? await options.registry.resolve(
+          a,
+          files,
+          propsById.get(a.propositionId),
+          { evidence },
+        )
+      : resolveAssertion(a, files, {
+          ast: options.ast,
+          now: options.now,
+          evidence,
+        });
     verdicts.push(verdict);
   }
 
@@ -395,15 +420,32 @@ export async function runCheck(
           null)
         : null;
 
-    if (options.write) {
+    // D17 — pristine docs are never stamped. Evaluated at stamp time: the
+    // per-document flag OR a `StoreConfig.pristine` glob matching now — so adding
+    // a glob later protects already-recorded docs. Verdicts are still computed
+    // and emitted (JSON/status/exit codes); only the banner/frontmatter writes
+    // are skipped for a doc hibi does not own.
+    const cfg = await store.config();
+    const pristine =
+      doc.pristine === true ||
+      (cfg.pristine ?? []).some((g) => new Bun.Glob(g).match(doc.path));
+
+    if (options.write && !pristine) {
       const abs = join(root, doc.path);
       if (await exists(abs)) {
         const original = await readFile(abs, "utf8");
-        const nonce = (await store.config()).nonce;
+        const nonce = cfg.nonce;
         const headline =
           suspectEntries.length === 0 && lcEntries.length > 0
             ? `DOCUMENT STATUS — ${lcEntries.length} notice(s) — re-verify before trusting.`
             : DEFAULT_HEADLINE(allEntries.length);
+
+        // D18 — instruction files get the single-line compact banner instead of
+        // the full block (attention budget: every extra byte dilutes following).
+        const compact = isInstructionFile(
+          doc.path,
+          cfg.instructionFiles ?? [...DEFAULT_INSTRUCTION_FILES],
+        );
 
         let content = original;
         if (allEntries.length === 0) {
@@ -417,7 +459,12 @@ export async function runCheck(
             doc.path,
             { headline, entries: allEntries },
             nonce,
-            { failOnTamper: options.failOn === "tamper" },
+            {
+              failOnTamper: options.failOn === "tamper",
+              ...(compact
+                ? { compact: { count: allEntries.length, docPath: doc.path } }
+                : {}),
+            },
           );
           if (res.tampered) {
             sawTamper = true;

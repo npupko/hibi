@@ -19,6 +19,30 @@ export const BANNER_VERSION = 1;
 export const DEFAULT_HEADLINE = (n: number) =>
   `STALE DOCUMENT — ${n} suspect claim(s) — re-verify before trusting.`;
 
+/**
+ * Attention-budget instruction files that get the compact single-line banner
+ * (§8, D18): always-loaded agent instruction files where every extra byte
+ * dilutes instruction-following. Overridable via `StoreConfig.instructionFiles`.
+ */
+export const DEFAULT_INSTRUCTION_FILES = [
+  "CLAUDE.md",
+  "AGENTS.md",
+  ".cursorrules",
+  ".github/copilot-instructions.md",
+] as const;
+
+/** Whether a doc path is an instruction file (compact-banner target) — §8/D18. */
+export function isInstructionFile(
+  path: string,
+  globs: readonly string[] = DEFAULT_INSTRUCTION_FILES,
+): boolean {
+  const base = path.split("/").pop() ?? path;
+  return globs.some((g) => {
+    const glob = new Bun.Glob(g);
+    return glob.match(path) || glob.match(base);
+  });
+}
+
 export type CommentStyle = "html" | "hash" | "slash" | "none";
 
 export interface BannerEntry {
@@ -126,16 +150,8 @@ export function bannerBody(payload: BannerPayload): string[] {
   return [headline, ...entries.map((e) => `[${e.status}] (${e.id}) ${e.text}`)];
 }
 
-/** Build the banner block text (with comment wrapping) for a given style. */
-export function buildBanner(
-  payload: BannerPayload,
-  nonce: string,
-  style: CommentStyle,
-): string {
-  const body = bannerBody(payload);
-  const sha = fnv1a32hex(body.join("\n"));
-  const core = [beginSentinel(nonce), ...body, endSentinel(nonce, sha)];
-
+/** Wrap the sentinel-delimited core lines in the file's comment style (§17.5). */
+function wrapCore(core: string[], style: CommentStyle): string {
   switch (style) {
     case "html":
       return ["<!--", ...core, "-->"].join("\n");
@@ -146,6 +162,44 @@ export function buildBanner(
     case "none":
       return core.join("\n");
   }
+}
+
+/** Build the banner block text (with comment wrapping) for a given style. */
+export function buildBanner(
+  payload: BannerPayload,
+  nonce: string,
+  style: CommentStyle,
+): string {
+  const body = bannerBody(payload);
+  const sha = fnv1a32hex(body.join("\n"));
+  return wrapCore(
+    [beginSentinel(nonce), ...body, endSentinel(nonce, sha)],
+    style,
+  );
+}
+
+/** The compact instruction-file banner body: one pointer line (§8, D18). */
+export function compactBannerBody(count: number, docPath: string): string[] {
+  return [`STALE — ${count} claim(s); run \`hibi status --doc ${docPath}\``];
+}
+
+/**
+ * Build the single-line compact banner for an instruction file (§8, D18): the
+ * same sentinel + FNV-1a machinery as the full block, but a one-line pointer
+ * body instead of the full per-claim list — always stamped top-of-file.
+ */
+export function buildCompactBanner(
+  count: number,
+  docPath: string,
+  nonce: string,
+  style: CommentStyle,
+): string {
+  const body = compactBannerBody(count, docPath);
+  const sha = fnv1a32hex(body.join("\n"));
+  return wrapCore(
+    [beginSentinel(nonce), ...body, endSentinel(nonce, sha)],
+    style,
+  );
 }
 
 // ── Locating an existing banner ──────────────────────────────────────────────
@@ -265,6 +319,12 @@ function splice(head: string, banner: string, remainder: string): string {
 export interface StampOptions {
   /** When true, refuse to overwrite a hand-edited (tampered) banner (§17.5). */
   failOnTamper?: boolean;
+  /**
+   * Compact instruction-file mode (§8, D18): stamp the single-line pointer
+   * banner (`STALE — N claim(s); run …`) instead of the full per-claim block.
+   * `count` is the suspect-claim count; `docPath` is the pointer target.
+   */
+  compact?: { count: number; docPath: string };
 }
 
 /** Insert or replace the banner so the document carries `payload`. */
@@ -276,7 +336,9 @@ export function stampBanner(
   opts: StampOptions = {},
 ): StampResult {
   const style = commentStyleFor(filePath);
-  const banner = buildBanner(payload, nonce, style);
+  const banner = opts.compact
+    ? buildCompactBanner(opts.compact.count, opts.compact.docPath, nonce, style)
+    : buildBanner(payload, nonce, style);
   const existing = locateBanner(text, nonce, style);
 
   if (existing) {

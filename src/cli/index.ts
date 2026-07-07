@@ -284,12 +284,9 @@ function recordCallFromSpec(
     throw new Error("each record item needs a `doc` path");
 
   const docSpec = spanSpec(spec.docQuote, spec.docRange, spec.docLine);
-  const legacyText = spec.text as string | undefined;
-  // An empty `text` is rejected like a missing one (`!legacyText`): otherwise the
-  // item would record a proposition with an empty fingerprint.
-  if (!docSpec && !legacyText)
+  if (!docSpec)
     throw new Error(
-      `record item for ${doc} needs a doc span (docQuote/docRange/docLine) or text`,
+      `record item for ${doc} needs a doc span (docQuote/docRange/docLine)`,
     );
 
   const code: NonNullable<RecordCall["code"]> = [];
@@ -314,7 +311,6 @@ function recordCallFromSpec(
     docQuote: docSpec?.quote,
     docRange: docRangeOf(docSpec),
     inlineId: spec.inlineId as string | undefined,
-    text: legacyText,
     code,
     // Mirror the single-flag default (`inferred`); a batch never silently mints
     // `verified` (which requires deliberate evidence) on the author's behalf.
@@ -376,7 +372,6 @@ async function main(argv: string[]): Promise<number> {
       // record — batch authoring (a JSON array of claim specs; `-` = stdin)
       "from-file": { type: "string" },
       // record — authored facets
-      text: { type: "string" }, // legacy override only
       trust: { type: "string", default: "inferred" },
       enforce: { type: "boolean", default: false },
       enforcement: { type: "string" },
@@ -583,10 +578,9 @@ async function main(argv: string[]): Promise<number> {
         values["doc-range"],
         values["doc-line"],
       );
-      const legacyText = values.text as string | undefined;
-      if (!docSpec && !legacyText)
+      if (!docSpec)
         return fail(
-          "record requires a doc span (--doc-quote/--doc-range/--doc-line) or legacy --text",
+          "record requires a doc span (--doc-quote/--doc-range/--doc-line)",
           mode,
         );
 
@@ -618,7 +612,6 @@ async function main(argv: string[]): Promise<number> {
         docQuote: docSpec?.quote,
         docRange: docRangeOf(docSpec),
         inlineId: values["inline-id"] as string | undefined,
-        text: legacyText,
         code,
         authoredTrust: String(values.trust) as AuthoredTrust,
         owner: values.owner as string | undefined,

@@ -32,6 +32,7 @@
 
 import { readFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
+import { isBehavioral } from "./algo/behavioral.ts";
 import { regionText } from "./algo/localize.ts";
 import { type AstAnalyzer, resolveSide } from "./algo/resolve.ts";
 import { removeBanner } from "./banner/banner.ts";
@@ -52,6 +53,7 @@ import {
   runCheck,
 } from "./engine/check.ts";
 import { buildDoctorReport, type DoctorReport } from "./engine/doctor.ts";
+import { buildEvidenceBaselineFor } from "./engine/evidence.ts";
 import { type ListResult, type ListState, toListRows } from "./engine/list.ts";
 import { type QueryHit, queryByPath } from "./engine/query.ts";
 import {
@@ -66,6 +68,7 @@ import {
   type RecordInput,
   type RecordResult,
   recordClaim,
+  resolveRegion,
 } from "./engine/record.ts";
 import { planRelocation, type RelocateResult } from "./engine/relocate.ts";
 import { type RetireResult, retire } from "./engine/retire.ts";
@@ -202,8 +205,7 @@ export interface EngineOptions {
  * A span-first record call (§9 `record`). The documented sentence is located by
  * its own span (`docQuote`/`docRange`/`docLine`) — the doc side of the anchor —
  * and zero or more code targets pin the code it describes. The current artifact
- * span is authoritative; `text` is a LEGACY Model-A override only (pristine
- * migration), never the normal path (§18-B).
+ * span is authoritative; there is no side-channel text override (§18-B, D16).
  */
 export interface RecordCall {
   /** Repo-relative path of the document making the claim. */
@@ -220,8 +222,6 @@ export interface RecordCall {
   };
   /** Optional owned-doc marker id that stabilizes re-anchoring (§4/§8). */
   inlineId?: string;
-  /** LEGACY authoritative-text override only (migration); prefer the doc span. */
-  text?: string;
   /** Zero or more code targets the claim pins. */
   code?: {
     file: string;
@@ -383,6 +383,10 @@ export class Engine {
     const registry = await buildRegistry(this.store, analyzer);
     try {
       const options: CheckOptions = {
+        // The analyzer is also handed to `check` directly: it drives the
+        // change-gate's import extraction (§17.6, D14), separately from the
+        // registry's anchor-resolution analyzer.
+        ast: analyzer,
         registry,
         write: opts.write ?? false,
         failOn: opts.failOn,
@@ -460,13 +464,36 @@ export class Engine {
       codeContents[target.file] = await this.readAnchored(target.file);
     }
 
+    const analyzer = await this.analyzer();
+
+    // Capture the change-gate baseline for a behavioral claim (§17.6, D14): the
+    // shell owns FS + analyzer, so it computes the evidence set here and hands
+    // the baseline to the pure core. Non-behavioral claims carry no baseline.
+    const docText = this.docTextForClassify(docContent, call);
+    const hasVerifiers = (call.verifiers?.length ?? 0) > 0;
+    const seeds = code.filter((t) => !t.glob).map((t) => t.file);
+    const evidenceBaseline =
+      seeds.length > 0 && isBehavioral(call.behavioral, docText, hasVerifiers)
+        ? await buildEvidenceBaselineFor(
+            {
+              seeds,
+              behaviorScope: call.behaviorScope,
+              verifiers: call.verifiers,
+            },
+            {
+              analyzer,
+              readFile: (rel) => this.readAnchored(rel),
+              root: this.store.anchorRoot,
+            },
+          )
+        : undefined;
+
     const contents: RecordContents = { docContent, codeContents };
     const input: RecordInput = {
       docPath: call.docPath,
       docSpec:
         call.docQuote !== undefined ? { quote: call.docQuote } : call.docRange,
       inlineId: call.inlineId,
-      text: call.text,
       authoredTrust: call.authoredTrust ?? "inferred",
       owner: call.owner ?? "unknown",
       ref: call.ref ?? "WORKTREE",
@@ -477,12 +504,33 @@ export class Engine {
       behavioral: call.behavioral,
       verifiers: call.verifiers,
       behaviorScope: call.behaviorScope,
+      evidenceBaseline,
       // A precise code anchor consults the analyzer; coarse/glob ignore it, but
       // passing it is harmless and lets a mixed call resolve its precise targets.
-      analyzer: await this.analyzer(),
+      analyzer,
       attrs: call.attrs,
     };
     return recordClaim(this.store, contents, input);
+  }
+
+  /**
+   * Best-effort documented text for behavioral classification at record time: the
+   * quote when given, else the resolved range text. A malformed range surfaces
+   * later in `recordClaim` (the real error path), so here it just skips capture.
+   */
+  private docTextForClassify(
+    docContent: string | null,
+    call: RecordCall,
+  ): string | null {
+    if (call.docQuote !== undefined) return call.docQuote;
+    if (docContent !== null && call.docRange) {
+      try {
+        return regionText(docContent, resolveRegion(docContent, call.docRange));
+      } catch {
+        return null;
+      }
+    }
+    return null;
   }
 
   /**
@@ -553,6 +601,36 @@ export class Engine {
       codeContents[target.file] = await this.readAnchored(target.file);
     }
 
+    const analyzer = await this.analyzer();
+
+    // D14/D15 — refresh the change-gate baseline for a behavioral claim (one that
+    // has a baseline, or is behavioral by declaration/verifier). Seeds are the
+    // new code files (replacement targets if given, else the current ones).
+    const isGated =
+      assertion.evidenceBaseline !== undefined ||
+      assertion.behavioral === true ||
+      assertion.verifiers.length > 0;
+    const seeds = code
+      ? code.filter((t) => !t.glob).map((t) => t.file)
+      : assertion.anchor.code
+          .filter((b) => !b.selectors.some((s) => s.kind === "glob"))
+          .map((b) => b.file);
+    const evidenceBaseline =
+      isGated && seeds.length > 0
+        ? await buildEvidenceBaselineFor(
+            {
+              seeds,
+              behaviorScope: assertion.behaviorScope,
+              verifiers: assertion.verifiers,
+            },
+            {
+              analyzer,
+              readFile: (rel) => this.readAnchored(rel),
+              root: this.store.anchorRoot,
+            },
+          )
+        : undefined;
+
     const contents: RecordContents = { docContent, codeContents };
     const input: ReanchorInput = {
       claimId,
@@ -561,7 +639,8 @@ export class Engine {
         opts.docQuote !== undefined ? { quote: opts.docQuote } : opts.docRange,
       code,
       ref: opts.ref,
-      analyzer: await this.analyzer(),
+      evidenceBaseline,
+      analyzer,
       dryRun: opts.dryRun,
     };
     return reanchor(this.store, contents, input);

@@ -34,6 +34,15 @@ function xx(s: string): string {
 }
 
 /**
+ * xxHash64 of a file's content, as 16-hex (§17.6, D14). The single hashing
+ * function behind the change-gate's evidence baselines — used identically at
+ * `record`/`reanchor` (to store) and at `check` (to compare), so they never drift.
+ */
+export function hashContent(content: string): string {
+  return xx(content);
+}
+
+/**
  * Snap a region to the smallest enclosing *named* node (§17.1). Trim leading and
  * trailing whitespace off the span first (if it collapses, keep one character) —
  * this is what makes the chosen node invariant to re-indentation.

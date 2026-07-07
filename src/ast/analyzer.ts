@@ -32,6 +32,7 @@ import type { AstAnalysis, AstAnalyzer } from "../algo/resolve.ts";
 import type { Region, Selector } from "../core/model.ts";
 import type { AnchorAnalyzer } from "../engine/anchor.ts";
 import { extractValueFrom, fingerprintNode, snapNamedNode } from "./hash.ts";
+import { extractImportSpecifiers } from "./imports.ts";
 
 const WASM: Record<string, string> = {
   typescript: tsWasm,
@@ -80,6 +81,12 @@ class TreeSitterAnalyzer implements AstAnalyzer, AnchorAnalyzer {
     const node = snapNamedNode(root, text, region);
     if (!node) return null;
     return extractValueFrom(node, language)?.value ?? null;
+  }
+
+  extractImports(text: string, language: string): string[] {
+    const root = this.parse(text, language);
+    if (!root) return [];
+    return extractImportSpecifiers(root, language);
   }
 
   recordSelectors(
