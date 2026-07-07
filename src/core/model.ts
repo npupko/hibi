@@ -422,7 +422,7 @@ export type Region = z.infer<typeof Region>;
 export const ChangedEvidence = z.object({
   /** The file (or selector locus) whose evidence changed. */
   path: z.string(),
-  /** What kind of evidence changed: `value`, `ast`, `text`, `callee`, `import`, `verifier-source`. */
+  /** What kind of evidence changed: `value`, `ast`, `text`, or `import` (an evidence-set file — depth-N imports, `include`-glob files, and verifier sources all surface as `import`). */
   kind: z.string(),
   /** Optional human-readable detail. */
   detail: z.string().optional(),

@@ -71,10 +71,10 @@ Throughout, `hibi` stands for whichever form you settled on.
 
 ---
 
-## The four workflows
+## Core workflows
 
 Each is *the moment → the command → reading the result → acting*. `hibi check`,
-`diff`, `query`, `status`, and `list` (without `--write`) are **read-only and safe to
+`diff`, `query`, `status`, `coverage`, and `list` (without `--write`) are **read-only and safe to
 run anytime**. `--write`, `record`, `reanchor`, `retire`, and the lifecycle verbs
 modify the store or your docs — run those deliberately.
 

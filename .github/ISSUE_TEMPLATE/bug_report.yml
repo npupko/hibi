@@ -26,7 +26,7 @@ body:
       description: A minimal sequence of commands (and any relevant doc/code) that reproduces the behavior.
       placeholder: |
         1. `hibi init`
-        2. `hibi record --doc README.md --text "..." --file src/x.ts --quote "..."`
+        2. `hibi record --doc README.md --doc-quote "..." --code-file src/x.ts --code-quote "..."`
         3. Edit `src/x.ts`
         4. `hibi check`
     validations:

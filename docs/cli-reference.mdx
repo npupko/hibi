@@ -275,6 +275,46 @@ the shape a shell loop wants:
 for id in $(hibi list --state orphaned --ids-only); do hibi retire "$id"; done
 ```
 
+## `hibi coverage`
+
+`coverage` is the **grounding-audit worklist**: it segments a document into blocks
+(blank-line separated; fenced code blocks kept whole) and reports each block as
+**covered** — a live, code-grounded claim's doc anchor resolves cleanly into it —
+or **uncovered**. Read-only; it writes nothing and judges nothing.
+
+```sh
+hibi coverage --doc README.md
+```
+
+```json
+{
+  "ok": true,
+  "action": "coverage",
+  "schemaVersion": "v1",
+  "doc": "README.md",
+  "summary": { "blocks": 12, "coveredBlocks": 7, "uncoveredBlocks": 5, "coverageRatio": 0.58 },
+  "regions": [
+    {
+      "range": { "start": 120, "end": 244 },
+      "preview": "Retries are capped at 5 attempts…",
+      "covered": true,
+      "claimIds": ["asrt_897e054b48d040db"]
+    }
+  ],
+  "next": "ground or prune the uncovered regions, then hibi check"
+}
+```
+
+A block counts as covered only when the claim is **live and code-grounded** and its
+doc anchor resolves `unchanged`/`moved` — a doc-only `suggested` placeholder or a
+drifted anchor does not count (that is `check`'s concern). Walk the `covered: false`
+regions and decide **ground-or-prune**: anchor the blocks a code span backs
+(`hibi record`, or the batch `--from-file`), and cut the prose nothing backs. Hibi
+never extracts claims from prose — the judgment on every uncovered block stays with
+you. Note `range` offsets are banner-normalized (the HIBI banner is stripped before
+segmenting), so identify a block by its `preview` text rather than byte-slicing the
+raw file at `range`.
+
 ## `hibi retire`
 
 `retire` **withdraws a single claim**: it flips that claim's `enforcement` to
@@ -431,7 +471,9 @@ verdict is surfaced but never affects exit codes. `diff` additionally reports
 **`list`** returns `{ ok, action, schemaVersion, state, count, claims[] }`, where
 each claim row is the lean handle described above. **`query`** returns
 `{ ok, action, schemaVersion, path, count, hits[] }` — the way you find a claim's
-id before editing.
+id before editing. **`coverage`** returns `{ ok, action, schemaVersion, doc,
+summary: { blocks, coveredBlocks, uncoveredBlocks, coverageRatio }, regions[], next }`
+— see [`hibi coverage`](#hibi-coverage) above.
 
 ## Exit codes
 

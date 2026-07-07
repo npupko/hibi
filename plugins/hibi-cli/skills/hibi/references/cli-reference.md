@@ -33,14 +33,14 @@ repo root), `--store-dir <dir>` (store location, default `<anchor>/.claims`),
 | `status` | No `--doc`: a repo-wide document health overview (every tracked doc, worst status, claim counts, owner, lifecycle). |
 | `status --doc <p>` | "Is this one document current?" read-time gate (exit 2 if any verdict gates). |
 | `query --path <p>` | List the claims anchored to / covering a path. Read-only. |
-| `list [--state …]` | Triage: one lean row per claim (handle + status + severity + recommended). Read-only. `--state all\|gating\|warning\|clean`. |
+| `list [--state …]` | Triage: one lean row per claim (handle + status + severity + recommended). Read-only. `--state all\|gating\|warning\|clean\|orphaned\|suggested`. |
 | `completions <zsh\|bash\|fish>` | Print a shell completion script. |
 | `coverage --doc <p>` | Report which blocks of a doc are backed by a claim vs uncovered (the grounding-audit worklist). Read-only. |
 | `reanchor <claim-id>` | Re-resolve a claim against current content (new doc/code spans). |
 | `retire <claim-id>` | Withdraw one claim (`enforcement` → `retired`); idempotent. A retired claim never gates/warns. |
 | `relocate --from <p> --to <p>` | Batch re-home every live claim from one doc onto another (verbatim sentence matches move; the rest land in `misses[]`). Supports `--dry-run`. |
 | `ignore --claim <id> --reason <t>` | Suppress a known-good behavioral `at-risk`: acknowledges the current changed evidence (`{path → hash}`) and auto-lapses when evidence moves again or a new path appears. Reason required. |
-| `doctor` | Store-health sweep: orphaned anchors, unpinned suggests, stale-doc claims, duplicates, plus flag/drift `rates`. Purely informational; always exits 0. |
+| `doctor` | Store-health sweep: orphaned anchors, anchorless `suggested` claims, stale-doc claims, duplicates, plus flag/drift `rates`. Purely informational; always exits 0. |
 | `supersede` | Author a `supersedes`/`amends` edge between two documents. |
 | `retract --doc <p>` | Mark a document retracted (author withdrew it). |
 | `archive --doc <p>` | Tombstone a document out of the read path; optional `--successor`. |
