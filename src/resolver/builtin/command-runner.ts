@@ -74,11 +74,7 @@ export class CommandRunnerResolver implements Resolver {
       return {
         behavior: code === 0 ? "supported" : "refuted",
         advisories: [],
-        notes: [
-          code === 0
-            ? `command exited 0: ${verifier.ref}`
-            : `command exited ${code}: ${verifier.ref}`,
-        ],
+        notes: [`command exited ${code}: ${verifier.ref}`],
       };
     } catch {
       // Spawn failure → no result.

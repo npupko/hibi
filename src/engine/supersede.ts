@@ -8,7 +8,7 @@
 
 import type { Assertion, Document, Edge } from "../core/model.ts";
 import type { ClaimStore } from "../store/store.ts";
-import { documentIdForPath } from "./record.ts";
+import { documentIdForPath, newDocument } from "./record.ts";
 
 async function upsertDocument(
   store: ClaimStore,
@@ -18,7 +18,7 @@ async function upsertDocument(
   const id = documentIdForPath(path);
   let doc = await store.getDocument(id);
   if (!doc) {
-    doc = { id, path, lifecycle: "active", edges: [], pristine: false };
+    doc = newDocument(id, path);
     if (!dryRun) await store.putDocument(doc);
   }
   return doc;

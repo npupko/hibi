@@ -285,10 +285,13 @@ export async function runCheck(
     const files: ResolveFiles = { doc: docContent, code };
 
     // Change-gate evidence (§17.6, D14): the current contents of every
-    // evidence-set path. Skipped for a claim that can never be behavioral
-    // (`behavioral: false`, which the schema guarantees has no verifiers).
+    // evidence-set path. The gate reads this map ONLY for a claim carrying a
+    // stored baseline or an authored suppression; every other claim (non-
+    // behavioral, or behavioral with no baseline → the anchored-node-only
+    // fallback) discards it. So skip the whole import walk + globs + reads for
+    // those — a large saving on the common check path.
     let evidence: Map<string, string | null> | undefined;
-    if (a.behavioral !== false) {
+    if (a.evidenceBaseline !== undefined || a.suppressed !== undefined) {
       const paths = await evidenceSetPaths(a, {
         analyzer: options.ast,
         readFile: readFileText,

@@ -104,7 +104,7 @@ async function resolveExisting(
 }
 
 /** The seed code files of a claim: precise/coarse bundles, not glob patterns. */
-function seedFiles(a: Assertion): string[] {
+export function seedFiles(a: Assertion): string[] {
   const out: string[] = [];
   for (const b of a.anchor.code) {
     if (b.selectors.some((s) => s.kind === "glob")) continue;

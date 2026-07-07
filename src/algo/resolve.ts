@@ -129,17 +129,11 @@ function computeBehaviorRisk(
     }
   }
 
-  // Dedupe by (path, kind) so one file never contributes two identical entries.
-  const seen = new Set<string>();
-  const uniq = changed.filter((c) => {
-    const key = `${c.path}|${c.kind}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  return uniq.length > 0
-    ? { state: "at-risk", changed: uniq }
+  // No dedupe here: the caller merges `changed` into the verdict's
+  // `changedEvidence` through `dedupeEvidence`, and `suppressionActive` keys on
+  // `path` alone — so a duplicate entry changes neither the state nor the output.
+  return changed.length > 0
+    ? { state: "at-risk", changed }
     : { state: "unverified", changed: [] };
 }
 

@@ -14,13 +14,13 @@ import type {
   Assertion,
   AuthoredTrust,
   BehaviorScope,
-  Document,
   Enforcement,
   Proposition,
   Region,
   SelectorBundle,
   Verifier,
 } from "../core/model.ts";
+import { Document } from "../core/model.ts";
 import type { ClaimStore } from "../store/store.ts";
 import {
   type AnchorAnalyzer,
@@ -34,6 +34,20 @@ import { languageForFile } from "./lang.ts";
 /** Stable document id derived from its repo-relative path. */
 export function documentIdForPath(path: string): string {
   return `doc_${Bun.hash.xxHash64(path).toString(16).padStart(16, "0")}`;
+}
+
+/**
+ * A fresh active Document with schema defaults applied once (§4). Routing every
+ * construction site through `Document.parse` keeps a defaulted field (e.g.
+ * `pristine`) defined in exactly one place — the schema — instead of repeated in
+ * each object literal, so adding a field is not an N-call-site edit.
+ */
+export function newDocument(
+  id: string,
+  path: string,
+  pristine = false,
+): Document {
+  return Document.parse({ id, path, pristine });
 }
 
 /** How a record call locates a span inside a file (doc side or code side). */
@@ -225,13 +239,7 @@ export async function recordClaim(
   const docId = documentIdForPath(input.docPath);
   let document = await store.getDocument(docId);
   if (!document) {
-    document = {
-      id: docId,
-      path: input.docPath,
-      lifecycle: "active",
-      edges: [],
-      pristine: input.pristine ?? false,
-    };
+    document = newDocument(docId, input.docPath, input.pristine ?? false);
     await store.putDocument(document);
   } else if (input.pristine && !document.pristine) {
     document = { ...document, pristine: true };

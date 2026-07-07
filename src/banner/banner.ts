@@ -164,18 +164,22 @@ function wrapCore(core: string[], style: CommentStyle): string {
   }
 }
 
+/** Seal a body between the nonce sentinels (BEGIN + END-with-checksum) and wrap it. */
+function sealBody(body: string[], nonce: string, style: CommentStyle): string {
+  const sha = fnv1a32hex(body.join("\n"));
+  return wrapCore(
+    [beginSentinel(nonce), ...body, endSentinel(nonce, sha)],
+    style,
+  );
+}
+
 /** Build the banner block text (with comment wrapping) for a given style. */
 export function buildBanner(
   payload: BannerPayload,
   nonce: string,
   style: CommentStyle,
 ): string {
-  const body = bannerBody(payload);
-  const sha = fnv1a32hex(body.join("\n"));
-  return wrapCore(
-    [beginSentinel(nonce), ...body, endSentinel(nonce, sha)],
-    style,
-  );
+  return sealBody(bannerBody(payload), nonce, style);
 }
 
 /** The compact instruction-file banner body: one pointer line (§8, D18). */
@@ -194,12 +198,7 @@ export function buildCompactBanner(
   nonce: string,
   style: CommentStyle,
 ): string {
-  const body = compactBannerBody(count, docPath);
-  const sha = fnv1a32hex(body.join("\n"));
-  return wrapCore(
-    [beginSentinel(nonce), ...body, endSentinel(nonce, sha)],
-    style,
-  );
+  return sealBody(compactBannerBody(count, docPath), nonce, style);
 }
 
 // ── Locating an existing banner ──────────────────────────────────────────────

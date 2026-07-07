@@ -56,8 +56,10 @@ import {
 import { buildDoctorReport, type DoctorReport } from "./engine/doctor.ts";
 import {
   buildEvidenceBaselineFor,
+  type EvidenceDeps,
   evidenceSetPaths,
   readEvidenceContents,
+  seedFiles,
 } from "./engine/evidence.ts";
 import { type IgnoreResult, ignoreClaim } from "./engine/ignore.ts";
 import { type ListResult, type ListState, toListRows } from "./engine/list.ts";
@@ -396,6 +398,41 @@ export class Engine {
   }
 
   /**
+   * The change-gate evidence deps for a one-shot command (§17.6, D14), with a
+   * per-operation read cache so each file is read at most once across the walk +
+   * hash passes — the same memoization the `check` loop uses.
+   */
+  private evidenceDeps(analyzer: Analyzer | undefined): EvidenceDeps {
+    const cache = new Map<string, string | null>();
+    const readFile = async (rel: string): Promise<string | null> => {
+      if (cache.has(rel)) return cache.get(rel) ?? null;
+      const content = await this.readAnchored(rel);
+      cache.set(rel, content);
+      return content;
+    };
+    return { analyzer, readFile, root: this.store.anchorRoot };
+  }
+
+  /**
+   * Capture the change-gate baseline for a behavioral claim (§17.6, D14), shared
+   * by `record` and `reanchor`. Returns undefined when the claim carries no gate
+   * (not behavioral, or no anchored code seeds) — nothing to baseline.
+   */
+  private async captureBaseline(
+    gated: boolean,
+    seeds: string[],
+    behaviorScope: BehaviorScope | undefined,
+    verifiers: Verifier[] | undefined,
+    analyzer: Analyzer | undefined,
+  ): Promise<Record<string, string> | undefined> {
+    if (!gated || seeds.length === 0) return undefined;
+    return buildEvidenceBaselineFor(
+      { seeds, behaviorScope, verifiers },
+      this.evidenceDeps(analyzer),
+    );
+  }
+
+  /**
    * Verify every claim against the working tree (§9 `check`). Banners are stamped
    * into documents only when `write` is set; otherwise this is a pure read that
    * returns verdicts as data — the mode a consumer rendering its own status uses.
@@ -524,22 +561,13 @@ export class Engine {
     // the baseline to the pure core. Non-behavioral claims carry no baseline.
     const docText = this.docTextForClassify(docContent, call);
     const hasVerifiers = (call.verifiers?.length ?? 0) > 0;
-    const seeds = code.filter((t) => !t.glob).map((t) => t.file);
-    const evidenceBaseline =
-      seeds.length > 0 && isBehavioral(call.behavioral, docText, hasVerifiers)
-        ? await buildEvidenceBaselineFor(
-            {
-              seeds,
-              behaviorScope: call.behaviorScope,
-              verifiers: call.verifiers,
-            },
-            {
-              analyzer,
-              readFile: (rel) => this.readAnchored(rel),
-              root: this.store.anchorRoot,
-            },
-          )
-        : undefined;
+    const evidenceBaseline = await this.captureBaseline(
+      isBehavioral(call.behavioral, docText, hasVerifiers),
+      code.filter((t) => !t.glob).map((t) => t.file),
+      call.behaviorScope,
+      call.verifiers,
+      analyzer,
+    );
 
     const contents: RecordContents = { docContent, codeContents };
     const input: RecordInput = {
@@ -657,32 +685,21 @@ export class Engine {
     const analyzer = await this.analyzer();
 
     // D14/D15 — refresh the change-gate baseline for a behavioral claim (one that
-    // has a baseline, or is behavioral by declaration/verifier). Seeds are the
-    // new code files (replacement targets if given, else the current ones).
-    const isGated =
+    // already has a baseline, or is behavioral via the shared `isBehavioral`
+    // rule). Seeds are the new code files (replacement targets if given, else the
+    // current ones, via the shared `seedFiles`).
+    const gated =
       assertion.evidenceBaseline !== undefined ||
-      assertion.behavioral === true ||
-      assertion.verifiers.length > 0;
-    const seeds = code
-      ? code.filter((t) => !t.glob).map((t) => t.file)
-      : assertion.anchor.code
-          .filter((b) => !b.selectors.some((s) => s.kind === "glob"))
-          .map((b) => b.file);
-    const evidenceBaseline =
-      isGated && seeds.length > 0
-        ? await buildEvidenceBaselineFor(
-            {
-              seeds,
-              behaviorScope: assertion.behaviorScope,
-              verifiers: assertion.verifiers,
-            },
-            {
-              analyzer,
-              readFile: (rel) => this.readAnchored(rel),
-              root: this.store.anchorRoot,
-            },
-          )
-        : undefined;
+      isBehavioral(assertion.behavioral, null, assertion.verifiers.length > 0);
+    const evidenceBaseline = await this.captureBaseline(
+      gated,
+      code
+        ? code.filter((t) => !t.glob).map((t) => t.file)
+        : seedFiles(assertion),
+      assertion.behaviorScope,
+      assertion.verifiers,
+      analyzer,
+    );
 
     const contents: RecordContents = { docContent, codeContents };
     const input: ReanchorInput = {
@@ -821,14 +838,10 @@ export class Engine {
   async ignore(claimId: string, reason: string): Promise<IgnoreResult> {
     const assertion = await this.store.getAssertion(claimId);
     if (!assertion) throw new Error(`No claim ${claimId} in the store.`);
-    const analyzer = await this.analyzer();
-    const readFile = (rel: string) => this.readAnchored(rel);
-    const paths = await evidenceSetPaths(assertion, {
-      analyzer,
-      readFile,
-      root: this.store.anchorRoot,
-    });
-    const evidence = await readEvidenceContents(paths, readFile);
+    // One cached reader across the walk + read passes, so each file reads once.
+    const deps = this.evidenceDeps(await this.analyzer());
+    const paths = await evidenceSetPaths(assertion, deps);
+    const evidence = await readEvidenceContents(paths, deps.readFile);
     // The acknowledged set: every evidence path whose current hash differs from
     // its baseline entry (or that has none) — exactly the currently-changed
     // evidence the at-risk is firing on.

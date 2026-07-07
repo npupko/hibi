@@ -240,7 +240,7 @@ export class ClaimStore {
       return schema.parse(JSON.parse(raw));
     } catch (e) {
       throw new Error(
-        `Claim store record ${where} failed to validate against schema ${MODEL_VERSION} — this store predates schema v2. Re-initialize it with \`hibi init\` (no migration shim). Cause: ${(e as Error).message}`,
+        `Claim store record ${where} failed schema validation — the store may predate schema v2 (the ADR-002 rewrite). Re-initialize with \`hibi init\` (no migration shim; alpha). Cause: ${(e as Error).message}`,
       );
     }
   }

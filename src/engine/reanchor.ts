@@ -40,6 +40,7 @@ import { languageForFile } from "./lang.ts";
 import {
   type CodeTarget,
   documentIdForPath,
+  newDocument,
   type RecordContents,
   type RegionSpec,
   resolveRegion,
@@ -291,13 +292,7 @@ export async function reanchor(
   if (!input.dryRun && input.docPath && documentId !== assertion.documentId) {
     const existing = await store.getDocument(documentId);
     if (!existing) {
-      await store.putDocument({
-        id: documentId,
-        path: input.docPath,
-        lifecycle: "active",
-        edges: [],
-        pristine: false,
-      });
+      await store.putDocument(newDocument(documentId, input.docPath));
     } else if (existing.lifecycle !== "active") {
       await store.putDocument({ ...existing, lifecycle: "active" });
     }
