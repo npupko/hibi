@@ -758,16 +758,21 @@ correctness (especially the suspect-set precision of §11.3) at each step:
 - **D21 — Onboarding → deterministic `coverage` grounding-audit; the `suggest` extraction verb is
   removed; `record --from-file` is transactional.** `suggest`'s sentence extraction — even at the
   research's best-case ~77% precision (LSI trace recovery, §18-B) — hands the agent a proposal
-  stream that is one-in-four noise, and the evidence says human vetting of noisy matrices can
-  *degrade* them (Cuddeback, §18-B). **`coverage --doc <p>`** instead reports a purely structural
-  fact — which blocks of a document a live, code-grounded claim's doc anchor resolves into
+  stream that is one-in-four noise, and the vetting studies (Cuddeback, §18-B) argue for keeping the
+  confirmation workload small and precision-first — which a one-in-four-noise proposal stream is not.
+  **`coverage --doc <p>`** instead reports a purely structural fact — which blocks of a document a
+  live, code-grounded claim's doc anchor resolves into
   (per-block `covered`, `coverageRatio`) — and the agent in the loop judges each uncovered block:
   **ground** it (anchor doc-span + code-span) or **prune** it. No extraction, no proposal noise,
   nothing NLP-ish in core; D2's principle (the engine never auto-enforces; the agent confirms) and
   the `suggested → enforced` ladder are unchanged — only the *mechanism* that produces the
   worklist moved from noisy extraction to deterministic coverage reporting. `record --from-file`
   validates every spec before any write and rolls the whole batch back on any failure, so a bad
-  item can never half-record a set.
+  item can never half-record a set. **What would change it:** if real onboarding shows users or
+  agents stalling at `coverage` (blocks too coarse; uncovered regions not getting grounded), a
+  deterministic candidate extractor (RFC-2119 keywords, code identifiers, literals — the old
+  `suggest` §9 spec) may return as an **opt-in resolver** behind the §7 seam — never as a core verb;
+  the executable-block carve-out is catalogued as the **`example-extractor` resolver** in §19.
 - **SCIP — rejected as first-party.** Its differentiator over tree-sitter (cross-file semantic symbol
   graph) serves navigation/blast-radius, which §2 says this tool is not; its costs (heavy per-language
   indexer, code-only, two-commit indexing) are permanent. The kinded-anchor seam leaves the door open
@@ -1221,6 +1226,14 @@ verdict; the only gate remains a deterministic `refuted` (executable verifier) o
   owned instruction file whose target moved or was deleted. *Output:* `orphaned` for the broken
   reference. *Deferred because:* it edges toward the navigation territory §2 disclaims, so it stays a
   third-party resolver, never core; it closes the context-engineering "@-import drift" gap.
+- **`example-extractor` resolver** — *trigger:* fenced executable code blocks / explicit config
+  literals in a doc. *Output:* candidate claims with a pre-filled `command`/`example` verifier.
+  *Deferred because:* `coverage` already detects these blocks deterministically (the `executable`
+  tag on a region, §9), so the agent can ground them explicitly; creation stays explicit per
+  D2/D21. Full auto-creation returns only as an opt-in resolver if that detection alone proves
+  insufficient — this is the one carve-out the research endorsed for fully-automatic durable
+  creation (deterministic executable examples / literal checks), held back here for the same
+  agent-confirms discipline (D2) that governs every other candidate.
 - **Behavioral advisor (LLM / formal)** — already defined as the quarantined Tier-3 advisor (§7.4): an
   opt-in resolver that *explains/triages* a behavioral claim, recording model/prompt/context
   provenance, and **never** sets a computed state. Listed here for completeness; its deterministic
