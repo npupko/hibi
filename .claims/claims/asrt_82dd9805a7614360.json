@@ -1,0 +1,59 @@
+{
+  "id": "asrt_82dd9805a7614360",
+  "propositionId": "prop_594d4528ff434589",
+  "documentId": "doc_25887c67cd18d901",
+  "owner": "hibi-dogfood",
+  "ref": "feat/post-adr-002-refinements",
+  "anchor": {
+    "doc": {
+      "file": "docs/verdicts.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "unverified · at-risk · supported · refuted",
+          "prefix": "havior still holds is still justified — one\nof `",
+          "suffix": "`. It appears only on behavioral\nclaims; on ever"
+        },
+        {
+          "kind": "text-position",
+          "start": 3140,
+          "end": 3182
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/core/model.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "BehaviorState = z.enum([",
+            "prefix": "(§7.4); `at-risk` is advisory.\n */\nexport const ",
+            "suffix": "\n  \"unverified\", // behavioral, untested, nothin"
+          },
+          {
+            "kind": "text-position",
+            "start": 3110,
+            "end": 3134
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "variable_declarator",
+            "structuralHash": "2e7b65f1bd5c61ca",
+            "semanticHash": "11c9f93e50239c98"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "array",
+            "value": "[\"unverified\",//behavioral,untested,nothingchanged(resting)\"at-risk\",//reachableevidencechanged;beliefnolongerjustified\"supported\",//alinkedverifierpassed\"refuted\",//alinkedverifierfailed]"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verifiers": [],
+  "attrs": {}
+}

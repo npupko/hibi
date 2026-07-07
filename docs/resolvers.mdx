@@ -142,7 +142,10 @@ recommendation, not schema — are `command`, `example`, `snapshot`, `contract`,
 
 One runner ships in-tree: the built-in **command runner**. It handles
 `kind: "command"` and executes the verifier's `ref` as a shell command via
-`sh -c`, with the working directory set to the repository root:
+`sh -c` on POSIX or `cmd /c` on Windows, with the working directory set to the
+repository root. The two shells differ, so cross-platform repos should keep
+verifier refs shell-neutral (e.g. `bun test retry`, not a shell builtin or an
+`&&` chain):
 
 ```sh
 hibi record ... --verifier command:"bun test retry"   # kind:ref

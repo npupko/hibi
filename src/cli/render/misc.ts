@@ -98,13 +98,17 @@ export function renderCoverage(
   if (uncoveredBlocks === 0) return `${head}\n`;
   // List the uncovered blocks — the audit worklist (ground or prune each).
   // `preview` is already collapsed to one line and capped by the engine; render it
-  // verbatim so the terminal and the JSON payload show the identical text.
+  // verbatim so the terminal and the JSON payload show the identical text. An
+  // executable block (```sh/bash/…) is flagged: it can carry a `command:` verifier.
   const lines = result.regions
     .filter((r) => !r.covered)
-    .map(
-      (r) =>
-        `  ${style.yellow(mode.unicode ? "○" : "o")} ${style.dim(`[${r.range.start}-${r.range.end}]`)} ${style.dim(`"${r.preview}"`)}`,
-    );
+    .map((r) => {
+      const mark = r.executable
+        ? style.yellow(mode.unicode ? "⚡" : "$")
+        : style.yellow(mode.unicode ? "○" : "o");
+      const tag = r.executable ? ` ${style.dim("executable")}` : "";
+      return `  ${mark} ${style.dim(`[${r.range.start}-${r.range.end}]`)} ${style.dim(`"${r.preview}"`)}${tag}`;
+    });
   return `${head}\n${lines.join("\n")}\n`;
 }
 

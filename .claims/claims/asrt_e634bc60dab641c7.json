@@ -1,0 +1,59 @@
+{
+  "id": "asrt_e634bc60dab641c7",
+  "propositionId": "prop_0c3081f7e2a14560",
+  "documentId": "doc_fa1698bd5b6313a3",
+  "owner": "hibi-dogfood",
+  "ref": "feat/post-adr-002-refinements",
+  "anchor": {
+    "doc": {
+      "file": "docs/banners.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".github/copilot-instructions.md",
+          "prefix": " `CLAUDE.md`, `AGENTS.md`, `.cursorrules`, and\n`",
+          "suffix": "`. For a document matching any of them, the\nbann"
+        },
+        {
+          "kind": "text-position",
+          "start": 5989,
+          "end": 6020
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/banner/banner.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "DEFAULT_INSTRUCTION_FILES = [",
+            "prefix": "StoreConfig.instructionFiles`.\n */\nexport const ",
+            "suffix": "\n  \"CLAUDE.md\",\n  \"AGENTS.md\",\n  \".cursorrules\","
+          },
+          {
+            "kind": "text-position",
+            "start": 1112,
+            "end": 1141
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "variable_declarator",
+            "structuralHash": "b0392a1478979413",
+            "semanticHash": "a8524e06a10e716a"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "array",
+            "value": "[\"CLAUDE.md\",\"AGENTS.md\",\".cursorrules\",\".github/copilot-instructions.md\",]"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verifiers": [],
+  "attrs": {}
+}

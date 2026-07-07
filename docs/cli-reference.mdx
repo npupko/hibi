@@ -292,16 +292,17 @@ hibi coverage --doc README.md
   "action": "coverage",
   "schemaVersion": "v1",
   "doc": "README.md",
-  "summary": { "blocks": 12, "coveredBlocks": 7, "uncoveredBlocks": 5, "coverageRatio": 0.58 },
+  "summary": { "blocks": 12, "coveredBlocks": 7, "uncoveredBlocks": 5, "uncoveredExecutableBlocks": 1, "coverageRatio": 0.58 },
   "regions": [
     {
       "range": { "start": 120, "end": 244 },
       "preview": "Retries are capped at 5 attempts…",
       "covered": true,
+      "executable": false,
       "claimIds": ["asrt_897e054b48d040db"]
     }
   ],
-  "next": "ground or prune the uncovered regions, then hibi check"
+  "next": "1 uncovered block(s) are executable — record them with --verifier command:\"…\"; ground or prune the rest — hibi record --from-file <specs.json>"
 }
 ```
 
@@ -314,6 +315,16 @@ never extracts claims from prose — the judgment on every uncovered block stays
 you. Note `range` offsets are banner-normalized (the HIBI banner is stripped before
 segmenting), so identify a block by its `preview` text rather than byte-slicing the
 raw file at `range`.
+
+Each region also carries `executable: true` when its block **is or contains a fenced
+code block** whose info string is one of the exact set `sh`, `bash`, `zsh`, `shell`,
+`console` — the whole detection rule, no other heuristics (a ` ```json ` or ` ```ts `
+block is not executable). An **uncovered executable** block is the highest-value
+grounding target: it can carry a `command:` verifier and reach a `supported`/`refuted`
+behavioral verdict, so when any exist the `next` hint leads with them and
+`summary.uncoveredExecutableBlocks` counts them; the general ground-or-prune steer
+for any remaining prose blocks still follows. `coverage` only tags — it never
+records a claim; creation stays explicit.
 
 ## `hibi retire`
 
@@ -472,7 +483,7 @@ verdict is surfaced but never affects exit codes. `diff` additionally reports
 each claim row is the lean handle described above. **`query`** returns
 `{ ok, action, schemaVersion, path, count, hits[] }` — the way you find a claim's
 id before editing. **`coverage`** returns `{ ok, action, schemaVersion, doc,
-summary: { blocks, coveredBlocks, uncoveredBlocks, coverageRatio }, regions[], next }`
+summary: { blocks, coveredBlocks, uncoveredBlocks, uncoveredExecutableBlocks, coverageRatio }, regions[], next }`
 — see [`hibi coverage`](#hibi-coverage) above.
 
 ## Exit codes
@@ -518,8 +529,10 @@ hibi check --run-verifiers --verifier-timeout 300  # raise the per-verifier time
 ```
 
 The built-in **command runner** handles `kind: "command"`: it runs the
-verifier's `ref` as a shell command (`sh -c`, cwd = repo root). Exit `0` →
-`supported`; non-zero → `refuted`; a timeout or spawn failure produces no
+verifier's `ref` as a shell command via `sh -c` on POSIX or `cmd /c` on Windows
+(cwd = repo root), so cross-platform repos should keep verifier refs
+shell-neutral (e.g. `bun test retry`, not a shell builtin or `&&` chain). Exit
+`0` → `supported`; non-zero → `refuted`; a timeout or spawn failure produces no
 result, so the belief stays at the deterministic baseline. The per-verifier
 timeout defaults to **120 seconds**; tune it with `--verifier-timeout
 <seconds>`. External runner resolvers still require the default-deny manifest

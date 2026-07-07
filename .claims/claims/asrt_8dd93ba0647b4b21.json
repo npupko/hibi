@@ -1,23 +1,23 @@
 {
-  "id": "asrt_90a2edb088df4cb4",
-  "propositionId": "prop_a72d2c48159349eb",
-  "documentId": "doc_25887c67cd18d901",
+  "id": "asrt_8dd93ba0647b4b21",
+  "propositionId": "prop_9cb7f1b5dbe94c11",
+  "documentId": "doc_84263e2579006d07",
   "owner": "hibi-dogfood",
   "ref": "feat/post-adr-002-refinements",
   "anchor": {
     "doc": {
-      "file": "docs/verdicts.mdx",
+      "file": "docs/anchors.mdx",
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "48-character context window",
-          "prefix": "hold 0.4` and\n  `Match_Distance 100000`, over a ",
-          "suffix": ". The full selector\n  model, weights, and tiers "
+          "exact": "Structural-only AST matches score 0.40",
+          "prefix": "`ambiguous`.\n  </Accordion>\n  <Accordion title=\"",
+          "suffix": "\">\n    If the `ast-node` matches only structural"
         },
         {
           "kind": "text-position",
-          "start": 10495,
-          "end": 10522
+          "start": 6179,
+          "end": 6217
         }
       ]
     },
@@ -27,27 +27,27 @@
         "selectors": [
           {
             "kind": "text-quote",
-            "exact": "TEXT_QUOTE_CONTEXT = 48",
-            "prefix": ": 0.4,\n  matchDistance: 100000,\n};\nexport const ",
-            "suffix": ";\n\n/** A minimum of two agreeing selectors is re"
+            "exact": "STRUCTURAL_ONLY_SCORE = 0.4",
+            "prefix": "its this partial score (§17.3). */\nexport const ",
+            "suffix": ";\n\n/** Value veto trips when text-quote similari"
           },
           {
             "kind": "text-position",
-            "start": 560,
-            "end": 583
+            "start": 1691,
+            "end": 1718
           },
           {
             "kind": "ast-node",
             "language": "typescript",
             "nodeType": "variable_declarator",
             "structuralHash": "de0dbd0a8e84411f",
-            "semanticHash": "3e47faab960c1c6f"
+            "semanticHash": "26a21c7f8401be2e"
           },
           {
             "kind": "value",
             "language": "typescript",
             "nodeKind": "number",
-            "value": "48"
+            "value": "0.4"
           }
         ]
       }

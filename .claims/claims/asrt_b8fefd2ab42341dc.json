@@ -1,0 +1,59 @@
+{
+  "id": "asrt_b8fefd2ab42341dc",
+  "propositionId": "prop_4b4647cb09cd4a62",
+  "documentId": "doc_a8b3f9165caba304",
+  "owner": "hibi-dogfood",
+  "ref": "feat/post-adr-002-refinements",
+  "anchor": {
+    "doc": {
+      "file": "plugins/hibi-cli/skills/hibi/references/cli-reference.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "all\\|gating\\|warning\\|clean\\|orphaned\\|suggested",
+          "prefix": " + severity + recommended). Read-only. `--state ",
+          "suffix": "`. |\n| `completions <zsh\\|bash\\|fish>` | Print a"
+        },
+        {
+          "kind": "text-position",
+          "start": 2329,
+          "end": 2377
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/cli/index.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "VALID_STATES = [",
+            "prefix": "     const rawState = values.state;\n      const ",
+            "suffix": "\n        \"all\",\n        \"gating\",\n        \"warni"
+          },
+          {
+            "kind": "text-position",
+            "start": 40074,
+            "end": 40090
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "variable_declarator",
+            "structuralHash": "b731db639c537611",
+            "semanticHash": "83a67742195261ba"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "array",
+            "value": "[\"all\",\"gating\",\"warning\",\"clean\",\"orphaned\",\"suggested\",]"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verifiers": [],
+  "attrs": {}
+}

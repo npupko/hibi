@@ -22,6 +22,17 @@ import type { Resolver } from "../registry.ts";
 /** Default per-verifier timeout (§17.6): a real test suite needs far more than the 5s RPC timeout. */
 export const DEFAULT_VERIFIER_TIMEOUT_MS = 120_000;
 
+/**
+ * The argv to run a verifier `ref` as a shell command, per platform: `sh -c` on
+ * POSIX, `cmd /c` on Windows (hibi ships Windows binaries, PRD §12). Pure, so the
+ * platform branch is unit-testable without spawning. The two shells differ, so
+ * cross-platform repos should keep verifier refs shell-neutral (e.g. a runner
+ * invocation like `bun test retry`, not a shell builtin or `&&` chain).
+ */
+export function verifierArgv(platform: NodeJS.Platform, ref: string): string[] {
+  return platform === "win32" ? ["cmd", "/c", ref] : ["sh", "-c", ref];
+}
+
 export class CommandRunnerResolver implements Resolver {
   readonly name = "builtin:command-runner";
   readonly kinds: string[] = [];
@@ -44,9 +55,9 @@ export class CommandRunnerResolver implements Resolver {
   }
 
   /**
-   * Run one `command` verifier out-of-process. `ref` is a shell string, so it is
-   * dispatched via `sh -c` (POSIX; Windows support is out of scope for now), with
-   * the anchor root as the working directory so relative test paths resolve.
+   * Run one `command` verifier out-of-process. `ref` is a shell string, dispatched
+   * via `sh -c` (POSIX) or `cmd /c` (Windows) — see `verifierArgv` — with the
+   * anchor root as the working directory so relative test paths resolve.
    */
   async verify(
     _assertion: Assertion,
@@ -56,7 +67,7 @@ export class CommandRunnerResolver implements Resolver {
     if (verifier.kind !== "command") return null;
     let timedOut = false;
     try {
-      const proc = Bun.spawn(["sh", "-c", verifier.ref], {
+      const proc = Bun.spawn(verifierArgv(process.platform, verifier.ref), {
         cwd: this.anchorRoot,
         stdout: "ignore",
         stderr: "ignore",

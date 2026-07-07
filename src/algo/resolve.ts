@@ -116,16 +116,33 @@ function computeBehaviorRisk(
   }
 
   // (2) Evidence-set drift — only when a baseline exists (baseline-absent → (1)).
+  //     Each entry is labeled by the path's provenance: a verifier `ref` source
+  //     file is `verifier-source` (the gate watches the checker itself), every
+  //     other evidence-set file — a depth-N import or an `include`-glob file — is
+  //     `import`. The provenance is the claim's verifier-ref set: a path enters
+  //     the evidence set through a verifier ref iff it is one of these (§17.6, D14).
   const baseline = assertion.evidenceBaseline;
   if (baseline && evidence) {
+    const verifierSources = new Set(
+      assertion.verifiers.map((v) => v.ref).filter((r) => r.length > 0),
+    );
     for (const [path, content] of evidence) {
       const cur = content === null ? null : hashContent(content);
       const base = baseline[path];
-      if (base === undefined) {
-        changed.push({ path, kind: "import", detail: "new evidence path" });
-      } else if (cur !== base) {
-        changed.push({ path, kind: "import", detail: "evidence file changed" });
-      }
+      if (base !== undefined && cur === base) continue; // unchanged
+      const isVerifier = verifierSources.has(path);
+      const added = base === undefined;
+      changed.push({
+        path,
+        kind: isVerifier ? "verifier-source" : "import",
+        detail: isVerifier
+          ? added
+            ? "verifier source added"
+            : "verifier source changed"
+          : added
+            ? "new evidence path"
+            : "evidence file changed",
+      });
     }
   }
 

@@ -1,0 +1,60 @@
+{
+  "id": "asrt_30b951878e3444a7",
+  "propositionId": "prop_c5b97f0c05fd4223",
+  "documentId": "doc_a8b3f9165caba304",
+  "owner": "hibi-dogfood",
+  "ref": "feat/post-adr-002-refinements",
+  "anchor": {
+    "doc": {
+      "file": "plugins/hibi-cli/skills/hibi/references/cli-reference.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`--verifier-timeout <s>`, default 120",
+          "prefix": "verifiers` executes declared verifiers (opt-in; ",
+          "suffix": "). |\n| `diff --since <ref>` | Same as check, but"
+        },
+        {
+          "kind": "text-position",
+          "start": 1742,
+          "end": 1779
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/resolver/builtin/command-runner.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "DEFAULT_VERIFIER_TIMEOUT_MS = 120_000;\n\n/**\n * The argv to run a verifier `ref` as a shell command, per platform: `sh -c` on\n * POSIX, `cmd /c` on Windows (hibi ships Windows binaries, PRD §12). Pure, so the\n * platform branch is unit-testable without spawning. The two shells differ, so\n * cross-platform repos should keep verifier refs shell-neutral (e.g. a runner\n * invocation like `bun test retry`, not a shell builtin or `&&` chain).\n */\nexport function verifierArgv(platform: NodeJS.Platform, ref: string): string[] {\n  return platform === \"win32\" ? [\"cmd\", \"/c\", ref] : [\"sh\", \"-c\", ref];\n",
+            "prefix": "r more than the 5s RPC timeout. */\nexport const ",
+            "suffix": "}\n\nexport class CommandRunnerResolver implements"
+          },
+          {
+            "kind": "text-position",
+            "start": 1216,
+            "end": 1813
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "program",
+            "structuralHash": "9ed012d5c8e6a952",
+            "semanticHash": "4d2bc470ad188552"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "string",
+            "value": "\"../../algo/resolve.ts\""
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "behavioral": false,
+  "verifiers": [],
+  "attrs": {}
+}

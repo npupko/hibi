@@ -204,11 +204,15 @@ proposition, documentPath, coarse, side } ] }`. This is how you find the
 `assertion.id` before an edit.
 
 **`coverage`** → `{ ok, action:"coverage", schemaVersion, doc, summary:{ blocks,
-coveredBlocks, uncoveredBlocks, coverageRatio }, regions:[ { range:{start,end}, preview,
-covered, claimIds } ], next }`. Reports a structural fact per block: `covered:true` iff a
-live, **code-grounded** claim's doc anchor resolves cleanly into it (a doc-only `suggested`
-placeholder or a drifted anchor does not count — that's `check`'s concern). The
-`covered:false` regions are the ground-or-prune worklist. `range` offsets are in
+coveredBlocks, uncoveredBlocks, uncoveredExecutableBlocks, coverageRatio }, regions:[ {
+range:{start,end}, preview, covered, executable, claimIds } ], next }`. Reports a structural fact per block:
+`covered:true` iff a live, **code-grounded** claim's doc anchor resolves cleanly into it (a
+doc-only `suggested` placeholder or a drifted anchor does not count — that's `check`'s
+concern). `executable:true` iff the block is or contains a fenced code block whose info
+string is in the exact set `sh | bash | zsh | shell | console` (the whole rule — no other
+heuristics). An **uncovered executable** block is the highest-value target (it can carry a
+`command:` verifier and reach `supported`/`refuted`), so when any exist `next` leads with
+them. The `covered:false` regions are the ground-or-prune worklist. `range` offsets are in
 banner-normalized coordinates (the HIBI banner is stripped first), so identify a block by
 its `preview`/sentence text, not by byte-slicing the raw file at `range`.
 
