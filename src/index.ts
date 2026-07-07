@@ -294,6 +294,17 @@ export interface StatusResult {
   current: boolean;
   suspect: SuspectEntry[];
   verdicts: Verdict[];
+  /**
+   * Reanchor trust downgrades on this doc's claims (§15/D15): a claim
+   * re-anchored without `--ref`, whose `verified` trust was withdrawn. Surfaced
+   * here so a reader sees the un-attested claims at a glance.
+   */
+  downgrades: {
+    claimId: string;
+    from: string;
+    to: string;
+    reason: string;
+  }[];
 }
 
 /** Build a RegionSpec from a doc/code locator, or undefined when none is given. */
@@ -452,6 +463,17 @@ export class Engine {
     const report = await this.check({ write: false, ref: opts.ref, onlyFiles });
     const docReport = report.documents.find((d) => d.id === docId);
     const verdicts = report.verdicts.filter((v) => v.documentId === docId);
+    // D15 — surface reanchor trust downgrades on this document's claims.
+    const downgrades = assertions
+      .filter((a) => a.documentId === docId && a.attrs.reanchorDowngrade)
+      .map((a) => {
+        const d = a.attrs.reanchorDowngrade as {
+          from: string;
+          to: string;
+          reason: string;
+        };
+        return { claimId: a.id, from: d.from, to: d.to, reason: d.reason };
+      });
     return {
       doc: docPath,
       found: Boolean(doc),
@@ -459,6 +481,7 @@ export class Engine {
       current: !verdicts.some((v) => v.gates),
       suspect: docReport?.suspect ?? [],
       verdicts,
+      downgrades,
     };
   }
 

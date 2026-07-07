@@ -752,6 +752,9 @@ async function main(argv: string[]): Promise<number> {
         lifecycle: result.lifecycle,
         current: result.current,
         suspect: result.suspect,
+        ...(result.downgrades.length > 0
+          ? { downgrades: result.downgrades }
+          : {}),
         verdicts: result.verdicts.map((v: Verdict) =>
           projectVerdict(v, projection(mode), fps),
         ),
