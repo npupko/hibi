@@ -68,7 +68,9 @@ import { type QueryHit, queryByPath } from "./engine/query.ts";
 import {
   type ReanchorInput,
   type ReanchorResult,
+  type ReanchorSuggestResult,
   reanchor,
+  suggestReanchorCandidates,
 } from "./engine/reanchor.ts";
 import {
   type CodeTarget,
@@ -134,9 +136,12 @@ export {
 } from "./engine/list.ts";
 export type { QueryHit } from "./engine/query.ts";
 export {
+  type ReanchorCandidate,
   type ReanchorInput,
   type ReanchorResult,
+  type ReanchorSuggestResult,
   reanchor as reanchorClaim,
+  suggestReanchorCandidates,
 } from "./engine/reanchor.ts";
 export {
   type CodeTarget,
@@ -717,6 +722,30 @@ export class Engine {
   }
 
   /**
+   * Orphan recovery suggestions (§9 `reanchor --suggest`, D24). Read-only: takes
+   * the claim's stored doc-side `text-quote` and localizes it against every
+   * registered Document's current content, returning ranked candidate targets.
+   * Never writes the store or any document; an explicit `reanchor --doc-range`
+   * (D15 attestation rules) is still the only path that moves an anchor.
+   */
+  async reanchorSuggest(claimId: string): Promise<ReanchorSuggestResult> {
+    const assertion = await this.store.getAssertion(claimId);
+    if (!assertion) throw new Error(`No claim ${claimId} in the store.`);
+    const documents = await this.store.allDocuments();
+    const docs: { path: string; content: string }[] = [];
+    for (const d of documents) {
+      const content = await this.readDoc(d.path);
+      if (content === null) continue; // skip files missing on disk
+      docs.push({ path: d.path, content });
+    }
+    return {
+      action: "reanchor-suggest",
+      claimId,
+      candidates: suggestReanchorCandidates(assertion, docs),
+    };
+  }
+
+  /**
    * Re-home every live claim stranded on `fromDoc` to `toDoc` in one pass (§9
    * `relocate`, Tier-1 silent-orphan hardening). A claim is re-homed when its
    * current documented sentence appears verbatim in the destination; the rest are
@@ -893,12 +922,19 @@ export class Engine {
    */
   async doctor(opts: { ref?: string } = {}): Promise<DoctorReport> {
     const report = await this.check({ write: false, ref: opts.ref });
-    const [assertions, documents, propositions] = await Promise.all([
+    const [assertions, documents, propositions, config] = await Promise.all([
       this.store.allAssertions(),
       this.store.allDocuments(),
       this.store.allPropositions(),
+      this.store.config(),
     ]);
-    return buildDoctorReport(report, assertions, documents, propositions);
+    return buildDoctorReport(
+      report,
+      assertions,
+      documents,
+      propositions,
+      config.version,
+    );
   }
 
   /**

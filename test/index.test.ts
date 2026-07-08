@@ -76,7 +76,7 @@ describe("library facade (§7.5)", () => {
   test("check returns verdicts as data by default; stamps a banner only on write", async () => {
     const anchorRoot = await tmp();
     await writeFile(join(anchorRoot, "code.ts"), "export const N = 5;\n");
-    await writeFile(join(anchorRoot, "doc.md"), "# D\n\nN is 5\n");
+    await writeFile(join(anchorRoot, "doc.md"), "# D\n\nN is 5 in code\n");
 
     const engine = await Engine.init(anchorRoot); // string form → store at <root>/.claims
     expect(engine.store.dir).toBe(join(anchorRoot, ".claims"));
@@ -84,7 +84,7 @@ describe("library facade (§7.5)", () => {
     // `verified` → enforced, so a code change gates (exit 2).
     await engine.record({
       docPath: "doc.md",
-      docQuote: "N is 5",
+      docQuote: "N is 5 in code",
       code: [{ file: "code.ts", quote: "N = 5" }],
       authoredTrust: "verified",
       ref: "r",
@@ -126,13 +126,13 @@ describe("library facade (§7.5)", () => {
   test("query, status, supersede, retract, archive via the facade", async () => {
     const anchorRoot = await tmp();
     await writeFile(join(anchorRoot, "code.ts"), "export const N = 5;\n");
-    await writeFile(join(anchorRoot, "v1.md"), "# v1\n\nN is 5\n");
+    await writeFile(join(anchorRoot, "v1.md"), "# v1\n\nN is 5 in code\n");
     await writeFile(join(anchorRoot, "v2.md"), "# v2\n");
     const e = await Engine.init(anchorRoot);
 
     await e.record({
       docPath: "v1.md",
-      docQuote: "N is 5",
+      docQuote: "N is 5 in code",
       code: [{ file: "code.ts", quote: "N = 5" }],
     });
 
@@ -210,11 +210,11 @@ describe("library facade (§7.5)", () => {
   test("noAst runs Tier-1 only and still detects text drift", async () => {
     const anchorRoot = await tmp();
     await writeFile(join(anchorRoot, "code.ts"), "export const N = 5;\n");
-    await writeFile(join(anchorRoot, "doc.md"), "# D\n\nN is 5\n");
+    await writeFile(join(anchorRoot, "doc.md"), "# D\n\nN is 5 in code\n");
     const engine = await Engine.init(anchorRoot, { noAst: true });
     await engine.record({
       docPath: "doc.md",
-      docQuote: "N is 5",
+      docQuote: "N is 5 in code",
       code: [{ file: "code.ts", quote: "N = 5" }],
       authoredTrust: "verified",
       ref: "r",
@@ -232,20 +232,20 @@ describe("library facade (§7.5)", () => {
     const anchorRoot = await tmp();
     await writeFile(join(anchorRoot, "a.ts"), "export const A = 1;\n");
     await writeFile(join(anchorRoot, "b.ts"), "export const B = 2;\n");
-    await writeFile(join(anchorRoot, "a.md"), "# A\n\nA is 1\n");
-    await writeFile(join(anchorRoot, "b.md"), "# B\n\nB is 2\n");
+    await writeFile(join(anchorRoot, "a.md"), "# A\n\nA is 1 here\n");
+    await writeFile(join(anchorRoot, "b.md"), "# B\n\nB is 2 here\n");
     const e = await Engine.init(anchorRoot);
     // `verified` → enforced, so a removed anchor gates (status.current === false).
     await e.record({
       docPath: "a.md",
-      docQuote: "A is 1",
+      docQuote: "A is 1 here",
       code: [{ file: "a.ts", quote: "A = 1" }],
       authoredTrust: "verified",
       ref: "r",
     });
     await e.record({
       docPath: "b.md",
-      docQuote: "B is 2",
+      docQuote: "B is 2 here",
       code: [{ file: "b.ts", quote: "B = 2" }],
       authoredTrust: "verified",
       ref: "r",

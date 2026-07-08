@@ -110,6 +110,31 @@ file in a directory can never start running code in your check loop.
   no model runs on the verdict path.
 </Warning>
 
+### Provenance for model-backed advisors
+
+An advisor may layer context on top of a verdict, but when a **model** produced
+that context the model state has to be on the record — Hibi will not let hidden
+LLM output ride alongside a deterministic verdict unattributed. Two schema fields
+make that enforceable:
+
+- The wire **`Advisory`** object gains an optional **`provenance`** object —
+  `{ model, promptHash, contextHash, params? }` — the model name, the prompt and
+  context hashes, and any sampling parameters behind the advisory.
+- A resolver's manifest spec (**`ResolverSpec`**) gains **`modelBacked`**, a
+  boolean defaulting to `false`. Set it on any resolver whose advisories are
+  produced by a model.
+
+When a `modelBacked` resolver returns an advisory that lacks `provenance`, the
+registry **drops it** and prints one stderr warning per run per resolver:
+
+```
+dropped <N> advisories from <resolver>: modelBacked resolvers must attach provenance (model, promptHash, contextHash).
+```
+
+A non-`modelBacked` resolver is unaffected, and an advisory that carries
+`provenance` passes through untouched. Either way the gating path stays
+deterministic — this only governs which advisory context is allowed to surface.
+
 ## Where resolvers fit
 
 Two distinct out-of-process roles ride the same protocol, and it is worth keeping

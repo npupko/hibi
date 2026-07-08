@@ -113,6 +113,21 @@ hibi record \
   `--glob` targets are navigation-only and cannot back an enforced claim.
 </Warning>
 
+<Warning>
+  **Record-time doc-quote guard.** The doc span must anchor reliably, so `record`
+  (including `--from-file`) and `reanchor` reject a doc-side quote that cannot.
+  Two rejections, each exiting `1`:
+
+  - **Too short** — a quote under 8 characters:
+    `doc quote is shorter than 8 characters — too short to anchor reliably. Record a wider span (--doc-range) that covers the full sentence.`
+  - **Ambiguous** — a quote that occurs more than once and whose 48-character
+    context can't single out one occurrence:
+    `doc quote occurs N times in <docPath> and the surrounding context does not select a single occurrence. Record a wider span (--doc-range), or add an inline ID and re-record.`
+
+  In a `--from-file` batch, one failing spec fails the whole batch — nothing is
+  written.
+</Warning>
+
 When a recorded claim lands `suggested`, its JSON carries a `warning` —
 *"recorded as suggested — won't gate the build; pass `--enforce` to make it
 gating"* — so the advisory status never passes silently. And when the claim's
@@ -190,6 +205,44 @@ hibi reanchor asrt_1a2b3c --doc docs/subsystems/retry.md --doc-quote "Retries ar
 | `--code-quote <s>` / `--code-range` / `--code-line` / `--glob` / `--coarse` | The code span to re-resolve. |
 | `--ref <ref>` | Attest re-verification: records the new `@ref` and **retains authored trust**. Omitted, the re-anchor still lands, but `verified` authored trust is **downgraded to `inferred`**; the downgrade is recorded and surfaced in `status` and the JSON. |
 | `--dry-run` | Compute the would-be result and write nothing. The envelope gains `dryRun: true` and `next: "re-run without --dry-run to apply"`. |
+| `--suggest` | **Read-only orphan recovery** (see below): localize the claim's stored doc quote against every registered document and print ranked candidate targets. Never writes the store or any document; exits `0`. Cannot be combined with `--ref` / `--doc-range` or any other mutation flag. |
+
+### Recovering an orphan — `--suggest`
+
+When a claim's documented sentence has been deleted from its file, `reanchor`
+alone can't repair it — it has no span to resolve against. `hibi reanchor
+<claim-id> --suggest` is the **read-only recovery aid**: it takes the claim's
+stored doc-side `text-quote` and localizes it against the current content of
+**every document registered in the store**, then prints the ranked candidate
+targets so you can pick one and re-anchor with an explicit `--doc-range`.
+
+It never writes the store or any document, and it always exits `0` (an
+operational error still exits `1`). It refuses to be combined with any mutation
+flag, failing with exactly:
+`--suggest is read-only and cannot be combined with mutation flags.`
+
+```json
+{
+  "action": "reanchor-suggest",
+  "claimId": "asrt_1a2b3c",
+  "candidates": [
+    {
+      "doc": "docs/retry.md",
+      "start": 120,
+      "end": 152,
+      "similarity": 1.0,
+      "snippet": "Retries are capped at 5 attempts"
+    }
+  ]
+}
+```
+
+Candidates keep a similarity **≥ 0.5**, are sorted by similarity descending, then
+document path ascending, then region start ascending, and are **capped at 5**;
+each `snippet` is the matched region text trimmed to 120 characters. Zero
+candidates is a valid result (an empty array). The `doc:orphaned` remediation
+action carries this command pre-filled, so you run it, inspect the candidates,
+then `hibi reanchor <id> --doc-range …` to re-anchor.
 
 <Note>
   Relocating a doc anchor (`--doc`) moves the claim, it does not copy it: the
@@ -325,6 +378,19 @@ behavioral verdict, so when any exist the `next` hint leads with them and
 `summary.uncoveredExecutableBlocks` counts them; the general ground-or-prune steer
 for any remaining prose blocks still follows. `coverage` only tags — it never
 records a claim; creation stays explicit.
+
+### Gating a plan — `--fail-uncovered`
+
+By default `coverage` is a pure report and always exits `0`. Pass
+**`--fail-uncovered`** to make it gate: when any uncovered block remains, the
+command exits with the gating exit code **2** (the same code `check` uses for a
+gating verdict). JSON and human output are unchanged — only the exit code
+differs. This is the CI-enforceable form of "this plan must be fully grounded":
+an uncovered block is an unimplemented or unpruned plan item.
+
+```sh
+hibi coverage --doc plan.md --fail-uncovered   # exit 2 while any block is uncovered, 0 once fully grounded
+```
 
 ## `hibi retire`
 

@@ -15,7 +15,12 @@
  * — the live sentence, never the stale cache (§4/§18-B).
  */
 
-import { regionText } from "../algo/localize.ts";
+import {
+  localizeTextQuote,
+  positionBias,
+  regionText,
+} from "../algo/localize.ts";
+import { textSimilarity } from "../algo/normalize.ts";
 import {
   type ResolveFiles,
   resolveAssertion,
@@ -44,6 +49,7 @@ import {
   type RecordContents,
   type RegionSpec,
   resolveRegion,
+  validateDocQuote,
 } from "./record.ts";
 
 export interface ReanchorInput {
@@ -83,6 +89,85 @@ export interface ReanchorResult {
   code: AnchorState;
   /** D15: present iff `verified` trust was downgraded (reanchored without `--ref`). */
   reanchorDowngrade?: { from: string; to: string; reason: string };
+}
+
+/** One candidate re-anchor target (§9, D24 `reanchor --suggest`). */
+export interface ReanchorCandidate {
+  doc: string;
+  start: number;
+  end: number;
+  similarity: number;
+  /** The region text, trimmed to 120 chars. */
+  snippet: string;
+}
+
+/** The read-only `reanchor --suggest` result (D24) — never writes anything. */
+export interface ReanchorSuggestResult {
+  action: "reanchor-suggest";
+  claimId: string;
+  candidates: ReanchorCandidate[];
+}
+
+/** Minimum similarity for a candidate to be worth listing (D24). */
+const SUGGEST_MIN_SIMILARITY = 0.5;
+/** Never surface more than this many candidates (D24). */
+const SUGGEST_MAX_CANDIDATES = 5;
+/** Snippet cap for a candidate region (D24). */
+const SUGGEST_SNIPPET_MAX = 120;
+
+/**
+ * Orphan recovery suggestions (§9, D24). Takes the claim's stored doc-side
+ * `text-quote` (its exact string + context — NOT the proposition `textCache`) and
+ * runs the existing `localizeTextQuote` cascade against the current content of
+ * every registered Document. Read-only: it proposes targets; only an explicit
+ * `reanchor --doc-range` (with D15's attestation rules) actually moves an anchor.
+ * Files missing on disk are skipped; candidates below `SUGGEST_MIN_SIMILARITY`
+ * are dropped; the rest sort by similarity desc, then document path asc, then
+ * region start asc, capped at `SUGGEST_MAX_CANDIDATES`.
+ */
+export function suggestReanchorCandidates(
+  assertion: Assertion,
+  docs: { path: string; content: string }[],
+): ReanchorCandidate[] {
+  const sel = assertion.anchor.doc.selectors;
+  const tq = sel.find(
+    (s): s is Extract<typeof s, { kind: "text-quote" }> =>
+      s.kind === "text-quote",
+  );
+  if (!tq) return [];
+  const tp = sel.find(
+    (s): s is Extract<typeof s, { kind: "text-position" }> =>
+      s.kind === "text-position",
+  );
+  const bias = positionBias(tp);
+
+  const candidates: ReanchorCandidate[] = [];
+  for (const { path, content } of docs) {
+    const region = localizeTextQuote(content, tq, bias);
+    if (!region) continue;
+    const text = regionText(content, region);
+    const similarity = textSimilarity(text, tq.exact);
+    if (similarity < SUGGEST_MIN_SIMILARITY) continue;
+    const snippet =
+      text.length > SUGGEST_SNIPPET_MAX
+        ? text.slice(0, SUGGEST_SNIPPET_MAX)
+        : text;
+    candidates.push({
+      doc: path,
+      start: region.start,
+      end: region.end,
+      similarity,
+      snippet,
+    });
+  }
+
+  candidates.sort(
+    (a, b) =>
+      b.similarity - a.similarity ||
+      (a.doc < b.doc ? -1 : a.doc > b.doc ? 1 : 0) ||
+      a.start - b.start,
+  );
+  return candidates.slice(0, SUGGEST_MAX_CANDIDATES);
 }
 
 /** Build the ResolveFiles view (doc + code map) from the supplied contents. */
@@ -224,6 +309,16 @@ export async function reanchor(
       undefined);
   const doc = relocateDoc(assertion, contents, input, docLocated);
 
+  // D23 — the re-anchored doc quote must still anchor reliably (relocateDoc has
+  // already guaranteed docContent is non-null).
+  if (contents.docContent !== null) {
+    validateDocQuote(
+      contents.docContent,
+      doc.region,
+      input.docPath ?? assertion.anchor.doc.file,
+    );
+  }
+
   // ── Code side ── resolve each bundle INDEPENDENTLY (not via the aggregated
   // `evidence.codeRegions`, which drops null regions and so is neither
   // index-aligned with `anchor.code` nor safe for two bundles in one file).
@@ -261,8 +356,32 @@ export async function reanchor(
   // trust is downgraded to `inferred` and the downgrade is recorded on the
   // assertion — the claim is findable again, but nobody re-attested it is *true*.
   // The shared-proposition caveat: downgrade only when currently `verified`.
+  //
+  // D25 — attestation-free exact re-anchor (pure-move repair). A byte-shift is
+  // evidence-neutral: there is nothing to re-attest, so it retains `verified` and
+  // records no downgrade iff BOTH (1) the re-resolved doc span's text-quote exact
+  // is byte-identical to the stored exact AND resolved uniquely at similarity 1.0
+  // (same sentence, new offset — not `ambiguous`), and (2) the code side
+  // re-resolves against its stored baseline as exactly `unchanged` (not `moved`,
+  // not `changed`). Anything fuzzier downgrades exactly as D15 shipped. The
+  // exception is gameable only by *not changing anything* — not a gaming vector.
+  const docTqBefore = assertion.anchor.doc.selectors.find(
+    (s): s is Extract<typeof s, { kind: "text-quote" }> =>
+      s.kind === "text-quote",
+  );
+  const preDoc = resolveSide(assertion.anchor.doc, contents.docContent);
+  const beforeStates = resolveAssertion(assertion, files);
+  const pureMove =
+    docTqBefore !== undefined &&
+    doc.confirmed === docTqBefore.exact && // byte-identical → similarity 1.0
+    preDoc.region !== null &&
+    preDoc.state !== "ambiguous" && // resolved to a single occurrence
+    beforeStates.code === "unchanged"; // code side re-resolves unchanged
+
   const downgrade =
-    input.ref === undefined && proposition.authoredTrust === "verified";
+    input.ref === undefined &&
+    proposition.authoredTrust === "verified" &&
+    !pureMove;
   const downgradeRecord = {
     from: "verified",
     to: "inferred",

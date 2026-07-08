@@ -1,9 +1,9 @@
 {
-  "id": "asrt_30a426b5956c44a5",
-  "propositionId": "prop_81eec159546d4108",
+  "id": "asrt_317b7814369e4cad",
+  "propositionId": "prop_6501d30fb13944c8",
   "documentId": "doc_25887c67cd18d901",
   "owner": "hibi-dogfood",
-  "ref": "feat/post-adr-002-refinements",
+  "ref": "2358ba7e4b5a89c53310936962ac481c9084edf4",
   "anchor": {
     "doc": {
       "file": "docs/verdicts.mdx",
@@ -16,8 +16,8 @@
         },
         {
           "kind": "text-position",
-          "start": 15818,
-          "end": 15862
+          "start": 16341,
+          "end": 16385
         }
       ]
     },

@@ -394,6 +394,8 @@ async function main(argv: string[]): Promise<number> {
       // check — execute declared verifiers (D13); repo-committed commands, opt-in only.
       "run-verifiers": { type: "boolean", default: false },
       "verifier-timeout": { type: "string" },
+      // coverage — gate CI on a fully-grounded plan doc (D30)
+      "fail-uncovered": { type: "boolean", default: false },
       // query / diff
       path: { type: "string" },
       since: { type: "string" },
@@ -408,6 +410,8 @@ async function main(argv: string[]): Promise<number> {
       to: { type: "string" },
       // lifecycle / reanchor / relocate — preview without writing
       "dry-run": { type: "boolean", default: false },
+      // reanchor — read-only orphan recovery suggestions (D24)
+      suggest: { type: "boolean", default: false },
       // schema
       name: { type: "string" },
     },
@@ -831,6 +835,13 @@ async function main(argv: string[]): Promise<number> {
         await emit(mode, value, () =>
           misc.renderCoverage(String(values.doc), result, style, mode),
         );
+        // D30 — `--fail-uncovered` gates CI on a fully-grounded plan doc: exit
+        // with the gating code (2) — the same code `check` uses for a gating
+        // verdict, NOT the operational-error code — when any block is uncovered.
+        // Output is unchanged; only the exit code differs.
+        if (values["fail-uncovered"] && result.summary.uncoveredBlocks > 0) {
+          return 2;
+        }
         return 0;
       } catch (e) {
         return fail((e as Error).message, mode);
@@ -842,6 +853,47 @@ async function main(argv: string[]): Promise<number> {
       const claimId = positionals[0];
       if (!claimId)
         return fail("reanchor requires a <claim-id> positional", mode);
+
+      // D24 — read-only orphan recovery suggestions. Never writes the store or a
+      // document; incompatible with every mutation flag.
+      if (values.suggest) {
+        const mutationFlags = [
+          values.ref,
+          values.doc,
+          values["doc-quote"],
+          values["doc-range"],
+          values["doc-line"],
+          values["code-file"],
+          values["code-quote"],
+          values["code-range"],
+          values["code-line"],
+          values.glob,
+          values.coarse,
+        ];
+        if (mutationFlags.some((f) => f !== undefined && f !== false)) {
+          return fail(
+            "--suggest is read-only and cannot be combined with mutation flags.",
+            mode,
+          );
+        }
+        try {
+          const result = await engine.reanchorSuggest(claimId);
+          const value = {
+            ok: true,
+            action: result.action,
+            schemaVersion: SCHEMA_VERSION,
+            claimId: result.claimId,
+            candidates: result.candidates,
+          };
+          await emit(mode, value, () =>
+            misc.renderReanchorSuggest(result, style, mode),
+          );
+          return 0;
+        } catch (e) {
+          return fail((e as Error).message, mode);
+        }
+      }
+
       const docSpec = spanSpec(
         values["doc-quote"],
         values["doc-range"],
@@ -1256,9 +1308,11 @@ Commands:
   status   [--doc <p>]              No --doc: repo-wide health overview. --doc: one-document gate.
   query    --path <p>               What claims are anchored to / cover this doc OR code path?
   list     [--state all|gating|warning|clean|orphaned|suggested]  Triage: one lean row per claim
-  coverage --doc <p>                What regions of a doc are backed by a claim vs uncovered?
+  coverage --doc <p> [--fail-uncovered]  What regions of a doc are backed by a claim vs uncovered?
+                                    (--fail-uncovered exits 2 when any block is ungrounded — CI plan gate)
   reanchor <claim-id> [--doc <p>] [--doc-quote …] [--code-file …]  Re-resolve a claim, or relocate
                                     either side to a different file (--doc moves the doc anchor)
+  reanchor <claim-id> --suggest     List candidate re-anchor targets for an orphan (read-only)
   retire   <claim-id>               Withdraw one claim (enforcement → retired); idempotent
   ignore   --claim <id> --reason <text>  Acknowledge a behavioral at-risk (non-gating until evidence moves again)
   supersede --new <p> --old <p> --type supersedes|amends [--propositions id,id]

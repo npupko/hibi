@@ -259,6 +259,33 @@
         },
         "confidence": {
           "type": "number"
+        },
+        "provenance": {
+          "type": "object",
+          "properties": {
+            "model": {
+              "type": "string"
+            },
+            "promptHash": {
+              "type": "string"
+            },
+            "contextHash": {
+              "type": "string"
+            },
+            "params": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "model",
+            "promptHash",
+            "contextHash"
+          ],
+          "additionalProperties": false
         }
       },
       "required": [

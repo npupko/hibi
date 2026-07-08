@@ -8,7 +8,7 @@ import { access, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import * as z from "zod";
 
-export const ResolverSpec = z.object({
+export const ResolverSpec = z.strictObject({
   name: z.string(),
   command: z.string(),
   args: z.array(z.string()).default([]),
@@ -16,10 +16,16 @@ export const ResolverSpec = z.object({
   timeoutMs: z.number().int().positive().default(5000),
   /** Optional explicit allow-list of kinds; otherwise taken from `describe`. */
   kinds: z.array(z.string()).optional(),
+  /**
+   * The resolver is LLM-backed (§19, D29): its advisories must carry structured
+   * `provenance` (model, promptHash, contextHash). The registry drops any
+   * provenance-less advisory from a `modelBacked` resolver and warns once per run.
+   */
+  modelBacked: z.boolean().default(false),
 });
 export type ResolverSpec = z.infer<typeof ResolverSpec>;
 
-export const Manifest = z.object({
+export const Manifest = z.strictObject({
   resolvers: z.array(ResolverSpec).default([]),
 });
 export type Manifest = z.infer<typeof Manifest>;

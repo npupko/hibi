@@ -142,9 +142,10 @@ the truth (§18-B). Selector kinds (each side draws the kinds that fit it):
   both sides; always present for a precise anchor.*
 - **`text-position`** — line/char range; a cheap first guess and corroboration hint **only** (never
   sole identity — it is brittle under insertions, §18-B).
-- **`ast-node`** — the enclosing construct via **tree-sitter**: a code symbol on the code side, or a
-  **document structural path** (markdown heading/block path, parsed with the same tree-sitter
-  machinery) on the doc side; survives relocation/reformatting.
+- **`ast-node`** *(code side only)* — the enclosing construct via **tree-sitter**, snapped to the
+  smallest enclosing named code symbol; survives relocation/reformatting. The doc side is
+  format-agnostic and carries no structural selector: it rests on `text-quote` (48-char context) +
+  `text-position` (+ optional `inline-id`).
 - **`value`** — *(code side)* for claims about a specific value (e.g. `MAX_ATTEMPTS == 5`), an
   extracted structured value so a `5 → 50` change trips even if nothing else moves. Which AST node
   kinds carry a literal is configured **per language grammar** (§6).
@@ -272,8 +273,8 @@ Web Annotation `TextQuoteSelector` (+ tree-sitter for the structural selector).
 the verdict path.** Authored records (Propositions + Assertions + Anchors) live in a **committed
 claim store** beside the docs (see §8). **The anchor *is* the baseline snapshot:** because
 re-localizing a claim requires its original selectors, every Anchor already carries — **on both the
-doc and code sides** — the `text-quote` (exact + prefix/suffix), the normalized-AST/structural-path
-hash, and (code side) the extracted `value` as captured when the claim was confirmed. Freshness is
+doc and code sides** — the `text-quote` (exact + prefix/suffix) and `text-position`, plus **(code
+side only)** the normalized-AST hash and the extracted `value`, as captured when the claim was confirmed. Freshness is
 therefore computed from **(the stored Anchor) vs (the current working tree — both the document and
 the code)** alone — the engine never reads a historical revision to reach a verdict. This keeps
 `check` **fully offline** and correct under shallow CI clones (`git clone --depth=1`), where
@@ -320,11 +321,11 @@ if it still existed (§18-B):**
    `refuted` (may gate); all pass → `supported`. **Wording alone never fires**: a keyword in the
    prose, with nothing changed, is not a signal (§7.4, §18-A).
 
-**Precision tiers (all first-party; SCIP is *not* — §14). Tiers 1–2 run on *both* sides of the
-anchor:**
+**Precision tiers (all first-party; SCIP is *not* — §14). Tier 1 runs on *both* sides of the
+anchor; Tier 2 (structural) is code side only — the doc side carries no structural selector:**
 - **Tier 1 — text:** fuzzy `text-quote` localization + a text-normalized similarity score (§17.2).
-- **Tier 2 — structural:** **tree-sitter** `ast-node` localization (snapped to the enclosing named
-  node; the doc side uses the markdown structural path) + a **two-tier** normalized-AST hash
+- **Tier 2 — structural (code side only):** **tree-sitter** `ast-node` localization (snapped to the
+  enclosing named node) + a **two-tier** normalized-AST hash
   (structural + semantic). Lightweight (a grammar, not a semantic indexer), deterministic, with
   grammars available for all mainstream languages (TypeScript, Python, Rust, Go, and more).
 - **Tier 3 — behavioral risk routing (optional, change-gated, deterministic):** for behavioral claims
@@ -417,7 +418,7 @@ gates — §7.4).
 ### 7.2 Kinded selectors
 A claim's `Anchor` is bidirectional (`{ doc, code[] }`, §4); within each side, `selector` is a
 discriminated union on `kind`. The engine dispatches each kind to the resolver(s) that declare it.
-Built-in kinds: `text-quote`, `text-position`, `ast-node` (code symbol or doc structural path),
+Built-in kinds: `text-quote`, `text-position`, `ast-node` (code symbol; code side only),
 `value`, `inline-id`, `path`/`glob`. Additional kinds (e.g. a community `scip-symbol`) require **no
 core change**.
 
@@ -653,8 +654,8 @@ correctness (especially the suspect-set precision of §11.3) at each step:
    behind the same contract; default-deny manifest; the **runner-resolver capability** for executable
    verifiers.
 5. **Tier-2 structural** — tree-sitter `ast-node` selector (snapped to the enclosing named node) +
-   two-tier normalized-AST hash; the markdown structural-path selector for the doc side; corroboration
-   & confidence grading across selectors; `value` selector.
+   two-tier normalized-AST hash (code side only; the doc side carries no structural selector — D22);
+   corroboration & confidence grading across selectors; `value` selector.
 6. **Tier-3 behavioral + onboarding** — deterministic change-gated **Behavioral Risk Routing**
    (file-level import reachability over the redefined `behaviorScope`, with stored evidence
    baselines — D14); the built-in `command` verifier runner behind `check --run-verifiers` (D13);
@@ -790,6 +791,51 @@ correctness (especially the suspect-set precision of §11.3) at each step:
   and coupling would invert the dependency direction. We borrow only *patterns* (schema-as-source-of-
   truth + SDK codegen; the provider/JSONL-RPC/manifest shape).
 - **Extension model — out-of-process protocol + per-language SDKs, not in-process plugins.**
+- **D22–D32 — trust hardening, anchoring honesty, recovery ergonomics, and the author/verify/prune
+  workflows** (full rationale, evidence, and roadmap in **`design/ADR-003-trust-hardening-and-workflow-alignment.md`**):
+  - **D22 — the doc-side structural-path selector is retracted** (never built; will not be built).
+    No markdown structural-path / doc-side `ast-node` selector ships; the doc side is
+    format-agnostic by design and rests on `text-quote` (48-char context) + `text-position` (+
+    optional `inline-id`). New evidence (ADR-003 Appendix A/B) shows building it would be
+    net-negative. D19's escape hatch is rewritten to rest on inline IDs only. Reopen trigger in §19.
+  - **D23 — record-time doc-quote guard.** `record`/`reanchor`/`record --from-file` validate the
+    doc-side `text-quote` after span resolution: reject a quote shorter than
+    `AMBIGUOUS_MIN_QUOTE_LENGTH` (8), and reject a quote whose occurrences the stored 48-char context
+    cannot disambiguate. Replaces the never-adopted record-time context-*expansion* idea.
+  - **D24 — orphan recovery suggestions:** `hibi reanchor <id> --suggest` — read-only, lists ranked
+    candidate targets (the claim's stored doc quote localized against every registered Document),
+    never writes; wired into the doc-orphaned remediation action.
+  - **D25 — D15 amendment: attestation-free exact re-anchor.** A pure move (doc quote byte-identical
+    and uniquely re-resolved at similarity 1.0, code side `unchanged`) re-anchors without the D15
+    `verified → inferred` trust downgrade; anything fuzzier downgrades exactly as D15 shipped.
+  - **D26 — test mapping.** A coverage-artifact resolver is **deferred** (spec + reopen triggers in
+    §19). A deterministic **reverse-import test suggestion** is adopted: advisory-only, computed
+    fresh at check time from the working tree, appended to the declare-a-verifier remediation
+    rationale for a behavioral `at-risk`/`refuted` claim with no verifiers. Never touches verdicts,
+    exit codes, or the store.
+  - **D27 — compound-proposition lint: declined.** No lint, no doctor row, no record-time warning for
+    "this claim may bundle two propositions." The only deterministic signal (one proposition anchored
+    in ≥2 code files) cannot distinguish a compound sentence from one fact corroborated in two
+    places; an ambiguous heuristic nag violates D14's noise discipline and the §11.3
+    precision-over-recall principle. Granularity stays authored judgment (D19 guidance + `doctor`
+    observability); D23's quote guard already catches the degenerate-span symptom.
+  - **D28 — store schema v2:** `MODEL_VERSION` `v1 → v2`; every stored object becomes strict (unknown
+    keys fail the parse); store load is version-gated with a loud, verbatim failure; no migration
+    shim (beta; rewrite > migration). `doctor` reports `storeVersion`.
+  - **D29 — advisory provenance:** `Advisory.provenance` (`model`, `promptHash`, `contextHash`,
+    optional `params`) plus `ResolverSpec.modelBacked`; the registry drops provenance-less advisories
+    from a `modelBacked` resolver with a verbatim stderr warning. Makes the §19 "no hidden LLM state"
+    rule enforceable.
+  - **D30 — `coverage --doc <p> --fail-uncovered`** exits with the gating code (2) when uncovered
+    blocks remain, so "this plan must be fully grounded" is CI-enforceable. Without the flag, exit 0
+    as today.
+  - **D31 — workflow set restructured** into Author / Verify / Maintain / Prune with four new moments
+    (write grounded docs; verify built code against a plan; recover an orphaned claim; prune the
+    ungrounded).
+  - **D32 — dogfood hardening:** the repo's `.claims/` store is re-recorded as v2 with full-SHA
+    refs; two behavioral claims with `command` verifiers make the behavioral tier check itself in CI
+    (`check --run-verifiers`); `doctor` gains a thin-evidence observability row; a real
+    `no-taxonomy` fitness test parses the generated v2 schemas.
 
 ## 15. Prior art (reference for the builder — study, don't copy)
 
@@ -910,9 +956,10 @@ must reproduce. Where any value here would differ from a prototype, this section
   fully contains the trimmed span (the deepest named node in pre-order descent). The whitespace trim is
   what makes the chosen node — and therefore its hash — invariant to re-indentation.
 - **Doc-side cascade & outcome classification** (resolve the doc-side bundle in the *current*
-  document; the hypothes.is fuzzy-anchoring order — §15): (1) structural-path selector (markdown
-  heading/block path) → (2) `text-position` hint → (3) context-first fuzzy (Bitap on the stored 48-char
-  prefix/suffix, matched in ≤32-char Bitap windows, then verify the intervening exact text) → (4) exact-only fuzzy. Classify the result:
+  document; the hypothes.is fuzzy-anchoring order — §15): (1) an `inline-id` marker, when present on an
+  owned doc, biases localization → (2) `text-position` hint → (3) context-first fuzzy (Bitap on the stored 48-char
+  prefix/suffix, matched in ≤32-char Bitap windows, then verify the intervening exact text) → (4) exact-only fuzzy. The doc
+  side carries no structural selector (D22); there is no structural-path step. Classify the result:
   exact unique hit, identical text → `doc:unchanged` (extract the live span as the authoritative claim
   text); same quote at a new offset → `doc:moved` (rewrite selectors); only a fuzzy hit, or the exact
   text differs from the stored quote → `doc:changed`; >1 acceptable hit → `doc:ambiguous`; no hit at any
@@ -1134,9 +1181,10 @@ authoritative) **+ optional inline IDs for owned docs + Model A for migration/re
 **span-first `record`**, **ground-or-prune** creation (agent-authored, `coverage`-driven) with
 `suggested`/`enforced`/`retired` states, doc-first verification order, and explicit doc-side states
 incl. `doc:orphaned`. **What would
-change it:** if doc-side fuzzy anchoring proves too noisy in practice (orphan rate > ~30%), require
-inline IDs for high-severity claims; if pristine-doc tracking proves rare, drop the Model-A fallback
-and simplify to pure C.
+change it:** if doc-side orphan rate exceeds ~30% for typical edits, require inline IDs for
+high-severity claims (D22 — the retracted structural doc selector is *not* the escape hatch;
+inline IDs are); if pristine-doc tracking proves rare, drop the Model-A fallback and simplify to
+pure C.
 
 ### 18-C. The state vocabulary — ubiquitous language for the computed model
 
@@ -1240,6 +1288,20 @@ verdict; the only gate remains a deterministic `refuted` (executable verifier) o
   siblings, the **verifier runners** (open-string kinds; built-in `command`, conventional
   `example`/`snapshot`/`contract`/`property`/`metamorphic`/`formal` — §5, §17.6, D13), are the
   gating-eligible members of the same family (via `refuted`).
+- **`test-impact` coverage-artifact resolver (D26 — deferred; do not build now).** A resolver that
+  reads per-test-attributed coverage artifacts (coverage.py dynamic-contexts DB, Teamscale testwise
+  JSON) with a hard freshness gate (artifact's recorded commit == HEAD, else refuse with "stale —
+  regenerate"). *Deferred because* (ADR-003 Appendix C): standard lcov/istanbul artifacts carry no
+  per-test attribution and coverage artifacts are normatively gitignored, so the promised output is
+  unconstructible from the proposed input. **Reopen triggers (all three recorded):** (1) a mainstream
+  runner (vitest/jest/bun/pytest) emits per-test attribution in a default report format; (2) hibi
+  gains a CI execution context guaranteeing a same-commit, context-enabled artifact; (3) repeated
+  user requests to name covering tests for an anchor. The adopted alternative — a deterministic
+  reverse-import test *suggestion*, advisory-only, computed fresh at check time — ships in core (D26).
+
+**Reopen trigger — the retracted doc-side structural selector (D22).** Revisit a structural doc
+selector only if `doctor` reports `docOrphanedRate` > 0.30 on typical edits for real users AND
+inline IDs have been tried and rejected by those users.
 
 **Consumers (read `check --json`; out of repo scope — §7):**
 - **Claims index / `llms.txt` emitter** — a standing manifest (tracked docs → claims → code anchors →
@@ -1255,11 +1317,12 @@ verdict; the only gate remains a deterministic `refuted` (executable verifier) o
 
 *This document is the **design record** — the problem, principles, decision log, and evidence
 behind the tool — not the living specification (demoted from "final specification" by **D20**). The
-behavioral contract that ships is `docs/` + `schemas/*.v1.json` + the executable test suite
+behavioral contract that ships is `docs/` + `schemas/*.v2.json` + the executable test suite
 (`test/precision-rate.test.ts` is the §10 precision contract in code); where this document and the
 shipped code disagree, the code and docs win, and hibi dogfoods its own repo to keep them honest
 (**D20**). The build is sequenced (§13) for validation, not scope reduction. Design rationale — the
 options weighed and declined — is in §18; alignment with the foundational documentation-practice
 research is in §18-D; deferred, separately-implementable resolvers and consumers are in §19. The
-standalone decision records are `design/ADR-001-state-vocabulary.md` and
-`design/ADR-002-research-realignment.md`.*
+standalone decision records are `design/ADR-001-state-vocabulary.md`,
+`design/ADR-002-research-realignment.md`, and
+`design/ADR-003-trust-hardening-and-workflow-alignment.md`.*

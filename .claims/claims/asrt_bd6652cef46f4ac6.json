@@ -1,9 +1,9 @@
 {
-  "id": "asrt_e634bc60dab641c7",
-  "propositionId": "prop_0c3081f7e2a14560",
+  "id": "asrt_bd6652cef46f4ac6",
+  "propositionId": "prop_e6518ce4b0b545ca",
   "documentId": "doc_fa1698bd5b6313a3",
   "owner": "hibi-dogfood",
-  "ref": "feat/post-adr-002-refinements",
+  "ref": "2358ba7e4b5a89c53310936962ac481c9084edf4",
   "anchor": {
     "doc": {
       "file": "docs/banners.mdx",

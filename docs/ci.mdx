@@ -134,6 +134,46 @@ shared with the CLI's `--fail-on` flag, so a local run and the action agree.
   acknowledgment never becomes a permanent mute.
 </Tip>
 
+## Proving behavioral claims — `check --run-verifiers`
+
+A plain `hibi check` grades anchors deterministically but never runs a verifier.
+To also *prove* behavioral claims — turning `at-risk` into `supported` or
+`refuted` — add `--run-verifiers`, which executes each claim's declared verifier
+command. Hibi dogfoods exactly this: its own CI runs
+`hibi check --run-verifiers --fail-on gating`, so a broken behavioral gate turns
+the build red without human review.
+
+```yaml
+      - uses: npupko/hibi@v0.2.3
+        with:
+          command: check
+          run-verifiers: true
+          fail-on: gating
+```
+
+Verifiers execute repo-committed commands — a supply-chain surface — so they run
+**only** under this explicit opt-in; see
+[running verifiers](/cli-reference#running-verifiers-check-run-verifiers).
+
+## Gating a plan — `coverage --fail-uncovered`
+
+The plan-verification loop is the mirror image of drift-checking: instead of
+guarding recorded claims, you assert that a plan document is **fully grounded** —
+every promise anchored to the code that implements it.
+`hibi coverage --doc plan.md --fail-uncovered` makes that CI-enforceable: it
+exits with the gating code **2** while any block of the plan is still uncovered,
+and `0` once every block is backed by a claim.
+
+```sh
+# in a CI step, once hibi is installed:
+hibi coverage --doc plan.md --fail-uncovered   # exit 2 while any block is uncovered
+```
+
+An uncovered block is an unimplemented or unpruned plan item. Hibi never judges
+whether code *implements* a sentence — the author (or agent) makes that judgment
+by *anchoring* each promise to its implementing code, and `--fail-uncovered`
+guards that the anchoring is complete.
+
 ## git hooks
 
 A git hook moves the same gate one step earlier, onto the developer's machine,

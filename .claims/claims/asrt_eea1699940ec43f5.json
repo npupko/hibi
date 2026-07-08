@@ -1,0 +1,78 @@
+{
+  "id": "asrt_eea1699940ec43f5",
+  "propositionId": "prop_4cbd2f4edbfc42fc",
+  "documentId": "doc_320b0ba63f0f3f7e",
+  "owner": "hibi-dogfood",
+  "ref": "2358ba7e4b5a89c53310936962ac481c9084edf4",
+  "anchor": {
+    "doc": {
+      "file": "docs/behavioral.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "The change-gate is the heart of Tier 3.",
+          "prefix": "shows `behavior` as `n/a`.\n\n## The change-gate\n\n",
+          "suffix": " It answers one question: *should this\nbehaviora"
+        },
+        {
+          "kind": "text-position",
+          "start": 4937,
+          "end": 4976
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/algo/resolve.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "function computeBehaviorRisk(",
+            "prefix": "nchored-node signal, never flag every path.\n */\n",
+            "suffix": "\n  assertion: Assertion,\n  codeChanged: ChangedE"
+          },
+          {
+            "kind": "text-position",
+            "start": 4063,
+            "end": 4092
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "function_declaration",
+            "structuralHash": "7d4174f2883a00ab",
+            "semanticHash": "0d8fb1e3814eb3e5"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "null",
+            "value": "null"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "behavioral": true,
+  "verifiers": [
+    {
+      "kind": "command",
+      "ref": "bun test test/behavioral-gate.test.ts",
+      "proves": "the gate fires on evidence drift while the anchored span is untouched"
+    }
+  ],
+  "evidenceBaseline": {
+    "src/algo/resolve.ts": "948194d9acda2270",
+    "src/ast/hash.ts": "d6e2ddc256205dba",
+    "src/core/gating.ts": "601373bfdac2a51c",
+    "src/core/model.ts": "c924df2215d91e3d",
+    "src/core/remediation.ts": "b2b1897eda36f3f3",
+    "src/algo/behavioral.ts": "0baf44b4ac816142",
+    "src/algo/fusion.ts": "5bed361b80ad6464",
+    "src/algo/localize.ts": "361d6068eacd23b9",
+    "src/algo/normalize.ts": "4f881ae938f0b984",
+    "src/algo/params.ts": "0d89fd4e0b15a2c7"
+  },
+  "attrs": {}
+}

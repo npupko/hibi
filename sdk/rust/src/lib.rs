@@ -3,7 +3,7 @@
 //! A thin SDK for authoring an out-of-process resolver in Rust. Implement the
 //! [`Resolver`] trait and call [`serve`]; the SDK owns the JSONL-RPC framing and
 //! dispatch over stdio. The protocol types mirror the canonical Zod model
-//! (`schemas/*.v1.json`), the single source of truth.
+//! (`schemas/*.v2.json`), the single source of truth.
 //!
 //! The model is two-axis (ADR-001): an anchor-resolution axis reported per side
 //! (`doc` / `code`, sharing one `AnchorState` vocabulary) and an optional
@@ -203,6 +203,11 @@ pub struct Advisory {
     pub message: String,
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub confidence: Option<f64>,
+    /// No hidden LLM state (§19, D29): a `modelBacked` resolver must attach the
+    /// model, prompt hash, and context hash; the registry drops advisories that
+    /// lack it. Opaque here so the SDK stays forward-compatible.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub provenance: Option<Value>,
 }
 
 /// Result of a `describe` call — advertises this resolver's identity and the

@@ -1,5 +1,5 @@
 /**
- * Generate versioned JSON Schema (`schemas/*.v1.json`) from the canonical Zod
+ * Generate versioned JSON Schema (`schemas/*.v2.json`) from the canonical Zod
  * model (§5). The Zod model is the single source of truth; this is a derived
  * artifact, regenerated, never hand-edited.
  */

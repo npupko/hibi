@@ -1,9 +1,9 @@
 {
-  "id": "asrt_dda5dd7dcfb448e7",
-  "propositionId": "prop_69640b32874840a0",
+  "id": "asrt_c3ff6a3f064c4570",
+  "propositionId": "prop_9a3a679f0da4436a",
   "documentId": "doc_84263e2579006d07",
   "owner": "hibi-dogfood",
-  "ref": "ADR-002",
+  "ref": "2358ba7e4b5a89c53310936962ac481c9084edf4",
   "anchor": {
     "doc": {
       "file": "docs/anchors.mdx",
@@ -16,8 +16,8 @@
         },
         {
           "kind": "text-position",
-          "start": 6024,
-          "end": 6053
+          "start": 6061,
+          "end": 6090
         }
       ]
     },

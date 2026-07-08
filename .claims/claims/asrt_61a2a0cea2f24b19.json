@@ -1,23 +1,23 @@
 {
-  "id": "asrt_97997f7955ff474b",
-  "propositionId": "prop_53c9b92f2c574175",
-  "documentId": "doc_a8b3f9165caba304",
+  "id": "asrt_61a2a0cea2f24b19",
+  "propositionId": "prop_4c165e8d74844830",
+  "documentId": "doc_84263e2579006d07",
   "owner": "hibi-dogfood",
-  "ref": "feat/post-adr-002-refinements",
+  "ref": "2358ba7e4b5a89c53310936962ac481c9084edf4",
   "anchor": {
     "doc": {
-      "file": "plugins/hibi-cli/skills/hibi/references/cli-reference.md",
+      "file": "docs/anchors.mdx",
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "≥ 0.9 similar",
-          "prefix": "red value changed but the located text is still\n",
-          "suffix": "; fewer than two resolving selectors forces `orp"
+          "exact": "Structural-only AST matches score 0.40",
+          "prefix": "`ambiguous`.\n  </Accordion>\n  <Accordion title=\"",
+          "suffix": "\">\n    If the `ast-node` matches only structural"
         },
         {
           "kind": "text-position",
-          "start": 9774,
-          "end": 9787
+          "start": 6216,
+          "end": 6254
         }
       ]
     },
@@ -27,27 +27,27 @@
         "selectors": [
           {
             "kind": "text-quote",
-            "exact": "VALUE_VETO_TEXTQUOTE_SIMILARITY = 0.9",
-            "prefix": "this and value changed (§17.3). */\nexport const ",
-            "suffix": ";\nexport const VALUE_VETO_CONFIDENCE = 0.3;\n\n/**"
+            "exact": "STRUCTURAL_ONLY_SCORE = 0.4",
+            "prefix": "its this partial score (§17.3). */\nexport const ",
+            "suffix": ";\n\n/** Value veto trips when text-quote similari"
           },
           {
             "kind": "text-position",
-            "start": 1822,
-            "end": 1859
+            "start": 1691,
+            "end": 1718
           },
           {
             "kind": "ast-node",
             "language": "typescript",
             "nodeType": "variable_declarator",
             "structuralHash": "de0dbd0a8e84411f",
-            "semanticHash": "ae60bcabc637dddb"
+            "semanticHash": "26a21c7f8401be2e"
           },
           {
             "kind": "value",
             "language": "typescript",
             "nodeKind": "number",
-            "value": "0.9"
+            "value": "0.4"
           }
         ]
       }

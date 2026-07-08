@@ -272,7 +272,7 @@ describe("CLI end-to-end (§9)", () => {
       "--doc",
       "doc.md",
       "--doc-quote",
-      "A is 1",
+      "A is 1 and",
       "--code-file",
       "src/a.ts",
       "--code-quote",
@@ -283,7 +283,7 @@ describe("CLI end-to-end (§9)", () => {
       "--doc",
       "doc.md",
       "--doc-quote",
-      "B is 2",
+      "B is 2 here",
       "--code-file",
       "src/b.ts",
       "--code-quote",
@@ -311,7 +311,7 @@ describe("CLI end-to-end (§9)", () => {
       "--doc",
       "doc.md",
       "--doc-quote",
-      "A is 1",
+      "A is 1 here",
       "--code-file",
       "src/a.ts",
       "--code-quote",
@@ -333,7 +333,7 @@ describe("CLI end-to-end (§9)", () => {
       "--doc",
       "doc.md",
       "--doc-quote",
-      "A is 1",
+      "A is 1 here",
       "--code-file",
       "src/a.ts",
       "--code-quote",
@@ -444,7 +444,7 @@ describe("CLI end-to-end (§9)", () => {
       "--doc",
       "doc.md",
       "--doc-quote",
-      "A is 1",
+      "A is 1 here",
       "--code-file",
       "src/a.ts",
       "--code-quote",
@@ -497,7 +497,7 @@ describe("CLI end-to-end (§9)", () => {
     await write(d, "doc.md", "# Doc\n\nA is 1 here.\n");
 
     const init = await run(d, ["init"]);
-    expect(init.json.schemaVersion).toBe("v1");
+    expect(init.json.schemaVersion).toBe("v2");
     expect(init.json.next).toBeDefined();
 
     const rec = await run(d, [
@@ -505,18 +505,18 @@ describe("CLI end-to-end (§9)", () => {
       "--doc",
       "doc.md",
       "--doc-quote",
-      "A is 1",
+      "A is 1 here",
       "--code-file",
       "src/a.ts",
       "--code-quote",
       "A = 1",
     ]);
-    expect(rec.json.schemaVersion).toBe("v1");
+    expect(rec.json.schemaVersion).toBe("v2");
     expect(rec.json.claimId).toMatch(/^asrt_/);
     expect(rec.json.next).toBe("hibi check");
 
     const check = await run(d, ["check"]);
-    expect(check.json.schemaVersion).toBe("v1");
+    expect(check.json.schemaVersion).toBe("v2");
   });
 
   test("concise check is lean (no evidence); --explain adds evidence + fingerprint", async () => {
@@ -559,7 +559,7 @@ describe("CLI end-to-end (§9)", () => {
       "--doc",
       "doc.md",
       "--doc-quote",
-      "A is 1",
+      "A is 1 here",
       "--code-file",
       "src/a.ts",
       "--code-quote",
@@ -569,10 +569,15 @@ describe("CLI end-to-end (§9)", () => {
     // Delete the code file → the code side orphans.
     await rm(join(d, "src/a.ts"), { force: true });
     const check = await run(d, ["check"]);
-    const rem = check.json.verdicts?.[0]?.remediation;
+    const verdict = check.json.verdicts?.[0];
+    const rem = verdict?.remediation;
     expect(rem?.recommended).toBe("retire");
     const reanchor = rem?.actions?.find((a) => a.id === "reanchor");
-    expect(reanchor?.command).toBeUndefined(); // a bare reanchor cannot resolve an orphan
+    // D24 — the orphan reanchor pre-fills the read-only `--suggest` pass (always
+    // safe: it only lists candidate targets), never a bare mutating reanchor.
+    expect(reanchor?.command).toBe(
+      `hibi reanchor ${verdict?.assertionId} --suggest`,
+    );
   });
 
   test("--no-hints / HIBI_ADVICE=0 strips the remediation block", async () => {
@@ -699,7 +704,7 @@ describe("CLI end-to-end (§9)", () => {
       "--doc",
       "v1.md",
       "--doc-quote",
-      "A is 1",
+      "A is 1 here",
       "--code-file",
       "src/a.ts",
       "--code-quote",

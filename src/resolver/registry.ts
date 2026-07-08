@@ -47,6 +47,8 @@ export interface Resolver {
   kinds: string[];
   tier: number;
   advisory: boolean;
+  /** LLM-backed (§19, D29): its advisories must carry structured `provenance`. */
+  modelBacked?: boolean;
   /** Verifier kinds this resolver can run to upgrade behavioral belief (§17.6). */
   verifierKinds?: string[];
   resolve(
@@ -117,6 +119,7 @@ class ProcessResolver implements Resolver {
     public advisory: boolean,
     public verifierKinds: string[],
     private proc: OutOfProcessResolver,
+    public modelBacked = false,
   ) {}
 
   async resolve(
@@ -167,6 +170,8 @@ export class ResolverRegistry {
   private resolvers: Resolver[] = [];
   private disposers: Array<() => void> = [];
   private driftResolver: DriftResolver;
+  /** Resolvers already warned this run for dropping provenance-less advisories (D29). */
+  private warnedResolvers = new Set<string>();
   /**
    * Whether to dispatch verifiers (§17.6, D13). Default **false** — verifiers
    * execute repo-committed commands, so they run only under the explicit
@@ -211,6 +216,7 @@ export class ResolverRegistry {
         desc.advisory,
         desc.verifierKinds ?? [],
         proc,
+        spec.modelBacked,
       );
       this.register(pr);
       this.disposers.push(() => pr.dispose());
@@ -276,11 +282,27 @@ export class ResolverRegistry {
       );
     }
 
-    // 3 — Advisory resolvers (Tier-3 advises, never decides — §7.4).
+    // 3 — Advisory resolvers (Tier-3 advises, never decides — §7.4). A
+    //     `modelBacked` resolver must attach structured provenance to every
+    //     advisory (§19, D29): the registry drops any that lack it and warns once
+    //     per run per resolver, so the LLM-quarantine rule is enforced, not just
+    //     documented.
     for (const adv of this.advisoryResolvers()) {
       const r = await adv.resolve(assertion, files, proposition);
-      if (r.advisories?.length) {
-        verdict.advisories = [...(verdict.advisories ?? []), ...r.advisories];
+      let advisories = r.advisories ?? [];
+      if (adv.modelBacked) {
+        const kept = advisories.filter((a) => a.provenance !== undefined);
+        const dropped = advisories.length - kept.length;
+        if (dropped > 0 && !this.warnedResolvers.has(adv.name)) {
+          this.warnedResolvers.add(adv.name);
+          process.stderr.write(
+            `dropped ${dropped} advisories from ${adv.name}: modelBacked resolvers must attach provenance (model, promptHash, contextHash).\n`,
+          );
+        }
+        advisories = kept;
+      }
+      if (advisories.length) {
+        verdict.advisories = [...(verdict.advisories ?? []), ...advisories];
       }
     }
 

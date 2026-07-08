@@ -46,7 +46,7 @@ describe("claim store (§6, §8)", () => {
     const r = await repo();
     const config = await r.store.config();
     expect(config.nonce).toBe("deadbeef");
-    expect(config.version).toBe("v1");
+    expect(config.version).toBe("v2");
     const gi = await readFile(join(r.store.dir, ".gitignore"), "utf8");
     expect(gi).toContain("cache/");
   });
@@ -63,13 +63,13 @@ describe("claim store (§6, §8)", () => {
     await r.write("src/b.ts", "export const B = 2;\n");
     await record(r, {
       doc: "d.md",
-      text: "A is 1",
+      text: "A is 1 here",
       file: "src/a.ts",
       quote: "A = 1",
     });
     await record(r, {
       doc: "d.md",
-      text: "B is 2",
+      text: "B is 2 here",
       file: "src/b.ts",
       quote: "B = 2",
     });
@@ -104,7 +104,7 @@ describe("claim store (§6, §8)", () => {
     await r.write("src/a.ts", "export const A = 1;\n");
     const { assertion } = await record(r, {
       doc: "d.md",
-      text: "A is 1",
+      text: "A is 1 here",
       file: "src/a.ts",
       quote: "A = 1",
     });
@@ -134,7 +134,7 @@ describe("claim store (§6, §8)", () => {
     // is recorded `enforced` — the only enforcement that can gate (§9).
     const { assertion } = await record(r, {
       doc: "d.md",
-      text: "A is 1",
+      text: "A is 1 here",
       file: "src/a.ts",
       quote: "A = 1",
       trust: "verified",
