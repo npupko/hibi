@@ -1,7 +1,7 @@
 /**
  * The canonical data model — the single source of truth (§5).
  *
- * Defined once in Zod v4. The versioned JSON Schema (`schemas/*.v1.json`), the
+ * Defined once in Zod v4. The versioned JSON Schema (`schemas/*.v2.json`), the
  * TypeScript types, and every language SDK are generated from this file (via
  * `z.toJSONSchema`). Claim-store records are validated against it at load.
  *
@@ -23,7 +23,7 @@
 import * as z from "zod";
 
 /** Schema version stamped into generated artifacts and the store config. */
-export const MODEL_VERSION = "v1" as const;
+export const MODEL_VERSION = "v2" as const;
 
 // ── Status: four kinds, never conflated (§4/§10) ─────────────────────────────
 
@@ -89,7 +89,7 @@ export type DocumentLifecycle = z.infer<typeof DocumentLifecycle>;
  * base selector on both sides; always present for a precise anchor. Carries the
  * baseline `exact` captured at record time.
  */
-export const TextQuoteSelector = z.object({
+export const TextQuoteSelector = z.strictObject({
   kind: z.literal("text-quote"),
   exact: z.string(),
   prefix: z.string().default(""),
@@ -97,19 +97,20 @@ export const TextQuoteSelector = z.object({
 });
 
 /** `text-position` — line/char range; a cheap first guess and corroboration hint. */
-export const TextPositionSelector = z.object({
+export const TextPositionSelector = z.strictObject({
   kind: z.literal("text-position"),
   start: z.number().int().nonnegative(),
   end: z.number().int().nonnegative(),
 });
 
 /**
- * `ast-node` — the enclosing construct via tree-sitter, snapped to the smallest
- * enclosing *named* node (a code symbol on the code side, or a document
- * structural path on the doc side). Stores the two-tier baseline AST fingerprint
- * (structural + semantic) and the node type, captured at record time.
+ * `ast-node` — *(code side only)* the enclosing construct via tree-sitter,
+ * snapped to the smallest enclosing *named* code symbol. Stores the two-tier
+ * baseline AST fingerprint (structural + semantic) and the node type, captured at
+ * record time. The doc side is format-agnostic and carries no structural selector
+ * (ADR-003 D22).
  */
-export const AstNodeSelector = z.object({
+export const AstNodeSelector = z.strictObject({
   kind: z.literal("ast-node"),
   language: z.string(),
   nodeType: z.string(),
@@ -122,7 +123,7 @@ export const AstNodeSelector = z.object({
  * trips even if nothing else moves. Which AST node kinds carry a literal is
  * configured per-grammar (§17.4).
  */
-export const ValueSelector = z.object({
+export const ValueSelector = z.strictObject({
   kind: z.literal("value"),
   language: z.string(),
   nodeKind: z.string(),
@@ -136,19 +137,19 @@ export const ValueSelector = z.object({
  * required (§4/§8/§18-B). If marker and prose disagree, the prose wins — so this
  * selector aids localization/disambiguation only and is never a fusion score.
  */
-export const InlineIdSelector = z.object({
+export const InlineIdSelector = z.strictObject({
   kind: z.literal("inline-id"),
   id: z.string(),
 });
 
 /** `path` (coarse) — a file → an edge: navigation and blast-radius only. */
-export const PathSelector = z.object({
+export const PathSelector = z.strictObject({
   kind: z.literal("path"),
   path: z.string(),
 });
 
 /** `glob` (coarse) — a directory/glob → an edge: navigation and blast-radius only. */
-export const GlobSelector = z.object({
+export const GlobSelector = z.strictObject({
   kind: z.literal("glob"),
   glob: z.string(),
 });
@@ -185,7 +186,7 @@ export type SelectorKind = Selector["kind"];
  * cross-corroborates. This *is* the baseline snapshot for that side (§6).
  */
 export const SelectorBundle = z
-  .object({
+  .strictObject({
     /** The file this side's selectors resolve against. */
     file: z.string(),
     selectors: z.array(Selector).min(1),
@@ -202,7 +203,7 @@ export type SelectorBundle = z.infer<typeof SelectorBundle>;
  * target; an `enforced` claim requires both sides to resolve (§9, validated at
  * `record`, not in the schema).
  */
-export const Anchor = z.object({
+export const Anchor = z.strictObject({
   doc: SelectorBundle,
   code: z.array(SelectorBundle).default([]),
 });
@@ -217,7 +218,7 @@ export type Anchor = z.infer<typeof Anchor>;
  * runner resolver (§7), never in core.
  */
 export const Verifier = z
-  .object({
+  .strictObject({
     /**
      * A dispatch key, not a taxonomy: a runner resolver declares the
      * `verifierKinds` it handles and the engine routes by string match. The
@@ -240,7 +241,7 @@ export type Verifier = z.infer<typeof Verifier>;
  * its imports followed to `depth`, plus `include` globs, minus `exclude` globs.
  * Absent → the default is `depth: 1` (the anchored file + its direct imports).
  */
-export const BehaviorScope = z.object({
+export const BehaviorScope = z.strictObject({
   /** Extra paths/globs to fold into the evidence set (config, fixtures, tables). */
   include: z.array(z.string()).default([]),
   /** Paths/globs to drop from the evidence set (silence unrelated nearby churn). */
@@ -253,7 +254,7 @@ export type BehaviorScope = z.infer<typeof BehaviorScope>;
 // ── Document edges (forward-authored, reverse-derived — §4, §6) ──────────────
 
 /** `supersedes` (full) → targets a Document; the old doc → `superseded`. */
-export const SupersedesEdge = z.object({
+export const SupersedesEdge = z.strictObject({
   type: z.literal("supersedes"),
   /** documentId of the superseded (old) document. */
   target: z.string(),
@@ -261,7 +262,7 @@ export const SupersedesEdge = z.object({
 });
 
 /** Reverse of `supersedes`, derived by the engine onto the old document. */
-export const SupersededByEdge = z.object({
+export const SupersededByEdge = z.strictObject({
   type: z.literal("superseded-by"),
   /** documentId of the superseding (new) document. */
   source: z.string(),
@@ -269,7 +270,7 @@ export const SupersededByEdge = z.object({
 });
 
 /** `amends` (partial) → targets one or more Propositions in a Document. */
-export const AmendsEdge = z.object({
+export const AmendsEdge = z.strictObject({
   type: z.literal("amends"),
   /** documentId of the amended (old) document. */
   target: z.string(),
@@ -279,7 +280,7 @@ export const AmendsEdge = z.object({
 });
 
 /** Reverse of `amends`, derived by the engine onto the old document. */
-export const AmendedByEdge = z.object({
+export const AmendedByEdge = z.strictObject({
   type: z.literal("amended-by"),
   source: z.string(),
   propositions: z.array(z.string()).min(1),
@@ -297,7 +298,7 @@ export type Edge = z.infer<typeof Edge>;
 // ── Entities (§5) ────────────────────────────────────────────────────────────
 
 /** Document — a file. Owns lifecycle and supersession edges. */
-export const Document = z.object({
+export const Document = z.strictObject({
   id: z.string(),
   path: z.string(),
   lifecycle: DocumentLifecycle.default("active"),
@@ -321,7 +322,7 @@ export type Document = z.infer<typeof Document>;
  * anchor (§4, §8, §18-B). Identity is authored/explicit (`id` / content
  * `fingerprint` of the confirmed text), never similarity-computed (§5).
  */
-export const Proposition = z.object({
+export const Proposition = z.strictObject({
   id: z.string(),
   /** Non-authoritative cache of the documented sentence (§5/§18-B). */
   textCache: z.string(),
@@ -340,7 +341,7 @@ export type Proposition = z.infer<typeof Proposition>;
  * behavioral declaration.
  */
 export const Assertion = z
-  .object({
+  .strictObject({
     id: z.string(),
     propositionId: z.string(),
     documentId: z.string(),
@@ -375,7 +376,7 @@ export const Assertion = z
      * Workflow state captured at ignore time — never a computed verdict field.
      */
     suppressed: z
-      .object({
+      .strictObject({
         paths: z.record(z.string(), z.string()),
         reason: z.string(),
       })
@@ -394,7 +395,7 @@ export type Assertion = z.infer<typeof Assertion>;
 // ── Verdict (ephemeral — never persisted, §5/§6) ─────────────────────────────
 
 /** Per-selector contribution to the fused confidence (§17.3). */
-export const SelectorScore = z.object({
+export const SelectorScore = z.strictObject({
   kind: z.string(),
   /** Whether the selector resolved ("found") per §17.3. */
   found: z.boolean(),
@@ -407,7 +408,7 @@ export type SelectorScore = z.infer<typeof SelectorScore>;
 
 /** A located region in the current text. */
 export const Region = z
-  .object({
+  .strictObject({
     start: z.number().int().nonnegative(),
     end: z.number().int().nonnegative(),
   })
@@ -419,7 +420,7 @@ export type Region = z.infer<typeof Region>;
  * risk / a `changed` anchor state (§5/§17.6). Each entry names the changed path
  * and the kind of evidence that moved.
  */
-export const ChangedEvidence = z.object({
+export const ChangedEvidence = z.strictObject({
   /** The file (or selector locus) whose evidence changed. */
   path: z.string(),
   /** What kind of evidence changed: `value`, `ast`, `text`, `import` (an evidence-set file — a depth-N import or an `include`-glob file), or `verifier-source` (a verifier `ref` source file, §17.6). */
@@ -431,17 +432,30 @@ export type ChangedEvidence = z.infer<typeof ChangedEvidence>;
 
 /** Advisory note from a quarantined Tier-3 resolver — advises, never gates (§7.4). */
 export const Advisory = z
-  .object({
+  .strictObject({
     resolver: z.string(),
     message: z.string(),
     /** Free-form confidence the advisor reports; never folded into the verdict. */
     confidence: z.number().optional(),
+    /**
+     * No hidden LLM state (§19, D29): a `modelBacked` resolver must attach the
+     * model name, the prompt hash, the context hash, and any params it ran with;
+     * the registry drops a provenance-less advisory from such a resolver (§7.4).
+     */
+    provenance: z
+      .strictObject({
+        model: z.string(),
+        promptHash: z.string(),
+        contextHash: z.string(),
+        params: z.record(z.string(), z.unknown()).optional(),
+      })
+      .optional(),
   })
   .meta({ id: "Advisory" });
 export type Advisory = z.infer<typeof Advisory>;
 
 /** Bulky located evidence — trails the decision fields in the JSON shape (§9). */
-export const VerdictEvidence = z.object({
+export const VerdictEvidence = z.strictObject({
   /** The located doc-side region (the documented sentence), when found. */
   docRegion: Region.optional(),
   /** The located code-side region per code bundle, when found. */
@@ -487,7 +501,7 @@ export type RemediationEffect = z.infer<typeof RemediationEffect>;
  * is NEVER pre-filled when it cannot succeed (e.g. a bare `reanchor` on an
  * orphan, which has no span to relocate to).
  */
-export const RemediationAction = z.object({
+export const RemediationAction = z.strictObject({
   /** Stable kebab token, machine-stable across releases (e.g. `reanchor`). */
   id: z.string(),
   /** One-line human label. */
@@ -509,7 +523,7 @@ export type RemediationAction = z.infer<typeof RemediationAction>;
  * verdict→action mapping is a fixed lookup table (`remediationFor`), never a
  * model decision (§7/§11).
  */
-export const Remediation = z.object({
+export const Remediation = z.strictObject({
   /** The single best action id, or `null` when intent is ambiguous. */
   recommended: z.string().nullable(),
   actions: z.array(RemediationAction).default([]),
@@ -524,7 +538,7 @@ export type Remediation = z.infer<typeof Remediation>;
  * surfaces the verdict and what to do about it. Means "suspect — re-verify",
  * never "the claim is false" (§11).
  */
-export const Verdict = z.object({
+export const Verdict = z.strictObject({
   assertionId: z.string(),
   propositionId: z.string(),
   documentId: z.string(),
@@ -568,7 +582,7 @@ export type Verdict = z.infer<typeof Verdict>;
 // ── Store config ─────────────────────────────────────────────────────────────
 
 /** `.claims/config.json` — holds the per-repository banner nonce (§17.5). */
-export const StoreConfig = z.object({
+export const StoreConfig = z.strictObject({
   version: z.string().default(MODEL_VERSION),
   /** Short random identifier generated once per repository at store init. */
   nonce: z.string(),

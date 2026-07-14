@@ -98,11 +98,24 @@ export class ClaimStore {
     return s;
   }
 
-  /** Open an existing store; throws if not initialized. */
+  /** Open an existing store; throws if not initialized or version-skewed. */
   static async open(location: string | StoreLocation): Promise<ClaimStore> {
     const s = new ClaimStore(resolveLocation(location));
-    if (!(await exists(join(s.dir, "config.json")))) {
+    const configPath = join(s.dir, "config.json");
+    if (!(await exists(configPath))) {
       throw new Error(`No claim store at ${s.dir}. Run \`hibi init\` first.`);
+    }
+    // Version gate (D28): refuse a store written by a different model version
+    // BEFORE parsing any claim file. hibi ships no migration (beta) — the store
+    // can no longer silently misrepresent what it was recorded with.
+    const raw = JSON.parse(await readFile(configPath, "utf8")) as {
+      version?: string;
+    };
+    const found = raw.version ?? "unknown";
+    if (found !== MODEL_VERSION) {
+      throw new Error(
+        `this store was written by hibi model ${found} and this binary requires ${MODEL_VERSION}. hibi ships no migration (beta): re-run 'hibi init' and re-record, or use a matching hibi version.`,
+      );
     }
     return s;
   }
@@ -226,10 +239,11 @@ export class ClaimStore {
   }
 
   /**
-   * Parse one stored record against the current schema. A validation failure on
-   * a store written by an older schema (e.g. carrying the removed `claimKind` /
-   * `unanchored-legacy` fields) surfaces plainly — there is no migration shim
-   * (alpha; zero external users). Re-initialize with `hibi init`.
+   * Parse one stored record against the current strict schema. The store's model
+   * version is gated at `open` (D28), so a version skew is already refused before
+   * we reach here; a failure at this point is a genuinely malformed record or an
+   * unknown key rejected by strict parsing (D28). There is no migration shim
+   * (beta) — re-initialize with `hibi init` and re-record.
    */
   private parseRecord<T>(
     schema: { parse(v: unknown): T },
@@ -240,7 +254,7 @@ export class ClaimStore {
       return schema.parse(JSON.parse(raw));
     } catch (e) {
       throw new Error(
-        `Claim store record ${where} failed schema validation — the store may predate schema v2 (the ADR-002 rewrite). Re-initialize with \`hibi init\` (no migration shim; alpha). Cause: ${(e as Error).message}`,
+        `Claim store record ${where} failed schema validation (strict — an unknown or malformed field). The store version is gated at open, so this is a corrupt record, not version skew. No migration shim (beta): re-initialize with \`hibi init\`. Cause: ${(e as Error).message}`,
       );
     }
   }

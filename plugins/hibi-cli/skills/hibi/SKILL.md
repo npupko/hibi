@@ -159,6 +159,14 @@ sentence from two files shares one meaning. Re-run `hibi coverage --doc README.m
 the ratio climb, then `hibi check` to confirm clean. This is the low-friction path when an
 agent grounds many docs at once.
 
+**Verifying built code against a pre-existing plan?** Same `coverage` mechanism, but
+gate it: `hibi coverage --doc plan.md --fail-uncovered` exits **2** while any block
+is uncovered and **0** once fully grounded — a CI-enforceable "the plan must be fully
+grounded." hibi never judges whether code *implements* a sentence; you judge by
+*anchoring* each promise to its implementing code (a block you can't anchor is an
+unimplemented plan item). Give behavioral promises `--verifier command:"…"` at
+authoring time, and prove them with `hibi check --run-verifiers`.
+
 ---
 
 ## Responding to a flag — the verdict→action checklist
@@ -189,7 +197,7 @@ The common shapes:
 | `code:changed` | `null` | code changed on purpose? fix prose / retire. Still true? reanchor |
 | `doc:changed` | `null` | prose edited — **meaning may have inverted**; re-read the span and re-verify |
 | `doc:changed` + `code:changed` | `null` | both moved → **reconcile** doc vs code; don't auto-decide |
-| `*:orphaned` | `retire` | span gone from this file → if it **moved to another file**, `hibi reanchor <id> --doc <new>` (or `--code-file <new>`) relocates it; if truly deleted, retire/supersede |
+| `*:orphaned` | `retire` | span gone from this file → not sure where it went? `hibi reanchor <id> --suggest` lists ranked candidate targets across every registered doc (read-only, exit 0), then `hibi reanchor <id> --doc-range …` to one; if it **moved to another file** you know, `hibi reanchor <id> --doc <new>` (or `--code-file <new>`) relocates it; if truly deleted, retire/supersede |
 | `behavior:refuted` | `null` | a verifier failed → fix code or fix claim — **never reanchor** (it clears the gate without fixing the behavior) |
 | `behavior:at-risk` | `null` | the claim's evidence set changed → re-verify; still true? `hibi ignore --claim <id> --reason "…"` acknowledges it (auto-lapses on the next evidence change) |
 | `+ expired` | (composed) | ttl passed → re-verify and re-record, on top of the above |
@@ -214,7 +222,15 @@ keeps flagging forever. Three clean responses:
   Reanchoring is an **attestation**: pass `--ref <commit|pr>` when you actually
   re-verified the claim and trust is retained; without `--ref` the re-anchor still
   lands but `verified` trust downgrades to `inferred` (recorded and surfaced) — a bare
-  reanchor can't silently clear a gate.
+  reanchor can't silently clear a gate. **One exception (a pure move):** if the
+  re-resolved doc quote is byte-identical and unique at similarity 1.0 *and* the
+  code side re-resolves as exactly `unchanged`, trust is kept with no downgrade —
+  a byte-shift is evidence-neutral, there's nothing to re-attest.
+- The claim is orphaned and you don't know where its sentence went →
+  **`hibi reanchor <claim-id> --suggest`** localizes the stored doc quote against
+  every registered doc and prints ranked candidate targets (read-only, always exit
+  0; refuses mutation flags). Pick one and `hibi reanchor <id> --doc-range …`; if
+  no candidate fits, the sentence is gone → `retire`.
 - The claim still holds but its sentence (or code) **moved to a different file** →
   **`hibi reanchor <claim-id> --doc <new-file> --doc-quote "…"`** (and/or `--code-file
   <new-file>`). This *relocates* the same claim — same id, owner, trust, history, and the
@@ -344,6 +360,11 @@ hibi record \
   several selectors matching, so a changed value can grade `code:moved` instead of
   `code:changed` — and only `changed`/`orphaned`/`ambiguous` gate.
 - The quote must appear **verbatim** at record time, or `record` fails.
+- **The doc quote must anchor reliably.** `record`/`record --from-file`/`reanchor`
+  reject a doc-side quote shorter than 8 characters, or one that occurs more than
+  once without a 48-char context that disambiguates it — widen the span with
+  `--doc-range` (or add an inline ID). A bad anchor is refused at birth, not left
+  to flag forever.
 - **Confirm the anchor is load-bearing.** After recording an `enforced` claim, perturb the
   anchored token (e.g. flip the value), run `hibi check` — it should exit **2** — then
   revert. A claim that *doesn't* flip the gate is anchored to the wrong span and protects
@@ -431,4 +452,7 @@ own that policy.
   SDKs) — the canonical human reference.
 - **Resolvers** speak a JSONL-RPC protocol (`describe` | `resolve` | `verify`); the
   optional semantic resolver only *advises* — it never changes a verdict or exit code.
-  Leave it off unless asked.
+  Leave it off unless asked. A **model-backed** resolver must attach `provenance`
+  (`model`, `promptHash`, `contextHash`) to each advisory and set
+  `ResolverSpec.modelBacked: true`; the registry drops provenance-less advisories from
+  a model-backed resolver and prints a stderr warning per run.

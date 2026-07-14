@@ -39,10 +39,12 @@ import type {
   Region,
   Verdict,
 } from "../core/model.ts";
+import { remediationFor } from "../core/remediation.ts";
 import { exists } from "../fs.ts";
 import type { ResolverRegistry } from "../resolver/registry.ts";
 import type { ClaimStore } from "../store/store.ts";
 import { evidenceSetPaths, readEvidenceContents } from "./evidence.ts";
+import { buildTestFileIndex, suggestTests } from "./test-suggest.ts";
 
 /**
  * Side-tagged status precedence for the single-valued frontmatter status (most
@@ -313,6 +315,56 @@ export async function runCheck(
           evidence,
         });
     verdicts.push(verdict);
+  }
+
+  // ── D26 — advisory reverse-import test suggestions ──
+  // For a behavioral claim that is `at-risk`/`refuted` and has NO declared
+  // verifier, list test files that exercise the anchored code and fold them into
+  // the declare-a-verifier remediation rationale. Built lazily: the test-file
+  // import index is computed at most once per run, and only when at least one
+  // verdict qualifies. Never touches verdicts, states, exit codes, or the store.
+  const assertById = new Map(assertions.map((a) => [a.id, a]));
+  const qualifies = (v: Verdict): boolean => {
+    if (v.behavior !== "at-risk" && v.behavior !== "refuted") return false;
+    const a = assertById.get(v.assertionId);
+    return a !== undefined && a.verifiers.length === 0;
+  };
+  if (verdicts.some(qualifies)) {
+    const index = await buildTestFileIndex({
+      analyzer: options.ast,
+      readFile: readFileText,
+      root,
+    });
+    for (const v of verdicts) {
+      if (!qualifies(v)) continue;
+      const a = assertById.get(v.assertionId);
+      if (!a) continue;
+      // Union the suggestions across the claim's precise (non-coarse) code files.
+      const seen = new Set<string>();
+      const tests: string[] = [];
+      for (const bundle of a.anchor.code) {
+        if (
+          bundle.selectors.every((s) => s.kind === "path" || s.kind === "glob")
+        )
+          continue;
+        for (const t of suggestTests(bundle.file, index)) {
+          if (!seen.has(t)) {
+            seen.add(t);
+            tests.push(t);
+          }
+        }
+      }
+      tests.sort();
+      v.remediation = remediationFor({
+        assertionId: v.assertionId,
+        doc: v.doc,
+        code: v.code,
+        behavior: v.behavior,
+        expired: v.expired,
+        changedEvidence: v.evidence.changedEvidence,
+        suggestedTests: tests.slice(0, 3),
+      });
+    }
   }
 
   // ── Histograms & rollups ──

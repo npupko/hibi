@@ -1,23 +1,23 @@
 {
-  "id": "asrt_8dd93ba0647b4b21",
-  "propositionId": "prop_9cb7f1b5dbe94c11",
-  "documentId": "doc_84263e2579006d07",
+  "id": "asrt_457f235830024f07",
+  "propositionId": "prop_7f2618592a5d43b0",
+  "documentId": "doc_25887c67cd18d901",
   "owner": "hibi-dogfood",
-  "ref": "feat/post-adr-002-refinements",
+  "ref": "2358ba7e4b5a89c53310936962ac481c9084edf4",
   "anchor": {
     "doc": {
-      "file": "docs/anchors.mdx",
+      "file": "docs/verdicts.mdx",
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "Structural-only AST matches score 0.40",
-          "prefix": "`ambiguous`.\n  </Accordion>\n  <Accordion title=\"",
-          "suffix": "\">\n    If the `ast-node` matches only structural"
+          "exact": "48-character context window",
+          "prefix": "hold 0.4` and\n  `Match_Distance 100000`, over a ",
+          "suffix": ". The full selector\n  model, weights, and tiers "
         },
         {
           "kind": "text-position",
-          "start": 6179,
-          "end": 6217
+          "start": 10495,
+          "end": 10522
         }
       ]
     },
@@ -27,27 +27,27 @@
         "selectors": [
           {
             "kind": "text-quote",
-            "exact": "STRUCTURAL_ONLY_SCORE = 0.4",
-            "prefix": "its this partial score (§17.3). */\nexport const ",
-            "suffix": ";\n\n/** Value veto trips when text-quote similari"
+            "exact": "TEXT_QUOTE_CONTEXT = 48",
+            "prefix": ": 0.4,\n  matchDistance: 100000,\n};\nexport const ",
+            "suffix": ";\n\n/** A minimum of two agreeing selectors is re"
           },
           {
             "kind": "text-position",
-            "start": 1691,
-            "end": 1718
+            "start": 560,
+            "end": 583
           },
           {
             "kind": "ast-node",
             "language": "typescript",
             "nodeType": "variable_declarator",
             "structuralHash": "de0dbd0a8e84411f",
-            "semanticHash": "26a21c7f8401be2e"
+            "semanticHash": "3e47faab960c1c6f"
           },
           {
             "kind": "value",
             "language": "typescript",
             "nodeKind": "number",
-            "value": "0.4"
+            "value": "48"
           }
         ]
       }

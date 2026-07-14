@@ -42,6 +42,17 @@ export interface DuplicatePropositionRow {
 }
 
 /**
+ * A behavioral claim whose change-gate is watching almost nothing (§17.6, D32):
+ * its `evidenceBaseline` holds ≤ 1 path, so drift may slip past the gate.
+ * Observability only — never affects `healthy` and never gates. Remedy: widen the
+ * scope with `behaviorScope.include` globs or a larger `depth`.
+ */
+export interface ThinEvidenceRow {
+  assertionId: string;
+  evidencePaths: number;
+}
+
+/**
  * Rate metrics from the read-only resolution pass (§17.6/D14/D19). Observability,
  * not gates: the behavioral flag-rate carries the research's >30% tighten-the-gate
  * trigger; the doc-side rates carry D19's orphan-rate kill-switch (>30% → require
@@ -59,15 +70,20 @@ export interface DoctorRates {
 }
 
 export interface DoctorReport {
+  /** The store's model version string, read from `config.json` (D28). */
+  storeVersion: string;
   orphanedAnchors: OrphanedAnchorRow[];
   suggestedNoCode: SuggestedNoCodeRow[];
   staleDocClaims: StaleDocClaimRow[];
   duplicatePropositions: DuplicatePropositionRow[];
+  /** Behavioral claims watching ≤ 1 evidence path (D32) — observability only. */
+  thinEvidenceBehavioral: ThinEvidenceRow[];
   counts: {
     orphanedAnchors: number;
     suggestedNoCode: number;
     staleDocClaims: number;
     duplicatePropositions: number;
+    thinEvidenceBehavioral: number;
   };
   /** Observability rates (never gate) — the tighten-the-gate / kill-switch triggers. */
   rates: DoctorRates;
@@ -149,6 +165,7 @@ export function buildDoctorReport(
   assertions: Assertion[],
   documents: Document[],
   propositions: Proposition[],
+  storeVersion: string,
 ): DoctorReport {
   const assertById = new Map(assertions.map((a) => [a.id, a]));
   const docById = new Map(documents.map((d) => [d.id, d]));
@@ -226,19 +243,48 @@ export function buildDoctorReport(
     });
   }
 
+  // ── thinEvidenceBehavioral: a behavioral claim whose gate watches ≤ 1 path. ──
+  // Uses the live check's computed behavior axis to identify behavioral claims
+  // (verdict.behavior !== undefined), then counts the claim's stored evidence
+  // baseline. Observability only: it never feeds `healthy` and never gates (D32).
+  const thinEvidenceBehavioral: ThinEvidenceRow[] = [];
+  for (const v of report.verdicts) {
+    if (v.behavior === undefined) continue;
+    const a = assertById.get(v.assertionId);
+    if (!a || a.enforcement === "retired") continue;
+    const evidencePaths = a.evidenceBaseline
+      ? Object.keys(a.evidenceBaseline).length
+      : 0;
+    if (evidencePaths <= 1) {
+      thinEvidenceBehavioral.push({
+        assertionId: v.assertionId,
+        evidencePaths,
+      });
+    }
+  }
+
   const counts = {
     orphanedAnchors: orphanedAnchors.length,
     suggestedNoCode: suggestedNoCode.length,
     staleDocClaims: staleDocClaims.length,
     duplicatePropositions: duplicatePropositions.length,
+    thinEvidenceBehavioral: thinEvidenceBehavioral.length,
   };
-  const healthy = Object.values(counts).every((n) => n === 0);
+  // `healthy` is the silent-rot rollup only — the thin-evidence row is pure
+  // observability and must not flip a store to unhealthy (D32).
+  const healthy =
+    orphanedAnchors.length === 0 &&
+    suggestedNoCode.length === 0 &&
+    staleDocClaims.length === 0 &&
+    duplicatePropositions.length === 0;
 
   return {
+    storeVersion,
     orphanedAnchors,
     suggestedNoCode,
     staleDocClaims,
     duplicatePropositions,
+    thinEvidenceBehavioral,
     counts,
     rates: computeRates(report),
     healthy,

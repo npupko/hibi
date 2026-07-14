@@ -1,9 +1,9 @@
 {
-  "id": "asrt_b8fefd2ab42341dc",
-  "propositionId": "prop_4b4647cb09cd4a62",
+  "id": "asrt_d9b97debe5fc487f",
+  "propositionId": "prop_30f605cb9d4546d7",
   "documentId": "doc_a8b3f9165caba304",
   "owner": "hibi-dogfood",
-  "ref": "feat/post-adr-002-refinements",
+  "ref": "2358ba7e4b5a89c53310936962ac481c9084edf4",
   "anchor": {
     "doc": {
       "file": "plugins/hibi-cli/skills/hibi/references/cli-reference.md",
@@ -33,8 +33,8 @@
           },
           {
             "kind": "text-position",
-            "start": 40074,
-            "end": 40090
+            "start": 41986,
+            "end": 42002
           },
           {
             "kind": "ast-node",

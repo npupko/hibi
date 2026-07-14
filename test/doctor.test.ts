@@ -170,7 +170,13 @@ describe("buildDoctorReport (pure projection)", () => {
       proposition({ id: "p_d2", fingerprint: "shared" }),
     ];
 
-    const out = buildDoctorReport(report, assertions, documents, propositions);
+    const out = buildDoctorReport(
+      report,
+      assertions,
+      documents,
+      propositions,
+      "v2",
+    );
     expect(out.orphanedAnchors.map((o) => o.claimId)).toEqual(["asrt_orphan"]);
     expect(out.suggestedNoCode.map((s) => s.claimId)).toEqual(["asrt_sugg"]);
     expect(out.staleDocClaims.map((s) => s.claimId)).toEqual(["asrt_stale"]);
@@ -216,7 +222,7 @@ describe("buildDoctorReport (pure projection)", () => {
       proposition({ id: "p_d2", fingerprint: "shared" }),
     ];
 
-    const out = buildDoctorReport(report, assertions, [], propositions);
+    const out = buildDoctorReport(report, assertions, [], propositions, "v2");
     expect(out.orphanedAnchors).toEqual([]);
     expect(out.duplicatePropositions).toEqual([]);
     expect(out.healthy).toBe(true);
@@ -277,6 +283,7 @@ describe("buildDoctorReport (pure projection)", () => {
       assertions,
       [],
       [proposition({ id: "p_m", fingerprint: "f_m" })],
+      "v2",
     );
     const codeRow = out.orphanedAnchors.find((o) => o.side === "code");
     expect(codeRow?.path).toBe("src/gone.ts"); // not src/here.ts (code[0])
@@ -290,13 +297,14 @@ describe("buildDoctorReport (pure projection)", () => {
       summary: {} as CheckReport["summary"],
       exitCode: 0,
     } satisfies CheckReport;
-    const out = buildDoctorReport(report, [], [], []);
+    const out = buildDoctorReport(report, [], [], [], "v2");
     expect(out.healthy).toBe(true);
     expect(out.counts).toEqual({
       orphanedAnchors: 0,
       suggestedNoCode: 0,
       staleDocClaims: 0,
       duplicatePropositions: 0,
+      thinEvidenceBehavioral: 0,
     });
   });
 });

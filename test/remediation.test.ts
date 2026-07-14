@@ -58,7 +58,7 @@ describe("optional markdown frontmatter status (§8)", () => {
     // Enforced so the orphaned code side gates and the doc becomes suspect.
     await record(r, {
       doc: "doc.md",
-      text: "A is 1",
+      text: "A is 1 here",
       file: "src/a.ts",
       quote: "A = 1",
       trust: "verified",

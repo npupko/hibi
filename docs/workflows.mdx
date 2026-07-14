@@ -1,21 +1,75 @@
 ---
-title: "Six Workflows Where Hibi Catches Documentation Drift"
+title: "Workflows: Author, Verify, Maintain, and Prune with Hibi"
 sidebarTitle: "Workflows"
-description: "Six key moments: trust-check before following a doc, keep docs honest in a PR, see blast radius before a refactor, onboard an existing repo, consolidate docs, and silence a known-good at-risk."
+description: "Ten moments grouped by intent: author grounded docs and verify built code against a plan; trust-check, keep-honest, blast-radius, onboard, consolidate, silence, and recover; and prune the ungrounded."
 icon: "route"
 ---
 
 Hibi is not a thing you run on a schedule and forget. It's a thing you reach for at
 specific *moments* — the instant before you trust a doc, the instant after you change
-code. Each moment below is a real problem, the one command that answers it, and what
-you do with the answer. (For the same flows as an agent-facing playbook with raw
-JSON, see the [`hibi` skill cookbook](https://github.com/npupko/hibi/blob/main/plugins/hibi-cli/skills/hibi/references/cookbook.md).)
+code, the instant you fold a draft into a permanent page. The moments below are grouped
+by **intent**: **Author** grounded prose for new code, **Verify / Maintain** what
+already exists, and **Prune** what no longer earns its place. Each moment is a real
+problem, the one command that answers it, and what you do with the answer. (For the same
+flows as an agent-facing playbook with raw JSON, see the [`hibi` skill
+cookbook](https://github.com/npupko/hibi/blob/main/plugins/hibi-cli/skills/hibi/references/cookbook.md).)
 
 The running example: a service with `src/retry.ts` (`MAX_ATTEMPTS = 5`) and
 `src/auth.ts` (`TOKEN_TTL_MIN = 30`), a `README.md`, and a `CLAUDE.md` telling an
 agent "Auth tokens expire after 30 minutes."
 
-## 1. Trust-check before you follow an instruction file
+## Author
+
+### 1. Write grounded docs for a fresh feature
+
+**The problem.** You just built a feature and you're writing the doc that describes it.
+You want every sentence that makes a promise about the code to be *anchored* to the code
+that keeps it — so the doc can never quietly drift once it ships.
+
+**The commands.**
+
+```sh
+hibi coverage --doc docs/new-feature.md      # which blocks are ungrounded?
+hibi record --from-file claims.json          # author the whole claim set in one pass
+```
+
+**The payoff.** Write the doc, then let `coverage` list the ungrounded blocks — the
+deterministic worklist. Author a claim per promise and record the set transactionally
+(`record --from-file`; every spec is validated before any write, so a typo fails the
+batch loudly rather than half-recording it). You're done when `coverage` comes back
+clean. Behavioral sentences ("retries use exponential backoff") get a `command:`
+verifier at authoring time, so `hibi check --run-verifiers` can prove them later. A doc
+quote shorter than 8 characters, or a repeated sentence the surrounding context can't
+disambiguate, is refused at record time — the anchor has to be able to find its span
+again.
+
+### 2. Verify built code against a pre-existing plan
+
+**The problem.** You have a plan (an RFC, a spec, a design doc) and code that claims to
+implement it. Which promises in the plan are actually built, and which are still
+vapor — or were quietly dropped?
+
+**The command.**
+
+```sh
+hibi coverage --doc plan.md --fail-uncovered   # in CI: gate on a fully-grounded plan
+```
+
+**The payoff.** `--fail-uncovered` exits **2** (the gating code) while any block of the
+plan is ungrounded, so "this plan must be fully grounded" becomes CI-enforceable — an
+uncovered block is an unimplemented (or unpruned) plan item. Behavioral promises get
+verifiers; `hibi check --run-verifiers` proves them.
+
+<Note>
+  **The honesty rule (read this).** hibi never judges whether code *implements* a
+  sentence — the author/agent judges by **anchoring** each promise to its implementing
+  code (a sentence you cannot anchor is an unimplemented plan item); hibi makes the
+  judgment enforceable and guards it afterward.
+</Note>
+
+## Verify / Maintain
+
+### 3. Trust-check before you follow an instruction file
 
 **The problem.** Your `CLAUDE.md` / `AGENTS.md` / README tells you how the code
 behaves. But docs rot silently — the moment you act on a stale instruction, you ship a
@@ -37,7 +91,7 @@ to 60 minutes; the file still says 30). You now know not to blindly trust the
 fix it. This is the natural **SessionStart** moment for an agent: check the instruction
 file before the session trusts it.
 
-## 2. Keep docs honest in the same PR as the code change
+### 4. Keep docs honest in the same PR as the code change
 
 **The problem.** You changed a constant. Somewhere in the docs, a sentence just became
 a lie — but you don't remember which, and "update the docs" is the step everyone
@@ -57,7 +111,7 @@ change, while you still remember why. Add `--explain` to see *what* moved
 (`changedEvidence` points at the literal value), or read the concise `changed` field
 for a one-line summary. This is the natural **Stop / pre-commit** moment.
 
-## 3. See the blast radius before you refactor
+### 5. See the blast radius before you refactor
 
 **The problem.** You're about to refactor `src/auth.ts`. What promises does the rest of
 the repo make about this file? Which sentences will quietly become wrong if you change
@@ -76,7 +130,7 @@ asserting the 30-minute TTL. Now you refactor *knowing* the contracts you must n
 silently break, and you already hold the ids you'll `reanchor` (if still true) or
 `retire` (if now wrong) afterward.
 
-## 4. Go from zero to protected on an existing repo
+### 6. Go from zero to protected on an existing repo
 
 **The problem.** A repo has docs but no claims. Hand-authoring an anchor for every
 sentence is tedious enough that it never happens, so nothing is protected.
@@ -111,7 +165,7 @@ hibi record --from-file claims.json   # a JSON array of claim specs; - reads std
 Every spec is validated before any write, so a typo fails the batch loudly rather than
 half-recording it. See [`record --from-file`](/cli-reference#batch-authoring-from-file).
 
-## 5. Consolidate a doc and bring its claims along
+### 7. Consolidate a doc and bring its claims along
 
 **The problem.** You merged a doc into another, renamed it, or folded a draft into a
 permanent page. Every sentence those claims tracked now lives in a **different file** —
@@ -137,7 +191,7 @@ hand. This is the batch companion to the single-claim
 [supersession](/lifecycle), which records a document-to-document edge rather than
 relocating claims.
 
-## 6. Silence a known-good at-risk
+### 8. Silence a known-good at-risk
 
 **The problem.** A behavioral claim went `at-risk` because a file in its evidence set
 changed — say a helper that `src/retry.ts` imports. You re-verified by hand: the
@@ -157,7 +211,63 @@ the JSON. The suppression **lapses on its own** the moment any acknowledged path
 changes again or a new evidence path appears — you silenced one inspected change-set,
 not the claim. If you find yourself ignoring the same claim repeatedly, that's the cue
 to declare a verifier and let `hibi check --run-verifiers` do the re-verification for
-you.
+you — the `run-verifier` remediation action even names the tests that already exercise
+the anchored code, so you know which one to promote into a `command:` verifier.
+
+### 9. Recover an orphaned claim
+
+**The problem.** A claim went `orphaned` — its documented span was deleted or moved
+somewhere `reanchor` can't find on its own. A bare `reanchor` has no target to relocate
+to, and you don't want to hand-hunt every doc for where the sentence went.
+
+**The commands.**
+
+```sh
+hibi reanchor asrt_1a2b3c --suggest                       # list candidate targets (read-only)
+hibi reanchor asrt_1a2b3c --doc-range L40:L40             # re-anchor to the one you picked
+```
+
+**The payoff.** `--suggest` is **read-only** — it never writes the store or a document,
+and it refuses every mutation flag. It takes the claim's stored doc quote, localizes it
+against every registered document, and prints the ranked candidate targets (path, span,
+similarity, snippet). Inspect them, then either re-anchor to the one you chose with an
+explicit `--doc-range` (D15's attestation rules still apply — re-anchoring without
+`--ref` downgrades `verified` trust) or `hibi retire` the claim if the sentence is gone
+for good.
+
+<Note>
+  **The pure-move case.** If the sentence turns up **byte-identical** at a new offset and
+  the code side is still `unchanged`, re-anchoring it does **not** downgrade trust — a
+  byte-shift is evidence-neutral, so there is nothing to re-attest (D25). Anything
+  fuzzier (a reword, a changed code side) downgrades exactly as a no-`--ref` reanchor
+  always has.
+</Note>
+
+## Prune
+
+### 10. Prune the ungrounded
+
+**The problem.** A doc has grown prose that no code backs — aspirational sentences,
+stale promises, notes that never became claims. You want a deterministic worklist of
+what to cut, not a vibe.
+
+**The commands.**
+
+```sh
+hibi coverage --doc docs/guide.md          # blocks with no claim recorded
+hibi list --state orphaned                 # claims whose grounding died
+```
+
+**The payoff.** Two deterministic signals feed the prune decision. `coverage` uncovered
+blocks were **never grounded** — ground them (if a code span backs the sentence) or cut
+them. `list --state orphaned` are claims whose **grounding died** — the code-side span
+is gone, so retire the claim and cut the sentence it tracked. hibi hands you the
+worklist; you make the call.
+
+<Note>
+  **Read this caveat.** "uncovered" means "no claim recorded," not "no code backs it" —
+  hibi provides the worklist, the author makes the prune call.
+</Note>
 
 ## Triage anytime
 
@@ -172,15 +282,17 @@ One lean row per claim — the `claimId`, the doc and code paths, the status, an
 recommended action — most-severe-first. Decide intent, then act on the row's handle:
 `hibi reanchor <id>` if the claim still holds, `hibi retire <id>` if it's obsolete
 (idempotent, keeps the audit trail). Swap the filter for the cut you need —
-`--state orphaned` for un-relocatable claims whose span was deleted, `--state suggested`
-for the advisory claims that never got enforced — and add `--ids-only` to pipe the bare
-id list straight into a `for id in $(…)` loop.
+`--state orphaned` for un-relocatable claims whose span was deleted (recover them with
+`reanchor --suggest`, moment 9), `--state suggested` for the advisory claims that never
+got enforced — and add `--ids-only` to pipe the bare id list straight into a
+`for id in $(…)` loop.
 
 ## How to respond to a flag
 
 Across all of these, a flag is the **start of a decision, not a banner to silence**.
 Every drift verdict carries a deterministic [`remediation`](/verdicts#the-remediation-menu)
 menu: read `recommended` (the unambiguous next step, or `null` when intent matters),
-pick an action, and either run its pre-filled `command` (`reanchor`/`retire`) or do the
-prose work it names (fix the code, rewrite the sentence). You never rewrite a doc just
-to make a flag go away — you re-verify, then act.
+pick an action, and either run its pre-filled `command` (`reanchor`/`retire`, or the
+read-only `reanchor --suggest` on an orphan) or do the prose work it names (fix the
+code, rewrite the sentence). You never rewrite a doc just to make a flag go away — you
+re-verify, then act.

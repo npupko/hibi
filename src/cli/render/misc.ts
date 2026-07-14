@@ -14,6 +14,7 @@ import type {
   ListSeverity,
   QueryHit,
   ReanchorResult,
+  ReanchorSuggestResult,
   RecordResult,
   RelocateResult,
   RetireResult,
@@ -83,6 +84,22 @@ export function renderReanchor(
 ): string {
   const verb = dryRun ? "would reanchor" : "reanchored";
   return `${ok(style, mode)} ${verb}  ${style.cyan(result.assertion.id)}   ${style.dim(`doc:${result.doc}  code:${result.code}`)}${dryTag(style, dryRun)}\n`;
+}
+
+export function renderReanchorSuggest(
+  result: ReanchorSuggestResult,
+  style: Style,
+  mode: OutputMode,
+): string {
+  const head = `${ok(style, mode)} ${style.bold("reanchor --suggest")}  ${style.cyan(result.claimId)}  ${style.dim(`${result.candidates.length} candidate${result.candidates.length === 1 ? "" : "s"}`)}`;
+  if (result.candidates.length === 0) {
+    return `${head}\n  ${style.dim("no candidate targets found — retire the claim, or re-anchor with an explicit --doc-range")}\n`;
+  }
+  const lines = result.candidates.map((c) => {
+    const sim = `${Math.round(c.similarity * 100)}%`;
+    return `  ${style.green(sim.padStart(4))}  ${style.bold(c.doc)} ${style.dim(`[${c.start}-${c.end}]`)}  ${style.dim(`"${c.snippet}"`)}`;
+  });
+  return `${head}\n${lines.join("\n")}\n`;
 }
 
 export function renderCoverage(
@@ -246,7 +263,7 @@ export function renderDoctor(
     ? style.green(mode.unicode ? "✓" : "+")
     : style.yellow(mode.unicode ? "⚠" : "!");
   out.push(
-    `${mark} ${style.bold("hibi doctor")} ${style.dim(report.healthy ? "(healthy)" : "(needs attention)")}`,
+    `${mark} ${style.bold("hibi doctor")} ${style.dim(report.healthy ? "(healthy)" : "(needs attention)")} ${style.dim(`store ${report.storeVersion}`)}`,
   );
   out.push("");
   const rows = [
@@ -271,6 +288,12 @@ export function renderDoctor(
   out.push(
     `  ${style.dim("doc orphaned/moved/changed")} ${rate(report.rates.docOrphanedRate)} / ${style.dim(pct(report.rates.docMovedRate))} / ${style.dim(pct(report.rates.docChangedRate))} ${style.dim("(>30% orphaned → require inline IDs)")}`,
   );
+  // Thin-evidence behavioral claims (D32) — observability only, never a health flag.
+  if (report.counts.thinEvidenceBehavioral > 0) {
+    out.push(
+      `  ${style.dim("thin-evidence behavioral")} ${style.yellow(String(report.counts.thinEvidenceBehavioral))} ${style.dim("(≤1 evidence path — widen behaviorScope include/depth)")}`,
+    );
+  }
   // The claim ids per non-empty category, so the next command is one copy away.
   const detail: string[] = [];
   for (const o of report.orphanedAnchors)

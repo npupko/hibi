@@ -8,6 +8,11 @@
  */
 
 import { regionText } from "../algo/localize.ts";
+import { textSimilarity } from "../algo/normalize.ts";
+import {
+  AMBIGUOUS_MIN_QUOTE_LENGTH,
+  TEXT_QUOTE_CONTEXT,
+} from "../algo/params.ts";
 import { newId, propositionFingerprint } from "../core/ids.ts";
 import type {
   Anchor,
@@ -157,6 +162,12 @@ export async function recordClaim(
     throw new Error(
       "A claim requires a doc span (--doc-quote/--doc-range/--doc-line).",
     );
+
+  // D23 — reject a doc-side quote that cannot anchor reliably (too short, or a
+  // repeated span the stored context cannot disambiguate). docRegion + docContent
+  // are both defined here (confirmedText required them).
+  if (docRegion !== undefined && docContent !== null)
+    validateDocQuote(docContent, docRegion, input.docPath);
 
   // ── Code side: a bundle per target. ──
   const codeBundles: SelectorBundle[] = [];
@@ -316,6 +327,80 @@ export async function recordClaim(
     // pre-existing claim on the same (deduped) proposition.
     existingClaims: sharingProposition.map((x) => x.id),
   };
+}
+
+/**
+ * Record-time doc-quote guard (§17.1, D23). After the doc span is resolved
+ * (span-first), reject a doc-side `text-quote` that cannot anchor reliably:
+ *
+ *   1. Length floor — a quote shorter than `AMBIGUOUS_MIN_QUOTE_LENGTH` occurs
+ *      everywhere and is not a meaningful anchor.
+ *   2. Uniqueness — if the exact quote occurs more than once, score each
+ *      occurrence with the stored 48-char prefix/suffix context (the same text
+ *      similarity the text-quote cascade uses); if the recorded occurrence is not
+ *      *strictly* the best, the context cannot select a single span → reject.
+ *
+ * Prevents a bad anchor at birth, in `record`, `record --from-file`, and
+ * `reanchor` alike (the failure to prevent is a degenerate span, not thin
+ * context — D23).
+ */
+export function validateDocQuote(
+  docContent: string,
+  region: Region,
+  docPath: string,
+): void {
+  const quote = regionText(docContent, region);
+  if (quote.length < AMBIGUOUS_MIN_QUOTE_LENGTH) {
+    throw new Error(
+      "doc quote is shorter than 8 characters — too short to anchor reliably. Record a wider span (--doc-range) that covers the full sentence.",
+    );
+  }
+
+  // Count exact occurrences of the quote in the document text.
+  let count = 0;
+  for (
+    let j = docContent.indexOf(quote);
+    j !== -1;
+    j = docContent.indexOf(quote, j + quote.length)
+  ) {
+    count += 1;
+  }
+  if (count <= 1) return;
+
+  // The stored 48-char context around the recorded span (buildSelectorBundle
+  // captures exactly this window). Score each occurrence's live context against
+  // it; the recorded occurrence must win outright.
+  const storedPrefix = docContent.slice(
+    Math.max(0, region.start - TEXT_QUOTE_CONTEXT),
+    region.start,
+  );
+  const storedSuffix = docContent.slice(
+    region.end,
+    region.end + TEXT_QUOTE_CONTEXT,
+  );
+  const scores: number[] = [];
+  for (
+    let j = docContent.indexOf(quote);
+    j !== -1;
+    j = docContent.indexOf(quote, j + quote.length)
+  ) {
+    const pre = docContent.slice(Math.max(0, j - TEXT_QUOTE_CONTEXT), j);
+    const suf = docContent.slice(
+      j + quote.length,
+      j + quote.length + TEXT_QUOTE_CONTEXT,
+    );
+    scores.push(
+      textSimilarity(pre, storedPrefix) + textSimilarity(suf, storedSuffix),
+    );
+  }
+  scores.sort((a, b) => b - a);
+  const best = scores[0] ?? 0;
+  const second = scores[1] ?? 0;
+  if (!(best > second)) {
+    throw new Error(
+      `doc quote occurs ${count} times in ${docPath} and the surrounding context does not select a single occurrence. Record a wider span (--doc-range), or add an inline ID and re-record.`,
+    );
+  }
 }
 
 /**

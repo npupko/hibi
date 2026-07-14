@@ -3,7 +3,7 @@
   "type": "object",
   "properties": {
     "version": {
-      "default": "v1",
+      "default": "v2",
       "type": "string"
     },
     "nonce": {

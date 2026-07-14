@@ -35,8 +35,8 @@ repo root), `--store-dir <dir>` (store location, default `<anchor>/.claims`),
 | `query --path <p>` | List the claims anchored to / covering a path. Read-only. |
 | `list [--state …]` | Triage: one lean row per claim (handle + status + severity + recommended). Read-only. `--state all\|gating\|warning\|clean\|orphaned\|suggested`. |
 | `completions <zsh\|bash\|fish>` | Print a shell completion script. |
-| `coverage --doc <p>` | Report which blocks of a doc are backed by a claim vs uncovered (the grounding-audit worklist). Read-only. |
-| `reanchor <claim-id>` | Re-resolve a claim against current content (new doc/code spans). |
+| `coverage --doc <p>` | Report which blocks of a doc are backed by a claim vs uncovered (the grounding-audit worklist). Read-only; `--fail-uncovered` exits 2 while any block is uncovered (else 0) — the plan-grounding gate. |
+| `reanchor <claim-id>` | Re-resolve a claim against current content (new doc/code spans). `--suggest` is read-only orphan recovery: prints ranked candidate targets across all docs, writes nothing, exits 0. |
 | `retire <claim-id>` | Withdraw one claim (`enforcement` → `retired`); idempotent. A retired claim never gates/warns. |
 | `relocate --from <p> --to <p>` | Batch re-home every live claim from one doc onto another (verbatim sentence matches move; the rest land in `misses[]`). Supports `--dry-run`. |
 | `ignore --claim <id> --reason <t>` | Suppress a known-good behavioral `at-risk`: acknowledges the current changed evidence (`{path → hash}`) and auto-lapses when evidence moves again or a new path appears. Reason required. |
@@ -82,6 +82,14 @@ may await a code target — but an **`enforced` claim must resolve both sides**,
 `record` throws (exit 1) when an enforced outcome can't anchor doc and code. If a
 quote isn't found, record fails with a non-zero exit and an `{ ok: false, error }`
 payload.
+
+**Record-time doc-quote guard.** `record`, `record --from-file`, and `reanchor`
+reject a doc-side quote that can't anchor reliably (exit 1): one shorter than 8
+characters (`doc quote is shorter than 8 characters — too short to anchor
+reliably. …`), or one that occurs more than once where the 48-char context can't
+disambiguate (`doc quote occurs N times in <docPath> …`). Widen the span with
+`--doc-range`, or add an inline ID and re-record. In a `--from-file` batch, one
+failing spec fails the whole batch — nothing is written.
 
 ## Exit-code contract
 
@@ -214,18 +222,46 @@ heuristics). An **uncovered executable** block is the highest-value target (it c
 `command:` verifier and reach `supported`/`refuted`), so when any exist `next` leads with
 them. The `covered:false` regions are the ground-or-prune worklist. `range` offsets are in
 banner-normalized coordinates (the HIBI banner is stripped first), so identify a block by
-its `preview`/sentence text, not by byte-slicing the raw file at `range`.
+its `preview`/sentence text, not by byte-slicing the raw file at `range`. Pass
+**`--fail-uncovered`** to gate: the command exits **2** while `uncoveredBlocks > 0`
+(the gating code `check` uses) and 0 when fully covered — JSON/human output
+unchanged, only the exit code. This is the plan-grounding gate for CI.
 
 **`reanchor`** → `{ ok, action:"reanchor", schemaVersion, assertion, doc, code,
 claimId, next }`. Re-resolves `<claim-id>` against current content; `doc`/`code` are
 the post-reanchor `AnchorState`s (should settle to `unchanged`). Reanchoring is an
 **attestation**: with `--ref <r>` authored trust is retained and the ref recorded;
-without it, `verified` trust downgrades to `inferred` (recorded on the assertion).
+without it, `verified` trust downgrades to `inferred` (recorded on the assertion)
+— **except a pure move** (re-resolved doc quote byte-identical and unique at
+similarity 1.0, code side re-resolving as exactly `unchanged`), which keeps
+`verified` trust with no downgrade.
+
+**`reanchor <claim-id> --suggest`** is **read-only orphan recovery**: it takes the
+claim's stored doc-side quote, localizes it against every registered document, and
+prints ranked candidate targets. It never writes the store or a document and
+always exits 0 (operational errors exit 1); it refuses mutation flags
+(`--suggest is read-only and cannot be combined with mutation flags.`). Shape:
+`{ action:"reanchor-suggest", claimId, candidates:[ { doc, start, end, similarity,
+snippet } ] }` — candidates keep similarity ≥ 0.5, sorted by similarity desc / doc
+path asc / start asc, capped at 5 (`snippet` trimmed to 120 chars; empty array is
+valid). Feed a chosen candidate into `hibi reanchor <id> --doc-range …`.
 
 **`retire`** → `{ ok, action:"retire", schemaVersion, assertion, alreadyRetired,
 claimId, next }`. Flips `enforcement` to `retired`; idempotent (`alreadyRetired: true`
 on a second call). `status` (single doc) reports exit 2 when any verdict gates, exit 3
 on a `moved`/`at-risk` warning, else 0.
+
+## Advisory provenance (model-backed resolvers)
+
+Advisories are optional out-of-process context that never gates. If a resolver is
+**model-backed**, its model state must be on the record: the wire `Advisory` gains
+an optional `provenance` object `{ model, promptHash, contextHash, params? }`, and
+a resolver's manifest spec (`ResolverSpec`) gains `modelBacked` (boolean, default
+false). When a `modelBacked` resolver returns an advisory lacking `provenance`,
+the registry **drops it** and prints one stderr warning per run per resolver:
+`dropped <N> advisories from <resolver>: modelBacked resolvers must attach
+provenance (model, promptHash, contextHash).` Non-model-backed resolvers are
+unaffected; provenance-carrying advisories pass through.
 
 ## Store layout (`.claims/`)
 

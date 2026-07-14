@@ -1,23 +1,23 @@
 {
-  "id": "asrt_90a2edb088df4cb4",
-  "propositionId": "prop_a72d2c48159349eb",
-  "documentId": "doc_25887c67cd18d901",
+  "id": "asrt_750f2092932e47c4",
+  "propositionId": "prop_67c33b4e1b7348a7",
+  "documentId": "doc_a8b3f9165caba304",
   "owner": "hibi-dogfood",
-  "ref": "feat/post-adr-002-refinements",
+  "ref": "2358ba7e4b5a89c53310936962ac481c9084edf4",
   "anchor": {
     "doc": {
-      "file": "docs/verdicts.mdx",
+      "file": "plugins/hibi-cli/skills/hibi/references/cli-reference.md",
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "48-character context window",
-          "prefix": "hold 0.4` and\n  `Match_Distance 100000`, over a ",
-          "suffix": ". The full selector\n  model, weights, and tiers "
+          "exact": "≥ 0.9 similar",
+          "prefix": "red value changed but the located text is still\n",
+          "suffix": "; fewer than two resolving selectors forces `orp"
         },
         {
           "kind": "text-position",
-          "start": 10495,
-          "end": 10522
+          "start": 10513,
+          "end": 10526
         }
       ]
     },
@@ -27,27 +27,27 @@
         "selectors": [
           {
             "kind": "text-quote",
-            "exact": "TEXT_QUOTE_CONTEXT = 48",
-            "prefix": ": 0.4,\n  matchDistance: 100000,\n};\nexport const ",
-            "suffix": ";\n\n/** A minimum of two agreeing selectors is re"
+            "exact": "VALUE_VETO_TEXTQUOTE_SIMILARITY = 0.9",
+            "prefix": "this and value changed (§17.3). */\nexport const ",
+            "suffix": ";\nexport const VALUE_VETO_CONFIDENCE = 0.3;\n\n/**"
           },
           {
             "kind": "text-position",
-            "start": 560,
-            "end": 583
+            "start": 1822,
+            "end": 1859
           },
           {
             "kind": "ast-node",
             "language": "typescript",
             "nodeType": "variable_declarator",
             "structuralHash": "de0dbd0a8e84411f",
-            "semanticHash": "3e47faab960c1c6f"
+            "semanticHash": "ae60bcabc637dddb"
           },
           {
             "kind": "value",
             "language": "typescript",
             "nodeKind": "number",
-            "value": "48"
+            "value": "0.9"
           }
         ]
       }

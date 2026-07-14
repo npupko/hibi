@@ -1,9 +1,9 @@
 {
-  "id": "asrt_30b951878e3444a7",
-  "propositionId": "prop_c5b97f0c05fd4223",
+  "id": "asrt_b1db0c16caf5498c",
+  "propositionId": "prop_61e8264dfe8c46df",
   "documentId": "doc_a8b3f9165caba304",
   "owner": "hibi-dogfood",
-  "ref": "feat/post-adr-002-refinements",
+  "ref": "2358ba7e4b5a89c53310936962ac481c9084edf4",
   "anchor": {
     "doc": {
       "file": "plugins/hibi-cli/skills/hibi/references/cli-reference.md",

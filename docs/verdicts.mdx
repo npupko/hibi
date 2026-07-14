@@ -331,6 +331,16 @@ A few patterns are worth reading off the table:
 - **`expired` composes.** The TTL flag is orthogonal, so an expired verdict keeps
   whatever menu its axes produced and *appends* a `reverify-and-rerecord` action.
 
+<Note>
+  **Test suggestions on `run-verifier`.** When a behavioral claim is `at-risk` or
+  `refuted` and declares **no** verifier, `check` computes the test files that
+  exercise the anchored code — a static reverse-import walk (depth ≤ 2, capped at
+  3) — and appends them to the `run-verifier` action's rationale as
+  `— tests that exercise this code: <p1>, <p2>, <p3>`. It is advisory only: it
+  never changes a verdict, a state, or an exit code, and the clause is omitted
+  entirely when no test file matches.
+</Note>
+
 ### Turning the menu off
 
 The menu is verbose by design, which a noise-sensitive harness may not want.

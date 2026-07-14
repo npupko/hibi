@@ -59,6 +59,12 @@ Re-pointing a claim's anchors is not the same as re-verifying the claim, and
   findable again — but **downgrades authored trust `verified` → `inferred`**:
   nobody has re-attested that the claim is *true*. The downgrade is recorded on
   the assertion and surfaced in `status` and the JSON.
+- **The pure-move exception.** A bare `hibi reanchor <id>` keeps `verified` trust
+  — with **no** downgrade recorded — in exactly one case: a **pure move**, where
+  the re-resolved doc quote is byte-identical to the stored one and re-resolves
+  uniquely at similarity 1.0, *and* the code side re-resolves as exactly
+  `unchanged`. A byte-shift changes no evidence, so there is nothing to
+  re-attest. Anything fuzzier downgrades as above.
 
 This closes the gaming hole where re-linking an anchor clears CI without anyone
 re-checking the claim: a `verified` badge always means someone attested it,

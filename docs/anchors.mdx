@@ -45,7 +45,7 @@ flowchart TD
   AS --> AN["Anchor (bidirectional)"]
   AN --> DOC["doc side<br/>1 SelectorBundle"]
   AN --> CODE["code side<br/>1+ SelectorBundles"]
-  DOC --> DS["text-quote · text-position<br/>ast-node (structural path) · inline-id?"]
+  DOC --> DS["text-quote · text-position<br/>inline-id?"]
   CODE --> CS["text-quote · text-position<br/>ast-node · value · path/glob?"]
 ```
 
@@ -68,7 +68,7 @@ no single kind is enough.
 |---|---|---|---|---|
 | `text-quote` | both | the exact text plus a 48-character prefix and suffix | moves, small edits | Matched fuzzily (W3C TextQuoteSelector + Bitap). The base selector on both sides. |
 | `text-position` | both | a line / character range | nothing, really | A cheap hint and a tie-breaker only, never a span's sole identity. |
-| `ast-node` | both | the enclosing named syntax node | relocation, reformatting | On the code side, a code symbol (via tree-sitter). On the doc side, a markdown structural path. |
+| `ast-node` | code | the enclosing named syntax node | relocation, reformatting | A code symbol, snapped via tree-sitter to the smallest enclosing named node. Code side only — the doc side is format-agnostic and carries no structural selector. |
 | `value` | code | an extracted literal value | everything except a value edit | So changing `MAX_ATTEMPTS = 5` to `50` trips the claim even when nothing else moved. Which AST kinds carry a literal is configured per grammar. |
 | `inline-id` | doc (owned docs) | a hidden marker near the paragraph, e.g. `<!-- hibi:claim id=… -->` | edits around it | Optional. It identifies the record; it never restates the claim. If the marker and the prose disagree, the prose wins. |
 | `path` / `glob` | code | a file, directory, or glob | renames within scope | Coarse coverage for navigation and blast-radius only. |
@@ -165,6 +165,33 @@ back `changed` or `orphaned`, Hibi stops and reports that, rather than grading
 stale prose against the code. The documented span is the source of truth, all the
 way down.
 
+## The record-time quote guard
+
+A doc anchor is only as good as the span it pins, so `record`,
+`record --from-file`, and `reanchor` refuse a doc-side quote that cannot anchor
+reliably — fixing a bad anchor at birth rather than flagging it forever:
+
+- **Too short.** A quote shorter than 8 characters is too common to locate
+  reliably; record a wider span (`--doc-range`) that covers the full sentence.
+- **Ambiguous.** A quote that occurs more than once in the document, where the
+  48-char context still can't single out one occurrence, is refused; widen the
+  span or add an inline ID and re-record.
+
+The exact rejection messages are on the
+[CLI reference](/cli-reference#hibi-record).
+
+## The pure-move exception
+
+Reanchoring a `verified` claim without a `--ref` normally downgrades trust to
+`inferred` — nobody re-attested that the claim is still *true* (see
+[Lifecycle](/lifecycle#reanchoring-is-an-attestation)). One case is exempt: a
+**pure move**. When the re-resolved doc quote is byte-identical to the stored one
+and re-resolves uniquely at similarity 1.0, **and** the code side re-resolves as
+exactly `unchanged`, the claim keeps `verified` trust and records no downgrade. A
+byte-shift is evidence-neutral: there is nothing to re-attest. Anything fuzzier —
+any similarity below 1.0, any code-side state other than `unchanged`, any doc
+text difference — downgrades exactly as before.
+
 ## Precision tiers
 
 Selectors live in a stack of tiers, from cheap text matching up to executable
@@ -177,8 +204,10 @@ checks. The first two tiers are what anchors and fusion cover:
   </Step>
   <Step title="Tier 2: structural">
     The `ast-node` selector, parsed with tree-sitter and snapped to the smallest
-    enclosing named node, plus a two-tier AST hash. The doc side uses the markdown
-    structural path. Grammars: TypeScript, Python, Rust, Go, and Java.
+    enclosing named node, plus a two-tier AST hash — code side only. The doc side
+    is format-agnostic: it rests on `text-quote` (48-char context) + `text-position`
+    (+ optional `inline-id`), with no structural selector. Grammars: TypeScript,
+    Python, Rust, Go, and Java.
   </Step>
   <Step title="Tier 3: behavioral">
     Claims that structural matching can't prove ("retries with backoff", "sorts

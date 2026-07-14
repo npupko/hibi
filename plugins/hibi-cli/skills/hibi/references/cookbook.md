@@ -405,3 +405,146 @@ hibi check
 
 `--dry-run` is available on `reanchor`, `retire`, `supersede`, and `relocate` — the
 write verbs — so any bulk migration can be rehearsed before it lands.
+
+---
+
+## 8. Write grounded docs for a fresh feature
+
+**When** — you just shipped a feature and are writing its doc; you want every
+promise in the new page anchored to the code that implements it, so it's guarded
+from the first commit. (The Author moment — the mirror of onboarding an old repo.)
+
+**Run** — write the doc, then `hibi coverage --doc docs/new-feature.md` to see
+what isn't grounded yet.
+
+```json
+{
+  "ok": true, "action": "coverage", "schemaVersion": "v1",
+  "doc": "docs/new-feature.md",
+  "summary": { "blocks": 4, "coveredBlocks": 0, "uncoveredBlocks": 4, "uncoveredExecutableBlocks": 1, "coverageRatio": 0 },
+  "regions": [
+    { "range": { "start": 60, "end": 118 }, "preview": "The rate limiter allows 100 requests per minute.", "covered": false, "executable": false, "claimIds": [] },
+    { "range": { "start": 120, "end": 210 }, "preview": "```sh\nhibi-demo --limit 100\n```", "covered": false, "executable": true, "claimIds": [] }
+  ],
+  "next": "1 uncovered block(s) are executable — record them with --verifier command:\"…\"; ground or prune the rest — hibi record --from-file <specs.json>"
+}
+```
+
+**Act** — author the claim set for the checkable blocks in **one transactional
+pass**, giving behavioral sentences a `command:` verifier at authoring time:
+
+```sh
+hibi record --from-file claims.json   # [{ "doc":"docs/new-feature.md",
+                                      #    "docQuote":"The rate limiter allows 100 requests per minute.",
+                                      #    "codeFile":"src/limiter.ts", "codeQuote":"100", "trust":"verified",
+                                      #    "verifier":"command:bun test limiter" }]
+hibi coverage --doc docs/new-feature.md   # ratio climbs toward 1.0
+hibi check                                # confirm clean
+```
+
+Done when coverage is clean and `check` is green — the new doc is grounded and
+will flag itself the moment the code beneath it moves.
+
+---
+
+## 9. Verify built code against a pre-existing plan
+
+**When** — you have a plan or spec doc written *before* the code, and you want CI
+to prove the plan is fully implemented — every promise anchored to real code.
+
+**Run** — `hibi coverage --doc plan.md --fail-uncovered`
+
+**Setup** — three of the plan's four blocks are anchored; one promise
+("Webhook retries use exponential backoff") isn't implemented yet.
+
+```json
+{
+  "ok": true, "action": "coverage", "schemaVersion": "v1",
+  "doc": "plan.md",
+  "summary": { "blocks": 4, "coveredBlocks": 3, "uncoveredBlocks": 1, "coverageRatio": 0.75 },
+  "regions": [
+    { "range": { "start": 210, "end": 268 }, "preview": "Webhook retries use exponential backoff.", "covered": false, "executable": false, "claimIds": [] }
+  ],
+  "next": "ground or prune the uncovered regions — `hibi record --from-file <specs.json>`"
+}
+```
+
+Exit code **2** — `--fail-uncovered` gates while any block is uncovered (it exits
+**0** once every block is backed). JSON/human output is identical to plain
+`coverage`; only the exit code changes.
+
+**Act** — the uncovered block is the plan item to resolve. hibi never judges
+whether code *implements* a sentence — **you** (or the agent) judge by *anchoring*
+each promise to its implementing code; a sentence you can't anchor is an
+unimplemented (or unpruned) plan item. Implement it and `hibi record` the claim,
+or cut the promise from the plan. Behavioral promises get verifiers, and
+`hibi check --run-verifiers` proves them. `--fail-uncovered` is what makes "the
+plan must be fully grounded" a real CI gate.
+
+---
+
+## 10. Recover an orphaned claim — `reanchor --suggest`
+
+**When** — a claim's documented sentence was deleted from its file
+(`doc:orphaned`) and you don't know where — if anywhere — it moved. `reanchor`
+alone needs a target; `--suggest` finds candidates for you.
+
+**Run** — `hibi reanchor asrt_1a2b3c --suggest`
+
+**Setup** — the sentence "Retries are capped at 5 attempts" was moved out of
+`README.md` into `docs/retry.md` during a doc split.
+
+```json
+{
+  "action": "reanchor-suggest",
+  "claimId": "asrt_1a2b3c",
+  "candidates": [
+    { "doc": "docs/retry.md", "start": 120, "end": 152, "similarity": 1.0, "snippet": "Retries are capped at 5 attempts" },
+    { "doc": "docs/overview.md", "start": 44, "end": 79, "similarity": 0.62, "snippet": "Retries are capped, then the call fails" }
+  ]
+}
+```
+
+Exit code **0** — `--suggest` is **read-only**: it writes nothing to the store or
+any document, and refuses mutation flags (`--suggest is read-only and cannot be
+combined with mutation flags.`). Candidates keep similarity ≥ 0.5, ranked
+highest-first, capped at 5; an empty array is a valid result (the sentence is
+truly gone).
+
+**Act** — the top candidate is a byte-identical match in `docs/retry.md`. Re-anchor
+to it with an explicit range:
+
+```sh
+hibi reanchor asrt_1a2b3c --doc docs/retry.md --doc-range L8:L8
+```
+
+Attestation rules apply — but this is a **pure move** (byte-identical sentence,
+code side unchanged), so trust is **kept with no downgrade** (D25). If no candidate
+were right, the sentence is deleted for real → `hibi retire asrt_1a2b3c`.
+
+---
+
+## 11. Prune the ungrounded
+
+**When** — a cleanup pass: cut prose nothing backs, and retire claims whose
+grounding died. Two deterministic signals drive the worklist.
+
+**Run** — `hibi coverage --doc <p>` (never-grounded blocks) and
+`hibi list --state orphaned` (claims whose code-side grounding died).
+
+```sh
+hibi coverage --doc README.md     # covered:false regions = blocks no claim records
+hibi list --state orphaned        # claims with an orphaned doc OR code side
+```
+
+**Act** — two different prune calls:
+
+- **Uncovered blocks** — `covered:false` regions mean *no claim was recorded*, and
+  the caveat is exact: **"uncovered" means "no claim recorded," not "no code backs
+  it."** Read each block; ground it if a code span backs it, or cut it if it's
+  ungrounded/stale prose. hibi provides the worklist; the prune call is yours.
+- **Orphaned claims** — the anchored span is gone, so the grounding died: `hibi
+  retire <id>` the claim and cut the sentence it guarded.
+
+Between them these two signals surface everything ungrounded — prose with no claim,
+and claims with no live anchor — without hibi ever guessing intent.

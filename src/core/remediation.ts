@@ -35,12 +35,20 @@ export interface RemediationInput {
   behavior?: BehaviorState;
   expired: boolean;
   changedEvidence?: ChangedEvidence[];
+  /**
+   * Advisory reverse-import test suggestions (§9, D26): test files that exercise
+   * the anchored code, appended to the declare-a-verifier action's rationale.
+   * Populated by `check` only for a behavioral `at-risk`/`refuted` claim with no
+   * declared verifiers; never affects verdicts, states, or exit codes.
+   */
+  suggestedTests?: string[];
 }
 
 // ── Action builders ──────────────────────────────────────────────────────────
 // `command` is populated only for runnable deterministic actions with the claim
-// id pre-filled; prose actions (and the orphan re-anchor, which needs a target)
-// carry none so an agent never runs a command that cannot succeed.
+// id pre-filled; prose actions carry none so an agent never runs a command that
+// cannot succeed. The orphan re-anchor carries the read-only `--suggest` pass
+// (D24) — always safe to run, it only lists candidate targets.
 
 const reanchorCmd = (id: string): string => `hibi reanchor ${id}`;
 const retireCmd = (id: string): string => `hibi retire ${id}`;
@@ -79,15 +87,20 @@ function reanchorIfTrue(id: string): RemediationAction {
   };
 }
 
-/** Orphan re-anchor: a bare `reanchor` cannot resolve it, so NO command. */
-function reanchorToTarget(): RemediationAction {
+/**
+ * Orphan re-anchor (D24): a bare `reanchor` cannot resolve a deleted span, but
+ * `reanchor --suggest` is read-only and lists candidate targets — so the command
+ * is the safe suggestion pass, never a mutation that would fail.
+ */
+function reanchorToTarget(id: string): RemediationAction {
   return {
     id: "reanchor",
     title: "Re-anchor to a new location",
     applicability: "manual",
     effect: "deterministic",
     rationale:
-      "the span was deleted — re-anchor with an explicit --doc-range / --code-file target",
+      "the span was deleted — run --suggest to list candidate targets, then re-anchor with an explicit --doc-range",
+    command: `hibi reanchor ${id} --suggest`,
   };
 }
 
@@ -167,14 +180,24 @@ function reverifyBehavior(detail: string | undefined): RemediationAction {
   };
 }
 
-/** Execution-grounding seam (D13): run the linked verifier(s) out-of-process. */
-function runVerifier(): RemediationAction {
+/**
+ * Execution-grounding seam (D13): run the linked verifier(s) out-of-process. When
+ * the claim has no verifier yet, D26's advisory reverse-import test suggestions
+ * are appended so the author knows which tests to promote into a `command:`
+ * verifier. The clause is omitted entirely when the suggestion list is empty.
+ */
+function runVerifier(suggestedTests?: string[]): RemediationAction {
+  const base = "executable evidence can confirm or refute the behavior";
+  const rationale =
+    suggestedTests && suggestedTests.length > 0
+      ? `${base} — tests that exercise this code: ${suggestedTests.join(", ")}`
+      : base;
   return {
     id: "run-verifier",
     title: "Run the linked verifier",
     applicability: "needs-review",
     effect: "deterministic",
-    rationale: "executable evidence can confirm or refute the behavior",
+    rationale,
     command: "hibi check --run-verifiers",
   };
 }
@@ -220,7 +243,7 @@ export function remediationFor(v: RemediationInput): Remediation | null {
     // takes the refuted branch below).
     rem = {
       recommended: "retire",
-      actions: [retire(id), supersede(), reanchorToTarget()],
+      actions: [retire(id), supersede(), reanchorToTarget(id)],
     };
   } else if (v.behavior === "refuted") {
     // A linked verifier failed: never re-anchor (re-linking clears the gate
@@ -250,7 +273,7 @@ export function remediationFor(v: RemediationInput): Remediation | null {
       recommended: null,
       actions: [
         reverifyBehavior(changedSummary(v.changedEvidence)),
-        runVerifier(),
+        runVerifier(v.suggestedTests),
       ],
     };
   }

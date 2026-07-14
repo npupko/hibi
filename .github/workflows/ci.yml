@@ -41,8 +41,10 @@ jobs:
       - name: Dogfood — hibi checks its own docs (in-tree engine, read-only)
         # Runs the current tree's engine, NOT a published release, so a drift
         # this PR introduces between docs/ and src/ fails the build via hibi
-        # itself (D20). Read-only: no --write. See CONTRIBUTING.md for the fix loop.
-        run: bun run src/cli/index.ts check --fail-on gating
+        # itself (D20). Read-only: no --write. --run-verifiers executes the two
+        # behavioral claims' command verifiers so the behavioral tier checks
+        # itself in CI (D32). See CONTRIBUTING.md for the fix loop.
+        run: bun run src/cli/index.ts check --run-verifiers --fail-on gating
 
   rust-sdk:
     runs-on: ubuntu-latest

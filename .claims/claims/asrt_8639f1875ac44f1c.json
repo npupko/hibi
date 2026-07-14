@@ -1,0 +1,70 @@
+{
+  "id": "asrt_8639f1875ac44f1c",
+  "propositionId": "prop_c1f0312d33e04ed3",
+  "documentId": "doc_25887c67cd18d901",
+  "owner": "hibi-dogfood",
+  "ref": "2358ba7e4b5a89c53310936962ac481c9084edf4",
+  "anchor": {
+    "doc": {
+      "file": "docs/verdicts.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "held at or below roughly 2%",
+          "prefix": "s (crying wolf on code that did not change) are\n",
+          "suffix": ". And Hibi **never reports a drifted\nclaim as `u"
+        },
+        {
+          "kind": "text-position",
+          "start": 10781,
+          "end": 10808
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/algo/params.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "BANDS = {",
+            "prefix": "d code sides (one vocabulary).\n */\nexport const ",
+            "suffix": "\n  unchanged: 0.8, // C ≥ 0.8 → unchanged\n  move"
+          },
+          {
+            "kind": "text-position",
+            "start": 893,
+            "end": 902
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "variable_declarator",
+            "structuralHash": "445992d510691196",
+            "semanticHash": "3534b8948fac94a1"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "number",
+            "value": "0.8"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "behavioral": true,
+  "verifiers": [
+    {
+      "kind": "command",
+      "ref": "bun test test/precision-rate.test.ts",
+      "proves": "the ≤2% false-changed precision contract holds"
+    }
+  ],
+  "evidenceBaseline": {
+    "src/algo/params.ts": "0d89fd4e0b15a2c7",
+    "src/vendor/bitap.ts": "b8fc7207a8a07d18"
+  },
+  "attrs": {}
+}

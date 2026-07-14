@@ -36,8 +36,9 @@ point at the same span, so no single edit can break the link unnoticed:
 
 - the **quoted text** (`text-quote`), matched fuzzily so it survives small edits and moves;
 - its **line/char position** (`text-position`), kept only as a cheap hint and corroboration;
-- the **enclosing syntax node** (`ast-node`), parsed with tree-sitter, so reformatting alone
-  does not trip it (on the doc side this is the markdown structural path instead);
+- the **enclosing syntax node** (`ast-node`, code side only), parsed with tree-sitter, so
+  reformatting alone does not trip it — the doc side is format-agnostic and carries no
+  structural selector;
 - any **literal value** (`value`, code side only), so changing `MAX_ATTEMPTS = 5` to `50`
   flags the claim even when nothing else moves;
 - an optional **`inline-id`** marker on docs you own that aids re-anchoring but never restates
