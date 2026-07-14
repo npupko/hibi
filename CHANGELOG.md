@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.5.0](https://github.com/npupko/hibi/compare/v0.4.0...v0.5.0) (2026-07-14)
+
+
+### ⚠ BREAKING CHANGES
+
+* the claim store is now schema v2 and strictly parsed. A v1 store fails to load with a plain message; there is no migration (beta) — re-run `hibi init` and re-record.
+
+### Features
+
+* ADR-003 — trust hardening, anchoring honesty, recovery ergonomics, workflows ([#40](https://github.com/npupko/hibi/issues/40)) ([d6fef36](https://github.com/npupko/hibi/commit/d6fef36c69a4ebffb1fa7f700db8ccdc104386d4))
+
 ## [0.4.0](https://github.com/npupko/hibi/compare/v0.3.0...v0.4.0) (2026-07-07)
 
 
