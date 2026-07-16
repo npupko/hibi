@@ -51,7 +51,7 @@
     "prepare": "lefthook install"
   },
   "dependencies": {
-    "web-tree-sitter": "0.26.10",
+    "web-tree-sitter": "0.26.11",
     "zod": "4.4.3",
     "tree-sitter-typescript": "0.23.2",
     "tree-sitter-python": "0.25.0",
@@ -60,8 +60,8 @@
     "tree-sitter-java": "0.23.5"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.2",
+    "@biomejs/biome": "2.5.4",
     "@types/bun": "latest",
-    "lefthook": "2.1.9"
+    "lefthook": "2.1.10"
   }
 }
