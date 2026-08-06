@@ -40,8 +40,8 @@
             "kind": "ast-node",
             "language": "typescript",
             "nodeType": "function_declaration",
-            "structuralHash": "8220e0362d0e8f58",
-            "semanticHash": "260b3d77be9784f0"
+            "structuralHash": "ff1b0a1b103063ed",
+            "semanticHash": "8e239f8535473f87"
           },
           {
             "kind": "value",
@@ -63,8 +63,8 @@
     }
   ],
   "evidenceBaseline": {
-    "src/algo/resolve.ts": "9b33cf3d12ef2911",
-    "src/ast/hash.ts": "b524ab90f00d73a9",
+    "src/algo/resolve.ts": "699080e95a6dcb06",
+    "src/ast/hash.ts": "c0ae703267147937",
     "src/core/gating.ts": "601373bfdac2a51c",
     "src/core/model.ts": "f80717f03fbdf563",
     "src/core/remediation.ts": "b2b1897eda36f3f3",
