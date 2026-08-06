@@ -41,9 +41,12 @@ export async function changedFiles(
   cwd: string,
 ): Promise<string[]> {
   const set = new Set<string>();
+  // `git diff` emits paths from the repo top-level unless `--relative`, while
+  // claims store anchor-root-relative ones — so a store below the git root
+  // (monorepo) would never match. `ls-files` is already cwd-relative.
   for (const args of [
-    ["diff", "--name-only", ref],
-    ["diff", "--name-only", "--cached"],
+    ["diff", "--name-only", "--relative", ref],
+    ["diff", "--name-only", "--relative", "--cached"],
     ["ls-files", "--others", "--exclude-standard"],
   ]) {
     const out = await git(args, cwd);

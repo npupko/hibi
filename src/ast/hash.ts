@@ -110,13 +110,14 @@ export function fingerprintNode(node: Node): AstFingerprint {
 export function extractValueFrom(
   node: Node,
   language: string,
+  targetKind?: string,
 ): { nodeKind: string; value: string } | null {
   let found: { nodeKind: string; value: string } | null = null;
 
   const visit = (n: Node): void => {
     if (found) return;
     const cls = valueClass(language, n.type);
-    if (cls) {
+    if (cls && (targetKind === undefined || n.type === targetKind)) {
       const raw = n.text;
       const value =
         cls === "collection"

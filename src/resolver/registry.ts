@@ -22,6 +22,7 @@ import type {
   Advisory,
   Assertion,
   BehaviorState,
+  ChangedEvidence,
   Proposition,
   Verdict,
   Verifier,
@@ -62,6 +63,7 @@ export interface Resolver {
     assertion: Assertion,
     verifier: Verifier,
     files: ResolveFiles,
+    changedEvidence?: ChangedEvidence[],
   ): Promise<VerifyResult | null>;
 }
 
@@ -142,12 +144,13 @@ class ProcessResolver implements Resolver {
     assertion: Assertion,
     verifier: Verifier,
     files: ResolveFiles,
+    changedEvidence: ChangedEvidence[] = [],
   ): Promise<VerifyResult | null> {
     return this.proc.verify({
       assertion,
       verifier,
       files: toWireFiles(files),
-      changedEvidence: [],
+      changedEvidence,
     });
   }
 
@@ -223,7 +226,12 @@ export class ResolverRegistry {
     }
   }
 
-  /** The first non-advisory resolver covering at least one of the anchor's kinds. */
+  /**
+   * The non-advisory resolver covering at least one of the anchor's kinds, with
+   * an external one outranking the built-in drift resolver: the builtin declares
+   * every builtin kind, so first-match would shadow every manifest-registered
+   * resolver — against docs/resolvers.mdx ("no privileged internal path").
+   */
   primaryFor(assertion: Assertion): Resolver | undefined {
     const anchor = assertion.anchor;
     const anchorKinds = new Set<string>();
@@ -231,9 +239,10 @@ export class ResolverRegistry {
     for (const bundle of anchor.code) {
       for (const s of bundle.selectors) anchorKinds.add(s.kind);
     }
-    return this.resolvers.find(
+    const matching = this.resolvers.filter(
       (r) => !r.advisory && r.kinds.some((k) => anchorKinds.has(k)),
     );
+    return matching.find((r) => !(r instanceof DriftResolver)) ?? matching[0];
   }
 
   advisoryResolvers(): Resolver[] {
@@ -279,6 +288,7 @@ export class ResolverRegistry {
         assertion,
         files,
         verdict.behavior,
+        verdict.evidence.changedEvidence,
       );
     }
 
@@ -334,6 +344,7 @@ export class ResolverRegistry {
     assertion: Assertion,
     files: ResolveFiles,
     baseline: BehaviorState | undefined,
+    changedEvidence: ChangedEvidence[] = [],
   ): Promise<BehaviorState | undefined> {
     const results: BehaviorState[] = [];
     for (const verifier of assertion.verifiers) {
@@ -344,7 +355,12 @@ export class ResolverRegistry {
           !r.advisory && r.verify && r.verifierKinds?.includes(verifier.kind),
       );
       if (!runner?.verify) continue;
-      const res = await runner.verify(assertion, verifier, files);
+      const res = await runner.verify(
+        assertion,
+        verifier,
+        files,
+        changedEvidence,
+      );
       if (res) results.push(res.behavior);
     }
     if (results.length === 0) return baseline;

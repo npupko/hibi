@@ -26,10 +26,11 @@ import {
   resolveAssertion,
   resolveSide,
 } from "../algo/resolve.ts";
-import { propositionFingerprint } from "../core/ids.ts";
+import { newId, propositionFingerprint } from "../core/ids.ts";
 import type {
   AnchorState,
   Assertion,
+  Proposition,
   Region,
   SelectorBundle,
 } from "../core/model.ts";
@@ -392,16 +393,43 @@ export async function reanchor(
     ? { ...assertion.attrs, reanchorDowngrade: downgradeRecord }
     : assertion.attrs;
 
+  // ── Proposition refresh — split-on-write when shared (§4/§5) ──
+  // `record` dedupes propositions by fingerprint across documents, so one record
+  // can back many assertions: rewriting a shared one in place would change every
+  // other claim's text too.
+  const newFingerprint = propositionFingerprint(doc.confirmed);
+  const shared = (await store.allAssertions()).some(
+    (x) => x.propositionId === proposition.id && x.id !== assertion.id,
+  );
+  let propositionId = assertion.propositionId;
+  if (shared && newFingerprint !== proposition.fingerprint) {
+    const fresh: Proposition = {
+      id: newId("prop"),
+      textCache: doc.confirmed,
+      authoredTrust: downgrade ? "inferred" : proposition.authoredTrust,
+      fingerprint: newFingerprint,
+    };
+    propositionId = fresh.id;
+    if (!input.dryRun) await store.putProposition(fresh);
+  } else {
+    proposition.textCache = doc.confirmed;
+    proposition.fingerprint = newFingerprint;
+    // D15: withdraw the `verified` attestation when re-anchored without a
+    // `--ref` — never on a shared proposition, which would strip the sibling
+    // claims' attestation too; there the downgrade lives on `attrs` alone.
+    if (downgrade && !shared) proposition.authoredTrust = "inferred";
+    if (!input.dryRun) await store.putProposition(proposition);
+  }
+
   const next: Assertion = {
     ...assertion,
     documentId,
+    propositionId,
     anchor: composeAnchor(doc.bundle, codeBundles),
     ref: input.ref ?? assertion.ref,
     evidenceBaseline: input.evidenceBaseline ?? assertion.evidenceBaseline,
     attrs,
   };
-  // --dry-run: every `put*` below is guarded so the preview leaves the store
-  // byte-identical. The post-state resolve still runs on the in-memory `next`.
   if (!input.dryRun) await store.putAssertion(next);
 
   // Ensure the destination Document exists and is active. A doc previously
@@ -416,12 +444,6 @@ export async function reanchor(
       await store.putDocument({ ...existing, lifecycle: "active" });
     }
   }
-
-  proposition.textCache = doc.confirmed;
-  proposition.fingerprint = propositionFingerprint(doc.confirmed);
-  // D15: withdraw the `verified` attestation when re-anchored without a `--ref`.
-  if (downgrade) proposition.authoredTrust = "inferred";
-  if (!input.dryRun) await store.putProposition(proposition);
 
   // Confirm the post-reanchor states (should settle to `unchanged`).
   const after = resolveAssertion(next, files);

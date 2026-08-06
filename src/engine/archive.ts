@@ -52,10 +52,12 @@ export async function archiveDocument(
   let archivedTo: string | null = null;
   if (await exists(abs)) {
     const relDest = join("archive", docPath);
+    const dest = join(root, relDest);
+    const alreadyArchived =
+      doc.lifecycle === "archived" && (await exists(dest));
     // --dry-run: report where the file *would* move (and that the doc would flip
     // to archived) without moving it, writing the tombstone, or touching the store.
-    if (!opts.dryRun) {
-      const dest = join(root, relDest);
+    if (!opts.dryRun && !alreadyArchived) {
       await mkdir(dirname(dest), { recursive: true });
       const content = await readFile(abs, "utf8");
       await writeFile(dest, content);

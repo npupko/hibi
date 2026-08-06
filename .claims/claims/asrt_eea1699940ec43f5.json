@@ -3,7 +3,7 @@
   "propositionId": "prop_4cbd2f4edbfc42fc",
   "documentId": "doc_320b0ba63f0f3f7e",
   "owner": "hibi-dogfood",
-  "ref": "2358ba7e4b5a89c53310936962ac481c9084edf4",
+  "ref": "c6d6f814de247673c6814bec90c119ae27914497",
   "anchor": {
     "doc": {
       "file": "docs/behavioral.mdx",
@@ -40,8 +40,8 @@
             "kind": "ast-node",
             "language": "typescript",
             "nodeType": "function_declaration",
-            "structuralHash": "7d4174f2883a00ab",
-            "semanticHash": "0d8fb1e3814eb3e5"
+            "structuralHash": "ff1b0a1b103063ed",
+            "semanticHash": "8e239f8535473f87"
           },
           {
             "kind": "value",
@@ -63,10 +63,10 @@
     }
   ],
   "evidenceBaseline": {
-    "src/algo/resolve.ts": "948194d9acda2270",
-    "src/ast/hash.ts": "d6e2ddc256205dba",
+    "src/algo/resolve.ts": "699080e95a6dcb06",
+    "src/ast/hash.ts": "c0ae703267147937",
     "src/core/gating.ts": "601373bfdac2a51c",
-    "src/core/model.ts": "c924df2215d91e3d",
+    "src/core/model.ts": "f80717f03fbdf563",
     "src/core/remediation.ts": "b2b1897eda36f3f3",
     "src/algo/behavioral.ts": "0baf44b4ac816142",
     "src/algo/fusion.ts": "5bed361b80ad6464",
