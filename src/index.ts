@@ -37,6 +37,7 @@ import { regionText } from "./algo/localize.ts";
 import { type AstAnalyzer, resolveSide } from "./algo/resolve.ts";
 import { hashContent } from "./ast/hash.ts";
 import { removeBanner } from "./banner/banner.ts";
+import { setFrontmatterStatus } from "./banner/frontmatter.ts";
 import type {
   AuthoredTrust,
   BehaviorScope,
@@ -397,7 +398,10 @@ export class Engine {
     const raw = await this.readAnchored(rel);
     if (raw === null) return null;
     const nonce = (await this.store.config()).nonce;
-    return removeBanner(raw, rel, nonce).content;
+    // Strip exactly what `check.ts` strips before resolving (banner AND the
+    // engine-owned `hibi-status:` line) — any difference shifts every doc-side
+    // offset and grades a stamped doc's clean claims `doc:moved`.
+    return setFrontmatterStatus(removeBanner(raw, rel, nonce).content, null);
   }
 
   /**

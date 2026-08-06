@@ -198,6 +198,17 @@ function spanSpec(
   return undefined;
 }
 
+function verifierTimeoutMsOf(raw: unknown): number | undefined {
+  if (raw === undefined) return undefined;
+  const secs = Number(raw);
+  if (!Number.isFinite(secs) || secs <= 0) {
+    throw new Error(
+      `--verifier-timeout expects a positive number of seconds, got: ${String(raw)}`,
+    );
+  }
+  return secs * 1000;
+}
+
 /**
  * Parse a repeatable `--verifier kind:ref` flag into Verifiers (§5/§17.6). The
  * value may be a lone string (one verifier) or an array (parseArgs collects
@@ -666,17 +677,19 @@ async function main(argv: string[]): Promise<number> {
 
     case "check": {
       const engine = await open();
-      const verifierTimeout = values["verifier-timeout"];
+      let verifierTimeoutMs: number | undefined;
+      try {
+        verifierTimeoutMs = verifierTimeoutMsOf(values["verifier-timeout"]);
+      } catch (e) {
+        return fail((e as Error).message, mode);
+      }
       const report = await engine.check({
         write: Boolean(values.write),
         failOn: String(values["fail-on"]) as FailOn,
         ref: await currentRef(anchorRoot),
         // Verifiers execute repo-committed commands — opt-in only (D13).
         runVerifiers: Boolean(values["run-verifiers"]),
-        verifierTimeoutMs:
-          verifierTimeout !== undefined
-            ? Number(verifierTimeout) * 1000
-            : undefined,
+        verifierTimeoutMs,
       });
       const value = projectCheckReport(
         "check",
@@ -694,12 +707,21 @@ async function main(argv: string[]): Promise<number> {
     case "diff": {
       const engine = await open();
       if (!values.since) return fail("diff requires --since <ref>", mode);
+      let verifierTimeoutMs: number | undefined;
+      try {
+        verifierTimeoutMs = verifierTimeoutMsOf(values["verifier-timeout"]);
+      } catch (e) {
+        return fail((e as Error).message, mode);
+      }
       const files = await changedFiles(values.since as string, anchorRoot);
       const report = await engine.check({
         onlyFiles: files,
         write: Boolean(values.write),
         failOn: String(values["fail-on"]) as FailOn,
         ref: await currentRef(anchorRoot),
+        // Verifiers execute repo-committed commands — opt-in only (D13).
+        runVerifiers: Boolean(values["run-verifiers"]),
+        verifierTimeoutMs,
       });
       const value = projectCheckReport(
         "diff",

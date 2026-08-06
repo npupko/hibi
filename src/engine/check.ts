@@ -21,9 +21,11 @@ import {
 import {
   type BannerAction,
   type BannerEntry,
+  commentStyleFor,
   DEFAULT_HEADLINE,
   DEFAULT_INSTRUCTION_FILES,
   isInstructionFile,
+  locateBanner,
   removeBanner,
   stampBanner,
 } from "../banner/banner.ts";
@@ -275,12 +277,18 @@ export async function runCheck(
     // Strip hibi's own banner first: the engine-owned banner restates the suspect
     // sentence verbatim, and leaving it in would let the doc-side text-quote
     // re-anchor onto the stamped copy and self-orphan on re-check — the banner
-    // must never poison re-anchoring (§8/§18-B). Code files carry no banner.
+    // must never poison re-anchoring (§8/§18-B). The engine-owned `hibi-status:`
+    // frontmatter line goes too, and record time must strip exactly the same
+    // pair (`Engine.readAnchored`) — any difference shifts every doc-side offset
+    // and grades a stamped doc's clean claims `doc:moved`. Code files carry no banner.
     const rawDoc = await readFileText(a.anchor.doc.file);
     const docContent =
       rawDoc === null
         ? null
-        : removeBanner(rawDoc, a.anchor.doc.file, nonce).content;
+        : setFrontmatterStatus(
+            removeBanner(rawDoc, a.anchor.doc.file, nonce).content,
+            null,
+          );
     docContentById.set(a.documentId, docContent);
     const code = new Map<string, string | null>();
     for (const f of codeFiles) code.set(f, await readFileText(f));
@@ -397,8 +405,8 @@ export async function runCheck(
   }
 
   const docReports: DocumentReport[] = [];
-  let sawGating = false;
-  let sawWarn = false;
+  const sawGating = gatingCount > 0;
+  const sawWarn = warningCount > 0;
   let sawTamper = false;
 
   for (const doc of documents) {
@@ -433,15 +441,6 @@ export async function runCheck(
     const lcEntries = lifecycleEntries(doc, propsById);
     const allEntries = [...suspectEntries, ...lcEntries];
 
-    if (dv.some((v) => v.gates)) sawGating = true;
-    if (
-      dv.some((v) =>
-        isWarnVerdict(v, enforcementById.get(v.assertionId) ?? "suggested"),
-      )
-    ) {
-      sawWarn = true;
-    }
-
     const suspect: SuspectEntry[] = suspectVerdicts
       .map((v) => ({
         propositionId: v.propositionId,
@@ -461,6 +460,19 @@ export async function runCheck(
       lifecycle: doc.lifecycle,
       suspect,
     };
+
+    const rawForTamper = await readFileText(doc.path);
+    if (rawForTamper !== null) {
+      const located = locateBanner(
+        rawForTamper,
+        nonce,
+        commentStyleFor(doc.path),
+      );
+      if (located && located.sha !== located.computedSha) {
+        sawTamper = true;
+        report.tampered = true;
+      }
+    }
 
     // Worst single status for the optional frontmatter field (§8): over both
     // the side-tagged verdict statuses and the lifecycle tags.
@@ -587,7 +599,7 @@ export function computeExitCode(
 ): number {
   if (failOn === "never") return 0;
   if (flags.gating) return 2;
-  if (flags.warn) return failOn === "warn" ? 2 : 3;
   if (flags.tamper && failOn === "tamper") return 2;
+  if (flags.warn) return failOn === "warn" ? 2 : 3;
   return 0;
 }

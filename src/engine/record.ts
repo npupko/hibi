@@ -271,6 +271,14 @@ export async function recordClaim(
     await store.putProposition(proposition);
   }
 
+  // ── Anchor (bidirectional, composite — §4). ──
+  const docBundle: SelectorBundle = docRegion
+    ? buildSelectorBundle(input.docPath, docContent ?? "", docRegion, {
+        inlineId: input.inlineId,
+      })
+    : buildPathBundle(input.docPath);
+  const anchor: Anchor = composeAnchor(docBundle, codeBundles);
+
   // Dedup the assertion: one verification instance per (proposition, document).
   // Re-running `record` on unchanged content must be idempotent (§6) —
   // otherwise each run would accumulate a duplicate assertion in the store.
@@ -281,10 +289,32 @@ export async function recordClaim(
   );
   const existing = sharingProposition.find((x) => x.documentId === docId);
   if (existing) {
+    const updated: Assertion = {
+      ...existing,
+      anchor: input.code.length > 0 ? anchor : existing.anchor,
+      ref: input.ref,
+      // Not the derived `enforcement`: a bare re-record carries default trust,
+      // which derives "suggested" and would downgrade an enforced claim.
+      enforcement: input.enforcement ?? existing.enforcement,
+      ...(input.behavioral !== undefined
+        ? { behavioral: input.behavioral }
+        : {}),
+      ...(input.verifiers !== undefined && input.verifiers.length > 0
+        ? { verifiers: input.verifiers }
+        : {}),
+      ...(input.behaviorScope !== undefined
+        ? { behaviorScope: input.behaviorScope }
+        : {}),
+      ...(input.evidenceBaseline !== undefined
+        ? { evidenceBaseline: input.evidenceBaseline }
+        : {}),
+      ...(input.ttl !== undefined ? { ttl: input.ttl } : {}),
+    };
+    await store.putAssertion(updated);
     return {
       document,
       proposition,
-      assertion: existing,
+      assertion: updated,
       dedupedProposition: deduped,
       // Exclude the returned (existing) claim — the rest already share its proposition.
       existingClaims: sharingProposition
@@ -292,14 +322,6 @@ export async function recordClaim(
         .map((x) => x.id),
     };
   }
-
-  // ── Anchor (bidirectional, composite — §4). ──
-  const docBundle: SelectorBundle = docRegion
-    ? buildSelectorBundle(input.docPath, docContent ?? "", docRegion, {
-        inlineId: input.inlineId,
-      })
-    : buildPathBundle(input.docPath);
-  const anchor: Anchor = composeAnchor(docBundle, codeBundles);
 
   const assertion: Assertion = {
     id: newId("asrt"),

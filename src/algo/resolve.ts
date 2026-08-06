@@ -144,6 +144,20 @@ function computeBehaviorRisk(
             : "evidence file changed",
       });
     }
+    // A deleted evidence file never enters the recomputed set (`evidence.ts`
+    // resolves imports/globs/refs against disk), so it is absent from the map
+    // rather than present with null content — only `baseline` still records it.
+    for (const path of Object.keys(baseline)) {
+      if (evidence.has(path)) continue;
+      const isVerifier = verifierSources.has(path);
+      changed.push({
+        path,
+        kind: isVerifier ? "verifier-source" : "import",
+        detail: isVerifier
+          ? "verifier source missing"
+          : "evidence file missing",
+      });
+    }
   }
 
   // No dedupe here: the caller merges `changed` into the verdict's
@@ -331,15 +345,15 @@ export function resolveSide(
 
   // ── Localize (text-quote cascade, biased by inline marker or text-position) ──
   const bias = inlineFound ? inlineAt : positionBias(tp);
-  let region: Region | null = null;
-  if (tq) region = localizeTextQuote(currentText, tq, bias);
+  const quoteRegion = tq ? localizeTextQuote(currentText, tq, bias) : null;
+  let region: Region | null = quoteRegion;
   if (!region && tp) region = { start: tp.start, end: tp.end };
 
   const baselineExact = tq?.exact ?? "";
-  const textQuoteFound = tq !== undefined && region !== null;
+  const textQuoteFound = quoteRegion !== null;
   const textQuoteSimilarity =
-    region !== null && tq
-      ? textSimilarity(regionText(currentText, region), baselineExact)
+    quoteRegion !== null
+      ? textSimilarity(regionText(currentText, quoteRegion), baselineExact)
       : 0;
   const ambiguous = tq && !inlineFound ? isAmbiguous(currentText, tq) : false;
 
@@ -348,7 +362,11 @@ export function resolveSide(
   let positionScore = 0;
   if (tp) {
     const atOffset = currentText.slice(tp.start, tp.end);
-    positionScore = textSimilarity(atOffset, baselineExact || atOffset);
+    positionScore = baselineExact
+      ? textSimilarity(atOffset, baselineExact)
+      : atOffset.length > 0
+        ? 1
+        : 0;
     positionFound = positionScore >= POSITION_FOUND_SIMILARITY;
   }
 
@@ -485,6 +503,22 @@ export function resolveSide(
   };
 }
 
+/**
+ * TTL expiry (§9). `Date.parse` reads a datetime with no timezone suffix as
+ * *local* time, which would expire a store up to a day apart between a laptop
+ * and a UTC CI runner.
+ */
+function parseTtl(
+  ttl: string,
+  now: number,
+): { expired: boolean; invalid: boolean } {
+  const normalized =
+    ttl.includes("T") && !/(Z|[+-]\d{2}:?\d{2})$/i.test(ttl) ? `${ttl}Z` : ttl;
+  const at = Date.parse(normalized);
+  if (Number.isNaN(at)) return { expired: true, invalid: true };
+  return { expired: at <= now, invalid: false };
+}
+
 /** Resolve a single Assertion against the current working tree (two-axis). */
 export function resolveAssertion(
   assertion: Assertion,
@@ -545,8 +579,9 @@ export function resolveAssertion(
     }
   }
 
-  const expired =
-    assertion.ttl !== undefined && Date.parse(assertion.ttl) <= now;
+  const ttl =
+    assertion.ttl !== undefined ? parseTtl(assertion.ttl, now) : undefined;
+  const expired = ttl?.expired ?? false;
 
   const gates = computeGates(
     { doc: docSide.state, code, behavior, expired },
@@ -560,6 +595,9 @@ export function resolveAssertion(
     ...docSide.notes.map((n) => `doc: ${n}`),
     ...codeNotes,
     behavioral ? "behavioral claim" : "",
+    ttl?.invalid
+      ? `unparseable ttl "${assertion.ttl}" — treated as expired (fix or clear the ttl)`
+      : "",
   ].filter(Boolean);
 
   // Merge the behavioral evidence-path changes (imports/verifier sources) in,

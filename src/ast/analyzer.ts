@@ -75,12 +75,17 @@ class TreeSitterAnalyzer implements AstAnalyzer, AnchorAnalyzer {
     };
   }
 
-  extractValue(text: string, language: string, region: Region): string | null {
+  extractValue(
+    text: string,
+    language: string,
+    region: Region,
+    nodeKind?: string,
+  ): string | null {
     const root = this.parse(text, language);
     if (!root) return null;
     const node = snapNamedNode(root, text, region);
     if (!node) return null;
-    return extractValueFrom(node, language)?.value ?? null;
+    return extractValueFrom(node, language, nodeKind)?.value ?? null;
   }
 
   extractImports(text: string, language: string): string[] {
