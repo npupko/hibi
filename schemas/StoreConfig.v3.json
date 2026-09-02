@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "version": {
+      "default": "v3",
+      "type": "string"
+    },
+    "nonce": {
+      "type": "string"
+    },
+    "instructionFiles": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "pristine": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "version",
+    "nonce"
+  ],
+  "additionalProperties": false
+}

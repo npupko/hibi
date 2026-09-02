@@ -1,0 +1,60 @@
+{
+  "id": "asrt_5be394c127aa4960",
+  "propositionId": "prop_868de165eff245de",
+  "documentId": "doc_fa1698bd5b6313a3",
+  "owner": "hibi-dogfood",
+  "ref": "c6bac8d38ea9468d696bf29754ef9ba6e2871b1b",
+  "anchor": {
+    "doc": {
+      "file": "docs/banners.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`CLAUDE.md`, `AGENTS.md`, `.cursorrules`, and `.github/copilot-instructions.md` are loaded into an agent's context on every turn.",
+          "prefix": "\n| other | plain lines |\n\n## Instruction files\n\n",
+          "suffix": " For those files the body collapses to one line:"
+        },
+        {
+          "kind": "text-position",
+          "start": 2668,
+          "end": 2797
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/banner/banner.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "\"CLAUDE.md\",\n  \"AGENTS.md\",\n  \".cursorrules\",\n  \".github/copilot-instructions.md\",",
+            "prefix": "*/\nexport const DEFAULT_INSTRUCTION_FILES = [\n  ",
+            "suffix": "\n] as const;\n\nexport function isInstructionFile("
+          },
+          {
+            "kind": "text-position",
+            "start": 930,
+            "end": 1012
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "array",
+            "structuralHash": "3e4336457357ee1e",
+            "semanticHash": "5363217b419e2ed4"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "string",
+            "value": "\"CLAUDE.md\""
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verified": true,
+  "verifiers": [],
+  "attrs": {}
+}

@@ -1,94 +1,52 @@
 /**
- * The canonical data model — the single source of truth (§5).
+ * The canonical data model, the single source of truth for the store, the
+ * generated JSON Schema (`schemas/*.v3.json` via `scripts/gen-schemas.ts`),
+ * and the TypeScript types. Claim-store records are validated against it at load.
  *
- * Defined once in Zod v4. The versioned JSON Schema (`schemas/*.v2.json`), the
- * TypeScript types, and every language SDK are generated from this file (via
- * `z.toJSONSchema`). Claim-store records are validated against it at load.
- *
- * The computed model is **two axes that answer two different questions**
- * (ADR-001, PRD §4/§10/§18-C), each with a borrowed term-of-art vocabulary,
- * plus orthogonal flags:
- *   - Axis 1 — anchor resolution (`AnchorState`): one vocabulary applied per
- *     side (`doc:…` / `code:…`) — "can I find the span, and is it unchanged?"
- *   - Axis 2 — behavioral belief (`BehaviorState`): absent on non-behavioral
- *     claims — "do we still believe the documented behavior holds?"
- *   - `expired` is an orthogonal time flag, never a state.
- *
- * Lineage (§5): Proposition/Assertion ≈ Truth-Maintenance belief/justification;
- * Document edges ≈ ADR `superseded-by` / RFC `Obsoletes`; Anchor selectors ≈ W3C
- * Web Annotation TextQuoteSelector (+ tree-sitter for the structural selector);
- * AnchorState ≈ git status + hypothes.is `orphaned`; BehaviorState ≈ FEVER
- * `supported`/`refuted` + JTMS support-withdrawal.
+ * Two computed axes:
+ *   - `AnchorState`: one vocabulary applied per side (`doc` / `code`): can the
+ *     span be found, and is it unchanged?
+ *   - `BehaviorState`: present only when a verifier ran (`supported` / `refuted`).
+ *   - `expired` is an orthogonal time flag.
  */
 import * as z from "zod";
 
 /** Schema version stamped into generated artifacts and the store config. */
-export const MODEL_VERSION = "v2" as const;
-
-// ── Status: four kinds, never conflated (§4/§10) ─────────────────────────────
-
-/** Authored trust — set by the author, lives on the Proposition/Assertion. */
-export const AuthoredTrust = z.enum(["verified", "inferred", "assumed"]);
-export type AuthoredTrust = z.infer<typeof AuthoredTrust>;
+export const MODEL_VERSION = "v3" as const;
 
 /**
- * Enforcement — the record's creation-lifecycle, set by the workflow (§4/§9/§10).
- * Only `enforced` can produce a gating verdict or a strong banner; `suggested`
- * is advisory; `retired` is withdrawn.
+ * Enforcement: whether the claim may gate. `enforced` is the record default;
+ * `suggested` is advisory (`record --suggest`); `retired` is withdrawn.
  */
 export const Enforcement = z.enum(["suggested", "enforced", "retired"]);
 export type Enforcement = z.infer<typeof Enforcement>;
 
-/**
- * Computed — Axis 1: anchor resolution. One vocabulary, applied to *each side*
- * (reported `doc:…` / `code:…`). Engine-only, ephemeral, never authored (§10).
- * Borrowed from git (`unchanged`/`moved`), W3C annotation (`ambiguous`), and
- * hypothes.is (`orphaned`). The side is a *separate field*, never baked into the
- * word (ADR-001 parallelism invariant).
- */
+/** Computed anchor resolution, applied to each side of the anchor. */
 export const AnchorState = z
   .enum([
-    "unchanged", // found, identical
-    "moved", // found, relocated (same content)
-    "changed", // found, content differs
-    "ambiguous", // matches in several places
-    "orphaned", // span deleted / unresolvable
+    "unchanged", // found, same text, same place
+    "moved", // found, same text, new place
+    "changed", // found, text or structure differs
+    "ambiguous", // matches in several places equally well
+    "orphaned", // not found
   ])
   .meta({ id: "AnchorState" });
 export type AnchorState = z.infer<typeof AnchorState>;
 
 /**
- * Computed — Axis 2: behavioral belief. Absent on non-behavioral claims (no
- * peer status; displayed `n/a`, never stored). Engine-only, ephemeral (§10).
- * Borrowed from FEVER (`supported`/`refuted`) and reason-maintenance
- * (support-withdrawn → `at-risk`). Shares no member with `AuthoredTrust`.
- * Only `refuted` may gate (§7.4); `at-risk` is advisory.
+ * Computed behavioral belief. Absent unless a verifier ran under
+ * `check --run-verifiers`. Only `refuted` may gate.
  */
-export const BehaviorState = z.enum([
-  "unverified", // behavioral, untested, nothing changed (resting)
-  "at-risk", // reachable evidence changed; belief no longer justified
-  "supported", // a linked verifier passed
-  "refuted", // a linked verifier failed
-]);
+export const BehaviorState = z.enum(["supported", "refuted"]);
 export type BehaviorState = z.infer<typeof BehaviorState>;
 
-/** Document lifecycle — set by the engine from edges/actions (§4/§10). */
-export const DocumentLifecycle = z.enum([
-  "active",
-  "amended",
-  "superseded",
-  "archived",
-  "retracted",
-]);
+/** Document lifecycle. */
+export const DocumentLifecycle = z.enum(["active", "superseded", "archived"]);
 export type DocumentLifecycle = z.infer<typeof DocumentLifecycle>;
 
-// ── Anchor selectors (discriminated union on `kind` — §4) ────────────────────
+// ── Anchor selectors ─────────────────────────────────────────────────────────
 
-/**
- * `text-quote` — exact + prefix + suffix snippet (W3C TextQuoteSelector). The
- * base selector on both sides; always present for a precise anchor. Carries the
- * baseline `exact` captured at record time.
- */
+/** `text-quote`: exact + prefix + suffix (W3C TextQuoteSelector). */
 export const TextQuoteSelector = z.strictObject({
   kind: z.literal("text-quote"),
   exact: z.string(),
@@ -96,7 +54,7 @@ export const TextQuoteSelector = z.strictObject({
   suffix: z.string().default(""),
 });
 
-/** `text-position` — line/char range; a cheap first guess and corroboration hint. */
+/** `text-position`: char offsets at record time. A locate bias and a move tiebreaker. */
 export const TextPositionSelector = z.strictObject({
   kind: z.literal("text-position"),
   start: z.number().int().nonnegative(),
@@ -104,11 +62,9 @@ export const TextPositionSelector = z.strictObject({
 });
 
 /**
- * `ast-node` — *(code side only)* the enclosing construct via tree-sitter,
- * snapped to the smallest enclosing *named* code symbol. Stores the two-tier
- * baseline AST fingerprint (structural + semantic) and the node type, captured at
- * record time. The doc side is format-agnostic and carries no structural selector
- * (ADR-003 D22).
+ * `ast-node` (code side): the smallest enclosing named tree-sitter node with a
+ * two-tier fingerprint. Used for reason labels only: structural equal and
+ * semantic different means a rename, both different means a restructure.
  */
 export const AstNodeSelector = z.strictObject({
   kind: z.literal("ast-node"),
@@ -118,11 +74,7 @@ export const AstNodeSelector = z.strictObject({
   semanticHash: z.string(),
 });
 
-/**
- * `value` — *(code side)* an extracted structured value so a `5 → 50` change
- * trips even if nothing else moves. Which AST node kinds carry a literal is
- * configured per-grammar (§17.4).
- */
+/** `value` (code side): the first literal inside the quoted span, so `5` to `50` trips. */
 export const ValueSelector = z.strictObject({
   kind: z.literal("value"),
   language: z.string(),
@@ -130,40 +82,14 @@ export const ValueSelector = z.strictObject({
   value: z.string(),
 });
 
-/**
- * `inline-id` — *(optional, owned docs only)* a hidden marker (e.g.
- * `<!-- hibi:claim id=… -->`) that *identifies* the record near the paragraph;
- * it stabilizes re-anchoring but **never restates the claim**, and is never
- * required (§4/§8/§18-B). If marker and prose disagree, the prose wins — so this
- * selector aids localization/disambiguation only and is never a fusion score.
- */
-export const InlineIdSelector = z.strictObject({
-  kind: z.literal("inline-id"),
-  id: z.string(),
+/** `coarse`: a file or glob pattern. Navigation only, never graded as drift. */
+export const CoarseSelector = z.strictObject({
+  kind: z.literal("coarse"),
+  pattern: z.string(),
 });
 
-/** `path` (coarse) — a file → an edge: navigation and blast-radius only. */
-export const PathSelector = z.strictObject({
-  kind: z.literal("path"),
-  path: z.string(),
-});
-
-/** `glob` (coarse) — a directory/glob → an edge: navigation and blast-radius only. */
-export const GlobSelector = z.strictObject({
-  kind: z.literal("glob"),
-  glob: z.string(),
-});
-
-/** The precise selector kinds — these can be graded into a drift state. */
-export const PRECISE_SELECTOR_KINDS = [
-  "text-quote",
-  "text-position",
-  "ast-node",
-  "value",
-  "inline-id",
-] as const;
-/** The coarse selector kinds — navigational; never reported as drift (§11.3). */
-export const COARSE_SELECTOR_KINDS = ["path", "glob"] as const;
+/** The coarse selector kinds, never reported as drift. */
+export const COARSE_SELECTOR_KINDS = ["coarse"] as const;
 
 export const Selector = z
   .discriminatedUnion("kind", [
@@ -171,23 +97,15 @@ export const Selector = z
     TextPositionSelector,
     AstNodeSelector,
     ValueSelector,
-    InlineIdSelector,
-    PathSelector,
-    GlobSelector,
+    CoarseSelector,
   ])
   .meta({ id: "Selector" });
 export type Selector = z.infer<typeof Selector>;
 export type SelectorKind = Selector["kind"];
 
-/**
- * SelectorBundle — the multi-selector list for *one side* of an anchor (§4). A
- * bundle of redundant, independently-resolvable selectors against one `file`;
- * the engine resolves the most robust available, falls back down the chain, and
- * cross-corroborates. This *is* the baseline snapshot for that side (§6).
- */
+/** The selectors for one side of an anchor against one file. */
 export const SelectorBundle = z
   .strictObject({
-    /** The file this side's selectors resolve against. */
     file: z.string(),
     selectors: z.array(Selector).min(1),
   })
@@ -195,13 +113,8 @@ export const SelectorBundle = z
 export type SelectorBundle = z.infer<typeof SelectorBundle>;
 
 /**
- * Anchor (bidirectional, composite — §4). A value-object on the Assertion: a
- * **doc-side** bundle (the documented sentence) plus **one or more code-side**
- * bundles (the code it describes). The current artifact span is authoritative;
- * the stored quote is anchoring material + an audit cache, never the truth
- * (§18-B). `code` may be empty for a doc-only `suggested` claim awaiting a code
- * target; an `enforced` claim requires both sides to resolve (§9, validated at
- * `record`, not in the schema).
+ * Anchor: a doc-side bundle (the documented sentence) plus zero or more
+ * code-side bundles. `code` may be empty only on a `suggested` claim.
  */
 export const Anchor = z.strictObject({
   doc: SelectorBundle,
@@ -209,204 +122,75 @@ export const Anchor = z.strictObject({
 });
 export type Anchor = z.infer<typeof Anchor>;
 
-// ── Behavioral evidence (§5/§17.6) ───────────────────────────────────────────
+// ── Verifiers ────────────────────────────────────────────────────────────────
 
 /**
- * Verifier — an executable-evidence link that upgrades behavioral risk to a real
- * verdict (§5/§17.6). If a verifier runs and fails → `refuted`; if none is
- * declared, a claim is never marked `supported`. Executed by an out-of-process
- * runner resolver (§7), never in core.
+ * Verifier: a command a runner executes under `check --run-verifiers`.
+ * `kind` is a dispatch key matched against runner-declared kinds; the built-in
+ * runner handles `command`.
  */
 export const Verifier = z
   .strictObject({
-    /**
-     * A dispatch key, not a taxonomy: a runner resolver declares the
-     * `verifierKinds` it handles and the engine routes by string match. The
-     * conventional kinds (a recommendation, not schema) are `command`,
-     * `example`, `snapshot`, `contract`, `property`, `metamorphic`, `formal`.
-     * The built-in command runner handles `command`.
-     */
     kind: z.string().min(1),
-    /** Names a test/command to run. */
     ref: z.string(),
-    /** Optional human note on what this verifier proves. */
-    proves: z.string().optional(),
   })
   .meta({ id: "Verifier" });
 export type Verifier = z.infer<typeof Verifier>;
 
-/**
- * BehaviorScope — the deterministic blast-radius the change-gate watches for a
- * behavioral claim (§5/§17.6, D14). Bounds the evidence set: the anchored file +
- * its imports followed to `depth`, plus `include` globs, minus `exclude` globs.
- * Absent → the default is `depth: 1` (the anchored file + its direct imports).
- */
-export const BehaviorScope = z.strictObject({
-  /** Extra paths/globs to fold into the evidence set (config, fixtures, tables). */
-  include: z.array(z.string()).default([]),
-  /** Paths/globs to drop from the evidence set (silence unrelated nearby churn). */
-  exclude: z.array(z.string()).default([]),
-  /** Import hops out from the anchored file to follow: 0, 1, or 2 (default 1). */
-  depth: z.union([z.literal(0), z.literal(1), z.literal(2)]).default(1),
-});
-export type BehaviorScope = z.infer<typeof BehaviorScope>;
+// ── Document edges ───────────────────────────────────────────────────────────
 
-// ── Document edges (forward-authored, reverse-derived — §4, §6) ──────────────
-
-/** `supersedes` (full) → targets a Document; the old doc → `superseded`. */
+/** `supersedes`: authored on the new document, targets the old document id. */
 export const SupersedesEdge = z.strictObject({
   type: z.literal("supersedes"),
-  /** documentId of the superseded (old) document. */
   target: z.string(),
-  derived: z.boolean().default(false),
 });
 
-/** Reverse of `supersedes`, derived by the engine onto the old document. */
-export const SupersededByEdge = z.strictObject({
-  type: z.literal("superseded-by"),
-  /** documentId of the superseding (new) document. */
-  source: z.string(),
-  derived: z.boolean().default(true),
-});
-
-/** `amends` (partial) → targets one or more Propositions in a Document. */
-export const AmendsEdge = z.strictObject({
-  type: z.literal("amends"),
-  /** documentId of the amended (old) document. */
-  target: z.string(),
-  /** propositionIds amended within the target document. */
-  propositions: z.array(z.string()).min(1),
-  derived: z.boolean().default(false),
-});
-
-/** Reverse of `amends`, derived by the engine onto the old document. */
-export const AmendedByEdge = z.strictObject({
-  type: z.literal("amended-by"),
-  source: z.string(),
-  propositions: z.array(z.string()).min(1),
-  derived: z.boolean().default(true),
-});
-
-export const Edge = z.discriminatedUnion("type", [
-  SupersedesEdge,
-  SupersededByEdge,
-  AmendsEdge,
-  AmendedByEdge,
-]);
+export const Edge = z.discriminatedUnion("type", [SupersedesEdge]);
 export type Edge = z.infer<typeof Edge>;
 
-// ── Entities (§5) ────────────────────────────────────────────────────────────
+// ── Entities ─────────────────────────────────────────────────────────────────
 
-/** Document — a file. Owns lifecycle and supersession edges. */
 export const Document = z.strictObject({
   id: z.string(),
   path: z.string(),
   lifecycle: DocumentLifecycle.default("active"),
   edges: z.array(Edge).default([]),
-  frontmatterStatus: z.string().optional(),
-  /**
-   * Pristine (§8, D17) — a doc hibi does not own (vendored, third-party,
-   * read-only). `check --write` never stamps a banner or frontmatter into it;
-   * verdicts surface via JSON/`status`/exit codes only. Also matchable via
-   * `StoreConfig.pristine` globs at stamp time.
-   */
-  pristine: z.boolean().default(false),
 });
 export type Document = z.infer<typeof Document>;
 
 /**
- * Proposition — the timeless meaning; the target of `amends`; the dedup unit.
- * `textCache` is a **non-authoritative** copy of the documented sentence, kept
- * only for audit, diffing, and `orphaned`-claim recovery; **the authoritative
- * text is the current doc span**, re-read at `check` time via the doc-side
- * anchor (§4, §8, §18-B). Identity is authored/explicit (`id` / content
- * `fingerprint` of the confirmed text), never similarity-computed (§5).
+ * Proposition: the sentence, deduplicated by content fingerprint. `textCache`
+ * is a non-authoritative copy; the live doc span is the truth.
  */
 export const Proposition = z.strictObject({
   id: z.string(),
-  /** Non-authoritative cache of the documented sentence (§5/§18-B). */
   textCache: z.string(),
-  authoredTrust: AuthoredTrust,
   fingerprint: z.string(),
 });
 export type Proposition = z.infer<typeof Proposition>;
 
-/**
- * Assertion — one verification instance. Carries the bidirectional Anchor.
- *
- * The `behavioral` tri-state and `verifiers[]` together decide Tier-3 routing
- * (§17.6, D12/D13). The no-contradiction invariant is enforced here (a
- * `.refine`, run at `record` time AND at every store load): `behavioral: false`
- * cannot be combined with a non-empty `verifiers[]` — a verifier is itself a
- * behavioral declaration.
- */
-export const Assertion = z
-  .strictObject({
-    id: z.string(),
-    propositionId: z.string(),
-    documentId: z.string(),
-    owner: z.string(),
-    /** The `@ref` (commit) last verified against. */
-    ref: z.string(),
-    anchor: Anchor,
-    /** The record's creation-lifecycle (§4/§9). */
-    enforcement: Enforcement.default("suggested"),
-    /**
-     * Author's behavioral declaration (§17.6, D12). `true` → behavioral,
-     * wording irrelevant; `false` → not behavioral, heuristic skipped
-     * (`verifiers[]` must be empty); absent → the keyword heuristic classifies,
-     * or a non-empty `verifiers[]` makes it behavioral.
-     */
-    behavioral: z.boolean().optional(),
-    /** Executable-evidence links that upgrade behavioral risk (§5/§17.6). */
-    verifiers: z.array(Verifier).default([]),
-    /** Deterministic blast-radius for the behavioral change-gate (§5/§17.6). */
-    behaviorScope: BehaviorScope.optional(),
-    /**
-     * The change-gate baseline (§17.6, D14): each evidence-set path → its
-     * xxHash64 hex, captured at `record`/`reanchor` time. A current hash that
-     * differs, or a path missing from this map, counts as changed evidence.
-     */
-    evidenceBaseline: z.record(z.string(), z.string()).optional(),
-    /**
-     * Authored suppression of a behavioral `at-risk` (§17.6, D14; `hibi
-     * ignore`). `paths` is the acknowledged `{path → hash}` map of the
-     * currently-changed evidence; the suppression lapses when any path's current
-     * hash differs from its acknowledged entry (or a new evidence path appears).
-     * Workflow state captured at ignore time — never a computed verdict field.
-     */
-    suppressed: z
-      .strictObject({
-        paths: z.record(z.string(), z.string()),
-        reason: z.string(),
-      })
-      .optional(),
-    /** Optional ISO-8601 instant; past it the computed `expired` flag is set. */
-    ttl: z.string().optional(),
-    /** Open key/value bag for resolver-specific metadata the core does not interpret. */
-    attrs: z.record(z.string(), z.unknown()).default({}),
-  })
-  .refine((a) => !(a.behavioral === false && a.verifiers.length > 0), {
-    message:
-      "behavioral: false cannot be combined with verifiers[] — a verifier is itself a behavioral declaration. Remove the verifiers or drop behavioral: false. To keep the verifier but silence at-risk noise, narrow behaviorScope (exclude globs / depth: 0) or use hibi ignore --claim <id> --reason <text>.",
-  });
+/** Assertion: one claim. Carries the anchor and the authored facets. */
+export const Assertion = z.strictObject({
+  id: z.string(),
+  propositionId: z.string(),
+  documentId: z.string(),
+  owner: z.string(),
+  /** The commit the claim was last recorded or reanchored against. */
+  ref: z.string(),
+  anchor: Anchor,
+  enforcement: Enforcement.default("enforced"),
+  /** The author confirmed the code backs the sentence (`record --verified`). */
+  verified: z.boolean().default(false),
+  verifiers: z.array(Verifier).default([]),
+  /** ISO-8601 instant; past it the computed `expired` flag is set. */
+  ttl: z.string().optional(),
+  /** Open key/value bag for resolver-specific metadata the core does not interpret. */
+  attrs: z.record(z.string(), z.unknown()).default({}),
+});
 export type Assertion = z.infer<typeof Assertion>;
 
-// ── Verdict (ephemeral — never persisted, §5/§6) ─────────────────────────────
+// ── Verdict (ephemeral, never persisted) ─────────────────────────────────────
 
-/** Per-selector contribution to the fused confidence (§17.3). */
-export const SelectorScore = z.strictObject({
-  kind: z.string(),
-  /** Whether the selector resolved ("found") per §17.3. */
-  found: z.boolean(),
-  /** The selector's similarity score in [0,1]. */
-  score: z.number(),
-  /** The fusion weight for this selector kind. */
-  weight: z.number(),
-});
-export type SelectorScore = z.infer<typeof SelectorScore>;
-
-/** A located region in the current text. */
 export const Region = z
   .strictObject({
     start: z.number().int().nonnegative(),
@@ -415,33 +199,28 @@ export const Region = z
   .meta({ id: "Region" });
 export type Region = z.infer<typeof Region>;
 
-/**
- * ChangedEvidence — what reachable evidence changed and triggered behavioral
- * risk / a `changed` anchor state (§5/§17.6). Each entry names the changed path
- * and the kind of evidence that moved.
- */
+export const ChangedEvidenceKind = z.enum([
+  "text",
+  "ast",
+  "value",
+  "verifier-source",
+]);
+export type ChangedEvidenceKind = z.infer<typeof ChangedEvidenceKind>;
+
+/** What changed and where. */
 export const ChangedEvidence = z.strictObject({
-  /** The file (or selector locus) whose evidence changed. */
   path: z.string(),
-  /** What kind of evidence changed: `value`, `ast`, `text`, `import` (an evidence-set file — a depth-N import or an `include`-glob file), or `verifier-source` (a verifier `ref` source file, §17.6). */
-  kind: z.string(),
-  /** Optional human-readable detail. */
+  kind: ChangedEvidenceKind,
   detail: z.string().optional(),
 });
 export type ChangedEvidence = z.infer<typeof ChangedEvidence>;
 
-/** Advisory note from a quarantined Tier-3 resolver — advises, never gates (§7.4). */
+/** Advisory note from an advisory resolver. Advises, never gates. */
 export const Advisory = z
   .strictObject({
     resolver: z.string(),
     message: z.string(),
-    /** Free-form confidence the advisor reports; never folded into the verdict. */
-    confidence: z.number().optional(),
-    /**
-     * No hidden LLM state (§19, D29): a `modelBacked` resolver must attach the
-     * model name, the prompt hash, the context hash, and any params it ran with;
-     * the registry drops a provenance-less advisory from such a resolver (§7.4).
-     */
+    /** Required from a `modelBacked` resolver; the registry drops advisories without it. */
     provenance: z
       .strictObject({
         model: z.string(),
@@ -454,160 +233,70 @@ export const Advisory = z
   .meta({ id: "Advisory" });
 export type Advisory = z.infer<typeof Advisory>;
 
-/** Bulky located evidence — trails the decision fields in the JSON shape (§9). */
 export const VerdictEvidence = z.strictObject({
-  /** The located doc-side region (the documented sentence), when found. */
   docRegion: Region.optional(),
-  /** The located code-side region per code bundle, when found. */
   codeRegions: z.array(Region).default([]),
-  /** Fused confidence of the primary (code, else doc) side (§17.3). */
-  confidence: z.number(),
-  /** Which selectors agreed, and how (primary side). */
-  selectorScores: z.array(SelectorScore).default([]),
-  /** Reachable evidence that changed, triggering `changed`/`at-risk` (§17.6). */
+  /** Normalized text similarity of the located primary span to its stored quote. */
+  similarity: z.number().optional(),
   changedEvidence: z.array(ChangedEvidence).default([]),
-  /** The ref the assertion was verified against. */
-  ref: z.string().optional(),
 });
 export type VerdictEvidence = z.infer<typeof VerdictEvidence>;
 
-// ── Remediation menu (deterministic verdict→action lookup, §9) ───────────────
+// ── Remediation menu ─────────────────────────────────────────────────────────
 
-/**
- * How safely an action can be applied — Rust `Applicability`-style (§9):
- *   - `auto`         — safe to apply mechanically (e.g. a pure relocation).
- *   - `needs-review` — apply but review the result (the anchor/value may differ).
- *   - `manual`       — a human/agent must decide intent before acting.
- */
-export const RemediationApplicability = z.enum([
-  "auto",
-  "needs-review",
-  "manual",
-]);
-export type RemediationApplicability = z.infer<typeof RemediationApplicability>;
-
-/**
- * What kind of work the action is:
- *   - `deterministic` — hibi performs it via a `command` (e.g. `reanchor`/`retire`).
- *   - `prose`         — a human/agent must rewrite the doc or code (no command).
- */
-export const RemediationEffect = z.enum(["deterministic", "prose"]);
-export type RemediationEffect = z.infer<typeof RemediationEffect>;
-
-/**
- * One entry in a verdict's remediation menu (§9). A `deterministic` action
- * carries a ready-to-run `command` with the claim id pre-filled; a `prose`
- * action carries none, because it needs a human/agent to edit text. A command
- * is NEVER pre-filled when it cannot succeed (e.g. a bare `reanchor` on an
- * orphan, which has no span to relocate to).
- */
 export const RemediationAction = z.strictObject({
-  /** Stable kebab token, machine-stable across releases (e.g. `reanchor`). */
+  /** Stable token, e.g. `reanchor`, `retire`. */
   id: z.string(),
-  /** One-line human label. */
   title: z.string(),
-  applicability: RemediationApplicability,
-  effect: RemediationEffect,
-  /** Why this action applies, derived from the verdict's states/evidence. */
   rationale: z.string(),
-  /** Ready-to-run command (deterministic, runnable actions only). */
+  /** Ready-to-run command with the claim id filled in, when one exists. */
   command: z.string().optional(),
 });
 export type RemediationAction = z.infer<typeof RemediationAction>;
 
-/**
- * The deterministic remediation menu for a verdict (§9). A *menu*, not a single
- * prescription: hibi routes attention but cannot know developer intent (was the
- * code change deliberate?), so `recommended` is set only when the next step is
- * unambiguous, and `actions` is ordered safest/most-severe-first. The
- * verdict→action mapping is a fixed lookup table (`remediationFor`), never a
- * model decision (§7/§11).
- */
 export const Remediation = z.strictObject({
-  /** The single best action id, or `null` when intent is ambiguous. */
   recommended: z.string().nullable(),
   actions: z.array(RemediationAction).default([]),
 });
 export type Remediation = z.infer<typeof Remediation>;
 
-/**
- * Verdict — the engine's per-Assertion result, recomputed live, never stored.
- * **Verdict-first** (§9): leads with the decision (the two per-side anchor
- * states, the behavioral state, the `expired`/`gates` flags, and the
- * `remediation` menu) and trails the bulky `evidence`, so a truncated read still
- * surfaces the verdict and what to do about it. Means "suspect — re-verify",
- * never "the claim is false" (§11).
- */
+/** Verdict: the per-claim result. Decision fields first, evidence last. */
 export const Verdict = z.strictObject({
   assertionId: z.string(),
   propositionId: z.string(),
   documentId: z.string(),
-  /** Axis 1 — anchor resolution, doc side. */
   doc: AnchorState,
-  /** Axis 1 — anchor resolution, code side (aggregated worst over code bundles). */
   code: AnchorState,
-  /** Axis 2 — behavioral belief; absent on non-behavioral claims. */
   behavior: BehaviorState.optional(),
-  /** Orthogonal time flag: past the Assertion's `ttl`. */
   expired: z.boolean(),
-  /**
-   * Whether this verdict gates the build (exit 2): true iff the claim is
-   * `enforced` and (doc or code ∈ {changed, orphaned, ambiguous} | `expired` |
-   * `behavior === "refuted"`). `moved`/`at-risk` never gate (§9/§17.3).
-   */
+  /** True iff enforced and (a side is changed/orphaned/ambiguous, or expired, or refuted). */
   gates: z.boolean(),
-  /**
-   * Deterministic verdict→action menu (§9): a decision field that leads
-   * alongside `gates`. `null` on a clean verdict (nothing to remediate). hibi's
-   * own resolvers always set it; the default keeps the registry tolerant of a
-   * wire verdict from an external resolver that omits it (the registry recomputes
-   * the menu from the computed states regardless — §7.4).
-   */
   remediation: Remediation.nullable().default(null),
-  /**
-   * Computed (never persisted): the behavioral `at-risk` was acknowledged via
-   * `hibi ignore` and the acknowledged evidence still stands (§17.6, D14). While
-   * true the at-risk contributes nothing to exit codes; it lapses automatically
-   * when any acknowledged evidence path's hash moves or a new one appears.
-   */
-  suppressed: z.boolean().default(false),
   evidence: VerdictEvidence,
-  /** Human-readable explanation crumbs (e.g. "value veto", "structural-only"). */
+  /** Reason labels, e.g. "identifiers or literals renamed". */
   notes: z.array(z.string()).default([]),
-  /** Non-gating advice from Tier-3 resolvers. */
   advisories: z.array(Advisory).default([]),
 });
 export type Verdict = z.infer<typeof Verdict>;
 
 // ── Store config ─────────────────────────────────────────────────────────────
 
-/** `.claims/config.json` — holds the per-repository banner nonce (§17.5). */
 export const StoreConfig = z.strictObject({
   version: z.string().default(MODEL_VERSION),
   /** Short random identifier generated once per repository at store init. */
   nonce: z.string(),
-  /**
-   * Attention-budget instruction files that get the compact single-line banner
-   * (§8). Defaults applied by the engine when absent: CLAUDE.md, AGENTS.md,
-   * editor rule files.
-   */
+  /** Instruction files that get the one-line banner. Defaults: CLAUDE.md, AGENTS.md, editor rule files. */
   instructionFiles: z.array(z.string()).optional(),
-  /**
-   * Globs marking pristine docs (§8, D17). A document whose path matches any of
-   * these is treated pristine at stamp time — `check --write` never banners it —
-   * so adding a glob here protects already-recorded docs without re-recording.
-   */
+  /** Globs for documents `check --write` never stamps. */
   pristine: z.array(z.string()).optional(),
 });
 export type StoreConfig = z.infer<typeof StoreConfig>;
 
-/** The full set of schemas exported to JSON Schema by `scripts/gen-schemas.ts`. */
 export const SCHEMAS = {
   Selector,
   SelectorBundle,
   Anchor,
   Verifier,
-  BehaviorScope,
   Edge,
   Document,
   Proposition,

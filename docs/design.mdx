@@ -1,165 +1,90 @@
 ---
-title: "Why Hibi: Deterministic Doc-Staleness Detection Explained"
+title: "Why Hibi: Deterministic Doc-Drift Detection"
 sidebarTitle: "Why Hibi"
-description: "The problem Hibi solves, its threat model — a naive consumer reads the raw file and trusts it — and six principles that every design decision upholds."
+description: "The problem Hibi solves, its threat model (a reader trusts the raw file), and the principles behind every design decision."
 icon: "compass"
 ---
 
-Documentation drifts. Someone edits the code, the sentence that described it stays
-put, and the page now lies to anyone who reads it. Often that reader is an AI coding
-agent that loads `CLAUDE.md` or a README at the start of a session and acts on every
-line as if it were true. Hibi exists to make that drift both **detectable** and
-**visible in the artifact itself**, deterministically.
+Documentation drifts. Someone edits the code, the sentence that described it stays, and the page now misleads whoever reads it. Often that reader is an AI coding agent that loads `CLAUDE.md` or a README at the start of a session and acts on every line. Hibi makes that drift detectable and visible in the file itself, deterministically.
 
-For the mechanics first, start with [How it works](/concepts); to see how the
-reasoning becomes a verdict, read [Verdicts, states & exit codes](/verdicts).
+For the mechanics, start with [Verdicts](/verdicts).
 
-## The problem & threat model
+## The problem and the threat model
 
-A **claim** is a binding between a documented sentence and the code it describes.
-Claims rot in three ways, and conflating them is the first mistake:
+A **claim** is a sentence in a document anchored to the code it describes. Claims rot in three ways:
 
 | Drift type | What changed | Example |
 |---|---|---|
-| **Code drift** | The code moved on; the prose stayed. | A doc says "retries 5 times" after the constant became `50`. |
-| **Doc drift** | The documented sentence itself was edited or deleted. | Someone rewrote the paragraph; the claim no longer points at live text. |
-| **Supersession** | A newer document replaced or amended this one. | An ADR marks an older design "superseded by"; readers still find the old page. |
+| Code drift | The code moved on; the prose stayed. | A doc says "retries 5 times" after the constant became `50`. |
+| Doc drift | The documented sentence was edited or deleted. | Someone rewrote the paragraph; the claim no longer points at live text. |
+| Supersession | A newer document replaced this one. | An ADR is marked superseded; readers still find the old page. |
 
-The threat model is a single sentence: **a naive consumer reads the raw file and
-trusts it.** It does not consult a dashboard, a CI run, or a side channel. It reads
-the bytes on disk. So a staleness signal that lives only beside the file is invisible
-to the reader who most needs it. The status has to land *in* the artifact.
+The threat model is one sentence: **a reader reads the raw file and trusts it.** It does not consult a dashboard or a CI log. So the status has to land in the file. That is what `check --write` and the [banner](/banners) are for.
 
 <Info>
-  A flag is a request to **re-verify**, not a claim that the doc is wrong. The
-  evidence under a sentence moved; a human or agent decides what the prose should now
-  say. Hibi never rewrites prose.
+  A flag is a request to re-verify. Hibi reports that the text or code under a sentence moved. A person or agent decides what the prose should now say. Hibi never rewrites prose.
 </Info>
 
 ## The principles
 
-These six commitments shape every decision in Hibi. Read them as constraints the
-design refuses to violate, not as features.
-
 <AccordionGroup>
-  <Accordion title="Determinism is the product" icon="scale-balanced">
-    Hibi is **deterministic: no model runs in the check loop.** The same working
-    tree always yields the same verdicts. This is not a performance choice; it is the
-    entire value proposition. The moment "is this doc stale?" becomes probabilistic,
-    you have traded a trustworthy, repeatable signal for a guess that varies run to
-    run, and a guess is what a reader already had. An optional semantic
-    resolver may advise, out-of-process, but it never decides a verdict and never
-    gates.
+  <Accordion title="Determinism" icon="scale-balanced">
+    No model runs in the check loop. The same working tree yields the same verdicts. Resolution is an ordered cascade with named constants ([Anchors](/anchors)), not a score. An external advisory resolver may attach notes; it never decides a verdict and never gates.
   </Accordion>
 
   <Accordion title="Suspect, not false" icon="circle-question">
-    Hibi reports that the evidence under a claim **moved** (re-verify it), never that
-    the claim is **false**. Confirming falsity requires reading both sides and judging
-    intent, which is a human or agent act, not a deterministic one. So the signal is
-    always "suspect, not false." This keeps Hibi honest about what it knows:
-    the anchored code changed, therefore the belief is no longer justified, therefore
-    someone should look again.
+    Hibi reports that evidence moved, never that a claim is false. Confirming falsity means reading both sides and judging intent, which is a human or agent act.
   </Accordion>
 
-  <Accordion title="Over-flagging is the #1 failure mode" icon="flag">
-    A tool that cries wolf gets muted, and a muted tool protects nothing. The valuable
-    output is a **tight, trustworthy suspect set**, not a long list of maybes. Hibi
-    earns that several ways: coarse file- and directory-level anchors are treated as
-    navigation only and are **never reported as stale**; resolution is graded against
-    confidence thresholds rather than a binary cutoff; several redundant signals must
-    corroborate before a verdict is confident; and when those signals disagree, the
-    answer is "re-verify," not a hard "stale."
+  <Accordion title="Over-flagging is the main failure mode" icon="flag">
+    A tool that flags too much gets muted. Coarse anchors are never reported as drift. `moved` is a warning, not a gate. When several exact matches tie, the answer is `ambiguous`, not a guess.
   </Accordion>
 
   <Accordion title="The documented span is the source of truth" icon="quote-left">
-    The store holds **pointers** (bidirectional anchors), not a copy of the prose. A
-    copied sentence would become a second source of truth that outlives the
-    real doc, so the doc could drift while the copy still looked authoritative. By
-    re-reading the live sentence at check time, Hibi closes that gap: the same
-    mechanism that catches code drift also catches **doc drift**, because a sentence
-    that was edited or deleted no longer resolves against its anchor.
+    The store holds anchors, not a copy of the prose. Re-reading the live sentence at check time is what catches doc drift as well as code drift.
   </Accordion>
 
-  <Accordion title="Tiny core" icon="cube">
-    The rule is "if it isn't core, it's a resolver or a consumer." The core is only the
-    data model and the verdict contract: no I/O, no CLI, no UI. Everything else
-    (anchor grading, supersession logic, verifier execution, an optional advisor) lives
-    behind one out-of-process protocol. A small core is auditable, and an auditable
-    core is what makes the determinism claim believable.
+  <Accordion title="Agents author claims, and new claims gate" icon="robot">
+    The primary user is a coding agent. JSON is the contract, and `record --from-file -` is the primary recording path. A new claim is enforced by default; a claim that cannot fail anything does not prevent false claims. `--suggest` opts out.
   </Accordion>
 
-  <Accordion title="Universal by construction" icon="file-lines">
-    Hibi treats docs as **text**. There is no per-format parser in the core, so
-    Markdown, plain text, AsciiDoc, an `AGENTS.md`, or an editor-rules file all work
-    the same way. Format-specific knowledge (where to place a banner, which comment
-    syntax to use) is a thin edge concern, never a precondition for tracking a claim.
+  <Accordion title="Any file is text" icon="file-lines">
+    There is no per-format parser. Markdown, plain text, AsciiDoc, and editor rule files are all handled the same way; the only format-specific knowledge is which comment syntax wraps a banner.
   </Accordion>
 </AccordionGroup>
 
 ## Why no model sits on the verdict path
 
-One objection to a deterministic design: wouldn't a language model *understand*
-whether the doc still matches? The published evidence says no: not reliably enough
-to gate on.
+Published results on model-based doc verification are not strong enough to gate on:
 
-- The best published **doc-behavior verification** tops out at an F1 of about **0.58**
-  (precision ≈ 0.72, recall ≈ 0.48). A coin-flip-adjacent recall is not a foundation
-  for "trust this page."
-- **LLM-as-judge** consistency falls to about **0.57** under sampling, and audits have
-  shown judges accepting up to **~63%** of intentionally wrong answers. A judge that
-  endorses two-thirds of wrong answers cannot be the thing that says a doc is fine.
-- **Noisy analyzers** report up to **~96%** spurious warnings, and trust lost in one
-  tier spreads to every tier; once a developer learns to ignore Hibi's output, the
-  accurate flags die with the false ones.
+- The best published doc-behavior verification tops out at an F1 of about 0.58 (precision about 0.72, recall about 0.48).
+- LLM-as-judge consistency falls to about 0.57 under sampling, and audits have shown judges accepting up to about 63% of intentionally wrong answers.
+- Noisy analyzers report up to about 96% spurious warnings, and trust lost in one tier spreads to every tier.
 
-So Hibi splits the work the way the evidence demands. It **routes attention
-deterministically** (structural analysis says *where* something changed) and it runs
-**executable checks** the author supplied to judge behavioral truth. A model may
-**advise** (explain a change, triage a suspect set) but it may never gate and never
-mark a claim supported. The judgment that ships in CI is reproducible by construction.
+So Hibi splits the work. Text and AST resolution say where something changed. Author-supplied verifiers, run only under `check --run-verifiers`, judge behavior. A model may advise through an advisory resolver, but it may not gate and may not mark a claim supported.
 
-<Note>
-  This is also why a related signal, trace-link extraction, tops out around 77%
-  precision at 60% recall (or 100% recall at 16% precision). The honest response
-  to a noisy extractor is to **auto-suggest, never auto-enforce**: Hibi can propose
-  candidate claims, but a human confirms one before it can gate.
-</Note>
-
-## Prior art & lineage
-
-Hibi is an assembly of ideas that already work, plus a doc side that the closest
-sibling lacks. Each row is studied, not copied.
+## Prior art
 
 | Prior work | What Hibi takes from it |
 |---|---|
-| **Fiberplane Drift** | The closest sibling: tree-sitter plus an AST fingerprint committed in a lock. But it is code-only and binary (stale / not-stale). Hibi adds the **doc side**, **graded states**, **supersession**, and **in-file stamping**. |
-| **W3C Web Annotation + hypothes.is** | Multi-selector fuzzy anchoring: the redundant-selector idea. Their orphaned-annotation study found ~22% of annotations detach under real churn and only ~12% are recoverable, which is why **deletion must be an explicit state**, not a silent failure. |
-| **Doorstop** | Fingerprint-per-link that marks a link **"suspect"** and demands an explicit re-baseline: the "suspect, not false" stance. |
-| **tree-sitter** | The lightweight structural tier: resolve a claim to the enclosing named node so reformatting alone does not trip it. |
-| **RFC Obsoletes / ADR superseded-by** | The supersession data model: a typed edge authored forward on the new document. |
-| **Truth-Maintenance Systems** | The split into Proposition and Assertion mirrors belief and justification: a timeless meaning, and the instances that justify believing it. |
-| **Swimm** | Code-coupled docs that cannot track a pristine, unmarked doc, which motivates Hibi's hybrid carrier (anchor in a store, optional in-file marker). |
-| **FEVER** | The `supported` / `refuted` vocabulary for claim verification. |
-| **SCIP / LSIF / Glean** | The code-index family: excellent for navigation, but built for code-to-code, not doc-staleness. **Not** adopted. |
-
-<Tip>
-  The throughline: existing tools either track code-to-code links or annotate prose,
-  but none make a documented sentence's relationship to code both **deterministic** and
-  **visible in the file**. That gap is the whole reason Hibi exists.
-</Tip>
+| Hypothesis fuzzy anchoring | The ordered cascade: exact match with context, then fuzzy match within an error budget, position as a weak bias. |
+| W3C Web Annotation Data Model | The `text-quote` and `text-position` selectors; several matches means ambiguous, not a guess. |
+| Fiberplane Drift | tree-sitter plus an AST fingerprint committed to a lock. Hibi adds the doc side, graded states, supersession, and in-file stamping. |
+| Doorstop | A link marked "suspect" that demands an explicit re-baseline. |
+| Gerrit ported comments | Degrade precision rather than guess. |
+| RFC Obsoletes / ADR supersession | A typed `supersedes` edge authored on the new document. |
+| FEVER | The `supported` / `refuted` vocabulary. |
 
 ## Where the reasoning becomes mechanics
 
 <CardGroup cols={2}>
-  <Card title="How it works" icon="diagram-project" href="/concepts">
-    Claims, redundant anchors, and the doc-first flow that turns these principles into
-    a verdict.
+  <Card title="Verdicts" icon="scale-balanced" href="/verdicts">
+    The claim model, the two axes, the remediation menu, and the exit codes.
   </Card>
-  <Card title="Verdicts, states & exit codes" icon="scale-balanced" href="/verdicts">
-    The two-axis model, confidence bands, and how precision-over-recall is enforced.
+  <Card title="Anchors" icon="anchor" href="/anchors">
+    The selectors and the resolution cascade with its constants.
   </Card>
-  <Card title="Behavioral claims & verifiers" icon="flask-vial" href="/behavioral">
-    How Hibi handles claims structural checks can't prove, without a model on the
-    verdict path.
+  <Card title="Behavioral claims" icon="flask-vial" href="/behavioral">
+    Verifiers and why they are opt-in.
   </Card>
 </CardGroup>

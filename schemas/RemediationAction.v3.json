@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "rationale": {
+      "type": "string"
+    },
+    "command": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "rationale"
+  ],
+  "additionalProperties": false
+}

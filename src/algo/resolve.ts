@@ -1,51 +1,38 @@
 /**
- * Drift resolution (§6 layered cheapest-first with corroboration; §17).
+ * Anchor resolution: an ordered cascade per side, no weighted fusion.
  *
- * Resolves an Assertion's **bidirectional** Anchor against the *current* working
- * tree, producing the two-axis Verdict. Freshness is computed from (stored
- * Anchor) vs (current files) alone — the engine never reads a historical
- * revision, so `check` stays offline-correct (§6).
+ *   1. Locate the stored quote (exact occurrences ranked by prefix/suffix
+ *      context, else a fuzzy match within the error budget).
+ *   2. Same normalized text at the same offset: `unchanged`.
+ *   3. Same text at a new offset: `moved`.
+ *   4. Text below the similarity floor, semantic AST hash changed, or the
+ *      in-span literal changed: `changed`, with a reason label.
+ *   5. Not found: `orphaned`.
+ *   6. Several equally good exact matches: `ambiguous`.
  *
- * Order is load-bearing (§6 step 0 / §18-B): the **doc side resolves first**.
- * The documented sentence is the source of truth; a `doc:orphaned`/`doc:changed`
- * result must not let the stale `textCache` be verified as live truth, and a
- * verifier must never certify a claim whose sentence is in flux. Behavioral
- * belief here is the **deterministic baseline** (`unverified`/`at-risk`); a
- * runner resolver upgrades it to `supported`/`refuted` out-of-process (§17.6).
+ * Position is a tiebreaker only. Both AST hashes are kept as reason labels:
+ * structural equal and semantic different is "identifiers or literals renamed";
+ * both different is "restructured". Freshness is computed from the stored
+ * anchor and the current files alone; `check` never reads git.
  */
 
-import { hashContent } from "../ast/hash.ts";
 import { computeGates } from "../core/gating.ts";
 import {
   type AnchorState,
   type Assertion,
-  type BehaviorState,
   type ChangedEvidence,
   COARSE_SELECTOR_KINDS,
   type Region,
   type Selector,
   type SelectorBundle,
-  type SelectorScore,
   type Verdict,
 } from "../core/model.ts";
 import { remediationFor } from "../core/remediation.ts";
-import { isBehavioral } from "./behavioral.ts";
-import { grade, type ResolvedSelector } from "./fusion.ts";
-import { localizeTextQuote, positionBias, regionText } from "./localize.ts";
+import { localizeTextQuote, regionText } from "./localize.ts";
 import { collapseWhitespace, textSimilarity } from "./normalize.ts";
-import {
-  AMBIGUOUS_MIN_QUOTE_LENGTH,
-  POSITION_FOUND_SIMILARITY,
-  STRONG_TEXTQUOTE_SIMILARITY,
-  STRUCTURAL_ONLY_SCORE,
-  WEIGHTS,
-} from "./params.ts";
+import { MOVE_AWARENESS_CHARS, SAME_TEXT_SIMILARITY } from "./params.ts";
 
-/**
- * Tier-2 analyzer hook — implemented with tree-sitter. Given the current text
- * and the localized region, snaps the enclosing named node and reports its
- * two-tier hash and any extracted literal value.
- */
+/** Tree-sitter analyzer hook (check time). */
 export interface AstAnalysis {
   nodeType: string;
   structuralHash: string;
@@ -54,144 +41,29 @@ export interface AstAnalysis {
   region: Region;
 }
 export interface AstAnalyzer {
-  /** Snap & hash the enclosing named node around `region`; null if none. */
+  /** Snap and hash the enclosing named node around `region`; null if unparseable. */
   analyze(text: string, language: string, region: Region): AstAnalysis | null;
-  /** Extract the first matching literal value within `region`; null if none. */
+  /** The first literal inside `region`; null if none. */
   extractValue(
     text: string,
     language: string,
     region: Region,
-    nodeKind: string,
+    nodeKind?: string,
   ): string | null;
-  /** List the import specifiers of a file (§17.6, D14); [] if unparseable. */
-  extractImports(text: string, language: string): string[];
 }
 
-/** Current content of every file an anchor points into (null = file missing). */
+/** Current content of every file an anchor points into (null = missing). */
 export interface ResolveFiles {
-  /** The doc-side file's current content. */
   doc: string | null;
-  /** Each code-side bundle file's current content, keyed by path. */
   code: ReadonlyMap<string, string | null>;
 }
 
 export interface ResolveOptions {
   ast?: AstAnalyzer;
-  /** Current time for ttl evaluation; defaults to Date.now() at call site. */
+  /** Current time for ttl evaluation; defaults to Date.now(). */
   now?: number;
-  /**
-   * The change-gate evidence (§17.6, D14): current contents of every
-   * evidence-set path, keyed by path (null = file missing). Supplied by the
-   * engine shell (`check.ts`); absent → the gate falls back to the
-   * anchored-node signal only.
-   */
-  evidence?: ReadonlyMap<string, string | null>;
 }
 
-/**
- * The behavioral change-gate (§17.6, D14). `docSide.state` is consulted NOWHERE
- * here — a doc-side edit is Axis 1's job, so the two axes never double-fire on
- * one signal. Fires `at-risk` when the anchored node's semantics changed (an
- * `ast`/`value` change on the code side) or any evidence path drifted from its
- * baseline (a changed hash, or a newly-added import with no baseline entry).
- *
- * Baseline handling is precision-critical (§11.3):
- *   - baseline **exists** but an evidence path is missing from it → that path is
- *     changed evidence (a newly added import);
- *   - baseline **absent entirely** (recorded `--no-ast`, analyzer failure) →
- *     fall back to the anchored-node signal, never flag every path.
- */
-function computeBehaviorRisk(
-  assertion: Assertion,
-  codeChanged: ChangedEvidence[],
-  evidence: ReadonlyMap<string, string | null> | undefined,
-): { state: BehaviorState; changed: ChangedEvidence[] } {
-  const changed: ChangedEvidence[] = [];
-
-  // (1) Anchored-node signal: a semantic (ast) or literal (value) change of the
-  //     anchored span — a rename/whitespace-only edit is structural-only and
-  //     surfaces neither, so it correctly never fires.
-  for (const c of codeChanged) {
-    if (c.kind === "ast" || c.kind === "value") changed.push(c);
-  }
-
-  // (2) Evidence-set drift — only when a baseline exists (baseline-absent → (1)).
-  //     Each entry is labeled by the path's provenance: a verifier `ref` source
-  //     file is `verifier-source` (the gate watches the checker itself), every
-  //     other evidence-set file — a depth-N import or an `include`-glob file — is
-  //     `import`. The provenance is the claim's verifier-ref set: a path enters
-  //     the evidence set through a verifier ref iff it is one of these (§17.6, D14).
-  const baseline = assertion.evidenceBaseline;
-  if (baseline && evidence) {
-    const verifierSources = new Set(
-      assertion.verifiers.map((v) => v.ref).filter((r) => r.length > 0),
-    );
-    for (const [path, content] of evidence) {
-      const cur = content === null ? null : hashContent(content);
-      const base = baseline[path];
-      if (base !== undefined && cur === base) continue; // unchanged
-      const isVerifier = verifierSources.has(path);
-      const added = base === undefined;
-      changed.push({
-        path,
-        kind: isVerifier ? "verifier-source" : "import",
-        detail: isVerifier
-          ? added
-            ? "verifier source added"
-            : "verifier source changed"
-          : added
-            ? "new evidence path"
-            : "evidence file changed",
-      });
-    }
-    // A deleted evidence file never enters the recomputed set (`evidence.ts`
-    // resolves imports/globs/refs against disk), so it is absent from the map
-    // rather than present with null content — only `baseline` still records it.
-    for (const path of Object.keys(baseline)) {
-      if (evidence.has(path)) continue;
-      const isVerifier = verifierSources.has(path);
-      changed.push({
-        path,
-        kind: isVerifier ? "verifier-source" : "import",
-        detail: isVerifier
-          ? "verifier source missing"
-          : "evidence file missing",
-      });
-    }
-  }
-
-  // No dedupe here: the caller merges `changed` into the verdict's
-  // `changedEvidence` through `dedupeEvidence`, and `suppressionActive` keys on
-  // `path` alone — so a duplicate entry changes neither the state nor the output.
-  return changed.length > 0
-    ? { state: "at-risk", changed }
-    : { state: "unverified", changed: [] };
-}
-
-/**
- * Whether an authored `hibi ignore` suppression is still active (§17.6, D14).
- * Active iff every acknowledged path still hashes to its acknowledged value AND
- * no currently-changed evidence path lies outside the acknowledged set (a new
- * path appearing lapses it). Any mismatch → lapsed, and the at-risk resurfaces.
- */
-function suppressionActive(
-  suppressed: Assertion["suppressed"],
-  evidence: ReadonlyMap<string, string | null> | undefined,
-  behaviorChanged: ChangedEvidence[],
-): boolean {
-  if (!suppressed) return false;
-  for (const [path, ackHash] of Object.entries(suppressed.paths)) {
-    const content = evidence?.get(path);
-    const cur = content == null ? null : hashContent(content);
-    if (cur !== ackHash) return false; // an acknowledged path moved → lapsed
-  }
-  for (const c of behaviorChanged) {
-    if (!(c.path in suppressed.paths)) return false; // a new path → lapsed
-  }
-  return true;
-}
-
-/** Worst-wins precedence when aggregating code-side bundle states. */
 const STATE_RANK: Record<AnchorState, number> = {
   orphaned: 4,
   ambiguous: 3,
@@ -203,23 +75,12 @@ const STATE_RANK: Record<AnchorState, number> = {
 export interface SideResult {
   state: AnchorState;
   region: Region | null;
-  confidence: number;
-  selectorScores: SelectorScore[];
+  /** Normalized similarity of the located text to the stored quote (0 when not found). */
+  similarity: number;
   notes: string[];
   changedEvidence: ChangedEvidence[];
-  /** The live text at the located region (the authoritative span when found). */
+  /** The live text at the located region. */
   liveText: string | null;
-}
-
-/** Dedupe changed-evidence entries by (path, kind, detail). */
-function dedupeEvidence(entries: ChangedEvidence[]): ChangedEvidence[] {
-  const seen = new Set<string>();
-  return entries.filter((c) => {
-    const key = `${c.path}|${c.kind}|${c.detail ?? ""}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
 }
 
 function bySelectorKind(selectors: Selector[]) {
@@ -228,67 +89,22 @@ function bySelectorKind(selectors: Selector[]) {
   return out;
 }
 
-function countOccurrences(haystack: string, needle: string): number {
-  if (!needle) return 0;
-  let n = 0;
-  let i = haystack.indexOf(needle);
-  while (i !== -1) {
-    n++;
-    i = haystack.indexOf(needle, i + needle.length);
-  }
-  return n;
+/** Numeric tokens of a prose span, so a `5` to `7` edit in a sentence is caught. */
+function numbers(s: string): string {
+  return (s.match(/\d+(?:\.\d+)?/g) ?? []).join(",");
 }
 
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-/** Locate an owned-doc `<!-- hibi:claim id=… -->` marker; -1 if absent. */
-function locateInlineId(text: string, id: string): number {
-  const re = new RegExp(`hibi:claim\\s+id=["']?${escapeRegExp(id)}["']?`);
-  const m = re.exec(text);
-  return m ? m.index : -1;
-}
-
-/**
- * Detect a unique-but-multiply-matched quote (§17.1) — `ambiguous`. Guarded by a
- * minimum quote length, and disambiguated by prefix context so a genuinely
- * unique anchor with a common substring is not falsely flagged.
- */
-function isAmbiguous(
-  text: string,
-  tq: Extract<Selector, { kind: "text-quote" }>,
-): boolean {
-  if (tq.exact.length < AMBIGUOUS_MIN_QUOTE_LENGTH) return false;
-  if (countOccurrences(text, tq.exact) < 2) return false;
-  // Disambiguate with both prefix and suffix context — a span at offset 0 (or
-  // any anchor with no captured prefix) still has suffix context to fall back on,
-  // so a genuinely-unique quote with a common substring is not falsely flagged.
-  const ctx = tq.prefix.slice(-16) + tq.exact + tq.suffix.slice(0, 16);
-  if (ctx.length > tq.exact.length && countOccurrences(text, ctx) < 2) {
-    return false;
-  }
-  return true;
-}
-
-/**
- * Resolve a single anchor side (doc or code) against its current file text.
- * Exported so `reanchor` can re-localize each bundle independently and in order
- * (the aggregated `evidence.codeRegions` drops null regions, so it is not
- * index-aligned with `anchor.code`).
- */
+/** Resolve one anchor side against its current file text. */
 export function resolveSide(
   bundle: SelectorBundle,
   currentText: string | null,
   opts: ResolveOptions = {},
 ): SideResult {
-  // File missing → the span is unresolvable (§17.1).
   if (currentText === null) {
     return {
       state: "orphaned",
       region: null,
-      confidence: 0,
-      selectorScores: [],
+      similarity: 0,
       notes: [`file not found: ${bundle.file}`],
       changedEvidence: [
         { path: bundle.file, kind: "text", detail: "file missing" },
@@ -297,35 +113,21 @@ export function resolveSide(
     };
   }
 
-  const sel = bySelectorKind(bundle.selectors);
-
-  // Coarse-only bundles are navigational and never reported as drift (§11.3).
   const coarseOnly = bundle.selectors.every((s) =>
     (COARSE_SELECTOR_KINDS as readonly string[]).includes(s.kind),
   );
   if (coarseOnly) {
-    const g = grade({
-      selectors: [],
-      coarseOnly: true,
-      ambiguous: false,
-      startDelta: null,
-      textQuoteFound: false,
-      textQuoteSimilarity: 0,
-      soleStrongQuote: false,
-      valueFound: false,
-      valueScore: 0,
-    });
     return {
-      state: g.state,
+      state: "unchanged",
       region: null,
-      confidence: g.confidence,
-      selectorScores: [],
-      notes: g.notes,
+      similarity: 1,
+      notes: ["coarse anchor: navigational, never drift"],
       changedEvidence: [],
       liveText: null,
     };
   }
 
+  const sel = bySelectorKind(bundle.selectors);
   const tq =
     sel["text-quote"]?.kind === "text-quote" ? sel["text-quote"] : undefined;
   const tp =
@@ -335,99 +137,68 @@ export function resolveSide(
   const astSel =
     sel["ast-node"]?.kind === "ast-node" ? sel["ast-node"] : undefined;
   const valSel = sel.value?.kind === "value" ? sel.value : undefined;
-  const inlineSel =
-    sel["inline-id"]?.kind === "inline-id" ? sel["inline-id"] : undefined;
 
-  // An owned-doc inline marker, when present, biases localization and resolves
-  // ambiguity — but never restates the claim, so prose still decides the state.
-  const inlineAt = inlineSel ? locateInlineId(currentText, inlineSel.id) : -1;
-  const inlineFound = inlineAt >= 0;
-
-  // ── Localize (text-quote cascade, biased by inline marker or text-position) ──
-  const bias = inlineFound ? inlineAt : positionBias(tp);
-  const quoteRegion = tq ? localizeTextQuote(currentText, tq, bias) : null;
-  let region: Region | null = quoteRegion;
-  if (!region && tp) region = { start: tp.start, end: tp.end };
-
-  const baselineExact = tq?.exact ?? "";
-  const textQuoteFound = quoteRegion !== null;
-  const textQuoteSimilarity =
-    quoteRegion !== null
-      ? textSimilarity(regionText(currentText, quoteRegion), baselineExact)
-      : 0;
-  const ambiguous = tq && !inlineFound ? isAmbiguous(currentText, tq) : false;
-
-  // ── text-position found-check (§17.3): content at baseline offset ≥ 0.6 ──
-  let positionFound = false;
-  let positionScore = 0;
-  if (tp) {
-    const atOffset = currentText.slice(tp.start, tp.end);
-    positionScore = baselineExact
-      ? textSimilarity(atOffset, baselineExact)
-      : atOffset.length > 0
-        ? 1
-        : 0;
-    positionFound = positionScore >= POSITION_FOUND_SIMILARITY;
+  if (!tq) {
+    return {
+      state: "orphaned",
+      region: null,
+      similarity: 0,
+      notes: ["no text-quote selector"],
+      changedEvidence: [],
+      liveText: null,
+    };
   }
 
-  const resolved: ResolvedSelector[] = [];
-  const changedEvidence: ChangedEvidence[] = [];
+  // 1. Locate.
+  const located = localizeTextQuote(currentText, tq, tp);
+  if (!located.region) {
+    return {
+      state: "orphaned",
+      region: null,
+      similarity: 0,
+      notes: ["quote not found"],
+      changedEvidence: [
+        { path: bundle.file, kind: "text", detail: "documented span orphaned" },
+      ],
+      liveText: null,
+    };
+  }
+  const region = located.region;
+  const liveText = regionText(currentText, region);
+  const similarity = textSimilarity(liveText, tq.exact);
   const notes: string[] = [];
+  const changedEvidence: ChangedEvidence[] = [];
 
-  if (tq) {
-    resolved.push({
-      kind: "text-quote",
-      found: textQuoteFound,
-      score: textQuoteSimilarity,
-      weight: WEIGHTS["text-quote"],
-    });
-  }
-  if (tp) {
-    resolved.push({
-      kind: "text-position",
-      found: positionFound,
-      score: positionScore,
-      weight: WEIGHTS["text-position"],
-    });
+  // 6. Several equally good matches.
+  if (located.ambiguous) {
+    notes.push("quote matched in several places equally well");
+    return {
+      state: "ambiguous",
+      region,
+      similarity,
+      notes,
+      changedEvidence,
+      liveText,
+    };
   }
 
-  // ── Tier-2 structural (ast-node) ──
-  if (astSel && opts.ast && region) {
-    let astScore = 0;
+  // AST reason label (code side, analyzer present).
+  let astLabel: string | undefined;
+  if (astSel && opts.ast) {
     const analysis = opts.ast.analyze(currentText, astSel.language, region);
     if (analysis) {
-      if (
-        analysis.semanticHash === astSel.semanticHash &&
-        analysis.structuralHash === astSel.structuralHash
-      ) {
-        astScore = 1.0;
-      } else if (analysis.structuralHash === astSel.structuralHash) {
-        astScore = STRUCTURAL_ONLY_SCORE; // rename/whitespace — keep out of `changed`
-        notes.push("structural-only AST match (rename/whitespace)");
-      } else {
-        astScore = 0;
-        changedEvidence.push({
-          path: bundle.file,
-          kind: "ast",
-          detail: "enclosing node structure changed",
-        });
+      if (analysis.semanticHash !== astSel.semanticHash) {
+        astLabel =
+          analysis.structuralHash === astSel.structuralHash
+            ? "identifiers or literals renamed"
+            : "restructured";
       }
     }
-    // A positive match is always found; a total mismatch counts as found only
-    // if text-position corroborates (the orphan-detection mechanism, §17.3).
-    const astFound = astScore > 0 ? true : positionFound;
-    resolved.push({
-      kind: "ast-node",
-      found: astFound,
-      score: astScore,
-      weight: WEIGHTS["ast-node"],
-    });
   }
 
-  // ── value tier ──
-  let valueScore = 0;
-  let valueFound = false;
-  if (valSel && opts.ast && region) {
+  // In-span literal check (code side, analyzer present).
+  let valueLabel: string | undefined;
+  if (valSel && opts.ast) {
     const extracted = opts.ast.extractValue(
       currentText,
       valSel.language,
@@ -435,79 +206,80 @@ export function resolveSide(
       valSel.nodeKind,
     );
     if (
-      extracted !== null &&
-      collapseWhitespace(extracted) === collapseWhitespace(valSel.value)
+      extracted === null ||
+      collapseWhitespace(extracted) !== collapseWhitespace(valSel.value)
     ) {
-      valueScore = 1;
-    } else {
-      valueScore = 0;
+      valueLabel = `value changed (was \`${valSel.value}\`)`;
+    }
+  }
+
+  // Prose: a numeric token changed inside the span.
+  let numberLabel: string | undefined;
+  if (!astSel && !valSel && numbers(liveText) !== numbers(tq.exact)) {
+    numberLabel = "a number in the sentence changed";
+  }
+
+  // 4. Changed.
+  const sameText = similarity >= SAME_TEXT_SIMILARITY;
+  if (!sameText || astLabel || valueLabel || numberLabel) {
+    if (valueLabel) {
       changedEvidence.push({
         path: bundle.file,
         kind: "value",
-        detail: `anchored value changed (was \`${valSel.value}\`)`,
+        detail: valueLabel,
       });
     }
-    valueFound = valueScore > 0 ? true : positionFound;
-    resolved.push({
-      kind: "value",
-      found: valueFound,
-      score: valueScore,
-      weight: WEIGHTS.value,
-    });
+    if (astLabel) {
+      changedEvidence.push({
+        path: bundle.file,
+        kind: "ast",
+        detail: astLabel,
+      });
+    }
+    if (!valueLabel && !astLabel) {
+      changedEvidence.push({
+        path: bundle.file,
+        kind: "text",
+        detail:
+          numberLabel ??
+          `text changed (${Math.round(similarity * 100)}% similar)`,
+      });
+    }
+    for (const c of changedEvidence) if (c.detail) notes.push(c.detail);
+    return {
+      state: "changed",
+      region,
+      similarity,
+      notes,
+      changedEvidence,
+      liveText,
+    };
   }
 
-  const startDelta = region && tp ? Math.abs(region.start - tp.start) : null;
-
-  // A near-exact relocation that is the *only* resolving selector still vouches
-  // for the span (the moved-prose case — §17.3) — keeps it `moved`, not `orphaned`.
-  const foundCount = resolved.filter((r) => r.found).length;
-  const soleStrongQuote =
-    foundCount < 2 &&
-    textQuoteFound &&
-    textQuoteSimilarity >= STRONG_TEXTQUOTE_SIMILARITY;
-
-  const g = grade({
-    selectors: resolved,
-    coarseOnly: false,
-    ambiguous,
-    startDelta,
-    textQuoteFound,
-    textQuoteSimilarity,
-    soleStrongQuote,
-    valueFound,
-    valueScore,
-  });
-
-  // A `text`-level changed/orphaned verdict on the quote is itself evidence.
-  if ((g.state === "changed" || g.state === "orphaned") && tq) {
-    changedEvidence.push({
-      path: bundle.file,
-      kind: "text",
-      detail: `documented span ${g.state}`,
-    });
+  // 2 and 3. Unchanged or moved.
+  const delta = tp ? Math.abs(region.start - tp.start) : 0;
+  if (delta > MOVE_AWARENESS_CHARS) {
+    notes.push(`span moved ${delta} chars`);
+    return {
+      state: "moved",
+      region,
+      similarity,
+      notes,
+      changedEvidence,
+      liveText,
+    };
   }
-
   return {
-    state: g.state,
+    state: "unchanged",
     region,
-    confidence: g.confidence,
-    selectorScores: resolved.map((r) => ({
-      kind: r.kind,
-      found: r.found,
-      score: r.score,
-      weight: r.weight,
-    })),
-    notes: [...notes, ...g.notes],
+    similarity,
+    notes,
     changedEvidence,
-    liveText: region ? regionText(currentText, region) : null,
+    liveText,
   };
 }
 
-/**
- * TTL expiry (§9). `Date.parse` reads a datetime with no timezone suffix as
- * *local* time, which would expire a store up to a day apart between a laptop
- * and a UTC CI runner.
- */
+/** TTL expiry. A datetime with no timezone suffix is read as UTC. */
 function parseTtl(
   ttl: string,
   now: number,
@@ -519,122 +291,92 @@ function parseTtl(
   return { expired: at <= now, invalid: false };
 }
 
-/** Resolve a single Assertion against the current working tree (two-axis). */
+export interface SidesResult {
+  doc: SideResult;
+  /** Index-aligned with `assertion.anchor.code`. */
+  code: SideResult[];
+}
+
+/** Resolve every side once. The doc side resolves first. */
+export function resolveSides(
+  assertion: Assertion,
+  files: ResolveFiles,
+  opts: ResolveOptions = {},
+): SidesResult {
+  const anchor = assertion.anchor;
+  const doc = resolveSide(anchor.doc, files.doc, opts);
+  const code = anchor.code.map((bundle) =>
+    resolveSide(bundle, files.code.get(bundle.file) ?? null, opts),
+  );
+  return { doc, code };
+}
+
+/** Worst state over the code-side bundles. */
+export function worstCodeState(code: SideResult[]): AnchorState {
+  let state: AnchorState = "unchanged";
+  for (const side of code) {
+    if (STATE_RANK[side.state] > STATE_RANK[state]) state = side.state;
+  }
+  return state;
+}
+
+/** Resolve a single assertion against the current working tree. */
 export function resolveAssertion(
   assertion: Assertion,
   files: ResolveFiles,
   opts: ResolveOptions = {},
 ): Verdict {
   const now = opts.now ?? Date.now();
-  const anchor = assertion.anchor;
-
-  // ── Step 0 — resolve the doc side first (§6 / §18-B) ──
-  const docSide = resolveSide(anchor.doc, files.doc, opts);
-
-  // ── Resolve each code-side bundle; aggregate worst-wins ──
-  const codeSides = anchor.code.map((bundle) =>
-    resolveSide(bundle, files.code.get(bundle.file) ?? null, opts),
-  );
-  let code: AnchorState = "unchanged";
-  let primaryCode: SideResult | undefined;
-  for (const side of codeSides) {
-    if (!primaryCode || STATE_RANK[side.state] > STATE_RANK[code]) {
-      code = side.state;
-      primaryCode = side;
-    }
-  }
-  const codeRegions = codeSides
-    .map((s) => s.region)
-    .filter((r): r is Region => r !== null);
-  const codeChanged = codeSides.flatMap((s) => s.changedEvidence);
-  const codeNotes = codeSides.flatMap((s) => s.notes);
-
-  // ── Behavioral risk routing (deterministic baseline — §17.6) ──
-  // The live documented span is authoritative for classification. A claim that
-  // links executable verifiers is behavioral by construction, even if neither an
-  // author `behavioral` flag nor the keyword heuristic classifies it — so the
-  // verifier-dispatch path and this inline path agree on the behavior axis (§10).
-  const behavioral = isBehavioral(
-    assertion.behavioral,
-    docSide.liveText,
-    assertion.verifiers.length > 0,
-  );
-  let behavior: BehaviorState | undefined;
-  let behaviorChanged: ChangedEvidence[] = [];
-  let suppressed = false;
-  if (behavioral) {
-    // Change-gate v2 (§17.6, D14): the anchored-node signal + evidence-set drift.
-    // A linked verifier may later upgrade this to supported/refuted (§17.6).
-    const risk = computeBehaviorRisk(assertion, codeChanged, opts.evidence);
-    behavior = risk.state;
-    behaviorChanged = risk.changed;
-    // An authored `hibi ignore` neutralizes an active at-risk (D14): still
-    // surfaced (`suppressed: true`), but contributes nothing to exit codes.
-    if (behavior === "at-risk") {
-      suppressed = suppressionActive(
-        assertion.suppressed,
-        opts.evidence,
-        behaviorChanged,
-      );
-    }
-  }
+  const sides = resolveSides(assertion, files, opts);
+  const code = worstCodeState(sides.code);
+  const primaryCode = sides.code.find((s) => s.state === code) ?? sides.code[0];
+  const primary = primaryCode ?? sides.doc;
 
   const ttl =
     assertion.ttl !== undefined ? parseTtl(assertion.ttl, now) : undefined;
   const expired = ttl?.expired ?? false;
 
   const gates = computeGates(
-    { doc: docSide.state, code, behavior, expired },
+    { doc: sides.doc.state, code, expired },
     assertion.enforcement,
   );
 
-  // Primary evidence side: code (the precision-critical side) when present.
-  const primary = primaryCode ?? docSide;
-
   const notes = [
-    ...docSide.notes.map((n) => `doc: ${n}`),
-    ...codeNotes,
-    behavioral ? "behavioral claim" : "",
+    ...sides.doc.notes.map((n) => `doc: ${n}`),
+    ...sides.code.flatMap((s) => s.notes.map((n) => `code: ${n}`)),
     ttl?.invalid
-      ? `unparseable ttl "${assertion.ttl}" — treated as expired (fix or clear the ttl)`
+      ? `unparseable ttl "${assertion.ttl}": treated as expired (fix or clear the ttl)`
       : "",
   ].filter(Boolean);
 
-  // Merge the behavioral evidence-path changes (imports/verifier sources) in,
-  // deduped by (path, kind) — so each behavioral banner line names the changed
-  // evidence path even when the anchored span itself is untouched (D14).
-  const changedEvidence = dedupeEvidence([
-    ...docSide.changedEvidence,
-    ...codeChanged,
-    ...behaviorChanged,
-  ]);
+  const changedEvidence = [
+    ...sides.doc.changedEvidence,
+    ...sides.code.flatMap((s) => s.changedEvidence),
+  ];
 
   return {
     assertionId: assertion.id,
     propositionId: assertion.propositionId,
     documentId: assertion.documentId,
-    doc: docSide.state,
+    doc: sides.doc.state,
     code,
-    behavior,
+    behavior: undefined,
     expired,
     gates,
-    suppressed,
-    // Deterministic next-action menu derived from the computed states (§9).
     remediation: remediationFor({
       assertionId: assertion.id,
-      doc: docSide.state,
+      doc: sides.doc.state,
       code,
-      behavior,
       expired,
       changedEvidence,
     }),
     evidence: {
-      docRegion: docSide.region ?? undefined,
-      codeRegions,
-      confidence: primary.confidence,
-      selectorScores: primary.selectorScores,
+      docRegion: sides.doc.region ?? undefined,
+      codeRegions: sides.code
+        .map((s) => s.region)
+        .filter((r): r is Region => r !== null),
+      similarity: primary.similarity,
       changedEvidence,
-      ref: assertion.ref,
     },
     notes,
     advisories: [],

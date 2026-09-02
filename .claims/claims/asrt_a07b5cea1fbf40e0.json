@@ -1,0 +1,60 @@
+{
+  "id": "asrt_a07b5cea1fbf40e0",
+  "propositionId": "prop_ba7d4b3bbddf41d9",
+  "documentId": "doc_25887c67cd18d901",
+  "owner": "hibi-dogfood",
+  "ref": "c6bac8d38ea9468d696bf29754ef9ba6e2871b1b",
+  "anchor": {
+    "doc": {
+      "file": "docs/verdicts.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`warn` (a `moved` side also exits 2)",
+          "prefix": "ail-on` sets the threshold: `gating` (default), ",
+          "suffix": ", `never` (always exit 0; read the JSON).\n\n## Fi"
+        },
+        {
+          "kind": "text-position",
+          "start": 7498,
+          "end": 7534
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/engine/check.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "if (flags.warn && failOn === \"warn\") return 2;",
+            "prefix": "ver\") return 0;\n  if (flags.gating) return 2;\n  ",
+            "suffix": "\n  return 0;\n}\n"
+          },
+          {
+            "kind": "text-position",
+            "start": 12260,
+            "end": 12306
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "if_statement",
+            "structuralHash": "17d4586292646027",
+            "semanticHash": "2ece3d2492cd8a49"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "string",
+            "value": "\"warn\""
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verified": true,
+  "verifiers": [],
+  "attrs": {}
+}

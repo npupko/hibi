@@ -38,18 +38,12 @@ jobs:
         run: |
           bun run build:schemas
           git diff --exit-code schemas/ || (echo "schemas/ is stale — run bun run build:schemas" && exit 1)
+      - name: CLI reference and completions are generated from the option tables
+        run: |
+          bun run build:cli-reference
+          git diff --exit-code docs/cli-reference.mdx plugins/hibi-cli/skills/hibi/references/cli-reference.md || (echo "generated CLI reference is stale — run bun run build:cli-reference" && exit 1)
       - name: Dogfood — hibi checks its own docs (in-tree engine, read-only)
-        # Runs the current tree's engine, NOT a published release, so a drift
-        # this PR introduces between docs/ and src/ fails the build via hibi
-        # itself (D20). Read-only: no --write. --run-verifiers executes the two
-        # behavioral claims' command verifiers so the behavioral tier checks
-        # itself in CI (D32). See CONTRIBUTING.md for the fix loop.
+        # Runs the current tree's engine read-only (no --write) and executes
+        # declared verifiers, so drift this PR introduces between docs/ and
+        # src/ fails the build via hibi itself.
         run: bun run src/cli/index.ts check --run-verifiers --fail-on gating
-
-  rust-sdk:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
-      - run: cargo build --examples
-        working-directory: sdk/rust

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "textCache": {
+      "type": "string"
+    },
+    "fingerprint": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "textCache",
+    "fingerprint"
+  ],
+  "additionalProperties": false
+}

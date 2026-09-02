@@ -1,18 +1,16 @@
 /**
- * The check engine (§6, §9): walk the store's claims → resolve each
- * **bidirectional** anchor against the current working tree → merge with
- * document lifecycle/supersession → optionally stamp banners → emit a JSON
- * report with a meaningful exit code.
+ * The check engine: walk the store's claims, resolve each anchor against the
+ * current working tree, merge with document lifecycle, optionally stamp
+ * banners, and emit a report with an exit code.
  *
- * Verdicts are recomputed live and never persisted (§6). The report leads with
- * the two-axis decision per claim (`doc`/`code` AnchorState, `behavior`
- * BehaviorState, `expired`/`gates`) and a side-tagged banner status vocabulary
- * (`code:changed`, `doc:orphaned`, `behavior:refuted`, …); the words
- * stale/ghost/drift live only in human banner copy, never in this machine text.
+ * Verdicts are recomputed live and never persisted. The report leads with the
+ * per-claim decision (`doc`/`code` AnchorState, `behavior`, `expired`/`gates`)
+ * and a side-tagged status vocabulary (`code:changed`, `doc:orphaned`,
+ * `behavior:refuted`, ...).
  */
 
 import { readFile, writeFile } from "node:fs/promises";
-import { extname, join } from "node:path";
+import { join } from "node:path";
 import {
   type AstAnalyzer,
   type ResolveFiles,
@@ -21,11 +19,9 @@ import {
 import {
   type BannerAction,
   type BannerEntry,
-  commentStyleFor,
   DEFAULT_HEADLINE,
   DEFAULT_INSTRUCTION_FILES,
   isInstructionFile,
-  locateBanner,
   removeBanner,
   stampBanner,
 } from "../banner/banner.ts";
@@ -37,22 +33,14 @@ import type {
   Document,
   DocumentLifecycle,
   Enforcement,
-  Proposition,
   Region,
   Verdict,
 } from "../core/model.ts";
-import { remediationFor } from "../core/remediation.ts";
 import { exists } from "../fs.ts";
 import type { ResolverRegistry } from "../resolver/registry.ts";
 import type { ClaimStore } from "../store/store.ts";
-import { evidenceSetPaths, readEvidenceContents } from "./evidence.ts";
-import { buildTestFileIndex, suggestTests } from "./test-suggest.ts";
 
-/**
- * Side-tagged status precedence for the single-valued frontmatter status (most
- * severe first, §8). The side prefix is part of the machine vocabulary; the
- * lifecycle terms trail it.
- */
+/** Side-tagged status precedence, most severe first. */
 const STATUS_PRECEDENCE = [
   "code:orphaned",
   "doc:orphaned",
@@ -62,17 +50,12 @@ const STATUS_PRECEDENCE = [
   "doc:changed",
   "behavior:refuted",
   "expired",
-  "behavior:at-risk",
   "code:moved",
   "doc:moved",
-  "retracted",
   "superseded",
-  "amended",
+  "archived",
 ];
 
-const MARKDOWN_EXT = new Set([".md", ".markdown", ".mdx"]);
-
-/** Anchor states that surface as a side-tagged banner status (§8). */
 const REPORTABLE_ANCHOR: ReadonlySet<AnchorState> = new Set<AnchorState>([
   "orphaned",
   "ambiguous",
@@ -80,22 +63,24 @@ const REPORTABLE_ANCHOR: ReadonlySet<AnchorState> = new Set<AnchorState>([
   "moved",
 ]);
 
-export type FailOn = "gating" | "warn" | "tamper" | "never";
+export const FAIL_ON = ["gating", "warn", "never"] as const;
+export type FailOn = (typeof FAIL_ON)[number];
 
 export interface CheckOptions {
   ast?: AstAnalyzer;
-  /** Resolve through the registry (built-in + external + advisory) instead of inline. */
+  /** Resolve through the registry (built-in + external + verifiers) instead of inline. */
   registry?: ResolverRegistry;
-  /** Apply banner stamps to documents (the write path). Default: read-only. */
+  /** Apply banner stamps to documents. Default: read-only. */
   write?: boolean;
   /** Restrict the check to claims touching a file in this set (doc or code side). */
   onlyFiles?: Set<string>;
+  /** Restrict the check to claims on this document id. */
+  onlyDocument?: string;
   failOn?: FailOn;
   now?: number;
   ref?: string;
 }
 
-/** A suspect claim's banner entry: its proposition and the side-tagged status string. */
 export interface SuspectEntry {
   propositionId: string;
   status: string;
@@ -107,21 +92,15 @@ export interface DocumentReport {
   lifecycle: DocumentLifecycle;
   suspect: SuspectEntry[];
   bannerAction?: BannerAction;
-  tampered?: boolean;
-  /** The machine-readable frontmatter status written (markdown only, §8). */
-  frontmatterStatus?: string;
 }
 
-/**
- * Two-axis check summary (§9): the gating/warning/clean rollup plus a per-state
- * histogram for each axis. `doc`/`code` count the AnchorState enum; `behavior`
- * counts the BehaviorState enum over behavioral claims only.
- */
 export interface CheckSummary {
   total: number;
   gating: number;
   warning: number;
   clean: number;
+  /** Retired claims are listed but never clean, gating, or warning. */
+  retired: number;
   doc: Record<AnchorState, number>;
   code: Record<AnchorState, number>;
   behavior: Record<BehaviorState, number>;
@@ -141,10 +120,9 @@ function emptyAnchorHistogram(): Record<AnchorState, number> {
 }
 
 function emptyBehaviorHistogram(): Record<BehaviorState, number> {
-  return { unverified: 0, "at-risk": 0, supported: 0, refuted: 0 };
+  return { supported: 0, refuted: 0 };
 }
 
-/** Slice the live documented span out of the doc content for a banner entry (§8/§18-B). */
 function liveDocText(
   docContent: string | null,
   region: Region | undefined,
@@ -153,76 +131,56 @@ function liveDocText(
   return docContent.slice(region.start, region.end);
 }
 
-/**
- * The worst-per-side, side-tagged status strings a suspect verdict contributes
- * (§8). Each side reports at most its single worst reportable AnchorState; the
- * behavioral axis and the `expired` flag add their own tags. Returns the
- * machine vocabulary only — banner headline copy lives elsewhere.
- */
+/** The side-tagged status strings a suspect verdict contributes. */
 export function verdictStatuses(v: Verdict): string[] {
   const out: string[] = [];
   if (REPORTABLE_ANCHOR.has(v.code)) out.push(`code:${v.code}`);
   if (REPORTABLE_ANCHOR.has(v.doc)) out.push(`doc:${v.doc}`);
   if (v.behavior === "refuted") out.push("behavior:refuted");
-  else if (v.behavior === "at-risk") out.push("behavior:at-risk");
   if (v.expired) out.push("expired");
   return out;
 }
 
-/**
- * The single most-severe status for a suspect verdict (the banner entry's tag).
- * A claim suspect *only* because its document changed lifecycle (e.g. amended)
- * has no verdict status of its own, so the document's lifecycle tags are folded
- * in — otherwise the status would wrongly default to `expired`.
- */
+/** The single most severe status for a verdict, folding in lifecycle tags. */
 export function worstStatus(v: Verdict, lcTags: string[] = []): string {
   const statuses = [...verdictStatuses(v), ...lcTags];
   for (const s of STATUS_PRECEDENCE) if (statuses.includes(s)) return s;
   return statuses[0] ?? "unchanged";
 }
 
-/** Lifecycle status tags a document carries from its edges/lifecycle (§6). */
 function lifecycleTags(doc: Document): string[] {
-  const tags: string[] = [];
-  if (doc.lifecycle === "superseded") tags.push("superseded");
-  if (doc.lifecycle === "retracted") tags.push("retracted");
-  if (doc.lifecycle === "amended") tags.push("amended");
-  for (const e of doc.edges) {
-    if (e.type === "amended-by" && !tags.includes("amended"))
-      tags.push("amended");
-  }
-  return tags;
+  return doc.lifecycle === "active" ? [] : [doc.lifecycle];
 }
 
-/** Banner entries contributed by a document's lifecycle (§6 remediation). */
-function lifecycleEntries(
-  doc: Document,
-  propsById: Map<string, Proposition>,
-): BannerEntry[] {
-  const entries: BannerEntry[] = [];
-  const amended = new Set<string>();
-  for (const e of doc.edges) {
-    if (e.type === "amended-by") for (const p of e.propositions) amended.add(p);
-  }
-  for (const propId of amended) {
-    const p = propsById.get(propId);
-    if (p) entries.push({ status: "amended", id: propId, text: p.textCache });
-  }
+function lifecycleEntries(doc: Document): BannerEntry[] {
   if (doc.lifecycle === "superseded") {
-    entries.push({
-      status: "superseded",
-      id: doc.id,
-      text: `This document has been superseded.`,
-    });
+    return [
+      {
+        status: "superseded",
+        id: doc.id,
+        text: "This document has been superseded.",
+      },
+    ];
   }
-  if (doc.lifecycle === "retracted") {
-    entries.push({
-      status: "retracted",
-      id: doc.id,
-      text: `The author withdrew this document.`,
-    });
+  if (doc.lifecycle === "archived") {
+    return [
+      {
+        status: "archived",
+        id: doc.id,
+        text: "This document has been archived.",
+      },
+    ];
   }
-  return entries;
+  return [];
+}
+
+/** Strip hibi's own banner and the legacy `hibi-status:` frontmatter line. */
+export function stripEngineOwned(
+  raw: string,
+  path: string,
+  nonce: string,
+): string {
+  return setFrontmatterStatus(removeBanner(raw, path, nonce).content, null);
 }
 
 export async function runCheck(
@@ -234,20 +192,13 @@ export async function runCheck(
   const documents = await store.allDocuments();
   const propositions = await store.allPropositions();
   const assertions = await store.allAssertions();
-
   const propsById = new Map(propositions.map((p) => [p.id, p]));
-
-  // assertionId → enforcement, so the warn predicate can re-read the policy
-  // for any verdict without re-fetching the assertion (§9).
   const enforcementById = new Map<string, Enforcement>(
     assertions.map((a) => [a.id, a.enforcement]),
   );
+  const cfg = await store.config();
+  const nonce = cfg.nonce;
 
-  // The per-repo banner nonce, used to strip hibi's own banner out of a document
-  // before resolving its claims (see the doc-side read below).
-  const nonce = (await store.config()).nonce;
-
-  // Cache file reads (a regenerable optimization; never affects the verdict).
   const fileCache = new Map<string, string | null>();
   const readFileText = async (rel: string): Promise<string | null> => {
     if (fileCache.has(rel)) return fileCache.get(rel) ?? null;
@@ -258,12 +209,11 @@ export async function runCheck(
   };
 
   const verdicts: Verdict[] = [];
-  /** Doc content per document id, for slicing the live span into banner entries. */
   const docContentById = new Map<string, string | null>();
-  /** Document ids that were actually evaluated (≥1 in-scope assertion). */
   const evaluatedDocs = new Set<string>();
 
   for (const a of assertions) {
+    if (options.onlyDocument && a.documentId !== options.onlyDocument) continue;
     const codeFiles = a.anchor.code.map((b) => b.file);
     if (options.onlyFiles) {
       const touches =
@@ -273,130 +223,44 @@ export async function runCheck(
     }
     evaluatedDocs.add(a.documentId);
 
-    // Read both sides into ResolveFiles (file-missing → orphaned is handled in resolve).
-    // Strip hibi's own banner first: the engine-owned banner restates the suspect
-    // sentence verbatim, and leaving it in would let the doc-side text-quote
-    // re-anchor onto the stamped copy and self-orphan on re-check — the banner
-    // must never poison re-anchoring (§8/§18-B). The engine-owned `hibi-status:`
-    // frontmatter line goes too, and record time must strip exactly the same
-    // pair (`Engine.readAnchored`) — any difference shifts every doc-side offset
-    // and grades a stamped doc's clean claims `doc:moved`. Code files carry no banner.
+    // The engine-owned banner restates the suspect sentence verbatim; strip it
+    // before resolving so the doc-side quote never latches onto the copy.
     const rawDoc = await readFileText(a.anchor.doc.file);
     const docContent =
       rawDoc === null
         ? null
-        : setFrontmatterStatus(
-            removeBanner(rawDoc, a.anchor.doc.file, nonce).content,
-            null,
-          );
+        : stripEngineOwned(rawDoc, a.anchor.doc.file, nonce);
     docContentById.set(a.documentId, docContent);
     const code = new Map<string, string | null>();
     for (const f of codeFiles) code.set(f, await readFileText(f));
     const files: ResolveFiles = { doc: docContent, code };
 
-    // Change-gate evidence (§17.6, D14): the current contents of every
-    // evidence-set path. The gate reads this map ONLY for a claim carrying a
-    // stored baseline or an authored suppression; every other claim (non-
-    // behavioral, or behavioral with no baseline → the anchored-node-only
-    // fallback) discards it. So skip the whole import walk + globs + reads for
-    // those — a large saving on the common check path.
-    let evidence: Map<string, string | null> | undefined;
-    if (a.evidenceBaseline !== undefined || a.suppressed !== undefined) {
-      const paths = await evidenceSetPaths(a, {
-        analyzer: options.ast,
-        readFile: readFileText,
-        root,
-      });
-      evidence = await readEvidenceContents(paths, readFileText);
-    }
-
     const verdict = options.registry
-      ? await options.registry.resolve(
-          a,
-          files,
-          propsById.get(a.propositionId),
-          { evidence },
-        )
-      : resolveAssertion(a, files, {
-          ast: options.ast,
-          now: options.now,
-          evidence,
-        });
+      ? await options.registry.resolve(a, files, propsById.get(a.propositionId))
+      : resolveAssertion(a, files, { ast: options.ast, now: options.now });
     verdicts.push(verdict);
   }
 
-  // ── D26 — advisory reverse-import test suggestions ──
-  // For a behavioral claim that is `at-risk`/`refuted` and has NO declared
-  // verifier, list test files that exercise the anchored code and fold them into
-  // the declare-a-verifier remediation rationale. Built lazily: the test-file
-  // import index is computed at most once per run, and only when at least one
-  // verdict qualifies. Never touches verdicts, states, exit codes, or the store.
-  const assertById = new Map(assertions.map((a) => [a.id, a]));
-  const qualifies = (v: Verdict): boolean => {
-    if (v.behavior !== "at-risk" && v.behavior !== "refuted") return false;
-    const a = assertById.get(v.assertionId);
-    return a !== undefined && a.verifiers.length === 0;
-  };
-  if (verdicts.some(qualifies)) {
-    const index = await buildTestFileIndex({
-      analyzer: options.ast,
-      readFile: readFileText,
-      root,
-    });
-    for (const v of verdicts) {
-      if (!qualifies(v)) continue;
-      const a = assertById.get(v.assertionId);
-      if (!a) continue;
-      // Union the suggestions across the claim's precise (non-coarse) code files.
-      const seen = new Set<string>();
-      const tests: string[] = [];
-      for (const bundle of a.anchor.code) {
-        if (
-          bundle.selectors.every((s) => s.kind === "path" || s.kind === "glob")
-        )
-          continue;
-        for (const t of suggestTests(bundle.file, index)) {
-          if (!seen.has(t)) {
-            seen.add(t);
-            tests.push(t);
-          }
-        }
-      }
-      tests.sort();
-      v.remediation = remediationFor({
-        assertionId: v.assertionId,
-        doc: v.doc,
-        code: v.code,
-        behavior: v.behavior,
-        expired: v.expired,
-        changedEvidence: v.evidence.changedEvidence,
-        suggestedTests: tests.slice(0, 3),
-      });
-    }
-  }
-
-  // ── Histograms & rollups ──
+  // Histograms and rollups.
   const docHist = emptyAnchorHistogram();
   const codeHist = emptyAnchorHistogram();
   const behaviorHist = emptyBehaviorHistogram();
   let expiredCount = 0;
   let gatingCount = 0;
   let warningCount = 0;
+  let retiredCount = 0;
 
   for (const v of verdicts) {
     docHist[v.doc] += 1;
     codeHist[v.code] += 1;
     if (v.behavior !== undefined) behaviorHist[v.behavior] += 1;
     if (v.expired) expiredCount += 1;
-    if (v.gates) gatingCount += 1;
-    else if (
-      isWarnVerdict(v, enforcementById.get(v.assertionId) ?? "suggested")
-    ) {
-      warningCount += 1;
-    }
+    const enforcement = enforcementById.get(v.assertionId) ?? "suggested";
+    if (enforcement === "retired") retiredCount += 1;
+    else if (v.gates) gatingCount += 1;
+    else if (isWarnVerdict(v, enforcement)) warningCount += 1;
   }
 
-  // ── Per-document banner payloads & lifecycle ──
   const verdictsByDoc = new Map<string, Verdict[]>();
   for (const v of verdicts) {
     const list = verdictsByDoc.get(v.documentId) ?? [];
@@ -405,40 +269,30 @@ export async function runCheck(
   }
 
   const docReports: DocumentReport[] = [];
-  const sawGating = gatingCount > 0;
-  const sawWarn = warningCount > 0;
-  let sawTamper = false;
-
   for (const doc of documents) {
-    // A scoped check (the `diff --since` / write-time loop) only evaluated the
-    // documents touching a changed file. Leave every other document — and its
-    // existing valid banner — untouched, rather than stripping a banner we never
-    // re-verified (§6 write-time loop).
+    if (options.onlyDocument && doc.id !== options.onlyDocument) continue;
+    // A scoped check only evaluated the documents touching a changed file.
+    // Leave every other document, and its banner, untouched.
     if (options.onlyFiles && !evaluatedDocs.has(doc.id)) continue;
 
     const dv = verdictsByDoc.get(doc.id) ?? [];
     const lcTags = lifecycleTags(doc);
     const docContent = docContentById.get(doc.id) ?? null;
-
-    // A claim is suspect (gets a banner entry) iff it gates, warns, or its
-    // document carries a lifecycle flag (§8).
     const docHasLifecycle = lcTags.length > 0;
-    const suspectVerdicts = dv.filter(
-      (v) =>
-        v.gates ||
-        isWarnVerdict(v, enforcementById.get(v.assertionId) ?? "suggested") ||
-        docHasLifecycle,
-    );
+    const suspectVerdicts = dv.filter((v) => {
+      const enforcement = enforcementById.get(v.assertionId) ?? "suggested";
+      if (enforcement === "retired") return false;
+      return v.gates || isWarnVerdict(v, enforcement) || docHasLifecycle;
+    });
 
     const suspectEntries: BannerEntry[] = suspectVerdicts.map((v) => {
-      const region = v.evidence.docRegion;
       const text =
-        liveDocText(docContent, region) ??
+        liveDocText(docContent, v.evidence.docRegion) ??
         propsById.get(v.propositionId)?.textCache ??
         "(unknown proposition)";
       return { status: worstStatus(v, lcTags), id: v.propositionId, text };
     });
-    const lcEntries = lifecycleEntries(doc, propsById);
+    const lcEntries = lifecycleEntries(doc);
     const allEntries = [...suspectEntries, ...lcEntries];
 
     const suspect: SuspectEntry[] = suspectVerdicts
@@ -461,54 +315,18 @@ export async function runCheck(
       suspect,
     };
 
-    const rawForTamper = await readFileText(doc.path);
-    if (rawForTamper !== null) {
-      const located = locateBanner(
-        rawForTamper,
-        nonce,
-        commentStyleFor(doc.path),
-      );
-      if (located && located.sha !== located.computedSha) {
-        sawTamper = true;
-        report.tampered = true;
-      }
-    }
-
-    // Worst single status for the optional frontmatter field (§8): over both
-    // the side-tagged verdict statuses and the lifecycle tags.
-    const severities = [
-      ...suspectVerdicts.flatMap((v) => verdictStatuses(v)),
-      ...lcTags,
-    ];
-    const statusValue: string | null =
-      severities.length > 0
-        ? (STATUS_PRECEDENCE.find((s) => severities.includes(s)) ??
-          severities[0] ??
-          null)
-        : null;
-
-    // D17 — pristine docs are never stamped. Evaluated at stamp time: the
-    // per-document flag OR a `StoreConfig.pristine` glob matching now — so adding
-    // a glob later protects already-recorded docs. Verdicts are still computed
-    // and emitted (JSON/status/exit codes); only the banner/frontmatter writes
-    // are skipped for a doc hibi does not own.
-    const cfg = await store.config();
-    const pristine =
-      doc.pristine === true ||
-      (cfg.pristine ?? []).some((g) => new Bun.Glob(g).match(doc.path));
+    const pristine = (cfg.pristine ?? []).some((g) =>
+      new Bun.Glob(g).match(doc.path),
+    );
 
     if (options.write && !pristine) {
       const abs = join(root, doc.path);
       if (await exists(abs)) {
         const original = await readFile(abs, "utf8");
-        const nonce = cfg.nonce;
         const headline =
           suspectEntries.length === 0 && lcEntries.length > 0
             ? `DOCUMENT STATUS — ${lcEntries.length} notice(s) — re-verify before trusting.`
             : DEFAULT_HEADLINE(allEntries.length);
-
-        // D18 — instruction files get the single-line compact banner instead of
-        // the full block (attention budget: every extra byte dilutes following).
         const compact = isInstructionFile(
           doc.path,
           cfg.instructionFiles ?? [...DEFAULT_INSTRUCTION_FILES],
@@ -516,7 +334,6 @@ export async function runCheck(
 
         let content = original;
         if (allEntries.length === 0) {
-          // Nothing suspect → ensure no lingering banner remains.
           const res = removeBanner(content, doc.path, nonce);
           content = res.content;
           report.bannerAction = res.action;
@@ -526,31 +343,15 @@ export async function runCheck(
             doc.path,
             { headline, entries: allEntries },
             nonce,
-            {
-              failOnTamper: options.failOn === "tamper",
-              ...(compact
-                ? { compact: { count: allEntries.length, docPath: doc.path } }
-                : {}),
-            },
+            compact
+              ? { compact: { count: allEntries.length, docPath: doc.path } }
+              : {},
           );
-          if (res.tampered) {
-            sawTamper = true;
-            report.tampered = true;
-          }
           report.bannerAction = res.action;
-          // Honor --fail-on tamper: refuse to overwrite a hand-edited banner.
-          content =
-            res.tampered && options.failOn === "tamper"
-              ? original
-              : res.content;
+          content = res.content;
         }
-
-        // Optional markdown frontmatter status (§8): only where frontmatter exists.
-        if (MARKDOWN_EXT.has(extname(doc.path).toLowerCase())) {
-          content = setFrontmatterStatus(content, statusValue);
-          report.frontmatterStatus = statusValue ?? undefined;
-        }
-
+        // Clear a legacy `hibi-status:` frontmatter line written by older versions.
+        content = setFrontmatterStatus(content, null);
         if (content !== original) await writeFile(abs, content);
       }
     }
@@ -560,7 +361,7 @@ export async function runCheck(
 
   const failOn = options.failOn ?? "gating";
   const exitCode = computeExitCode(
-    { gating: sawGating, warn: sawWarn, tamper: sawTamper },
+    { gating: gatingCount > 0, warn: warningCount > 0 },
     failOn,
   );
 
@@ -568,38 +369,28 @@ export async function runCheck(
     total: verdicts.length,
     gating: gatingCount,
     warning: warningCount,
-    clean: verdicts.length - gatingCount - warningCount,
+    clean: verdicts.length - gatingCount - warningCount - retiredCount,
+    retired: retiredCount,
     doc: docHist,
     code: codeHist,
     behavior: behaviorHist,
     expired: expiredCount,
   };
 
-  return {
-    ref,
-    verdicts,
-    documents: docReports,
-    summary,
-    exitCode,
-  };
+  return { ref, verdicts, documents: docReports, summary, exitCode };
 }
 
 /**
- * Exit-code contract (§9): 0 clean · 2 gating · 3 warn-only · 1 op error.
- *
- * `failOn` selects the threshold before the flags are consulted: `never` always
- * passes; otherwise a `gating` verdict always fails (exit 2); a warn-only result
- * fails (exit 2) when `failOn==="warn"` and is otherwise a soft exit 3; a tamper
- * fails (exit 2) only under `failOn==="tamper"`. Operational errors are exit 1,
- * raised by the CLI, not here.
+ * Exit-code contract: 0 clean, 2 gating, 1 operational error (raised by the
+ * CLI, not here). `--fail-on never` always passes; a gating verdict is exit 2;
+ * a warning (`moved`) is exit 2 only under `--fail-on warn`.
  */
 export function computeExitCode(
-  flags: { gating: boolean; warn: boolean; tamper: boolean },
+  flags: { gating: boolean; warn: boolean },
   failOn: FailOn,
 ): number {
   if (failOn === "never") return 0;
   if (flags.gating) return 2;
-  if (flags.tamper && failOn === "tamper") return 2;
-  if (flags.warn) return failOn === "warn" ? 2 : 3;
+  if (flags.warn && failOn === "warn") return 2;
   return 0;
 }

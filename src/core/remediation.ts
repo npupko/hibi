@@ -1,21 +1,10 @@
 /**
- * The deterministic verdict→remediation mapping (§9) — the single source of the
- * "what do I do about this flag?" menu, consumed by both the machine JSON and
- * the human renderer.
+ * The deterministic verdict→remediation mapping: the single source of the
+ * "what do I do about this flag?" menu, consumed by the JSON and the renderer.
  *
- * This is a *menu*, not a prescription. hibi routes attention deterministically
- * but cannot know developer intent (was the code change deliberate? is the doc
- * the spec, or stale prose?), so `recommended` is set only when the next step is
- * unambiguous, and each row's `actions` are ordered safest/most-severe-first so
- * truncation + primacy favor the safe action. The mapping is a fixed lookup over
- * the verdict's computed states — never a model decision (§7/§11), which is why
- * surfacing it does not violate the "no model on the verdict path" invariant.
- *
- * The lookup key is the tuple `(doc, code, behavior?, expired)`. `expired` is an
- * orthogonal time flag (never a state), composed onto whatever anchor/behavior
- * remediation already applies. Document *lifecycle* (superseded/amended/
- * retracted) is a separate, document-scoped concern surfaced via the document
- * report's banner copy, not here — a Verdict carries no lifecycle.
+ * A menu, not a prescription: hibi cannot know intent, so `recommended` is set
+ * only when the next step is clear, and `actions` are ordered by preference.
+ * The lookup key is `(doc, code, behavior?, expired)`.
  */
 
 import type {
@@ -27,7 +16,6 @@ import type {
   Verdict,
 } from "./model.ts";
 
-/** The verdict fields the mapping reads (a Verdict satisfies this). */
 export interface RemediationInput {
   assertionId: string;
   doc: AnchorState;
@@ -35,31 +23,55 @@ export interface RemediationInput {
   behavior?: BehaviorState;
   expired: boolean;
   changedEvidence?: ChangedEvidence[];
-  /**
-   * Advisory reverse-import test suggestions (§9, D26): test files that exercise
-   * the anchored code, appended to the declare-a-verifier action's rationale.
-   * Populated by `check` only for a behavioral `at-risk`/`refuted` claim with no
-   * declared verifiers; never affects verdicts, states, or exit codes.
-   */
-  suggestedTests?: string[];
 }
-
-// ── Action builders ──────────────────────────────────────────────────────────
-// `command` is populated only for runnable deterministic actions with the claim
-// id pre-filled; prose actions carry none so an agent never runs a command that
-// cannot succeed. The orphan re-anchor carries the read-only `--suggest` pass
-// (D24) — always safe to run, it only lists candidate targets.
 
 const reanchorCmd = (id: string): string => `hibi reanchor ${id}`;
 const retireCmd = (id: string): string => `hibi retire ${id}`;
 
+function updateThenReanchor(id: string): RemediationAction {
+  return {
+    id: "update-claim",
+    title: "Update the sentence, then reanchor",
+    rationale:
+      "the code changed; if the sentence is now wrong, rewrite it, then run the command",
+    command: reanchorCmd(id),
+  };
+}
+
+function reverifyDoc(id: string): RemediationAction {
+  return {
+    id: "reverify-doc",
+    title: "Re-read the edited sentence against the code, then reanchor",
+    rationale:
+      "the prose changed; confirm the code still backs it, then run the command",
+    command: reanchorCmd(id),
+  };
+}
+
+function reconcile(id: string): RemediationAction {
+  return {
+    id: "reconcile",
+    title: "Reconcile the doc and the code, then reanchor",
+    rationale:
+      "both sides changed; re-verify the current sentence against the current code, then run the command",
+    command: reanchorCmd(id),
+  };
+}
+
+function reanchorAsIs(id: string): RemediationAction {
+  return {
+    id: "reanchor",
+    title: "Reanchor as is",
+    rationale: "the sentence is still true; accept the new span",
+    command: reanchorCmd(id),
+  };
+}
+
 function reanchorMoved(id: string): RemediationAction {
   return {
     id: "reanchor",
-    title: "Re-anchor to current content",
-    applicability: "auto",
-    effect: "deterministic",
-    rationale: "the span moved (content intact) — update its stored position",
+    title: "Reanchor to the new position",
+    rationale: "the span moved with its content intact",
     command: reanchorCmd(id),
   };
 }
@@ -67,39 +79,18 @@ function reanchorMoved(id: string): RemediationAction {
 function reanchorTighten(id: string): RemediationAction {
   return {
     id: "reanchor",
-    title: "Tighten the anchor",
-    applicability: "needs-review",
-    effect: "deterministic",
-    rationale: "the anchor matches several places — re-anchor to a unique span",
+    title: "Reanchor to a unique span",
+    rationale: "the quote matches several places; pass a wider span",
     command: reanchorCmd(id),
   };
 }
 
-function reanchorIfTrue(id: string): RemediationAction {
+function reanchorSuggest(id: string): RemediationAction {
   return {
     id: "reanchor",
-    title: "Re-anchor if the sentence still holds",
-    applicability: "needs-review",
-    effect: "deterministic",
+    title: "Find where the span went, then reanchor",
     rationale:
-      "the content changed — re-anchor only after confirming it is true",
-    command: reanchorCmd(id),
-  };
-}
-
-/**
- * Orphan re-anchor (D24): a bare `reanchor` cannot resolve a deleted span, but
- * `reanchor --suggest` is read-only and lists candidate targets — so the command
- * is the safe suggestion pass, never a mutation that would fail.
- */
-function reanchorToTarget(id: string): RemediationAction {
-  return {
-    id: "reanchor",
-    title: "Re-anchor to a new location",
-    applicability: "manual",
-    effect: "deterministic",
-    rationale:
-      "the span was deleted — run --suggest to list candidate targets, then re-anchor with an explicit --doc-range",
+      "the span was not found; the command lists candidate locations, then reanchor with an explicit span",
     command: `hibi reanchor ${id} --suggest`,
   };
 }
@@ -108,9 +99,7 @@ function retire(id: string): RemediationAction {
   return {
     id: "retire",
     title: "Retire the claim",
-    applicability: "manual",
-    effect: "deterministic",
-    rationale: "the claim is obsolete — withdraw it so it no longer gates",
+    rationale: "the claim is obsolete; withdraw it so it no longer gates",
     command: retireCmd(id),
   };
 }
@@ -119,10 +108,7 @@ function supersede(): RemediationAction {
   return {
     id: "supersede",
     title: "Supersede the document",
-    applicability: "manual",
-    effect: "prose",
-    rationale:
-      "a newer document replaces this one — author the supersedes edge",
+    rationale: "a newer document replaces this one",
   };
 }
 
@@ -130,8 +116,6 @@ function fixCode(): RemediationAction {
   return {
     id: "fix-code",
     title: "Fix the code to match the doc",
-    applicability: "manual",
-    effect: "prose",
     rationale: "if the doc is the spec, the code drifted from it",
   };
 }
@@ -140,65 +124,7 @@ function fixClaim(): RemediationAction {
   return {
     id: "fix-claim",
     title: "Fix the documented claim",
-    applicability: "manual",
-    effect: "prose",
-    rationale: "if the code is correct, the sentence is now wrong — rewrite it",
-  };
-}
-
-function reverifyDoc(): RemediationAction {
-  return {
-    id: "reverify-doc",
-    title: "Re-read the current doc span and re-verify",
-    applicability: "manual",
-    effect: "prose",
-    rationale:
-      "the prose was edited — its meaning may have inverted; re-verify against the code",
-  };
-}
-
-function reconcile(): RemediationAction {
-  return {
-    id: "reconcile",
-    title: "Reconcile the doc and the code",
-    applicability: "manual",
-    effect: "prose",
-    rationale:
-      "both sides changed — re-verify the current doc against the current code; do not auto-decide",
-  };
-}
-
-function reverifyBehavior(detail: string | undefined): RemediationAction {
-  return {
-    id: "reverify-behavior",
-    title: "Re-verify the documented behavior",
-    applicability: "manual",
-    effect: "prose",
-    rationale: detail
-      ? `reachable code changed (${detail}) — re-examine the behavior`
-      : "reachable code changed — re-examine the behavior",
-  };
-}
-
-/**
- * Execution-grounding seam (D13): run the linked verifier(s) out-of-process. When
- * the claim has no verifier yet, D26's advisory reverse-import test suggestions
- * are appended so the author knows which tests to promote into a `command:`
- * verifier. The clause is omitted entirely when the suggestion list is empty.
- */
-function runVerifier(suggestedTests?: string[]): RemediationAction {
-  const base = "executable evidence can confirm or refute the behavior";
-  const rationale =
-    suggestedTests && suggestedTests.length > 0
-      ? `${base} — tests that exercise this code: ${suggestedTests.join(", ")}`
-      : base;
-  return {
-    id: "run-verifier",
-    title: "Run the linked verifier",
-    applicability: "needs-review",
-    effect: "deterministic",
-    rationale,
-    command: "hibi check --run-verifiers",
+    rationale: "if the code is correct, the sentence is now wrong; rewrite it",
   };
 }
 
@@ -206,26 +132,11 @@ function reverifyAndReRecord(): RemediationAction {
   return {
     id: "reverify-and-rerecord",
     title: "Re-verify and re-record",
-    applicability: "manual",
-    effect: "prose",
-    rationale:
-      "the claim's ttl has passed — re-verify, then re-record it fresh",
+    rationale: "the claim's ttl has passed; re-verify, then re-record it",
   };
 }
 
-/** A one-line `path (kind)` summary of the first changed-evidence entry. */
-function changedSummary(
-  evidence: ChangedEvidence[] | undefined,
-): string | undefined {
-  const first = evidence?.[0];
-  return first ? `${first.path} ${first.kind}` : undefined;
-}
-
-/**
- * The remediation menu for a verdict, or `null` when there is nothing to do
- * (a clean verdict). The branches are mutually exclusive and ordered by
- * severity; `expired` is appended onto whatever applies.
- */
+/** The remediation menu for a verdict, or `null` when there is nothing to do. */
 export function remediationFor(v: RemediationInput): Remediation | null {
   const id = v.assertionId;
   let rem: Remediation | null = null;
@@ -237,73 +148,46 @@ export function remediationFor(v: RemediationInput): Remediation | null {
   const hasMoved = v.doc === "moved" || v.code === "moved";
 
   if (hasOrphan) {
-    // The span was deleted — retire/supersede/re-anchor-to-target, whatever the
-    // behavior axis says. Checked BEFORE `refuted` so an orphaned-and-refuted
-    // claim keeps a withdraw path (a refuted claim with intact anchors still
-    // takes the refuted branch below).
     rem = {
-      recommended: "retire",
-      actions: [retire(id), supersede(), reanchorToTarget(id)],
+      recommended: "reanchor",
+      actions: [reanchorSuggest(id), retire(id), supersede()],
     };
   } else if (v.behavior === "refuted") {
-    // A linked verifier failed: never re-anchor (re-linking clears the gate
-    // without fixing the behavior — a documented anti-pattern).
     rem = { recommended: null, actions: [fixCode(), fixClaim()] };
   } else if (docChanged && codeChanged) {
     rem = {
-      recommended: null,
-      actions: [reconcile(), reanchorIfTrue(id), retire(id)],
+      recommended: "reconcile",
+      actions: [reconcile(id), reanchorAsIs(id), retire(id)],
     };
   } else if (codeChanged) {
     rem = {
-      recommended: null,
-      actions: [retire(id), fixCode(), reanchorIfTrue(id)],
+      recommended: "update-claim",
+      actions: [updateThenReanchor(id), reanchorAsIs(id), retire(id)],
     };
   } else if (docChanged) {
     rem = {
-      recommended: null,
-      actions: [reverifyDoc(), retire(id), reanchorIfTrue(id)],
+      recommended: "reverify-doc",
+      actions: [reverifyDoc(id), reanchorAsIs(id), retire(id)],
     };
   } else if (hasAmbiguous) {
     rem = { recommended: "reanchor", actions: [reanchorTighten(id)] };
   } else if (hasMoved) {
     rem = { recommended: "reanchor", actions: [reanchorMoved(id)] };
-  } else if (v.behavior === "at-risk") {
-    rem = {
-      recommended: null,
-      actions: [
-        reverifyBehavior(changedSummary(v.changedEvidence)),
-        runVerifier(v.suggestedTests),
-      ],
-    };
   }
 
   if (v.expired) {
-    // `expired` gates on its own and `reanchor` alone never clears it — only
-    // re-verifying and re-recording does (and that re-anchors too). So when the
-    // base recommendation was a bare re-anchor (moved/ambiguous), or there was
-    // nothing else to do, promote `reverify-and-rerecord` to `recommended`;
-    // otherwise keep the base recommendation (e.g. `retire` for an orphan, or
-    // `null` for an intent-ambiguous change).
     const base = rem ?? { recommended: null, actions: [] };
     const recommended =
       base.recommended === "reanchor" || rem === null
         ? "reverify-and-rerecord"
         : base.recommended;
-    rem = {
-      recommended,
-      actions: [...base.actions, reverifyAndReRecord()],
-    };
+    rem = { recommended, actions: [...base.actions, reverifyAndReRecord()] };
   }
 
   return rem;
 }
 
-/**
- * The single action a one-line surface (a human `help:` crumb, a row's "next
- * step") should show: the `recommended` action when set, else the safest/first.
- * The single source for "what's the top action?" so every renderer agrees.
- */
+/** The single action a one-line surface shows: `recommended`, else the first. */
 export function topAction(rem: Remediation | null): RemediationAction | null {
   if (!rem || rem.actions.length === 0) return null;
   return (
@@ -313,7 +197,6 @@ export function topAction(rem: Remediation | null): RemediationAction | null {
   );
 }
 
-/** Convenience over a full Verdict (reads its evidence for the at-risk detail). */
 export function remediationForVerdict(verdict: Verdict): Remediation | null {
   return remediationFor({
     assertionId: verdict.assertionId,

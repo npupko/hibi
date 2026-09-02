@@ -1,0 +1,60 @@
+{
+  "id": "asrt_0254732441da4233",
+  "propositionId": "prop_d44a8072317f4790",
+  "documentId": "doc_84263e2579006d07",
+  "owner": "hibi-dogfood",
+  "ref": "c6bac8d38ea9468d696bf29754ef9ba6e2871b1b",
+  "anchor": {
+    "doc": {
+      "file": "docs/anchors.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "normalized text similarity to the stored quote is below 0.9",
+          "prefix": " The side is `changed` when any of these holds: ",
+          "suffix": "; the semantic AST hash differs; the literal ins"
+        },
+        {
+          "kind": "text-position",
+          "start": 2968,
+          "end": 3027
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/algo/params.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "SAME_TEXT_SIMILARITY = 0.9",
+            "prefix": "w it the\n * span is `changed`.\n */\nexport const ",
+            "suffix": ";\n\n/** A same-text span whose start moved by mor"
+          },
+          {
+            "kind": "text-position",
+            "start": 1376,
+            "end": 1402
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "variable_declarator",
+            "structuralHash": "1ef22338a05b5fba",
+            "semanticHash": "9f7625576bec3ee4"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "number",
+            "value": "0.9"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verified": true,
+  "verifiers": [],
+  "attrs": {}
+}

@@ -1,30 +1,24 @@
 /**
- * `reanchor` (§9, §18-B) — re-point an existing claim at its current location.
+ * `reanchor`: re-point an existing claim at its current location.
  *
- * The documented sentence and the code it describes both move; `reanchor`
- * re-resolves **both sides** of the bidirectional anchor against the current
- * working tree and rewrites the stored baseline so a `moved`/`changed` claim
- * settles back to `unchanged`. The caller may hand in explicit replacement spans
- * (`docSpec` / `code[]`) — those override; otherwise each side is re-localized
- * through its existing selectors.
+ * Both sides re-resolve against the current working tree and the stored
+ * baseline is rewritten so a `moved`/`changed` claim settles back to
+ * `unchanged`. Explicit replacement spans (`docSpec` / `code[]`) override;
+ * otherwise each side re-localizes through its existing selectors.
  *
- * A side that cannot be located and has no replacement span is an un-relocatable
- * orphan: re-anchoring cannot invent a target, so it throws and the author must
- * supply a new location or retire the claim (§9). On success the proposition's
- * `textCache` + `fingerprint` are refreshed from the **new confirmed doc span**
- * — the live sentence, never the stale cache (§4/§18-B).
+ * Safety: a side that resolves `orphaned` and has no explicit replacement is
+ * refused; an empty span is never stored. The result carries the before and
+ * after quotes per side so the caller can see what moved.
  */
 
-import {
-  localizeTextQuote,
-  positionBias,
-  regionText,
-} from "../algo/localize.ts";
+import { fuzzyLocate, regionText } from "../algo/localize.ts";
 import { textSimilarity } from "../algo/normalize.ts";
 import {
+  type AstAnalyzer,
   type ResolveFiles,
-  resolveAssertion,
-  resolveSide,
+  resolveSides,
+  type SideResult,
+  worstCodeState,
 } from "../algo/resolve.ts";
 import { newId, propositionFingerprint } from "../core/ids.ts";
 import type {
@@ -37,10 +31,10 @@ import type {
 import type { ClaimStore } from "../store/store.ts";
 import {
   type AnchorAnalyzer,
-  buildGlobBundle,
-  buildPathBundle,
+  buildCoarseBundle,
   buildSelectorBundle,
   composeAnchor,
+  isCoarseBundle,
 } from "./anchor.ts";
 import { languageForFile } from "./lang.ts";
 import {
@@ -57,44 +51,34 @@ export interface ReanchorInput {
   claimId: string;
   /** Replacement doc-side span; omit to re-localize via the existing selectors. */
   docSpec?: RegionSpec;
-  /**
-   * Re-home the doc anchor to a **different file** — symmetric with the code
-   * side's per-target `file`. Omit to keep the claim on its current document.
-   * When set, the doc span re-resolves against this file and the assertion's
-   * `documentId` moves with it: the same claim, relocated (split/merge/rename/
-   * extract), never an orphan-plus-fresh-record. The caller supplies the file's
-   * content as `contents.docContent`.
-   */
+  /** Re-home the doc anchor to a different file (requires `docSpec`). */
   docPath?: string;
   /** Replacement code-side targets; omit to re-localize the existing bundles. */
   code?: CodeTarget[];
-  /** New `@ref` to stamp; omit to keep the assertion's current ref. */
+  /** The ref to stamp (the caller resolves git HEAD). */
   ref?: string;
-  /**
-   * Refreshed change-gate baseline (§17.6, D14/D15), computed by the shell.
-   * Undefined → the existing baseline carries forward unchanged.
-   */
-  evidenceBaseline?: Record<string, string>;
-  analyzer?: AnchorAnalyzer;
-  /**
-   * Preview only: compute the would-be result (the post-reanchor per-side states)
-   * without persisting any `put*` write (§9 `--dry-run`). The in-memory `next`
-   * assertion is still resolved, so the preview is accurate.
-   */
+  analyzer?: AnchorAnalyzer & AstAnalyzer;
   dryRun?: boolean;
+}
+
+export interface SideQuote {
+  file: string;
+  quote: string;
 }
 
 export interface ReanchorResult {
   assertion: Assertion;
   doc: AnchorState;
   code: AnchorState;
-  /** D15: present iff `verified` trust was downgraded (reanchored without `--ref`). */
-  reanchorDowngrade?: { from: string; to: string; reason: string };
+  before: { doc: SideQuote; code: SideQuote[] };
+  after: { doc: SideQuote; code: SideQuote[] };
+  warnings: string[];
 }
 
-/** One candidate re-anchor target (§9, D24 `reanchor --suggest`). */
+/** One candidate location for `reanchor --suggest`. */
 export interface ReanchorCandidate {
-  doc: string;
+  side: "doc" | "code";
+  file: string;
   start: number;
   end: number;
   similarity: number;
@@ -102,76 +86,72 @@ export interface ReanchorCandidate {
   snippet: string;
 }
 
-/** The read-only `reanchor --suggest` result (D24) — never writes anything. */
 export interface ReanchorSuggestResult {
   action: "reanchor-suggest";
   claimId: string;
   candidates: ReanchorCandidate[];
 }
 
-/** Minimum similarity for a candidate to be worth listing (D24). */
 const SUGGEST_MIN_SIMILARITY = 0.5;
-/** Never surface more than this many candidates (D24). */
 const SUGGEST_MAX_CANDIDATES = 5;
-/** Snippet cap for a candidate region (D24). */
 const SUGGEST_SNIPPET_MAX = 120;
 
-/**
- * Orphan recovery suggestions (§9, D24). Takes the claim's stored doc-side
- * `text-quote` (its exact string + context — NOT the proposition `textCache`) and
- * runs the existing `localizeTextQuote` cascade against the current content of
- * every registered Document. Read-only: it proposes targets; only an explicit
- * `reanchor --doc-range` (with D15's attestation rules) actually moves an anchor.
- * Files missing on disk are skipped; candidates below `SUGGEST_MIN_SIMILARITY`
- * are dropped; the rest sort by similarity desc, then document path asc, then
- * region start asc, capped at `SUGGEST_MAX_CANDIDATES`.
- */
-export function suggestReanchorCandidates(
-  assertion: Assertion,
-  docs: { path: string; content: string }[],
-): ReanchorCandidate[] {
-  const sel = assertion.anchor.doc.selectors;
-  const tq = sel.find(
-    (s): s is Extract<typeof s, { kind: "text-quote" }> =>
-      s.kind === "text-quote",
-  );
-  if (!tq) return [];
-  const tp = sel.find(
-    (s): s is Extract<typeof s, { kind: "text-position" }> =>
-      s.kind === "text-position",
-  );
-  const bias = positionBias(tp);
-
-  const candidates: ReanchorCandidate[] = [];
-  for (const { path, content } of docs) {
-    const region = localizeTextQuote(content, tq, bias);
-    if (!region) continue;
-    const text = regionText(content, region);
-    const similarity = textSimilarity(text, tq.exact);
-    if (similarity < SUGGEST_MIN_SIMILARITY) continue;
-    const snippet =
-      text.length > SUGGEST_SNIPPET_MAX
-        ? text.slice(0, SUGGEST_SNIPPET_MAX)
-        : text;
-    candidates.push({
-      doc: path,
-      start: region.start,
-      end: region.end,
-      similarity,
-      snippet,
-    });
-  }
-
-  candidates.sort(
-    (a, b) =>
-      b.similarity - a.similarity ||
-      (a.doc < b.doc ? -1 : a.doc > b.doc ? 1 : 0) ||
-      a.start - b.start,
-  );
-  return candidates.slice(0, SUGGEST_MAX_CANDIDATES);
+function quoteOf(bundle: SelectorBundle): string {
+  const tq = bundle.selectors.find((s) => s.kind === "text-quote");
+  return tq?.kind === "text-quote" ? tq.exact : "";
 }
 
-/** Build the ResolveFiles view (doc + code map) from the supplied contents. */
+function sideQuote(bundle: SelectorBundle): SideQuote {
+  return { file: bundle.file, quote: quoteOf(bundle) };
+}
+
+/**
+ * Rank candidate locations for one side's stored quote across `files`. Exact
+ * occurrences first, then fuzzy matches; candidates below the similarity floor
+ * are dropped and the rest sort by similarity, then path, then offset.
+ */
+export function suggestForBundle(
+  side: "doc" | "code",
+  bundle: SelectorBundle,
+  files: { path: string; content: string }[],
+): ReanchorCandidate[] {
+  const tq = bundle.selectors.find((s) => s.kind === "text-quote");
+  if (tq?.kind !== "text-quote" || tq.exact.length === 0) return [];
+  const out: ReanchorCandidate[] = [];
+  for (const { path, content } of files) {
+    const seen = new Set<number>();
+    const push = (region: Region) => {
+      if (seen.has(region.start)) return;
+      seen.add(region.start);
+      const text = regionText(content, region);
+      const similarity = textSimilarity(text, tq.exact);
+      if (similarity < SUGGEST_MIN_SIMILARITY) return;
+      out.push({
+        side,
+        file: path,
+        start: region.start,
+        end: region.end,
+        similarity,
+        snippet: text.slice(0, SUGGEST_SNIPPET_MAX),
+      });
+    };
+    let i = content.indexOf(tq.exact);
+    while (i !== -1) {
+      push({ start: i, end: i + tq.exact.length });
+      i = content.indexOf(tq.exact, i + tq.exact.length);
+    }
+    const fuzzy = fuzzyLocate(content, tq, 0);
+    if (fuzzy) push(fuzzy);
+  }
+  out.sort(
+    (a, b) =>
+      b.similarity - a.similarity ||
+      (a.file < b.file ? -1 : a.file > b.file ? 1 : 0) ||
+      a.start - b.start,
+  );
+  return out.slice(0, SUGGEST_MAX_CANDIDATES);
+}
+
 function toResolveFiles(contents: RecordContents): ResolveFiles {
   return {
     doc: contents.docContent,
@@ -179,55 +159,10 @@ function toResolveFiles(contents: RecordContents): ResolveFiles {
   };
 }
 
-/** Re-locate the doc side, preferring an explicit replacement span. */
-function relocateDoc(
-  assertion: Assertion,
-  contents: RecordContents,
-  input: ReanchorInput,
-  located: Region | undefined,
-): { bundle: SelectorBundle; region: Region; confirmed: string } {
-  const docContent = contents.docContent;
-  if (docContent === null) {
-    throw new Error(
-      `claim ${assertion.id} orphaned — provide a new location or retire`,
-    );
-  }
-  // Relocating onto a different file must carry an explicit span: the existing
-  // selectors describe the old file, so re-matching them against the new file's
-  // content could latch onto a coincidentally similar sentence and mis-anchor.
-  if (
-    input.docPath !== undefined &&
-    input.docPath !== assertion.anchor.doc.file &&
-    !input.docSpec
-  ) {
-    throw new Error(
-      `relocating claim ${assertion.id} to ${input.docPath} requires an explicit doc span (--doc-quote/--doc-range/--doc-line); the existing selectors describe the old file and must not be re-matched against a different one`,
-    );
-  }
-  const region = input.docSpec
-    ? resolveRegion(docContent, input.docSpec)
-    : located;
-  if (!region) {
-    throw new Error(
-      `claim ${assertion.id} orphaned — provide a new location or retire`,
-    );
-  }
-  // Prose side: no analyzer/language; carry the existing inline-id forward.
-  const inlineId = assertion.anchor.doc.selectors.find(
-    (s): s is Extract<typeof s, { kind: "inline-id" }> =>
-      s.kind === "inline-id",
-  )?.id;
-  const bundle = buildSelectorBundle(
-    // Relocation (`--doc`) re-homes the bundle onto the new file; otherwise the
-    // doc bundle keeps its current file.
-    input.docPath ?? assertion.anchor.doc.file,
-    docContent,
-    region,
-    {
-      inlineId,
-    },
+function orphanError(id: string, side: string, file: string): Error {
+  return new Error(
+    `claim ${id}: the ${side} span in ${file} was not found (orphaned). Pass an explicit new span for that side (${side === "doc" ? "--doc-quote/--doc-range" : "--code-file with --code-quote/--code-range"}), run --suggest to find candidates, or retire the claim.`,
   );
-  return { bundle, region, confirmed: regionText(docContent, region) };
 }
 
 /** Rebuild one code bundle from an explicit replacement target. */
@@ -235,15 +170,16 @@ function bundleFromTarget(
   target: CodeTarget,
   contents: RecordContents,
   analyzer: AnchorAnalyzer | undefined,
-  claimId: string,
 ): SelectorBundle {
-  if (target.glob) return buildGlobBundle(target.glob);
-  if (target.coarse || !target.region) return buildPathBundle(target.file);
+  if (target.coarse) return buildCoarseBundle(target.file);
+  if (!target.region) {
+    throw new Error(
+      `code target ${target.file} has no span; pass --code-quote or --code-range`,
+    );
+  }
   const content = contents.codeContents[target.file];
   if (content === undefined || content === null) {
-    throw new Error(
-      `claim ${claimId} orphaned — provide a new location or retire`,
-    );
+    throw new Error(`Code file not found on disk: ${target.file}`);
   }
   const region = resolveRegion(content, target.region);
   return buildSelectorBundle(target.file, content, region, {
@@ -252,39 +188,25 @@ function bundleFromTarget(
   });
 }
 
-/**
- * Re-localize an existing code bundle in place: coarse bundles carry forward
- * unchanged; a precise bundle is rebuilt at its current located region. A precise
- * bundle that could not be located (no region) is an un-relocatable orphan.
- */
+/** Re-localize an existing code bundle in place from its resolved side result. */
 function relocateCodeBundle(
   bundle: SelectorBundle,
   contents: RecordContents,
-  located: Region | undefined,
+  side: SideResult,
   analyzer: AnchorAnalyzer | undefined,
   claimId: string,
 ): SelectorBundle {
-  const isCoarse = bundle.selectors.every(
-    (s) => s.kind === "path" || s.kind === "glob",
-  );
-  if (isCoarse) return bundle;
+  if (isCoarseBundle(bundle)) return bundle;
   const content = contents.codeContents[bundle.file];
-  if (content === undefined || content === null || !located) {
-    throw new Error(
-      `claim ${claimId} orphaned — provide a new location or retire`,
-    );
+  if (content === undefined || content === null || !side.region) {
+    throw orphanError(claimId, "code", bundle.file);
   }
-  return buildSelectorBundle(bundle.file, content, located, {
+  return buildSelectorBundle(bundle.file, content, side.region, {
     language: languageForFile(bundle.file),
     analyzer,
   });
 }
 
-/**
- * Re-resolve both sides of a claim against current content, rebuild its baseline
- * anchor, and refresh the proposition's confirmed text. Throws on an
- * un-relocatable orphan.
- */
 export async function reanchor(
   store: ClaimStore,
   contents: RecordContents,
@@ -300,104 +222,66 @@ export async function reanchor(
   }
 
   const files = toResolveFiles(contents);
+  const warnings: string[] = [];
 
-  // ── Doc side ── re-localize the doc bundle against the current document. Skip
-  // this when an explicit span is given: relocateDoc resolves that span directly
-  // and ignores the located region, so resolving it would be wasted work.
-  const docLocated = input.docSpec
-    ? undefined
-    : (resolveSide(assertion.anchor.doc, contents.docContent).region ??
-      undefined);
-  const doc = relocateDoc(assertion, contents, input, docLocated);
+  // Resolve every side once.
+  const before = resolveSides(assertion, files, { ast: input.analyzer });
 
-  // D23 — the re-anchored doc quote must still anchor reliably (relocateDoc has
-  // already guaranteed docContent is non-null).
-  if (contents.docContent !== null) {
-    validateDocQuote(
-      contents.docContent,
-      doc.region,
-      input.docPath ?? assertion.anchor.doc.file,
+  // Doc side.
+  const docFile = input.docPath ?? assertion.anchor.doc.file;
+  if (contents.docContent === null) {
+    throw new Error(`Document not found on disk: ${docFile}`);
+  }
+  if (
+    input.docPath !== undefined &&
+    input.docPath !== assertion.anchor.doc.file &&
+    !input.docSpec
+  ) {
+    throw new Error(
+      `relocating claim ${assertion.id} to ${input.docPath} requires an explicit doc span (--doc-quote/--doc-range); the existing selectors describe the old file.`,
     );
   }
+  let docRegion: Region;
+  if (input.docSpec) {
+    docRegion = resolveRegion(contents.docContent, input.docSpec);
+  } else {
+    if (before.doc.state === "orphaned" || !before.doc.region) {
+      throw orphanError(assertion.id, "doc", docFile);
+    }
+    docRegion = before.doc.region;
+  }
+  warnings.push(...validateDocQuote(contents.docContent, docRegion, docFile));
+  const docBundle = buildSelectorBundle(
+    docFile,
+    contents.docContent,
+    docRegion,
+  );
+  const confirmed = regionText(contents.docContent, docRegion);
 
-  // ── Code side ── resolve each bundle INDEPENDENTLY (not via the aggregated
-  // `evidence.codeRegions`, which drops null regions and so is neither
-  // index-aligned with `anchor.code` nor safe for two bundles in one file).
+  // Code side.
   let codeBundles: SelectorBundle[];
   if (input.code !== undefined) {
     codeBundles = input.code.map((t) =>
-      bundleFromTarget(t, contents, input.analyzer, assertion.id),
+      bundleFromTarget(t, contents, input.analyzer),
     );
   } else {
-    codeBundles = assertion.anchor.code.map((bundle) => {
-      const content = contents.codeContents[bundle.file] ?? null;
-      const located = resolveSide(bundle, content).region ?? undefined;
-      return relocateCodeBundle(
+    codeBundles = assertion.anchor.code.map((bundle, i) =>
+      relocateCodeBundle(
         bundle,
         contents,
-        located,
+        before.code[i] as SideResult,
         input.analyzer,
         assertion.id,
-      );
-    });
+      ),
+    );
   }
 
-  // ── Rewrite the baseline and the confirmed proposition text ──
-  // Re-home to a new document when `--doc` relocates the doc anchor (§9). The
-  // claim keeps its id, proposition, code side, owner, trust, and history; only
-  // its `documentId` moves — no orphan-plus-fresh-record.
   const documentId = input.docPath
     ? documentIdForPath(input.docPath)
     : assertion.documentId;
 
-  // D15 — reanchor attestation (anti-gaming). `--ref` asserts re-verification:
-  // selectors + evidence baseline refresh, authored trust is retained, the new
-  // ref is recorded. WITHOUT `--ref` the claim is still re-anchored (the
-  // doc:moved repair loop is legitimately evidence-free), but `verified` authored
-  // trust is downgraded to `inferred` and the downgrade is recorded on the
-  // assertion — the claim is findable again, but nobody re-attested it is *true*.
-  // The shared-proposition caveat: downgrade only when currently `verified`.
-  //
-  // D25 — attestation-free exact re-anchor (pure-move repair). A byte-shift is
-  // evidence-neutral: there is nothing to re-attest, so it retains `verified` and
-  // records no downgrade iff BOTH (1) the re-resolved doc span's text-quote exact
-  // is byte-identical to the stored exact AND resolved uniquely at similarity 1.0
-  // (same sentence, new offset — not `ambiguous`), and (2) the code side
-  // re-resolves against its stored baseline as exactly `unchanged` (not `moved`,
-  // not `changed`). Anything fuzzier downgrades exactly as D15 shipped. The
-  // exception is gameable only by *not changing anything* — not a gaming vector.
-  const docTqBefore = assertion.anchor.doc.selectors.find(
-    (s): s is Extract<typeof s, { kind: "text-quote" }> =>
-      s.kind === "text-quote",
-  );
-  const preDoc = resolveSide(assertion.anchor.doc, contents.docContent);
-  const beforeStates = resolveAssertion(assertion, files);
-  const pureMove =
-    docTqBefore !== undefined &&
-    doc.confirmed === docTqBefore.exact && // byte-identical → similarity 1.0
-    preDoc.region !== null &&
-    preDoc.state !== "ambiguous" && // resolved to a single occurrence
-    beforeStates.code === "unchanged"; // code side re-resolves unchanged
-
-  const downgrade =
-    input.ref === undefined &&
-    proposition.authoredTrust === "verified" &&
-    !pureMove;
-  const downgradeRecord = {
-    from: "verified",
-    to: "inferred",
-    reason: "reanchored without --ref — no re-attestation of truth",
-  };
-
-  const attrs = downgrade
-    ? { ...assertion.attrs, reanchorDowngrade: downgradeRecord }
-    : assertion.attrs;
-
-  // ── Proposition refresh — split-on-write when shared (§4/§5) ──
-  // `record` dedupes propositions by fingerprint across documents, so one record
-  // can back many assertions: rewriting a shared one in place would change every
-  // other claim's text too.
-  const newFingerprint = propositionFingerprint(doc.confirmed);
+  // Proposition refresh, split-on-write when shared.
+  const newFingerprint = propositionFingerprint(confirmed);
   const shared = (await store.allAssertions()).some(
     (x) => x.propositionId === proposition.id && x.id !== assertion.id,
   );
@@ -405,19 +289,14 @@ export async function reanchor(
   if (shared && newFingerprint !== proposition.fingerprint) {
     const fresh: Proposition = {
       id: newId("prop"),
-      textCache: doc.confirmed,
-      authoredTrust: downgrade ? "inferred" : proposition.authoredTrust,
+      textCache: confirmed,
       fingerprint: newFingerprint,
     };
     propositionId = fresh.id;
     if (!input.dryRun) await store.putProposition(fresh);
   } else {
-    proposition.textCache = doc.confirmed;
+    proposition.textCache = confirmed;
     proposition.fingerprint = newFingerprint;
-    // D15: withdraw the `verified` attestation when re-anchored without a
-    // `--ref` — never on a shared proposition, which would strip the sibling
-    // claims' attestation too; there the downgrade lives on `attrs` alone.
-    if (downgrade && !shared) proposition.authoredTrust = "inferred";
     if (!input.dryRun) await store.putProposition(proposition);
   }
 
@@ -425,17 +304,11 @@ export async function reanchor(
     ...assertion,
     documentId,
     propositionId,
-    anchor: composeAnchor(doc.bundle, codeBundles),
+    anchor: composeAnchor(docBundle, codeBundles),
     ref: input.ref ?? assertion.ref,
-    evidenceBaseline: input.evidenceBaseline ?? assertion.evidenceBaseline,
-    attrs,
   };
   if (!input.dryRun) await store.putAssertion(next);
 
-  // Ensure the destination Document exists and is active. A doc previously
-  // retracted/superseded/archived at this path would otherwise lend its stale
-  // lifecycle to the freshly-relocated live claim, so reactivate it. The source
-  // Document is left intact as audit — never auto-deleted (§6).
   if (!input.dryRun && input.docPath && documentId !== assertion.documentId) {
     const existing = await store.getDocument(documentId);
     if (!existing) {
@@ -445,12 +318,19 @@ export async function reanchor(
     }
   }
 
-  // Confirm the post-reanchor states (should settle to `unchanged`).
-  const after = resolveAssertion(next, files);
+  const after = resolveSides(next, files, { ast: input.analyzer });
   return {
     assertion: next,
-    doc: after.doc,
-    code: after.code,
-    reanchorDowngrade: downgrade ? downgradeRecord : undefined,
+    doc: after.doc.state,
+    code: worstCodeState(after.code),
+    before: {
+      doc: sideQuote(assertion.anchor.doc),
+      code: assertion.anchor.code.map(sideQuote),
+    },
+    after: {
+      doc: sideQuote(next.anchor.doc),
+      code: next.anchor.code.map(sideQuote),
+    },
+    warnings,
   };
 }

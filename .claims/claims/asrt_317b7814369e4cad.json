@@ -53,7 +53,8 @@
       }
     ]
   },
-  "enforcement": "enforced",
+  "enforcement": "retired",
+  "verified": true,
   "verifiers": [],
   "attrs": {}
 }

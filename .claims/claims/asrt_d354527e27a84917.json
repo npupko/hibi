@@ -1,0 +1,60 @@
+{
+  "id": "asrt_d354527e27a84917",
+  "propositionId": "prop_411abd2d9adb42d0",
+  "documentId": "doc_6921472667ef1c18",
+  "owner": "hibi-dogfood",
+  "ref": "c6bac8d38ea9468d696bf29754ef9ba6e2871b1b",
+  "anchor": {
+    "doc": {
+      "file": "docs/lifecycle.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Documents are active, superseded, or archived.",
+          "prefix": "n: \"Claims are enforced, suggested, or retired. ",
+          "suffix": " Three verbs manage both: retire, supersede, arc"
+        },
+        {
+          "kind": "text-position",
+          "start": 140,
+          "end": 186
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/core/model.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "DocumentLifecycle = z.enum([\"active\", \"superseded\", \"archived\"])",
+            "prefix": "tate>;\n\n/** Document lifecycle. */\nexport const ",
+            "suffix": ";\nexport type DocumentLifecycle = z.infer<typeof"
+          },
+          {
+            "kind": "text-position",
+            "start": 1682,
+            "end": 1746
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "variable_declarator",
+            "structuralHash": "02dcb2766868ec11",
+            "semanticHash": "b4487b177498f237"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "array",
+            "value": "[\"active\",\"superseded\",\"archived\"]"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verified": true,
+  "verifiers": [],
+  "attrs": {}
+}

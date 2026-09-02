@@ -1,50 +1,55 @@
 /**
- * `list` (§9) — the triage command. A flat array of one row per claim with just
- * the decision fields and the handles the next step needs (the claim id, the
- * doc/code paths, the worst status, the severity, and the recommended action) —
- * so an agent can answer "what needs attention?" without parsing a full `check`
- * report. Built by projecting a live `CheckReport`, so it shares the exact
- * verdict/gating semantics `check` uses (never a second computation).
+ * `list`: one lean row per claim with the decision fields and the handles the
+ * next command needs. Built by projecting a live `CheckReport`, so it shares
+ * the verdict/gating semantics `check` uses. `--path` restricts the rows to
+ * claims anchored to or covering a file on either side.
  */
 
 import { isWarnVerdict } from "../core/gating.ts";
-import type { Assertion, Verdict } from "../core/model.ts";
+import type {
+  Assertion,
+  Proposition,
+  SelectorBundle,
+  Verdict,
+} from "../core/model.ts";
+import { coarseCovers } from "./anchor.ts";
 import type { CheckReport, DocumentReport } from "./check.ts";
 import { worstStatus } from "./check.ts";
 
-/** The triage severity buckets, matching the `check` summary vocabulary. */
 export type ListSeverity = "gating" | "warning" | "clean";
 
-/**
- * Which claims to include. `all` (default) lists every tracked claim; the
- * severity buckets (`gating`/`warning`/`clean`) filter by `check` severity; the
- * two health filters cut across severity — `orphaned` selects claims with an
- * un-relocatable side, `suggested` selects non-gating advisory claims.
- */
-export type ListState =
-  | "all"
-  | "gating"
-  | "warning"
-  | "clean"
-  | "orphaned"
-  | "suggested";
+export const LIST_STATES = [
+  "all",
+  "gating",
+  "warning",
+  "clean",
+  "orphaned",
+  "suggested",
+  "stranded",
+  "duplicate",
+] as const;
+export type ListState = (typeof LIST_STATES)[number];
 
-/** One lean triage row — decision fields + the handles for the next command. */
 export interface ListRow {
   claimId: string;
   propositionId: string;
+  /** The documented sentence (non-authoritative cache). */
+  text: string;
   documentPath: string | null;
   codePath: string | null;
-  /** Worst side-tagged status (`code:changed`, …), or `unchanged` when clean. */
+  /** Worst side-tagged status, `retired`, or `unchanged` when clean. */
   status: string;
   severity: ListSeverity;
   gates: boolean;
-  /** The recommended remediation action id, or `null` when intent is ambiguous. */
+  enforcement: Assertion["enforcement"];
   recommended: string | null;
+  /** Under `--path`: which side matched. */
+  side?: "doc" | "code";
 }
 
 export interface ListResult {
   state: ListState;
+  path?: string;
   count: number;
   claims: ListRow[];
 }
@@ -58,42 +63,24 @@ function severityOf(
   return "clean";
 }
 
-/**
- * Does this row match the requested `state`? The severity buckets compare against
- * the computed severity; the two health filters cut across it — `orphaned` keys
- * off an un-relocatable side from the live verdict, `suggested` off the authored
- * enforcement (a `retired` claim carries enforcement `retired`, so it is
- * naturally excluded from `suggested`).
- */
-function matchesState(
-  state: ListState,
-  v: Verdict,
-  enforcement: Assertion["enforcement"],
-  severity: ListSeverity,
-): boolean {
-  if (state === "all") return true;
-  // A retired claim is withdrawn — never surface it as an actionable orphan, or
-  // the `--state orphaned --ids-only | retire` cleanup loop never drains (retire
-  // flips enforcement but leaves the orphaned anchor in place).
-  if (state === "orphaned")
-    return (
-      enforcement !== "retired" &&
-      (v.doc === "orphaned" || v.code === "orphaned")
-    );
-  if (state === "suggested") return enforcement === "suggested";
-  return severity === state;
+function bundleMatches(bundle: SelectorBundle, path: string): boolean {
+  if (bundle.file === path) return true;
+  for (const s of bundle.selectors) {
+    if (s.kind === "coarse" && coarseCovers(s.pattern, path)) return true;
+  }
+  return false;
 }
 
-/** Lifecycle status tags a document carries (for the worst-status string). */
-function lifecycleTagsOf(lifecycle: DocumentReport["lifecycle"]): string[] {
-  return lifecycle === "active" ? [] : [lifecycle];
+/** Which side of a claim's anchor targets or covers `path`, if any. */
+export function matchedSide(
+  a: Assertion,
+  path: string,
+): "doc" | "code" | undefined {
+  if (a.anchor.doc.file === path) return "doc";
+  if (a.anchor.code.some((b) => bundleMatches(b, path))) return "code";
+  return undefined;
 }
 
-/**
- * The code file most relevant to a verdict's status: the changed-evidence path
- * that belongs to one of the claim's code bundles (so a multi-target claim points
- * at the bundle that actually drifted), else the first code bundle's file.
- */
 function relevantCodePath(
   v: Verdict,
   assertion: Assertion | undefined,
@@ -107,61 +94,98 @@ function relevantCodePath(
 
 export interface ToListRowsOptions {
   state?: ListState;
-  /** Emit the `recommended` action; off under `--no-hints` / `HIBI_ADVICE=0`. */
+  path?: string;
   hints?: boolean;
 }
 
-/**
- * Project a `CheckReport` (joined to its assertions and the report's own document
- * reports) into triage rows, filtered by `state`. Pure — the caller supplies the
- * live report. Document *lifecycle* is folded into the status (so a claim on a
- * superseded/retracted document reads `superseded`/`retracted`, not `unchanged`),
- * and a `retired` claim is reported as `retired` rather than as live drift.
- */
 export function toListRows(
   report: CheckReport,
   assertions: Assertion[],
+  propositions: Proposition[],
   documents: DocumentReport[],
   opts: ToListRowsOptions = {},
 ): ListResult {
   const state = opts.state ?? "all";
   const hints = opts.hints ?? true;
   const assertById = new Map(assertions.map((a) => [a.id, a]));
+  const propById = new Map(propositions.map((p) => [p.id, p]));
   const docById = new Map(documents.map((d) => [d.id, d]));
+
+  // Fingerprints claimed by more than one live claim.
+  const liveByFingerprint = new Map<string, number>();
+  for (const a of assertions) {
+    if (a.enforcement === "retired") continue;
+    const fp = propById.get(a.propositionId)?.fingerprint;
+    if (!fp) continue;
+    liveByFingerprint.set(fp, (liveByFingerprint.get(fp) ?? 0) + 1);
+  }
 
   const rows: ListRow[] = [];
   for (const v of report.verdicts) {
     const assertion = assertById.get(v.assertionId);
-    const enforcement = assertion?.enforcement ?? "suggested";
+    if (!assertion) continue;
+    const enforcement = assertion.enforcement;
     const doc = docById.get(v.documentId);
     const retired = enforcement === "retired";
-
     const severity = retired ? "clean" : severityOf(v, enforcement);
-    if (!matchesState(state, v, enforcement, severity)) continue;
+    const lifecycle = doc?.lifecycle ?? "active";
 
-    // A retired claim is withdrawn — report it as such, never as live drift.
+    let side: "doc" | "code" | undefined;
+    if (opts.path !== undefined) {
+      side = matchedSide(assertion, opts.path);
+      if (!side) continue;
+    }
+
+    const fp = propById.get(assertion.propositionId)?.fingerprint;
+    const matches = (() => {
+      switch (state) {
+        case "all":
+          return true;
+        case "orphaned":
+          return !retired && (v.doc === "orphaned" || v.code === "orphaned");
+        case "suggested":
+          return enforcement === "suggested";
+        case "stranded":
+          return !retired && lifecycle !== "active";
+        case "duplicate":
+          return (
+            !retired && fp !== undefined && (liveByFingerprint.get(fp) ?? 0) > 1
+          );
+        default:
+          return !retired && severity === state;
+      }
+    })();
+    if (!matches) continue;
+
     const status = retired
       ? "retired"
-      : worstStatus(v, lifecycleTagsOf(doc?.lifecycle ?? "active"));
+      : worstStatus(v, lifecycle === "active" ? [] : [lifecycle]);
     const recommended =
       hints && !retired ? (v.remediation?.recommended ?? null) : null;
 
     rows.push({
       claimId: v.assertionId,
       propositionId: v.propositionId,
+      text: propById.get(v.propositionId)?.textCache ?? "",
       documentPath: doc?.path ?? null,
       codePath: relevantCodePath(v, assertion),
       status,
       severity,
       gates: v.gates,
+      enforcement,
       recommended,
+      ...(side ? { side } : {}),
     });
   }
 
-  // Most-severe-first so the rows an agent must act on lead.
   const rank = (s: ListSeverity) =>
     s === "gating" ? 0 : s === "warning" ? 1 : 2;
   rows.sort((a, b) => rank(a.severity) - rank(b.severity));
 
-  return { state, count: rows.length, claims: rows };
+  return {
+    state,
+    ...(opts.path !== undefined ? { path: opts.path } : {}),
+    count: rows.length,
+    claims: rows,
+  };
 }

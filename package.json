@@ -26,14 +26,17 @@
   "bin": {
     "hibi": "./src/cli/index.ts"
   },
+  "exports": {
+    ".": "./src/index.ts",
+    "./resolver": "./src/resolver/index.ts"
+  },
   "engines": {
     "bun": ">=1.0.0"
   },
   "files": [
     "src",
     "grammars",
-    "schemas",
-    "sdk/ts"
+    "schemas"
   ],
   "publishConfig": {
     "access": "public",
@@ -42,7 +45,8 @@
   "scripts": {
     "build:grammars": "bun run scripts/copy-grammars.ts",
     "build:schemas": "bun run scripts/gen-schemas.ts",
-    "build": "bun run build:grammars && bun run build:schemas && bun build --compile src/cli/index.ts --outfile dist/hibi",
+    "build:cli-reference": "bun run scripts/gen-cli-reference.ts",
+    "build": "bun run build:grammars && bun run build:schemas && bun run build:cli-reference && bun build --compile src/cli/index.ts --outfile dist/hibi",
     "test": "bun test",
     "lint": "biome lint .",
     "format": "biome format --write .",

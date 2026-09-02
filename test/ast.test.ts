@@ -14,12 +14,12 @@ const region = (text: string, quote: string) => {
   return { start, end: start + quote.length };
 };
 
-/** A trivial doc-side bundle whose sentence is present in `docText`. */
+/** A doc-side bundle whose sentence is present in `docText`. */
 function docBundle(docText: string, sentence: string): SelectorBundle {
   return buildSelectorBundle("README.md", docText, region(docText, sentence));
 }
 
-/** Assemble an Assertion from a doc-side + code-side bundle. */
+/** Assemble an Assertion from a doc-side and a code-side bundle. */
 function makeAssertion(
   doc: SelectorBundle,
   code: SelectorBundle,
@@ -33,13 +33,14 @@ function makeAssertion(
     ref: "r",
     anchor: composeAnchor(doc, [code]),
     enforcement: "suggested",
+    verified: false,
     verifiers: [],
     attrs: {},
     ...overrides,
   };
 }
 
-describe("tree-sitter snapping & two-tier hash (§17.2)", () => {
+describe("tree-sitter snapping and the two-tier hash", () => {
   test("structural hash is invariant under re-indentation", () => {
     const a = "export const MAX_ATTEMPTS = 5;";
     const b = "export   const    MAX_ATTEMPTS   =   5;";
@@ -66,7 +67,7 @@ describe("tree-sitter snapping & two-tier hash (§17.2)", () => {
     expect(fa?.semanticHash).not.toBe(fb?.semanticHash);
   });
 
-  test("a changed numeric literal changes the semantic hash (5 → 50)", () => {
+  test("a changed numeric literal changes the semantic hash (5 to 50)", () => {
     const a = "const MAX = 5;";
     const b = "const MAX = 50;";
     const fa = analyzer.analyze(a, "typescript", region(a, "MAX = 5"));
@@ -75,7 +76,7 @@ describe("tree-sitter snapping & two-tier hash (§17.2)", () => {
   });
 });
 
-describe("value extraction (§17.4)", () => {
+describe("value extraction", () => {
   test("extracts a scalar number", () => {
     const t = "const MAX = 5;";
     expect(analyzer.extractValue(t, "typescript", region(t, "MAX = 5"))).toBe(
@@ -110,11 +111,11 @@ describe("value extraction (§17.4)", () => {
   });
 });
 
-describe("end-to-end value veto: a 5 → 50 change trips even at the boundary (§4, §17.3)", () => {
+describe("end-to-end value check: a 5 to 50 change trips even at the boundary", () => {
   const docText = "The retry budget is five attempts.\n";
   const docSentence = "The retry budget is five attempts.";
 
-  test("value selector catches a boundary insertion the text tier misses", () => {
+  test("the value selector catches a boundary insertion the text tier misses", () => {
     const original = "export const MAX_ATTEMPTS = 5;\n";
     const codeBundle = buildSelectorBundle(
       "src/retry.ts",
@@ -122,7 +123,7 @@ describe("end-to-end value veto: a 5 → 50 change trips even at the boundary (�
       region(original, "MAX_ATTEMPTS = 5"),
       { language: "typescript", analyzer },
     );
-    // The code-side bundle must carry both an ast-node and a value selector.
+    // The code-side bundle carries both an ast-node and a value selector.
     expect(codeBundle.selectors.some((s) => s.kind === "ast-node")).toBe(true);
     const valueSel = codeBundle.selectors.find((s) => s.kind === "value");
     expect(valueSel).toBeDefined();
@@ -137,12 +138,15 @@ describe("end-to-end value veto: a 5 → 50 change trips even at the boundary (�
       { doc: docText, code: new Map([["src/retry.ts", changed]]) },
       { ast: analyzer },
     );
-    // Despite text similarity ~1.0, the value veto forces a `changed` code side.
+    // Text similarity is near 1.0; the value check still grades the code side changed.
     expect(verdict.code).toBe("changed");
-    expect(verdict.notes.join(" ")).toContain("value veto");
+    expect(verdict.notes.join(" ")).toContain("value changed");
+    expect(
+      verdict.evidence.changedEvidence.some((c) => c.kind === "value"),
+    ).toBe(true);
   });
 
-  test("an unchanged file grades code:unchanged with full corroboration", () => {
+  test("an unchanged file grades code:unchanged at similarity 1", () => {
     const original = "export const MAX_ATTEMPTS = 5;\n";
     const codeBundle = buildSelectorBundle(
       "src/retry.ts",
@@ -160,6 +164,30 @@ describe("end-to-end value veto: a 5 → 50 change trips even at the boundary (�
       { ast: analyzer },
     );
     expect(verdict.code).toBe("unchanged");
-    expect(verdict.evidence.confidence).toBeCloseTo(1, 5);
+    expect(verdict.evidence.similarity).toBeCloseTo(1, 5);
+    expect(verdict.evidence.changedEvidence).toEqual([]);
+  });
+
+  test("a restructured node is labelled restructured", () => {
+    const original = "function retry(max: number) { return max; }\n";
+    const codeBundle = buildSelectorBundle(
+      "src/retry.ts",
+      original,
+      region(original, "function retry(max: number)"),
+      { language: "typescript", analyzer },
+    );
+    const assertion = makeAssertion(
+      docBundle(docText, docSentence),
+      codeBundle,
+    );
+    const changed =
+      "function retry(max: number, delay: number) { return max; }\n";
+    const verdict = resolveAssertion(
+      assertion,
+      { doc: docText, code: new Map([["src/retry.ts", changed]]) },
+      { ast: analyzer },
+    );
+    expect(verdict.code).toBe("changed");
+    expect(verdict.notes.join(" ")).toContain("restructured");
   });
 });

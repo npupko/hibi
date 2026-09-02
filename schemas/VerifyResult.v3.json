@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "behavior": {
+      "type": "string",
+      "enum": [
+        "supported",
+        "refuted"
+      ]
+    },
+    "advisories": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Advisory"
+      }
+    },
+    "notes": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "behavior",
+    "advisories",
+    "notes"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "Advisory": {
+      "type": "object",
+      "properties": {
+        "resolver": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "provenance": {
+          "type": "object",
+          "properties": {
+            "model": {
+              "type": "string"
+            },
+            "promptHash": {
+              "type": "string"
+            },
+            "contextHash": {
+              "type": "string"
+            },
+            "params": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "model",
+            "promptHash",
+            "contextHash"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "resolver",
+        "message"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

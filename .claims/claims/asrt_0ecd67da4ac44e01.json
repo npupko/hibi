@@ -1,0 +1,60 @@
+{
+  "id": "asrt_0ecd67da4ac44e01",
+  "propositionId": "prop_05539304004549cd",
+  "documentId": "doc_25887c67cd18d901",
+  "owner": "hibi-dogfood",
+  "ref": "c6bac8d38ea9468d696bf29754ef9ba6e2871b1b",
+  "anchor": {
+    "doc": {
+      "file": "docs/verdicts.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`doc` or `code` is `changed`, `orphaned`, or `ambiguous`;",
+          "prefix": " `enforced` and at least one of these holds:\n\n- ",
+          "suffix": "\n- `expired` is true;\n- `behavior` is `refuted`."
+        },
+        {
+          "kind": "text-position",
+          "start": 3631,
+          "end": 3688
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/core/gating.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "\"changed\",\n  \"orphaned\",\n  \"ambiguous\",",
+            "prefix": "onlySet<AnchorState> = new Set<AnchorState>([\n  ",
+            "suffix": "\n]);\n\nconst WARN_ANCHOR: ReadonlySet<AnchorState"
+          },
+          {
+            "kind": "text-position",
+            "start": 454,
+            "end": 493
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "array",
+            "structuralHash": "ae6b0b83909f44d2",
+            "semanticHash": "a3aca0b3d30a81e6"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "string",
+            "value": "\"changed\""
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verified": true,
+  "verifiers": [],
+  "attrs": {}
+}

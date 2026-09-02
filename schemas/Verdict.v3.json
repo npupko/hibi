@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "assertionId": {
+      "type": "string"
+    },
+    "propositionId": {
+      "type": "string"
+    },
+    "documentId": {
+      "type": "string"
+    },
+    "doc": {
+      "$ref": "#/$defs/AnchorState"
+    },
+    "code": {
+      "$ref": "#/$defs/AnchorState"
+    },
+    "behavior": {
+      "type": "string",
+      "enum": [
+        "supported",
+        "refuted"
+      ]
+    },
+    "expired": {
+      "type": "boolean"
+    },
+    "gates": {
+      "type": "boolean"
+    },
+    "remediation": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "recommended": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "actions": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  },
+                  "command": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "title",
+                  "rationale"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "recommended",
+            "actions"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "docRegion": {
+          "$ref": "#/$defs/Region"
+        },
+        "codeRegions": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Region"
+          }
+        },
+        "similarity": {
+          "type": "number"
+        },
+        "changedEvidence": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "ast",
+                  "value",
+                  "verifier-source"
+                ]
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "kind"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "codeRegions",
+        "changedEvidence"
+      ],
+      "additionalProperties": false
+    },
+    "notes": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "advisories": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Advisory"
+      }
+    }
+  },
+  "required": [
+    "assertionId",
+    "propositionId",
+    "documentId",
+    "doc",
+    "code",
+    "expired",
+    "gates",
+    "remediation",
+    "evidence",
+    "notes",
+    "advisories"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "AnchorState": {
+      "type": "string",
+      "enum": [
+        "unchanged",
+        "moved",
+        "changed",
+        "ambiguous",
+        "orphaned"
+      ]
+    },
+    "Region": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "additionalProperties": false
+    },
+    "Advisory": {
+      "type": "object",
+      "properties": {
+        "resolver": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "provenance": {
+          "type": "object",
+          "properties": {
+            "model": {
+              "type": "string"
+            },
+            "promptHash": {
+              "type": "string"
+            },
+            "contextHash": {
+              "type": "string"
+            },
+            "params": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          },
+          "required": [
+            "model",
+            "promptHash",
+            "contextHash"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "resolver",
+        "message"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

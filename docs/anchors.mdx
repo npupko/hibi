@@ -1,237 +1,98 @@
 ---
-title: "Anchors and Selectors: How Hibi Pins Claims to Code"
+title: "Anchors and Resolution: How Hibi Pins Claims to Code"
 sidebarTitle: "Anchors"
-description: "Hibi records each claim with redundant selectors — text-quote, position, AST node, value — fused into a confidence score to locate the span."
+description: "Each side of a claim stores a text quote with context, a position, and on the code side an AST fingerprint and a literal. Resolution is an ordered cascade with fixed constants."
 icon: "anchor"
 ---
-
-A **claim** is a sentence in a doc that asserts how your code behaves. To check
-whether that sentence is still honest, Hibi has to find two things in your
-current files: the **sentence** (did the prose change?) and the **code** it
-describes (did the behavior move out from under it?). The thing that lets Hibi
-find both, over and over, as the repo churns, is the **anchor**.
-
-An anchor is a pair of pointers, not a copy of anything:
+A claim has two sides. The **doc side** is the documented sentence. The **code side** is one or more spans of code the sentence describes. Each side is a **selector bundle**: one file plus a list of selectors that point at the same span in different ways.
 
 ```
 Anchor = { doc: SelectorBundle, code: SelectorBundle[] }
 ```
 
-The **doc side** is the documented sentence, and it is the source of truth. The
-**code side** is one or more bundles describing the code the sentence is about. A
-claim can point at several places in the code (a function and the constant it
-reads, say), so the code side is a list of bundles; the doc side is always a
-single bundle.
+The store holds the anchor, not a copy of the prose. At check time Hibi re-reads the live span from the file.
 
-<Note>
-  The store holds the anchor, not the prose. The sentence Hibi recorded is kept
-  only as anchoring material and an audit cache. At check time Hibi re-reads the
-  live span from the document and works from that. The documented span is the
-  source of truth, so a doc that has been reworded can't hide behind a
-  stale copy in the store.
-</Note>
+## Selector kinds
 
-## The bidirectional anchor
+| Selector | Side | What it stores |
+|---|---|---|
+| `text-quote` | both | the exact text plus 48 characters of prefix and suffix context |
+| `text-position` | both | the character offsets at record time; a locate bias and the `moved` tiebreaker |
+| `ast-node` | code | the smallest enclosing named tree-sitter node with a structural hash and a semantic hash; used for reason labels |
+| `value` | code | the first literal that lies inside the quoted span, so `5` becoming `50` is caught |
+| `coarse` | code | a file or glob pattern (`--glob`); navigation only, never graded as drift |
 
-Each side of the anchor is a **SelectorBundle**: a single file plus a list of
-**selectors**, each a different way of pointing at the same span. No one selector
-survives every kind of edit, so Hibi records several and weighs how well they
-agree.
-
-```mermaid
-flowchart TD
-  CL["Claim"] --> P["Proposition<br/>timeless meaning"]
-  CL --> AS["Assertion<br/>verification instance"]
-  AS --> AN["Anchor (bidirectional)"]
-  AN --> DOC["doc side<br/>1 SelectorBundle"]
-  AN --> CODE["code side<br/>1+ SelectorBundles"]
-  DOC --> DS["text-quote · text-position<br/>inline-id?"]
-  CODE --> CS["text-quote · text-position<br/>ast-node · value · path/glob?"]
-```
-
-*Each side bundles several redundant selectors. No single selector survives every
-edit; agreement across them sets confidence.*
-
-Two terms in that diagram are worth defining once. A **Proposition** is the
-timeless meaning of the claim ("retries use exponential backoff"), independent of
-where it lives. An **Assertion** is one instance of verifying that proposition in
-a specific doc against specific code; it is the Assertion that carries the anchor.
-One proposition can be asserted from more than one place.
-
-## The six selector kinds
-
-Selectors range from precise-but-brittle to coarse-but-durable. Hibi records the
-ones that apply and fuses them; the durability and the cost differ, which is why
-no single kind is enough.
-
-| Selector | Side | What it pins | Survives | Notes |
-|---|---|---|---|---|
-| `text-quote` | both | the exact text plus a 48-character prefix and suffix | moves, small edits | Matched fuzzily (W3C TextQuoteSelector + Bitap). The base selector on both sides. |
-| `text-position` | both | a line / character range | nothing, really | A cheap hint and a tie-breaker only, never a span's sole identity. |
-| `ast-node` | code | the enclosing named syntax node | relocation, reformatting | A code symbol, snapped via tree-sitter to the smallest enclosing named node. Code side only — the doc side is format-agnostic and carries no structural selector. |
-| `value` | code | an extracted literal value | everything except a value edit | So changing `MAX_ATTEMPTS = 5` to `50` trips the claim even when nothing else moved. Which AST kinds carry a literal is configured per grammar. |
-| `inline-id` | doc (owned docs) | a hidden marker near the paragraph, e.g. `<!-- hibi:claim id=… -->` | edits around it | Optional. It identifies the record; it never restates the claim. If the marker and the prose disagree, the prose wins. |
-| `path` / `glob` | code | a file, directory, or glob | renames within scope | Coarse coverage for navigation and blast-radius only. |
+The `value` selector is stored only when a literal lies inside the quoted span. If the span has no literal, no value selector is stored and no value check runs. Quote the load-bearing token (`MAX_ATTEMPTS = 5`), not the whole line.
 
 <Warning>
-  Coarse anchors (a bare `path` or `glob`) are **never reported as stale**. They
-  exist to answer "which claims touch this area?" and to size the blast radius of a
-  change, not to grade drift. A claim backed only by a coarse anchor cannot gate.
+  A coarse anchor is never reported as drift. It answers "which claims touch this area" and nothing more. A claim whose only code side is coarse cannot gate; record it with `--suggest`.
 </Warning>
 
-## Why redundancy, not one perfect selector
+Tree-sitter grammars (TypeScript, Python, Rust, Go, Java) load lazily, per language present in the anchors being checked. `--no-ast` skips them.
 
-No single signal is robust on its own. Positions drift on every edit above them,
-quoted text breaks the moment someone reformats, and syntax nodes move when code is
-restructured. If Hibi trusted any one of these alone, it would either miss real
-drift or cry wolf on every cosmetic change.
+## The resolution cascade
 
-Recording several selectors per side turns "did this match?" into "how much do my
-selectors agree?" That agreement is what lets Hibi tell a harmless reformat (the
-quote shifted but the syntax node and value are intact) from a meaningful change
-(the value differs, or the node is gone), deterministically, with no model in the
-check loop.
-
-## Confidence fusion
-
-When Hibi localizes a side, each selector that resolves contributes a similarity
-score `s` between 0 and 1, weighted by how trustworthy that kind of selector is.
-The bundle's confidence is the weighted average over the selectors that
-resolved:
-
-```
-C = Σ(wᵢ · sᵢ) / Σ(wᵢ)
-```
-
-The weights:
-
-| Selector | Weight `w` |
-|---|---|
-| `ast-node` | 0.35 |
-| `text-quote` | 0.30 |
-| `value` | 0.20 |
-| `text-position` | 0.15 |
-
-A few rules shape the outcome before the score becomes a state:
-
-<AccordionGroup>
-  <Accordion title="At least two selectors must resolve">
-    Fewer than **two** resolved selectors and the side is `orphaned` at confidence
-    0. A lone surviving selector is not corroboration (it could be a coincidental
-    match), so Hibi refuses to grade on it. One exception: a single **near-exact
-    `text-quote` match (similarity ≥ 0.9)** satisfies the minimum on its own —
-    that is what lets a relocated prose sentence grade `moved` instead of
-    `orphaned`. Quotes shorter than **8 characters** are too common to trust for
-    multi-match detection and are ineligible for `ambiguous`.
-  </Accordion>
-  <Accordion title="Structural-only AST matches score 0.40">
-    If the `ast-node` matches only structurally (same shape after a rename or a
-    whitespace change, not an exact match), it scores `0.40` rather than a full
-    hit. The construct is still there; the text around it shifted.
-  </Accordion>
-  <Accordion title="The value veto">
-    If a `value` selector changed (score 0) **and** the `text-quote` similarity is
-    at least `0.9`, Hibi forces the side to `changed` at confidence `0.3`. The
-    prose still matches, but the literal it cites no longer does: the kind of
-    silent change (`5 → 50`) the value selector exists to catch.
-  </Accordion>
-  <Accordion title="Fuzzy-matching parameters">
-    The `text-quote` selector matches with a Bitap fuzzy search: `Match_Threshold`
-    `0.4`, `Match_Distance` `100000`, with a 48-character context window on each
-    side. These are fixed so the same tree always yields the same match.
-  </Accordion>
-</AccordionGroup>
-
-The confidence `C` is then bucketed into an anchor-resolution state. The bands and
-the move-awareness rule (an otherwise-`unchanged` hit that relocated by more than
-4 characters is downgraded to `moved`) are graded the same way for both sides, and
-the full mechanics live on the verdicts page.
-
-<Card title="Confidence bands & states" icon="scale-balanced" href="/verdicts">
-  How `C` becomes `unchanged` / `moved` / `changed` / `ambiguous` / `orphaned`,
-  and how those roll up into an exit code.
-</Card>
-
-## Doc-first resolution
-
-Hibi resolves the **doc** side first: it finds the sentence in
-the current document and extracts the live claim text. Only then does it localize
-the code side.
-
-The reason is integrity. A claim whose source sentence has been deleted or
-rewritten must not be verified against code as if the sentence still existed.
-That would be checking a span that is no longer there. So if the doc side comes
-back `changed` or `orphaned`, Hibi stops and reports that, rather than grading
-stale prose against the code. The documented span is the source of truth, all the
-way down.
-
-## The record-time quote guard
-
-A doc anchor is only as good as the span it pins, so `record`,
-`record --from-file`, and `reanchor` refuse a doc-side quote that cannot anchor
-reliably — fixing a bad anchor at birth rather than flagging it forever:
-
-- **Too short.** A quote shorter than 8 characters is too common to locate
-  reliably; record a wider span (`--doc-range`) that covers the full sentence.
-- **Ambiguous.** A quote that occurs more than once in the document, where the
-  48-char context still can't single out one occurrence, is refused; widen the
-  span or add an inline ID and re-record.
-
-The exact rejection messages are on the
-[CLI reference](/cli-reference#hibi-record).
-
-## The pure-move exception
-
-Reanchoring a `verified` claim without a `--ref` normally downgrades trust to
-`inferred` — nobody re-attested that the claim is still *true* (see
-[Lifecycle](/lifecycle#reanchoring-is-an-attestation)). One case is exempt: a
-**pure move**. When the re-resolved doc quote is byte-identical to the stored one
-and re-resolves uniquely at similarity 1.0, **and** the code side re-resolves as
-exactly `unchanged`, the claim keeps `verified` trust and records no downgrade. A
-byte-shift is evidence-neutral: there is nothing to re-attest. Anything fuzzier —
-any similarity below 1.0, any code-side state other than `unchanged`, any doc
-text difference — downgrades exactly as before.
-
-## Precision tiers
-
-Selectors live in a stack of tiers, from cheap text matching up to executable
-checks. The first two tiers are what anchors and fusion cover:
+Each side is resolved by an ordered cascade. There is no weighted score.
 
 <Steps>
-  <Step title="Tier 1: text">
-    Fuzzy `text-quote` localization plus normalized text similarity. Format- and
-    language-agnostic; it is what makes Hibi work on any file.
+  <Step title="Locate the quote">
+    Find exact occurrences of the stored quote. If there are several, rank them by how well the stored 48-character prefix and suffix match. If there is no exact occurrence, run a bitap fuzzy match biased toward the stored position. The match is accepted only when its edit distance to the stored quote is within the error budget `min(256, floor(len × 0.4))`, where `len` is the quote length. A candidate over the budget counts as not found.
   </Step>
-  <Step title="Tier 2: structural">
-    The `ast-node` selector, parsed with tree-sitter and snapped to the smallest
-    enclosing named node, plus a two-tier AST hash — code side only. The doc side
-    is format-agnostic: it rests on `text-quote` (48-char context) + `text-position`
-    (+ optional `inline-id`), with no structural selector. Grammars: TypeScript,
-    Python, Rust, Go, and Java.
+  <Step title="Not found: orphaned">
+    A missing file, or no match within the budget, is `orphaned`.
   </Step>
-  <Step title="Tier 3: behavioral">
-    Claims that structural matching can't prove ("retries with backoff", "sorts
-    ascending") need a different mechanism: a change-gate over the claim's evidence
-    set, hashed at record time into an `evidenceBaseline`, plus executable verifiers
-    dispatched only under `check --run-verifiers` — still with no model on the
-    verdict path.
+  <Step title="Several equally good exact matches: ambiguous">
+    When more than one exact occurrence ties on context, the side is `ambiguous`. Quotes shorter than 8 characters are exempt from this check; their candidates are picked by position.
+  </Step>
+  <Step title="Changed">
+    The side is `changed` when any of these holds: normalized text similarity to the stored quote is below 0.9; the semantic AST hash differs; the literal inside the quoted span differs from the stored value; on a prose span, a number in the sentence changed.
+  </Step>
+  <Step title="Unchanged or moved">
+    Otherwise the text is the same. If the located start is within 4 characters of the stored position, the side is `unchanged`; further away, it is `moved`.
   </Step>
 </Steps>
 
-Tiers 1 and 2 detect that the structure moved or changed; they do not judge
-whether documented *behavior* still holds. That is what the behavioral tier is
-for.
+Position is only a bias during locate and the tiebreaker between `unchanged` and `moved`. It never decides `changed`.
+
+## Reason labels
+
+A `changed` side carries a reason in `notes` and in `evidence.changedEvidence`:
+
+| Condition | Label | `changedEvidence.kind` |
+|---|---|---|
+| semantic hash differs, structural hash equal | `identifiers or literals renamed` | `ast` |
+| both hashes differ | `restructured` | `ast` |
+| in-span literal differs | ``value changed (was `5`)`` | `value` |
+| number in a prose sentence differs | `a number in the sentence changed` | `text` |
+| similarity below 0.9 | `text changed (NN% similar)` | `text` |
+
+## The constants
+
+All constants live in `src/algo/params.ts`. There are no hidden weights.
+
+| Constant | Value | Effect |
+|---|---|---|
+| fuzzy error budget | `min(256, floor(len × 0.4))` edits | a candidate over it is `orphaned` |
+| text-quote context | 48 characters each side | ranks exact occurrences |
+| same-text similarity | 0.9 | below it, `changed` |
+| move awareness | 4 characters | beyond it, same text is `moved` |
+| ambiguity minimum quote length | 8 characters | shorter quotes are never `ambiguous` |
+
+## Doc-first resolution
+
+The doc side resolves first. The documented span is the source of truth, and a verifier runs only when the doc side is `unchanged` or `moved` (see [Behavioral claims](/behavioral)). The verdict still reports both sides, so a `doc:changed` verdict also shows what the code did.
+
+## Record-time checks
+
+`record` and `reanchor` refuse a doc quote shorter than 8 characters, a quote that does not occur in its file, and a `--code-file` that does not exist. A doc quote that occurs more than once is refused when the context cannot single out one occurrence, and recorded with a warning when it can; widen the span with `--doc-range` to avoid both.
 
 ## Next
 
 <CardGroup cols={2}>
-  <Card title="Verdicts, states & exit codes" icon="scale-balanced" href="/verdicts">
-    How confidence becomes a two-axis verdict and an exit code.
+  <Card title="Verdicts" icon="scale-balanced" href="/verdicts">
+    How the five states become a verdict, a remediation menu, and an exit code.
   </Card>
   <Card title="Behavioral claims" icon="flask-vial" href="/behavioral">
-    Tier 3: the change-gate and executable verifiers for claims structure can't prove.
-  </Card>
-  <Card title="Status banners" icon="stamp" href="/banners">
-    How a flagged claim becomes a visible warning inside the document itself.
+    Verifiers for sentences that text and AST resolution cannot judge.
   </Card>
 </CardGroup>

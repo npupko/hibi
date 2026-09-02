@@ -2,11 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
-import type {
-  AuthoredTrust,
-  Enforcement,
-  Verifier,
-} from "../src/core/model.ts";
+import type { Enforcement, Verifier } from "../src/core/model.ts";
 import { type CodeTarget, recordClaim } from "../src/engine/record.ts";
 import { ClaimStore } from "../src/store/store.ts";
 
@@ -39,13 +35,11 @@ export async function makeRepo(): Promise<TempRepo> {
 }
 
 /**
- * Record a precise (or coarse) claim against a code file already in the repo.
- *
- * Span-first per the new model (§9/§18-B): the documented sentence (`text`) is
- * anchored in the doc file as the doc-side bundle — the helper ensures the doc
- * actually contains the sentence so the doc side resolves `unchanged`. Default
- * enforcement follows authored trust: `verified` → `enforced` (gating), else
- * `suggested` (advisory) — overridable via `enforcement`.
+ * Record a claim against a code file already in the repo. The documented
+ * sentence (`text`) is anchored in the doc file; the helper appends the
+ * sentence to the doc when it is not already there so the doc side resolves
+ * `unchanged`. Enforcement defaults to `enforced` for a precise code span and
+ * `suggested` for a coarse or glob target; `enforcement` overrides.
  */
 export async function record(
   repo: TempRepo,
@@ -55,18 +49,16 @@ export async function record(
     file: string;
     quote?: string;
     line?: number;
-    trust?: AuthoredTrust;
+    verified?: boolean;
     ttl?: string;
     coarse?: boolean;
     glob?: string;
     enforcement?: Enforcement;
-    behavioral?: boolean;
     verifiers?: Verifier[];
   },
 ) {
   const analyzer = await getAnalyzer();
 
-  // Ensure the doc carries the documented sentence so the doc side resolves.
   let docContent = "";
   try {
     docContent = await repo.read(opts.doc);
@@ -80,25 +72,26 @@ export async function record(
     await repo.write(opts.doc, docContent);
   }
 
-  // Build the code side.
   const codeContents: Record<string, string | null> = {};
   let code: CodeTarget[];
+  let coarse = false;
   if (opts.glob) {
-    code = [{ file: opts.glob, glob: opts.glob }];
+    code = [{ file: opts.glob, coarse: true }];
+    coarse = true;
   } else if (opts.coarse) {
     code = [{ file: opts.file, coarse: true }];
-    codeContents[opts.file] = null;
+    coarse = true;
   } else {
     const content = await repo.read(opts.file);
     codeContents[opts.file] = content;
-    code = [
-      { file: opts.file, region: { quote: opts.quote, line: opts.line } },
-    ];
+    const region =
+      opts.line !== undefined
+        ? { startLine: opts.line, endLine: opts.line }
+        : { quote: opts.quote };
+    code = [{ file: opts.file, region }];
   }
 
-  const trust = opts.trust ?? "inferred";
-  const enforcement =
-    opts.enforcement ?? (trust === "verified" ? "enforced" : "suggested");
+  const enforcement = opts.enforcement ?? (coarse ? "suggested" : "enforced");
 
   return recordClaim(
     repo.store,
@@ -106,13 +99,12 @@ export async function record(
     {
       docPath: opts.doc,
       docSpec: { quote: opts.text },
-      authoredTrust: trust,
+      verified: opts.verified ?? false,
       owner: "tester",
       ref: "testref",
       ttl: opts.ttl,
       code,
       enforcement,
-      behavioral: opts.behavioral,
       verifiers: opts.verifiers,
       analyzer,
     },

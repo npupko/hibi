@@ -1,11 +1,9 @@
 /**
- * Anchor construction at record time (§4, §6). The Anchor is **bidirectional**:
- * a doc-side bundle (the documented sentence) plus one or more code-side bundles
- * (the code it describes). Each bundle *is* the baseline snapshot for its side:
- * it captures the text-quote (exact + prefix/suffix), text-position, and — when
- * a tree-sitter analyzer is supplied — the ast-node two-tier hash and the
- * extracted value, all as seen at record time. An optional `inline-id` marker
- * stabilizes re-anchoring on owned docs (§4/§8) without restating the claim.
+ * Anchor construction at record time. The anchor is bidirectional: a doc-side
+ * bundle (the documented sentence) plus code-side bundles (the code it
+ * describes). Each bundle is the baseline snapshot for its side: text-quote
+ * (exact + prefix/suffix), text-position, and, with an analyzer, the ast-node
+ * fingerprint and the in-span literal value.
  */
 
 import { TEXT_QUOTE_CONTEXT } from "../algo/params.ts";
@@ -16,9 +14,8 @@ import type {
   SelectorBundle,
 } from "../core/model.ts";
 
-/** Record-time tree-sitter seam (implemented by the analyzer in `src/ast`). */
+/** Record-time tree-sitter seam (implemented by `src/ast/analyzer.ts`). */
 export interface AnchorAnalyzer {
-  /** Build the ast-node + value selectors for a region, or {} if unparseable. */
   recordSelectors(
     text: string,
     language: string,
@@ -33,15 +30,13 @@ export interface BuildBundleOptions {
   /** The structural language for the file (e.g. "typescript"); omit for prose. */
   language?: string;
   analyzer?: AnchorAnalyzer;
-  /** Optional owned-doc inline marker id that stabilizes re-anchoring (§4/§8). */
-  inlineId?: string;
 }
 
 /**
- * Build a precise `SelectorBundle` for a region of `content` in `file` — one
- * side of an anchor. Always emits text-quote + text-position; adds ast-node +
- * value when a structural analyzer is supplied (code side or a parseable doc);
- * adds an `inline-id` selector when an owned-doc marker id is given.
+ * Build a precise bundle for a region of `content` in `file`. Always emits
+ * text-quote + text-position; adds ast-node + value when an analyzer and a
+ * language are supplied. Refuses an empty span: an empty quote matches
+ * everywhere and could never fail again.
  */
 export function buildSelectorBundle(
   file: string,
@@ -53,6 +48,11 @@ export function buildSelectorBundle(
   const end = Math.max(start, Math.min(region.end, content.length));
 
   const exact = content.slice(start, end);
+  if (exact.trim().length === 0) {
+    throw new Error(
+      `refusing to anchor an empty span in ${file}; pass a quote or range that covers text`,
+    );
+  }
   const prefix = content.slice(Math.max(0, start - TEXT_QUOTE_CONTEXT), start);
   const suffix = content.slice(
     end,
@@ -74,22 +74,34 @@ export function buildSelectorBundle(
     if (value) selectors.push(value);
   }
 
-  if (opts.inlineId) selectors.push({ kind: "inline-id", id: opts.inlineId });
-
   return { file, selectors };
 }
 
-/** Build a coarse path bundle (code-side; navigational, never reported drift). */
-export function buildPathBundle(file: string): SelectorBundle {
-  return { file, selectors: [{ kind: "path", path: file }] };
+/** Build a coarse bundle for a file or glob pattern (navigational, never drift). */
+export function buildCoarseBundle(pattern: string): SelectorBundle {
+  return { file: pattern, selectors: [{ kind: "coarse", pattern }] };
 }
 
-/** Build a coarse glob bundle (code-side blast-radius). */
-export function buildGlobBundle(glob: string): SelectorBundle {
-  return { file: glob, selectors: [{ kind: "glob", glob }] };
+/** True when every selector in the bundle is coarse. */
+export function isCoarseBundle(bundle: SelectorBundle): boolean {
+  return bundle.selectors.every((s) => s.kind === "coarse");
 }
 
-/** Compose the bidirectional Anchor from a doc-side bundle and code-side bundles. */
+/**
+ * Does a coarse pattern cover `path`? Exact file, a directory ancestor on a
+ * `/` boundary, or a glob match.
+ */
+export function coarseCovers(pattern: string, path: string): boolean {
+  if (pattern === path) return true;
+  const dir = pattern.endsWith("/") ? pattern : `${pattern}/`;
+  if (path.startsWith(dir)) return true;
+  try {
+    return new Bun.Glob(pattern).match(path);
+  } catch {
+    return false;
+  }
+}
+
 export function composeAnchor(
   doc: SelectorBundle,
   code: SelectorBundle[] = [],

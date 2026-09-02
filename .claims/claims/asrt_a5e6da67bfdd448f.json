@@ -1,0 +1,60 @@
+{
+  "id": "asrt_a5e6da67bfdd448f",
+  "propositionId": "prop_ec3d480bf8394e97",
+  "documentId": "doc_88a90eff6155c712",
+  "owner": "hibi-dogfood",
+  "ref": "c6bac8d38ea9468d696bf29754ef9ba6e2871b1b",
+  "anchor": {
+    "doc": {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`--state all|gating|warning|clean|orphaned|suggested|stranded|duplicate`",
+          "prefix": "main\n```\n\n**4. list** prints one row per claim. ",
+          "suffix": ", `--path <p>` (either side), `--ids-only` for s"
+        },
+        {
+          "kind": "text-position",
+          "start": 3637,
+          "end": 3709
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/engine/list.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "\"all\",\n  \"gating\",\n  \"warning\",\n  \"clean\",\n  \"orphaned\",\n  \"suggested\",\n  \"stranded\",\n  \"duplicate\",",
+            "prefix": "ing\" | \"clean\";\n\nexport const LIST_STATES = [\n  ",
+            "suffix": "\n] as const;\nexport type ListState = (typeof LIS"
+          },
+          {
+            "kind": "text-position",
+            "start": 690,
+            "end": 790
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "array",
+            "structuralHash": "508ea38befc6bad4",
+            "semanticHash": "a37a2c2633d07c8b"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "string",
+            "value": "\"all\""
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verified": true,
+  "verifiers": [],
+  "attrs": {}
+}

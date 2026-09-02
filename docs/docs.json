@@ -25,14 +25,7 @@
       },
       {
         "group": "Concepts",
-        "pages": [
-          "concepts",
-          "anchors",
-          "verdicts",
-          "behavioral",
-          "banners",
-          "lifecycle"
-        ]
+        "pages": ["verdicts", "anchors", "behavioral", "banners", "lifecycle"]
       },
       {
         "group": "Why Hibi",

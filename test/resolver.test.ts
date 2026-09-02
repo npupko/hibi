@@ -7,31 +7,31 @@ import { buildSelectorBundle, composeAnchor } from "../src/engine/anchor.ts";
 import { OutOfProcessResolver } from "../src/resolver/client.ts";
 import { loadManifest } from "../src/resolver/manifest.ts";
 import { LineFramer } from "../src/resolver/protocol.ts";
-import { DriftResolver, ResolverRegistry } from "../src/resolver/registry.ts";
+import {
+  BUILTIN_KINDS,
+  DriftResolver,
+  ResolverRegistry,
+} from "../src/resolver/registry.ts";
 
 const ROOT = join(import.meta.dir, "..");
-const ADVISOR = join(ROOT, "resolvers", "semantic-advisor.ts");
+const ECHO = join(ROOT, "test", "fixtures", "echo-resolver.ts");
 
-function advisorProc(timeoutMs = 8000) {
+function echoProc(timeoutMs = 8000) {
   return new OutOfProcessResolver({
-    name: "semantic-advisor",
+    name: "echo",
     command: "bun",
-    args: ["run", ADVISOR],
+    args: ["run", ECHO],
     timeoutMs,
     cwd: ROOT,
   });
 }
 
-// Two-axis model: the proposition carries `textCache` (non-authoritative copy of
-// the documented sentence); the semantic advisor classifies against it.
 const prop = (textCache: string): Proposition => ({
   id: "prop_x",
   textCache,
-  authoredTrust: "inferred",
   fingerprint: "f",
 });
 
-// Bidirectional anchor (doc-side + code-side bundles) + enforcement + verifiers.
 const assertion = (): Assertion => ({
   id: "a",
   propositionId: "prop_x",
@@ -53,11 +53,12 @@ const assertion = (): Assertion => ({
     ],
   ),
   enforcement: "suggested",
+  verified: false,
   verifiers: [],
   attrs: {},
 });
 
-/** ResolveFiles wire helper: a doc string + a code Map (per the new model). */
+/** ResolveFiles helper: a doc string + a code Map. */
 function files(
   doc: string | null,
   code: Record<string, string | null> = {},
@@ -65,7 +66,7 @@ function files(
   return { doc, code: new Map(Object.entries(code)) };
 }
 
-describe("vendored line framing (§7.1)", () => {
+describe("vendored line framing", () => {
   test("reassembles messages split across chunks", () => {
     const f = new LineFramer();
     expect(f.push('{"a":1}\n{"b":')).toEqual(['{"a":1}']);
@@ -77,36 +78,29 @@ describe("vendored line framing (§7.1)", () => {
   });
 });
 
-describe("out-of-process resolver over JSONL-RPC (§7.1)", () => {
+describe("out-of-process resolver over JSONL-RPC", () => {
   test("describe announces kinds, tier, advisory", async () => {
-    const proc = advisorProc();
+    const proc = echoProc();
     const desc = await proc.describe();
     proc.dispose();
     expect(desc).not.toBeNull();
-    expect(desc?.name).toBe("semantic-advisor");
+    expect(desc?.name).toBe("echo");
     expect(desc?.tier).toBe(3);
     expect(desc?.advisory).toBe(true);
-    expect(desc?.kinds).toContain("text-quote");
+    expect(desc?.kinds).toEqual(["text-quote"]);
+    expect(desc?.verifierKinds).toEqual([]);
   });
 
-  test("resolve returns advisories for a behavioral claim, none otherwise", async () => {
-    const proc = advisorProc();
-    const behavioral = await proc.resolve({
+  test("resolve returns the advisory the resolver produces", async () => {
+    const proc = echoProc();
+    const res = await proc.resolve({
       assertion: assertion(),
       files: { doc: null, code: { "x.ts": "code" } },
       proposition: prop("Retries on timeout with exponential backoff"),
     });
-    const structural = await proc.resolve({
-      assertion: assertion(),
-      files: { doc: null, code: { "x.ts": "code" } },
-      proposition: prop("MAX_ATTEMPTS equals 5"),
-    });
     proc.dispose();
-    expect(behavioral?.advisories.length).toBeGreaterThan(0);
-    expect(behavioral?.advisories[0]?.message).toContain(
-      "semantic re-verification",
-    );
-    expect(structural?.advisories.length).toBe(0);
+    expect(res?.advisories).toEqual([{ resolver: "echo", message: "echo" }]);
+    expect(res?.verdict).toBeUndefined();
   });
 
   test("a resolver that never responds is timed out and degrades to null", async () => {
@@ -126,17 +120,14 @@ describe("out-of-process resolver over JSONL-RPC (§7.1)", () => {
     expect(Date.now() - start).toBeLessThan(3000);
   });
 
-  test("verify round-trips: a resolver with no verify handler answers unknown-method → null", async () => {
-    const proc = advisorProc();
+  test("verify round-trips: a resolver with no verify handler answers unknown-method, which degrades to null", async () => {
+    const proc = echoProc();
     const res = await proc.verify({
       assertion: assertion(),
       verifier: { kind: "command", ref: "bun test" },
-      files: { doc: null, code: { "x.ts": "code" } },
       changedEvidence: [],
     });
     proc.dispose();
-    // The semantic advisor declares no verifierKinds and omits verify(); the
-    // server replies with an unknown-method error, which degrades to null.
     expect(res).toBeNull();
   });
 
@@ -153,22 +144,31 @@ describe("out-of-process resolver over JSONL-RPC (§7.1)", () => {
   });
 });
 
-describe("default-deny manifest (§7.1)", () => {
+describe("default-deny manifest", () => {
   test("absent manifest yields no resolvers", async () => {
     const manifest = await loadManifest("/nonexistent-path-xyz");
     expect(manifest.resolvers).toEqual([]);
   });
+
+  test("the built-in kinds are the five selector kinds", () => {
+    expect([...BUILTIN_KINDS]).toEqual([
+      "text-quote",
+      "text-position",
+      "ast-node",
+      "value",
+      "coarse",
+    ]);
+  });
 });
 
-describe("registry: advisory resolvers advise but never gate (§7.4)", () => {
+describe("registry: advisory resolvers advise but never gate", () => {
   test("an unchanged deterministic verdict keeps its state but gains advisories", async () => {
     const analyzer = await getAnalyzer();
     const registry = new ResolverRegistry();
     registry.register(new DriftResolver(analyzer));
-    // Manually register the advisor as an out-of-process resolver.
-    const proc = advisorProc();
+    const proc = echoProc();
     const desc = await proc.describe();
-    if (desc === null) throw new Error("advisor describe() returned null");
+    if (desc === null) throw new Error("echo describe() returned null");
     expect(desc.advisory).toBe(true);
     registry.register({
       name: desc.name,
@@ -185,7 +185,6 @@ describe("registry: advisory resolvers advise but never gate (§7.4)", () => {
       },
     });
 
-    // Code side: anchor the literal; doc side: anchor the documented sentence.
     const code = "export const MAX_ATTEMPTS = 5;\n";
     const cStart = code.indexOf("MAX_ATTEMPTS = 5");
     const codeBundle = buildSelectorBundle(
@@ -209,6 +208,7 @@ describe("registry: advisory resolvers advise but never gate (§7.4)", () => {
       ref: "r",
       anchor: composeAnchor(docBundle, [codeBundle]),
       enforcement: "suggested",
+      verified: false,
       verifiers: [],
       attrs: {},
     };
@@ -222,11 +222,76 @@ describe("registry: advisory resolvers advise but never gate (§7.4)", () => {
     proc.dispose();
     registry.dispose();
 
-    // The advisory did NOT change the deterministic verdict (code stays unchanged).
     expect(verdict.code).toBe("unchanged");
     expect(verdict.doc).toBe("unchanged");
     expect(verdict.gates).toBe(false);
-    expect(verdict.advisories.length).toBeGreaterThan(0);
-    expect(verdict.advisories[0]?.resolver).toBe("semantic-advisor");
+    expect(verdict.behavior).toBeUndefined();
+    expect(verdict.advisories).toEqual([{ resolver: "echo", message: "echo" }]);
+  });
+
+  test("a modelBacked advisory without provenance is dropped", async () => {
+    const registry = new ResolverRegistry();
+    registry.register(new DriftResolver());
+    registry.register({
+      name: "llm",
+      kinds: ["text-quote"],
+      tier: 3,
+      advisory: true,
+      modelBacked: true,
+      resolve: async () => ({
+        advisories: [
+          { resolver: "llm", message: "no provenance" },
+          {
+            resolver: "llm",
+            message: "with provenance",
+            provenance: { model: "m", promptHash: "p", contextHash: "c" },
+          },
+        ],
+      }),
+    });
+    const verdict = await registry.resolve(
+      assertion(),
+      files("foo", { "x.ts": "foo" }),
+    );
+    expect(verdict.advisories.map((x) => x.message)).toEqual([
+      "with provenance",
+    ]);
+  });
+
+  test("verifiers do not run unless runVerifiers is set", async () => {
+    const registry = new ResolverRegistry();
+    registry.register(new DriftResolver());
+    let ran = 0;
+    registry.register({
+      name: "runner",
+      kinds: [],
+      tier: 2,
+      advisory: false,
+      verifierKinds: ["command"],
+      resolve: async () => ({}),
+      verify: async () => {
+        ran += 1;
+        return { behavior: "refuted", advisories: [], notes: [] };
+      },
+    });
+    const a: Assertion = {
+      ...assertion(),
+      enforcement: "enforced",
+      verifiers: [{ kind: "command", ref: "exit 2" }],
+    };
+    const off = await registry.resolve(a, files("foo", { "x.ts": "foo" }));
+    expect(ran).toBe(0);
+    expect(off.behavior).toBeUndefined();
+    expect(off.gates).toBe(false);
+
+    registry.runVerifiers = true;
+    const on = await registry.resolve(a, files("foo", { "x.ts": "foo" }));
+    expect(ran).toBe(1);
+    expect(on.behavior).toBe("refuted");
+    expect(on.gates).toBe(true);
+    expect(on.remediation?.actions.map((x) => x.id)).toEqual([
+      "fix-code",
+      "fix-claim",
+    ]);
   });
 });
