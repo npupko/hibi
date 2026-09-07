@@ -1,6 +1,6 @@
 # hibi-cli: Claude Code plugin
 
-A Claude Code [Agent Skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) that teaches coding agents to use the [hibi](https://github.com/npupko/hibi) CLI ([docs](https://npupko.mintlify.app)): initialize the store, record claims as JSON on stdin, run `check` (with `--doc`, `--since`, `--overview`), `list`, and `coverage`, read the verdicts and exit codes, act on the remediation menu (`reanchor`, `retire`), manage document lifecycle (`supersede`, `archive`), and wire hibi into CI.
+A Claude Code [Agent Skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) that teaches coding agents to use the [hibi](https://github.com/npupko/hibi) CLI ([docs](https://hibi.mintlify.app)): initialize the store, record claims as JSON on stdin, run `check` (with `--doc`, `--since`, `--overview`), `list`, and `coverage`, read the verdicts and exit codes, act on the remediation menu (`reanchor`, `retire`), manage document lifecycle (`supersede`, `archive`), and wire hibi into CI.
 
 ## Install
 

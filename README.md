@@ -7,7 +7,7 @@
 
 <p align="center"><em>Catch documentation that no longer matches your code.</em></p>
 
-<p align="center"><a href="https://npupko.mintlify.app"><strong>Documentation</strong></a></p>
+<p align="center"><a href="https://hibi.mintlify.app"><strong>Documentation</strong></a></p>
 
 <p align="center">
   <a href="https://github.com/npupko/hibi/actions/workflows/ci.yml"><img src="https://github.com/npupko/hibi/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -114,7 +114,7 @@ The built-in drift resolver runs in-process. External resolvers run out-of-proce
 import { serveResolver } from "@npupko/hibi/resolver";
 ```
 
-See the [resolver docs](https://npupko.mintlify.app/resolvers) for the protocol and the `override` flag.
+See the [resolver docs](https://hibi.mintlify.app/resolvers) for the protocol and the `override` flag.
 
 ## Use it with Claude Code
 
