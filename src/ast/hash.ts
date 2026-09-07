@@ -26,15 +26,10 @@ const CONTENT_LITERAL = new Set([
 
 // The US control char (\x1f): a delimiter between serialized nodes so adjacent
 // kinds/tokens cannot concatenate into a colliding stream.
-const SEP = "";
+const SEP = "\u001f";
 
 function xx(s: string): string {
   return Bun.hash.xxHash64(s).toString(16).padStart(16, "0");
-}
-
-/** xxHash64 of a string as 16 hex chars. */
-export function hashContent(content: string): string {
-  return xx(content);
 }
 
 /**

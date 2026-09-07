@@ -3,7 +3,7 @@
   "propositionId": "prop_ba7d4b3bbddf41d9",
   "documentId": "doc_25887c67cd18d901",
   "owner": "hibi-dogfood",
-  "ref": "c6bac8d38ea9468d696bf29754ef9ba6e2871b1b",
+  "ref": "ce2fd982a55dec0d80e48b0f06762adefd7e5bfb",
   "anchor": {
     "doc": {
       "file": "docs/verdicts.mdx",
@@ -33,15 +33,15 @@
           },
           {
             "kind": "text-position",
-            "start": 12260,
-            "end": 12306
+            "start": 12627,
+            "end": 12673
           },
           {
             "kind": "ast-node",
             "language": "typescript",
             "nodeType": "if_statement",
-            "structuralHash": "17d4586292646027",
-            "semanticHash": "2ece3d2492cd8a49"
+            "structuralHash": "bccaa0a62493fb72",
+            "semanticHash": "a278e5457df0d7f8"
           },
           {
             "kind": "value",

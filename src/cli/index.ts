@@ -14,6 +14,7 @@ import pkg from "../../package.json" with { type: "json" };
 import type { Verifier } from "../core/model.ts";
 import { changedFiles, currentRef } from "../git/git.ts";
 import {
+  ClaimStore,
   type CodeTarget,
   Engine,
   type FailOn,
@@ -371,8 +372,12 @@ async function main(argv: string[]): Promise<number> {
     : anchorRoot;
 
   const open = async (): Promise<Engine> => {
-    const engine = await Engine.open(loc, { noAst }).catch(() =>
-      fail("No claim store. Run `hibi init`.", mode),
+    // Only a missing store means "run hibi init"; a version skew, a corrupt
+    // record, or a failed upgrade each carry their own actionable message.
+    const engine = await Engine.open(loc, { noAst }).catch(async (e) =>
+      (await ClaimStore.isInitialized(loc))
+        ? fail((e as Error).message, mode)
+        : fail("No claim store. Run `hibi init`.", mode),
     );
     if (engine.store.upgradedFrom) {
       process.stderr.write(
@@ -459,29 +464,38 @@ async function main(argv: string[]): Promise<number> {
             );
           }
         }
-        // All or nothing: roll back everything this batch wrote if an item fails.
-        const snapshot = async () => ({
-          assertions: new Set(
-            (await engine.store.allAssertions()).map((x) => x.id),
+        // All or nothing: roll back everything this batch wrote if an item
+        // fails. Records are snapshotted whole, not just by id, because
+        // re-recording an existing claim updates it in place.
+        const before = {
+          assertions: new Map(
+            (await engine.store.allAssertions()).map((x) => [x.id, x]),
           ),
-          propositions: new Set(
-            (await engine.store.allPropositions()).map((x) => x.id),
+          propositions: new Map(
+            (await engine.store.allPropositions()).map((x) => [x.id, x]),
           ),
-          documents: new Set(
-            (await engine.store.allDocuments()).map((x) => x.id),
+          documents: new Map(
+            (await engine.store.allDocuments()).map((x) => [x.id, x]),
           ),
-        });
-        const before = await snapshot();
+        };
         const rollback = async () => {
-          for (const x of await engine.store.allAssertions())
-            if (!before.assertions.has(x.id))
+          for (const x of await engine.store.allAssertions()) {
+            const original = before.assertions.get(x.id);
+            if (original === undefined)
               await engine.store.deleteAssertion(x.id);
-          for (const x of await engine.store.allPropositions())
-            if (!before.propositions.has(x.id))
+            else await engine.store.putAssertion(original);
+          }
+          for (const x of await engine.store.allPropositions()) {
+            const original = before.propositions.get(x.id);
+            if (original === undefined)
               await engine.store.deleteProposition(x.id);
-          for (const x of await engine.store.allDocuments())
-            if (!before.documents.has(x.id))
-              await engine.store.deleteDocument(x.id);
+            else await engine.store.putProposition(original);
+          }
+          for (const x of await engine.store.allDocuments()) {
+            const original = before.documents.get(x.id);
+            if (original === undefined) await engine.store.deleteDocument(x.id);
+            else await engine.store.putDocument(original);
+          }
         };
         const results: Record<string, unknown>[] = [];
         for (const [i, call] of calls.entries()) {

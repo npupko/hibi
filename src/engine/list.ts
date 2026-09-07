@@ -54,6 +54,25 @@ export interface ListResult {
   claims: ListRow[];
 }
 
+/**
+ * How many live (non-retired) claims assert each proposition fingerprint. The
+ * single source for both the `duplicate` list state and the overview footer.
+ */
+export function liveFingerprintCounts(
+  assertions: Assertion[],
+  propositions: Proposition[],
+): Map<string, number> {
+  const fpByProp = new Map(propositions.map((p) => [p.id, p.fingerprint]));
+  const counts = new Map<string, number>();
+  for (const a of assertions) {
+    if (a.enforcement === "retired") continue;
+    const fp = fpByProp.get(a.propositionId);
+    if (!fp) continue;
+    counts.set(fp, (counts.get(fp) ?? 0) + 1);
+  }
+  return counts;
+}
+
 function severityOf(
   v: Verdict,
   enforcement: Assertion["enforcement"],
@@ -111,14 +130,7 @@ export function toListRows(
   const propById = new Map(propositions.map((p) => [p.id, p]));
   const docById = new Map(documents.map((d) => [d.id, d]));
 
-  // Fingerprints claimed by more than one live claim.
-  const liveByFingerprint = new Map<string, number>();
-  for (const a of assertions) {
-    if (a.enforcement === "retired") continue;
-    const fp = propById.get(a.propositionId)?.fingerprint;
-    if (!fp) continue;
-    liveByFingerprint.set(fp, (liveByFingerprint.get(fp) ?? 0) + 1);
-  }
+  const liveByFingerprint = liveFingerprintCounts(assertions, propositions);
 
   const rows: ListRow[] = [];
   for (const v of report.verdicts) {

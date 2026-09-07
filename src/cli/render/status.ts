@@ -5,6 +5,7 @@
  */
 
 import { isWarnVerdict } from "../../core/gating.ts";
+import { liveFingerprintCounts } from "../../engine/list.ts";
 import type {
   Assertion,
   CheckReport,
@@ -36,15 +37,9 @@ export function duplicateCount(
   assertions: Assertion[],
   propositions: Proposition[],
 ): number {
-  const fpByProp = new Map(propositions.map((p) => [p.id, p.fingerprint]));
-  const counts = new Map<string, number>();
-  for (const a of assertions) {
-    if (a.enforcement === "retired") continue;
-    const fp = fpByProp.get(a.propositionId);
-    if (!fp) continue;
-    counts.set(fp, (counts.get(fp) ?? 0) + 1);
-  }
-  return [...counts.values()].filter((n) => n > 1).length;
+  return [...liveFingerprintCounts(assertions, propositions).values()].filter(
+    (n) => n > 1,
+  ).length;
 }
 
 export function renderOverview(ctx: OverviewContext): string {

@@ -53,9 +53,16 @@ interface SuspectClaim {
 
 function suspectsFor(
   doc: DocumentReport,
-  verdictsByProp: Map<string, Verdict>,
+  docVerdicts: Verdict[],
   ctx: CheckRenderContext,
 ): SuspectClaim[] {
+  // Propositions are deduplicated across documents by fingerprint, so the
+  // lookup must stay inside this document's own verdicts.
+  const verdictsByProp = new Map<string, Verdict>();
+  for (const v of docVerdicts) {
+    if (!verdictsByProp.has(v.propositionId))
+      verdictsByProp.set(v.propositionId, v);
+  }
   return doc.suspect.map((s) => {
     const verdict = verdictsByProp.get(s.propositionId);
     const assertion = verdict
@@ -210,13 +217,10 @@ export function renderCheck(ctx: CheckRenderContext): string {
   const compact = mode.kind === "compact";
 
   const verdictsByDoc = new Map<string, Verdict[]>();
-  const verdictsByProp = new Map<string, Verdict>();
   for (const v of report.verdicts) {
     const list = verdictsByDoc.get(v.documentId) ?? [];
     list.push(v);
     verdictsByDoc.set(v.documentId, list);
-    if (!verdictsByProp.has(v.propositionId))
-      verdictsByProp.set(v.propositionId, v);
   }
 
   const out: string[] = [];
@@ -234,10 +238,11 @@ export function renderCheck(ctx: CheckRenderContext): string {
   }
 
   const enriched = report.documents.map((doc) => {
-    const total = (verdictsByDoc.get(doc.id) ?? []).filter(
+    const docVerdicts = verdictsByDoc.get(doc.id) ?? [];
+    const total = docVerdicts.filter(
       (v) => ctx.assertionsById.get(v.assertionId)?.enforcement !== "retired",
     ).length;
-    const suspects = suspectsFor(doc, verdictsByProp, ctx);
+    const suspects = suspectsFor(doc, docVerdicts, ctx);
     return { doc, total, suspects };
   });
   enriched.sort(

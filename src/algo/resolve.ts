@@ -329,8 +329,11 @@ export function resolveAssertion(
   const now = opts.now ?? Date.now();
   const sides = resolveSides(assertion, files, opts);
   const code = worstCodeState(sides.code);
-  const primaryCode = sides.code.find((s) => s.state === code) ?? sides.code[0];
-  const primary = primaryCode ?? sides.doc;
+  // The reported similarity describes the side that decided the verdict, so a
+  // `doc:changed` claim never reports an untouched code side's 1.0.
+  const primary = [sides.doc, ...sides.code].reduce((worst, side) =>
+    STATE_RANK[side.state] > STATE_RANK[worst.state] ? side : worst,
+  );
 
   const ttl =
     assertion.ttl !== undefined ? parseTtl(assertion.ttl, now) : undefined;
@@ -368,7 +371,6 @@ export function resolveAssertion(
       doc: sides.doc.state,
       code,
       expired,
-      changedEvidence,
     }),
     evidence: {
       docRegion: sides.doc.region ?? undefined,

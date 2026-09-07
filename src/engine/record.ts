@@ -4,8 +4,11 @@
  * span's text is the claim; the code targets are the spans it describes.
  */
 
-import { regionText } from "../algo/localize.ts";
-import { textSimilarity } from "../algo/normalize.ts";
+import {
+  contextScore,
+  exactOccurrences,
+  regionText,
+} from "../algo/localize.ts";
 import {
   AMBIGUOUS_MIN_QUOTE_LENGTH,
   TEXT_QUOTE_CONTEXT,
@@ -17,6 +20,7 @@ import type {
   Enforcement,
   Proposition,
   Region,
+  Selector,
   SelectorBundle,
   Verifier,
 } from "../core/model.ts";
@@ -181,7 +185,10 @@ export async function recordClaim(
       ...existing,
       anchor: input.code.length > 0 ? anchor : existing.anchor,
       ref: input.ref,
-      enforcement: input.enforcement ?? existing.enforcement,
+      // The same value the precise-code-span guard above validated against, so
+      // re-recording never leaves the claim `suggested`/`retired` behind the
+      // requirements it was just checked under.
+      enforcement,
       verified: input.verified || existing.verified,
       ...(input.verifiers !== undefined && input.verifiers.length > 0
         ? { verifiers: input.verifiers }
@@ -243,39 +250,24 @@ export function validateDocQuote(
     );
   }
 
-  let count = 0;
-  for (
-    let j = docContent.indexOf(quote);
-    j !== -1;
-    j = docContent.indexOf(quote, j + quote.length)
-  ) {
-    count += 1;
-  }
+  const hits = exactOccurrences(docContent, quote);
+  const count = hits.length;
   if (count <= 1) return [];
 
-  const storedPrefix = docContent.slice(
-    Math.max(0, region.start - TEXT_QUOTE_CONTEXT),
-    region.start,
+  // Score every occurrence exactly the way `localizeTextQuote` will at check
+  // time, so a quote that records clean also resolves to this same occurrence.
+  const stored: Extract<Selector, { kind: "text-quote" }> = {
+    kind: "text-quote",
+    exact: quote,
+    prefix: docContent.slice(
+      Math.max(0, region.start - TEXT_QUOTE_CONTEXT),
+      region.start,
+    ),
+    suffix: docContent.slice(region.end, region.end + TEXT_QUOTE_CONTEXT),
+  };
+  const scores = hits.map((at) =>
+    contextScore(docContent, at, quote.length, stored),
   );
-  const storedSuffix = docContent.slice(
-    region.end,
-    region.end + TEXT_QUOTE_CONTEXT,
-  );
-  const scores: number[] = [];
-  for (
-    let j = docContent.indexOf(quote);
-    j !== -1;
-    j = docContent.indexOf(quote, j + quote.length)
-  ) {
-    const pre = docContent.slice(Math.max(0, j - TEXT_QUOTE_CONTEXT), j);
-    const suf = docContent.slice(
-      j + quote.length,
-      j + quote.length + TEXT_QUOTE_CONTEXT,
-    );
-    scores.push(
-      textSimilarity(pre, storedPrefix) + textSimilarity(suf, storedSuffix),
-    );
-  }
   scores.sort((a, b) => b - a);
   const best = scores[0] ?? 0;
   const second = scores[1] ?? 0;

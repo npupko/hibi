@@ -10,7 +10,6 @@
 import type {
   AnchorState,
   BehaviorState,
-  ChangedEvidence,
   Remediation,
   RemediationAction,
   Verdict,
@@ -22,7 +21,6 @@ export interface RemediationInput {
   code: AnchorState;
   behavior?: BehaviorState;
   expired: boolean;
-  changedEvidence?: ChangedEvidence[];
 }
 
 const reanchorCmd = (id: string): string => `hibi reanchor ${id}`;
@@ -204,6 +202,5 @@ export function remediationForVerdict(verdict: Verdict): Remediation | null {
     code: verdict.code,
     behavior: verdict.behavior,
     expired: verdict.expired,
-    changedEvidence: verdict.evidence.changedEvidence,
   });
 }

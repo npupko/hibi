@@ -3,7 +3,7 @@
   "propositionId": "prop_ec3d480bf8394e97",
   "documentId": "doc_88a90eff6155c712",
   "owner": "hibi-dogfood",
-  "ref": "c6bac8d38ea9468d696bf29754ef9ba6e2871b1b",
+  "ref": "ce2fd982a55dec0d80e48b0f06762adefd7e5bfb",
   "anchor": {
     "doc": {
       "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
@@ -40,8 +40,8 @@
             "kind": "ast-node",
             "language": "typescript",
             "nodeType": "array",
-            "structuralHash": "508ea38befc6bad4",
-            "semanticHash": "a37a2c2633d07c8b"
+            "structuralHash": "57f5ebf3fbcf8df8",
+            "semanticHash": "8815d2002bd765c8"
           },
           {
             "kind": "value",

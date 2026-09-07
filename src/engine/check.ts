@@ -25,7 +25,10 @@ import {
   removeBanner,
   stampBanner,
 } from "../banner/banner.ts";
-import { setFrontmatterStatus } from "../banner/frontmatter.ts";
+import {
+  getFrontmatterStatus,
+  setFrontmatterStatus,
+} from "../banner/frontmatter.ts";
 import { isWarnVerdict } from "../core/gating.ts";
 import type {
   AnchorState,
@@ -180,7 +183,10 @@ export function stripEngineOwned(
   path: string,
   nonce: string,
 ): string {
-  return setFrontmatterStatus(removeBanner(raw, path, nonce).content, null);
+  const content = removeBanner(raw, path, nonce).content;
+  return getFrontmatterStatus(content) === undefined
+    ? content
+    : setFrontmatterStatus(content, null);
 }
 
 export async function runCheck(
@@ -350,8 +356,13 @@ export async function runCheck(
           report.bannerAction = res.action;
           content = res.content;
         }
-        // Clear a legacy `hibi-status:` frontmatter line written by older versions.
-        content = setFrontmatterStatus(content, null);
+        // Clear a legacy `hibi-status:` frontmatter line written by older
+        // versions. Only when one is present: the rewriter re-emits the fences
+        // with `\n`, so running it unconditionally rewrites every CRLF
+        // document on every check.
+        if (getFrontmatterStatus(content) !== undefined) {
+          content = setFrontmatterStatus(content, null);
+        }
         if (content !== original) await writeFile(abs, content);
       }
     }
