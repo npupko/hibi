@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0](https://github.com/npupko/hibi/compare/v0.5.0...v0.6.0) (2026-09-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* simplify hibi into an agent-first CLI (ADR-004) ([#53](https://github.com/npupko/hibi/issues/53))
+
+### Features
+
+* simplify hibi into an agent-first CLI (ADR-004) ([#53](https://github.com/npupko/hibi/issues/53)) ([904876e](https://github.com/npupko/hibi/commit/904876e1b75a7b6b4d5e97dd19b5ce0981daf945))
+
+
+### Bug Fixes
+
+* correctness hardening across resolve, check, record, and reanchor ([#48](https://github.com/npupko/hibi/issues/48)) ([c6bac8d](https://github.com/npupko/hibi/commit/c6bac8d38ea9468d696bf29754ef9ba6e2871b1b))
+
 ## [0.5.0](https://github.com/npupko/hibi/compare/v0.4.0...v0.5.0) (2026-07-14)
 
 
