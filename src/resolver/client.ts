@@ -119,8 +119,8 @@ export class OutOfProcessResolver {
     const raw = await this.rpc("verify", params);
     if (raw === null) return null;
     const parsed = VerifyResult.safeParse(raw);
-    // Degrade to null on timeout/crash/malformed; the caller treats a null
-    // result as a non-gating `unverified` BehaviorState (§7.4).
+    // Degrade to null on timeout/crash/malformed; the caller skips a null
+    // result, so it contributes no `behavior` and cannot gate.
     return parsed.success ? parsed.data : null;
   }
 
