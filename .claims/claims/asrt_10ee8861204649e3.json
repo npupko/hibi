@@ -1,0 +1,60 @@
+{
+  "id": "asrt_10ee8861204649e3",
+  "propositionId": "prop_bc883c0264474e1e",
+  "documentId": "doc_84263e2579006d07",
+  "owner": "hibi-dogfood",
+  "ref": "ce2fd982a55dec0d80e48b0f06762adefd7e5bfb",
+  "anchor": {
+    "doc": {
+      "file": "docs/anchors.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Quotes shorter than 8 characters are exempt from this check",
+          "prefix": "rence ties on context, the side is `ambiguous`. ",
+          "suffix": "; their candidates are picked by position.\n  </S"
+        },
+        {
+          "kind": "text-position",
+          "start": 2780,
+          "end": 2839
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/algo/params.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "AMBIGUOUS_MIN_QUOTE_LENGTH = 8",
+            "prefix": "re picked by position instead.\n */\nexport const ",
+            "suffix": ";\n"
+          },
+          {
+            "kind": "text-position",
+            "start": 1702,
+            "end": 1732
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "variable_declarator",
+            "structuralHash": "de0dbd0a8e84411f",
+            "semanticHash": "9820350616af141e"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "number",
+            "value": "8"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verified": true,
+  "verifiers": [],
+  "attrs": {}
+}

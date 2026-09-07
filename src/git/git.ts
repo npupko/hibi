@@ -1,7 +1,6 @@
 /**
- * Advisory git access (§6, D8). git is used ONLY for advisory work — scoping the
- * write-time loop (`diff --name-only`) and attribution (blame) — never to compute
- * a verdict. `check` is fully offline and correct under shallow CI clones.
+ * Advisory git access. git is used only to scope `check --since` and to fill
+ * the recorded ref, never to compute a verdict. `check` is fully offline.
  */
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -16,7 +15,7 @@ async function git(args: string[], cwd: string): Promise<string | null> {
     });
     return stdout;
   } catch {
-    return null; // advisory — never throw onto the verdict path
+    return null;
   }
 }
 
@@ -26,24 +25,33 @@ export async function repoRoot(cwd: string): Promise<string> {
   return out ? out.trim() : cwd;
 }
 
-/** The current HEAD ref, or "WORKTREE" outside a repo (advisory attribution). */
+/** The current HEAD ref, or "WORKTREE" outside a repo. */
 export async function currentRef(cwd: string): Promise<string> {
   const out = await git(["rev-parse", "HEAD"], cwd);
   return out ? out.trim() : "WORKTREE";
 }
 
+/** Whether `ref` names a commit git can resolve. */
+export async function refExists(ref: string, cwd: string): Promise<boolean> {
+  const out = await git(
+    ["rev-parse", "--verify", "--quiet", `${ref}^{commit}`],
+    cwd,
+  );
+  return out !== null && out.trim().length > 0;
+}
+
 /**
  * Files changed between `ref` and the working tree (HEAD diff + unstaged +
- * untracked). Scopes the write-time loop (§6); purely advisory.
+ * untracked), relative to `cwd`. Throws when `ref` does not resolve.
  */
 export async function changedFiles(
   ref: string,
   cwd: string,
 ): Promise<string[]> {
+  if (!(await refExists(ref, cwd))) {
+    throw new Error(`unknown git ref: ${ref}`);
+  }
   const set = new Set<string>();
-  // `git diff` emits paths from the repo top-level unless `--relative`, while
-  // claims store anchor-root-relative ones — so a store below the git root
-  // (monorepo) would never match. `ls-files` is already cwd-relative.
   for (const args of [
     ["diff", "--name-only", "--relative", ref],
     ["diff", "--name-only", "--relative", "--cached"],
@@ -54,20 +62,4 @@ export async function changedFiles(
       for (const line of out.split("\n")) if (line.trim()) set.add(line.trim());
   }
   return [...set];
-}
-
-/** Blame attribution for a line (advisory only). */
-export async function blameAuthor(
-  file: string,
-  line: number,
-  cwd: string,
-): Promise<string | null> {
-  const out = await git(
-    ["blame", "-L", `${line},${line}`, "--porcelain", file],
-    cwd,
-  );
-  if (!out) return null;
-  const m = out.match(/^author (.+)$/m);
-  const author = m?.[1];
-  return author !== undefined ? author.trim() : null;
 }

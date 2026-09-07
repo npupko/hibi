@@ -7,7 +7,7 @@
 
 <p align="center"><em>Catch documentation that no longer matches your code.</em></p>
 
-<p align="center"><a href="https://npupko.mintlify.app"><strong>Documentation</strong></a></p>
+<p align="center"><a href="https://hibi.mintlify.app"><strong>Documentation</strong></a></p>
 
 <p align="center">
   <a href="https://github.com/npupko/hibi/actions/workflows/ci.yml"><img src="https://github.com/npupko/hibi/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
@@ -18,9 +18,9 @@
   -->
 </p>
 
-Hibi tracks **claims**: sentences in your docs and AI-agent instructions that assert how the code behaves. You anchor each claim to the code it describes. When that code changes, `hibi check` flags the claim and can stamp a status banner into the doc, so no reader and no agent acts on a page that has fallen out of sync with the source.
+Hibi tracks **claims**: a sentence in a doc or an AI-agent instruction file, anchored to the code it describes. When either side changes, `hibi check` flags the claim and can stamp a status banner into the doc, so a reader without hibi still sees the flag.
 
-Run it in CI, in a git hook, or as a pre-edit lookup an agent makes before it trusts a doc.
+Run it in CI, in a git hook, or as the check an agent makes before it trusts a doc.
 
 ## Install
 
@@ -29,7 +29,8 @@ Run it in CI, in a git hook, or as a pre-edit lookup an agent makes before it tr
 curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | sh
 
 # Or, in a Bun/JS project
-bun add @npupko/hibi
+bun add @npupko/hibi        # then: bunx hibi …
+bunx @npupko/hibi --help    # or run it once without installing
 ```
 
 ## Quick start
@@ -37,98 +38,94 @@ bun add @npupko/hibi
 ```sh
 hibi init                       # create .claims/ (with a per-repo banner nonce)
 
-# Record a claim: anchor the doc sentence to the constant that backs it (span-first)
+# Record a claim: anchor the doc sentence to the constant that backs it
 hibi record \
   --doc README.md --doc-quote "Retries are capped at 5 attempts" \
-  --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" --trust verified --owner alice
+  --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" --verified --owner alice
 
-hibi record --from-file claims.json  # batch-author many claims (a JSON array; - = stdin)
+# Agents record in batches: a JSON array on stdin, keys mirror the flags in camelCase
+echo '[{"doc":"README.md","docQuote":"Retries are capped at 5 attempts",
+        "codeFile":"src/retry.ts","codeQuote":"MAX_ATTEMPTS = 5","verified":true}]' \
+  | hibi record --from-file -
 
 hibi check                      # verify every claim
-hibi check --write              # verify, and stamp status banners into affected docs
-hibi diff --since origin/main   # what did this change invalidate?
-hibi query --path src/retry.ts  # before editing: which claims cover this file?
-hibi coverage --doc README.md   # which blocks of a doc are backed by a claim vs uncovered?
-hibi reanchor <claim-id> --doc-quote "…" --code-file src/retry.ts  # re-resolve a claim
-hibi reanchor <claim-id> --doc docs/retry.md --doc-quote "…"  # relocate it to another file
-hibi relocate --from v1.md --to v2.md  # batch-move every live claim from one doc to another
-hibi supersede --new v2.md --old v1.md --type supersedes
-hibi doctor                     # store-health report (orphans, stale, duplicates; always exits 0)
-hibi status                     # repo-wide document health overview
-hibi status --doc README.md     # is this one doc still current?
+hibi check --write              # verify, and stamp status banners into suspect docs
+hibi check --doc CLAUDE.md      # is this one doc still current?
+hibi check --since origin/main  # what did this change invalidate?
+hibi check --overview           # per-document table
+hibi list --path src/retry.ts   # before editing: which claims depend on this file?
+hibi list --state gating        # one row per gating claim
+hibi coverage --doc README.md   # which sentences have no claim?
+hibi reanchor <claim-id>        # re-resolve a claim and store the new baseline
+hibi reanchor <claim-id> --suggest   # candidate locations for a lost span
+hibi retire <claim-id>          # withdraw a claim
+hibi supersede --from v1.md --to v2.md   # replace a doc and relocate its claims
+hibi archive --doc old.md --successor new.md
 ```
 
-**Output is TTY-aware.** Run hibi in a terminal and you get a rich, grouped-by-document
-report with color and symbols; pipe or redirect it (or run it in CI) and you get compact
-JSON — so the machine contract is unchanged. Override with the flag vocabulary:
+Twelve commands: `init`, `record`, `check`, `list`, `coverage`, `reanchor`, `retire`, `supersede`, `archive`, `schema`, `completions`, `version`. `hibi <cmd> --help` prints that command's options.
+
+**Output is TTY-aware.** In a terminal you get a human-readable report; piped or in CI you get JSON.
 
 | flag | output |
 |------|--------|
-| _(default)_ | rich human view on a TTY, compact JSON when piped/redirected/CI |
-| `--json` | force compact JSON (the machine contract; what agents read) |
-| `--json --pretty` | indented JSON |
-| `--pretty` | force the rich human view, even when piped |
-| `--compact` | one line per claim (human) |
+| `--format human\|compact\|json\|json-pretty` | pick the shape (default: `human` on a TTY, `json` when piped) |
+| `--json` | alias for `--format json` |
+| `--explain` | add the evidence tail to each verdict |
+| `--no-hints` | drop the remediation menu (also `HIBI_ADVICE=0`) |
 | `--color auto\|always\|never` | color control (also honors `NO_COLOR` / `FORCE_COLOR`) |
-| `--simple` | ASCII symbols instead of unicode |
 
-`hibi completions <zsh\|bash\|fish>` prints a shell completion script.
+`HIBI_ASCII=1` switches to ASCII symbols. `hibi completions <zsh\|bash\|fish>` prints a shell completion script.
 
 ### Exit codes
 
 | code | meaning |
 |------|---------|
-| `0`  | all clean |
+| `0`  | clean, or only `moved` warnings |
 | `2`  | gating: `changed` / `orphaned` / `ambiguous` / `expired` / `refuted` on an enforced claim |
-| `3`  | warning: `moved` or `at-risk` (re-anchorable / advisory) |
 | `1`  | operational error |
 
-Tune strictness with `--fail-on gating|warn|tamper|never`.
+Tune strictness with `--fail-on gating|warn|never`. New claims are enforced by default; `record --suggest` makes one advisory.
 
 ## How it works
 
-Each claim carries a **bidirectional anchor**: a doc-side bundle (the documented sentence) and one or more code-side bundles (the code it describes). Each side bundles several redundant selectors against one file:
+Each claim has a doc side (the documented sentence) and one or more code sides. Each side stores several selectors against one file:
 
-- the quoted text, matched fuzzily so it survives small edits and moves;
-- its byte position, as a cheap hint;
-- the enclosing syntax node, parsed with tree-sitter, so reformatting alone does not trip it;
-- any literal value it mentions, so changing `MAX_ATTEMPTS = 5` to `50` flags the claim even when nothing else moves;
-- an optional `path` or `glob` for coarse coverage, used to size blast radius.
+- the quoted text with 48 characters of context, located exactly or by a fuzzy match within a fixed error budget;
+- its character position, as a locate bias and the `moved` tiebreaker;
+- on the code side, the enclosing tree-sitter node with a two-tier hash, used for reason labels;
+- on the code side, the literal inside the quoted span, so changing `MAX_ATTEMPTS = 5` to `50` flags the claim;
+- an optional `--glob` for coarse coverage, used for navigation only.
 
-On `hibi check`, Hibi re-finds each side in your current files and grades the result on two independent axes: **anchor resolution** per side (`unchanged` · `moved` · `changed` · `ambiguous` · `orphaned`), and, on behavioral claims, a **behavioral belief** (`unverified` · `at-risk` · `supported` · `refuted`). A verdict reads e.g. `doc:unchanged · code:changed · behavior:at-risk`. When the selectors agree, you get a confident verdict; when they disagree, Hibi asks you to re-verify instead of guessing. Verdicts are computed live and kept out of the store.
+On `hibi check`, each side resolves through an ordered cascade to one of five states: `unchanged`, `moved`, `changed`, `ambiguous`, `orphaned`. A claim with a `--verifier` also gets a `behavior` of `supported` or `refuted` under `check --run-verifiers`. Every suspect verdict carries a remediation menu with the next command filled in. Verdicts are computed live and never stored.
 
 ## What you can rely on
 
-- **Deterministic.** No model runs in the check loop, so the same working tree yields the same verdicts every time. The optional semantic resolver advises and nothing more.
-- **A flag means re-verify.** Hibi reports that the evidence under a claim moved. It never declares a doc wrong on its own.
-- **Any file format.** Hibi treats docs as text, so Markdown, plain text, AsciiDoc, or anything else works without a per-format parser.
-- **Offline and shallow-clone safe.** The anchor is its own baseline, so `check` reads your files, never git history.
+- **Deterministic.** No model runs in the check loop. The same working tree yields the same verdicts.
+- **A flag means re-verify.** Hibi reports that the text or code under a claim moved. It never declares a doc wrong on its own.
+- **Any file format.** Docs are text, so Markdown, plain text, AsciiDoc, and instruction files work without a per-format parser.
+- **Offline and shallow-clone safe.** The anchor is its own baseline, so `check` reads your files, not git history.
 
 ## Extend it
 
-Hibi finds drift through an out-of-process resolver protocol (JSONL-RPC over stdio). The built-in code-anchor resolver speaks the same contract, so you can add your own in any language. SDKs ship for [TypeScript](sdk/ts) and [Rust](sdk/rust). Resolvers stay off until you list them in `.claims/resolvers.json`:
+The built-in drift resolver runs in-process. External resolvers run out-of-process over JSONL-RPC on stdio and can grade new anchor kinds, run verifiers, or attach advisories. They stay off until listed in `.claims/resolvers.json`. Write one in TypeScript with the SDK export:
 
-```jsonc
-// .claims/resolvers.json: opt in to the optional semantic advisor (it advises, it does not gate)
-{ "resolvers": [
-    { "name": "semantic-advisor", "command": "bun", "args": ["run", "resolvers/semantic-advisor.ts"] }
-] }
+```ts
+import { serveResolver } from "@npupko/hibi/resolver";
 ```
+
+See the [resolver docs](https://hibi.mintlify.app/resolvers) for the protocol and the `override` flag.
 
 ## Use it with Claude Code
 
-Hibi ships a [Claude Code](https://claude.com/claude-code) skill that teaches coding
-agents to use it: set up the store in a fresh repo, record well-anchored claims, run
-the check/diff/query loops, respond to flagged claims, and wire CI. The repo doubles
-as a plugin marketplace, so installing takes two commands:
+Hibi ships a [Claude Code](https://claude.com/claude-code) skill that teaches coding agents to record claims, run `check`, and act on the remediation menu. The repo doubles as a plugin marketplace:
 
 ```
 /plugin marketplace add npupko/hibi
 /plugin install hibi-cli@hibi
 ```
 
-Claude loads the skill when you ask it to work with hibi. You can also invoke it as
-`/hibi-cli:hibi`. The source lives in [`plugins/hibi-cli`](plugins/hibi-cli).
+Claude loads the skill when you ask it to work with hibi. You can also invoke it as `/hibi-cli:hibi`. The source lives in [`plugins/hibi-cli`](plugins/hibi-cli).
 
 ## Develop
 
@@ -139,7 +136,7 @@ bun test                    # the full suite
 bun run build               # single-file executable at dist/hibi
 ```
 
-The data model lives once in Zod (`src/core/model.ts`). The JSON Schemas (`schemas/*.v1.json`) and SDK types come from it via `bun run build:schemas`.
+The data model lives once in Zod (`src/core/model.ts`). The JSON Schemas (`schemas/*.v3.json`) come from it via `bun run build:schemas`. The CLI reference in `docs/` and `plugins/` is generated from the option tables via `bun run build:cli-reference`.
 
 ## Contributing
 
@@ -151,4 +148,4 @@ Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for
 
 ---
 
-For the data model, verdict algorithm, and design rationale, read [`docs/PRD.md`](docs/PRD.md).
+For the original design rationale, read [`design/PRD-historical.md`](design/PRD-historical.md). The current simplification decisions are in [`design/ADR-004-simplification.md`](design/ADR-004-simplification.md).

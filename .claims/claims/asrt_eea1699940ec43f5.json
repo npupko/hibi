@@ -53,26 +53,13 @@
       }
     ]
   },
-  "enforcement": "enforced",
-  "behavioral": true,
+  "enforcement": "retired",
+  "verified": true,
   "verifiers": [
     {
       "kind": "command",
-      "ref": "bun test test/behavioral-gate.test.ts",
-      "proves": "the gate fires on evidence drift while the anchored span is untouched"
+      "ref": "bun test test/behavioral-gate.test.ts"
     }
   ],
-  "evidenceBaseline": {
-    "src/algo/resolve.ts": "699080e95a6dcb06",
-    "src/ast/hash.ts": "c0ae703267147937",
-    "src/core/gating.ts": "601373bfdac2a51c",
-    "src/core/model.ts": "f80717f03fbdf563",
-    "src/core/remediation.ts": "b2b1897eda36f3f3",
-    "src/algo/behavioral.ts": "0baf44b4ac816142",
-    "src/algo/fusion.ts": "5bed361b80ad6464",
-    "src/algo/localize.ts": "361d6068eacd23b9",
-    "src/algo/normalize.ts": "4f881ae938f0b984",
-    "src/algo/params.ts": "0d89fd4e0b15a2c7"
-  },
   "attrs": {}
 }

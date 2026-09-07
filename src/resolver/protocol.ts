@@ -1,10 +1,7 @@
 /**
- * The resolver wire protocol (§7.1): JSONL-RPC over stdio. Defined once in Zod so
- * the protocol JSON Schema and the per-language SDKs are generated from it. The
- * line-framing and dispatch are vendored and owned (§16) — trivial and on the
- * isolation boundary.
- *
- * Framing: one JSON object per line (`\n`-delimited) in each direction.
+ * The resolver wire protocol: JSONL-RPC over stdio. Defined once in Zod so the
+ * protocol JSON Schema is generated from it. One JSON object per line in each
+ * direction.
  */
 import * as z from "zod";
 import {
@@ -23,37 +20,27 @@ export const PROTOCOL_VERSION = "1" as const;
 export const DescribeResult = z.object({
   name: z.string(),
   version: z.string(),
-  /** Anchor `kind`s this resolver declares (§7.2). */
   kinds: z.array(z.string()),
-  /** Verifier `kind`s this resolver runs for behavioral verification (§7/§17.6). */
+  /** Verifier kinds this resolver runs. */
   verifierKinds: z.array(z.string()).default([]),
-  /** Precision tier; 3 = quarantined advisory (advises, never gates — §7.4). */
+  /** Precision tier; 3 is the advisory tier. */
   tier: z.number().int().default(1),
-  /** Advisory resolvers return advisories only; they never gate a verdict. */
+  /** Advisory resolvers return advisories only; they never gate. */
   advisory: z.boolean().default(false),
 });
 export type DescribeResult = z.infer<typeof DescribeResult>;
 
-/**
- * resolve params — the engine reads the files; the resolver stays pure/isolated.
- * Both sides of the bidirectional anchor (§4) travel on the wire: the doc-side
- * file plus a map of code-side files (each nullable when absent).
- */
+/** resolve params: the engine reads the files; the resolver stays pure. */
 export const ResolveParams = z.object({
   assertion: Assertion,
-  /** Current contents of the anchored files; null where the file is absent. */
   files: z.object({
-    /** The doc-side file content, or null if it is absent. */
     doc: z.string().nullable(),
-    /** Code-side file contents keyed by path; null where a file is absent. */
     code: z.record(z.string(), z.string().nullable()),
   }),
-  /** The proposition this assertion verifies (for semantic/behavioral advisors). */
   proposition: Proposition.optional(),
 });
 export type ResolveParams = z.infer<typeof ResolveParams>;
 
-/** resolve result — a gating verdict (deterministic) and/or non-gating advisories. */
 export const ResolveResult = z.object({
   verdict: Verdict.optional(),
   advisories: z.array(Advisory).default([]),
@@ -61,31 +48,16 @@ export const ResolveResult = z.object({
 export type ResolveResult = z.infer<typeof ResolveResult>;
 
 /**
- * verify params — run one executable-evidence link (§5/§17.6) against the current
- * files to upgrade behavioral belief. Dispatched only after the doc side resolves
- * (doc-first guard, §7); `changedEvidence` carries the reachable evidence that
- * already moved so a runner can scope its work.
+ * verify params: run one verifier. A runner reads its own files; the engine
+ * sends only the assertion, the verifier, and the evidence that changed.
  */
 export const VerifyParams = z.object({
   assertion: Assertion,
   verifier: Verifier,
-  /** Current file contents, same shape as resolve; optional for a runner that reads its own. */
-  files: z
-    .object({
-      doc: z.string().nullable(),
-      code: z.record(z.string(), z.string().nullable()),
-    })
-    .optional(),
-  /** Reachable evidence that changed since the last verification (§17.6). */
   changedEvidence: z.array(ChangedEvidence).default([]),
 });
 export type VerifyParams = z.infer<typeof VerifyParams>;
 
-/**
- * verify result — the behavioral belief the runner reached (§17.6). `refuted` may
- * gate an enforced claim; `supported` clears it; otherwise the deterministic
- * baseline is kept by the registry.
- */
 export const VerifyResult = z.object({
   behavior: BehaviorState,
   advisories: z.array(Advisory).default([]),
@@ -121,17 +93,13 @@ export const PROTOCOL_SCHEMAS = {
   RpcResponse,
 } as const;
 
-// ── Vendored line-framing ────────────────────────────────────────────────────
+// ── Line framing ─────────────────────────────────────────────────────────────
 
-/** Encode a message as a single JSONL line. */
 export function encodeLine(msg: unknown): string {
   return `${JSON.stringify(msg)}\n`;
 }
 
-/**
- * A streaming line splitter: feed it chunks, get back complete lines. Holds a
- * partial trailing line until the next chunk completes it.
- */
+/** A streaming line splitter: feed it chunks, get back complete lines. */
 export class LineFramer {
   private buf = "";
   push(chunk: string): string[] {

@@ -1,14 +1,13 @@
 /**
- * Structural snapping & the two-tier AST fingerprint (§17.1 snap, §17.2 hash).
- * Operates on tree-sitter nodes; deterministic and language-universal except for
- * the value-extraction map (§17.4).
+ * Structural snapping and the two-tier AST fingerprint. Operates on tree-sitter
+ * nodes; deterministic and language-universal except for the value map.
  */
 import type { Node } from "web-tree-sitter";
 import { collapseWhitespace } from "../algo/normalize.ts";
 import type { Region } from "../core/model.ts";
 import { valueClass } from "./value-map.ts";
 
-/** Content-literal kinds (§17.2, verbatim) — some grammars hide a literal body. */
+/** Content-literal kinds: some grammars hide a literal body. */
 const CONTENT_LITERAL = new Set([
   "string",
   "string_literal",
@@ -25,27 +24,17 @@ const CONTENT_LITERAL = new Set([
   "imaginary_literal",
 ]);
 
-const SEP = "";
+// The US control char (\x1f): a delimiter between serialized nodes so adjacent
+// kinds/tokens cannot concatenate into a colliding stream.
+const SEP = "\u001f";
 
-// SEP (above) is the US control char (\x1f): a delimiter between serialized nodes
-// so adjacent kinds/tokens cannot concatenate into a colliding stream (§17.2).
 function xx(s: string): string {
   return Bun.hash.xxHash64(s).toString(16).padStart(16, "0");
 }
 
 /**
- * xxHash64 of a file's content, as 16-hex (§17.6, D14). The single hashing
- * function behind the change-gate's evidence baselines — used identically at
- * `record`/`reanchor` (to store) and at `check` (to compare), so they never drift.
- */
-export function hashContent(content: string): string {
-  return xx(content);
-}
-
-/**
- * Snap a region to the smallest enclosing *named* node (§17.1). Trim leading and
- * trailing whitespace off the span first (if it collapses, keep one character) —
- * this is what makes the chosen node invariant to re-indentation.
+ * Snap a region to the smallest enclosing named node. Leading and trailing
+ * whitespace is trimmed first so the chosen node is invariant to re-indentation.
  */
 export function snapNamedNode(
   root: Node,
@@ -59,7 +48,7 @@ export function snapNamedNode(
   const trail = span.length - span.replace(/\s+$/, "").length;
   ts += lead;
   te -= trail;
-  if (ts >= te) te = ts + 1; // collapsed → keep one character
+  if (ts >= te) te = ts + 1;
 
   let node = root.descendantForIndex(ts, Math.max(ts, te - 1));
   while (node && !node.isNamed) node = node.parent;
@@ -73,11 +62,10 @@ export interface AstFingerprint {
 }
 
 /**
- * Two-tier fingerprint (§17.2): pre-order DFS over ALL children (including
- * anonymous token nodes), source order, no sorting, no trivia dropping.
- *   - structural: the `type` of every node (invariant under renames/literals/ws).
- *   - semantic:   leaf → `type:text`; internal → `type`; content-literal kinds
- *                 additionally `=<whitespace-collapsed text>`.
+ * Two-tier fingerprint: pre-order DFS over all children, source order.
+ *   - structural: the `type` of every node (invariant under renames and literals).
+ *   - semantic: leaf → `type:text`; internal → `type`; content literals add
+ *     `=<whitespace-collapsed text>`.
  */
 export function fingerprintNode(node: Node): AstFingerprint {
   const struct: string[] = [];
@@ -103,21 +91,30 @@ export function fingerprintNode(node: Node): AstFingerprint {
 }
 
 /**
- * Extract a literal value from within `node` (§17.4): pre-order DFS over named
- * children, take the first matching literal and stop. Collections strip all
- * whitespace; scalars/strings are whitespace-collapsed.
+ * Extract the first literal whose byte range lies inside `span`: pre-order DFS
+ * over named children under `node`, take the first matching literal and stop.
+ * Collections strip all whitespace; scalars and strings are whitespace-collapsed.
+ * A literal outside the quoted span never counts, so quoting a signature does
+ * not store a value from the body.
  */
 export function extractValueFrom(
   node: Node,
   language: string,
+  span: Region,
   targetKind?: string,
 ): { nodeKind: string; value: string } | null {
   let found: { nodeKind: string; value: string } | null = null;
 
   const visit = (n: Node): void => {
     if (found) return;
+    if (n.endIndex <= span.start || n.startIndex >= span.end) return;
     const cls = valueClass(language, n.type);
-    if (cls && (targetKind === undefined || n.type === targetKind)) {
+    if (
+      cls &&
+      n.startIndex >= span.start &&
+      n.endIndex <= span.end &&
+      (targetKind === undefined || n.type === targetKind)
+    ) {
       const raw = n.text;
       const value =
         cls === "collection"

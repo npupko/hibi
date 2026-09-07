@@ -1,8 +1,7 @@
 /**
- * Archival remediation (§6): for an obsolete-in-full document, move it out of the
- * read path and leave a tombstone/redirect to the successor at the original path,
- * and set the document lifecycle to `archived`. The engine owns archival (§6
- * division of labor).
+ * `archive --doc <p> [--successor <p>]`: move an obsolete document out of the
+ * read path, leave a tombstone at the original path, and set the lifecycle to
+ * `archived`. Live claims left on the document are reported, never moved.
  */
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -11,20 +10,16 @@ import type { Document } from "../core/model.ts";
 import { exists } from "../fs.ts";
 import type { ClaimStore } from "../store/store.ts";
 import { documentIdForPath, newDocument } from "./record.ts";
-import { liveClaimsOnDocument } from "./supersede.ts";
+import { isLiveClaimOn } from "./supersede.ts";
 
 function tombstone(docPath: string, successorPath?: string): string {
   const redirect = successorPath
     ? `\nSuperseded by [\`${successorPath}\`](${successorPath}).\n`
     : "\n";
   return [
-    "---",
-    "hibi-status: archived",
-    "---",
-    "",
     "# Archived",
     "",
-    `This document (\`${docPath}\`) has been **archived** and moved out of the read path.`,
+    `This document (\`${docPath}\`) has been archived and moved out of the read path.`,
     redirect,
   ].join("\n");
 }
@@ -33,8 +28,8 @@ export interface ArchiveResult {
   document: Document;
   archivedTo: string | null;
   successor?: string;
-  /** Live claim ids still anchored to the archived document (see SupersedeResult). */
   strandedClaims: string[];
+  dryRun: boolean;
 }
 
 export async function archiveDocument(
@@ -47,6 +42,7 @@ export async function archiveDocument(
   const id = documentIdForPath(docPath);
   const doc: Document =
     (await store.getDocument(id)) ?? newDocument(id, docPath);
+  const dryRun = opts.dryRun ?? false;
 
   const abs = join(root, docPath);
   let archivedTo: string | null = null;
@@ -55,9 +51,7 @@ export async function archiveDocument(
     const dest = join(root, relDest);
     const alreadyArchived =
       doc.lifecycle === "archived" && (await exists(dest));
-    // --dry-run: report where the file *would* move (and that the doc would flip
-    // to archived) without moving it, writing the tombstone, or touching the store.
-    if (!opts.dryRun && !alreadyArchived) {
+    if (!dryRun && !alreadyArchived) {
       await mkdir(dirname(dest), { recursive: true });
       const content = await readFile(abs, "utf8");
       await writeFile(dest, content);
@@ -67,12 +61,15 @@ export async function archiveDocument(
   }
 
   doc.lifecycle = "archived";
-  if (!opts.dryRun) await store.putDocument(doc);
-  const strandedClaims = await liveClaimsOnDocument(store, doc.id);
+  if (!dryRun) await store.putDocument(doc);
+  const strandedClaims = (await store.allAssertions())
+    .filter((a) => isLiveClaimOn(a, doc.id))
+    .map((a) => a.id);
   return {
     document: doc,
     archivedTo,
     successor: successorPath,
     strandedClaims,
+    dryRun,
   };
 }

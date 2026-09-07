@@ -48,6 +48,7 @@ function anchorOn(original: string, quote: string, language = "typescript") {
     ref: "r",
     anchor: composeAnchor(docBundle, [codeBundle]),
     enforcement: "enforced",
+    verified: false,
     verifiers: [],
     attrs: {},
   };

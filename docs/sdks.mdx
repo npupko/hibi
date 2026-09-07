@@ -1,99 +1,58 @@
 ---
-title: "TypeScript and Rust SDKs for Building Hibi Resolvers"
-sidebarTitle: "SDKs"
-description: "The TypeScript and Rust SDKs handle JSONL-RPC framing for Hibi resolvers. Both bind to one shared JSON Schema source of truth from the Hibi data model."
+title: "The Hibi Resolver SDK"
+sidebarTitle: "SDK"
+description: "The @npupko/hibi/resolver export handles JSONL-RPC framing so a TypeScript resolver only implements describe, resolve, and verify."
 icon: "cube"
 ---
 
-A **resolver** is an out-of-process program that Hibi calls to grade an anchor or run a
-verifier. Hibi talks to it in JSONL-RPC over stdio, one JSON message per line. The
-SDKs exist so you don't have to hand-roll that framing or re-derive the message shapes:
-they give you typed scaffolding in TypeScript or Rust, and you fill in the drift logic.
+A resolver is a program Hibi spawns to grade an anchor kind, run a verifier, or attach advisories. Hibi talks to it in JSONL-RPC over stdio. The SDK is one export from the main package that handles the framing:
 
-For the protocol itself (the methods, the request/response shapes, the
-default-deny manifest), start at [Resolvers](/resolvers). The SDKs are the
-language bindings on top of it.
-
-<CardGroup cols={2}>
-  <Card title="TypeScript SDK" icon="js" href="https://github.com/npupko/hibi/tree/main/sdk/ts">
-    Write resolvers in TypeScript, run them with Bun.
-  </Card>
-  <Card title="Rust SDK" icon="rust" href="https://github.com/npupko/hibi/tree/main/sdk/rust">
-    A native crate with a worked `echo_resolver` example.
-  </Card>
-</CardGroup>
-
-## What both SDKs implement
-
-Every resolver, whatever language it's written in, answers the same three-method
-protocol. Each SDK reads framed requests from stdin, dispatches to your handler, and
-writes framed responses to stdout.
-
-| Method | What you return | Purpose |
-|---|---|---|
-| `describe` | the anchor `kinds` and `verifierKinds` you handle | announce your capabilities at startup |
-| `resolve` | a verdict for an assertion's anchor | grade whether the anchored code drifted |
-| `verify` | `supported` or `refuted` | run an executable verifier against a behavioral claim |
-
-On `resolve`, the engine reads the relevant files itself and passes them to you as
-`files { doc, code: { path: content } }`; your resolver never reaches into the working
-tree. The verdict you return reads like the rest of Hibi's output:
-`doc:unchanged · code:changed · behavior:at-risk` (see [Verdicts](/verdicts) for the
-full vocabulary).
-
-Verifier `kind`s are **open strings**, not a schema enum: the engine routes a
-`verify` call to your resolver by exact string match, so a verifier reaches you only
-when its `kind` appears in the `verifierKinds` you returned from `describe`. Declare
-`"command"`, `"snapshot"`, or any string you invent — the `verify` request and
-response contract is the same for every kind; only the routing key varies.
-
-<Note>
-  A resolver that grades anchors is advisory unless it's the engine's own built-in drift
-  logic. An opt-in semantic advisor may explain or triage a verdict; it never gates and
-  never marks a claim supported. The line stays at [Resolvers](/resolvers).
-</Note>
-
-## The shared contract
-
-The two SDKs are not independent re-implementations that can drift apart. Both bind to
-**one** source of truth: every message type has a JSON Schema in
-[`schemas/`](https://github.com/npupko/hibi/tree/main/schemas), generated from Hibi's
-single Zod model (`src/core/model.ts`) and the protocol definition
-(`src/resolver/protocol.ts`).
-
-That single generation step has two payoffs:
-
-- The TypeScript and Rust bindings stay in lockstep with the engine: when the model
-  changes, the schemas regenerate and both SDKs follow.
-- A resolver in **any** language with a JSON Schema toolchain can validate its messages
-  against the same canonical contract, even without an SDK. The SDKs are a convenience,
-  not a requirement.
-
-You can emit the schemas yourself from the CLI:
-
-```sh
-hibi schema            # all schemas
-hibi schema --name Verdict   # one named schema
+```ts
+import { serveResolver } from "@npupko/hibi/resolver";
 ```
 
-## Building the Rust SDK
+For the protocol, the manifest, and `override`, see [Resolvers](/resolvers).
 
-The Rust SDK is a standalone crate: it builds without the CLI, so you can develop a
-native resolver in isolation and run the worked example:
+## The handler
 
-<Info>
-  ```sh
-  cd sdk/rust && cargo build --examples
-  ```
-</Info>
+```ts
+import { serveResolver, type ResolverHandler } from "@npupko/hibi/resolver";
+
+const handler: ResolverHandler = {
+  describe: () => ({
+    name: "echo", version: "1", kinds: ["echo"], tier: 2, advisory: false,
+    verifierKinds: ["echo-cmd"],
+  }),
+  resolve: ({ assertion, files }) => ({ verdict: /* … */ }),
+  verify: ({ assertion, verifier, changedEvidence }) => ({ behavior: "supported" }),
+};
+
+serveResolver(handler);
+```
+
+| Method | Params | Returns |
+|---|---|---|
+| `describe` | none | `{ name, version, kinds, tier, advisory, verifierKinds? }` |
+| `resolve` | `{ assertion, files: { doc, code }, proposition? }` | `{ verdict?, advisories? }` |
+| `verify` | `{ assertion, verifier, changedEvidence }` | `{ behavior: "supported" \| "refuted" }` |
+
+`verify` receives no file contents. A grader that only handles anchors omits `verify` (the server answers with an unknown-method error, and the engine records no result). A runner can return an empty `kinds` list and handle only `verify`. `tier` defaults to 1; 3 is the advisory tier.
+
+## Exports
+
+`@npupko/hibi/resolver` exports `serveResolver`, `ResolverHandler`, the protocol types (`DescribeResult`, `ResolveParams`, `ResolveResult`, `VerifyParams`, `VerifyResult`, `RpcRequest`, `RpcResponse`, `PROTOCOL_VERSION`, `LineFramer`, `encodeLine`), and the model types (`Assertion`, `Anchor`, `AnchorState`, `BehaviorState`, `Selector`, `SelectorBundle`, `Verdict`, `VerdictEvidence`, `Verifier`, `Advisory`, `ChangedEvidence`, `Enforcement`, `Proposition`).
+
+## Other languages
+
+Every message has a JSON Schema generated from the Zod model. Print one with `hibi schema --name <Name>`, or read `schemas/*.v3.json` in the repository. A resolver in any language reads one JSON object per line on stdin and writes one per line on stdout.
 
 ## Next
 
 <CardGroup cols={2}>
   <Card title="Resolvers" icon="puzzle-piece" href="/resolvers">
-    The protocol the SDKs implement: methods, the JSONL-RPC seam, the default-deny manifest.
+    The protocol, the manifest, and the `override` flag.
   </Card>
   <Card title="Behavioral claims" icon="flask-vial" href="/behavioral">
-    Where `verify` fits: executable verifiers, the change-gate, and the no-model boundary.
+    Where `verify` fits.
   </Card>
 </CardGroup>

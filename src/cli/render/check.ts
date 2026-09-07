@@ -1,13 +1,8 @@
 /**
- * Render a `CheckReport` for a human (§9 rich + compact views). Diagnostics are
- * grouped by document; each suspect claim gets a verdict code, the quoted doc
- * sentence, a `path:line` code anchor, owner, freshness, and a `help` remediation
- * line. Clean documents collapse to a count. A lead line names the ref; a footer
- * restates the counts and the exit code. Shared by `check` and `diff`.
- *
- * Everything here is display-only: it joins authored facets and computes line
- * numbers / relative freshness off wall-clock, never touching the verdict, the
- * machine JSON, or the exit code (which the caller already holds).
+ * Render a `CheckReport` for a human (rich and compact views). Diagnostics are
+ * grouped by document; each suspect claim gets a status, the quoted sentence,
+ * a `path:line` code anchor, owner, freshness, and a `help` line. Clean
+ * documents collapse to a count.
  */
 
 import { isWarnVerdict } from "../../core/gating.ts";
@@ -31,6 +26,7 @@ import type { OutputMode } from "./mode.ts";
 import type { Style } from "./style.ts";
 import {
   badge,
+  rankSeverity,
   type Severity,
   severityColor,
   severitySymbol,
@@ -43,10 +39,8 @@ export interface CheckRenderContext {
   read: FileRead;
   style: Style;
   mode: OutputMode;
-  /** Optional lead lines (the `diff` since/changed-files prefix). */
+  /** Optional lead lines (the `--since` prefix). */
   lead?: string[];
-  /** The verb name shown in the lead line. Default `check`. */
-  verb?: string;
 }
 
 interface SuspectClaim {
@@ -57,12 +51,18 @@ interface SuspectClaim {
   propositionId: string;
 }
 
-/** Join a document's engine-determined suspect entries back to their verdicts. */
 function suspectsFor(
   doc: DocumentReport,
-  verdictsByProp: Map<string, Verdict>,
+  docVerdicts: Verdict[],
   ctx: CheckRenderContext,
 ): SuspectClaim[] {
+  // Propositions are deduplicated across documents by fingerprint, so the
+  // lookup must stay inside this document's own verdicts.
+  const verdictsByProp = new Map<string, Verdict>();
+  for (const v of docVerdicts) {
+    if (!verdictsByProp.has(v.propositionId))
+      verdictsByProp.set(v.propositionId, v);
+  }
   return doc.suspect.map((s) => {
     const verdict = verdictsByProp.get(s.propositionId);
     const assertion = verdict
@@ -84,19 +84,17 @@ function suspectsFor(
   });
 }
 
-/** The label a human acts on — the claim (assertion) id, falling back to the prop id. */
 function claimLabel(claim: SuspectClaim): string {
   return claim.assertion?.id ?? claim.propositionId;
 }
 
 function leadLine(ctx: CheckRenderContext): string {
   const { style, report } = ctx;
-  const verb = ctx.verb ?? "check";
   const ref =
     report.ref && report.ref !== "WORKTREE"
       ? style.dim(report.ref.slice(0, 7))
       : style.dim("worktree");
-  return `${style.bold(`hibi ${verb}`)} ${ref}`;
+  return `${style.bold("hibi check")} ${ref}`;
 }
 
 function footer(ctx: CheckRenderContext): string {
@@ -116,7 +114,14 @@ function footer(ctx: CheckRenderContext): string {
   return `${style.dim("Found")} ${parts.join(", ")} ${style.dim(`across ${docs}.`)}  ${exit}`;
 }
 
-/** A document header line: its worst-severity badge, path, and a suspect/clean count. */
+function worstOf(suspects: SuspectClaim[]): Severity {
+  let worst: Severity = "clean";
+  for (const s of suspects) {
+    if (rankSeverity(s.severity) < rankSeverity(worst)) worst = s.severity;
+  }
+  return worst;
+}
+
 function docHeader(
   doc: DocumentReport,
   suspects: SuspectClaim[],
@@ -124,13 +129,7 @@ function docHeader(
   ctx: CheckRenderContext,
 ): string {
   const { style, mode } = ctx;
-  const worst: Severity = suspects.some((s) => s.severity === "gating")
-    ? "gating"
-    : suspects.some((s) => s.severity === "warn")
-      ? "warn"
-      : suspects.length > 0
-        ? "neutral"
-        : "clean";
+  const worst = worstOf(suspects);
   const sym = badge(worst, mode.unicode, style);
   const clean = Math.max(total - suspects.length, 0);
   const count =
@@ -140,7 +139,6 @@ function docHeader(
   return `${sym} ${style.bold(doc.path)}   ${count}`;
 }
 
-/** A rich multi-line diagnostic block for one suspect claim. */
 function richBlock(claim: SuspectClaim, ctx: CheckRenderContext): string[] {
   const { style, mode } = ctx;
   const sym = severityColor(
@@ -160,8 +158,16 @@ function richBlock(claim: SuspectClaim, ctx: CheckRenderContext): string[] {
       facets.push(`owner ${claim.assertion.owner}`);
     facets.push(freshness(claim.verdict, claim.assertion));
     if (facets.length) lines.push(`     ${style.dim(facets.join("   "))}`);
+    const reasons = [
+      ...new Set(
+        claim.verdict.evidence.changedEvidence
+          .map((c) => c.detail)
+          .filter((r): r is string => Boolean(r)),
+      ),
+    ];
+    if (reasons.length)
+      lines.push(`     ${style.dim(`reason: ${reasons.join("; ")}`)}`);
   }
-  // Honor --no-hints / HIBI_ADVICE=0 on the human surface too (mode.hints).
   if (mode.hints) {
     const help =
       remediationLine(claim.verdict?.remediation ?? null) ??
@@ -171,41 +177,25 @@ function richBlock(claim: SuspectClaim, ctx: CheckRenderContext): string[] {
   return lines;
 }
 
-/**
- * The one-line human help crumb for a verdict's remediation menu: the top action
- * (recommended, else safest/first), shown as its ready-to-run command when it
- * has one, else its title — always with the rationale. `null` when the verdict
- * is clean (a lifecycle-only suspect; see `lifecycleHint`).
- */
 function remediationLine(rem: Remediation | null): string | null {
   const top = topAction(rem);
   if (!top) return null;
   return top.command
-    ? `${top.command}  (${top.rationale})`
-    : `${top.title} — ${top.rationale}`;
+    ? `${top.command}  (${top.title}: ${top.rationale})`
+    : `${top.title}: ${top.rationale}`;
 }
 
-/**
- * Help crumb for a lifecycle-only suspect (a clean verdict on a superseded /
- * amended / retracted document, so it carries no `remediation`). The verdict
- * model deliberately excludes document lifecycle, so this guidance lives here.
- */
 function lifecycleHint(status: string): string | null {
   switch (status) {
     case "superseded":
-      return "this document was superseded — read its successor instead";
-    case "amended":
-      return "this claim was amended by a newer document";
-    case "retracted":
-      return "the author withdrew this document";
+      return "this document was superseded; read its successor instead";
     case "archived":
-      return "this document was archived — read its successor instead";
+      return "this document was archived; read its successor instead";
     default:
       return null;
   }
 }
 
-/** A compact one-line summary for one suspect claim. */
 function compactLine(claim: SuspectClaim, ctx: CheckRenderContext): string {
   const { style, mode } = ctx;
   const sym = severityColor(
@@ -226,15 +216,11 @@ export function renderCheck(ctx: CheckRenderContext): string {
   const { report, mode } = ctx;
   const compact = mode.kind === "compact";
 
-  // Index verdicts by document and by proposition for the per-doc join.
   const verdictsByDoc = new Map<string, Verdict[]>();
-  const verdictsByProp = new Map<string, Verdict>();
   for (const v of report.verdicts) {
     const list = verdictsByDoc.get(v.documentId) ?? [];
     list.push(v);
     verdictsByDoc.set(v.documentId, list);
-    if (!verdictsByProp.has(v.propositionId))
-      verdictsByProp.set(v.propositionId, v);
   }
 
   const out: string[] = [];
@@ -251,21 +237,18 @@ export function renderCheck(ctx: CheckRenderContext): string {
     return `${out.join("\n")}\n`;
   }
 
-  // Suspect documents first (most severe to least), then clean ones collapsed.
   const enriched = report.documents.map((doc) => {
-    const total = (verdictsByDoc.get(doc.id) ?? []).length;
-    const suspects = suspectsFor(doc, verdictsByProp, ctx);
+    const docVerdicts = verdictsByDoc.get(doc.id) ?? [];
+    const total = docVerdicts.filter(
+      (v) => ctx.assertionsById.get(v.assertionId)?.enforcement !== "retired",
+    ).length;
+    const suspects = suspectsFor(doc, docVerdicts, ctx);
     return { doc, total, suspects };
   });
-  const rank = (s: SuspectClaim[]) =>
-    s.some((x) => x.severity === "gating")
-      ? 0
-      : s.some((x) => x.severity === "warn")
-        ? 1
-        : s.length > 0
-          ? 2
-          : 3;
-  enriched.sort((a, b) => rank(a.suspects) - rank(b.suspects));
+  enriched.sort(
+    (a, b) =>
+      rankSeverity(worstOf(a.suspects)) - rankSeverity(worstOf(b.suspects)),
+  );
 
   for (const { doc, total, suspects } of enriched) {
     out.push(docHeader(doc, suspects, total, ctx));

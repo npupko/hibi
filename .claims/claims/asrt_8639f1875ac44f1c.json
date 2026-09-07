@@ -53,18 +53,13 @@
       }
     ]
   },
-  "enforcement": "enforced",
-  "behavioral": true,
+  "enforcement": "retired",
+  "verified": true,
   "verifiers": [
     {
       "kind": "command",
-      "ref": "bun test test/precision-rate.test.ts",
-      "proves": "the ≤2% false-changed precision contract holds"
+      "ref": "bun test test/precision-rate.test.ts"
     }
   ],
-  "evidenceBaseline": {
-    "src/algo/params.ts": "0d89fd4e0b15a2c7",
-    "src/vendor/bitap.ts": "b8fc7207a8a07d18"
-  },
   "attrs": {}
 }

@@ -1,276 +1,88 @@
 ---
-title: "Trust, Enforcement, and Document Lifecycle in Hibi"
+title: "Enforcement and Document Lifecycle in Hibi"
 sidebarTitle: "Lifecycle"
-description: "Hibi tracks four status kinds — authored trust, enforcement, computed drift, document lifecycle — so a doc can be both drifted and superseded at once."
+description: "Claims are enforced, suggested, or retired. Documents are active, superseded, or archived. Three verbs manage both: retire, supersede, archive."
 icon: "arrows-spin"
 ---
 
-A single word like "stale" hides several different questions. *Did the author
-mean this claim to be trustworthy?* *Is Hibi allowed to block a merge over it?*
-*Has the code under it moved?* *Has a newer document replaced it?* Hibi keeps
-those four questions in **four separate status kinds** and never collapses them
-into one flag.
+Two separate questions: may this claim gate a build, and where is this document in its life. Hibi answers each with its own field and its own verb.
 
-<Note>
-  The four kinds answer four different questions and live on different objects.
-  Keeping them apart is what lets Hibi say "this doc was partly replaced **and**
-  its code drifted" instead of one undifferentiated "stale."
-</Note>
+## Enforcement
 
-## The four status kinds
-
-| Kind | Question it answers | Who sets it | Where it lives |
-|---|---|---|---|
-| **Authored trust** | How much did the author vouch for this claim? | the author, at `record` time | the Proposition |
-| **Enforcement** | Is Hibi allowed to gate or stamp a strong banner over it? | derived at `record`, then explicit | the Assertion |
-| **Computed** | Right now, has the evidence moved? | the engine, live on every `check` | nowhere; recomputed, never stored |
-| **Document lifecycle** | Where is this document in its life? | authored edges + the engine | the Document |
-
-The first two are **authored**: you decide them when you write the claim. The
-third is **computed**: Hibi recalculates it on every run and keeps it out of the
-store. The fourth tracks the **document** itself, independent of any one claim.
-
-## Authored trust
-
-When you record a claim you declare how strongly you stand behind it. This is a
-statement about your confidence, not about the code.
-
-| Trust | Meaning |
-|---|---|
-| `verified` | You confirmed the claim against the code; it carries an anchor and a `@ref`. |
-| `inferred` | Derived from the code but not directly confirmed. |
-| `assumed` | Stated without confirmation: a working assumption. |
-
-<Info>
-  `verified` is the only trust level that requires both an anchor and a `@ref`
-  (the reference that backs the confirmation). Trust is set with
-  `--trust verified|inferred|assumed` on `hibi record`.
-</Info>
-
-### Reanchoring is an attestation
-
-Re-pointing a claim's anchors is not the same as re-verifying the claim, and
-`hibi reanchor` keeps the two honest:
-
-- `hibi reanchor <id> --ref <new-ref>` asserts "I re-verified this": selectors
-  and evidence baselines refresh, authored trust is **retained**, and the new
-  ref is recorded.
-- `hibi reanchor <id>` **without** `--ref` still re-anchors — the claim is
-  findable again — but **downgrades authored trust `verified` → `inferred`**:
-  nobody has re-attested that the claim is *true*. The downgrade is recorded on
-  the assertion and surfaced in `status` and the JSON.
-- **The pure-move exception.** A bare `hibi reanchor <id>` keeps `verified` trust
-  — with **no** downgrade recorded — in exactly one case: a **pure move**, where
-  the re-resolved doc quote is byte-identical to the stored one and re-resolves
-  uniquely at similarity 1.0, *and* the code side re-resolves as exactly
-  `unchanged`. A byte-shift changes no evidence, so there is nothing to
-  re-attest. Anything fuzzier downgrades as above.
-
-This closes the gaming hole where re-linking an anchor clears CI without anyone
-re-checking the claim: a `verified` badge always means someone attested it,
-with a `@ref`, against the code it points at now.
-
-## Enforcement: earning the right to gate
-
-Enforcement is the gate key. It decides whether a claim can fail your build or
-stamp a strong banner into a file, or whether it stays advisory.
+Enforcement lives on the claim.
 
 | Enforcement | Meaning |
 |---|---|
-| `suggested` | A candidate claim, advisory only. Never sets a failing exit code. |
-| `enforced` | A confirmed claim: may gate a build and may stamp a strong banner. |
-| `retired` | Withdrawn from active enforcement, kept for history. |
+| `enforced` | The default. May gate a build and may stamp a banner. |
+| `suggested` | Advisory. Never gates, never warns. Recorded with `record --suggest`. May have a coarse (`--glob`) or empty code side. |
+| `retired` | Withdrawn with `hibi retire`. Kept for history; ignored by every verdict. |
 
-<Warning>
-  **Only an `enforced` claim gates or stamps a strong banner.** A `suggested`
-  claim is reported but never sets a failing exit code, so unconfirmed candidates
-  can never break a build on their own.
-</Warning>
+`--verified` on `record` is a separate boolean: it records that the author confirmed the code backs the sentence. It does not change enforcement.
 
-### How `record` derives enforcement
+### `retire`
 
-You do not pick `enforced` yourself; Hibi earns it for you, and refuses it if
-the anchor is too weak to stand behind.
+```sh
+hibi retire <claim-id> [--dry-run]
+```
 
-<Steps>
-  <Step title="Verified trust plus a precise anchor on both sides → enforced">
-    If you record with `verified` trust and the anchor resolves precisely on the
-    doc side *and* the code side, the claim is recorded as `enforced`.
-  </Step>
-  <Step title="Anything weaker → suggested">
-    Without verified trust, or without a precise resolvable anchor, the claim is
-    recorded as `suggested`, advisory until you confirm it.
-  </Step>
-  <Step title="An enforced record is refused unless every condition holds">
-    `record` throws rather than create a weak `enforced` claim. To be enforced,
-    the doc side must resolve, a `@ref` must be present, the code side must be
-    precise (not a coarse or `--glob` target), and every code target must
-    resolve.
-  </Step>
-</Steps>
-
-Coarse and `--glob` targets are navigation and blast-radius only: they map
-which files a claim touches, but they can never back an `enforced` claim. (Coarse
-anchors are never reported as stale either; see how anchors are scored on the
-[Anchors & selectors](/anchors) page.)
-
-## Computed states
-
-The third kind, what the engine works out live on every `check`, is the
-**two-axis verdict** (`doc:…` / `code:…` resolution, plus a behavioral belief on
-behavioral claims) and the orthogonal `expired` flag. These are recomputed every
-run and never stored, so they are documented where they are graded rather than
-repeated here.
-
-<Card title="Verdicts, states & exit codes" icon="scale-balanced" href="/verdicts">
-  The full two-axis model, the grading bands, and how a verdict becomes an exit
-  code.
-</Card>
+Flips the claim's `enforcement` to `retired`. Idempotent: a second call reports `alreadyRetired: true`. A retired claim never gates, never warns, is excluded from `clean`, and is never stamped. Do not delete the file under `.claims/` by hand; the record is the audit trail.
 
 ## Document lifecycle
 
-A document is more than its claims; it has a life of its own. It can be amended,
-replaced wholesale, withdrawn, or moved out of the read path.
-
-```mermaid
-stateDiagram-v2
-  [*] --> active
-  active --> amended: amends (some propositions)
-  active --> superseded: supersedes (whole doc)
-  amended --> superseded
-  superseded --> archived: move out of read path
-  active --> retracted: author withdrew
-  active --> archived
-```
-
-Caption: "Supersession is authored forward on the new document; Hibi derives the reverse edge."
+Lifecycle lives on the document.
 
 | Lifecycle | Meaning |
 |---|---|
-| `active` | In the read path; treated as current. |
-| `amended` | Some of its propositions were replaced by a newer document; the file stays in the read path. |
-| `superseded` | Replaced in full by a newer document; should be archived. |
-| `archived` | Moved out of the read path, with a tombstone or redirect to its successor. |
-| `retracted` | The author withdrew the claim. |
+| `active` | In the read path. |
+| `superseded` | Replaced in full by another document. The new document carries a `supersedes` edge pointing at the old one. |
+| `archived` | Moved out of the read path with a tombstone at its old path. |
 
-## Supersession: replacing what a document said
+A live claim on a `superseded` or `archived` document is **stranded**. `hibi list --state stranded` lists them. A stranded claim still resolves and can still gate; the document's lifecycle is added to its banner status.
 
-When a newer document takes over from an older one, you author that relationship
-**forward on the new document**. Hibi derives the reverse edge, so the old
-document knows it was replaced without you editing it twice.
+### `supersede`
 
-<Tabs>
-  <Tab title="supersedes (full replacement)">
-    `supersedes` points at a whole **Document**. The old document's lifecycle
-    flips to `superseded`, and the next step is to archive it.
+```sh
+hibi supersede --from <old> --to <new> [--dry-run]
+```
 
-    ```bash
-    hibi supersede --new docs/new.md --old docs/old.md --type supersedes
-    ```
-  </Tab>
-  <Tab title="amends (partial replacement)">
-    `amends` points at one or more named **Propositions**: the specific claims
-    the new document changes. The old document stays in the read path; only the
-    named propositions flip, and its lifecycle becomes `amended`. Proposition ids
-    are required.
+In one pass:
 
-    ```bash
-    hibi supersede --new docs/new.md --old docs/old.md --type amends --propositions prop_d6185fc85e2a4e52,prop_f31b0a927c440e19
-    ```
-  </Tab>
-</Tabs>
+1. Registers `--to` if needed and authors the `supersedes` edge on it.
+2. Flips `--from` to `superseded`.
+3. Relocates every live claim on `--from` whose sentence appears verbatim in `--to`. A relocated claim keeps its id, code side, and history; only its document changes.
 
-<Note>
-  An old document can be **amended and code-drifted at the same time**: a newer
-  doc replaced part of it, and the code under another part moved. Because the four
-  status kinds are separate, both conditions surface together rather than masking
-  each other.
-</Note>
+The result lists `relocated`, `misses` (claims whose sentence was not found verbatim, with a reason), and `strandedClaims` (the live claims still on the old document after the pass). For each miss, either move it by hand with `hibi reanchor <id> --doc <new> --doc-quote "…"` (use `hibi reanchor <id> --suggest` to find the sentence) or withdraw it with `hibi retire <id>`. When `strandedClaims` is empty the old file can be deleted or archived without orphaning anything.
 
-### Stranded claims: relocate, don't hand-reanchor
+### `archive`
 
-Flipping a document's lifecycle does not move the claims still anchored to it. So
-`supersede`, `retract`, and `archive` now **report the live claims left behind**
-in a `strandedClaims: string[]` field — the claims still anchored to the old,
-retracted, or archived document. When that list is non-empty, the operation's
-`next` hint points at [`hibi relocate`](/cli-reference#hibi-relocate), the batch
-primitive that re-homes them in one pass:
+```sh
+hibi archive --doc <path> [--successor <path>] [--dry-run]
+```
 
-| Operation | When `strandedClaims` is non-empty, `next` is |
-|---|---|
-| `supersede` | `hibi relocate --from <old> --to <new>` |
-| `archive` | `hibi relocate --from <doc> --to <successor>` |
-| `retract` | `hibi relocate --from <doc> --to <newDoc>  # or: hibi retire <id>` |
+Moves the file to `archive/`, leaves a tombstone at the old path (pointing at `--successor` when given), and sets the document's lifecycle to `archived`. Claims are not moved; the result reports `strandedClaims`. To withdraw a document that has no successor, archive it without `--successor`.
 
-<Warning>
-  The remedy is **report-only**: these operations never auto-fix. They record the
-  edge and tell you which claims are stranded; you run `relocate` (or `retire`)
-  yourself. `relocate` re-homes only the claims whose sentence appears verbatim in
-  the target and reports the rest as misses — it never silently drops a claim.
-</Warning>
+## Deleting or renaming a document
 
-## Remediation: what to do when a claim needs attention
+Claims are content. Move them in the same change as the prose:
 
-A flag is a request to **re-verify**, not a claim that the doc is wrong. The
-response is graduated by how dangerous it is to leave the document standing as-is.
+1. `hibi list --path <old-doc>` to see the claims on it.
+2. `hibi supersede --from <old-doc> --to <new-doc>`.
+3. Resolve each entry in `misses` with `reanchor` or `retire`.
+4. When `strandedClaims` is empty, delete or archive the old file.
 
-| Condition | Remediation |
-|---|---|
-| `amended` / superseded-in-part | Stamp a banner and flip the frontmatter status; keep the file. |
-| `superseded` / obsolete-in-full | Archive it: move it out of the read path with a tombstone or redirect to the successor. |
-| `code:changed` / `code:orphaned` / `expired` | Stamp a banner and flag the specific claims to re-verify. |
-| `doc:changed` / `doc:ambiguous` | Banner noting the prose diverged; re-confirm, or `hibi retire <claim-id>`. |
-| `doc:orphaned` | The documented sentence was deleted: `hibi reanchor` to a new target, or `hibi retire <claim-id>`. |
-| `refuted` | Strong banner, with a configurable gate. |
-| `retracted` | Banner noting the author withdrew the claim. |
-
-To withdraw a single obsolete claim, run **`hibi retire <claim-id>`** — it flips
-the claim's `enforcement` to `retired` and keeps the audit trail. Never hand-edit
-or delete the claim's file under `.claims/`. Every drift verdict carries a
-[`remediation`](/verdicts#the-remediation-menu) menu that names the right verb for
-its state and pre-fills the command, so you rarely pick from this table by hand.
-
-The mechanics of how a banner is written, made tamper-evident, and placed at the
-top of a file live on the [Status banners](/banners) page.
-
-## Store health: `hibi doctor`
-
-`check` answers "is anything drifting *right now*?" — it says nothing about claims
-that are broken in a quieter way: a side whose span was deleted, a `suggested`
-claim that never got a code anchor, a live claim stranded on a superseded
-document, or two propositions that share one fingerprint. **`hibi doctor`**
-surfaces exactly that dead state. It is **purely informational and always exits
-`0`**, so it triages the store rather than gating a build, and its `next` hint
-routes you to the most pressing category (often `hibi list --state orphaned`). See
-[`hibi doctor`](/cli-reference#hibi-doctor) for the full report.
+Skipping steps 2 and 3 leaves the claims `doc:orphaned` after the delete. Orphaned is not retired: it is a live record pointing at a missing file.
 
 ## Who does what
 
-Hibi draws a hard line between the part it owns and the part it leaves to you.
-
-<CardGroup cols={2}>
-  <Card title="The engine owns" icon="gears">
-    Status, document edges, lifecycle stamping, archival, and flagging the
-    content that needs attention. Deterministic: no model runs in the check loop.
-  </Card>
-  <Card title="You (or your agent) own" icon="pen">
-    Rewriting the prose, then re-running `hibi check`. **The engine never writes
-    prose**: it tells you what moved, and you decide what the doc should now say.
-  </Card>
-</CardGroup>
-
-<Check>
-  The engine flags and stamps; the author or agent rewrites and re-runs. That
-  split is what keeps the signal trustworthy and the prose human.
-</Check>
+The engine flags, stamps, and records edges. The author or agent rewrites prose and re-runs `hibi check`. The engine never writes prose.
 
 ## Where to go next
 
 <CardGroup cols={2}>
-  <Card title="Status banners" icon="stamp" href="/banners">
-    How a status becomes a visible, tamper-evident banner in the file itself.
+  <Card title="Banners" icon="stamp" href="/banners">
+    How lifecycle and drift appear in the file itself.
   </Card>
   <Card title="CLI reference" icon="terminal" href="/cli-reference">
-    `record`, `supersede`, `retract`, `archive`, and the rest of the verbs.
+    `retire`, `supersede`, `archive`, and the rest of the verbs.
   </Card>
 </CardGroup>

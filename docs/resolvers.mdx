@@ -1,245 +1,105 @@
 ---
 title: "Hibi Resolvers: Extend Drift Detection in Any Language"
 sidebarTitle: "Resolvers"
-description: "Resolvers are out-of-process programs that grade Hibi anchors or run verifiers over JSONL-RPC stdio. Write one in any language using the resolver protocol."
+description: "External resolvers grade anchor kinds, run verifiers, or attach advisories over JSONL-RPC on stdio. They are off until listed in .claims/resolvers.json."
 icon: "puzzle-piece"
 ---
 
-A **resolver** is an external program that does the work of grading an
-anchor or running a verifier. Hibi's core is tiny ("if it isn't core, it's a
-resolver or a consumer"), so even the built-in drift and
-supersession logic ships *as resolvers* behind the same contract. To teach Hibi
-about a new language, a new anchor kind, or a new way to verify behavior, you
-write a resolver in any language and point Hibi at it.
+A **resolver** is a program that grades an anchor, runs a verifier, or attaches advisory notes to a verdict. The built-in drift resolver runs **in-process** and does not speak the wire protocol. External resolvers run out-of-process and talk to the engine over JSONL-RPC on stdin and stdout.
 
-## The mental model
+## Roles
 
-The engine owns the loop: it reads your files, decides which claims to check,
-collects verdicts, computes exit codes, and stamps banners. It does *not* know
-how to grade an anchor by itself. That knowledge lives in resolvers, which the
-engine drives over a small RPC protocol.
+| Role | Method | Effect |
+|---|---|---|
+| Anchor grader (non-advisory) | `resolve` | Produces the verdict for the anchor kinds it declares. May gate. |
+| Verifier runner | `verify` | Runs a verifier and returns `supported` or `refuted`. Dispatched only under `check --run-verifiers`. |
+| Advisor (`advisory: true`) | `resolve` | Attaches `advisories` to a verdict. Never changes a state, never gates. |
 
-This keeps two promises. First, a resolver runs **out-of-process** (a separate
-program the engine talks to over its standard input and output), so a resolver
-crash, hang, or dependency never destabilizes the core, and the engine never has
-to load a resolver's runtime. Second, the boundary is **deterministic by
-default**: the resolvers that produce verdicts are pure graders fed the
-file contents they need. A flag is a request to **re-verify**, not a claim that
-the doc is wrong, and that contract holds no matter which resolver produced it.
-
-<Note>
-  The built-in code-anchor, doc-anchor, and supersession resolvers ship in-tree,
-  but they speak the same protocol as anything you write. There is no privileged
-  internal path; your resolver is a first-class participant.
-</Note>
+There is no built-in supersession resolver and no semantic advisor; supersession is an engine operation (`hibi supersede`).
 
 ## The protocol
 
-Resolvers communicate over **JSONL-RPC over stdio**: newline-delimited JSON-RPC
-messages on the program's standard input and output. The engine sends a request,
-the resolver writes back a response, one JSON object per line. No network, no
-ports, no shared memory.
-
-There are three methods.
+Newline-delimited JSON-RPC, one object per line. Three methods:
 
 <ParamField path="describe" type="method">
-  Announce what this resolver handles: the anchor `kinds` it can grade and the
-  `verifierKinds` it can run. The engine calls `describe` first and routes work
-  only to resolvers that claim it. Verifier kinds are **open strings**: the
-  engine dispatches a verifier to a runner by exact string match between the
-  verifier's `kind` and the `verifierKinds` declared here.
+  Returns `{ name, version, kinds, tier, advisory, verifierKinds? }`. The engine calls it first and routes work only to a resolver that claimed it.
 </ParamField>
 
 <ParamField path="resolve" type="method">
-  Grade an assertion's anchor into a verdict. The engine reads both sides of the
-  bidirectional anchor and passes the file contents in as `files { doc, code: {
-  path: content } }`, so the resolver stays pure: it grades what it is handed
-  and never touches the filesystem itself. It returns a verdict on the anchor
-  resolution axis (`unchanged` / `moved` / `changed` / `ambiguous` / `orphaned`).
+  Params: `{ assertion, files: { doc, code: { path: content } }, proposition? }`. Returns `{ verdict?, advisories? }`. The engine reads the files; the resolver never touches the filesystem.
 </ParamField>
 
 <ParamField path="verify" type="method">
-  Run an executable **verifier** for a behavioral claim and report whether it
-  passed. A pass contributes `supported`; a failure contributes `refuted` (the
-  only behavioral state that may gate, and only on an enforced claim). The engine
-  itself never executes verifiers in-process; it dispatches them to a runner
-  resolver through this method, and only under `check --run-verifiers`.
+  Params: `{ assertion, verifier, changedEvidence }`. No file contents are sent. Returns `{ behavior: "supported" | "refuted" }`. An error response, a timeout, or a spawn failure counts as no result.
 </ParamField>
 
-A round-trip for one claim looks like this:
-
-```mermaid
-sequenceDiagram
-  participant E as hibi engine
-  participant R as resolver
-  E->>R: describe
-  R-->>E: kinds + verifierKinds
-  Note over E,R: engine routes only matching work
-  E->>R: resolve (anchor + files)
-  R-->>E: doc:… / code:… verdict
-  E->>R: verify (behavioral claim)
-  R-->>E: passed → supported / failed → refuted
-```
-
-The engine asks what a resolver can do, then hands it only the work it claimed and the file contents it needs.
+Print any message schema with `hibi schema --name <Name>` (for example `ResolveParams`, `VerifyParams`, `Verdict`). `hibi schema` with no name lists the names. The schemas in `schemas/*.v3.json` are generated from the Zod model.
 
 ## Enabling a resolver
 
-Resolvers stay off until you list them. The manifest is **default-deny**: a
-resolver that is not in `.claims/resolvers.json` is never launched, so dropping a
-file in a directory can never start running code in your check loop.
+The manifest is default-deny. A resolver not listed in `.claims/resolvers.json` is never launched.
 
-```jsonc .claims/resolvers.json
-// Opt in to the optional semantic advisor (it advises, it does not gate)
+```json
 {
   "resolvers": [
     {
-      "name": "semantic-advisor",
+      "name": "my-grader",
       "command": "bun",
-      "args": ["run", "resolvers/semantic-advisor.ts"]
+      "args": ["run", "resolvers/my-grader.ts"],
+      "timeoutMs": 5000
     }
   ]
 }
 ```
 
-<Warning>
-  An opt-in semantic resolver (an LLM or formal advisor) may explain a change
-  or triage a suspect set, but it **never gates** and never marks a claim
-  `supported`. Verdicts on the gating path stay deterministic; advisory output is
-  layered context on top, never the decision. This is the determinism boundary:
-  no model runs on the verdict path.
-</Warning>
+| Field | Default | Meaning |
+|---|---|---|
+| `name`, `command`, `args` | | How to spawn it. |
+| `timeoutMs` | `5000` | Per-request timeout; a slow resolver is killed. |
+| `kinds` | from `describe` | Optional explicit allow-list of anchor kinds. |
+| `override` | `false` | Allow a non-advisory resolver to claim a built-in kind. |
+| `modelBacked` | `false` | The resolver's advisories are produced by a model. |
+
+### `override`
+
+The built-in kinds are `text-quote`, `text-position`, `ast-node`, `value`, and `coarse`. A non-advisory external resolver that claims one of them replaces the deterministic core verdict for every anchor carrying that kind. That is refused by default: without `"override": true` on the manifest entry, the built-in kinds are dropped from the resolver's list with a warning on stderr. An advisory resolver may declare any kinds; it never produces a verdict.
 
 ### Provenance for model-backed advisors
 
-An advisor may layer context on top of a verdict, but when a **model** produced
-that context the model state has to be on the record — Hibi will not let hidden
-LLM output ride alongside a deterministic verdict unattributed. Two schema fields
-make that enforceable:
-
-- The wire **`Advisory`** object gains an optional **`provenance`** object —
-  `{ model, promptHash, contextHash, params? }` — the model name, the prompt and
-  context hashes, and any sampling parameters behind the advisory.
-- A resolver's manifest spec (**`ResolverSpec`**) gains **`modelBacked`**, a
-  boolean defaulting to `false`. Set it on any resolver whose advisories are
-  produced by a model.
-
-When a `modelBacked` resolver returns an advisory that lacks `provenance`, the
-registry **drops it** and prints one stderr warning per run per resolver:
-
-```
-dropped <N> advisories from <resolver>: modelBacked resolvers must attach provenance (model, promptHash, contextHash).
-```
-
-A non-`modelBacked` resolver is unaffected, and an advisory that carries
-`provenance` passes through untouched. Either way the gating path stays
-deterministic — this only governs which advisory context is allowed to surface.
-
-## Where resolvers fit
-
-Two distinct out-of-process roles ride the same protocol, and it is worth keeping
-them apart:
-
-| Role | Method | Effect on the verdict |
-|---|---|---|
-| Anchor grader | `resolve` | Produces the `doc:…` / `code:…` resolution state; deterministic; can gate via `changed` / `orphaned` / `ambiguous`. |
-| Verifier runner | `verify` | Runs an executable check; a failure yields `refuted` (may gate on an enforced claim); a pass yields `supported`. Dispatched only under `check --run-verifiers`. |
-| Advisor (opt-in) | `resolve` / `verify` | Explains or triages only; never gates, never marks `supported`. |
-
-The verifier runner is how Hibi proves behavioral claims that structural checks
-cannot judge on their own: "retries with backoff", "sorts ascending". The engine
-detects that reachable evidence changed and routes attention; an author-supplied
-verifier, dispatched through `verify`, is what can confirm or refute the
-belief. The full behavioral model lives on its own page.
-
-<Card title="Behavioral claims & verifiers" icon="flask-vial" href="/behavioral">
-  How the change-gate routes attention and how verifiers push a belief to
-  supported or refuted, without a model on the verdict path.
-</Card>
+An advisory from a `modelBacked` resolver must carry `provenance: { model, promptHash, contextHash, params? }`. The registry drops advisories without it and prints one warning per run per resolver.
 
 ## Verifier kinds and the built-in command runner
 
-A verifier's `kind` is an **open string** — any non-empty value. It is not an
-enum in the schema; it is a routing key, matched against the `verifierKinds` a
-runner resolver declares in `describe`. The conventional kinds — a
-recommendation, not schema — are `command`, `example`, `snapshot`, `contract`,
-`property`, `metamorphic`, and `formal`.
-
-One runner ships in-tree: the built-in **command runner**. It handles
-`kind: "command"` and executes the verifier's `ref` as a shell command via
-`sh -c` on POSIX or `cmd /c` on Windows, with the working directory set to the
-repository root. The two shells differ, so cross-platform repos should keep
-verifier refs shell-neutral (e.g. `bun test retry`, not a shell builtin or an
-`&&` chain):
-
-```sh
-hibi record ... --verifier command:"bun test retry"   # kind:ref
-```
-
-| Outcome | Behavioral state |
-|---|---|
-| exit `0` | `supported` |
-| non-zero exit | `refuted` |
-| timeout or spawn failure | no result — the state stays at the deterministic baseline |
-
-The command runner has its own timeout, **120 seconds** by default, set with
-`--verifier-timeout <seconds>`.
+A verifier's `kind` is an open string matched against the `verifierKinds` a runner declares. The built-in runner handles `command`: it executes `ref` as a shell command from the repository root. Exit `0` is `supported`, non-zero is `refuted`, a timeout or spawn failure is no result. The default timeout is 120 seconds, set with `--verifier-timeout <seconds>`.
 
 <Warning>
-  **Verifiers are a supply-chain surface.** A verifier executes a command
-  committed to the repository, so whoever can commit to the repo decides what
-  runs on the machine of whoever checks. Hibi therefore never runs a verifier
-  implicitly: verifiers execute **only** under `check --run-verifiers`.
-  `status`, `query`, `list`, `doctor`, and plain `check` never spawn a
-  verifier process. External runner resolvers still require the default-deny
-  manifest (`.claims/resolvers.json`) on top of the flag — the flag opts in to
-  running verifiers, the manifest opts in to the program that runs them.
+  Verifiers execute repo-committed commands. They run only under `check --run-verifiers`. `check` without that flag, `list`, and `coverage` never spawn a verifier. External runners also require the manifest.
 </Warning>
 
 ## Writing your own
 
-Because the protocol is plain JSONL-RPC over stdio, a resolver is any program
-that reads requests on its standard input and writes responses on its standard
-output. You handle the framing yourself, or you lean on an SDK that does it for
-you.
+Import the server from the main package:
 
-<Steps>
-  <Step title="Implement the three methods">
-    Respond to `describe`, `resolve`, and `verify`. A grader that only handles
-    anchors can leave `verify` as a no-op; a verifier runner can return an empty
-    `kinds` list from `describe` and handle only `verify`.
-  </Step>
-  <Step title="Validate against the schemas">
-    Every protocol message has a published JSON Schema, so you can validate
-    requests and responses in any language with a JSON Schema toolchain, no need
-    to hand-transcribe the shapes.
-  </Step>
-  <Step title="List it in the manifest">
-    Add the resolver to `.claims/resolvers.json` with its `command` and `args`.
-    Until it appears there, the default-deny manifest keeps it off.
-  </Step>
-</Steps>
+```ts
+import { serveResolver } from "@npupko/hibi/resolver";
 
-The JSON Schemas for every protocol message
-([`schemas/*.v1.json`](https://github.com/npupko/hibi/tree/main/schemas)) are
-generated from the single Zod source of truth, so the schema and the engine can
-never disagree, and any language that can read JSON Schema can validate against
-them.
+serveResolver({
+  describe: () => ({
+    name: "my-grader", version: "1", kinds: ["my-kind"], tier: 2, advisory: false,
+  }),
+  resolve: ({ assertion, files }) => ({ verdict: grade(assertion, files) }),
+});
+```
 
-<Tip>
-  You rarely need to handle JSONL-RPC framing by hand. The TypeScript and Rust
-  SDKs implement `describe` / `resolve` / `verify` for you, leaving you to write
-  only the grading logic.
-</Tip>
+`serveResolver` owns the framing and dispatch. The same module exports the protocol types (`ResolveParams`, `ResolveResult`, `VerifyParams`, `VerifyResult`, `DescribeResult`) and the model types (`Assertion`, `Verdict`, `Selector`, and the rest). A resolver in another language reads requests on stdin, writes responses on stdout, and validates against `hibi schema`.
 
 ## Where to go next
 
 <CardGroup cols={2}>
-  <Card title="SDKs" icon="cube" href="/sdks">
-    The TypeScript and Rust SDKs that handle protocol framing so you write only
-    the resolver logic.
+  <Card title="SDK" icon="cube" href="/sdks">
+    The `@npupko/hibi/resolver` export.
   </Card>
-  <Card title="Behavioral claims & verifiers" icon="flask-vial" href="/behavioral">
-    The change-gate and verifier model behind the `verify` method.
+  <Card title="Behavioral claims" icon="flask-vial" href="/behavioral">
+    Where `verify` fits.
   </Card>
 </CardGroup>

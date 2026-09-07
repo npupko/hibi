@@ -1,100 +1,18 @@
 /**
- * Hand-rolled shell completion generators (§9 `completions <zsh|bash|fish>`).
- * Static MVP: the verb list + the global and per-verb flags. `parseArgs` has no
- * Tab adapter, so this emits a self-contained script per shell — no new
- * dependency, matching hibi's vendor-tiny philosophy.
+ * Shell completion generators, derived from the option tables so they can
+ * never drift from what the parser accepts.
  */
+
+import { COMMANDS, GLOBAL_OPTIONS, optionsFor } from "./options.ts";
 
 export type Shell = "zsh" | "bash" | "fish";
 
-/** The verbs offered at the first argument position. */
-const VERBS = [
-  "init",
-  "record",
-  "check",
-  "diff",
-  "status",
-  "query",
-  "list",
-  "coverage",
-  "reanchor",
-  "retire",
-  "ignore",
-  "supersede",
-  "retract",
-  "archive",
-  "schema",
-  "completions",
-  "version",
-  "help",
-] as const;
-
-/** Flags available on every command (the output mode + store/anchor globals). */
-const GLOBAL_FLAGS = [
-  "--json",
-  "--pretty",
-  "--compact",
-  "--explain",
-  "--detailed",
-  "--no-hints",
-  "--color",
-  "--simple",
-  "--cwd",
-  "--store-dir",
-  "--no-ast",
-];
-
-/** Per-verb flags (beyond the globals) offered after the verb. */
-const VERB_FLAGS: Record<string, string[]> = {
-  record: [
-    "--doc",
-    "--doc-quote",
-    "--doc-range",
-    "--doc-line",
-    "--inline-id",
-    "--code-file",
-    "--code-quote",
-    "--code-range",
-    "--code-line",
-    "--coarse",
-    "--glob",
-    "--from-file",
-    "--trust",
-    "--enforce",
-    "--enforcement",
-    "--behavioral",
-    "--no-behavioral",
-    "--pristine",
-    "--verifier",
-    "--owner",
-    "--ref",
-    "--ttl",
-  ],
-  check: ["--write", "--fail-on", "--run-verifiers", "--verifier-timeout"],
-  diff: ["--since", "--write", "--fail-on"],
-  status: ["--doc"],
-  query: ["--path"],
-  list: ["--state"],
-  coverage: ["--doc"],
-  reanchor: [
-    "--doc",
-    "--doc-quote",
-    "--doc-range",
-    "--doc-line",
-    "--code-file",
-    "--ref",
-  ],
-  retire: [],
-  ignore: ["--claim", "--reason"],
-  supersede: ["--new", "--old", "--type", "--propositions"],
-  retract: ["--doc"],
-  archive: ["--doc", "--successor"],
-  schema: ["--name"],
-  completions: [],
-};
+const VERBS = COMMANDS.filter((c) => !c.aliasOf).map((c) => c.name);
+const GLOBAL_FLAGS = GLOBAL_OPTIONS.map((o) => `--${o.name}`);
 
 function flagsFor(verb: string): string[] {
-  return [...(VERB_FLAGS[verb] ?? []), ...GLOBAL_FLAGS];
+  const cmd = COMMANDS.find((c) => c.name === verb);
+  return cmd ? optionsFor(cmd).map((o) => `--${o.name}`) : GLOBAL_FLAGS;
 }
 
 function zsh(): string {
@@ -105,7 +23,7 @@ function zsh(): string {
     return `        ${v}) _values 'flag' ${flags} ;;`;
   }).join("\n");
   return `#compdef hibi
-# hibi zsh completions — source this file or place it on your $fpath.
+# hibi zsh completions (generated from the option tables). Source this file or place it on your $fpath.
 _hibi() {
   local -a verbs
   verbs=(${VERBS.map((v) => `'${v}'`).join(" ")})
@@ -126,7 +44,7 @@ function bash(): string {
   const verbCases = VERBS.map((v) => {
     return `    ${v}) opts="${flagsFor(v).join(" ")}" ;;`;
   }).join("\n");
-  return `# hibi bash completions — source this file (e.g. from ~/.bashrc).
+  return `# hibi bash completions (generated from the option tables). Source this file from ~/.bashrc.
 _hibi() {
   local cur prev verb opts
   cur="\${COMP_WORDS[COMP_CWORD]}"
@@ -147,16 +65,15 @@ complete -F _hibi hibi
 
 function fish(): string {
   const lines: string[] = [
-    "# hibi fish completions — place in ~/.config/fish/completions/hibi.fish",
+    "# hibi fish completions (generated from the option tables). Place in ~/.config/fish/completions/hibi.fish",
     "complete -c hibi -f",
   ];
-  // Verb completions at position 1 (no command seen yet).
   for (const v of VERBS) {
+    const summary = COMMANDS.find((c) => c.name === v)?.summary ?? `hibi ${v}`;
     lines.push(
-      `complete -c hibi -n '__fish_use_subcommand' -a ${v} -d 'hibi ${v}'`,
+      `complete -c hibi -n '__fish_use_subcommand' -a ${v} -d '${summary.replace(/'/g, "")}'`,
     );
   }
-  // Per-verb flag completions.
   for (const v of VERBS) {
     for (const f of flagsFor(v)) {
       const long = f.replace(/^--/, "");

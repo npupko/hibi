@@ -1,0 +1,60 @@
+{
+  "id": "asrt_a27dc933c36c4027",
+  "propositionId": "prop_300cc86c906547d2",
+  "documentId": "doc_320b0ba63f0f3f7e",
+  "owner": "hibi-dogfood",
+  "ref": "ce2fd982a55dec0d80e48b0f06762adefd7e5bfb",
+  "anchor": {
+    "doc": {
+      "file": "docs/behavioral.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "The default timeout is 120 seconds per verifier.",
+          "prefix": "n-verifiers [--verifier-timeout <seconds>]\n```\n\n",
+          "suffix": " A timeout or spawn failure produces no result f"
+        },
+        {
+          "kind": "text-position",
+          "start": 1433,
+          "end": 1481
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/resolver/builtin/command-runner.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "DEFAULT_VERIFIER_TIMEOUT_MS = 120_000",
+            "prefix": "Resolver } from \"../registry.ts\";\n\nexport const ",
+            "suffix": ";\n\n/** `sh -c` on POSIX, `cmd /c` on Windows. */"
+          },
+          {
+            "kind": "text-position",
+            "start": 594,
+            "end": 631
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "variable_declarator",
+            "structuralHash": "de0dbd0a8e84411f",
+            "semanticHash": "d796ae9fc33237c4"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "number",
+            "value": "120_000"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verified": true,
+  "verifiers": [],
+  "attrs": {}
+}

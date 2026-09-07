@@ -110,6 +110,7 @@ describe("all five first-party grammars (§16, §17.4)", () => {
         ref: "r",
         anchor: composeAnchor(docBundle, [codeBundle]),
         enforcement: "suggested",
+        verified: false,
         verifiers: [],
         attrs: {},
       };

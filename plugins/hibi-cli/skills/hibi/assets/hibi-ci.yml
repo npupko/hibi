@@ -19,14 +19,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # needed if you switch `command` to `diff` (it compares refs)
+          fetch-depth: 0 # needed if you set `since` (it compares refs)
 
       - name: Check documentation claims
         uses: npupko/hibi@v0
         with:
-          command: check # or: diff
-          fail-on: gating # gating | warn | tamper | never
-          # since: origin/${{ github.base_ref }}   # only for `command: diff`
+          fail-on: gating # gating | warn | never
+          # since: origin/${{ github.base_ref }}   # runs `check --since <ref>`
           # write: "false"                          # set true to stamp banners (commit them separately)
           # run-verifiers: "false"                  # set true to execute declared verifiers (supply-chain opt-in)
           # working-directory: "."                  # subdir holding the .claims store

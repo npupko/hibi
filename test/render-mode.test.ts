@@ -2,51 +2,66 @@ import { describe, expect, test } from "bun:test";
 import { resolveMode } from "../src/cli/render/mode.ts";
 
 /**
- * The mode resolver is the contract that keeps the machine flow byte-identical:
- * a piped (non-TTY) run with no flags must resolve to compact `json`. The matrix
- * below pins flags × isTTY × NO_COLOR/FORCE_COLOR/--color → kind + color.
+ * The mode resolver keeps the machine flow byte-identical: a piped (non-TTY)
+ * run with no flags resolves to compact `json`. The matrix below pins
+ * flags x isTTY x NO_COLOR/FORCE_COLOR/--color to kind + color.
  */
-describe("resolveMode — view kind", () => {
-  test("default + non-TTY → compact json (the machine contract)", () => {
+describe("resolveMode: view kind", () => {
+  test("default + non-TTY resolves to compact json (the machine contract)", () => {
     expect(resolveMode({}, { isTTY: false }).kind).toBe("json");
   });
-  test("default + TTY → rich", () => {
+  test("default + TTY resolves to rich", () => {
     expect(resolveMode({}, { isTTY: true }).kind).toBe("rich");
   });
   test("--json forces compact json even on a TTY", () => {
     expect(resolveMode({ json: true }, { isTTY: true }).kind).toBe("json");
   });
-  test("--json --pretty → indented json", () => {
-    expect(
-      resolveMode({ json: true, pretty: true }, { isTTY: true }).kind,
-    ).toBe("json-pretty");
+  test("--format json-pretty gives indented json", () => {
+    expect(resolveMode({ format: "json-pretty" }, { isTTY: true }).kind).toBe(
+      "json-pretty",
+    );
   });
-  test("--pretty forces rich even when piped", () => {
-    expect(resolveMode({ pretty: true }, { isTTY: false }).kind).toBe("rich");
+  test("--format human forces rich even when piped", () => {
+    expect(resolveMode({ format: "human" }, { isTTY: false }).kind).toBe(
+      "rich",
+    );
   });
-  test("--compact → compact human view even when piped", () => {
-    expect(resolveMode({ compact: true }, { isTTY: false }).kind).toBe(
+  test("--format compact gives the compact human view even when piped", () => {
+    expect(resolveMode({ format: "compact" }, { isTTY: false }).kind).toBe(
       "compact",
     );
   });
-  test("--json beats --compact (machine wins)", () => {
-    expect(resolveMode({ json: true, compact: true }, {}).kind).toBe("json");
+  test("--format beats --json", () => {
+    expect(resolveMode({ json: true, format: "compact" }, {}).kind).toBe(
+      "compact",
+    );
+  });
+  test("an unknown --format falls back to the TTY default", () => {
+    expect(resolveMode({ format: "bogus" }, { isTTY: false }).kind).toBe(
+      "json",
+    );
   });
 });
 
-describe("resolveMode — color", () => {
+describe("resolveMode: color", () => {
   test("json never carries color", () => {
     expect(resolveMode({ json: true }, { isTTY: true }).color).toBe(false);
+    expect(
+      resolveMode({ format: "json-pretty", color: "always" }, { isTTY: true })
+        .color,
+    ).toBe(false);
   });
   test("rich on a TTY is colored by default", () => {
     expect(resolveMode({}, { isTTY: true }).color).toBe(true);
   });
   test("rich piped is uncolored by default", () => {
-    expect(resolveMode({ pretty: true }, { isTTY: false }).color).toBe(false);
+    expect(resolveMode({ format: "human" }, { isTTY: false }).color).toBe(
+      false,
+    );
   });
   test("--color always wins over a non-TTY", () => {
     expect(
-      resolveMode({ pretty: true, color: "always" }, { isTTY: false }).color,
+      resolveMode({ format: "human", color: "always" }, { isTTY: false }).color,
     ).toBe(true);
   });
   test("--color never wins over a TTY", () => {
@@ -67,26 +82,30 @@ describe("resolveMode — color", () => {
   });
   test("FORCE_COLOR enables color when piped", () => {
     expect(
-      resolveMode({ pretty: true }, { isTTY: false, env: { FORCE_COLOR: "1" } })
-        .color,
+      resolveMode(
+        { format: "human" },
+        { isTTY: false, env: { FORCE_COLOR: "1" } },
+      ).color,
     ).toBe(true);
   });
   test("NO_COLOR beats FORCE_COLOR when both set", () => {
     expect(
       resolveMode(
-        { pretty: true },
+        { format: "human" },
         { isTTY: true, env: { NO_COLOR: "1", FORCE_COLOR: "1" } },
       ).color,
     ).toBe(false);
   });
 });
 
-describe("resolveMode — unicode", () => {
+describe("resolveMode: unicode", () => {
   test("default is unicode", () => {
     expect(resolveMode({}, { isTTY: true }).unicode).toBe(true);
   });
-  test("--simple forces ASCII", () => {
-    expect(resolveMode({ simple: true }, { isTTY: true }).unicode).toBe(false);
+  test("HIBI_ASCII=1 forces ASCII", () => {
+    expect(
+      resolveMode({}, { isTTY: true, env: { HIBI_ASCII: "1" } }).unicode,
+    ).toBe(false);
   });
   test("a UTF-8 locale keeps unicode", () => {
     expect(resolveMode({}, { env: { LANG: "en_US.UTF-8" } }).unicode).toBe(
@@ -95,5 +114,17 @@ describe("resolveMode — unicode", () => {
   });
   test("a non-UTF locale falls back to ASCII", () => {
     expect(resolveMode({}, { env: { LANG: "C" } }).unicode).toBe(false);
+  });
+});
+
+describe("resolveMode: explain and hints", () => {
+  test("explain is off unless the flag is set", () => {
+    expect(resolveMode({}, {}).explain).toBe(false);
+    expect(resolveMode({ explain: true }, {}).explain).toBe(true);
+  });
+  test("hints are on by default, off via --no-hints or HIBI_ADVICE=0", () => {
+    expect(resolveMode({}, {}).hints).toBe(true);
+    expect(resolveMode({ noHints: true }, {}).hints).toBe(false);
+    expect(resolveMode({}, { env: { HIBI_ADVICE: "0" } }).hints).toBe(false);
   });
 });

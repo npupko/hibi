@@ -13,25 +13,8 @@ import { exists } from "../src/fs.ts";
 
 const CLI = join(import.meta.dir, "..", "src", "cli", "index.ts");
 
-interface Selector {
-  kind?: string;
-}
-
-/** One side of an anchor's selector bundle (doc side or one code bundle). */
-interface SelectorBundle {
-  file?: string;
-  selectors?: Selector[];
-}
-
-/**
- * Minimal shape of the CLI's JSON output that these tests actually read — the
- * two-axis, verdict-first model (§9). `assertion.anchor` is bidirectional:
- * `code[]` is an array of per-target bundles, each with its own `selectors[]`.
- */
 interface RemediationAction {
   id?: string;
-  applicability?: string;
-  effect?: string;
   command?: string;
 }
 interface Remediation {
@@ -60,76 +43,81 @@ interface ListRow {
   recommended?: string | null;
   documentPath?: string | null;
   codePath?: string | null;
+  side?: string;
+  text?: string;
 }
 interface CliJson {
   ok?: boolean;
+  error?: string;
   action?: string;
   schemaVersion?: string;
   next?: string;
   nonce?: string;
   store?: string;
-  claimId?: string;
-  alreadyRetired?: boolean;
-  // reanchor result: the post-reanchor per-side states sit at the top level
+  id?: string;
   doc?: string;
   code?: string;
-  // record --from-file batch result
+  enforcement?: string;
+  verified?: boolean;
+  warnings?: string[];
+  alreadyRetired?: boolean;
   batch?: boolean;
-  assertion?: {
-    enforcement?: string;
-    anchor?: { doc?: SelectorBundle; code?: SelectorBundle[] };
+  results?: { id?: string }[];
+  before?: { doc?: { quote?: string }; code?: { quote?: string }[] };
+  after?: { doc?: { quote?: string }; code?: { quote?: string }[] };
+  summary?: {
+    clean?: number;
+    total?: number;
+    retired?: number;
+    warning?: number;
+    gating?: number;
+    uncovered?: number;
   };
-  summary?: { clean?: number; total?: number };
   verdicts?: CliVerdict[];
   changedFiles?: string[];
+  found?: boolean;
   count?: number;
-  current?: boolean;
   state?: string;
   claims?: ListRow[];
-  oldDoc?: { lifecycle?: string };
-  type?: string;
-  properties?: { anchor?: unknown };
-  // lifecycle stranded-claim reporting + relocate / doctor envelopes
-  warning?: string;
-  existingClaims?: string[];
+  candidates?: { side?: string; file?: string }[];
+  relocated?: { claimId?: string }[];
+  misses?: { claimId?: string }[];
   strandedClaims?: string[];
   dryRun?: boolean;
-  from?: string;
-  to?: string;
-  relocated?: { claimId?: string; doc?: string; code?: string }[];
-  misses?: { claimId?: string; reason?: string }[];
-  healthy?: boolean;
-  counts?: {
-    orphanedAnchors?: number;
-    suggestedNoCode?: number;
-    staleDocClaims?: number;
-    duplicatePropositions?: number;
-  };
-  orphanedAnchors?: { claimId?: string; side?: string; path?: string }[];
-  staleDocClaims?: { claimId?: string }[];
+  assertion?: unknown;
+  type?: string;
+  properties?: { anchor?: unknown };
+  exitCode?: number;
 }
 
 interface RunResult {
   code: number;
   json: CliJson;
   stdout: string;
+  stderr: string;
 }
 
-async function run(cwd: string, args: string[]): Promise<RunResult> {
+async function run(
+  cwd: string,
+  args: string[],
+  stdin?: string,
+): Promise<RunResult> {
   const proc = Bun.spawn(["bun", "run", CLI, ...args], {
     cwd,
     stdout: "pipe",
     stderr: "pipe",
+    stdin: stdin === undefined ? "ignore" : new TextEncoder().encode(stdin),
   });
   const stdout = await new Response(proc.stdout).text();
+  const stderr = await new Response(proc.stderr).text();
   const code = await proc.exited;
   let json: CliJson = {};
   try {
     json = JSON.parse(stdout.trim().split("\n").at(-1) ?? "");
   } catch {
-    /* non-JSON (e.g. usage) */
+    /* non-JSON */
   }
-  return { code, json, stdout };
+  return { code, json, stdout, stderr };
 }
 
 let dirs: string[] = [];
@@ -141,59 +129,66 @@ async function repo(): Promise<string> {
   await Bun.spawn(["git", "config", "user.name", "t"], { cwd: d }).exited;
   return d;
 }
+async function commit(d: string) {
+  await Bun.spawn(["git", "add", "-A"], { cwd: d }).exited;
+  await Bun.spawn(["git", "commit", "-qm", "c"], { cwd: d }).exited;
+}
 async function write(root: string, rel: string, content: string) {
   const abs = join(root, rel);
   await mkdir(dirname(abs), { recursive: true });
   await writeFile(abs, content);
+}
+async function snapshotStore(root: string): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const walk = async (d: string) => {
+    for (const e of await readdir(d, { withFileTypes: true })) {
+      const p = join(d, e.name);
+      if (e.isDirectory()) await walk(p);
+      else out.set(p, await readFile(p, "utf8"));
+    }
+  };
+  await walk(join(root, ".claims"));
+  return out;
+}
+function sameStore(a: Map<string, string>, b: Map<string, string>): boolean {
+  if (a.size !== b.size) return false;
+  for (const [k, v] of a) if (b.get(k) !== v) return false;
+  return true;
 }
 afterEach(async () => {
   await Promise.all(dirs.map((d) => rm(d, { recursive: true, force: true })));
   dirs = [];
 });
 
-/**
- * Pull the kinds present in the code side's first bundle. Span-first record
- * builds the doc-side bundle from the documented sentence and one code-side
- * bundle from the pinned code span; the code bundle carries the `value`
- * selector that trips a literal change (§4/§17.4).
- */
-function codeSelectorKinds(json: CliJson): (string | undefined)[] {
-  return (json.assertion?.anchor?.code?.[0]?.selectors ?? []).map(
-    (s: Selector) => s.kind,
-  );
+/** A repo with one enforced claim on MAX_ATTEMPTS. */
+async function seeded(): Promise<{ d: string; id: string }> {
+  const d = await repo();
+  await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+  await write(d, "README.md", "# Doc\n\nRetries are capped at 5 attempts.\n");
+  await run(d, ["init"]);
+  const rec = await run(d, [
+    "record",
+    "--doc",
+    "README.md",
+    "--doc-quote",
+    "Retries are capped at 5 attempts",
+    "--code-file",
+    "src/retry.ts",
+    "--code-quote",
+    "MAX_ATTEMPTS = 5",
+    "--owner",
+    "alice",
+  ]);
+  return { d, id: rec.json.id ?? "" };
 }
 
-describe("CLI end-to-end (§9)", () => {
-  test("init → record → check clean → drift → exit 2 (enforced gates)", async () => {
-    const d = await repo();
-    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-    await write(d, "README.md", "# Doc\n\nCapped at 5 attempts.\n");
-
+describe("CLI end-to-end", () => {
+  test("init → record → check clean → drift → exit 2 (enforced by default)", async () => {
+    const { d } = await seeded();
     const init = await run(d, ["init"]);
     expect(init.code).toBe(0);
     expect(init.json.nonce).toMatch(/^[0-9a-f]{8}$/);
-
-    // Span-first record: --doc-quote locates the documented sentence (doc side),
-    // --code-file/--code-quote pins the code (code side). `verified` trust makes
-    // the claim ENFORCED, so its drift gates.
-    const rec = await run(d, [
-      "record",
-      "--doc",
-      "README.md",
-      "--doc-quote",
-      "Capped at 5",
-      "--code-file",
-      "src/retry.ts",
-      "--code-quote",
-      "MAX_ATTEMPTS = 5",
-      "--trust",
-      "verified",
-      "--owner",
-      "alice",
-    ]);
-    expect(rec.code).toBe(0);
-    // The code-side bundle carries a `value` selector (5 → 50 trips it).
-    expect(codeSelectorKinds(rec.json)).toContain("value");
+    expect(init.json.schemaVersion).toBe("v3");
 
     const clean = await run(d, ["check"]);
     expect(clean.code).toBe(0);
@@ -202,66 +197,211 @@ describe("CLI end-to-end (§9)", () => {
     await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
     const drifted = await run(d, ["check"]);
     expect(drifted.code).toBe(2);
-    // Verdict-first: the code side resolved but its content changed.
     expect(drifted.json.verdicts?.[0]?.code).toBe("changed");
     expect(drifted.json.verdicts?.[0]?.gates).toBe(true);
+    expect(drifted.json.verdicts?.[0]?.changed).toContain("value changed");
   });
 
-  test("a NON-enforced (suggested) claim never gates — drift is exit 0", async () => {
-    // Precision-over-recall (§9/ADR-001): only ENFORCED claims gate. The default
-    // trust (`inferred`) derives `suggested`, which is advisory — the same code
-    // drift that gated above must NOT gate here.
-    const d = await repo();
-    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-    await write(d, "README.md", "# Doc\n\nCapped at 5 attempts.\n");
-    await run(d, ["init"]);
-    await run(d, [
+  test("piped record returns the lean summary; --explain returns the full result", async () => {
+    const { d, id } = await seeded();
+    expect(id).toMatch(/^asrt_/);
+    const rec = await run(d, [
       "record",
       "--doc",
       "README.md",
       "--doc-quote",
-      "Capped at 5",
+      "Retries are capped at 5 attempts",
       "--code-file",
       "src/retry.ts",
       "--code-quote",
       "MAX_ATTEMPTS = 5",
     ]);
+    expect(Object.keys(rec.json).sort()).toEqual(
+      [
+        "action",
+        "code",
+        "doc",
+        "enforcement",
+        "id",
+        "next",
+        "ok",
+        "schemaVersion",
+        "verified",
+      ].sort(),
+    );
+    expect(rec.json.enforcement).toBe("enforced");
+    const full = await run(d, [
+      "record",
+      "--doc",
+      "README.md",
+      "--doc-quote",
+      "Retries are capped at 5 attempts",
+      "--code-file",
+      "src/retry.ts",
+      "--code-quote",
+      "MAX_ATTEMPTS = 5",
+      "--explain",
+    ]);
+    expect(full.json.assertion).toBeDefined();
+  });
 
+  test("record --suggest never gates; --verified is recorded", async () => {
+    const d = await repo();
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+    await write(d, "README.md", "# Doc\n\nRetries are capped at 5 attempts.\n");
+    await run(d, ["init"]);
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "README.md",
+      "--doc-quote",
+      "Retries are capped at 5 attempts",
+      "--code-file",
+      "src/retry.ts",
+      "--code-quote",
+      "MAX_ATTEMPTS = 5",
+      "--suggest",
+      "--verified",
+    ]);
+    expect(rec.json.enforcement).toBe("suggested");
+    expect(rec.json.verified).toBe(true);
     await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
     const drifted = await run(d, ["check"]);
     expect(drifted.code).toBe(0);
-    // The drift is still computed and reported — it just does not gate.
     expect(drifted.json.verdicts?.[0]?.code).toBe("changed");
     expect(drifted.json.verdicts?.[0]?.gates).toBe(false);
   });
 
-  test("check --write stamps a banner that the consumer can see in the raw file", async () => {
+  test("record rejects a nonexistent --code-file with exit 1", async () => {
     const d = await repo();
-    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-    await write(d, "README.md", "# Doc\n\nCapped at 5 attempts.\n");
+    await write(d, "README.md", "# Doc\n\nRetries are capped at 5 attempts.\n");
     await run(d, ["init"]);
-    // --enforce makes the claim gating so the banner stamps.
-    await run(d, [
+    const rec = await run(d, [
       "record",
       "--doc",
       "README.md",
       "--doc-quote",
-      "Capped at 5",
+      "Retries are capped at 5 attempts",
       "--code-file",
-      "src/retry.ts",
+      "src/nope.ts",
       "--code-quote",
-      "MAX_ATTEMPTS = 5",
-      "--enforce",
+      "x",
     ]);
+    expect(rec.code).toBe(1);
+    expect(rec.json.error).toContain("not found");
+  });
+
+  test("a doc quote that occurs twice returns a warning in the result", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(
+      d,
+      "README.md",
+      "# Doc\n\nThe A constant is one.\n\nSecond section.\n\nThe A constant is one.\n",
+    );
+    await run(d, ["init"]);
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "README.md",
+      "--doc-quote",
+      "The A constant is one.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    expect(rec.code).toBe(0);
+    expect(rec.json.warnings?.[0]).toContain("occurs 2 times");
+  });
+
+  test("record --from-file - reads JSON from stdin, all or nothing", async () => {
+    const d = await repo();
+    await write(
+      d,
+      "src/conf.ts",
+      "export const TTL_MS = 60000;\nexport const RETRIES = 3;\n",
+    );
+    await write(
+      d,
+      "docs/conf.md",
+      "# Config\n\nThe cache TTL is 60000ms.\nRetries default to 3.\n",
+    );
+    await run(d, ["init"]);
+    const ok = await run(
+      d,
+      ["record", "--from-file", "-"],
+      JSON.stringify([
+        {
+          doc: "docs/conf.md",
+          docQuote: "The cache TTL is 60000ms",
+          codeFile: "src/conf.ts",
+          codeQuote: "TTL_MS = 60000",
+          verified: true,
+        },
+        {
+          doc: "docs/conf.md",
+          docQuote: "Retries default to 3",
+          codeFile: "src/conf.ts",
+          codeQuote: "RETRIES = 3",
+        },
+      ]),
+    );
+    expect(ok.code).toBe(0);
+    expect(ok.json.batch).toBe(true);
+    expect(ok.json.results?.length).toBe(2);
+    expect((await run(d, ["check"])).json.summary?.clean).toBe(2);
+
+    const before = await snapshotStore(d);
+    const bad = await run(
+      d,
+      ["record", "--from-file", "-"],
+      JSON.stringify([
+        {
+          doc: "docs/conf.md",
+          docQuote: "The cache TTL is 60000ms",
+          codeFile: "src/conf.ts",
+          codeQuote: "TTL_MS = 60000",
+        },
+        { doc: "docs/conf.md", docQuote: "NOT PRESENT IN THE FILE" },
+      ]),
+    );
+    expect(bad.code).toBe(1);
+    expect(sameStore(before, await snapshotStore(d))).toBe(true);
+  });
+
+  test("check --write stamps a banner without a checksum, then clears it", async () => {
+    const { d } = await seeded();
     await write(d, "src/retry.ts", "// removed\n");
     const res = await run(d, ["check", "--write"]);
     expect(res.code).toBe(2);
-    const doc = await Bun.file(join(d, "README.md")).text();
+    const doc = await readFile(join(d, "README.md"), "utf8");
     expect(doc).toContain("HIBI:BEGIN");
     expect(doc).toContain("STALE DOCUMENT");
+    expect(doc).not.toContain("sha=");
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+    await run(d, ["check", "--write"]);
+    expect(await readFile(join(d, "README.md"), "utf8")).not.toContain(
+      "HIBI:BEGIN",
+    );
   });
 
-  test("diff --since scopes to changed files (the write-time loop)", async () => {
+  test("moved exits 0 as a warning and 2 under --fail-on warn", async () => {
+    const { d } = await seeded();
+    await write(
+      d,
+      "src/retry.ts",
+      `${"// prologue\n".repeat(4)}export const MAX_ATTEMPTS = 5;\n`,
+    );
+    const soft = await run(d, ["check"]);
+    expect(soft.code).toBe(0);
+    expect(soft.json.verdicts?.[0]?.code).toBe("moved");
+    expect(soft.json.summary?.warning).toBe(1);
+    expect((await run(d, ["check", "--fail-on", "warn"])).code).toBe(2);
+    expect((await run(d, ["check", "--fail-on", "never"])).code).toBe(0);
+  });
+
+  test("check --since scopes to changed files and rejects an unknown ref", async () => {
     const d = await repo();
     await write(d, "src/a.ts", "export const A = 1;\n");
     await write(d, "src/b.ts", "export const B = 2;\n");
@@ -289,27 +429,28 @@ describe("CLI end-to-end (§9)", () => {
       "--code-quote",
       "B = 2",
     ]);
-    await Bun.spawn(["git", "add", "-A"], { cwd: d }).exited;
-    await Bun.spawn(["git", "commit", "-qm", "init"], { cwd: d }).exited;
-
-    // Change only a.ts.
+    await commit(d);
     await write(d, "src/a.ts", "export const A = 100;\n");
-    const res = await run(d, ["diff", "--since", "HEAD"]);
+    const res = await run(d, ["check", "--since", "HEAD"]);
     expect(res.json.changedFiles).toContain("src/a.ts");
     expect(res.json.changedFiles).not.toContain("src/b.ts");
-    // Only the changed file's claim is evaluated.
     expect(res.json.verdicts?.length).toBe(1);
+    const bad = await run(d, ["check", "--since", "no-such-ref"]);
+    expect(bad.code).toBe(1);
+    expect(bad.json.error).toContain("unknown git ref");
   });
 
-  test("query --path reports claims covering a file", async () => {
+  test("check --doc scopes to one document and shares the exit-code path", async () => {
     const d = await repo();
     await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "doc.md", "# Doc\n\nA is 1 here.\n");
+    await write(d, "src/b.ts", "export const B = 2;\n");
+    await write(d, "a.md", "# A\n\nA is 1 here.\n");
+    await write(d, "b.md", "# B\n\nB is 2 here.\n");
     await run(d, ["init"]);
     await run(d, [
       "record",
       "--doc",
-      "doc.md",
+      "a.md",
       "--doc-quote",
       "A is 1 here",
       "--code-file",
@@ -317,112 +458,449 @@ describe("CLI end-to-end (§9)", () => {
       "--code-quote",
       "A = 1",
     ]);
-    const res = await run(d, ["query", "--path", "src/a.ts"]);
-    expect(res.code).toBe(0);
-    expect(res.json.count).toBe(1);
-  });
-
-  test("status --doc is a read-time gate returning non-zero when suspect", async () => {
-    const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "doc.md", "# Doc\n\nA is 1 here.\n");
-    await run(d, ["init"]);
-    // Enforced so its drift gates the read-time check.
     await run(d, [
       "record",
       "--doc",
-      "doc.md",
+      "b.md",
       "--doc-quote",
-      "A is 1 here",
+      "B is 2 here",
       "--code-file",
-      "src/a.ts",
+      "src/b.ts",
       "--code-quote",
-      "A = 1",
-      "--enforce",
+      "B = 2",
     ]);
-    expect((await run(d, ["status", "--doc", "doc.md"])).code).toBe(0);
     await write(d, "src/a.ts", "// gone\n");
-    const after = await run(d, ["status", "--doc", "doc.md"]);
-    expect(after.code).toBe(2);
-    // Two-axis: `current` is false iff a verdict gates (no single rollup state).
-    expect(after.json.current).toBe(false);
-  });
-
-  test("supersede authors the edge and flips lifecycle", async () => {
-    const d = await repo();
-    await run(d, ["init"]);
-    const res = await run(d, [
-      "supersede",
-      "--new",
-      "v2.md",
-      "--old",
-      "v1.md",
-      "--type",
-      "supersedes",
+    const a = await run(d, ["check", "--doc", "a.md"]);
+    expect(a.code).toBe(2);
+    expect(a.json.doc).toBe("a.md");
+    expect(a.json.found).toBe(true);
+    expect(a.json.verdicts?.length).toBe(1);
+    const b = await run(d, ["check", "--doc", "b.md"]);
+    expect(b.code).toBe(0);
+    expect(b.json.verdicts?.length).toBe(1);
+    const never = await run(d, [
+      "check",
+      "--doc",
+      "a.md",
+      "--fail-on",
+      "never",
     ]);
-    expect(res.code).toBe(0);
-    expect(res.json.oldDoc?.lifecycle).toBe("superseded");
+    expect(never.code).toBe(0);
+    const untracked = await run(d, ["check", "--doc", "nope.md"]);
+    expect(untracked.json.found).toBe(false);
   });
 
-  test("schema emits generated JSON Schema by name", async () => {
-    const d = await repo();
-    const res = await run(d, ["schema", "--name", "Assertion"]);
-    expect(res.code).toBe(0);
-    expect(res.json.type).toBe("object");
-    expect(res.json.properties?.anchor).toBeDefined();
+  test("diff and status are deprecated aliases that print a notice", async () => {
+    const { d } = await seeded();
+    await commit(d);
+    const diff = await run(d, ["diff", "--since", "HEAD"]);
+    expect(diff.code).toBe(0);
+    expect(diff.json.action).toBe("check");
+    expect(diff.stderr).toContain("deprecated");
+    const status = await run(d, ["status", "--doc", "README.md"]);
+    expect(status.json.action).toBe("check");
+    expect(status.stderr).toContain("hibi check --doc");
   });
 
-  test("unknown command is an operational error (exit 1)", async () => {
-    const d = await repo();
-    const res = await run(d, ["frobnicate"]);
-    expect(res.code).toBe(1);
-    expect(res.json.ok).toBe(false);
+  test("retired claims are excluded from clean and never gate", async () => {
+    const { d, id } = await seeded();
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
+    expect((await run(d, ["check"])).code).toBe(2);
+    const first = await run(d, ["retire", id]);
+    expect(first.code).toBe(0);
+    expect(first.json.alreadyRetired).toBe(false);
+    const after = await run(d, ["check"]);
+    expect(after.code).toBe(0);
+    expect(after.json.summary?.clean).toBe(0);
+    expect(after.json.summary?.retired).toBe(1);
+    expect((await run(d, ["retire", id])).json.alreadyRetired).toBe(true);
+    const row = (await run(d, ["list"])).json.claims?.find(
+      (r) => r.claimId === id,
+    );
+    expect(row?.status).toBe("retired");
   });
 
-  /**
-   * Lock the machine contract (§9): the CLI is run with stdout piped (non-TTY),
-   * so the *default* already resolves to compact JSON. Forcing `--json` must
-   * produce byte-identical output — and the historical default *was* that exact
-   * compact JSON, so this pins "`--json` ≡ pre-change default" for every command
-   * a machine reads. `--json --pretty` is the same bytes, just indented.
-   */
-  test("--json output is byte-identical to the piped default (the machine contract)", async () => {
+  test("list filters by --state and --path, and --ids-only prints bare ids", async () => {
+    const { d, id } = await seeded();
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
+    const all = await run(d, ["list"]);
+    const row = all.json.claims?.[0];
+    expect(row?.claimId).toBe(id);
+    expect(row?.status).toBe("code:changed");
+    expect(row?.severity).toBe("gating");
+    expect(row?.text).toContain("Retries are capped");
+    expect(row?.recommended).toBe("update-claim");
+    expect((await run(d, ["list", "--state", "gating"])).json.count).toBe(1);
+    expect((await run(d, ["list", "--state", "clean"])).json.count).toBe(0);
+    const byPath = await run(d, ["list", "--path", "src/retry.ts"]);
+    expect(byPath.json.count).toBe(1);
+    expect(byPath.json.claims?.[0]?.side).toBe("code");
+    expect(
+      (await run(d, ["list", "--path", "README.md"])).json.claims?.[0]?.side,
+    ).toBe("doc");
+    expect((await run(d, ["list", "--path", "src/other.ts"])).json.count).toBe(
+      0,
+    );
+    const ids = await run(d, ["list", "--ids-only"]);
+    expect(ids.stdout.trim()).toBe(id);
+    expect((await run(d, ["list", "--state", "bogus"])).code).toBe(1);
+    const noHints = await run(d, ["list", "--no-hints"]);
+    expect(noHints.json.claims?.[0]?.recommended).toBeNull();
+  });
+
+  test("list --state orphaned drains after retire; stranded and duplicate filters", async () => {
     const d = await repo();
-    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-    await write(d, "README.md", "# Doc\n\nCapped at 5 attempts.\n");
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "src/gone.ts", "export const X = 1;\n");
+    await write(d, "ok.md", "# OK\n\nA is one.\n");
+    await write(d, "o.md", "# O\n\nOrphan here.\n");
+    await write(d, "dup.md", "# Dup\n\nA is one.\n");
     await run(d, ["init"]);
     await run(d, [
       "record",
       "--doc",
-      "README.md",
+      "ok.md",
       "--doc-quote",
-      "Capped at 5",
+      "A is one.",
       "--code-file",
-      "src/retry.ts",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    await run(d, [
+      "record",
+      "--doc",
+      "dup.md",
+      "--doc-quote",
+      "A is one.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    const orphan = await run(d, [
+      "record",
+      "--doc",
+      "o.md",
+      "--doc-quote",
+      "Orphan here.",
+      "--code-file",
+      "src/gone.ts",
+      "--code-quote",
+      "X = 1",
+    ]);
+    await rm(join(d, "src/gone.ts"));
+    expect(
+      (await run(d, ["list", "--state", "orphaned"])).json.claims?.map(
+        (c) => c.claimId,
+      ),
+    ).toEqual([orphan.json.id ?? ""]);
+    expect((await run(d, ["list", "--state", "duplicate"])).json.count).toBe(2);
+    await run(d, ["retire", orphan.json.id ?? ""]);
+    expect((await run(d, ["list", "--state", "orphaned"])).json.count).toBe(0);
+    await write(d, "new.md", "# New\n\nSomething else.\n");
+    await run(d, ["supersede", "--from", "ok.md", "--to", "new.md"]);
+    const stranded = await run(d, ["list", "--state", "stranded"]);
+    expect(stranded.json.count).toBe(1);
+    expect(stranded.json.claims?.[0]?.status).toBe("superseded");
+  });
+
+  test("a gating verdict carries the remediation menu with commands, --no-hints strips it", async () => {
+    const { d, id } = await seeded();
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
+    const rem = (await run(d, ["check"])).json.verdicts?.[0]?.remediation;
+    expect(rem?.recommended).toBe("update-claim");
+    expect(rem?.actions?.map((a) => a.id)).toEqual([
+      "update-claim",
+      "reanchor",
+      "retire",
+    ]);
+    expect(rem?.actions?.[2]?.command).toBe(`hibi retire ${id}`);
+    const stripped = await run(d, ["check", "--no-hints"]);
+    expect(stripped.json.verdicts?.[0]?.remediation).toBeUndefined();
+    expect(stripped.json.verdicts?.[0]?.gates).toBe(true);
+    const explained = await run(d, ["check", "--explain"]);
+    expect(explained.json.verdicts?.[0]?.evidence).toBeDefined();
+    expect(explained.json.verdicts?.[0]?.fingerprint).toBeDefined();
+    expect(
+      (await run(d, ["check"])).json.verdicts?.[0]?.evidence,
+    ).toBeUndefined();
+  });
+
+  test("an orphan recommends the read-only --suggest pass", async () => {
+    const { d, id } = await seeded();
+    await rm(join(d, "src/retry.ts"));
+    const v = (await run(d, ["check"])).json.verdicts?.[0];
+    expect(v?.code).toBe("orphaned");
+    expect(v?.remediation?.recommended).toBe("reanchor");
+    expect(v?.remediation?.actions?.[0]?.command).toBe(
+      `hibi reanchor ${id} --suggest`,
+    );
+  });
+
+  test("reanchor refuses an orphaned side, accepts an explicit new span, and reports before/after quotes", async () => {
+    const { d, id } = await seeded();
+    await rm(join(d, "src/retry.ts"));
+    const refused = await run(d, ["reanchor", id]);
+    expect(refused.code).toBe(1);
+    expect(refused.json.error).toContain("orphaned");
+    await write(d, "src/limits.ts", "export const MAX_ATTEMPTS = 5;\n");
+    const moved = await run(d, [
+      "reanchor",
+      id,
+      "--code-file",
+      "src/limits.ts",
       "--code-quote",
       "MAX_ATTEMPTS = 5",
-      "--trust",
-      "verified",
     ]);
+    expect(moved.code).toBe(0);
+    expect(moved.json.code).toBe("unchanged");
+    expect(moved.json.before?.code?.[0]?.quote).toBe("MAX_ATTEMPTS = 5");
+    expect(moved.json.after?.code?.[0]?.quote).toBe("MAX_ATTEMPTS = 5");
+    expect((await run(d, ["check"])).code).toBe(0);
+  });
 
-    // Read-only verbs: same store state, default-piped vs forced --json.
-    const readOnly: string[][] = [
+  test("reanchor re-localizes a moved claim and --dry-run writes nothing", async () => {
+    const { d, id } = await seeded();
+    await write(
+      d,
+      "src/retry.ts",
+      `${"// p\n".repeat(4)}export const MAX_ATTEMPTS = 5;\n`,
+    );
+    expect((await run(d, ["check"])).json.verdicts?.[0]?.code).toBe("moved");
+    const before = await snapshotStore(d);
+    const dry = await run(d, ["reanchor", id, "--dry-run"]);
+    expect(dry.json.dryRun).toBe(true);
+    expect(sameStore(before, await snapshotStore(d))).toBe(true);
+    const re = await run(d, ["reanchor", id]);
+    expect(re.json.code).toBe("unchanged");
+    expect((await run(d, ["check"])).json.verdicts?.[0]?.code).toBe(
+      "unchanged",
+    );
+  });
+
+  test("reanchor --suggest searches both sides, is read-only, and refuses span flags", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "doc.md", "# D\n\nThe A constant is one.\n");
+    await run(d, ["init"]);
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "The A constant is one.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    const id = rec.json.id ?? "";
+    await rm(join(d, "src/a.ts"));
+    await write(d, "src/b.ts", "export const A = 1;\n");
+    const before = await snapshotStore(d);
+    const sug = await run(d, ["reanchor", id, "--suggest"]);
+    expect(sug.code).toBe(0);
+    expect(sug.json.action).toBe("reanchor-suggest");
+    const sides = sug.json.candidates?.map((c) => `${c.side}:${c.file}`);
+    expect(sides).toContain("doc:doc.md");
+    expect(sides).toContain("code:src/b.ts");
+    expect(sameStore(before, await snapshotStore(d))).toBe(true);
+    const bad = await run(d, ["reanchor", id, "--suggest", "--doc-quote", "x"]);
+    expect(bad.code).toBe(1);
+  });
+
+  test("reanchor --doc moves the claim to another document (explicit span required)", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "wip.md", "# WIP\n\nThe A constant is one.\n");
+    await write(d, "docs/a.md", "# A\n\nThe A constant is one.\n");
+    await run(d, ["init"]);
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "wip.md",
+      "--doc-quote",
+      "The A constant is one",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    const id = rec.json.id ?? "";
+    expect((await run(d, ["reanchor", id, "--doc", "docs/a.md"])).code).toBe(1);
+    const re = await run(d, [
+      "reanchor",
+      id,
+      "--doc",
+      "docs/a.md",
+      "--doc-quote",
+      "The A constant is one",
+    ]);
+    expect(re.code).toBe(0);
+    expect(re.json.doc).toBe("unchanged");
+    await rm(join(d, "wip.md"));
+    expect((await run(d, ["check"])).code).toBe(0);
+    const byRange = await run(d, ["reanchor", id, "--doc-range", "L3:L3"]);
+    expect(byRange.json.doc).toBe("unchanged");
+  });
+
+  test("supersede relocates verbatim sentences and reports misses; archive tombstones", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\nexport const B = 2;\n");
+    await write(d, "v1.md", "# V1\n\nA is one.\nB is two.\n");
+    await run(d, ["init"]);
+    const a = await run(d, [
+      "record",
+      "--doc",
+      "v1.md",
+      "--doc-quote",
+      "A is one.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    const b = await run(d, [
+      "record",
+      "--doc",
+      "v1.md",
+      "--doc-quote",
+      "B is two.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "B = 2",
+    ]);
+    await write(d, "v2.md", "# V2\n\nA is one.\n");
+    const dry = await run(d, [
+      "supersede",
+      "--from",
+      "v1.md",
+      "--to",
+      "v2.md",
+      "--dry-run",
+    ]);
+    expect(dry.json.dryRun).toBe(true);
+    expect((await run(d, ["list", "--state", "stranded"])).json.count).toBe(0);
+    const sup = await run(d, ["supersede", "--from", "v1.md", "--to", "v2.md"]);
+    expect(sup.code).toBe(0);
+    expect(sup.json.relocated?.map((r) => r.claimId)).toEqual([
+      a.json.id ?? "",
+    ]);
+    expect(sup.json.misses?.map((m) => m.claimId)).toEqual([b.json.id ?? ""]);
+    expect(sup.json.strandedClaims).toEqual([b.json.id ?? ""]);
+    expect(
+      (await run(d, ["supersede", "--from", "v1.md", "--to", "v1.md"])).code,
+    ).toBe(1);
+    const arch = await run(d, [
+      "archive",
+      "--doc",
+      "v1.md",
+      "--successor",
+      "v2.md",
+    ]);
+    expect(arch.code).toBe(0);
+    expect(await exists(join(d, "archive", "v1.md"))).toBe(true);
+    expect(await readFile(join(d, "v1.md"), "utf8")).toContain("Archived");
+    expect(arch.json.strandedClaims).toEqual([b.json.id ?? ""]);
+  });
+
+  test("coverage splits prose at sentence level, gates with --fail-uncovered, and errors on a missing doc", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(
+      d,
+      "doc.md",
+      "The A constant is one. Nothing backs this sentence.\n",
+    );
+    await run(d, ["init"]);
+    await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "The A constant is one.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
+    const cov = await run(d, ["coverage", "--doc", "doc.md"]);
+    expect(cov.code).toBe(0);
+    expect(cov.json.summary?.uncovered).toBe(1);
+    expect(
+      (await run(d, ["coverage", "--doc", "doc.md", "--fail-uncovered"])).code,
+    ).toBe(2);
+    const missing = await run(d, ["coverage", "--doc", "nope.md"]);
+    expect(missing.code).toBe(1);
+    expect(missing.json.error).toContain("not found");
+  });
+
+  test("--help prints the command's table and never runs it; unknown flags exit 1", async () => {
+    const d = await repo();
+    const help = await run(d, ["init", "--help"]);
+    expect(help.code).toBe(0);
+    expect(help.stdout).toContain("hibi init");
+    expect(await exists(join(d, ".claims"))).toBe(false);
+    const rec = await run(d, ["record", "--help"]);
+    expect(rec.stdout).toContain("--doc-quote");
+    expect(rec.stdout).not.toContain("--trust");
+    const typo = await run(d, ["check", "--wirte"]);
+    expect(typo.code).toBe(1);
+    expect(typo.json.error).toContain("--wirte");
+    const trust = await run(d, ["record", "--trust", "yes"]);
+    expect(trust.code).toBe(1);
+    await run(d, ["init"]);
+    const badRange = await run(d, [
+      "record",
+      "--doc",
+      "x.md",
+      "--doc-range",
+      "3",
+    ]);
+    expect(badRange.code).toBe(1);
+    expect(badRange.stderr).not.toContain("at ");
+    expect(badRange.json.error).toContain("start:end");
+    const badEnum = await run(d, ["check", "--fail-on", "tamper"]);
+    expect(badEnum.code).toBe(1);
+    expect((await run(d, ["frobnicate"])).code).toBe(1);
+    expect((await run(d, [])).code).toBe(1);
+    expect((await run(d, ["--help"])).code).toBe(0);
+  });
+
+  test("--json is byte-identical to the piped default; --format json-pretty is the same data", async () => {
+    const { d } = await seeded();
+    for (const args of [
       ["check"],
-      ["status", "--doc", "README.md"],
-      ["status"], // the repo-wide overview path
-      ["query", "--path", "src/retry.ts"],
+      ["check", "--doc", "README.md"],
+      ["list"],
       ["schema", "--name", "Assertion"],
       ["version"],
-    ];
-    for (const args of readOnly) {
+    ]) {
       const def = await run(d, args);
       const forced = await run(d, [...args, "--json"]);
       expect(forced.stdout).toBe(def.stdout);
-      expect(forced.code).toBe(def.code);
-      // --json --pretty parses to the same object (indented, not different data).
-      const pretty = await run(d, [...args, "--json", "--pretty"]);
+      const pretty = await run(d, [...args, "--format", "json-pretty"]);
       expect(JSON.parse(pretty.stdout)).toEqual(JSON.parse(def.stdout));
     }
+    const human = await run(d, [
+      "check",
+      "--format",
+      "human",
+      "--color",
+      "never",
+    ]);
+    expect(human.stdout).toContain("hibi check");
+    const overview = await run(d, [
+      "check",
+      "--overview",
+      "--format",
+      "human",
+      "--color",
+      "never",
+    ]);
+    expect(overview.stdout).toContain("Store v3");
   });
 
   test("--store-dir decouples the store from the anchor root", async () => {
@@ -432,11 +910,9 @@ describe("CLI end-to-end (§9)", () => {
     const storeDir = join(storeHome, "claims");
     await write(d, "src/a.ts", "export const A = 1;\n");
     await write(d, "doc.md", "# Doc\n\nA is 1 here.\n");
-
-    const init = await run(d, ["init", "--store-dir", storeDir]);
-    expect(init.code).toBe(0);
-    expect(init.json.store).toBe(storeDir);
-
+    expect((await run(d, ["init", "--store-dir", storeDir])).json.store).toBe(
+      storeDir,
+    );
     const rec = await run(d, [
       "record",
       "--store-dir",
@@ -451,791 +927,129 @@ describe("CLI end-to-end (§9)", () => {
       "A = 1",
     ]);
     expect(rec.code).toBe(0);
-
-    // The store lives at the custom dir — nothing under <anchor>/.claims.
     expect(await exists(join(d, ".claims"))).toBe(false);
-    expect(await exists(join(storeDir, "config.json"))).toBe(true);
-
-    // Anchors still resolve against the anchor root through the far store.
-    const clean = await run(d, ["check", "--store-dir", storeDir]);
-    expect(clean.code).toBe(0);
-    expect(clean.json.summary?.clean).toBe(1);
+    expect(
+      (await run(d, ["check", "--store-dir", storeDir])).json.summary?.clean,
+    ).toBe(1);
   });
 
-  // ── New agent-facing surface (§9) ──────────────────────────────────────────
-
-  /**
-   * Seed an enforced claim against MAX_ATTEMPTS, then change the value so the
-   * single verdict gates with `code:changed`. Returns the claim id.
-   */
-  async function driftedRepo(): Promise<{ d: string; id: string }> {
+  test("schema emits generated JSON Schema by name and lists protocol schemas", async () => {
     const d = await repo();
-    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-    await write(d, "README.md", "# Doc\n\nRetries are capped at 5 attempts.\n");
-    await run(d, ["init"]);
-    const rec = await run(d, [
-      "record",
-      "--doc",
-      "README.md",
-      "--doc-quote",
-      "Retries are capped at 5 attempts",
-      "--code-file",
-      "src/retry.ts",
-      "--code-quote",
-      "5",
-      "--trust",
-      "verified",
-    ]);
-    const id = rec.json.claimId ?? "";
-    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
-    return { d, id };
-  }
+    const res = await run(d, ["schema", "--name", "Assertion"]);
+    expect(res.code).toBe(0);
+    expect(res.json.type).toBe("object");
+    expect(res.json.properties?.anchor).toBeDefined();
+    const list = await run(d, ["schema"]);
+    expect(list.stdout).toContain("ResolveParams");
+    expect((await run(d, ["schema", "--name", "Nope"])).code).toBe(1);
+  });
 
-  test("every envelope is self-describing (schemaVersion) and mutations return the handle + next", async () => {
+  test("completions are generated from the option tables", async () => {
     const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "doc.md", "# Doc\n\nA is 1 here.\n");
-
-    const init = await run(d, ["init"]);
-    expect(init.json.schemaVersion).toBe("v2");
-    expect(init.json.next).toBeDefined();
-
-    const rec = await run(d, [
-      "record",
-      "--doc",
-      "doc.md",
-      "--doc-quote",
-      "A is 1 here",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-    ]);
-    expect(rec.json.schemaVersion).toBe("v2");
-    expect(rec.json.claimId).toMatch(/^asrt_/);
-    expect(rec.json.next).toBe("hibi check");
-
-    const check = await run(d, ["check"]);
-    expect(check.json.schemaVersion).toBe("v2");
+    const zsh = await run(d, ["completions", "zsh"]);
+    expect(zsh.code).toBe(0);
+    expect(zsh.stdout).toContain("--from-file");
+    expect(zsh.stdout).toContain("'supersede'");
+    expect(zsh.stdout).not.toContain("'doctor'");
+    expect(zsh.stdout).not.toContain("--trust");
+    expect((await run(d, ["completions", "tcsh"])).code).toBe(1);
   });
 
-  test("concise check is lean (no evidence); --explain adds evidence + fingerprint", async () => {
-    const { d } = await driftedRepo();
-
-    const concise = await run(d, ["check"]);
-    const cv = concise.json.verdicts?.[0];
-    expect(cv?.code).toBe("changed");
-    expect(cv?.evidence).toBeUndefined(); // bulky evidence dropped on the hot path
-    expect(cv?.fingerprint).toBeUndefined();
-
-    const explained = await run(d, ["check", "--explain"]);
-    const ev = explained.json.verdicts?.[0];
-    expect(ev?.evidence).toBeDefined();
-    expect(ev?.fingerprint).toBeDefined();
-    expect(ev?.advisories).toBeDefined();
+  test("no check flag combination mutates .claims/", async () => {
+    const { d } = await seeded();
+    const baseline = await snapshotStore(d);
+    for (const args of [
+      ["check"],
+      ["check", "--write"],
+      ["check", "--run-verifiers"],
+      ["check", "--fail-on", "never"],
+      ["check", "--overview"],
+      ["list"],
+      ["coverage", "--doc", "README.md"],
+    ]) {
+      await run(d, args);
+      expect(sameStore(baseline, await snapshotStore(d))).toBe(true);
+    }
   });
 
-  test("a gating verdict carries a remediation menu with the id pre-filled", async () => {
-    const { d, id } = await driftedRepo();
-    const check = await run(d, ["check"]);
-    const rem = check.json.verdicts?.[0]?.remediation;
-    expect(rem).toBeDefined();
-    expect(Array.isArray(rem?.actions)).toBe(true);
-    // retire/reanchor commands carry the claim id verbatim.
-    const retire = rem?.actions?.find((a) => a.id === "retire");
-    expect(retire?.command).toBe(`hibi retire ${id}`);
-    expect(retire?.effect).toBe("deterministic");
-    const reanchor = rem?.actions?.find((a) => a.id === "reanchor");
-    expect(reanchor?.command).toBe(`hibi reanchor ${id}`);
-  });
-
-  test("an orphan recommends retire and never pre-fills a bare reanchor command", async () => {
+  test("a v2 store is upgraded once at open and then checks clean", async () => {
     const d = await repo();
     await write(d, "src/a.ts", "export const A = 1;\n");
     await write(d, "doc.md", "# Doc\n\nA is 1 here.\n");
-    await run(d, ["init"]);
-    await run(d, [
-      "record",
-      "--doc",
-      "doc.md",
-      "--doc-quote",
-      "A is 1 here",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-      "--enforce",
-    ]);
-    // Delete the code file → the code side orphans.
-    await rm(join(d, "src/a.ts"), { force: true });
-    const check = await run(d, ["check"]);
-    const verdict = check.json.verdicts?.[0];
-    const rem = verdict?.remediation;
-    expect(rem?.recommended).toBe("retire");
-    const reanchor = rem?.actions?.find((a) => a.id === "reanchor");
-    // D24 — the orphan reanchor pre-fills the read-only `--suggest` pass (always
-    // safe: it only lists candidate targets), never a bare mutating reanchor.
-    expect(reanchor?.command).toBe(
-      `hibi reanchor ${verdict?.assertionId} --suggest`,
-    );
-  });
-
-  test("--no-hints / HIBI_ADVICE=0 strips the remediation block", async () => {
-    const { d } = await driftedRepo();
-    const flagged = await run(d, ["check", "--no-hints"]);
-    expect(flagged.json.verdicts?.[0]?.remediation).toBeUndefined();
-    expect(flagged.json.verdicts?.[0]?.gates).toBe(true); // the decision still leads
-  });
-
-  test("the behavioral carve-out keeps a 1-line `changed` summary on the concise path", async () => {
-    const { d } = await driftedRepo();
-    const check = await run(d, ["check"]);
-    const v = check.json.verdicts?.[0];
-    expect(v?.behavior).toBe("at-risk");
-    expect(v?.changed).toContain("src/retry.ts"); // path + kind, no --explain needed
-  });
-
-  test("retire flips enforcement, is idempotent, and stops the claim gating", async () => {
-    const { d, id } = await driftedRepo();
-    expect((await run(d, ["check"])).code).toBe(2);
-
-    const first = await run(d, ["retire", id]);
-    expect(first.code).toBe(0);
-    expect(first.json.action).toBe("retire");
-    expect(first.json.alreadyRetired).toBe(false);
-    expect(first.json.assertion?.enforcement).toBe("retired");
-    expect(first.json.next).toBe("hibi check");
-
-    // A retired claim no longer gates.
-    expect((await run(d, ["check"])).code).toBe(0);
-
-    // Idempotent: a second retire is a no-op success.
-    const second = await run(d, ["retire", id]);
-    expect(second.code).toBe(0);
-    expect(second.json.alreadyRetired).toBe(true);
-  });
-
-  test("retire requires a claim-id positional (operational error otherwise)", async () => {
-    const d = await repo();
-    await run(d, ["init"]);
-    const res = await run(d, ["retire"]);
-    expect(res.code).toBe(1);
-    expect(res.json.ok).toBe(false);
-  });
-
-  test("list returns lean triage rows and filters by --state", async () => {
-    const { d, id } = await driftedRepo();
-
-    const all = await run(d, ["list"]);
-    expect(all.code).toBe(0);
-    expect(all.json.action).toBe("list");
-    expect(all.json.count).toBe(1);
-    const row = all.json.claims?.[0];
-    expect(row?.claimId).toBe(id);
-    expect(row?.status).toBe("code:changed");
-    expect(row?.severity).toBe("gating");
-    expect(row?.gates).toBe(true);
-    expect(row?.documentPath).toBe("README.md");
-    expect(row?.codePath).toBe("src/retry.ts");
-
-    const gating = await run(d, ["list", "--state", "gating"]);
-    expect(gating.json.count).toBe(1);
-    const clean = await run(d, ["list", "--state", "clean"]);
-    expect(clean.json.count).toBe(0);
-  });
-
-  test("list --state rejects an unknown state (operational error)", async () => {
-    const d = await repo();
-    await run(d, ["init"]);
-    const res = await run(d, ["list", "--state", "bogus"]);
-    expect(res.code).toBe(1);
-    expect(res.json.ok).toBe(false);
-  });
-
-  test("list --no-hints drops the recommended action from rows", async () => {
-    // A `moved` verdict recommends `reanchor` (non-null), so --no-hints is observable.
-    const d = await repo();
-    await write(d, "src/a.ts", "export const MAX = 5;\n");
-    await write(d, "doc.md", "# Doc\n\nMax is 5 here.\n");
-    await run(d, ["init"]);
-    await run(d, [
-      "record",
-      "--doc",
-      "doc.md",
-      "--doc-quote",
-      "Max is 5",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "MAX = 5",
-      "--trust",
-      "verified",
-    ]);
-    // Relocate the anchored line far (intact content) → code:moved.
+    const docId = "doc_1";
     await write(
       d,
-      "src/a.ts",
-      `${"// prologue\n".repeat(4)}export const MAX = 5;\n`,
-    );
-    const withHints = await run(d, ["list", "--state", "warning"]);
-    expect(withHints.json.claims?.[0]?.status).toBe("code:moved");
-    expect(withHints.json.claims?.[0]?.recommended).toBe("reanchor");
-    const noHints = await run(d, ["list", "--state", "warning", "--no-hints"]);
-    expect(noHints.json.claims?.[0]?.recommended).toBeNull();
-  });
-
-  test("list reports a retired claim as `retired`, not as live drift", async () => {
-    const { d, id } = await driftedRepo();
-    await run(d, ["retire", id]);
-    const all = await run(d, ["list"]);
-    const row = all.json.claims?.find((r) => r.claimId === id);
-    expect(row?.status).toBe("retired");
-    expect(row?.severity).toBe("clean");
-    expect(row?.recommended).toBeNull();
-  });
-
-  test("list reflects document lifecycle in the status (not a bare `unchanged`)", async () => {
-    const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "v1.md", "# V1\n\nA is 1 here.\n");
-    await run(d, ["init"]);
-    const rec = await run(d, [
-      "record",
-      "--doc",
-      "v1.md",
-      "--doc-quote",
-      "A is 1 here",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-    ]);
-    const id = rec.json.claimId ?? "";
-    // Supersede v1.md → its lifecycle flips to `superseded`; the anchor is intact.
-    await run(d, [
-      "supersede",
-      "--new",
-      "v2.md",
-      "--old",
-      "v1.md",
-      "--type",
-      "supersedes",
-    ]);
-    const all = await run(d, ["list"]);
-    const row = all.json.claims?.find((r) => r.claimId === id);
-    expect(row?.status).toBe("superseded");
-  });
-
-  test("list codePath reflects the code file that drifted", async () => {
-    const { d, id } = await driftedRepo();
-    const all = await run(d, ["list", "--state", "gating"]);
-    const row = all.json.claims?.find((r) => r.claimId === id);
-    expect(row?.codePath).toBe("src/retry.ts"); // the file changedEvidence names
-  });
-
-  test("record --from-file batch-records a JSON array in one pass (§9)", async () => {
-    const d = await repo();
-    await write(
-      d,
-      "src/conf.ts",
-      "export const TTL_MS = 60000;\nexport const RETRIES = 3;\n",
+      ".claims/config.json",
+      JSON.stringify({ version: "v2", nonce: "deadbeef" }),
     );
     await write(
       d,
-      "docs/conf.md",
-      "# Config\n\nThe cache TTL is 60000ms.\nRetries default to 3.\n",
+      `.claims/documents/${docId}.json`,
+      JSON.stringify({
+        id: docId,
+        path: "doc.md",
+        lifecycle: "active",
+        edges: [],
+        pristine: false,
+      }),
     );
-    await run(d, ["init"]);
     await write(
       d,
-      "batch.json",
-      JSON.stringify([
-        {
-          doc: "docs/conf.md",
-          docQuote: "The cache TTL is 60000ms",
-          codeFile: "src/conf.ts",
-          codeQuote: "TTL_MS = 60000",
-          trust: "verified",
-          owner: "alice",
+      ".claims/propositions/prop_1.json",
+      JSON.stringify({
+        id: "prop_1",
+        textCache: "A is 1 here",
+        authoredTrust: "verified",
+        fingerprint: "f",
+      }),
+    );
+    const docText = "# Doc\n\nA is 1 here.\n";
+    const s = docText.indexOf("A is 1 here");
+    await write(
+      d,
+      ".claims/claims/asrt_1.json",
+      JSON.stringify({
+        id: "asrt_1",
+        propositionId: "prop_1",
+        documentId: docId,
+        owner: "o",
+        ref: "r",
+        anchor: {
+          doc: {
+            file: "doc.md",
+            selectors: [
+              {
+                kind: "text-quote",
+                exact: "A is 1 here",
+                prefix: "# Doc\n\n",
+                suffix: ".\n",
+              },
+              { kind: "text-position", start: s, end: s + 11 },
+              { kind: "inline-id", id: "x" },
+            ],
+          },
+          code: [
+            {
+              file: "src/a.ts",
+              selectors: [{ kind: "path", path: "src/a.ts" }],
+            },
+          ],
         },
-        {
-          doc: "docs/conf.md",
-          docQuote: "Retries default to 3",
-          codeFile: "src/conf.ts",
-          codeQuote: "RETRIES = 3",
-          trust: "verified",
-          owner: "alice",
-        },
-      ]),
+        enforcement: "enforced",
+        behavioral: true,
+        evidenceBaseline: {},
+        verifiers: [],
+        attrs: {},
+      }),
     );
-    const rec = await run(d, ["record", "--from-file", "batch.json"]);
-    expect(rec.code).toBe(0);
-    expect(rec.json.batch).toBe(true);
-    expect(rec.json.count).toBe(2);
-
-    const chk = await run(d, ["check"]);
-    expect(chk.code).toBe(0);
-    expect(chk.json.summary?.clean).toBe(2);
-  });
-
-  test("record --from-file fails the whole batch on a malformed item, writing nothing (§9)", async () => {
-    const d = await repo();
-    await write(d, "src/conf.ts", "export const TTL_MS = 60000;\n");
-    await write(d, "docs/conf.md", "# Config\n\nThe cache TTL is 60000ms.\n");
-    await run(d, ["init"]);
-    await write(
-      d,
-      "batch.json",
-      JSON.stringify([
-        {
-          doc: "docs/conf.md",
-          docQuote: "The cache TTL is 60000ms",
-          codeFile: "src/conf.ts",
-          codeQuote: "TTL_MS = 60000",
-          trust: "verified",
-        },
-        { doc: "docs/conf.md" }, // malformed: no doc span
-      ]),
-    );
-    const rec = await run(d, ["record", "--from-file", "batch.json"]);
-    expect(rec.code).toBe(1);
-    expect(rec.json.ok).toBe(false);
-
-    // Phase-1 validation: the valid first item was NOT written.
-    const chk = await run(d, ["check"]);
-    expect(chk.json.summary?.total ?? 0).toBe(0);
-  });
-
-  test("reanchor --doc relocates the doc anchor to a different file, surviving deletion of the old one (§9)", async () => {
-    const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "wip.md", "# WIP\n\nThe A constant is one.\n");
-    await write(d, "docs/a.md", "# A\n\nThe A constant is one.\n");
-    await run(d, ["init"]);
-    const rec = await run(d, [
-      "record",
-      "--doc",
-      "wip.md",
-      "--doc-quote",
-      "The A constant is one",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-      "--trust",
-      "verified",
-    ]);
-    const id = rec.json.claimId ?? "";
-
-    const re = await run(d, [
-      "reanchor",
-      id,
-      "--doc",
-      "docs/a.md",
-      "--doc-quote",
-      "The A constant is one",
-    ]);
-    expect(re.code).toBe(0);
-    expect(re.json.doc).toBe("unchanged"); // re-resolved against the new file
-    expect(re.json.code).toBe("unchanged"); // code side untouched
-
-    // The claim moved off wip.md — deleting it no longer orphans the claim.
-    await rm(join(d, "wip.md"));
-    const chk = await run(d, ["check"]);
-    expect(chk.code).toBe(0);
-    expect(chk.json.verdicts?.[0]?.doc).toBe("unchanged");
-  });
-
-  test("reanchor --doc-range re-resolves via a line range without dropping the bounds (§9)", async () => {
-    const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "doc.md", "# A\n\nThe A constant is one.\n");
-    await run(d, ["init"]);
-    const rec = await run(d, [
-      "record",
-      "--doc",
-      "doc.md",
-      "--doc-quote",
-      "The A constant is one",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-      "--trust",
-      "verified",
-    ]);
-    const id = rec.json.claimId ?? "";
-
-    // Line 3 holds the documented sentence; a line range must resolve to it.
-    const re = await run(d, ["reanchor", id, "--doc-range", "L3:L3"]);
-    expect(re.code).toBe(0);
-    expect(re.json.doc).toBe("unchanged");
-  });
-
-  test("reanchor --doc to a different file without an explicit span is rejected, not silently re-matched (§9)", async () => {
-    const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "wip.md", "# WIP\n\nThe A constant is one.\n");
-    await write(d, "docs/a.md", "# A\n\nThe A constant is one.\n");
-    await run(d, ["init"]);
-    const rec = await run(d, [
-      "record",
-      "--doc",
-      "wip.md",
-      "--doc-quote",
-      "The A constant is one",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-      "--trust",
-      "verified",
-    ]);
-    const id = rec.json.claimId ?? "";
-
-    // No --doc-quote: re-matching the old selectors against docs/a.md could
-    // coincidentally latch onto the wrong sentence — demand a deliberate span.
-    const re = await run(d, ["reanchor", id, "--doc", "docs/a.md"]);
-    expect(re.code).toBe(1);
-    expect(re.json.ok).toBe(false);
-  });
-
-  test("record --from-file rolls back fully when a later item fails to resolve (§9)", async () => {
-    const d = await repo();
-    await write(d, "src/conf.ts", "export const TTL_MS = 60000;\n");
-    await write(d, "docs/conf.md", "# Config\n\nThe cache TTL is 60000ms.\n");
-    await run(d, ["init"]);
-    await write(
-      d,
-      "batch.json",
-      JSON.stringify([
-        {
-          doc: "docs/conf.md",
-          docQuote: "The cache TTL is 60000ms",
-          codeFile: "src/conf.ts",
-          codeQuote: "TTL_MS = 60000",
-          trust: "verified",
-        },
-        // Passes phase-1 structural validation, but its quote is absent from the
-        // file, so it throws during phase-2 record — after item 0 was written.
-        { doc: "docs/conf.md", docQuote: "NOT PRESENT IN THE FILE" },
-      ]),
-    );
-    const rec = await run(d, ["record", "--from-file", "batch.json"]);
-    expect(rec.code).toBe(1);
-    expect(rec.json.ok).toBe(false);
-
-    // The valid first item must NOT survive — a failed batch leaves no partial store.
-    const chk = await run(d, ["check"]);
-    expect(chk.json.summary?.total ?? 0).toBe(0);
-  });
-
-  test("record --from-file rejects an item with an empty text and no doc span (§9)", async () => {
-    const d = await repo();
-    await write(d, "docs/x.md", "# X\n\nsomething.\n");
-    await run(d, ["init"]);
-    await write(
-      d,
-      "batch.json",
-      JSON.stringify([{ doc: "docs/x.md", text: "" }]),
-    );
-    const rec = await run(d, ["record", "--from-file", "batch.json"]);
-    expect(rec.code).toBe(1);
-    expect(rec.json.ok).toBe(false);
-
-    const chk = await run(d, ["check"]);
-    expect(chk.json.summary?.total ?? 0).toBe(0);
-  });
-
-  // ── Tier-1/2/3 silent-orphan hardening ──
-
-  test("supersede reports strandedClaims and points next at relocate", async () => {
-    const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "v1.md", "# V1\n\nA is one.\n");
-    await run(d, ["init"]);
-    const rec = await run(d, [
-      "record",
-      "--doc",
-      "v1.md",
-      "--doc-quote",
-      "A is one.",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-    ]);
-    const sup = await run(d, [
-      "supersede",
-      "--new",
-      "v2.md",
-      "--old",
-      "v1.md",
-      "--type",
-      "supersedes",
-    ]);
-    expect(sup.code).toBe(0);
-    expect(sup.json.strandedClaims).toEqual([rec.json.claimId ?? ""]);
-    expect(sup.json.next).toContain("relocate");
-  });
-
-  test("relocate re-homes a stranded claim, then check settles clean", async () => {
-    const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "v1.md", "# V1\n\nA is one.\n");
-    await run(d, ["init"]);
-    await run(d, [
-      "record",
-      "--doc",
-      "v1.md",
-      "--doc-quote",
-      "A is one.",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-    ]);
-    // Copy the documented sentence into the successor.
-    await write(d, "v2.md", "# V2\n\nA is one.\n");
-    const rel = await run(d, [
-      "relocate",
-      "--from",
-      "v1.md",
-      "--to",
-      "v2.md",
-      "--json",
-    ]);
-    expect(rel.code).toBe(0);
-    expect(rel.json.relocated?.length).toBe(1);
-    expect(rel.json.misses?.length).toBe(0);
-    const chk = await run(d, ["check"]);
-    expect(chk.code).toBe(0);
-  });
-
-  test("doctor exits 0 even with an orphan, and populates categories", async () => {
-    const d = await repo();
-    await write(d, "src/gone.ts", "export const X = 1;\n");
-    await write(d, "o.md", "# O\n\nOrphan here.\n");
-    await run(d, ["init"]);
-    await run(d, [
-      "record",
-      "--doc",
-      "o.md",
-      "--doc-quote",
-      "Orphan here.",
-      "--code-file",
-      "src/gone.ts",
-      "--code-quote",
-      "X = 1",
-    ]);
-    await rm(join(d, "src/gone.ts"));
-    const doc = await run(d, ["doctor", "--json"]);
-    // Purely informational — never gates.
-    expect(doc.code).toBe(0);
-    expect(doc.json.healthy).toBe(false);
-    expect(doc.json.counts?.orphanedAnchors).toBeGreaterThan(0);
-  });
-
-  test("record warns when a claim lands suggested, and flags a duplicate proposition", async () => {
-    const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "a.md", "# A\n\nA is one.\n");
-    await write(d, "b.md", "# B\n\nA is one.\n");
-    await run(d, ["init"]);
-    // Default trust (inferred) → suggested → warning present.
-    const first = await run(d, [
-      "record",
-      "--doc",
-      "a.md",
-      "--doc-quote",
-      "A is one.",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-    ]);
-    expect(first.json.warning).toContain("suggested");
-    expect(first.json.existingClaims).toEqual([]);
-
-    // Same sentence on a different doc → duplicate proposition surfaced.
-    const second = await run(d, [
-      "record",
-      "--doc",
-      "b.md",
-      "--doc-quote",
-      "A is one.",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-    ]);
-    expect(second.json.existingClaims).toEqual([first.json.claimId ?? ""]);
-    expect(second.json.next).toContain("reanchor");
-  });
-
-  test("list --state orphaned and --state suggested filter correctly", async () => {
-    const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "src/gone.ts", "export const X = 1;\n");
-    await write(d, "ok.md", "# OK\n\nA is one.\n");
-    await write(d, "o.md", "# O\n\nOrphan here.\n");
-    await run(d, ["init"]);
-    // A healthy suggested claim.
-    await run(d, [
-      "record",
-      "--doc",
-      "ok.md",
-      "--doc-quote",
-      "A is one.",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-    ]);
-    // An orphan-to-be.
-    const orphan = await run(d, [
-      "record",
-      "--doc",
-      "o.md",
-      "--doc-quote",
-      "Orphan here.",
-      "--code-file",
-      "src/gone.ts",
-      "--code-quote",
-      "X = 1",
-    ]);
-    await rm(join(d, "src/gone.ts"));
-
-    const orphaned = await run(d, ["list", "--state", "orphaned"]);
-    expect(orphaned.json.claims?.map((c) => c.claimId)).toEqual([
-      orphan.json.claimId ?? "",
-    ]);
-
-    const suggested = await run(d, ["list", "--state", "suggested"]);
-    // Both records are `suggested` (default inferred trust).
-    expect(suggested.json.claims?.length).toBe(2);
-
-    // Retiring the orphan must drain it from `--state orphaned` AND from doctor —
-    // otherwise the documented cleanup loop never converges (review finding).
-    await run(d, ["retire", orphan.json.claimId ?? ""]);
-    const afterRetire = await run(d, ["list", "--state", "orphaned"]);
-    expect(afterRetire.json.claims?.length).toBe(0);
-    const doc = await run(d, ["doctor", "--json"]);
-    expect(doc.json.counts?.orphanedAnchors).toBe(0);
-  });
-
-  test("retract --dry-run and archive --dry-run leave the store + docs untouched", async () => {
-    const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "a.md", "# A\n\nA is one.\n");
-    await run(d, ["init"]);
-    await run(d, [
-      "record",
-      "--doc",
-      "a.md",
-      "--doc-quote",
-      "A is one.",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-    ]);
-
-    const snapshot = async (): Promise<Map<string, string>> => {
-      const out = new Map<string, string>();
-      const walk = async (dir: string) => {
-        for (const ent of await readdir(dir, { withFileTypes: true })) {
-          const abs = join(dir, ent.name);
-          if (ent.isDirectory()) await walk(abs);
-          else out.set(abs, await readFile(abs, "utf8"));
-        }
-      };
-      await walk(join(d, ".claims"));
-      out.set("a.md", await readFile(join(d, "a.md"), "utf8"));
-      return out;
-    };
-
-    const before = await snapshot();
-    const ret = await run(d, ["retract", "--doc", "a.md", "--dry-run"]);
-    expect(ret.json.dryRun).toBe(true);
-    const arch = await run(d, ["archive", "--doc", "a.md", "--dry-run"]);
-    expect(arch.json.dryRun).toBe(true);
-    const after = await snapshot();
-
-    expect([...after.keys()].sort()).toEqual([...before.keys()].sort());
-    for (const [k, v] of before) expect(after.get(k)).toBe(v);
-    // The archive tombstone/move must not have happened.
-    expect(await exists(join(d, "archive", "a.md"))).toBe(false);
-  });
-
-  test("--ids-only emits a bare newline-delimited id list", async () => {
-    const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "a.md", "# A\n\nA is one.\n");
-    await run(d, ["init"]);
-    const rec = await run(d, [
-      "record",
-      "--doc",
-      "a.md",
-      "--doc-quote",
-      "A is one.",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-    ]);
-    const ids = await run(d, ["list", "--ids-only"]);
-    expect(ids.code).toBe(0);
-    expect(ids.stdout.trim()).toBe(rec.json.claimId ?? "");
-  });
-
-  test("--dry-run leaves the .claims/ store byte-identical", async () => {
-    const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "a.md", "# A\n\nA is one.\n");
-    await run(d, ["init"]);
-    const rec = await run(d, [
-      "record",
-      "--doc",
-      "a.md",
-      "--doc-quote",
-      "A is one.",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-    ]);
-    const id = rec.json.claimId ?? "";
-
-    const snapshot = async (): Promise<Map<string, string>> => {
-      const out = new Map<string, string>();
-      const walk = async (dir: string) => {
-        for (const ent of await readdir(dir, { withFileTypes: true })) {
-          const abs = join(dir, ent.name);
-          if (ent.isDirectory()) await walk(abs);
-          else out.set(abs, await readFile(abs, "utf8"));
-        }
-      };
-      await walk(join(d, ".claims"));
-      return out;
-    };
-
-    const before = await snapshot();
-    // A dry-run reanchor must not touch the store.
-    const dry = await run(d, [
-      "reanchor",
-      id,
-      "--doc-quote",
-      "A is one.",
-      "--dry-run",
-    ]);
-    expect(dry.code).toBe(0);
-    expect(dry.json.dryRun).toBe(true);
-    // And a dry-run retire likewise.
-    await run(d, ["retire", id, "--dry-run"]);
-    const after = await snapshot();
-
-    expect([...after.keys()].sort()).toEqual([...before.keys()].sort());
-    for (const [k, v] of before) expect(after.get(k)).toBe(v);
+    const res = await run(d, ["check"]);
+    expect(res.stderr).toContain("upgraded claim store from v2 to v3");
+    expect(res.code).toBe(0);
+    expect(
+      JSON.parse(await readFile(join(d, ".claims/config.json"), "utf8"))
+        .version,
+    ).toBe("v3");
+    const again = await run(d, ["check"]);
+    expect(again.stderr).not.toContain("upgraded");
   });
 });

@@ -1,71 +1,46 @@
 ---
 title: "Hibi: Keep Docs and AI-Agent Instructions Up to Date"
 sidebarTitle: "Overview"
-description: "Hibi tracks claims in your docs and AI-agent instructions, anchors them to source code, and flags drift deterministically — no model in the check loop."
+description: "Hibi tracks claims in docs and agent instruction files, anchors them to source code, and flags drift deterministically with no model in the check loop."
 icon: "house"
 ---
 
-You changed a constant in `src/auth.ts`. Three sentences across your `README` and
-`CLAUDE.md` quietly became wrong, and nobody will notice until a teammate — or an
-AI agent — trusts one of them. Run `hibi diff --since origin/main` and Hibi names
-the exact sentences your change broke, then hands you the command to fix each.
+You change a constant in `src/auth.ts`. Two sentences in `README.md` and `CLAUDE.md` are now wrong, and nobody notices until a teammate or an agent trusts one of them. `hibi check --since origin/main` names those sentences and gives you the command to fix each.
 
-Hibi (日々, "day after day") tracks **claims**: sentences in your docs and
-AI-agent instruction files that assert how the code behaves. You anchor each
-claim to the code it describes. When either side drifts (you change the code, or
-you edit the documented sentence itself), `hibi check` flags the claim and can
-stamp a status banner into the doc, so no reader, and no agent, acts on a page
-that has fallen out of sync with the source.
+Hibi (日々, "day after day") tracks **claims**: a sentence in a document, anchored to the code it describes. When either side changes, `hibi check` flags the claim and can stamp a status banner into the document, so a reader without hibi still sees the flag.
 
-Run it in CI, in a git hook, or as a pre-edit lookup an agent makes before it
-trusts a doc.
+Run it in CI, in a git hook, or as the check an agent makes before it trusts an instruction file.
 
-## The mental model
+## The model
 
-A **claim** is a binding between a documented sentence and the code it
-describes. You record one with `hibi record`, pointing at a span of prose and
-the code span(s) it asserts something about. Hibi stores a bidirectional
-**anchor** (pointers to both sides, not a copy of the prose) in a committed
-store beside your docs (`.claims/`, one file per claim).
+You record a claim with `hibi record`, pointing at a span of prose and the code span it describes. Hibi stores an **anchor** for each side (pointers, not a copy of the prose) in a committed `.claims/` directory, one file per claim.
 
-On every `hibi check`, Hibi resolves the **doc side first**: it re-reads the
-live sentence from the current document. If that sentence is gone or has been
-edited, Hibi flags the claim and stops. It will not verify a stale
-sentence against code as if it still existed. If the sentence is intact, Hibi
-localizes the code side and grades whether the code still matches.
-
-The result is a **verdict** with two independent axes, read like
-`doc:unchanged · code:changed · behavior:at-risk`. A flag is a request to
-**re-verify**, not a claim that the doc is wrong: the evidence under the
-sentence moved, and a human or agent decides what the prose should now say.
-Hibi never rewrites prose. It flags, and can stamp a banner.
+On `hibi check`, each side is located again in the current files and graded as `unchanged`, `moved`, `changed`, `ambiguous`, or `orphaned`. An enforced claim **gates** (exit 2) when a side is `changed`, `orphaned`, or `ambiguous`, when its ttl passed, or when a verifier failed. `moved` is a warning. Every suspect verdict carries a remediation menu with the next command filled in.
 
 <Note>
-  Hibi is **deterministic**: no model runs in the check loop. The same working
-  tree always yields the same verdicts. An optional semantic resolver may advise
-  out-of-process, but it never decides a verdict and never gates.
+  No model runs in the check loop. The same working tree yields the same verdicts. A flag means re-verify; Hibi does not decide that a doc is wrong, and it never edits prose.
 </Note>
 
 ## Start here
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="rocket" href="/quickstart">
-    Install Hibi and record your first claim in a couple of minutes.
+    Install Hibi and record a claim.
   </Card>
-  <Card title="How it works" icon="diagram-project" href="/concepts">
-    Claims, anchors, and the doc-first flow that grades verdicts deterministically.
+  <Card title="Verdicts" icon="scale-balanced" href="/verdicts">
+    The claim model, the anchor states, the remediation menu, and the exit codes.
   </Card>
   <Card title="Why Hibi" icon="compass" href="/design">
     The problem, the threat model, and why no model sits on the verdict path.
   </Card>
   <Card title="CLI reference" icon="terminal" href="/cli-reference">
-    Every command, flag, exit code, and strictness level.
+    Every command and flag.
   </Card>
-  <Card title="Resolvers & SDKs" icon="puzzle-piece" href="/resolvers">
-    Extend drift detection with out-of-process resolvers in any language.
+  <Card title="Resolvers" icon="puzzle-piece" href="/resolvers">
+    Add out-of-process resolvers and verifier runners in any language.
   </Card>
   <Card title="Claude Code skill" icon="wand-magic-sparkles" href="/claude-code">
-    Install the official Agent Skill so coding agents use Hibi correctly.
+    The Agent Skill that teaches coding agents to use Hibi.
   </Card>
 </CardGroup>
 
@@ -73,19 +48,15 @@ Hibi never rewrites prose. It flags, and can stamp a banner.
 
 <CardGroup cols={2}>
   <Card title="Deterministic" icon="scale-balanced">
-    No model runs in the check loop, so the same working tree yields the same
-    verdicts every time. The optional semantic resolver only advises.
+    The check loop runs text matching, tree-sitter, and fixed constants. No model.
   </Card>
   <Card title="A flag means re-verify" icon="flag">
-    Hibi reports that the evidence under a claim moved: suspect, not false. It
-    never declares a doc wrong on its own.
+    Hibi reports that the text or code under a claim moved. It does not declare a doc wrong.
   </Card>
   <Card title="Any file format" icon="file-lines">
-    Hibi treats docs as text, so Markdown, plain text, AsciiDoc, or anything
-    else works without a per-format parser in the core.
+    Docs are text. Markdown, plain text, AsciiDoc, and instruction files work without a per-format parser.
   </Card>
-  <Card title="Offline & shallow-clone safe" icon="wifi-slash">
-    The anchor is its own baseline, so `check` reads your files, never git
-    history. It stays correct even under `git clone --depth=1`.
+  <Card title="Offline and shallow-clone safe" icon="wifi-slash">
+    The anchor is its own baseline. `check` reads files, not git history.
   </Card>
 </CardGroup>

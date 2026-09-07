@@ -1,0 +1,60 @@
+{
+  "id": "asrt_efe8c0bdc0804727",
+  "propositionId": "prop_0846e55e63104abd",
+  "documentId": "doc_84263e2579006d07",
+  "owner": "hibi-dogfood",
+  "ref": "ce2fd982a55dec0d80e48b0f06762adefd7e5bfb",
+  "anchor": {
+    "doc": {
+      "file": "docs/anchors.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "If the located start is within 4 characters of the stored position, the side is `unchanged`",
+          "prefix": " or moved\">\n    Otherwise the text is the same. ",
+          "suffix": "; further away, it is `moved`.\n  </Step>\n</Steps"
+        },
+        {
+          "kind": "text-position",
+          "start": 3259,
+          "end": 3350
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/algo/params.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "MOVE_AWARENESS_CHARS = 4",
+            "prefix": "han this many chars is `moved`. */\nexport const ",
+            "suffix": ";\n\n/**\n * Minimum quote length for multiple-matc"
+          },
+          {
+            "kind": "text-position",
+            "start": 1501,
+            "end": 1525
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "variable_declarator",
+            "structuralHash": "de0dbd0a8e84411f",
+            "semanticHash": "a0a26471f48ee57a"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "number",
+            "value": "4"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verified": true,
+  "verifiers": [],
+  "attrs": {}
+}

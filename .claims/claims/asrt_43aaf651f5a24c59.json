@@ -1,0 +1,60 @@
+{
+  "id": "asrt_43aaf651f5a24c59",
+  "propositionId": "prop_4ce85f61986a42cb",
+  "documentId": "doc_84263e2579006d07",
+  "owner": "hibi-dogfood",
+  "ref": "ce2fd982a55dec0d80e48b0f06762adefd7e5bfb",
+  "anchor": {
+    "doc": {
+      "file": "docs/anchors.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "the exact text plus 48 characters of prefix and suffix context",
+          "prefix": " stores |\n|---|---|---|\n| `text-quote` | both | ",
+          "suffix": " |\n| `text-position` | both | the character offs"
+        },
+        {
+          "kind": "text-position",
+          "start": 829,
+          "end": 891
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/algo/params.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "TEXT_QUOTE_CONTEXT = 48",
+            "prefix": "and suffix a text-quote stores. */\nexport const ",
+            "suffix": ";\n\n/**\n * Normalized text similarity at or above"
+          },
+          {
+            "kind": "text-position",
+            "start": 1152,
+            "end": 1175
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "variable_declarator",
+            "structuralHash": "de0dbd0a8e84411f",
+            "semanticHash": "3e47faab960c1c6f"
+          },
+          {
+            "kind": "value",
+            "language": "typescript",
+            "nodeKind": "number",
+            "value": "48"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verified": true,
+  "verifiers": [],
+  "attrs": {}
+}

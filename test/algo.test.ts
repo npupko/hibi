@@ -1,16 +1,24 @@
 import { describe, expect, test } from "bun:test";
-import { bandConfidence, fuseConfidence, grade } from "../src/algo/fusion.ts";
-import { localizeTextQuote } from "../src/algo/localize.ts";
+import {
+  fuzzyLocate,
+  localizeTextQuote,
+  withinErrorBudget,
+} from "../src/algo/localize.ts";
 import {
   collapseWhitespace,
   levenshtein,
   normalizeText,
   textSimilarity,
 } from "../src/algo/normalize.ts";
-import { WEIGHTS } from "../src/algo/params.ts";
-import { resolveAssertion } from "../src/algo/resolve.ts";
+import {
+  fuzzyErrorBudget,
+  MOVE_AWARENESS_CHARS,
+  SAME_TEXT_SIMILARITY,
+} from "../src/algo/params.ts";
+import { resolveAssertion, resolveSide } from "../src/algo/resolve.ts";
+import type { SelectorBundle } from "../src/core/model.ts";
+import { buildSelectorBundle } from "../src/engine/anchor.ts";
 import { MATCH_MAX_BITS, matchMain } from "../src/vendor/bitap.ts";
-import { fnv1a32hex } from "../src/vendor/fnv1a.ts";
 import { makeRepo, record } from "./helpers.ts";
 
 describe("Bitap matcher (vendored diff-match-patch)", () => {
@@ -38,20 +46,7 @@ describe("Bitap matcher (vendored diff-match-patch)", () => {
   });
 });
 
-describe("FNV-1a 32-bit checksum", () => {
-  // Canonical FNV-1a test vectors (offset 0x811c9dc5, prime 0x01000193).
-  test("known vectors", () => {
-    expect(fnv1a32hex("")).toBe("811c9dc5");
-    expect(fnv1a32hex("a")).toBe("e40c292c");
-    expect(fnv1a32hex("foobar")).toBe("bf9cf968");
-  });
-  test("is deterministic and order-sensitive", () => {
-    expect(fnv1a32hex("ab")).toBe(fnv1a32hex("ab"));
-    expect(fnv1a32hex("ab")).not.toBe(fnv1a32hex("ba"));
-  });
-});
-
-describe("text normalization & similarity (§17.2)", () => {
+describe("text normalization and similarity", () => {
   test("reindent normalizes to identical and scores 1.0", () => {
     const a = "if (x) {\n    return 5;\n}";
     const b = "if (x) {\n        return 5;\n}";
@@ -77,219 +72,220 @@ describe("text normalization & similarity (§17.2)", () => {
   });
 });
 
-describe("text-quote localization cascade (§17.1)", () => {
-  test("locates a short exact quote", () => {
+describe("fixed resolution parameters", () => {
+  test("the fuzzy error budget is 40% of the quote length, capped at 256", () => {
+    expect(fuzzyErrorBudget(10)).toBe(4);
+    expect(fuzzyErrorBudget(1000)).toBe(256);
+  });
+  test("the same-text floor and the move threshold are the documented values", () => {
+    expect(SAME_TEXT_SIMILARITY).toBe(0.9);
+    expect(MOVE_AWARENESS_CHARS).toBe(4);
+  });
+  test("withinErrorBudget accepts a span inside the budget and rejects one outside it", () => {
+    expect(withinErrorBudget("abcdefghix", "abcdefghij")).toBe(true);
+    expect(withinErrorBudget("zzzzzzzzzz", "abcdefghij")).toBe(false);
+  });
+});
+
+const tq = (exact: string, prefix = "", suffix = "") =>
+  ({ kind: "text-quote", exact, prefix, suffix }) as const;
+const tp = (start: number, end: number) =>
+  ({ kind: "text-position", start, end }) as const;
+
+describe("text-quote localization", () => {
+  test("a single exact occurrence is returned as an exact hit", () => {
     const text = "line one\nconst MAX = 5;\nline three";
-    const r = localizeTextQuote(
-      text,
-      { kind: "text-quote", exact: "const MAX = 5;", prefix: "", suffix: "" },
-      9,
-    );
-    expect(r).not.toBeNull();
-    expect(text.slice(r?.start, r?.end)).toBe("const MAX = 5;");
+    const r = localizeTextQuote(text, tq("const MAX = 5;"), undefined);
+    expect(r.how).toBe("exact");
+    expect(r.ambiguous).toBe(false);
+    expect(text.slice(r.region?.start, r.region?.end)).toBe("const MAX = 5;");
   });
-  test("locates a quote that moved", () => {
+
+  test("a quote that moved is still found by its exact text", () => {
     const text = "// a new header line added at the top\nconst MAX = 5;";
-    const r = localizeTextQuote(
-      text,
-      { kind: "text-quote", exact: "const MAX = 5;", prefix: "", suffix: "" },
-      0,
-    );
-    expect(r).not.toBeNull();
-    expect(text.slice(r?.start, r?.end)).toBe("const MAX = 5;");
+    const r = localizeTextQuote(text, tq("const MAX = 5;"), tp(0, 14));
+    expect(r.how).toBe("exact");
+    expect(text.slice(r.region?.start, r.region?.end)).toBe("const MAX = 5;");
   });
-  test("handles long quotes (>32 chars) via head+suffix", () => {
+
+  test("a quote with a small edit is found by the fuzzy cascade", () => {
     const exact =
       "the retry policy caps attempts at five and then gives up entirely";
-    const text = `prologue\n${exact}\nepilogue`;
+    const text =
+      "prologue\nthe retry policy caps attempts at six and then gives up entirely\nepilogue";
     const r = localizeTextQuote(
       text,
-      { kind: "text-quote", exact, prefix: "prologue\n", suffix: "\nepilogue" },
-      9,
+      tq(exact, "prologue\n", "\nepilogue"),
+      tp(9, 9 + exact.length),
     );
-    expect(r).not.toBeNull();
-    expect(text.slice(r?.start, r?.end)).toContain(
+    expect(r.how).toBe("fuzzy");
+    expect(text.slice(r.region?.start, r.region?.end)).toContain(
       "the retry policy caps attempts",
     );
   });
-  test("returns null when the quote is gone", () => {
+
+  test("fuzzyLocate returns the region of the nearest fuzzy match", () => {
+    const text = "function retryWithBackoff(maxAttempts) {}";
+    const r = fuzzyLocate(text, tq("retryWithBackof"), 0);
+    expect(r).not.toBeNull();
+    expect(r?.start).toBeGreaterThanOrEqual(8);
+    expect(r?.start).toBeLessThanOrEqual(10);
+  });
+
+  test("a quote that is gone yields no region", () => {
     const r = localizeTextQuote(
       "completely unrelated content here",
-      { kind: "text-quote", exact: "const MAX = 5;", prefix: "", suffix: "" },
-      0,
+      tq("const MAX = 5;"),
+      undefined,
     );
-    expect(r).toBeNull();
+    expect(r.region).toBeNull();
+    expect(r.how).toBe("none");
+  });
+
+  test("a fuzzy candidate over the error budget counts as not found", () => {
+    const r = localizeTextQuote(
+      "const MAX = 5;\n",
+      tq("const LIMIT_TOTAL = 999999;"),
+      undefined,
+    );
+    expect(r.region).toBeNull();
+  });
+
+  test("several equally scored occurrences of a long quote are ambiguous", () => {
+    const text = "abc\nconst MAX = 5;\nabc\nconst MAX = 5;\nabc\n";
+    const r = localizeTextQuote(text, tq("const MAX = 5;"), undefined);
+    expect(r.ambiguous).toBe(true);
+    expect(r.region).not.toBeNull();
+  });
+
+  test("context breaks the tie between occurrences", () => {
+    const text = "first:\nconst MAX = 5;\nsecond:\nconst MAX = 5;\nend\n";
+    const r = localizeTextQuote(
+      text,
+      tq("const MAX = 5;", "second:\n", "\nend"),
+      undefined,
+    );
+    expect(r.ambiguous).toBe(false);
+    expect(r.region?.start).toBe(text.lastIndexOf("const MAX = 5;"));
+  });
+
+  test("position breaks the tie for a short quote", () => {
+    const text = "MAX ......................... MAX";
+    const r = localizeTextQuote(text, tq("MAX"), tp(30, 33));
+    expect(r.ambiguous).toBe(false);
+    expect(r.region?.start).toBe(30);
   });
 });
 
-// Convenience: a fully-specified GradeInput with one drift dimension overridden.
-function gradeInput(over: Partial<Parameters<typeof grade>[0]> = {}) {
-  return grade({
-    selectors: [],
-    coarseOnly: false,
-    ambiguous: false,
-    startDelta: 0,
-    textQuoteFound: true,
-    textQuoteSimilarity: 1,
-    valueFound: false,
-    valueScore: 0,
-    ...over,
+/** A doc-side bundle for `sentence` inside `docText`. */
+function bundleFor(file: string, docText: string, sentence: string) {
+  const start = docText.indexOf(sentence);
+  return buildSelectorBundle(file, docText, {
+    start,
+    end: start + sentence.length,
   });
 }
 
-describe("confidence fusion & grading (§17.3, two-axis AnchorState)", () => {
-  test("fuses over found selectors only", () => {
-    const c = fuseConfidence([
-      {
-        kind: "text-quote",
-        found: true,
-        score: 1,
-        weight: WEIGHTS["text-quote"],
-      },
-      { kind: "ast-node", found: true, score: 1, weight: WEIGHTS["ast-node"] },
-      { kind: "value", found: false, score: 0, weight: WEIGHTS.value },
-    ]);
-    expect(c).toBeCloseTo(1, 5);
+describe("resolveSide: the ordered cascade", () => {
+  const original = "# Doc\n\nRetries are capped at 5 attempts.\n";
+  const sentence = "Retries are capped at 5 attempts.";
+  const bundle = bundleFor("README.md", original, sentence);
+
+  test("same text at the same offset is unchanged", () => {
+    const side = resolveSide(bundle, original);
+    expect(side.state).toBe("unchanged");
+    expect(side.similarity).toBe(1);
+    expect(side.liveText).toBe(sentence);
   });
 
-  // bandConfidence maps confidence → AnchorState (one vocabulary, both sides).
-  // Bands (§17.3): C ≥ 0.8 unchanged, ≥ 0.5 moved, ≥ 0.2 changed, else orphaned.
-  test("confidence bands → AnchorState", () => {
-    expect(bandConfidence(0.95)).toBe("unchanged");
-    expect(bandConfidence(0.8)).toBe("unchanged");
-    expect(bandConfidence(0.65)).toBe("moved");
-    expect(bandConfidence(0.5)).toBe("moved");
-    expect(bandConfidence(0.35)).toBe("changed");
-    expect(bandConfidence(0.2)).toBe("changed");
-    expect(bandConfidence(0.1)).toBe("orphaned");
-    expect(bandConfidence(0)).toBe("orphaned");
+  test("same text within the move threshold is still unchanged", () => {
+    const side = resolveSide(bundle, `# Doc\n\n  ${sentence}\n`);
+    expect(side.state).toBe("unchanged");
   });
 
-  test("fewer than two found selectors → orphaned (confidence forced to 0)", () => {
-    const g = grade({
-      selectors: [{ kind: "text-quote", found: true, score: 1, weight: 0.3 }],
-      coarseOnly: false,
-      ambiguous: false,
-      startDelta: 0,
-      textQuoteFound: true,
-      textQuoteSimilarity: 1,
-      valueFound: false,
-      valueScore: 0,
-    });
-    expect(g.state).toBe("orphaned");
-    expect(g.confidence).toBe(0);
+  test("same text at a new offset past the move threshold is moved", () => {
+    const side = resolveSide(
+      bundle,
+      `# Doc\n\nA new paragraph.\n\n${sentence}\n`,
+    );
+    expect(side.state).toBe("moved");
+    expect(side.notes.join(" ")).toContain("span moved");
   });
 
-  test("value veto forces changed at confidence 0.3", () => {
-    const g = grade({
+  test("a changed number in a sentence is changed even at high similarity", () => {
+    const side = resolveSide(
+      bundle,
+      "# Doc\n\nRetries are capped at 7 attempts.\n",
+    );
+    expect(side.state).toBe("changed");
+    expect(side.notes.join(" ")).toContain("a number in the sentence changed");
+    expect(side.changedEvidence[0]?.kind).toBe("text");
+  });
+
+  test("text below the similarity floor is changed", () => {
+    const side = resolveSide(
+      bundle,
+      "# Doc\n\nRetries are limited at 5 attempts.\n",
+    );
+    expect(side.state).toBe("changed");
+    expect(side.similarity).toBeLessThan(SAME_TEXT_SIMILARITY);
+    expect(side.notes.join(" ")).toContain("text changed");
+  });
+
+  test("a quote that is not found is orphaned", () => {
+    const side = resolveSide(bundle, "# Doc\n\nSomething else entirely.\n");
+    expect(side.state).toBe("orphaned");
+    expect(side.region).toBeNull();
+    expect(side.changedEvidence[0]?.detail).toBe("documented span orphaned");
+  });
+
+  test("a missing file is orphaned with a file-not-found note", () => {
+    const side = resolveSide(bundle, null);
+    expect(side.state).toBe("orphaned");
+    expect(side.notes[0]).toBe("file not found: README.md");
+    expect(side.changedEvidence[0]?.detail).toBe("file missing");
+  });
+
+  test("several equal exact matches are ambiguous", () => {
+    // No stored context, so the two occurrences score the same.
+    const noContext: SelectorBundle = {
+      file: "README.md",
       selectors: [
-        { kind: "text-quote", found: true, score: 0.95, weight: 0.3 },
-        { kind: "value", found: true, score: 0, weight: 0.2 },
+        { kind: "text-quote", exact: sentence, prefix: "", suffix: "" },
       ],
-      coarseOnly: false,
-      ambiguous: false,
-      startDelta: 0,
-      textQuoteFound: true,
-      textQuoteSimilarity: 0.95,
-      valueFound: true,
-      valueScore: 0,
-    });
-    expect(g.state).toBe("changed");
-    expect(g.confidence).toBe(0.3);
+    };
+    const side = resolveSide(noContext, `${sentence}\n\n${sentence}\n`);
+    expect(side.state).toBe("ambiguous");
+    expect(side.notes[0]).toContain("several places");
   });
 
-  test("coarse-only anchors are never drift → unchanged", () => {
-    const g = grade({
-      selectors: [],
-      coarseOnly: true,
-      ambiguous: false,
-      startDelta: null,
-      textQuoteFound: false,
-      textQuoteSimilarity: 0,
-      valueFound: false,
-      valueScore: 0,
-    });
-    expect(g.state).toBe("unchanged");
+  test("context selects one of several exact matches", () => {
+    const side = resolveSide(bundle, `# Doc\n\n${sentence}\n\n${sentence}\n`);
+    expect(["unchanged", "moved"]).toContain(side.state);
   });
 
-  test("move-awareness: unchanged → moved when start drifts > 4 chars", () => {
-    const g = grade({
-      selectors: [
-        { kind: "text-quote", found: true, score: 1, weight: 0.3 },
-        { kind: "ast-node", found: true, score: 1, weight: 0.35 },
-      ],
-      coarseOnly: false,
-      ambiguous: false,
-      startDelta: 12,
-      textQuoteFound: true,
-      textQuoteSimilarity: 1,
-      valueFound: false,
-      valueScore: 0,
-    });
-    expect(g.state).toBe("moved");
-  });
-
-  test("ambiguous: a multiply-matched quote over a clean fuse → ambiguous", () => {
-    const g = grade({
-      selectors: [
-        { kind: "text-quote", found: true, score: 1, weight: 0.3 },
-        { kind: "ast-node", found: true, score: 1, weight: 0.35 },
-      ],
-      coarseOnly: false,
-      ambiguous: true,
-      startDelta: 0,
-      textQuoteFound: true,
-      textQuoteSimilarity: 1,
-      valueFound: false,
-      valueScore: 0,
-    });
-    expect(g.state).toBe("ambiguous");
-  });
-
-  test("ambiguous does not override a genuine content changed/orphaned", () => {
-    // Low-confidence fuse lands in `changed`; ambiguity must not mask it.
-    const g = grade({
-      selectors: [
-        { kind: "text-quote", found: true, score: 0.3, weight: 0.3 },
-        { kind: "ast-node", found: true, score: 0.3, weight: 0.35 },
-      ],
-      coarseOnly: false,
-      ambiguous: true,
-      startDelta: 0,
-      textQuoteFound: true,
-      textQuoteSimilarity: 0.3,
-      valueFound: false,
-      valueScore: 0,
-    });
-    expect(g.state).toBe("changed");
-  });
-
-  test("grade has no `expired` axis — expired is resolve-level only", () => {
-    // Sanity: the GradeResult type/keys never carry an expired flag; grade only
-    // emits an AnchorState (expired lives on the Verdict, asserted below).
-    const g = gradeInput({
-      selectors: [
-        { kind: "text-quote", found: true, score: 1, weight: 0.3 },
-        { kind: "ast-node", found: true, score: 1, weight: 0.35 },
-      ],
-    });
-    expect(g.state).toBe("unchanged");
-    expect(Object.keys(g)).toEqual(["state", "confidence", "notes"]);
+  test("a coarse-only bundle is unchanged and navigational", () => {
+    const coarse: SelectorBundle = {
+      file: "src/**",
+      selectors: [{ kind: "coarse", pattern: "src/**" }],
+    };
+    const side = resolveSide(coarse, "anything at all");
+    expect(side.state).toBe("unchanged");
+    expect(side.notes[0]).toContain("coarse anchor");
   });
 });
 
-describe("expired is a resolve-level orthogonal flag (§17.3, moved OUT of grade)", () => {
+describe("expired is a resolve-level flag, orthogonal to the anchor states", () => {
   test("resolveAssertion sets verdict.expired without disturbing doc/code", async () => {
     const repo = await makeRepo();
     try {
       await repo.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-      // A past TTL → the time flag must fire while both sides still resolve.
       const { assertion } = await record(repo, {
         doc: "README.md",
         text: "Retries are capped at five attempts.",
         file: "src/retry.ts",
         quote: "export const MAX_ATTEMPTS = 5;",
-        trust: "verified",
+        verified: true,
         ttl: "2000-01-01T00:00:00.000Z",
       });
 
@@ -300,13 +296,10 @@ describe("expired is a resolve-level orthogonal flag (§17.3, moved OUT of grade
         code: new Map([["src/retry.ts", codeContent]]),
       });
 
-      // expired is orthogonal: set independently, doc/code resolve on their own.
       expect(verdict.expired).toBe(true);
       expect(verdict.doc).toBe("unchanged");
       expect(verdict.code).toBe("unchanged");
-      // expired is not an AnchorState value — it never leaks into either side.
-      expect(verdict.doc).not.toBe("expired");
-      expect(verdict.code).not.toBe("expired");
+      expect(verdict.gates).toBe(true);
     } finally {
       await repo.cleanup();
     }
@@ -321,14 +314,36 @@ describe("expired is a resolve-level orthogonal flag (§17.3, moved OUT of grade
         text: "Retries are capped at five attempts.",
         file: "src/retry.ts",
         quote: "export const MAX_ATTEMPTS = 5;",
-        trust: "verified",
-        // no ttl → never expires
+        verified: true,
       });
       const verdict = resolveAssertion(assertion, {
         doc: await repo.read("README.md"),
         code: new Map([["src/retry.ts", await repo.read("src/retry.ts")]]),
       });
       expect(verdict.expired).toBe(false);
+      expect(verdict.behavior).toBeUndefined();
+    } finally {
+      await repo.cleanup();
+    }
+  });
+
+  test("an unparseable ttl is treated as expired and noted", async () => {
+    const repo = await makeRepo();
+    try {
+      await repo.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+      const { assertion } = await record(repo, {
+        doc: "README.md",
+        text: "Retries are capped at five attempts.",
+        file: "src/retry.ts",
+        quote: "export const MAX_ATTEMPTS = 5;",
+        ttl: "not-a-date",
+      });
+      const verdict = resolveAssertion(assertion, {
+        doc: await repo.read("README.md"),
+        code: new Map([["src/retry.ts", await repo.read("src/retry.ts")]]),
+      });
+      expect(verdict.expired).toBe(true);
+      expect(verdict.notes.join(" ")).toContain("unparseable ttl");
     } finally {
       await repo.cleanup();
     }

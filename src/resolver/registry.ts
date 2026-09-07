@@ -1,15 +1,13 @@
 /**
- * The resolver registry (§7). Variety is pushed down here: the engine dispatches
- * each anchor to the resolver(s) that declare its kind. The built-in two-axis
- * anchor-resolution logic is itself a resolver behind the same contract; third
- * parties add more out-of-process, in any language, gated by the default-deny
- * manifest.
+ * The resolver registry. The engine dispatches each anchor to the resolver
+ * that declares its kinds; the built-in drift resolver is one such resolver,
+ * in-process. Third parties add more out-of-process, in any language, gated
+ * by the default-deny manifest.
  *
- * Strict rule (§7.4, §11.1; ADR-001 gating invariant): only a non-advisory
- * (deterministic) resolver may produce a gating verdict. Advisory (Tier-3)
- * resolvers only attach advisories. Behavioral evidence is upgraded by a
- * separate verifier dispatch (§17.6), guarded doc-first so a verifier never
- * certifies a claim whose documented sentence is in flux (§18-B).
+ * Only a non-advisory resolver may produce a gating verdict. Advisory
+ * resolvers only attach advisories. Verifiers run through a separate
+ * dispatch, guarded doc-first so a verifier never certifies a claim whose
+ * documented sentence is in flux.
  */
 
 import {
@@ -33,57 +31,41 @@ import { OutOfProcessResolver } from "./client.ts";
 import { loadManifest } from "./manifest.ts";
 import type { VerifyResult } from "./protocol.ts";
 
-/** Per-call extras the engine hands a resolver alongside the anchored files. */
-export interface ResolveExtra {
-  /**
-   * The change-gate evidence (§17.6, D14): current contents of every
-   * evidence-set path. Only the built-in drift resolver consumes it; external
-   * out-of-process resolvers compute their own verdict and ignore it.
-   */
-  evidence?: ReadonlyMap<string, string | null>;
-}
+/** The selector kinds the built-in drift resolver owns. */
+export const BUILTIN_KINDS = [
+  "text-quote",
+  "text-position",
+  "ast-node",
+  "value",
+  "coarse",
+] as const;
 
 export interface Resolver {
   name: string;
   kinds: string[];
   tier: number;
   advisory: boolean;
-  /** LLM-backed (§19, D29): its advisories must carry structured `provenance`. */
+  /** LLM-backed: its advisories must carry structured `provenance`. */
   modelBacked?: boolean;
-  /** Verifier kinds this resolver can run to upgrade behavioral belief (§17.6). */
+  /** Verifier kinds this resolver can run. */
   verifierKinds?: string[];
   resolve(
     assertion: Assertion,
     files: ResolveFiles,
     proposition?: Proposition,
-    extra?: ResolveExtra,
   ): Promise<{ verdict?: Verdict; advisories?: Advisory[] }>;
-  /** Run one verifier; null = unable to run (caller keeps the baseline). */
+  /** Run one verifier; null = unable to run. */
   verify?(
     assertion: Assertion,
     verifier: Verifier,
-    files: ResolveFiles,
     changedEvidence?: ChangedEvidence[],
   ): Promise<VerifyResult | null>;
 }
 
-/**
- * The built-in anchor-resolution resolver — the deterministic two-axis fusion of
- * §17. It owns no hand-built fallback verdict: `resolveAssertion` already returns
- * `orphaned` for a missing file (§17.1), so a missing anchor side is just an
- * ordinary verdict, never a special case here.
- */
+/** The built-in, in-process anchor resolver. */
 export class DriftResolver implements Resolver {
   readonly name = "builtin:drift";
-  readonly kinds = [
-    "text-quote",
-    "text-position",
-    "ast-node",
-    "value",
-    "inline-id",
-    "path",
-    "glob",
-  ];
+  readonly kinds: string[] = [...BUILTIN_KINDS];
   readonly tier = 2;
   readonly advisory = false;
 
@@ -96,24 +78,18 @@ export class DriftResolver implements Resolver {
     assertion: Assertion,
     files: ResolveFiles,
     _proposition?: Proposition,
-    extra?: ResolveExtra,
   ) {
     return {
       verdict: resolveAssertion(assertion, files, {
         ast: this.ast,
         now: this.now,
-        evidence: extra?.evidence,
       }),
     };
   }
 }
 
-/**
- * Wraps an out-of-process resolver process as a Resolver. Translates the engine's
- * in-memory `ResolveFiles` (a Map) to/from the JSONL wire shape (a Record) and
- * back, and forwards behavioral `verify` calls.
- */
-class ProcessResolver implements Resolver {
+/** Wraps an out-of-process resolver as a Resolver. */
+export class ProcessResolver implements Resolver {
   constructor(
     public name: string,
     public kinds: string[],
@@ -134,8 +110,7 @@ class ProcessResolver implements Resolver {
       files: toWireFiles(files),
       proposition,
     });
-    if (!res) return {}; // timed out / crashed → degrade silently
-    // A declared-advisory resolver can never gate: drop any verdict it returns.
+    if (!res) return {};
     if (this.advisory) return { advisories: res.advisories ?? [] };
     return { verdict: res.verdict, advisories: res.advisories ?? [] };
   }
@@ -143,15 +118,9 @@ class ProcessResolver implements Resolver {
   async verify(
     assertion: Assertion,
     verifier: Verifier,
-    files: ResolveFiles,
     changedEvidence: ChangedEvidence[] = [],
   ): Promise<VerifyResult | null> {
-    return this.proc.verify({
-      assertion,
-      verifier,
-      files: toWireFiles(files),
-      changedEvidence,
-    });
+    return this.proc.verify({ assertion, verifier, changedEvidence });
   }
 
   dispose() {
@@ -159,7 +128,6 @@ class ProcessResolver implements Resolver {
   }
 }
 
-/** Convert the in-memory `ResolveFiles` Map to the JSONL wire Record shape. */
 function toWireFiles(files: ResolveFiles): {
   doc: string | null;
   code: Record<string, string | null>;
@@ -173,14 +141,8 @@ export class ResolverRegistry {
   private resolvers: Resolver[] = [];
   private disposers: Array<() => void> = [];
   private driftResolver: DriftResolver;
-  /** Resolvers already warned this run for dropping provenance-less advisories (D29). */
   private warnedResolvers = new Set<string>();
-  /**
-   * Whether to dispatch verifiers (§17.6, D13). Default **false** — verifiers
-   * execute repo-committed commands, so they run only under the explicit
-   * `check --run-verifiers` opt-in. `status`/`query`/`list`/`doctor`/plain
-   * `check` leave this false, so no verifier process ever spawns.
-   */
+  /** Whether to dispatch verifiers. Default false: only `check --run-verifiers` sets it. */
   runVerifiers = false;
 
   constructor(ast?: AstAnalyzer, now?: number) {
@@ -192,9 +154,9 @@ export class ResolverRegistry {
   }
 
   /**
-   * Spawn & register every resolver allowed by the default-deny manifest.
-   * The manifest is read from the store dir; resolver processes run with the
-   * anchor root as cwd (so their paths resolve against the tracked tree, §8).
+   * Spawn and register every resolver allowed by the default-deny manifest.
+   * A non-advisory external resolver may not claim a built-in kind unless the
+   * manifest entry sets `override: true`; such kinds are dropped with a warning.
    */
   async loadFromManifest(store: ClaimStore): Promise<void> {
     const manifest = await loadManifest(store.dir);
@@ -209,9 +171,22 @@ export class ResolverRegistry {
       const desc = await proc.describe();
       if (!desc) {
         proc.dispose();
-        continue; // unreachable/incompatible resolver — skip (default-deny posture)
+        continue;
       }
-      const kinds = spec.kinds ?? desc.kinds;
+      let kinds = spec.kinds ?? desc.kinds;
+      if (!desc.advisory && !spec.override) {
+        const claimed = kinds.filter((k) =>
+          (BUILTIN_KINDS as readonly string[]).includes(k),
+        );
+        if (claimed.length > 0) {
+          process.stderr.write(
+            `resolver ${desc.name} claims built-in kind(s) ${claimed.join(", ")} without "override": true in resolvers.json; ignoring those kinds.\n`,
+          );
+          kinds = kinds.filter(
+            (k) => !(BUILTIN_KINDS as readonly string[]).includes(k),
+          );
+        }
+      }
       const pr = new ProcessResolver(
         desc.name,
         kinds,
@@ -226,12 +201,7 @@ export class ResolverRegistry {
     }
   }
 
-  /**
-   * The non-advisory resolver covering at least one of the anchor's kinds, with
-   * an external one outranking the built-in drift resolver: the builtin declares
-   * every builtin kind, so first-match would shadow every manifest-registered
-   * resolver — against docs/resolvers.mdx ("no privileged internal path").
-   */
+  /** The non-advisory resolver covering an anchor kind; an external one outranks the builtin. */
   primaryFor(assertion: Assertion): Resolver | undefined {
     const anchor = assertion.anchor;
     const anchorKinds = new Set<string>();
@@ -249,54 +219,32 @@ export class ResolverRegistry {
     return this.resolvers.filter((r) => r.advisory);
   }
 
-  /**
-   * Resolve an assertion (§7.4): deterministic primary verdict → doc-first
-   * verifier dispatch (behavioral) → non-gating advisories → recompute gates.
-   */
+  /** Deterministic primary verdict → verifier dispatch → advisories → recompute gates. */
   async resolve(
     assertion: Assertion,
     files: ResolveFiles,
     proposition?: Proposition,
-    extra?: ResolveExtra,
   ): Promise<Verdict> {
-    // 1 — base verdict from the primary deterministic resolver (defaults to the
-    //     built-in drift resolver, which never returns a hand-built fallback).
     const primary = this.primaryFor(assertion) ?? this.driftResolver;
-    const base = (await primary.resolve(assertion, files, proposition, extra))
-      .verdict;
+    const base = (await primary.resolve(assertion, files, proposition)).verdict;
     const verdict =
       base ??
-      (await this.driftResolver.resolve(assertion, files, proposition, extra))
-        .verdict;
+      (await this.driftResolver.resolve(assertion, files, proposition)).verdict;
     if (!verdict) {
-      // The drift resolver always returns a verdict; this is unreachable, but
-      // keeps the type total without a hand-built state literal.
       throw new Error(`no verdict produced for assertion ${assertion.id}`);
     }
 
-    // 2 — Verifier dispatch (doc-first guard §18-B): only for a behavioral claim
-    //     (the deterministic verdict carries a behavior axis), and only when its
-    //     documented sentence is locatable (unchanged/moved). A non-behavioral
-    //     claim never gains a behavior state, so the two resolve paths agree (§10).
     if (
       this.runVerifiers &&
       assertion.verifiers.length > 0 &&
-      verdict.behavior !== undefined &&
       (verdict.doc === "unchanged" || verdict.doc === "moved")
     ) {
       verdict.behavior = await this.dispatchVerifiers(
         assertion,
-        files,
-        verdict.behavior,
         verdict.evidence.changedEvidence,
       );
     }
 
-    // 3 — Advisory resolvers (Tier-3 advises, never decides — §7.4). A
-    //     `modelBacked` resolver must attach structured provenance to every
-    //     advisory (§19, D29): the registry drops any that lack it and warns once
-    //     per run per resolver, so the LLM-quarantine rule is enforced, not just
-    //     documented.
     for (const adv of this.advisoryResolvers()) {
       const r = await adv.resolve(assertion, files, proposition);
       let advisories = r.advisories ?? [];
@@ -316,7 +264,6 @@ export class ResolverRegistry {
       }
     }
 
-    // 4 — Recompute gates: behavior may have moved in step 2 (§9).
     verdict.gates = computeGates(
       {
         doc: verdict.doc,
@@ -326,47 +273,29 @@ export class ResolverRegistry {
       },
       assertion.enforcement,
     );
-
-    // 5 — Recompute the remediation menu: a verifier may have upgraded the
-    //     behavior axis in step 2, changing which actions apply (§9).
     verdict.remediation = remediationForVerdict(verdict);
-
     return verdict;
   }
 
-  /**
-   * Run each declared verifier through a resolver that handles its kind and merge
-   * the results (§17.6): any `refuted` wins; else if ≥1 ran and all `supported`,
-   * `supported`; otherwise the deterministic baseline (`at-risk`/`unverified`)
-   * is preserved.
-   */
+  /** Any `refuted` wins; else if at least one ran and all `supported`, `supported`; else absent. */
   private async dispatchVerifiers(
     assertion: Assertion,
-    files: ResolveFiles,
-    baseline: BehaviorState | undefined,
     changedEvidence: ChangedEvidence[] = [],
   ): Promise<BehaviorState | undefined> {
     const results: BehaviorState[] = [];
     for (const verifier of assertion.verifiers) {
-      // A verifier yields refuted/supported, which can gate — so only a
-      // NON-advisory resolver may run one (§7.4: an advisor never gates).
       const runner = this.resolvers.find(
         (r) =>
           !r.advisory && r.verify && r.verifierKinds?.includes(verifier.kind),
       );
       if (!runner?.verify) continue;
-      const res = await runner.verify(
-        assertion,
-        verifier,
-        files,
-        changedEvidence,
-      );
+      const res = await runner.verify(assertion, verifier, changedEvidence);
       if (res) results.push(res.behavior);
     }
-    if (results.length === 0) return baseline;
+    if (results.length === 0) return undefined;
     if (results.includes("refuted")) return "refuted";
     if (results.every((b) => b === "supported")) return "supported";
-    return baseline;
+    return undefined;
   }
 
   dispose(): void {

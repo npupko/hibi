@@ -53,13 +53,8 @@
       }
     ]
   },
-  "enforcement": "enforced",
+  "enforcement": "retired",
+  "verified": false,
   "verifiers": [],
-  "attrs": {
-    "reanchorDowngrade": {
-      "from": "verified",
-      "to": "inferred",
-      "reason": "reanchored without --ref — no re-attestation of truth"
-    }
-  }
+  "attrs": {}
 }

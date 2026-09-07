@@ -1,48 +1,16 @@
 /**
- * Status → symbol + color, always paired with the machine status code so the
- * rendering is never color-only (§8 accessibility). Severity collapses the
- * side-tagged status vocabulary onto the four buckets a human scans for:
- * gating (✖), warning (⚠), clean (✓), and neutral/lifecycle (—).
+ * Status → symbol + color, always paired with the status text so the
+ * rendering is never color-only. Severity collapses the side-tagged status
+ * vocabulary onto four buckets: gating, warn, clean, neutral (lifecycle).
  */
 
 import type { Style } from "./style.ts";
 
 export type Severity = "gating" | "warn" | "clean" | "neutral";
 
-/** Side-tagged statuses that gate the build when the claim is enforced (§9). */
-const GATING_STATUSES = new Set([
-  "code:changed",
-  "doc:changed",
-  "code:orphaned",
-  "doc:orphaned",
-  "code:ambiguous",
-  "doc:ambiguous",
-  "behavior:refuted",
-  "expired",
-]);
-
-/** Re-anchorable / advisory statuses — exit 3, never gate (§9/ADR-001). */
-const WARN_STATUSES = new Set(["code:moved", "doc:moved", "behavior:at-risk"]);
-
-/** Lifecycle / neutral tags — informational, no drift (§6). */
-const NEUTRAL_STATUSES = new Set([
-  "retracted",
-  "superseded",
-  "amended",
-  "archived",
-]);
-
-/**
- * Classify a side-tagged status string. Note a `changed`/`orphaned` status only
- * truly gates when its claim is *enforced*; callers that hold the verdict prefer
- * `severityOfVerdict`, which consults `gates` directly. This string-only path is
- * for rollup views (overview, single-doc status) that carry the status word.
- */
-export function severityOfStatus(status: string): Severity {
-  if (GATING_STATUSES.has(status)) return "gating";
-  if (WARN_STATUSES.has(status)) return "warn";
-  if (NEUTRAL_STATUSES.has(status)) return "neutral";
-  return "clean";
+/** Sort rank: gating first, then warn, neutral, clean. */
+export function rankSeverity(s: Severity): number {
+  return s === "gating" ? 0 : s === "warn" ? 1 : s === "neutral" ? 2 : 3;
 }
 
 const UNICODE: Record<Severity, string> = {
@@ -59,12 +27,10 @@ const ASCII: Record<Severity, string> = {
   neutral: "-",
 };
 
-/** The bare symbol for a severity, ASCII when unicode is disabled. */
 export function severitySymbol(sev: Severity, unicode: boolean): string {
   return (unicode ? UNICODE : ASCII)[sev];
 }
 
-/** The color wrapper for a severity (a no-op when the Style has color off). */
 export function severityColor(
   sev: Severity,
   style: Style,
@@ -81,7 +47,6 @@ export function severityColor(
   }
 }
 
-/** A colored symbol for a severity, ready to drop into a line. */
 export function badge(sev: Severity, unicode: boolean, style: Style): string {
   return severityColor(sev, style)(severitySymbol(sev, unicode));
 }

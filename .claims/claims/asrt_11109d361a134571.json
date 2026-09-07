@@ -1,0 +1,54 @@
+{
+  "id": "asrt_11109d361a134571",
+  "propositionId": "prop_7f80b7d1d5f34292",
+  "documentId": "doc_fa1698bd5b6313a3",
+  "owner": "hibi-dogfood",
+  "ref": "ce2fd982a55dec0d80e48b0f06762adefd7e5bfb",
+  "anchor": {
+    "doc": {
+      "file": "docs/banners.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "The **headline** is `STALE DOCUMENT — N suspect claim(s) — re-verify before trusting.`",
+          "prefix": " uses a different nonce and is never matched.\n- ",
+          "suffix": " where `N` counts the body lines. A document who"
+        },
+        {
+          "kind": "text-position",
+          "start": 1360,
+          "end": 1446
+        }
+      ]
+    },
+    "code": [
+      {
+        "file": "src/banner/banner.ts",
+        "selectors": [
+          {
+            "kind": "text-quote",
+            "exact": "`STALE DOCUMENT — ${n} suspect claim(s) — re-verify before trusting.`",
+            "prefix": "xport const DEFAULT_HEADLINE = (n: number) =>\n  ",
+            "suffix": ";\n\n/** Instruction files that get the compact si"
+          },
+          {
+            "kind": "text-position",
+            "start": 747,
+            "end": 816
+          },
+          {
+            "kind": "ast-node",
+            "language": "typescript",
+            "nodeType": "template_string",
+            "structuralHash": "45d070aa4137959b",
+            "semanticHash": "72a308c57383f446"
+          }
+        ]
+      }
+    ]
+  },
+  "enforcement": "enforced",
+  "verified": true,
+  "verifiers": [],
+  "attrs": {}
+}

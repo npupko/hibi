@@ -1,18 +1,11 @@
 /**
- * The tree-sitter analyzer (Tier-2, §6, §16). Implements both the check-time
- * `AstAnalyzer` and the record-time `AnchorAnalyzer` seams. Grammars are the
- * official prebuilt wasm, embedded so the compiled single binary stays offline.
- *
- * web-tree-sitter parsing is synchronous once a Language is loaded; grammars are
- * preloaded asynchronously by `getAnalyzer()`, after which `analyze`/`extractValue`
- * are synchronous (as the resolver fusion path requires).
+ * The tree-sitter analyzer. Implements both the check-time `AstAnalyzer` and
+ * the record-time `AnchorAnalyzer` seams. Grammars are the official prebuilt
+ * wasm, embedded so the compiled binary stays offline, and loaded lazily per
+ * language: `load(languages)` must be awaited before the synchronous
+ * `analyze`/`extractValue`/`recordSelectors` see that language.
  */
 import { Language, Parser } from "web-tree-sitter";
-// Embedded grammar wasm — `with { type: "file" }` yields a path that resolves in
-// dev (`bun run`) and is embedded by `bun build --compile` (§16, §12).
-// The web-tree-sitter runtime wasm must also be embedded and located explicitly,
-// otherwise the compiled binary cannot find it (`/$bunfs/root/web-tree-sitter.wasm`).
-// web-tree-sitter 0.26 renamed this file from `tree-sitter.wasm`.
 import runtimeWasm from "web-tree-sitter/web-tree-sitter.wasm" with {
   type: "file",
 };
@@ -31,8 +24,8 @@ import tsWasm from "../../grammars/tree-sitter-typescript.wasm" with {
 import type { AstAnalysis, AstAnalyzer } from "../algo/resolve.ts";
 import type { Region, Selector } from "../core/model.ts";
 import type { AnchorAnalyzer } from "../engine/anchor.ts";
+import { languageForFile } from "../engine/lang.ts";
 import { extractValueFrom, fingerprintNode, snapNamedNode } from "./hash.ts";
-import { extractImportSpecifiers } from "./imports.ts";
 
 const WASM: Record<string, string> = {
   typescript: tsWasm,
@@ -43,15 +36,34 @@ const WASM: Record<string, string> = {
   java: javaWasm,
 };
 
-class TreeSitterAnalyzer implements AstAnalyzer, AnchorAnalyzer {
+export class TreeSitterAnalyzer implements AstAnalyzer, AnchorAnalyzer {
   private parsers = new Map<string, Parser>();
+  private loading = new Map<string, Promise<void>>();
 
-  constructor(languages: Map<string, Language>) {
-    for (const [name, lang] of languages) {
-      const p = new Parser();
-      p.setLanguage(lang);
-      this.parsers.set(name, p);
+  /** Load the grammars for these languages (unknown names are ignored). Cached per process. */
+  async load(languages: Iterable<string | undefined>): Promise<void> {
+    const pending: Promise<void>[] = [];
+    for (const name of languages) {
+      if (!name || this.parsers.has(name) || !WASM[name]) continue;
+      let p = this.loading.get(name);
+      if (!p) {
+        p = Language.load(WASM[name] as string).then((lang) => {
+          const parser = new Parser();
+          parser.setLanguage(lang);
+          this.parsers.set(name, parser);
+        });
+        this.loading.set(name, p);
+      }
+      pending.push(p);
     }
+    await Promise.all(pending);
+  }
+
+  /** Load the grammars for a set of file paths, by extension. */
+  async loadForFiles(files: Iterable<string>): Promise<void> {
+    const langs = new Set<string | undefined>();
+    for (const f of files) langs.add(languageForFile(f));
+    await this.load(langs);
   }
 
   private parse(text: string, language: string) {
@@ -85,13 +97,7 @@ class TreeSitterAnalyzer implements AstAnalyzer, AnchorAnalyzer {
     if (!root) return null;
     const node = snapNamedNode(root, text, region);
     if (!node) return null;
-    return extractValueFrom(node, language, nodeKind)?.value ?? null;
-  }
-
-  extractImports(text: string, language: string): string[] {
-    const root = this.parse(text, language);
-    if (!root) return [];
-    return extractImportSpecifiers(root, language);
+    return extractValueFrom(node, language, region, nodeKind)?.value ?? null;
   }
 
   recordSelectors(
@@ -114,7 +120,7 @@ class TreeSitterAnalyzer implements AstAnalyzer, AnchorAnalyzer {
       structuralHash: fp.structuralHash,
       semanticHash: fp.semanticHash,
     };
-    const v = extractValueFrom(node, language);
+    const v = extractValueFrom(node, language, region);
     const value: Extract<Selector, { kind: "value" }> | undefined = v
       ? { kind: "value", language, nodeKind: v.nodeKind, value: v.value }
       : undefined;
@@ -124,19 +130,22 @@ class TreeSitterAnalyzer implements AstAnalyzer, AnchorAnalyzer {
 
 let cached: Promise<TreeSitterAnalyzer> | undefined;
 
-/** Load all grammars once and return the shared analyzer. */
-export async function getAnalyzer(): Promise<TreeSitterAnalyzer> {
+/**
+ * The shared analyzer, initialized once per process with no grammars loaded.
+ * Pass `languages` to preload grammars in the same call.
+ */
+export async function getAnalyzer(
+  languages: Iterable<string | undefined> = Object.keys(WASM),
+): Promise<TreeSitterAnalyzer> {
   if (!cached) {
     cached = (async () => {
       await Parser.init({ locateFile: () => runtimeWasm } as Parameters<
         typeof Parser.init
       >[0]);
-      const langs = new Map<string, Language>();
-      for (const [name, path] of Object.entries(WASM)) {
-        langs.set(name, await Language.load(path));
-      }
-      return new TreeSitterAnalyzer(langs);
+      return new TreeSitterAnalyzer();
     })();
   }
-  return cached;
+  const analyzer = await cached;
+  await analyzer.load(languages);
+  return analyzer;
 }

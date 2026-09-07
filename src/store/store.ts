@@ -1,14 +1,13 @@
 /**
- * The committed claim store (§6, §8). Holds authored records (Documents,
- * Propositions, Assertions+Anchors) — *not* computed verdicts. Written as one
- * file per record so merges stay scoped and meaningful, never a monolithic
- * lockfile. A git-ignored cache may live alongside as a pure optimization.
+ * The committed claim store. Holds authored records (documents, propositions,
+ * assertions with anchors), never computed verdicts. One file per record so
+ * merges stay scoped.
  *
  * Layout (`.claims/` beside the docs):
- *   config.json                 — { version, nonce }
+ *   config.json                 — { version, nonce, instructionFiles?, pristine? }
  *   documents/<id>.json
  *   propositions/<id>.json
- *   claims/<assertionId>.json   — the Assertion + its Anchor baseline
+ *   claims/<assertionId>.json
  */
 
 import { randomUUID } from "node:crypto";
@@ -22,6 +21,7 @@ import {
   StoreConfig,
 } from "../core/model.ts";
 import { exists } from "../fs.ts";
+import { upgradeV2Store } from "./upgrade.ts";
 
 export const STORE_DIR = ".claims";
 
@@ -32,15 +32,12 @@ const SUBDIRS = {
 } as const;
 
 /**
- * Where a store lives and what its anchors resolve against — decoupled (§8).
- * A bare string is the common case (`anchorRoot`, store at `<anchorRoot>/.claims`);
- * the object form lets a consumer (e.g. atlas) keep the store outside the tree it
- * anchors into, so one repo can carry many investigation-scoped stores.
+ * Where a store lives and what its anchors resolve against. A bare string is
+ * the common case (`anchorRoot`, store at `<anchorRoot>/.claims`); the object
+ * form keeps the store outside the tree it anchors into.
  */
 export interface StoreLocation {
-  /** Absolute path the anchors resolve against (the repo / content root). */
   anchorRoot: string;
-  /** Absolute path to the store directory. Default: `<anchorRoot>/.claims`. */
   storeDir?: string;
 }
 
@@ -48,8 +45,6 @@ function resolveLocation(location: string | StoreLocation): {
   anchorRoot: string;
   dir: string;
 } {
-  // Normalize to absolute so anchors and the store resolve deterministically,
-  // independent of the process cwd when the store is later used (§8).
   if (typeof location === "string") {
     const anchorRoot = resolve(location);
     return { anchorRoot, dir: join(anchorRoot, STORE_DIR) };
@@ -64,22 +59,22 @@ function resolveLocation(location: string | StoreLocation): {
 }
 
 export class ClaimStore {
-  /** Absolute path the anchors resolve against (the repo / content root). */
   readonly anchorRoot: string;
-  /** Absolute path to the store directory (holds config + records). */
   readonly dir: string;
+  /** Set when `open` upgraded a v2 store in place. */
+  upgradedFrom?: string;
 
   private constructor(loc: { anchorRoot: string; dir: string }) {
     this.anchorRoot = loc.anchorRoot;
     this.dir = loc.dir;
   }
 
-  /** Generate a fresh per-repository banner nonce: 8 regex-safe hex chars (§17.5). */
+  /** A fresh per-repository banner nonce: 8 hex chars. */
   static newNonce(): string {
     return randomUUID().replace(/-/g, "").slice(0, 8);
   }
 
-  /** Initialize a store; idempotent — refuses to clobber an existing config. */
+  /** Initialize a store; idempotent, never clobbers an existing config. */
   static async init(
     location: string | StoreLocation,
     nonce = ClaimStore.newNonce(),
@@ -93,28 +88,31 @@ export class ClaimStore {
       const config: StoreConfig = { version: MODEL_VERSION, nonce };
       await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
     }
-    // git-ignore the regenerable cache (§6).
-    await writeFile(join(s.dir, ".gitignore"), "cache/\n");
     return s;
   }
 
-  /** Open an existing store; throws if not initialized or version-skewed. */
+  /**
+   * Open an existing store. A v2 store is upgraded in place once; any other
+   * version skew is refused before a claim file is parsed.
+   */
   static async open(location: string | StoreLocation): Promise<ClaimStore> {
     const s = new ClaimStore(resolveLocation(location));
     const configPath = join(s.dir, "config.json");
     if (!(await exists(configPath))) {
       throw new Error(`No claim store at ${s.dir}. Run \`hibi init\` first.`);
     }
-    // Version gate (D28): refuse a store written by a different model version
-    // BEFORE parsing any claim file. hibi ships no migration (beta) — the store
-    // can no longer silently misrepresent what it was recorded with.
     const raw = JSON.parse(await readFile(configPath, "utf8")) as {
       version?: string;
     };
     const found = raw.version ?? "unknown";
+    if (found === "v2") {
+      await upgradeV2Store(s.dir);
+      s.upgradedFrom = "v2";
+      return s;
+    }
     if (found !== MODEL_VERSION) {
       throw new Error(
-        `this store was written by hibi model ${found} and this binary requires ${MODEL_VERSION}. hibi ships no migration (beta): re-run 'hibi init' and re-record, or use a matching hibi version.`,
+        `this store was written by hibi model ${found} and this binary requires ${MODEL_VERSION}. Re-run 'hibi init' and re-record, or use a matching hibi version.`,
       );
     }
     return s;
@@ -126,9 +124,6 @@ export class ClaimStore {
     return exists(join(resolveLocation(location).dir, "config.json"));
   }
 
-  /** Parsed config, memoized: it is written once at `init` and immutable for the
-   *  life of an opened store, so re-reading and re-parsing it per call is pure
-   *  overhead. */
   private configCache?: StoreConfig;
 
   async config(): Promise<StoreConfig> {
@@ -147,7 +142,6 @@ export class ClaimStore {
   async getDocument(id: string): Promise<Document | undefined> {
     return this.read(SUBDIRS.documents, id, Document);
   }
-  /** Remove a document record (used to roll back a failed batch record). */
   async deleteDocument(id: string): Promise<void> {
     await rm(join(this.dir, SUBDIRS.documents, `${id}.json`), { force: true });
   }
@@ -159,7 +153,6 @@ export class ClaimStore {
   async putProposition(p: Proposition): Promise<void> {
     await this.write(SUBDIRS.propositions, p.id, Proposition.parse(p));
   }
-  /** Remove a proposition record (used to roll back a failed batch record). */
   async deleteProposition(id: string): Promise<void> {
     await rm(join(this.dir, SUBDIRS.propositions, `${id}.json`), {
       force: true,
@@ -171,7 +164,6 @@ export class ClaimStore {
   async allPropositions(): Promise<Proposition[]> {
     return this.readAll(SUBDIRS.propositions, Proposition);
   }
-  /** Find an existing proposition by content fingerprint (the dedup unit, §5). */
   async findPropositionByFingerprint(
     fingerprint: string,
   ): Promise<Proposition | undefined> {
@@ -189,8 +181,6 @@ export class ClaimStore {
   async allAssertions(): Promise<Assertion[]> {
     return this.readAll(SUBDIRS.claims, Assertion);
   }
-
-  /** Remove a record (used by `retract`). */
   async deleteAssertion(id: string): Promise<void> {
     await rm(join(this.dir, SUBDIRS.claims, `${id}.json`), { force: true });
   }
@@ -238,13 +228,6 @@ export class ClaimStore {
     return out;
   }
 
-  /**
-   * Parse one stored record against the current strict schema. The store's model
-   * version is gated at `open` (D28), so a version skew is already refused before
-   * we reach here; a failure at this point is a genuinely malformed record or an
-   * unknown key rejected by strict parsing (D28). There is no migration shim
-   * (beta) — re-initialize with `hibi init` and re-record.
-   */
   private parseRecord<T>(
     schema: { parse(v: unknown): T },
     where: string,
@@ -254,7 +237,7 @@ export class ClaimStore {
       return schema.parse(JSON.parse(raw));
     } catch (e) {
       throw new Error(
-        `Claim store record ${where} failed schema validation (strict — an unknown or malformed field). The store version is gated at open, so this is a corrupt record, not version skew. No migration shim (beta): re-initialize with \`hibi init\`. Cause: ${(e as Error).message}`,
+        `Claim store record ${where} failed schema validation (an unknown or malformed field). The store version is checked at open, so this is a corrupt record, not version skew. Cause: ${(e as Error).message}`,
       );
     }
   }
