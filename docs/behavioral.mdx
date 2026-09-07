@@ -16,7 +16,7 @@ hibi record --doc README.md --doc-quote "Failed uploads retry with backoff" \
   --verifier command:"bun test upload"
 ```
 
-`kind` is an open string used as a dispatch key. The built-in runner handles `command`: it runs `ref` as a shell command from the repository root, exit `0` is `supported`, non-zero is `refuted`. An external resolver can declare other kinds in its `describe` response (see [Resolvers](/resolvers)).
+`kind` is an open string used as a dispatch key. The built-in runner handles `command`: it runs `ref` as a shell command from the anchor root (the current directory, or `--cwd`), exit `0` is `supported`, non-zero is `refuted`. An external resolver can declare other kinds in its `describe` response (see [Resolvers](/resolvers)).
 
 ## Running verifiers
 

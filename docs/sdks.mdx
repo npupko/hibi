@@ -34,7 +34,7 @@ serveResolver(handler);
 |---|---|---|
 | `describe` | none | `{ name, version, kinds, tier, advisory, verifierKinds? }` |
 | `resolve` | `{ assertion, files: { doc, code }, proposition? }` | `{ verdict?, advisories? }` |
-| `verify` | `{ assertion, verifier, changedEvidence }` | `{ behavior: "supported" \| "refuted" }` |
+| `verify` | `{ assertion, verifier, changedEvidence }` | `{ behavior: "supported" \| "refuted", advisories?, notes? }` |
 
 `verify` receives no file contents. A grader that only handles anchors omits `verify` (the server answers with an unknown-method error, and the engine records no result). A runner can return an empty `kinds` list and handle only `verify`. `tier` defaults to 1; 3 is the advisory tier.
 

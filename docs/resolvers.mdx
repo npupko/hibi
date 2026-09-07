@@ -30,7 +30,7 @@ Newline-delimited JSON-RPC, one object per line. Three methods:
 </ParamField>
 
 <ParamField path="verify" type="method">
-  Params: `{ assertion, verifier, changedEvidence }`. No file contents are sent. Returns `{ behavior: "supported" | "refuted" }`. An error response, a timeout, or a spawn failure counts as no result.
+  Params: `{ assertion, verifier, changedEvidence }`. No file contents are sent. Returns `{ behavior: "supported" | "refuted", advisories?, notes? }`; `advisories` and `notes` default to empty. An error response, a timeout, or a spawn failure counts as no result.
 </ParamField>
 
 Print any message schema with `hibi schema --name <Name>` (for example `ResolveParams`, `VerifyParams`, `Verdict`). `hibi schema` with no name lists the names. The schemas in `schemas/*.v3.json` are generated from the Zod model.
