@@ -22,6 +22,22 @@ import {
 } from "../src/core/model.ts";
 import { PROTOCOL_SCHEMAS } from "../src/resolver/protocol.ts";
 
+type JsonSchemaNode = {
+  $ref?: string;
+  $defs?: Record<string, JsonSchemaNode>;
+  anyOf?: unknown[];
+  oneOf?: unknown[];
+};
+
+function resolveRootRef(schema: JsonSchemaNode): JsonSchemaNode {
+  const ref = schema.$ref;
+  if (!ref) return schema;
+  const name = ref.replace("#/$defs/", "");
+  const target = schema.$defs?.[name];
+  if (!target) throw new Error(`unresolvable root $ref: ${ref}`);
+  return target;
+}
+
 const docOnlyAnchor = {
   doc: {
     file: "README.md",
@@ -100,11 +116,11 @@ describe("canonical model is the single source of truth", () => {
   // Selector union.
 
   test("Selector is a discriminated union of exactly 5 variants", () => {
-    const js = z.toJSONSchema(Selector) as {
-      anyOf?: unknown[];
-      oneOf?: unknown[];
-    };
-    const variants = js.oneOf ?? js.anyOf;
+    // zod emits the root schema either inline or as a `$ref` into `$defs`,
+    // so follow a root `$ref` before reading the union branches.
+    const js = z.toJSONSchema(Selector) as JsonSchemaNode;
+    const root = resolveRootRef(js);
+    const variants = root.oneOf ?? root.anyOf;
     expect(Array.isArray(variants)).toBe(true);
     // text-quote, text-position, ast-node, value, coarse
     expect(variants?.length).toBe(5);

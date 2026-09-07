@@ -19,13 +19,3 @@ updates:
       actions-minor-patch:
         applies-to: version-updates
         update-types: ["minor", "patch"]
-
-  # Rust SDK crate.
-  - package-ecosystem: "cargo"
-    directory: "/sdk/rust"
-    schedule:
-      interval: "weekly"
-    groups:
-      cargo-minor-patch:
-        applies-to: version-updates
-        update-types: ["minor", "patch"]
