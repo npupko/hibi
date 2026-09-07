@@ -1,7 +1,7 @@
 /**
  * Resolver-side runtime (§7.1): the loop a resolver process runs to speak
- * JSONL-RPC over stdio. The TS SDK (sdk/ts) re-exports this; in-tree example
- * resolvers use it directly. Vendored framing/dispatch (§16).
+ * JSONL-RPC over stdio. The `@npupko/hibi/resolver` export re-exports this;
+ * in-tree example resolvers use it directly. Vendored framing/dispatch (§16).
  */
 import {
   type DescribeResult,
