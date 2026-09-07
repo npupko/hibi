@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: biomejs/setup-biome@4c91541eaada48f67d7dbd7833600ce162b68f51 # v2.7.1
         with:
-          version: 2.5.2 # keep in lockstep with the @biomejs/biome devDependency
+          version: 2.5.11 # keep in lockstep with the @biomejs/biome devDependency
       - run: biome ci . # read-only; emits GitHub annotations
 
   test:
