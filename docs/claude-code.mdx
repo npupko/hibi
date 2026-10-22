@@ -41,10 +41,11 @@ If the line is already in the file, `init` does not add it again. The JSON resul
 The skill covers the agent loop described in [Workflows](/workflows):
 
 - **Before trusting a document**, run `hibi check --doc <file>` and do not act on a sentence whose verdict gates.
-- **For a new document**, run `hibi audit --doc <file>`, then record the claims it finds with `hibi record --from-file -`. The agent chooses the kind, the anchors, the sources, and the procedure. Hibi never records on its own.
+- **For a new document**, run `hibi audit --doc <file>`, then record the claims it finds with `hibi record --from-file - --by agent:<name>`. The agent chooses the kind, the anchors, the sources, and the procedure. Hibi never records on its own.
 - **After a change**, run `hibi check --since <ref>` and follow each verdict's `remediation`.
-- **For the worklist**, follow each item's `procedure` and `sources`, collect the evidence, and submit it with `hibi evidence --from-file - --by agent:<name>`.
-- **For findings**, reconcile a contradiction by fixing the wrong sentence, or acknowledge a `review` or `conflict` finding with `hibi attest <id> --ack … --note …`.
+- **Before trusting a document with no claims**, expect `hibi check --doc <file>` to exit 1 with `no claims are registered for <file>`, and run `hibi audit --doc <file>` instead.
+- **For the worklist**, follow each `attested` item's `procedure` and `sources`, collect the evidence, and submit it with `hibi evidence --from-file - --by agent:<name>`. Evidence applies to `attested` claims only.
+- **For findings**, reconcile a contradiction by fixing the wrong sentence, or acknowledge a finding with `hibi attest <id> --by agent:<name> --ack review --note "<why>"` or `hibi attest <id> --by agent:<name> --ack conflict:<other-id> --note "<why>"`. Each `remediation` action's `command` runs as printed once its placeholders are filled in.
 
 The skill also states what an agent must not do:
 

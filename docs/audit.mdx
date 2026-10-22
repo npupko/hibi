@@ -61,7 +61,7 @@ The decision is taken only when the confidence of the `kind` Choice is at or abo
 | row `kind` | when |
 |---|---|
 | `unsure` | a Choice fell below `judge.threshold`; `unsure` names which one (`kind` is checked first, then `evidenceKind`) |
-| `pending` | the judge could not answer: no `TYPESAFE_API_KEY`, or the API was unreachable |
+| `pending` | the judge could not answer: no `TYPESAFE_API_KEY`, the API was unreachable, or its answer could not be used (a judge error); only the rows of the failed request are `pending`, and the audit still exits 0 |
 
 ## Row shape
 
@@ -87,6 +87,8 @@ The decision is taken only when the confidence of the `kind` Choice is at or abo
 | `unsure` | `unsure` rows | `kind` or `evidenceKind` |
 | `probabilities` | `unsure` rows | the `kind` distribution, plus the `evidenceKind` distribution when the top kind is `factual_claim` |
 | `duplicateOf` | always | for a covered row, the claim its claim most likely duplicates (from the [contradiction pass](/conflicts)); otherwise `null` |
+
+The contradiction pass that `audit` runs judges only the pairs with at least one claim in this document, and pairs those claims against every live claim in the store.
 
 Covered rows and `pending` rows carry neither `probability` nor `probabilities`.
 
@@ -123,7 +125,7 @@ Covered rows and `pending` rows carry neither `probability` nor `probabilities`.
 }
 ```
 
-`byKind` counts covered and uncovered rows together. `summary.requests` counts triage requests the judge answered in this run; cache hits are not counted.
+`doc` is the path normalized to a POSIX path relative to the anchor root, so `--doc ./README.md` reports `README.md`. `byKind` counts covered and uncovered rows together. `summary.requests` counts triage requests the judge answered in this run; cache hits are not counted.
 
 ## The to-do line
 
@@ -137,7 +139,7 @@ The JSON carries `kind` and no advice. The human output prints one to-do per row
 | `not-a-claim` | none |
 | `unsure` on `kind` | `unsure: read it yourself` |
 | `unsure` on `evidenceKind` | `unsure: evidence kind` |
-| `pending` | `pending: judge unavailable` |
+| `pending` | `pending: judge unavailable` (also printed when the judge answered with something hibi could not use) |
 
 ```
 README.md

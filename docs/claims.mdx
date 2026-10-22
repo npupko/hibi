@@ -102,8 +102,15 @@ A code or reference span may then name `api:src/limits.ts`.
 
 - An alias that is not in `config.repos` is refused at record time.
 - At check time, an alias whose directory does not exist resolves the side to `unavailable`. That is a warning and never gates. The reason label names the alias and the path.
+- `hibi reanchor` keeps an evidence side whose sibling repo is not checked out as stored, with a warning, and re-resolves the other sides.
 
 Without aliases, nothing changes.
+
+An evidence file must stay inside its root: the anchor root for a plain path, or the alias directory for an aliased path. `record` and `reanchor` refuse a path that resolves outside it (`../outside.ts: path escapes its root; an evidence file must be inside the anchor root.`). If a stored side escapes its root, `check` reports it `unavailable` with the reason `evidence: path escapes its root`.
+
+## Paths
+
+Every path a command takes (`--doc`, `--code-file`, `--ref-file`, `--path`, `--from`, `--to`, `--successor`, and the same keys in JSON input) is normalized to a POSIX path relative to the anchor root (the current directory, or `--cwd`). `./README.md`, `README.md`, and an absolute path to the same file all name `README.md`. An aliased path keeps its prefix and has its relative part normalized: `api:./src/x.ts` is `api:src/x.ts`. JSON output echoes the normalized form.
 
 ## Recording
 
@@ -111,13 +118,13 @@ One claim from flags:
 
 ```sh
 hibi record --doc README.md --doc-quote "Retries are capped at 5 attempts." \
-  --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5"
+  --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" --by agent:opus
 ```
 
-Agents send a JSON array on stdin. The batch is validated first and is all or nothing; every problem is reported on its own line.
+Agents send a JSON array on stdin. The batch is validated first and is all or nothing; every problem is reported on its own line. `--by` is the actor for items without their own `by`.
 
 ```sh
-hibi record --from-file - <<'EOF'
+hibi record --from-file - --by agent:opus <<'EOF'
 [
   { "doc": "README.md", "docQuote": "Retries are capped at 5 attempts.", "kind": "code",
     "code": [{ "file": "src/retry.ts", "quote": "MAX_ATTEMPTS = 5" }] },
@@ -142,7 +149,7 @@ EOF
 | `procedure` | `{ instructions, steps? }` |
 | `ttl` | ISO 8601 duration; required on `attested` |
 | `owner` | actor |
-| `by` | the actor recorded as vouching; default `human:<git user.email>` |
+| `by` | the actor recorded as vouching; required here or as `--by`, with no default |
 | `suggest` | `true` records a claim that never gates |
 
 Each new claim gets one `vouch` attestation by `by`. A `human:` vouch counts toward the ttl; an `agent:` or `process:` vouch does not. So an `attested` claim recorded with `"by": "agent:<name>"` has no counting attestation and is `expired` until evidence or a human vouch arrives.
@@ -159,7 +166,7 @@ Each new claim gets one `vouch` attestation by `by`. A `human:` vouch counts tow
   judge/<sha256>.json        # cached judge verdicts
 ```
 
-Ids are `doc_` or `clm_` followed by 16 hex characters. The store version is `v4`. v3 stores are not upgraded.
+Ids are `doc_` or `clm_` followed by 16 hex characters. The store version is `v4`. A store of any other version is not upgraded: every command, `init` included, exits 1 with ``this claim store is version <v>; hibi v4 has no upgrade path from it. Remove <dir>, run `hibi init`, and re-record.``
 
 `config.json` as `hibi init` writes it:
 
@@ -221,7 +228,7 @@ A `code` claim as stored, after `record`:
   "procedure": null,
   "enforcement": "enforced",
   "attestations": [
-    { "by": "human:dev@example.com", "at": "2026-10-22T18:16:02.854Z", "basis": "vouch" }
+    { "by": "agent:opus", "at": "2026-10-22T18:16:02.854Z", "basis": "vouch" }
   ],
   "createdAt": "2026-10-22T18:16:02.854Z",
   "ref": "WORKTREE"

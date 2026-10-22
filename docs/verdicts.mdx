@@ -13,7 +13,7 @@ hibi check --doc CLAUDE.md      # the claims on one document; expired gates here
 hibi check --since origin/main  # the claims touching a file changed since the ref
 ```
 
-`check` writes nothing except new judge cache entries in `.claims/judge/`.
+`check` writes nothing except new judge cache entries in `.claims/judge/`. Paths given to `--doc` are normalized to POSIX paths relative to the anchor root, so `./CLAUDE.md` and `CLAUDE.md` name the same document, and the JSON echoes the normalized form. `check --doc` on a path with no registered claims exits 1 with `no claims are registered for <path>; run hibi audit --doc <path>`.
 
 ## Axes
 
@@ -28,6 +28,8 @@ hibi check --since origin/main  # the claims touching a file changed since the r
 The anchor states are defined on [Anchors](/anchors). The judge states are defined on [Judge](/judge).
 
 For a `reference` claim, the judge is consulted only when both sides are `unchanged` or `moved`. Otherwise the reasons say `judge: not consulted while the doc side is <state>` or `... the evidence side is <state>`, and `judge` is absent. For an `attested` claim, `judge` comes from the newest cached `supports` verdict for evidence submitted with `hibi evidence`.
+
+`judge: pending` has one of three causes, each with its own label: the judge was unavailable (no key, network down, 401 or 403), the judge answered with something hibi cannot use (`judge error: <message>`), or the referenced span is longer than 32,000 characters (`referenced span is longer than 32,000 characters`). None of them fails the run.
 
 ## gates, warns, reasons
 
@@ -61,7 +63,9 @@ A `suggested` claim that would gate or warn gets the label `suggested claim: nev
 |---|---|
 | `0` | clean, or warnings only |
 | `2` | at least one verdict gates; or, under `--fail-on warn`, at least one warns |
-| `1` | operational error: no store, an unknown flag, an unknown `--since` ref, an invalid input |
+| `1` | operational error: no store, an unknown flag, an unknown `--since` ref, an invalid input, `check --doc` on a path with no registered claims |
+
+Gating means a `changed`, `orphaned`, or `ambiguous` side, a `refuted` judgment, or a conflict on an enforced claim, and `expired` under `--doc`. A judge failure is never an operational error: it makes the judgment `pending`.
 
 `--fail-on` sets the threshold:
 
@@ -83,12 +87,23 @@ A verdict that needs action carries `remediation`: a menu, most severe condition
 | doc `changed` | `reverify-doc`, `reanchor`, `retire` |
 | a side `ambiguous` | `reanchor` with a wider span |
 | `judge: refuted` | `fix-evidence`, `fix-claim` (no reanchor) |
-| conflicts | `reconcile` (names the other claim), `ack` |
-| `expired` | `attest` (a human vouch), `evidence` |
-| `judge: review` | `ack`, `evidence` |
+| conflicts | `reconcile` (names the other claims), then one `ack` per other claim |
+| `expired` | `attest` (a human vouch), `evidence` (`attested` claims only) |
+| `judge: review` | `ack`, `evidence` (`attested` claims only) |
 | a side `moved` | `reanchor` |
 
 Each action has `id`, `title`, `rationale`, and a `command` when one exists. `pending` and `unavailable` add no actions; the reason label says what is missing.
+
+Every `command` runs as printed once the placeholders in angle brackets are filled in:
+
+| action | command |
+|---|---|
+| `attest` | `hibi attest <id> --by human:<you> --note "<what you checked>"` |
+| `ack` on a review | `hibi attest <id> --by <actor> --ack review --note "<why>"` |
+| `ack` on a conflict | `hibi attest <id> --by <actor> --ack conflict:<other-id> --note "<why>"` |
+| `evidence` | `echo '[{"claimId":"<id>","evidence":"<text>","source":"<where>","summary":"<one line>"}]' \| hibi evidence --from-file - --by agent:<name>` |
+
+The `evidence` action is offered only for `attested` claims, because `hibi evidence` accepts only those. A `reference` claim is judged from the referenced document.
 
 ## The worklist
 
@@ -96,12 +111,12 @@ Each action has `id`, `title`, `rationale`, and a `command` when one exists. `pe
 
 | reason | claims |
 |---|---|
-| `expired` | an `attested` claim whose ttl ran out |
+| `expired` | any claim with a `ttl` that ran out, `code` claims included |
 | `review` | a `reference` or `attested` claim whose judge state is `review` and not acknowledged |
 | `pending` | a `reference` or `attested` claim whose judge state is `pending` |
-| `never-checked` | an `attested` claim with no judged evidence yet |
+| `never-checked` | an `attested` claim with a `procedure` or at least one `sources` entry, and no judged evidence yet |
 
-A claim is listed once, with the first matching reason in the order above. Its verdict also carries a `worklist: …` reason. `hibi list --state pending` returns the same claims.
+A claim is listed once, with the first matching reason in the order above. Its verdict also carries a `worklist: …` reason. A pure vouch claim (`attested`, with no `procedure` and no `sources`) is listed only when it is expired. `hibi list --state pending` returns the same claims.
 
 Each item:
 
@@ -134,7 +149,7 @@ Each item:
     "expired": 0,
     "conflicts": 0,
     "worklist": 2,
-    "conflictPass": { "pairs": 0, "requests": 0, "pending": 0 }
+    "conflictPass": { "pairs": 0, "requests": 0, "pending": 0, "scope": "store" }
   },
   "verdicts": [
     {
@@ -211,14 +226,16 @@ After `MAX_ATTEMPTS = 5` becomes `50` in `src/retry.ts`, the code claim gates an
 |---|---|
 | `ref` | the git HEAD, or `WORKTREE` when there is no commit |
 | `since`, `changedFiles` | with `--since` only |
-| `doc`, `found` | with `--doc` only; `found` is false when no claim is recorded on that document |
+| `doc` | with `--doc` only: the document path, normalized |
 | `summary` | counts; `retired` claims are in none of `gating`, `warning`, `clean` |
-| `summary.conflictPass` | pairs formed over the whole store, judge requests answered in this run, pairs still pending |
-| `documents[].suspect[]` | per claim that gates or warns, its most severe status, such as `evidence:changed`, `judge:pending`, `conflict`, `expired`, `superseded` |
+| `summary.conflictPass` | `{ pairs, requests, pending, scope }`: pairs judged, judge requests answered in this run, pairs still pending, and `store` (every pair) or `doc` (only pairs with a claim in the `--doc` document) |
+| `documents[].suspect[]` | per claim that gates or warns, its most severe status tag, such as `evidence:changed`, `judge:pending`, `conflict`, `conflict:review`, `conflict:pending`, `expired`, `superseded`; never `unchanged` |
 
 `--explain` adds `detail` to each verdict: `docRegion`, `evidenceRegions[]`, `similarity`, and `changes[]` (`{ path, kind: text | ast | value, detail }`). `hibi schema --name Verdict` prints the schema.
 
-`--doc` and `--since` scope the verdicts. The contradiction pass still runs over the whole store, so a scoped check sees a conflict with a claim outside its scope.
+`--doc` and `--since` scope the verdicts. Under `--since` the contradiction pass runs over the whole store. Under `--doc` it judges only the pairs with at least one claim in that document; the other claim of a pair may be on any document, so a `--doc` check still sees a conflict with a claim outside it.
+
+Errors from `check` and `list` are printed as the JSON error envelope `{ "ok": false, "error": "…" }` with exit 1 whenever the output is JSON.
 
 ## Output format
 

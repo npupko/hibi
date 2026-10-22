@@ -30,7 +30,7 @@ Actors use the OKF form `<type>:<id>`:
 | `agent:<name>` | `agent:opus` | a coding agent |
 | `process:<name>` | `process:nightly-cron` | a script, a CI job, a workflow runner |
 
-`--by` is required on `evidence` and `attest`. On `record` it defaults to `human:<git user.email>`.
+`--by` is required on `record` and `attest`; there is no default. On `record --from-file`, each item may carry its own `by`, and `--by` is the default for items without one. On `evidence`, `--by` may be omitted when every item has `by`.
 
 ## Bases
 
@@ -84,22 +84,23 @@ A claim is `expired` when it has a `ttl` and either the newest counting attestat
 
 The difference is deliberate. A whole-store check in CI should not fail because time passed. A reader who asks "can I trust this document now?" should get no for an expired claim.
 
-An expired `attested` claim appears in the `check` worklist with reason `expired`. `hibi list --state expired` lists every expired live claim with its `owner`.
+An expired claim of any kind appears in the `check` worklist with reason `expired`; a `code` or `reference` claim can carry a `ttl` too. `hibi list --state expired` lists every expired live claim with its `owner`.
 
 ## What clears what
 
 | finding | an agent can clear it by | a human can also clear it by |
 |---|---|---|
-| `expired` | submitting evidence the judge finds `supported` | `hibi attest <id> --by human:<id>` |
-| never checked (`attested`, no evidence yet) | submitting evidence | nothing else; a vouch does not create a judge verdict |
-| `judge: refuted` | submitting newer evidence that is `supported`, or fixing the sentence | the same |
-| `judge: review` | `attest --ack review --note`, or submitting clearer evidence | the same |
-| a conflict | `attest --ack conflict:<other-id> --note`, or rewriting one sentence | the same |
+| `expired` on an `attested` claim | submitting evidence the judge finds `supported` | `hibi attest <id> --by human:<id> --note "<what you checked>"` |
+| `expired` on a `code` or `reference` claim | nothing; `hibi evidence` accepts only `attested` claims | `hibi attest <id> --by human:<id> --note "<what you checked>"` |
+| never checked (`attested` with a `procedure` or `sources`, no evidence yet) | submitting evidence | nothing else; a vouch does not create a judge verdict |
+| `judge: refuted` | submitting newer evidence that is `supported` (`attested` claims), or fixing the sentence | the same |
+| `judge: review` | `hibi attest <id> --by <actor> --ack review --note "<why>"`, or submitting clearer evidence (`attested` claims) | the same |
+| a conflict | `hibi attest <id> --by <actor> --ack conflict:<other-id> --note "<why>"`, or rewriting one sentence | the same |
 | `changed`, `orphaned`, `ambiguous`, `moved` | re-verifying, then `hibi reanchor <id>` | the same |
 
 An agent cannot reset a ttl by vouching. `hibi attest <id> --by agent:<name>` is recorded and `countsTowardTtl` is `false`.
 
-`--ack` accepts any actor. Only use it when the finding is not a problem, and say why in `--note`. An `ack` on a review is pinned to the cache key of the newest `supports` verdict, so newer evidence needs a new ack. An `ack` on a conflict is written to both claims and pinned to both sentences; it lapses when either sentence changes. See [Conflicts](/conflicts).
+`--ack` accepts any actor. Only use it when the finding is not a problem, and say why in `--note`. An `ack` on a review is pinned to the cache key of the claim's current `supports` verdict. For a `reference` claim that is the key of the request built from its sentence and referenced span as they read now, so an edit to either needs a new ack. For an `attested` claim it is the newest `supports` cache entry, so newer evidence needs a new ack. `--ack review` is an error when the claim has no current `supports` verdict: run `hibi check` first for a `reference` claim, or submit evidence for an `attested` claim. An `ack` on a conflict is written to both claims and pinned to both sentences; it lapses when either sentence changes. See [Conflicts](/conflicts).
 
 ## Next
 

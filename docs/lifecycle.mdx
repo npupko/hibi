@@ -89,13 +89,14 @@ Copies the file to `archive/<path>`, replaces the original with a short tombston
   "next": "reanchor or retire each stranded claim, then hibi check" }
 ```
 
-`archivedTo` is null when the file was not on disk. To withdraw a document that has no successor, archive it without `--successor`.
+`archivedTo` is null when the document is registered but its file was not on disk. A path that is not a registered document (no claim was ever recorded on it) is an error, and nothing is written. To withdraw a document that has no successor, archive it without `--successor`.
 
 ## Reanchoring a claim
 
 ```sh
 hibi reanchor <claim-id> [--doc <path>] [--doc-quote <text> | --doc-range L1:L3]
                          [--code-file <path> (--code-quote <text> | --code-range L1:L9)]
+                         [--ref-file <path> (--ref-quote <text> | --ref-range L1:L3)]
                          [--suggest] [--dry-run]
 ```
 
@@ -104,6 +105,8 @@ hibi reanchor <claim-id> [--doc <path>] [--doc-quote <text> | --doc-range L1:L3]
 - Without span flags, each side is located through its stored selectors.
 - A side that resolves `orphaned` is refused unless you pass a new span for it. Hibi does not guess where a lost span went.
 - `--doc <path>` with `--doc-quote` or `--doc-range` moves the claim to another document.
+- `--code-file` with `--code-quote` or `--code-range` replaces a `code` claim's spans; `--ref-file` with `--ref-quote` or `--ref-range` replaces a `reference` claim's span. The wrong kind is an error, for example `claim <id> is a code claim; --ref-file, --ref-quote, and --ref-range are for reference claims.`
+- An evidence side in a sibling repo that is not checked out is kept as stored, with a warning such as `evidence side api:src/limits.ts kept unchanged: sibling repo "api" is not checked out at ../api`. The other sides are re-resolved.
 - `--suggest` is read-only. It ranks candidate locations for the stored doc and evidence quotes. It cannot be combined with span flags or `--dry-run`.
 - `--dry-run` computes the result and writes nothing.
 

@@ -5,7 +5,7 @@ description: "Code pairs claims that might disagree, the judge answers each pair
 icon: "code-compare"
 ---
 
-Two documents can each be internally correct and still disagree: the pricing page says $29, the FAQ says $39. Hibi finds such pairs with a contradiction pass that runs over every live claim on every `check`, `list`, and `audit`.
+Two documents can each be internally correct and still disagree: the pricing page says $29, the FAQ says $39. Hibi finds such pairs with a contradiction pass that runs on every `check`, `list`, and `audit`.
 
 The pass has three steps. Code picks candidate pairs. The [judge](/judge) answers each new pair once. Code decides the outcome from the cached answer.
 
@@ -13,7 +13,7 @@ The pass has three steps. Code picks candidate pairs. The [judge](/judge) answer
 
 The pass considers live claims: not retired, on an `active` document. Two live claims form a pair when either rule holds:
 
-1. **A shared rare token.** Both sentences contain a content token that appears in fewer than `max(3, 0.05 × number of live claims)` claims.
+1. **A shared rare token.** Both sentences contain a content token that appears in fewer than `max(3, min(ceil(0.05 × n), 10))` claims, where `n` is the number of live claims.
 2. **Comparable values and a shared token.** Both sentences contain a value of the same kind and unit (for example both state an amount in USD), and they share any content token.
 
 A content token is a run of letters, lowercased, at least 3 letters long, and not in a fixed list of English stop words. Claims in the same document pair by the same rules. There are no topics and nothing to configure.
@@ -22,6 +22,7 @@ A content token is a run of letters, lowercased, at least 3 letters long, and no
 |---|---|---|
 | rare share | 5 percent of live claims | `RARE_SHARE` |
 | rarity floor | 3 claims, so a token shared by exactly two claims is always rare | `RARE_MIN_CLAIMS` |
+| rarity ceiling | 10 claims, so in a large store a token shared by hundreds of claims does not pair them all | `RARE_MAX_CLAIMS` |
 | shortest content token | 3 letters | `MIN_TOKEN_LETTERS` |
 
 Value kinds and units come from the extraction table described on [Judge](/judge#what-stays-in-code).
@@ -34,11 +35,19 @@ Each pair is sent to the `conflict` judgment once. The request holds both senten
 
 | field | meaning |
 |---|---|
-| `pairs` | pairs formed over the whole store |
+| `pairs` | pairs judged in this pass |
 | `requests` | judge calls answered in this run; 0 when every pair came from the cache |
 | `pending` | pairs the judge could not answer |
+| `scope` | `store` when every pair was judged; `doc` when only the pairs with a claim in one document were |
 
-The pass always runs over the whole store. `check --doc` and `check --since` scope only the verdicts, so a claim in scope still shows a conflict with a claim outside it.
+Pairing always sees every live claim. Which pairs are judged depends on the command:
+
+| command | pairs judged | `scope` |
+|---|---|---|
+| `check`, `check --since`, `list` | every pair | `store` |
+| `check --doc <path>`, `audit --doc <path>` | the pairs with at least one claim in that document | `doc` |
+
+The other claim of a judged pair may be on any document, so a `--doc` check still shows a conflict with a claim outside the document. `check --since` scopes only the verdicts.
 
 ## Outcomes
 
@@ -53,7 +62,7 @@ Every pair ends with one outcome and one reason label. `threshold` is `judge.thr
 | `duplicate` | `consistent`, with `same_subject` at or above the threshold | `consistent and same subject (same_subject=0.95)` |
 | `clean` | anything else | `unrelated (confidence=0.80, same_subject=0.40)` |
 | `acked` | a `conflict` or `review` that an ack on either claim covers | `acknowledged: numbers differ: 29 vs 39` |
-| `pending` | the judge was unavailable | `judge unavailable: TYPESAFE_API_KEY is not set; the judge cannot answer.` |
+| `pending` | the judge was unavailable, or its answer could not be used | `judge unavailable: TYPESAFE_API_KEY is not set; the judge cannot answer.`, `judge error: TypeSafe returned HTTP 400: …` |
 
 The value comparison runs in code, not in the model. It runs only after the judge says both sentences are about the same subject, so `$29` and `$39` in unrelated sentences are not a conflict.
 
@@ -63,10 +72,12 @@ The value comparison runs in code, not in the model. It runs only after the judg
 |---|---|---|
 | `conflict` | an entry in `conflicts[]`: `{ claimId, probability, reason }` naming the other claim; the reason label `conflicts with <id> (p=… at or above threshold …): …` | gates |
 | `review` | the reason label `possible conflict with <id>: review: contradictory, …` | warns |
-| `pending` | the reason label `conflict check pending with <id>: judge unavailable` | warns |
+| `pending` | the reason label `conflict check pending with <id>: judge unavailable`, or `conflict check pending with <id>: judge error` when the judge's answer could not be used | warns |
 | `duplicate` | nothing on the verdict; see below | none |
 
-`probability` is the judge's probability for `contradictory`, or `1` when the values differ. A gating conflict adds a `reconcile` action to the claim's [remediation menu](/verdicts), naming the other claim.
+`probability` is the judge's probability for `contradictory`, or `1` when the values differ. Unlike `supports`, the conflict value rule compares every value group, unitless numbers included. A gating conflict adds a `reconcile` action to the claim's [remediation menu](/verdicts), naming the other claims, and one `ack` action per other claim with the command `hibi attest <id> --by <actor> --ack conflict:<other-id> --note "<why>"`.
+
+In `documents[].suspect[]`, a claim whose most severe finding is a conflict in review has the status `conflict:review`, and one whose conflict check is pending has `conflict:pending`.
 
 `hibi list --state conflict` lists every live claim with a `conflict` or `review` finding.
 

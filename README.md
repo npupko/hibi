@@ -39,7 +39,7 @@ bun add @npupko/hibi        # then: bunx hibi …
 bunx @npupko/hibi --help    # or run it once without installing
 ```
 
-The judge reads `TYPESAFE_API_KEY`. Without it, everything else works and uncached judgments are `pending`, a warning.
+The judge reads `TYPESAFE_API_KEY`. Without it, everything else works and uncached judgments are `pending`, a warning. A judge error (an answer hibi cannot use) is `pending` too; it never aborts a run.
 
 ## Quick start
 
@@ -49,15 +49,15 @@ hibi audit --doc README.md           # one row per region: covered, or what kind
 
 # Record a claim of each kind
 hibi record --doc README.md --doc-quote "Retries are capped at 5 attempts." \
-  --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5"
+  --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" --by agent:opus
 hibi record --doc README.md --doc-quote "Refunds are issued within two weeks of a request." \
-  --kind reference --ref-file docs/billing.md --ref-quote "Refunds are issued within 14 days."
-hibi record --doc docs/pricing.md --doc-quote "The Pro plan costs $29 per month." \
+  --kind reference --ref-file docs/billing.md --ref-quote "Refunds are issued within 14 days." --by agent:opus
+hibi record --doc docs/pricing.md --doc-quote 'The Pro plan costs $29 per month.' \
   --kind attested --ttl P90D --source stripe=https://dashboard.stripe.com/products/prod_123 \
-  --instructions "Open the Stripe dashboard and report the Pro monthly price."
+  --instructions "Open the Stripe dashboard and report the Pro monthly price." --by human:alice@example.com
 
 hibi check                      # every claim, the contradiction pass, and the worklist
-hibi check --doc CLAUDE.md      # can this one document be trusted now?
+hibi check --doc CLAUDE.md      # can this one document be trusted now? (exit 1 if it has no claims)
 hibi check --since origin/main  # what did this change invalidate?
 hibi list --state pending       # the worklist: claims an agent should re-check
 
@@ -69,7 +69,7 @@ hibi attest <claim-id> --by human:alice@example.com --note "checked, still true"
 hibi attest <claim-id> --by human:alice@example.com --ack conflict:<other-id> --note "different plans"
 ```
 
-Agents record in batches with `hibi record --from-file -` (a JSON array on stdin, all or nothing).
+`--by` is required on `record` and `attest`; there is no default actor. Agents record in batches with `hibi record --from-file - --by agent:<name>` (a JSON array on stdin, all or nothing; an item's own `by` overrides `--by`). `hibi evidence` accepts `attested` claims only; a `reference` claim is judged from the referenced document. Paths are stored as POSIX paths relative to the anchor root, so `./README.md` and `README.md` are the same document.
 
 Commands: `init`, `record`, `check`, `list`, `audit`, `reanchor`, `retire`, `supersede`, `archive`, `evidence`, `attest`, `schema`, `completions`, `version`. `hibi <cmd> --help` prints that command's options.
 
@@ -80,14 +80,14 @@ Output is human on a terminal and JSON when piped. `--format human|compact|json|
 | code | meaning |
 |------|---------|
 | `0`  | clean, or warnings only |
-| `2`  | gating: a `changed` / `orphaned` / `ambiguous` span, a `refuted` judgment, or a contradiction on an enforced claim; `expired` also gates under `check --doc` |
-| `1`  | operational error |
+| `2`  | gating: a `changed` / `orphaned` / `ambiguous` side, a `refuted` judgment, or a contradiction on an enforced claim; `expired` also gates under `check --doc`; under `--fail-on warn`, any warning |
+| `1`  | operational error, including `check --doc` on a path with no registered claims |
 
 Warnings are `moved`, `review`, `pending`, `unavailable`, and `expired` in a whole-store check. `--fail-on gating|warn|never` sets when to exit 2. `record --suggest` makes a claim advisory.
 
 ## How it works
 
-Each claim has a doc side (the sentence) and, for `code` and `reference`, evidence sides. Each side stores selectors against one file: the quoted text with 48 characters of context, its position, and on code sides the enclosing tree-sitter node hash and the literal inside the span, so changing `MAX_ATTEMPTS = 5` to `50` flags the claim. On `check`, each side resolves to `unchanged`, `moved`, `changed`, `ambiguous`, or `orphaned`; a side in a sibling repo that is not checked out is `unavailable`.
+Each claim has a doc side (the sentence) and, for `code` and `reference`, evidence sides. Each side stores selectors against one file: the quoted text with 48 characters of context, its position, and on code sides the enclosing tree-sitter node hash and the literal inside the span, so changing `MAX_ATTEMPTS = 5` to `50` flags the claim. The tree-sitter grammars are embedded in the binary; `--no-ast` skips them, and a language without a grammar gets text selectors only. On `check`, each side resolves to `unchanged`, `moved`, `changed`, `ambiguous`, or `orphaned`; a side in a sibling repo that is not checked out is `unavailable`.
 
 A model judge (TypeSafe's Jev, over HTTP) answers three questions: what kind of claim a region is (`audit`), whether evidence supports a sentence (`reference` claims and `evidence`), and whether two sentences contradict each other (the contradiction pass). Every answer is cached in `.claims/judge/` by model and exact request, so a second run asks nothing and cannot flip a verdict. Numbers, money, versions, and dates are compared in code. One threshold, `judge.threshold` in `.claims/config.json`, decides when a judgment gates. Every rule that fires is a reason label in the output.
 

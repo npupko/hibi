@@ -13,7 +13,7 @@ The judge is an interface with three methods. The shipped implementation is **Je
 
 | method | input | result |
 |---|---|---|
-| `triage(doc, regions[])` | a document path and its regions | per region: `kind`, `kindProbabilities`, `kindConfidence`, `evidenceKind` (factual claims only), `evidenceProbabilities`, `checkable` |
+| `triage(doc, regions[])` | a document path and its regions | per region: `kind`, `kindProbabilities`, `kindConfidence`, `evidenceKind` (factual claims only), `evidenceProbabilities` |
 | `supports(input)` | `sentence`, `context`, `evidence`, `source` | `relation` (`supports`, `refutes`, `does_not_address`), `probabilities`, `confidence`, `addresses` |
 | `conflict(a, b)` | two sides, each `{ text, doc, context }` | `relation` (`consistent`, `contradictory`, `unrelated`), `probabilities`, `confidence`, `sameSubject`, `contradicts` |
 
@@ -26,7 +26,7 @@ Who calls which judgment:
 | `triage` | `hibi audit` | for the regions no claim covers |
 | `supports` | `hibi check`, `hibi list` | for a `reference` claim, when no cached verdict exists for the current sentence, context, and referenced text |
 | `supports` | `hibi evidence` | for each submitted item |
-| `conflict` | `hibi check`, `hibi list`, `hibi audit` | once per pair from the [contradiction pass](/conflicts) |
+| `conflict` | `hibi check`, `hibi list`, `hibi audit` | once per pair from the [contradiction pass](/conflicts); `check --doc` and `audit` judge only the pairs with a claim in the document |
 
 ## Jev and TypeSafe
 
@@ -58,15 +58,35 @@ The numbers copy the SDK's documented defaults. They live in `src/judge/http.ts`
 | retried statuses | 408, 429, and every 5xx (which includes 529), plus connection errors and timeouts |
 | retries | 2, so at most 3 attempts |
 | backoff | 500 ms doubled up to 5 s, minus up to 25 percent jitter |
-| `retry-after` | honored when it is at most 60 s |
+| `retry-after` | honored; a value over 60 s is clamped to 60 s |
 | per-attempt timeout | 10 s |
 | requests in flight | at most 8 per process |
 | request budget | 48,000 estimated tokens for state plus questions (model limit 64k) |
 | question budget | 24,000 estimated tokens for state plus any one question (model limit 32k) |
 
-Tokens are estimated at 4 characters per token. `triage` splits a long document into several requests that each carry the document path and only their own regions. `hibi evidence` refuses an evidence text longer than 32,000 characters.
+Tokens are estimated at 4 characters per token. `triage` splits a long document into several requests that each carry the document path and only their own regions. `hibi evidence` refuses an evidence text longer than 32,000 characters. A `reference` claim whose referenced span is longer than 32,000 characters is not sent; its judgment is `pending` with the label `referenced span is longer than 32,000 characters`.
 
-A 401 or 403, or a failure after the last retry, makes the judgment `pending`. A 400, a 422, or another 4xx means the request is malformed; the command exits 1.
+### Failures
+
+A judge failure never aborts a run and never exits 1. It makes the judgment `pending`, which warns.
+
+| failure | kind |
+|---|---|
+| no `TYPESAFE_API_KEY`, a 401 or 403, or no answer after the last retry | unavailable |
+| a 400, a 422, or another 4xx other than 401 and 403 | error |
+| a 200 whose body is not JSON, or has no `answers` object and `model` string | error |
+| an answer that is missing, of the wrong type, or names an unknown option | error |
+
+An error carries the label `judge error: <message>`, for example `judge error: TypeSafe returned HTTP 400: …`. An unavailable judge carries `pending: <message>` on a `reference` claim and `judge unavailable: <message>` on an evidence item or a conflict pair.
+
+Where the label appears:
+
+| judgment | on failure |
+|---|---|
+| `supports` for a `reference` claim | the claim's `judge` is `pending`; its reasons carry the label |
+| `supports` for a submitted evidence item | the item's `judge` is `pending`, nothing is written for it, and its `reasons` carry the label |
+| `conflict` | the pair is pending; both claims warn with `conflict check pending with <id>: judge unavailable` or `conflict check pending with <id>: judge error` |
+| `triage` | the regions of that request are `pending` rows |
 
 ## The three judgments
 
@@ -79,7 +99,7 @@ The questions are JSON files in [`src/judge/questions/`](https://github.com/npup
 | state | `doc: { path }`, `regions: [{ id, kind, text, headingPath }]` |
 | `kind_<i>` | Choice over `factual_claim`, `instruction`, `opinion`, `narrative` |
 | `evidenceKind_<i>` | Choice over `code`, `other_doc`, `external`, `nothing`: where an agent would look first for evidence |
-| `checkable_<i>` | Noul: could the region be shown true or false by looking at evidence |
+
 
 Code rule: a region is `code` by construction when it is a fenced block, contains a fence, contains an inline code span holding a path or a command, or contains a file path in prose. Such a region is not asked the `evidenceKind` question; when its `kind` is `factual_claim`, its evidence kind is `code` with probability 1. URLs are not paths, and names such as `Node.js` are not files.
 
@@ -137,6 +157,8 @@ On a verdict, `supports` outcomes appear as the `judge` axis: `supported`, `refu
 | review | `evidence leans supports, confidence 0.55 below threshold 0.8` |
 | review | `evidence did not address the sentence` (with `(addresses=0.12)` when the Noul forced it) |
 | pending | `pending: TYPESAFE_API_KEY is not set; the judge cannot answer.` |
+| pending | `judge error: TypeSafe returned HTTP 400: …` |
+| pending | `referenced span is longer than 32,000 characters` |
 
 When the evidence `source` equals one of the claim's `sources[].id` or `sources[].resource`, the reasons also include `source matches declared source "<id or resource>"`. It changes no state.
 
@@ -148,15 +170,19 @@ The model is not asked to compare quantities. Hibi extracts values from text wit
 |---|---|---|
 | `date` | `2026-10-22`, `October 22, 2026` | `2026-10-22` |
 | `version` | `v1.2.3`, `1.2.3`, `version 1.2` | `1.2.3` |
-| `money` | `$29`, `€ 5`, `29 USD`, `USD 29` | `29` with unit `USD` |
+| `money` | `$29`, `€ 5`, `29 USD`, `USD 29`, `$5m`, `$2.5k`, `$1bn` | `29` with unit `USD`; `$5m` is `5000000` |
 | `number` | `5%`, `5 days`, `90d`, `500ms`, `1,299.50` | `1299.5`, with a unit for `%` and durations |
 
-Values are compared only within the same kind and unit. A group differs when both texts have values in it and share none of them: `$29` against `$39` differs, `$29 or $49` against `$29` does not, `5 days` against `5%` is not compared.
+A suffix `k`, `m`, `b`, or `bn` after a currency amount multiplies it by a thousand, a million, or a billion, so `$5m` is five million dollars, not five minutes. Versions are compared after dropping a leading `v` and trailing `.0` parts, so `v1.2` equals `1.2.0`.
 
-| where | when the values differ | label |
-|---|---|---|
-| `supports` | the relation is not `does_not_address` | `value differs: numbers differ: 29 vs 39` (state `refuted`) |
-| `conflict` | `same_subject` is at or above the threshold | `numbers differ: 29 vs 39` (a conflict with probability 1) |
+Values are compared only within the same kind and unit (a group). A group differs when both texts have values in it and share none of them: `$29` against `$39` differs, `$29 or $49` against `$29` does not, `5 days` against `5%` is not compared.
+
+| where | groups compared | when the values differ | label |
+|---|---|---|---|
+| `supports` | money, numbers with a unit (`%`, durations), versions, dates; not unitless numbers | the relation is not `does_not_address` | `value differs: numbers differ: 29 vs 39` (state `refuted`) |
+| `conflict` | every group, unitless numbers included | `same_subject` is at or above the threshold | `numbers differ: 29 vs 39` (a conflict with probability 1) |
+
+On `supports`, a bare number in the evidence (a count, an id, a line number) says too little to refute the sentence, so unitless numbers are left out.
 
 Versions and dates use `versions differ: …` and `dates differ: …`. For submitted evidence, the extracted values are stored in the cache entry, so `check` applies the rule without the raw text.
 

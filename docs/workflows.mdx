@@ -21,9 +21,11 @@ Run this before acting on an instruction file, a README, or any page in a knowle
 |---|---|---|
 | `0` | no claim on the document gates | use the document; read any warnings in `reasons[]` |
 | `2` | at least one claim gates | do not act on the flagged sentences as written; read their `verdicts[]` entries |
-| `1` | operational error | read `error` |
+| `1` | operational error, including a document with no registered claims | read `error` |
 
-Under `--doc`, an `expired` claim gates. In a whole-store `check` it only warns. If the document has no claims, the JSON has `found: false` and the exit is 0: hibi knows nothing about the file, which is different from the file being clean.
+Under `--doc`, an `expired` claim gates. In a whole-store `check` it only warns. If no claim is registered for the document, `check --doc` exits 1 with `no claims are registered for <path>; run hibi audit --doc <path>`: hibi knows nothing about the file, which is different from the file being clean. Run `audit` on it (section 3).
+
+The contradiction pass under `--doc` judges only the pairs with a claim in that document, so the check stays fast in a large store. A pair's other claim may be on any document.
 
 ### 2. After a change
 
@@ -33,7 +35,7 @@ hibi check --since origin/main
 
 Only claims whose doc or evidence side names a file changed since the ref are evaluated. The JSON adds `since` and `changedFiles`. `documents[].suspect[]` names the sentences the change invalidated. Fix the prose in the same change, then follow each verdict's `remediation` (usually `hibi reanchor <id>` after you re-read the sentence). An unknown ref exits 1.
 
-The contradiction pass still runs over the whole store, so a scoped check still reports a conflict with a claim outside its scope.
+Under `--since` the contradiction pass still runs over the whole store, so a scoped check still reports a conflict with a claim outside its scope.
 
 ### 3. A new or unaudited document
 
@@ -54,10 +56,10 @@ echo '[
    "sources":[{"id":"stripe","resource":"https://dashboard.stripe.com/products/prod_123"}],
    "procedure":{"instructions":"Open the Stripe dashboard and report the Pro monthly price.",
                 "steps":[{"id":"price","command":"stripe prices list --product prod_123"}]}}
-]' | hibi record --from-file -
+]' | hibi record --from-file - --by agent:opus
 ```
 
-`record` adds one `vouch` attestation by `by`, or by `human:<git user.email>` when `by` is absent. An `attested` claim recorded with `"by": "agent:…"` has no counting attestation, so it is expired from the start: it warns in `check`, gates in `check --doc`, and appears in the worklist with reason `expired` until evidence is judged `supports`.
+`record` adds one `vouch` attestation by the item's `by`, or by `--by` when the item has none. `by` is required one way or the other; there is no default. An `attested` claim recorded with `"by": "agent:…"` has no counting attestation, so it is expired from the start: it warns in `check`, gates in `check --doc`, and appears in the worklist with reason `expired` until evidence is judged `supports`.
 
 For an `unverifiable` row, rewrite the sentence as an attributed opinion, or remove it. Run `audit` again to confirm.
 
@@ -73,10 +75,12 @@ Each worklist item has a `reason`:
 
 | reason | meaning | what to do |
 |---|---|---|
-| `expired` | an `attested` claim's ttl ran out | follow `procedure` and `sources`, then submit evidence |
-| `never-checked` | an `attested` claim has never had evidence judged | the same |
-| `review` | the judge was not sure, or the evidence did not address the sentence | submit evidence that addresses the sentence directly, or acknowledge |
-| `pending` | the judge could not answer (no key, or network down) | set `TYPESAFE_API_KEY` and run `check` again |
+| `expired` | a claim's ttl ran out (any kind with a `ttl`) | for an `attested` claim, follow `procedure` and `sources`, then submit evidence; for a `code` or `reference` claim, re-read it and ask a human to vouch |
+| `never-checked` | an `attested` claim with a `procedure` or `sources` has never had evidence judged | follow `procedure` and `sources`, then submit evidence |
+| `review` | the judge was not sure, or the evidence did not address the sentence | submit evidence that addresses the sentence directly (`attested` claims), or acknowledge |
+| `pending` | the judge could not answer (no key, network down, or an answer it could not use), or a referenced span is over 32,000 characters | set `TYPESAFE_API_KEY` and run `check` again; for `judge error: …`, read the message |
+
+An `attested` claim with no `procedure` and no `sources` (a pure vouch) is listed only when it is expired.
 
 `hibi list --state pending` returns the same claims as one row each. `lastEvidence` on an item shows the summary, source, time, and actor of the newest judged evidence.
 
@@ -90,7 +94,7 @@ echo '[{"claimId":"clm_1a2b3c4d5e6f7a8b",
   | hibi evidence --from-file - --by agent:opus
 ```
 
-A `supported` result appends an `evidence` attestation, which resets the ttl. A `refuted` result gates the claim: fix the sentence or the source of truth. See [Attestations](/attestations).
+Evidence applies to `attested` claims only; an item naming a `code` or `reference` claim rejects the batch. A `supported` result appends an `evidence` attestation, which resets the ttl. A `refuted` result gates the claim: fix the sentence or the source of truth. See [Attestations](/attestations).
 
 Then look at contradictions and duplicates:
 
@@ -120,7 +124,7 @@ while read -r item; do
 done
 ```
 
-`steps` uses the Lobster step shape (`id`, `command`, optional `stdin`), so a Lobster workflow can run the same steps. Evidence is limited to 32000 characters per item. Items without steps need an agent that reads `procedure.instructions`.
+`steps` uses the Lobster step shape (`id`, `command`, optional `stdin`), so a Lobster workflow can run the same steps. Evidence is limited to 32,000 characters per item. Items without steps need an agent that reads `procedure.instructions`.
 
 A `process:` actor can submit evidence, and judged evidence counts toward the ttl. A `process:` or `agent:` vouch does not.
 
@@ -137,7 +141,7 @@ hibi list --state expired | jq '.claims[] | {claimId, sentence, owner, ttl, expi
 The owner re-checks the fact and vouches:
 
 ```sh
-hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --note "checked Stripe, still $29"
+hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --note 'checked Stripe, still $29'
 ```
 
 Only a `human:` vouch or judged evidence resets the ttl. The result's `countsTowardTtl` says which applied.

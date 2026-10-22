@@ -57,7 +57,7 @@ Text anchoring can tell that a referenced span changed. It cannot tell whether "
 - **One threshold, three outcomes.** A judgment gates, goes to `review` (a warning), or is clean. `judge.threshold` in `.claims/config.json` sets the line for all of them.
 - **Numbers stay in code.** Numbers, money, versions, and dates are extracted and compared by code, not by the model.
 - **Cached verdicts.** Each answer is stored in `.claims/judge/` under the hash of the pinned model id and the canonical request. The same tree gives the same verdicts on every run and on every machine that has the committed cache.
-- **No key means pending.** Without `TYPESAFE_API_KEY`, or with the network down, an unanswered judgment is `pending`, which warns. It is never reported as a pass.
+- **No key means pending.** Without `TYPESAFE_API_KEY`, or with the network down, an unanswered judgment is `pending`, which warns. An answer hibi cannot use (a judge error) is `pending` too. It is never reported as a pass, and it never aborts a run.
 
 ## Why there are no banners
 
@@ -77,7 +77,7 @@ Earlier versions wrote a status comment into each stale document. That was remov
 | a separate layer of normalized statements | duplicates come from sentence text and the contradiction pass; `supersede` matches sentences verbatim |
 | topics | pairing for the contradiction pass is done in code and needs none |
 | a `verified` boolean | replaced by attestations with actors and bases |
-| store upgrade code | v3 stores are not upgraded |
+| store upgrade code | v3 stores are not upgraded; hibi asks you to remove the store, run `hibi init`, and re-record |
 
 ## Prior art
 

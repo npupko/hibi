@@ -27,7 +27,7 @@ Before an agent relies on a document, it runs `hibi check --doc <file>`; exit 2 
 - **A flag means re-verify.** Hibi never rewrites prose and never declares a sentence false on its own authority.
 - **Nothing clears without evidence or a human.** An agent vouch is recorded and does not reset a ttl.
 - **One knob.** `judge.threshold` (default 0.8) decides every judge outcome. Every rule that fires is a reason label in the output.
-- **No key, no silent pass.** Without `TYPESAFE_API_KEY`, a judgment the cache cannot answer is `pending`, a warning.
+- **No key, no silent pass.** Without `TYPESAFE_API_KEY`, or when the judge fails, a judgment the cache cannot answer is `pending`, a warning.
 
 ## Start here
 

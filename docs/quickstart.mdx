@@ -76,17 +76,19 @@ Each uncovered region gets a kind from the judge's triage, with the judge's prob
 ```sh
 # code: the sentence is backed by a code span
 hibi record --doc README.md --doc-quote "Retries are capped at 5 attempts." \
-  --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5"
+  --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" --by agent:opus
 
 # reference: the sentence is backed by a span in another document
 hibi record --doc README.md --doc-quote "Refunds are issued within two weeks of a request." \
-  --kind reference --ref-file docs/billing.md --ref-quote "Refunds are issued within 14 days."
+  --kind reference --ref-file docs/billing.md --ref-quote "Refunds are issued within 14 days." \
+  --by agent:opus
 
 # attested: the truth lives outside the repo; it needs a ttl
-hibi record --doc docs/pricing.md --doc-quote "The Pro plan costs $29 per month." \
+hibi record --doc docs/pricing.md --doc-quote 'The Pro plan costs $29 per month.' \
   --kind attested --ttl P90D --owner human:alice@example.com \
   --source stripe=https://dashboard.stripe.com/products/prod_123 \
-  --instructions "Open the Stripe dashboard and report the Pro monthly price."
+  --instructions "Open the Stripe dashboard and report the Pro monthly price." \
+  --by human:alice@example.com
 ```
 
 ```json
@@ -103,7 +105,9 @@ hibi record --doc docs/pricing.md --doc-quote "The Pro plan costs $29 per month.
 }
 ```
 
-Quote the load-bearing token on the code side (`MAX_ATTEMPTS = 5`, not the whole file), so a change from `5` to `50` is caught. Agents usually send all three as a JSON array to `hibi record --from-file -`; see [Claims](/claims).
+`--by` is required: it names the actor whose `vouch` the new claim starts with. There is no default. Paths are stored as POSIX paths relative to the anchor root (the current directory, or `--cwd`), so `./README.md` and `README.md` are the same document.
+
+Quote the load-bearing token on the code side (`MAX_ATTEMPTS = 5`, not the whole file), so a change from `5` to `50` is caught. Agents usually send all three as a JSON array to `hibi record --from-file - --by agent:<name>`; see [Claims](/claims).
 
 ## 5. Check
 
@@ -134,7 +138,7 @@ Worklist (2)
 Found 0 gating, 1 warning, 2 in worklist across 2 documents.  exit 0
 ```
 
-This run had no API key, so the reference claim is `pending` (a warning). The attested claim is in the worklist because no evidence has been judged for it yet. With a key, the reference claim is judged once and the verdict is cached in `.claims/judge/`. Piped, `check` prints JSON; the full shape is on [Verdicts](/verdicts).
+This run had no API key, so the reference claim is `pending` (a warning). The attested claim is in the worklist with reason `never-checked`: it has a procedure and a source, and no evidence has been judged for it yet. With a key, the reference claim is judged once and the verdict is cached in `.claims/judge/`. Piped, `check` prints JSON; the full shape is on [Verdicts](/verdicts).
 
 ## 6. Submit evidence
 

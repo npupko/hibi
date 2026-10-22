@@ -11,7 +11,9 @@ icon: "robot"
 |---|---|
 | `0` | clean, or warnings only |
 | `2` | gating: a `changed`, `orphaned`, or `ambiguous` side, a `refuted` judgment, or a contradiction at or above the threshold on an enforced claim; `expired` under `check --doc`; any warning under `--fail-on warn` |
-| `1` | operational error: no store, an unknown flag, an unknown `--since` ref |
+| `1` | operational error: no store, an unknown flag, an unknown `--since` ref, `check --doc` on a path with no registered claims |
+
+A judge failure is never an exit 1. An unreachable judge or an answer hibi cannot use (a 4xx other than 401 and 403, a body that is not JSON) makes the judgment `pending`, which warns.
 
 ## GitHub Action
 
@@ -42,7 +44,7 @@ jobs:
 |---|---|---|
 | `fail-on` | `gating` | passed as `check --fail-on`: `gating`, `warn`, or `never` |
 | `since` | empty | when set, runs `check --since <ref>`: only claims touching files changed since the ref |
-| `doc` | empty | when set, runs `check --doc <path>`: only claims on that document, and `expired` gates |
+| `doc` | empty | when set, runs `check --doc <path>`: only claims on that document, and `expired` gates; a document with no registered claims fails the step with exit 1 |
 | `working-directory` | `.` | the directory that holds `.claims/` |
 
 ### The API key
@@ -58,7 +60,7 @@ Most of `check` needs no key:
 - every judge verdict already in `.claims/judge/` (the cache is read, never re-asked);
 - the comparison of numbers, money, versions, and dates, which happens in code.
 
-A judgment that is not in the cache comes back `pending`. `pending` is a warning, so it does not fail the build under the default `fail-on: gating`. Under `fail-on: warn` it does.
+A judgment that is not in the cache comes back `pending`. The same holds when the key is set and the judge returns an error. `pending` is a warning, so it does not fail the build under the default `fail-on: gating`. Under `fail-on: warn` it does.
 
 Commit `.claims/judge/` with the rest of the store. When the cache already holds every verdict the tree needs, CI asks the judge nothing and gives the same verdicts with or without a key. See [Judge](/judge).
 
