@@ -40,6 +40,12 @@
  * Its `evidence` block keeps the hash, source, summary, actor, time, and the
  * values extracted from the evidence text, never the text itself.
  *
+ * Evidence applies to `attested` claims only: an item naming a `code` or
+ * `reference` claim is a validation error (a `reference` claim is judged
+ * from the referenced document). A judge call that fails with
+ * `JudgeUnavailable` or `JudgeError` makes its item `pending`, with the
+ * label `judge unavailable: <message>` or `judge error: <message>`.
+ *
  * Validation runs over the whole batch before any judge call; one invalid
  * item rejects the batch and nothing is asked or written.
  */
@@ -57,7 +63,8 @@ import type { Answer, SystemOneRequest } from "../judge/http.ts";
 import { buildSupportsRequest, mapSupportsAnswers } from "../judge/jev.ts";
 import {
   type Judge,
-  JudgeUnavailable,
+  judgeFailureLabel,
+  MAX_EVIDENCE_CHARS,
   type SupportsRelation,
   type SupportsResult,
 } from "../judge/types.ts";
@@ -68,13 +75,8 @@ import {
   supportsOutcome,
 } from "./reference.ts";
 
-/**
- * The longest evidence text accepted, in characters. About 8k tokens at 4
- * characters per token, which keeps one `supports` request well inside the
- * per-question budget of the Jev adapter (SPEC 8.2: requests stay under 64k
- * tokens; `QUESTION_TOKEN_BUDGET` in src/judge/jev.ts).
- */
-export const MAX_EVIDENCE_CHARS = 32_000;
+/** The longest evidence text accepted, in characters (shared with `reference` claims). */
+export { MAX_EVIDENCE_CHARS };
 
 export interface EvidenceItem {
   claimId: string;
@@ -174,6 +176,10 @@ function itemErrors(
       errors.push(`no claim ${claimId} in the store`);
     } else if (claim.enforcement === "retired") {
       errors.push(`claim ${claimId} is retired; evidence is not accepted`);
+    } else if (claim.kind !== "attested") {
+      errors.push(
+        `claim ${claimId} is a ${claim.kind} claim; evidence applies to attested claims, and reference claims are judged from the referenced document`,
+      );
     }
   }
   const evidence = str("evidence");
@@ -252,7 +258,7 @@ type Asked =
       result: SupportsResult;
     }
   | { kind: "cached"; entry: JudgeCacheEntry; result: SupportsResult }
-  | { kind: "pending"; message: string };
+  | { kind: "pending"; label: string };
 
 export async function submitEvidence(
   input: SubmitEvidenceInput,
@@ -262,7 +268,7 @@ export async function submitEvidence(
   const decode = (answers: unknown) =>
     mapSupportsAnswers(answers as Record<string, Answer>);
   const cache = store.judgeCache();
-  const model = config.judge.model;
+  const model = judge.model;
   const threshold = config.judge.threshold;
 
   const claims = new Map((await store.allClaims()).map((c) => [c.id, c]));
@@ -289,8 +295,9 @@ export async function submitEvidence(
     });
   }
 
-  // Ask: every miss goes to the judge. Any error other than
-  // `JudgeUnavailable` aborts the batch here, before anything is written.
+  // Ask: every miss goes to the judge. `JudgeUnavailable` and `JudgeError`
+  // make the item pending; any other error aborts the batch here, before
+  // anything is written.
   const asked: Asked[] = await Promise.all(
     planned.map(async (p): Promise<Asked> => {
       if (p.hit) {
@@ -310,10 +317,9 @@ export async function submitEvidence(
           result: decode(response.answers),
         };
       } catch (e) {
-        if (e instanceof JudgeUnavailable) {
-          return { kind: "pending", message: e.message };
-        }
-        throw e;
+        const label = judgeFailureLabel(e);
+        if (label === undefined) throw e;
+        return { kind: "pending", label };
       }
     }),
   );
@@ -337,7 +343,7 @@ export async function submitEvidence(
         relation: null,
         confidence: null,
         probabilities: null,
-        reasons: [`judge unavailable: ${a.message}`],
+        reasons: [a.label],
         attested: false,
         cached: false,
       });

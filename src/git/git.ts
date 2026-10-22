@@ -64,10 +64,3 @@ export async function changedFiles(
   }
   return [...set];
 }
-
-/** `git config user.email`, or null when unset or git is unavailable. */
-export async function userEmail(cwd: string): Promise<string | null> {
-  const out = await git(["config", "user.email"], cwd);
-  const email = out?.trim() ?? "";
-  return email.length > 0 ? email : null;
-}

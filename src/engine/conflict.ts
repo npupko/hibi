@@ -14,7 +14,7 @@
  * | `duplicate` | `consistent` with `same_subject` >= threshold                         | `consistent and same subject (same_subject=0.95)` |
  * | `clean`     | anything else                                                        | `unrelated (confidence=0.80, same_subject=0.40)` |
  * | `acked`     | a `conflict` or `review` that an `ack` on either claim covers         | `acknowledged: numbers differ: 29 vs 39` |
- * | `pending`   | the judge was unavailable                                             | `judge unavailable: no API key` |
+ * | `pending`   | the judge was unavailable, or its answer could not be used            | `judge unavailable: no API key`, `judge error: TypeSafe returned HTTP 400: …` |
  *
  * `conflict` and `review` become findings on both claims; `duplicate` becomes
  * a duplicate candidate in both directions.
@@ -28,7 +28,7 @@ import {
   type ConflictResult,
   type ConflictSide,
   type Judge,
-  JudgeUnavailable,
+  judgeFailureLabel,
 } from "../judge/types.ts";
 import { sentenceHash } from "./hash.ts";
 import { type Pair, pairClaims } from "./pairing.ts";
@@ -88,8 +88,13 @@ export interface ConflictPassResult {
   pending: string[];
   /** Judge calls that returned an answer; cache hits cost none. */
   requests: number;
-  /** Every pair formed, sorted by pair id. */
+  /** Every pair judged, sorted by pair id. */
   pairs: PairOutcome[];
+  /**
+   * `store` when every pair was judged; `doc` when only pairs with a claim in
+   * the scoped document were (`check --doc`, `audit`).
+   */
+  scope: "store" | "doc";
 }
 
 export interface ConflictPassOptions {
@@ -100,8 +105,11 @@ export interface ConflictPassOptions {
   context: (claim: Claim) => string;
   /** `judge.threshold` from config. */
   threshold: number;
-  /** `judge.model` from config; part of every cache key. */
-  model: string;
+  /**
+   * Restrict the judged pairs to those with at least one claim in this set
+   * (`check --doc`, `audit`). Absent: every pair is judged.
+   */
+  scope?: ReadonlySet<string>;
 }
 
 type Decision =
@@ -265,7 +273,10 @@ export async function runConflictPass(
   opts: ConflictPassOptions,
 ): Promise<ConflictPassResult> {
   const cache = opts.store.judgeCache();
-  const pairs = pairClaims(opts.claims);
+  const scope = opts.scope;
+  const pairs = pairClaims(opts.claims).filter(
+    (p) => scope === undefined || scope.has(p.a.id) || scope.has(p.b.id),
+  );
   const outcomes: PairOutcome[] = new Array(pairs.length);
   const findings: ConflictFinding[] = [];
   const duplicates: DuplicateCandidate[] = [];
@@ -274,7 +285,7 @@ export async function runConflictPass(
 
   await pool(pairs, MAX_IN_FLIGHT, async (pair, index) => {
     const { a, b, request, key } = conflictRequestFor(
-      opts.model,
+      opts.judge.model,
       pair,
       opts.context,
     );
@@ -287,13 +298,14 @@ export async function runConflictPass(
       try {
         response = await opts.judge.conflict(a, b);
       } catch (e) {
-        if (!(e instanceof JudgeUnavailable)) throw e;
+        const label = judgeFailureLabel(e);
+        if (label === undefined) throw e;
         pending.push(pair.pairId);
         outcomes[index] = {
           pairId: pair.pairId,
           why: pair.why,
           outcome: "pending",
-          reason: `judge unavailable: ${e.message}`,
+          reason: label,
         };
         return;
       }
@@ -360,6 +372,7 @@ export async function runConflictPass(
     findings: findings.sort(byIds((f) => f.otherClaimId)),
     duplicates: duplicates.sort(byIds((d) => d.duplicateOf)),
     pending: pending.sort(),
+    scope: scope === undefined ? "store" : "doc",
     requests,
     pairs: outcomes,
   };

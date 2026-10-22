@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import {
   MAX_IN_FLIGHT,
+  parseRetryAfter,
   type SystemOneRequest,
   type SystemOneResponse,
   TypeSafeHttp,
@@ -24,6 +25,7 @@ import {
 } from "../src/judge/jev.ts";
 import {
   type ConflictSide,
+  JudgeError,
   JudgeUnavailable,
   type Region,
   type SupportsInput,
@@ -152,9 +154,13 @@ describe("request shapes match the fixtures", () => {
     expect(byId.r3?.evidenceKind).toBeUndefined();
     expect(byId.r4?.kind).toBe("opinion");
     expect(byId.r4?.evidenceKind).toBeUndefined();
-    expect(byId.r1?.checkable).toBe(0.96);
     // (0.95 - 1/4) / (1 - 1/4)
     expect(byId.r1?.kindConfidence).toBeCloseTo(0.9333, 4);
+    // Triage asks kind and evidenceKind only; checkable was dropped.
+    expect(
+      Object.keys(expected.questions).filter((k) => k.startsWith("checkable")),
+    ).toEqual([]);
+    expect("checkable" in (byId.r1 ?? {})).toBe(false);
   });
 
   test("supports", async () => {
@@ -397,7 +403,6 @@ describe("chunking", () => {
     };
     for (let i = 0; i < regions.length; i++) {
       answers[`kind_${i}`] = kindAnswer;
-      answers[`checkable_${i}`] = { noul: 0.1 };
     }
     const { client, requests } = stubClient(answers);
     const out = await new JevJudge({ model: MODEL, http: client }).triage(
@@ -413,7 +418,7 @@ describe("chunking", () => {
       seen.push(...state.regions.map((r) => r.id));
       // Question ids and paths use the index inside this request.
       expect(Object.keys(request.questions)).toHaveLength(
-        state.regions.length * 3,
+        state.regions.length * 2,
       );
       expect(request.questions[`kind_${state.regions.length}`]).toBeUndefined();
       expect(estimateTokens(request)).toBeLessThanOrEqual(REQUEST_TOKEN_BUDGET);
@@ -448,14 +453,14 @@ describe("http client", () => {
     expect(sleeps).toEqual([2000]);
   });
 
-  test("a retry-after over 60 s falls back to exponential backoff", async () => {
+  test("a retry-after over 60 s is clamped to 60 s", async () => {
     const { http, sleeps } = httpWith([
       json({}, 529, { "retry-after": "120" }),
       json({}, 503),
       json(ok),
     ]);
     await http.systemOne(body);
-    expect(sleeps).toEqual([500, 1000]);
+    expect(sleeps).toEqual([60_000, 1000]);
   });
 
   test("missing or blank key throws JudgeUnavailable before any request", async () => {
@@ -498,15 +503,76 @@ describe("http client", () => {
     expect(calls).toHaveLength(3);
   });
 
-  test("400 throws a plain Error with the body and does not retry", async () => {
+  test("400 and 422 throw JudgeError with the body and do not retry", async () => {
+    for (const status of [400, 404, 422]) {
+      const { http, calls } = httpWith([
+        json({ error_type: "max_tokens_exceeded" }, status),
+      ]);
+      const error = await http.systemOne(body).catch((e) => e);
+      expect(error).toBeInstanceOf(JudgeError);
+      expect(error).not.toBeInstanceOf(JudgeUnavailable);
+      expect(error.message).toBe(
+        `TypeSafe returned HTTP ${status}: {"error_type":"max_tokens_exceeded"}`,
+      );
+      expect(calls).toHaveLength(1);
+    }
+  });
+
+  test("403 is JudgeUnavailable, not JudgeError", async () => {
+    const { http } = httpWith([json({}, 403)]);
+    const error = await http.systemOne(body).catch((e) => e);
+    expect(error).toBeInstanceOf(JudgeUnavailable);
+  });
+
+  test("a 200 body that is not JSON throws JudgeError", async () => {
     const { http, calls } = httpWith([
-      json({ error_type: "max_tokens_exceeded" }, 400),
+      new Response("<html>gateway</html>", { status: 200 }),
     ]);
     const error = await http.systemOne(body).catch((e) => e);
-    expect(error).toBeInstanceOf(Error);
-    expect(error).not.toBeInstanceOf(JudgeUnavailable);
-    expect(error.message).toContain("max_tokens_exceeded");
+    expect(error).toBeInstanceOf(JudgeError);
+    expect(error.message).toContain(
+      "TypeSafe returned a body that is not JSON",
+    );
+    expect(error.message).toContain("<html>gateway</html>");
     expect(calls).toHaveLength(1);
+  });
+
+  test("a 200 body without an answers object and a model string throws JudgeError", async () => {
+    for (const bad of [
+      { model: MODEL },
+      { answers: {} },
+      { model: MODEL, answers: [] },
+      { model: 1, answers: {} },
+      [],
+      null,
+    ]) {
+      const { http } = httpWith([json(bad)]);
+      const error = await http.systemOne(body).catch((e) => e);
+      expect(error).toBeInstanceOf(JudgeError);
+      expect(error.message).toContain(
+        'TypeSafe returned JSON without an "answers" object and a "model" string',
+      );
+    }
+  });
+
+  test("an answer the mappers cannot read throws JudgeError from the judge", async () => {
+    const { http } = httpWith([json({ ...ok, answers: { relation: {} } })]);
+    const judge = new JevJudge({ model: MODEL, http });
+    const error = await judge
+      .supports({ sentence: "s", context: "c", evidence: "e", source: "x" })
+      .catch((e) => e);
+    expect(error).toBeInstanceOf(JudgeError);
+  });
+
+  test("parseRetryAfter clamps to 60 s and reads HTTP dates", () => {
+    expect(parseRetryAfter("2")).toBe(2000);
+    expect(parseRetryAfter("120")).toBe(60_000);
+    expect(parseRetryAfter("-5")).toBe(0);
+    expect(parseRetryAfter("soon")).toBeNull();
+    expect(parseRetryAfter(null)).toBeNull();
+    const now = Date.parse("2026-10-22T00:00:00Z");
+    expect(parseRetryAfter("Thu, 22 Oct 2026 00:10:00 GMT", now)).toBe(60_000);
+    expect(parseRetryAfter("Thu, 22 Oct 2026 00:00:30 GMT", now)).toBe(30_000);
   });
 
   test("TYPESAFE_BASE_URL overrides the endpoint", async () => {

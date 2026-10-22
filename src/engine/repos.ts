@@ -10,7 +10,7 @@
  */
 
 import { existsSync, statSync } from "node:fs";
-import { isAbsolute, join, posix } from "node:path";
+import { isAbsolute, join, posix, relative, resolve } from "node:path";
 import type { Config } from "../core/model.ts";
 
 /**
@@ -23,10 +23,22 @@ export type ResolvedFile =
   | { path: string }
   | {
       unavailable: true;
-      alias: string;
+      /** The alias, for an aliased file. */
+      alias?: string;
       /** The reason label reported on the verdict. */
       reason: string;
+      /** Set when the path resolves outside its root (the anchor root, or its alias directory). */
+      escapes?: true;
     };
+
+/** The reason label for an evidence path outside its root. */
+export const ESCAPES_ROOT = "path escapes its root";
+
+/** True when `abs` is `root` or inside it. Both are resolved first. */
+export function isInside(root: string, abs: string): boolean {
+  const rel = relative(resolve(root), resolve(abs));
+  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
 
 /** The alias and relative part of `file`, or undefined when it has no alias. */
 export function splitAlias(
@@ -68,6 +80,9 @@ function isDirectory(abs: string): boolean {
 /**
  * Map a side's `file` to a path relative to `root` (the repository root), or
  * report the side `unavailable`. A file with no alias is returned unchanged.
+ * A file that resolves outside its root (the anchor root, or the alias
+ * directory for an aliased file) is `unavailable` with `escapes` set and the
+ * label `path escapes its root`.
  */
 export function resolveFile(
   config: Pick<Config, "repos">,
@@ -75,7 +90,12 @@ export function resolveFile(
   root: string,
 ): ResolvedFile {
   const split = splitAlias(file);
-  if (split === undefined) return { path: file };
+  if (split === undefined) {
+    if (!isInside(root, resolve(root, file))) {
+      return { unavailable: true, reason: ESCAPES_ROOT, escapes: true };
+    }
+    return { path: file };
+  }
   const dir = config.repos[split.alias];
   if (dir === undefined) {
     return {
@@ -85,6 +105,14 @@ export function resolveFile(
     };
   }
   const abs = isAbsolute(dir) ? dir : join(root, dir);
+  if (!isInside(abs, resolve(abs, split.relative))) {
+    return {
+      unavailable: true,
+      alias: split.alias,
+      reason: ESCAPES_ROOT,
+      escapes: true,
+    };
+  }
   if (!isDirectory(abs)) {
     return {
       unavailable: true,

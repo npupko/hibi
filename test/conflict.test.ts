@@ -116,7 +116,6 @@ async function run(
     claims,
     context,
     threshold,
-    model: MODEL,
   });
 }
 
@@ -413,6 +412,62 @@ describe("pending", () => {
     const again = await run(judge, claims);
     expect(again.pending).toEqual([]);
     expect(again.requests).toBe(1);
+  });
+
+  test("a judge error leaves the pair pending with its label and never aborts the pass", async () => {
+    const judge = judgeFor({ [pairKey(A, B)]: GATING });
+    judge.setError("TypeSafe returned HTTP 400: bad request");
+    const claims = [claim(ID_A, A), claim(ID_B, B)];
+    const result = await run(judge, claims);
+    expect(result.pending).toEqual([PAIR]);
+    expect(result.findings).toEqual([]);
+    expect(result.pairs[0]).toMatchObject({
+      outcome: "pending",
+      reason: "judge error: TypeSafe returned HTTP 400: bad request",
+    });
+    expect(await store.judgeCache().list()).toEqual([]);
+  });
+
+  test("the cache key uses the judge's model", async () => {
+    const judge = new FakeJudge(
+      { conflict: { [pairKey(A, B)]: GATING } },
+      "jev-9.9.9",
+    );
+    await run(judge, [claim(ID_A, A), claim(ID_B, B)]);
+    const [entry] = await store.judgeCache().list();
+    const pair = pairClaims([claim(ID_A, A), claim(ID_B, B)])[0];
+    if (pair === undefined) throw new Error("expected a pair");
+    expect(entry?.key).toBe(conflictRequestFor("jev-9.9.9", pair, context).key);
+  });
+});
+
+describe("scope", () => {
+  // Shares the rare token `monthly` with A only.
+  const C = "Invoices go out monthly for every seat.";
+  const ID_C = "clm_000000000000000c";
+
+  test("with a scope only pairs with a claim in it are judged; pairing still sees every claim", async () => {
+    const judge = new FakeJudge({ conflict: () => GATING });
+    const claims = [claim(ID_A, A), claim(ID_B, B), claim(ID_C, C)];
+    const all = await runConflictPass({
+      store,
+      judge,
+      claims,
+      context,
+      threshold: THRESHOLD,
+    });
+    expect(all.scope).toBe("store");
+    expect(all.pairs.map((p) => p.pairId)).toEqual([PAIR, `${ID_A}:${ID_C}`]);
+    const scoped = await runConflictPass({
+      store,
+      judge,
+      claims,
+      context,
+      threshold: THRESHOLD,
+      scope: new Set([ID_C]),
+    });
+    expect(scoped.scope).toBe("doc");
+    expect(scoped.pairs.map((p) => p.pairId)).toEqual([`${ID_A}:${ID_C}`]);
   });
 });
 

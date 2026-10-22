@@ -20,6 +20,7 @@ import {
   choiceConfidence,
   type EvidenceKind,
   type Judge,
+  JudgeError,
   type JudgeResponse,
   noulConfidence,
   type Region,
@@ -234,7 +235,9 @@ function stateRegion(r: Region): Region {
 function answer(answers: Answers, id: string): Answer {
   const a = answers[id];
   if (a === undefined) {
-    throw new Error(`TypeSafe response has no answer for question "${id}".`);
+    throw new JudgeError(
+      `TypeSafe response has no answer for question "${id}".`,
+    );
   }
   return a;
 }
@@ -246,18 +249,20 @@ function choice<K extends string>(
 ): { choice: K; probabilities: Record<K, number> } {
   const a = answer(answers, id) as ChoiceAnswer;
   if (typeof a.choice !== "string" || typeof a.probabilities !== "object") {
-    throw new Error(`Answer "${id}" is not a Choice answer.`);
+    throw new JudgeError(`Answer "${id}" is not a Choice answer.`);
   }
   const probabilities: Record<string, number> = {};
   for (const option of options) {
     const p = a.probabilities[option];
     if (typeof p !== "number") {
-      throw new Error(`Answer "${id}" has no probability for "${option}".`);
+      throw new JudgeError(
+        `Answer "${id}" has no probability for "${option}".`,
+      );
     }
     probabilities[option] = p;
   }
   if (!options.includes(a.choice)) {
-    throw new Error(`Answer "${id}" chose unknown option "${a.choice}".`);
+    throw new JudgeError(`Answer "${id}" chose unknown option "${a.choice}".`);
   }
   return {
     choice: a.choice as K,
@@ -268,7 +273,7 @@ function choice<K extends string>(
 function noul(answers: Answers, id: string): number {
   const a = answer(answers, id);
   if (!("noul" in a) || typeof a.noul !== "number") {
-    throw new Error(`Answer "${id}" is not a Noul answer.`);
+    throw new JudgeError(`Answer "${id}" is not a Noul answer.`);
   }
   return a.noul;
 }
@@ -374,7 +379,6 @@ export function mapTriageAnswers(
         kind: kind.choice,
         kindProbabilities: kind.probabilities,
         kindConfidence: choiceConfidence(kind.probabilities),
-        checkable: noul(chunkAnswers, `checkable_${i}`),
       };
       if (kind.choice === "factual_claim") {
         if (isCodeByConstruction(region)) {
@@ -519,7 +523,7 @@ export class JevJudge implements Judge {
 function sameModel(responses: SystemOneResponse[]): string {
   const models = new Set(responses.map((r) => r.model));
   if (models.size !== 1) {
-    throw new Error(
+    throw new JudgeError(
       `Triage chunks were answered by different models: ${[...models].join(", ")}.`,
     );
   }

@@ -130,6 +130,7 @@ describe("library facade", () => {
       pairs: 0,
       requests: 0,
       pending: 0,
+      scope: "store",
     });
   });
 
@@ -193,6 +194,7 @@ describe("library facade", () => {
       docPath: "v1.md",
       docQuote: "Pro costs $29/month.",
       ttl: "P90D",
+      sources: [{ id: "stripe", resource: "https://stripe.example/p" }],
     });
     expect((await e.check()).worklist.map((w) => w.claimId)).toEqual([
       rec.claim.id,
@@ -548,5 +550,315 @@ describe("record: the same sentence in another document", () => {
     });
     expect(rec.warnings).toHaveLength(1);
     expect(rec.warnings[0]).toContain("occurs 2 times");
+  });
+});
+
+describe("user-supplied paths are normalized to the store's form", () => {
+  async function seeded() {
+    const root = await tmp();
+    await mkdir(join(root, "docs"), { recursive: true });
+    await mkdir(join(root, "src"), { recursive: true });
+    await writeFile(join(root, "src/a.ts"), "export const A = 1;\n");
+    await writeFile(join(root, "docs/a.md"), "# A\n\nA is 1 here, always.\n");
+    await writeFile(join(root, "docs/b.md"), "# B\n\nA is 1 here, always.\n");
+    const e = await Engine.init(root, { noAst: true });
+    return { root, e };
+  }
+
+  test("./docs/a.md, docs/a.md, and the absolute path are one document", async () => {
+    const { root, e } = await seeded();
+    const rec = await e.record({
+      kind: "code",
+      by: "human:t@example.com",
+      docPath: "./docs/a.md",
+      docQuote: "A is 1 here, always.",
+      evidence: [{ file: "./src/../src/a.ts", region: { quote: "A = 1" } }],
+    });
+    expect(rec.document.path).toBe("docs/a.md");
+    expect(rec.claim.doc.file).toBe("docs/a.md");
+    expect(rec.claim.evidence[0]?.file).toBe("src/a.ts");
+    expect(rec.document.id).toBe(documentIdForPath("docs/a.md"));
+    // Re-recording by the absolute path updates the same claim.
+    const again = await e.record({
+      kind: "code",
+      by: "human:t@example.com",
+      docPath: join(root, "docs/a.md"),
+      docQuote: "A is 1 here, always.",
+      evidence: [{ file: join(root, "src/a.ts"), region: { quote: "A = 1" } }],
+    });
+    expect(again.updated).toBe(true);
+    expect(again.claim.id).toBe(rec.claim.id);
+
+    for (const doc of ["docs/a.md", "./docs/a.md", join(root, "docs/a.md")]) {
+      const report = await e.check({ doc });
+      expect(report.verdicts.map((v) => v.claimId)).toEqual([rec.claim.id]);
+    }
+    for (const path of ["src/a.ts", "./src/a.ts", join(root, "src/a.ts")]) {
+      expect((await e.list({ path })).claims.map((c) => c.claimId)).toEqual([
+        rec.claim.id,
+      ]);
+    }
+    const audit = await e.audit("./docs/a.md");
+    expect(audit.doc).toBe("docs/a.md");
+    expect(audit.rows.some((r) => r.claimId === rec.claim.id)).toBe(true);
+
+    const moved = await e.reanchor(rec.claim.id, {
+      doc: "./docs/b.md",
+      docQuote: "A is 1 here, always.",
+    });
+    expect(moved.claim.doc.file).toBe("docs/b.md");
+    const sup = await e.supersede({
+      from: "./docs/b.md",
+      to: join(root, "docs/a.md"),
+      dryRun: true,
+    });
+    expect([sup.oldDoc.path, sup.newDoc.path]).toEqual([
+      "docs/b.md",
+      "docs/a.md",
+    ]);
+    const arch = await e.archive(join(root, "docs/b.md"), "./docs/a.md", {
+      dryRun: true,
+    });
+    expect(arch.document.path).toBe("docs/b.md");
+    expect(arch.successor).toBe("docs/a.md");
+  });
+
+  test("normalizePath keeps an alias prefix and normalizes the rest", async () => {
+    const { normalizePath } = await import("../src/fs.ts");
+    expect(normalizePath("/r", "api:./src/x.ts")).toBe("api:src/x.ts");
+    expect(normalizePath("/r", "api:src/../lib/x.ts")).toBe("api:lib/x.ts");
+    expect(normalizePath("/r", "./docs/a.md")).toBe("docs/a.md");
+    expect(normalizePath("/r", "/r/docs/a.md")).toBe("docs/a.md");
+    expect(normalizePath("/r", "/elsewhere/a.md")).toBe("../elsewhere/a.md");
+  });
+
+  test("check --doc on a path with no registered claims throws", async () => {
+    const { e } = await seeded();
+    await expect(e.check({ doc: "./docs/a.md" })).rejects.toThrow(
+      "no claims are registered for docs/a.md; run hibi audit --doc docs/a.md",
+    );
+  });
+});
+
+describe("evidence file containment", () => {
+  test("record refuses a file outside the anchor root or outside its alias root", async () => {
+    const outer = await tmp();
+    const root = join(outer, "repo");
+    await mkdir(join(root, "docs"), { recursive: true });
+    await mkdir(join(outer, "api", "src"), { recursive: true });
+    await writeFile(join(outer, "secret.ts"), "export const S = 1;\n");
+    await writeFile(join(outer, "api", "src", "x.ts"), "export const X = 1;\n");
+    await writeFile(join(root, "docs/a.md"), "# A\n\nS is 1 in that file.\n");
+    const e = await Engine.init(root, { noAst: true });
+    const cfgPath = join(e.store.dir, "config.json");
+    const cfg = JSON.parse(await readFile(cfgPath, "utf8"));
+    cfg.repos = { api: "../api" };
+    await writeFile(cfgPath, JSON.stringify(cfg));
+    const e2 = await Engine.open(root, { noAst: true });
+    const call = (file: string) =>
+      e2.record({
+        kind: "code",
+        by: "human:t@example.com",
+        docPath: "docs/a.md",
+        docQuote: "S is 1 in that file.",
+        evidence: [{ file, region: { quote: "= 1" } }],
+      });
+    await expect(call("../secret.ts")).rejects.toThrow(
+      "../secret.ts: path escapes its root; an evidence file must be inside the anchor root.",
+    );
+    await expect(call("api:../secret.ts")).rejects.toThrow(
+      'api:../secret.ts: path escapes its root; an evidence file must be inside the directory of repo alias "api".',
+    );
+    // Inside the alias root is fine.
+    const ok = await call("api:src/x.ts");
+    expect(ok.claim.evidence[0]?.file).toBe("api:src/x.ts");
+  });
+
+  test("check reports an escaping stored evidence path as unavailable", async () => {
+    const outer = await tmp();
+    const root = join(outer, "repo");
+    await mkdir(join(root, "docs"), { recursive: true });
+    await mkdir(join(root, "src"), { recursive: true });
+    await writeFile(join(outer, "secret.ts"), "export const S = 1;\n");
+    await writeFile(join(root, "src/s.ts"), "export const S = 1;\n");
+    await writeFile(join(root, "docs/a.md"), "# A\n\nS is 1 in that file.\n");
+    const e = await Engine.init(root, { noAst: true });
+    const rec = await e.record({
+      kind: "code",
+      by: "human:t@example.com",
+      docPath: "docs/a.md",
+      docQuote: "S is 1 in that file.",
+      evidence: [{ file: "src/s.ts", region: { quote: "S = 1" } }],
+    });
+    // A hand-edited store pointing outside the root.
+    await e.store.putClaim({
+      ...rec.claim,
+      evidence: rec.claim.evidence.map((b) => ({ ...b, file: "../secret.ts" })),
+    });
+    const report = await e.check();
+    expect(report.verdicts[0]?.evidence).toBe("unavailable");
+    expect(report.verdicts[0]?.reasons).toContain(
+      "evidence: path escapes its root",
+    );
+    expect(report.verdicts[0]?.gates).toBe(false);
+  });
+});
+
+describe("reanchor across repos and kinds", () => {
+  test("a sibling repo that is not checked out keeps its bundle, with a warning", async () => {
+    const outer = await tmp();
+    const root = join(outer, "repo");
+    await mkdir(join(root, "docs"), { recursive: true });
+    await mkdir(join(outer, "api", "src"), { recursive: true });
+    await writeFile(join(outer, "api", "src", "x.ts"), "export const X = 1;\n");
+    await writeFile(join(root, "docs/a.md"), "# A\n\nX is 1 over there.\n");
+    let e = await Engine.init(root, { noAst: true });
+    const cfgPath = join(e.store.dir, "config.json");
+    const cfg = JSON.parse(await readFile(cfgPath, "utf8"));
+    cfg.repos = { api: "../api" };
+    await writeFile(cfgPath, JSON.stringify(cfg));
+    e = await Engine.open(root, { noAst: true });
+    const rec = await e.record({
+      kind: "code",
+      by: "human:t@example.com",
+      docPath: "docs/a.md",
+      docQuote: "X is 1 over there.",
+      evidence: [{ file: "api:src/x.ts", region: { quote: "X = 1" } }],
+    });
+    await rm(join(outer, "api"), { recursive: true, force: true });
+    await writeFile(
+      join(root, "docs/a.md"),
+      "# A\n\nIntro line.\n\nX is 1 over there.\n",
+    );
+    const res = await e.reanchor(rec.claim.id);
+    expect(res.warnings).toEqual([
+      'evidence side api:src/x.ts kept unchanged: sibling repo "api" is not checked out at ../api',
+    ]);
+    expect(res.evidence).toBe("unavailable");
+    expect(res.doc).toBe("unchanged");
+    expect(res.claim.evidence).toEqual(rec.claim.evidence);
+  });
+
+  test("--ref-* replaces a reference span; --code-* on a reference claim and --ref-* on a code claim are errors", async () => {
+    const root = await tmp();
+    await mkdir(join(root, "docs"), { recursive: true });
+    await mkdir(join(root, "src"), { recursive: true });
+    await writeFile(join(root, "src/a.ts"), "export const A = 1;\n");
+    await writeFile(
+      join(root, "docs/a.md"),
+      "# A\n\nRefunds take two weeks.\n\nA is 1 here, always.\n",
+    );
+    await writeFile(
+      join(root, "docs/billing.md"),
+      "# Billing\n\nRefunds are issued within 14 days.\n",
+    );
+    const e = await Engine.init(root, { noAst: true });
+    const ref = await e.record({
+      kind: "reference",
+      by: "human:t@example.com",
+      docPath: "docs/a.md",
+      docQuote: "Refunds take two weeks.",
+      evidence: [
+        {
+          file: "docs/billing.md",
+          region: { quote: "Refunds are issued within 14 days." },
+        },
+      ],
+    });
+    const code = await e.record({
+      kind: "code",
+      by: "human:t@example.com",
+      docPath: "docs/a.md",
+      docQuote: "A is 1 here, always.",
+      evidence: [{ file: "src/a.ts", region: { quote: "A = 1" } }],
+    });
+    await writeFile(
+      join(root, "docs/billing.md"),
+      "# Billing\n\nWe refund within 14 days.\n",
+    );
+    const out = await e.reanchor(ref.claim.id, {
+      reference: {
+        file: "./docs/billing.md",
+        region: { quote: "We refund within 14 days." },
+      },
+    });
+    expect(out.evidence).toBe("unchanged");
+    expect(out.after.evidence).toEqual([
+      { file: "docs/billing.md", quote: "We refund within 14 days." },
+    ]);
+    await expect(
+      e.reanchor(ref.claim.id, {
+        evidence: [{ file: "src/a.ts", region: { quote: "A = 1" } }],
+      }),
+    ).rejects.toThrow(
+      `claim ${ref.claim.id} is a reference claim; --code-file, --code-quote, and --code-range are for code claims; pass --ref-file with --ref-quote or --ref-range.`,
+    );
+    await expect(
+      e.reanchor(code.claim.id, {
+        reference: { file: "docs/billing.md", region: { quote: "We refund" } },
+      }),
+    ).rejects.toThrow(
+      `claim ${code.claim.id} is a code claim; --ref-file, --ref-quote, and --ref-range are for reference claims.`,
+    );
+  });
+});
+
+describe("conflict pass scope", () => {
+  test("audit and check --doc judge only pairs with a claim in the document; whole-store check judges all", async () => {
+    const root = await tmp();
+    await mkdir(join(root, "docs"), { recursive: true });
+    const write = (p: string, t: string) => writeFile(join(root, p), t);
+    await write("docs/a.md", "# A\n\nZebra pricing is $10.\n");
+    await write("docs/x.md", "# X\n\nQuokka pricing is $20.\n");
+    await write("docs/y.md", "# Y\n\nQuokka pricing is $30.\n");
+    const NARRATIVE = {
+      factual_claim: 0.02,
+      instruction: 0.02,
+      opinion: 0.02,
+      narrative: 0.94,
+    };
+    const { FakeJudge, conflictAnswer } = await import("../src/judge/fake.ts");
+    const judge = new FakeJudge({
+      triage: () => ({
+        kind: "narrative",
+        kindProbabilities: NARRATIVE,
+        kindConfidence: 0.92,
+      }),
+      conflict: () =>
+        conflictAnswer(
+          { consistent: 0.1, contradictory: 0.1, unrelated: 0.8 },
+          0.1,
+          0.1,
+        ),
+    });
+    const e = await Engine.init(root, { judge, noAst: true });
+    for (const [doc, quote] of [
+      ["docs/a.md", "Zebra pricing is $10."],
+      ["docs/x.md", "Quokka pricing is $20."],
+      ["docs/y.md", "Quokka pricing is $30."],
+    ] as const) {
+      await e.record({
+        kind: "attested",
+        by: "human:t@example.com",
+        docPath: doc,
+        docQuote: quote,
+        ttl: "P90D",
+      });
+    }
+    const conflicts = () =>
+      judge.calls.filter((c) => c.judgment === "conflict").length;
+
+    await e.audit("docs/a.md");
+    const afterAudit = conflicts();
+    const scoped = await e.check({ doc: "docs/a.md" });
+    expect(scoped.summary.conflictPass.scope).toBe("doc");
+    // a.md pairs with x.md and y.md through the money group and `pricing`.
+    expect(scoped.summary.conflictPass.pairs).toBe(2);
+    const whole = await e.check();
+    expect(whole.summary.conflictPass.scope).toBe("store");
+    expect(whole.summary.conflictPass.pairs).toBe(3);
+    // The x/y pair was first judged by the whole-store check.
+    expect(afterAudit).toBe(2);
+    expect(conflicts()).toBe(3);
   });
 });

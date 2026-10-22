@@ -173,4 +173,43 @@ describe("end-to-end value check: a 5 to 50 change trips even at the boundary", 
     expect(verdict.evidence).toBe("changed");
     expect(verdict.reasons.join(" ")).toContain("restructured");
   });
+
+  test("without the analyzer (--no-ast) the numeric-token rule grades 5 to 50 changed", () => {
+    const original = "export const MAX_ATTEMPTS = 5;\n";
+    const codeBundle = buildSelectorBundle(
+      "src/retry.ts",
+      original,
+      region(original, "MAX_ATTEMPTS = 5"),
+      { language: "typescript", analyzer },
+    );
+    const assertion = makeAssertion(
+      docBundle(docText, docSentence),
+      codeBundle,
+    );
+    const changed = "export const MAX_ATTEMPTS = 50;\n";
+    const files = {
+      doc: docText,
+      evidence: new Map([["src/retry.ts", changed]]),
+    };
+    const noAst = resolveClaim(assertion, files, {});
+    expect(noAst.evidence).toBe("changed");
+    expect(noAst.reasons).toContain(
+      "evidence: a number in the sentence changed",
+    );
+    // An analyzer without a grammar for the language behaves the same.
+    const noGrammar = resolveClaim(assertion, files, {
+      ast: { analyze: () => null, extractValue: () => null },
+    });
+    expect(noGrammar.evidence).toBe("changed");
+    expect(noGrammar.reasons).toContain(
+      "evidence: a number in the sentence changed",
+    );
+    // Unchanged numbers stay unchanged without the analyzer.
+    const same = resolveClaim(
+      assertion,
+      { doc: docText, evidence: new Map([["src/retry.ts", original]]) },
+      {},
+    );
+    expect(same.evidence).toBe("unchanged");
+  });
 });

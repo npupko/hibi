@@ -39,7 +39,7 @@ export function adviceFor(row: AuditRow): string | null {
   }
 }
 
-const KIND_WIDTH = "not-a-claim".length;
+const KIND_WIDTH = "unverifiable".length;
 
 function rowLine(row: AuditRow, style: Style, lineWidth: number): string {
   const line = style.dim(`L${row.region.line}`.padEnd(lineWidth + 1));

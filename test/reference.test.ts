@@ -14,7 +14,13 @@ import {
 import { cacheKey, JudgeCache } from "../src/judge/cache.ts";
 import { FakeJudge, supportsAnswer } from "../src/judge/fake.ts";
 import { buildSupportsRequest } from "../src/judge/jev.ts";
-import type { SupportsResult } from "../src/judge/types.ts";
+import { MAX_EVIDENCE_CHARS, type SupportsResult } from "../src/judge/types.ts";
+
+const SUPPORTS_ANSWER = supportsAnswer({
+  supports: 0.97,
+  refutes: 0.02,
+  does_not_address: 0.01,
+});
 
 const MODEL = "jev-1.14.0";
 const SENTENCE = "Pro costs $29/month.";
@@ -79,6 +85,31 @@ describe("supportsOutcome (SPEC 8.4, one threshold)", () => {
         "evidence supports the sentence (confidence 0.80 >= threshold 0.8)",
       ],
     });
+  });
+  test("on supports, a bare number does not refute; money, units, versions, and dates do", () => {
+    const vals = (sentence: string, evidence: string) => ({
+      sentence: storedValues(sentence),
+      evidence: storedValues(evidence),
+    });
+    expect(
+      supportsOutcome(
+        r({}),
+        0.8,
+        vals("Retries happen 5 times.", "Retry log line 42 shows 7 retries."),
+      ).state,
+    ).toBe("supported");
+    expect(
+      supportsOutcome(r({}), 0.8, vals("Pro costs $29.", "Pro costs $39."))
+        .reasons,
+    ).toEqual(["value differs: numbers differ: 29 vs 39"]);
+    expect(
+      supportsOutcome(r({}), 0.8, vals("Tokens last 5 days.", "TTL is 7 days."))
+        .state,
+    ).toBe("refuted");
+    expect(
+      supportsOutcome(r({}), 0.8, vals("Requires v1.2.", "requires 1.2.0"))
+        .state,
+    ).toBe("supported");
   });
   test("refutes at or above threshold is refuted", () => {
     expect(supportsOutcome(r({ relation: "refutes" }), 0.8).state).toBe(
@@ -273,6 +304,78 @@ describe("judgeReference", () => {
       reasons: ["pending: no TYPESAFE_API_KEY"],
     });
     expect(await c.list()).toHaveLength(0);
+  });
+
+  test("JudgeError is pending with the judge error label and caches nothing", async () => {
+    const c = await cache();
+    const judge = new FakeJudge();
+    judge.setError("TypeSafe returned HTTP 422: bad state");
+    const out = await judgeReference({
+      claim,
+      docText: DOC,
+      referencedText: REFERENCED,
+      judge,
+      cache: c,
+      model: MODEL,
+      threshold: 0.8,
+    });
+    expect(out).toEqual({
+      state: "pending",
+      reasons: ["judge error: TypeSafe returned HTTP 422: bad state"],
+    });
+    expect(await c.list()).toHaveLength(0);
+  });
+
+  test(`a referenced span over ${MAX_EVIDENCE_CHARS} characters is pending and the judge is not asked`, async () => {
+    const judge = new FakeJudge({ supports: () => SUPPORTS_ANSWER });
+    const out = await judgeReference({
+      claim,
+      docText: DOC,
+      referencedText: "x".repeat(MAX_EVIDENCE_CHARS + 1),
+      judge,
+      cache: await cache(),
+      model: MODEL,
+      threshold: 0.8,
+    });
+    expect(out).toEqual({
+      state: "pending",
+      reasons: ["referenced span is longer than 32,000 characters"],
+    });
+    expect(judge.calls).toHaveLength(0);
+    const atLimit = await judgeReference({
+      claim,
+      docText: DOC,
+      referencedText: "x".repeat(MAX_EVIDENCE_CHARS),
+      judge,
+      cache: await cache(),
+      model: MODEL,
+      threshold: 0.8,
+    });
+    expect(atLimit.state).toBe("supported");
+  });
+
+  test("the cache key uses the judge's model, not the model argument", async () => {
+    const c = await cache();
+    const judge = new FakeJudge(
+      { supports: () => SUPPORTS_ANSWER },
+      "jev-9.9.9",
+    );
+    const out = await judgeReference({
+      claim,
+      docText: DOC,
+      referencedText: REFERENCED,
+      judge,
+      cache: c,
+      model: MODEL,
+      threshold: 0.8,
+    });
+    const req = buildSupportsRequest("jev-9.9.9", {
+      sentence: SENTENCE,
+      context: claimContext(DOC, claim),
+      evidence: REFERENCED,
+      source: "docs/billing.md",
+    });
+    expect(out.key).toBe(cacheKey("jev-9.9.9", req));
   });
 
   test("no judge at all is pending", async () => {

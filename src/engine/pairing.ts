@@ -3,10 +3,13 @@
  * candidate pairs; the judge only sees pairs that survive. All-pairs is the
  * wrong first step (design/evidence/typesafe-research-2026-10-22.md, section 8).
  *
- * Two live claims (enforcement other than `retired`) pair when either holds:
+ * Two live claims (enforcement other than `retired`, on a document whose
+ * lifecycle is `active`; the caller filters the documents) pair when either
+ * holds:
  *
  * 1. They share a rare content token: a token that appears in fewer than
- *    `max(RARE_MIN_CLAIMS, RARE_SHARE * number of live claims)` claims.
+ *    `max(RARE_MIN_CLAIMS, min(ceil(RARE_SHARE * n), RARE_MAX_CLAIMS))`
+ *    claims, where `n` is the number of live claims.
  * 2. Both sentences contain a value of the same kind and unit (the same
  *    `valueGroup`, so `compareValues` can compare them) and they share any
  *    content token.
@@ -28,6 +31,12 @@ export const RARE_SHARE = 0.05;
  * claims is always rare.
  */
 export const RARE_MIN_CLAIMS = 3;
+
+/**
+ * Ceiling for the rarity cutoff. Without it, 5 percent of a large store lets
+ * a token shared by hundreds of claims count as rare and pair them all.
+ */
+export const RARE_MAX_CLAIMS = 10;
 
 /** Shortest token, in letters, that counts as content. */
 export const MIN_TOKEN_LETTERS = 3;
@@ -167,6 +176,8 @@ export interface PairingOptions {
   rareShare?: number;
   /** Overrides `RARE_MIN_CLAIMS`; for tests. */
   rareMinClaims?: number;
+  /** Overrides `RARE_MAX_CLAIMS`; for tests. */
+  rareMaxClaims?: number;
 }
 
 const TOKEN = /\p{L}+/gu;
@@ -187,13 +198,19 @@ export function pairIdOf(x: string, y: string): string {
   return x < y ? `${x}:${y}` : `${y}:${x}`;
 }
 
-/** The rarity cutoff for `n` live claims: a token is rare when its claim count is below this. */
+/**
+ * The rarity cutoff for `n` live claims: a token is rare when its claim count
+ * is below `max(3, min(ceil(0.05 n), 10))`.
+ */
 export function rareCutoff(
   n: number,
   share = RARE_SHARE,
   min = RARE_MIN_CLAIMS,
+  max = RARE_MAX_CLAIMS,
 ): number {
-  return Math.max(min, share * n);
+  // Rounded first so float error cannot lift it: 0.05 * 60 is 3.0000000000000004.
+  const shareCount = Math.ceil(Number((share * n).toFixed(9)));
+  return Math.max(min, Math.min(shareCount, max));
 }
 
 export function pairClaims(claims: Claim[], opts: PairingOptions = {}): Pair[] {
@@ -214,7 +231,12 @@ export function pairClaims(claims: Claim[], opts: PairingOptions = {}): Pair[] {
       else postings.set(t, [i]);
     }
   });
-  const cutoff = rareCutoff(live.length, opts.rareShare, opts.rareMinClaims);
+  const cutoff = rareCutoff(
+    live.length,
+    opts.rareShare,
+    opts.rareMinClaims,
+    opts.rareMaxClaims,
+  );
   const isRare = (t: string) => (postings.get(t)?.length ?? 0) < cutoff;
 
   // Candidate pairs: claims that share any token. Rule 1 needs a rare token,

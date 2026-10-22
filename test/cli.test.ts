@@ -73,7 +73,6 @@ interface CliJson {
   };
   verdicts?: CliVerdict[];
   changedFiles?: string[];
-  found?: boolean;
   count?: number;
   state?: string;
   claims?: ListRow[];
@@ -95,6 +94,13 @@ interface RunResult {
   stderr: string;
 }
 
+/** `record` needs `--by`; tests that are not about it get the repo's git user. */
+function withBy(args: string[]): string[] {
+  if (args[0] !== "record" || args.includes("--by") || args.includes("--help"))
+    return args;
+  return [...args, "--by", "human:t@t.co"];
+}
+
 async function run(
   cwd: string,
   args: string[],
@@ -102,7 +108,7 @@ async function run(
 ): Promise<RunResult> {
   const env: Record<string, string | undefined> = { ...process.env };
   delete env.TYPESAFE_API_KEY;
-  const proc = Bun.spawn(["bun", "run", CLI, ...args], {
+  const proc = Bun.spawn(["bun", "run", CLI, ...withBy(args)], {
     cwd,
     env,
     stdout: "pipe",
@@ -628,8 +634,15 @@ describe("CLI end-to-end", () => {
     const a = await run(d, ["check", "--doc", "a.md"]);
     expect(a.code).toBe(2);
     expect(a.json.doc).toBe("a.md");
-    expect(a.json.found).toBe(true);
     expect(a.json.verdicts?.length).toBe(1);
+    // The same document by ./a.md and by its absolute path.
+    const dotted = await run(d, ["check", "--doc", "./a.md"]);
+    expect(dotted.code).toBe(2);
+    expect(dotted.json.doc).toBe("a.md");
+    expect(dotted.json.verdicts?.length).toBe(1);
+    const absolute = await run(d, ["check", "--doc", join(d, "a.md")]);
+    expect(absolute.code).toBe(2);
+    expect(absolute.json.verdicts?.length).toBe(1);
     const b = await run(d, ["check", "--doc", "b.md"]);
     expect(b.code).toBe(0);
     expect(b.json.verdicts?.length).toBe(1);
@@ -641,8 +654,13 @@ describe("CLI end-to-end", () => {
       "never",
     ]);
     expect(never.code).toBe(0);
+    // An unregistered (or missing) document is an operational error.
     const untracked = await run(d, ["check", "--doc", "nope.md"]);
-    expect(untracked.json.found).toBe(false);
+    expect(untracked.code).toBe(1);
+    expect(untracked.json.ok).toBe(false);
+    expect(untracked.json.error).toBe(
+      "no claims are registered for nope.md; run hibi audit --doc nope.md",
+    );
   });
 
   test("diff and status are gone", async () => {
@@ -1151,43 +1169,174 @@ describe("CLI end-to-end", () => {
     expect(res.json.error).toContain("no upgrade path");
   });
 
-  test("record without --by and without a git user.email fails with a clear error", async () => {
+  test("init on a v3 store prints the no-upgrade-path message", async () => {
+    const d = await repo();
+    await write(
+      d,
+      ".claims/config.json",
+      JSON.stringify({ version: "v3", nonce: "deadbeef" }),
+    );
+    const res = await run(d, ["init"]);
+    expect(res.code).toBe(1);
+    expect(res.json.ok).toBe(false);
+    expect(res.json.error).toContain("this claim store is version v3");
+    expect(res.json.error).toContain("no upgrade path");
+  });
+
+  test("check and list failures print the JSON error envelope", async () => {
+    const { d } = await seeded();
+    await write(d, ".claims/claims/clm_0000000000000bad.json", "{ not json");
+    for (const args of [["check"], ["list"]]) {
+      const res = await run(d, args);
+      expect(res.code).toBe(1);
+      expect(res.json.ok).toBe(false);
+      expect(typeof res.json.error).toBe("string");
+    }
+  });
+
+  test("record --from-file on a missing file prints the JSON error envelope", async () => {
+    const { d } = await seeded();
+    const res = await run(d, ["record", "--from-file", "nope.json"]);
+    expect(res.code).toBe(1);
+    expect(res.json).toEqual({
+      ok: false,
+      error: "record --from-file: --from-file nope.json: no such file",
+    });
+  });
+
+  test("record --from-file takes --by as the default for items without by", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "doc.md", "# Doc\n\nA is 1 here.\n\nA is one, really.\n");
+    await run(d, ["init"]);
+    const items = [
+      {
+        doc: "./doc.md",
+        docQuote: "A is 1 here",
+        kind: "code",
+        code: [{ file: "src/a.ts", quote: "A = 1" }],
+      },
+      {
+        doc: "doc.md",
+        docQuote: "A is one, really.",
+        kind: "code",
+        code: [{ file: "./src/a.ts", quote: "A = 1" }],
+        by: "agent:opus",
+      },
+    ];
+    const res = await run(
+      d,
+      [
+        "record",
+        "--from-file",
+        "-",
+        "--by",
+        "human:dev@example.com",
+        "--explain",
+      ],
+      JSON.stringify(items),
+    );
+    expect(res.code).toBe(0);
+    const claims = await Promise.all(
+      (res.json.results as unknown as { id: string }[]).map(
+        async (r) =>
+          JSON.parse(
+            await readFile(
+              join(d, ".claims", "claims", `${r.id}.json`),
+              "utf8",
+            ),
+          ) as { attestations: { by: string }[]; doc: { file: string } },
+      ),
+    );
+    expect(claims.map((c) => c.attestations[0]?.by)).toEqual([
+      "human:dev@example.com",
+      "agent:opus",
+    ]);
+    expect(claims.map((c) => c.doc.file)).toEqual(["doc.md", "doc.md"]);
+  });
+
+  test("reanchor takes --ref-* for a reference claim and refuses --code-* on it", async () => {
+    const d = await repo();
+    await write(d, "doc.md", "# Doc\n\nRefunds take two weeks.\n");
+    await write(
+      d,
+      "billing.md",
+      "# Billing\n\nRefunds are issued within 14 days.\n",
+    );
+    await run(d, ["init"]);
+    const rec = await run(d, [
+      "record",
+      "--kind",
+      "reference",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "Refunds take two weeks.",
+      "--ref-file",
+      "billing.md",
+      "--ref-quote",
+      "Refunds are issued within 14 days.",
+    ]);
+    const id = rec.json.id ?? "";
+    await write(d, "billing.md", "# Billing\n\nWe refund within 14 days.\n");
+    const bad = await run(d, [
+      "reanchor",
+      id,
+      "--code-file",
+      "billing.md",
+      "--code-quote",
+      "We refund",
+    ]);
+    expect(bad.code).toBe(1);
+    expect(bad.json.error).toContain("is a reference claim; --code-file");
+    const ok = await run(d, [
+      "reanchor",
+      id,
+      "--ref-file",
+      "billing.md",
+      "--ref-quote",
+      "We refund within 14 days.",
+    ]);
+    expect(ok.code).toBe(0);
+    expect(ok.json.evidence).toBe("unchanged");
+  });
+
+  test("--fail-on help names what warn does", async () => {
+    const d = await repo();
+    const res = await run(d, ["check", "--help"]);
+    expect(res.stdout).toContain("warn: any warning also fails");
+  });
+
+  test("record without --by fails naming --by and the actor forms, even with a git user.email", async () => {
     const d = await repo();
     await write(d, "src/a.ts", "export const A = 1;\n");
     await write(d, "doc.md", "# Doc\n\nA is 1 here.\n");
     await run(d, ["init"]);
-    await Bun.spawn(["git", "config", "--unset", "user.email"], { cwd: d })
-      .exited;
-    const empty = join(d, "empty-gitconfig");
-    await writeFile(empty, "");
-    const args = [
-      "run",
-      CLI,
-      "record",
-      "--kind",
-      "code",
-      "--doc",
-      "doc.md",
-      "--doc-quote",
-      "A is 1 here",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-    ];
-    const proc = Bun.spawn(["bun", ...args], {
-      cwd: d,
-      env: {
-        ...process.env,
-        GIT_CONFIG_GLOBAL: empty,
-        GIT_CONFIG_NOSYSTEM: "1",
-      },
-      stdout: "pipe",
-      stderr: "pipe",
-    });
+    const proc = Bun.spawn(
+      [
+        "bun",
+        "run",
+        CLI,
+        "record",
+        "--kind",
+        "code",
+        "--doc",
+        "doc.md",
+        "--doc-quote",
+        "A is 1 here",
+        "--code-file",
+        "src/a.ts",
+        "--code-quote",
+        "A = 1",
+      ],
+      { cwd: d, stdout: "pipe", stderr: "pipe" },
+    );
     const out = JSON.parse((await new Response(proc.stdout).text()).trim());
     expect(await proc.exited).toBe(1);
     expect(out.error).toContain("--by");
+    expect(out.errors).toEqual([
+      "by is required: pass --by <actor> or a by key, as human:<id>, agent:<name>, or process:<name>",
+    ]);
     const withBy = await run(d, [
       "record",
       "--kind",

@@ -10,6 +10,7 @@
  * path for judge answers.
  */
 
+import { DEFAULT_JUDGE_MODEL } from "../core/model.ts";
 import type { Answer } from "./http.ts";
 import {
   buildConflictRequest,
@@ -27,6 +28,7 @@ import {
   type ConflictSide,
   choiceConfidence,
   type Judge,
+  JudgeError,
   type JudgeResponse,
   JudgeUnavailable,
   type Region,
@@ -75,10 +77,12 @@ export class FakeJudge implements Judge {
   /** Every request this judge received, in order. */
   readonly calls: FakeCall[] = [];
   private unavailable: string | null = null;
+  private error: string | null = null;
 
+  /** `model` defaults to the model `init` writes, so cache keys match the config as in production. */
   constructor(
     private readonly script: FakeScript = {},
-    model = "fake-1.0.0",
+    model = DEFAULT_JUDGE_MODEL,
   ) {
     this.model = model;
   }
@@ -88,9 +92,17 @@ export class FakeJudge implements Judge {
     this.unavailable = message;
   }
 
+  /** Make every following call throw `JudgeError` with `message`; `null` restores answers. */
+  setError(message: string | null = "fake judge error"): void {
+    this.error = message;
+  }
+
   private begin(judgment: FakeCall["judgment"], request: unknown): void {
     if (this.unavailable !== null) {
       throw new JudgeUnavailable(this.unavailable);
+    }
+    if (this.error !== null) {
+      throw new JudgeError(this.error);
     }
     this.calls.push({ judgment, request });
   }
@@ -232,7 +244,6 @@ export function encodeTriage(
 ): Record<string, Answer> {
   const out: Record<string, Answer> = {
     [`kind_${i}`]: choiceAnswer(r.kind, r.kindProbabilities),
-    [`checkable_${i}`]: noulAnswer(r.checkable),
   };
   if (!codeByConstruction) {
     const probabilities = r.evidenceProbabilities ?? {

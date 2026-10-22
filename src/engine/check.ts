@@ -5,7 +5,7 @@
  * never persisted; only judge verdicts are cached.
  *
  * JSON shape of `hibi check` (the CLI wraps it in `{ ok, action: "check",
- * schemaVersion, ref, [since, changedFiles], [doc, found], exitCode, summary,
+ * schemaVersion, ref, [since, changedFiles], [doc], exitCode, summary,
  * verdicts, worklist, documents }`; see `src/cli/render/json.ts`):
  *
  *   summary: {
@@ -16,8 +16,9 @@
  *     expired,                                       // claims with expired: true
  *     conflicts,                                     // claims with a non-empty conflicts[]
  *     worklist,                                      // worklist.length
- *     conflictPass: { pairs, requests, pending },    // pairs formed over the whole store,
- *                                                    // judge calls answered, pairs pending
+ *     conflictPass: { pairs, requests, pending,      // pairs judged, judge calls answered,
+ *                     scope: "store" | "doc" },      // pairs pending; doc: only pairs with a
+ *                                                    // claim in the --doc document
  *   }
  *   verdicts[]: {
  *     claimId, documentId, kind: "code" | "reference" | "attested",
@@ -42,24 +43,30 @@
  *     reason: "expired" | "never-checked" | "review" | "pending",
  *   }
  *   documents[]: { id, path, lifecycle, suspect: [{ claimId, status }] }
+ *     // status: the most severe warning, gating, or lifecycle tag, e.g.
+ *     // `doc:changed`, `conflict`, `expired`, `judge:review`,
+ *     // `conflict:review`, `conflict:pending`, `superseded`; never `unchanged`
  *
- * The contradiction pass (SPEC 9) runs over the whole store before this
- * module is called (`conflictPass`); a scoped check (`--doc`, `--since`)
- * still sees findings against claims outside its scope. On each claim:
- * a gating finding is a `conflicts[]` entry; a `review` finding warns with
- * its label; a pair the judge could not answer warns with
- * `conflict check pending with <id>: judge unavailable`.
+ * The contradiction pass (SPEC 9) runs before this module is called
+ * (`conflictPass`): over every pair for a whole-store check, and over the
+ * pairs with a claim in the document for `--doc`; its findings may name
+ * claims outside the scope. On each claim: a gating finding is a
+ * `conflicts[]` entry; a `review` finding warns with its label; a pair the
+ * judge could not answer warns with `conflict check pending with <id>: judge
+ * unavailable` (or `: judge error` when its answer could not be used).
  *
  * Judge outcome labels carry the prefix `judge: ` (see `reference.ts` for the
  * labels themselves).
  *
  * Worklist membership (SPEC 7.5), over claims that are not retired and whose
- * document is active: an
- * `attested` claim that is expired, or that has no `supports` cache entry
- * (`never-checked`); and a `reference` or `attested` claim whose judge state
- * is `review` (not acknowledged) or `pending`. A claim is listed once, with
- * the first matching reason in this order: expired, review, pending,
- * never-checked. The verdict's `reasons[]` carries a `worklist: …` label.
+ * document is active: any claim whose ttl ran out (`expired`); a `reference`
+ * or `attested` claim whose judge state is `review` (not acknowledged) or
+ * `pending`; and an `attested` claim with a `procedure` or at least one
+ * `sources` entry that has no `supports` cache entry (`never-checked`). A
+ * pure vouch claim (attested, no procedure, no sources) is listed only when
+ * expired. A claim is listed once, with the first matching reason in this
+ * order: expired, review, pending, never-checked. The verdict's `reasons[]`
+ * carries a `worklist: …` label.
  */
 
 import { readFile } from "node:fs/promises";
@@ -98,6 +105,7 @@ import {
   type JudgeOutcome,
   judgeReference,
   newestSupports,
+  referenceTexts,
 } from "./reference.ts";
 import { resolveFile } from "./repos.ts";
 
@@ -116,6 +124,8 @@ const STATUS_PRECEDENCE = [
   "doc:moved",
   "judge:review",
   "judge:pending",
+  "conflict:review",
+  "conflict:pending",
   "evidence:unavailable",
   "superseded",
   "archived",
@@ -133,12 +143,6 @@ const REPORTABLE_JUDGE: ReadonlySet<JudgeState> = new Set<JudgeState>([
   "refuted",
   "review",
   "pending",
-]);
-
-/** The anchor states in which the judge is consulted for a `reference` claim. */
-const JUDGEABLE: ReadonlySet<EvidenceState> = new Set<EvidenceState>([
-  "unchanged",
-  "moved",
 ]);
 
 export const FAIL_ON = ["gating", "warn", "never"] as const;
@@ -190,8 +194,17 @@ export interface CheckSummary {
   /** Claims with at least one conflict finding. */
   conflicts: number;
   worklist: number;
-  /** The contradiction pass: pairs formed, judge calls answered, pairs pending. */
-  conflictPass: { pairs: number; requests: number; pending: number };
+  /**
+   * The contradiction pass: pairs judged, judge calls answered, pairs pending,
+   * and whether it judged every pair (`store`) or only pairs with a claim in
+   * the scoped document (`doc`).
+   */
+  conflictPass: {
+    pairs: number;
+    requests: number;
+    pending: number;
+    scope: "store" | "doc";
+  };
 }
 
 export const WORKLIST_REASONS = [
@@ -277,14 +290,22 @@ export function orderStatuses(statuses: string[]): string[] {
     .map((x) => x.s);
 }
 
+/**
+ * The most severe of `statuses` (warning, gating, and lifecycle tags). A
+ * suspect always has at least one; `warning` is a fallback that names no
+ * rule and should not occur.
+ */
+export function firstStatus(statuses: string[]): string {
+  for (const s of STATUS_PRECEDENCE) if (statuses.includes(s)) return s;
+  return statuses[0] ?? "warning";
+}
+
 /** The single most severe status for a verdict, folding in lifecycle tags. */
 export function worstStatus(
   v: Parameters<typeof verdictStatuses>[0],
   lcTags: string[] = [],
 ): string {
-  const statuses = [...verdictStatuses(v), ...lcTags];
-  for (const s of STATUS_PRECEDENCE) if (statuses.includes(s)) return s;
-  return statuses[0] ?? "unchanged";
+  return firstStatus([...verdictStatuses(v), ...lcTags]);
 }
 
 function lifecycleTags(doc: Document): string[] {
@@ -324,13 +345,14 @@ function worklistReason(
   acknowledged: boolean,
   hasSupports: boolean,
 ): WorklistReason | undefined {
-  if (claim.enforcement === "retired" || claim.kind === "code")
-    return undefined;
-  const attested = claim.kind === "attested";
-  if (attested && v.expired) return "expired";
+  if (claim.enforcement === "retired") return undefined;
+  if (v.expired) return "expired";
+  if (claim.kind === "code") return undefined;
   if (v.judge === "review" && !acknowledged) return "review";
   if (v.judge === "pending") return "pending";
-  if (attested && !hasSupports) return "never-checked";
+  const checkable = claim.procedure !== null || claim.sources.length > 0;
+  if (claim.kind === "attested" && checkable && !hasSupports)
+    return "never-checked";
   return undefined;
 }
 
@@ -345,13 +367,19 @@ export async function runCheck(
     options.mode ?? (options.onlyDocument !== undefined ? "doc" : "store");
   const config: Config = await store.config();
   const threshold = config.judge.threshold;
+  // Cache keys use the judge's model; the configured model only when no judge is given.
+  const model = options.judge?.model ?? config.judge.model;
   const cache = store.judgeCache();
   const pass = options.conflictPass;
-  const pendingWith = new Map<string, string[]>();
-  for (const pairId of pass?.pending ?? []) {
-    const [a, b] = pairId.split(":") as [string, string];
-    pendingWith.set(a, [...(pendingWith.get(a) ?? []), b]);
-    pendingWith.set(b, [...(pendingWith.get(b) ?? []), a]);
+  const pendingWith = new Map<string, { other: string; why: string }[]>();
+  for (const pair of pass?.pairs ?? []) {
+    if (pair.outcome !== "pending") continue;
+    const [a, b] = pair.pairId.split(":") as [string, string];
+    const why = pair.reason.startsWith("judge error")
+      ? "judge error"
+      : "judge unavailable";
+    pendingWith.set(a, [...(pendingWith.get(a) ?? []), { other: b, why }]);
+    pendingWith.set(b, [...(pendingWith.get(b) ?? []), { other: a, why }]);
   }
   const documents = await store.allDocuments();
   const claims = await store.allClaims();
@@ -370,6 +398,7 @@ export async function runCheck(
   };
 
   const verdicts: ClaimVerdict[] = [];
+  const statusTags = new Map<string, string[]>();
   const worklist: WorklistItem[] = [];
   const evaluatedDocs = new Set<string>();
 
@@ -400,28 +429,16 @@ export async function runCheck(
     const findingReasons: string[] = [];
     if (c.enforcement !== "retired") {
       if (c.kind === "reference") {
-        const ev = sides.evidence[0];
-        if (!JUDGEABLE.has(sides.doc.state)) {
-          findingReasons.push(
-            `judge: not consulted while the doc side is ${sides.doc.state}`,
-          );
-        } else if (ev === undefined || !JUDGEABLE.has(ev.state)) {
-          findingReasons.push(
-            `judge: not consulted while the evidence side is ${ev?.state ?? "missing"}`,
-          );
-        } else if (docText === null || ev.liveText === null) {
-          findingReasons.push(
-            "judge: not consulted; the referenced span has no located text",
-          );
+        const judgeable = referenceTexts(c, sides, docText);
+        if ("reason" in judgeable) {
+          findingReasons.push(`judge: ${judgeable.reason}`);
         } else {
           outcome = await judgeReference({
             claim: c,
-            docText,
-            referencedText: ev.liveText,
-            sentence: sides.doc.liveText ?? c.sentence,
+            ...judgeable.texts,
             judge: options.judge,
             cache,
-            model: config.judge.model,
+            model,
             threshold,
             now,
           });
@@ -442,18 +459,15 @@ export async function runCheck(
       );
     }
     const live = c.enforcement !== "retired";
-    const warnings =
-      live && pass !== undefined
-        ? [
-            ...conflictReviewsFor(pass, c.id).map(
-              (f) => `possible conflict with ${f.claimId}: ${f.reason}`,
-            ),
-            ...(pendingWith.get(c.id) ?? []).map(
-              (other) =>
-                `conflict check pending with ${other}: judge unavailable`,
-            ),
-          ]
-        : [];
+    const reviews =
+      live && pass !== undefined ? conflictReviewsFor(pass, c.id) : [];
+    const pendingPairs = live ? (pendingWith.get(c.id) ?? []) : [];
+    const warnings = [
+      ...reviews.map((f) => `possible conflict with ${f.claimId}: ${f.reason}`),
+      ...pendingPairs.map(
+        (p) => `conflict check pending with ${p.other}: ${p.why}`,
+      ),
+    ];
     const findings: ClaimFindings = {
       judge: outcome?.state,
       conflicts: live && pass !== undefined ? conflictsFor(pass, c.id) : [],
@@ -470,6 +484,13 @@ export async function runCheck(
       mode,
       threshold,
     });
+    const tags = verdictStatuses({
+      ...v,
+      judge: ack !== undefined ? undefined : v.judge,
+    });
+    if (reviews.length > 0) tags.push("conflict:review");
+    if (pendingPairs.length > 0) tags.push("conflict:pending");
+    statusTags.set(c.id, tags);
 
     const active = (lifecycleById.get(c.documentId) ?? "active") === "active";
     const reason = active
@@ -547,7 +568,10 @@ export async function runCheck(
         if (enforcement === "retired") return false;
         return v.gates || v.warns || docHasLifecycle;
       })
-      .map((v) => ({ claimId: v.claimId, status: worstStatus(v, lcTags) }))
+      .map((v) => ({
+        claimId: v.claimId,
+        status: firstStatus([...(statusTags.get(v.claimId) ?? []), ...lcTags]),
+      }))
       .sort((a, b) =>
         a.claimId < b.claimId ? -1 : a.claimId > b.claimId ? 1 : 0,
       );
@@ -582,6 +606,7 @@ export async function runCheck(
       pairs: pass?.pairs.length ?? 0,
       requests: pass?.requests ?? 0,
       pending: pass?.pending.length ?? 0,
+      scope: pass?.scope ?? "store",
     },
   };
 

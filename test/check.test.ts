@@ -620,9 +620,9 @@ describe("reference claims: the judge axis", () => {
 });
 
 describe("attested claims: expiry, cached evidence, worklist", () => {
-  test("a fresh human vouch with no evidence is clean but never-checked", async () => {
+  test("a fresh pure vouch (no procedure, no sources) is clean and not in the worklist", async () => {
     const r = await repo();
-    const c = await recordKind(r, "attested", {
+    await recordKind(r, "attested", {
       sentence: "Pro costs $29/month.",
       ttl: "P90D",
     });
@@ -630,6 +630,19 @@ describe("attested claims: expiry, cached evidence, worklist", () => {
     const v = rep.verdicts[0];
     expect(v?.judge).toBeUndefined();
     expect(v?.expired).toBe(false);
+    expect(v?.warns).toBe(false);
+    expect(rep.worklist).toEqual([]);
+  });
+
+  test("a fresh human vouch with a source and no evidence is clean but never-checked", async () => {
+    const r = await repo();
+    const c = await recordKind(r, "attested", {
+      sentence: "Pro costs $29/month.",
+      ttl: "P90D",
+      sources: [{ id: "stripe", resource: "https://stripe.example/p" }],
+    });
+    const rep = await runCheck(r.store, { now: NOW });
+    const v = rep.verdicts[0];
     expect(v?.warns).toBe(false);
     expect(rep.worklist.map((w) => [w.claimId, w.reason])).toEqual([
       [c.id, "never-checked"],
@@ -828,6 +841,7 @@ describe("conflicts from the contradiction pass", () => {
       pending: [],
       requests: 0,
       pairs: [],
+      scope: "store",
     };
     const rep = await runCheck(r.store, { now: NOW, conflictPass });
     const va = rep.verdicts.find((v) => v.claimId === a.id);
@@ -977,7 +991,7 @@ describe("check JSON shape: one claim of each kind", () => {
       expired: 0,
       conflicts: 0,
       worklist: 1,
-      conflictPass: { pairs: 0, requests: 0, pending: 0 },
+      conflictPass: { pairs: 0, requests: 0, pending: 0, scope: "store" },
     });
     const explained = projectCheckReport(rep, {
       explain: true,
@@ -989,5 +1003,106 @@ describe("check JSON shape: one claim of each kind", () => {
     expect(Object.keys(explained.verdicts[0] ?? {})).not.toContain(
       "remediation",
     );
+  });
+});
+
+describe("worklist, suspects, and pending pairs", () => {
+  test("a code claim with a ttl expires: listed as expired, warns, and gates under --doc", async () => {
+    const r = await repo();
+    await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+    const c = await record(r, {
+      doc: "README.md",
+      text: "Retries are capped at 5.",
+      file: "src/retry.ts",
+      quote: "MAX_ATTEMPTS = 5",
+      ttl: "P1D",
+    });
+    const later = new Date("2030-01-01T00:00:00Z");
+    const store = await runCheck(r.store, { ast: analyzer, now: later });
+    expect(store.verdicts[0]?.expired).toBe(true);
+    expect(store.verdicts[0]?.warns).toBe(true);
+    expect(store.worklist.map((w) => [w.claimId, w.reason])).toEqual([
+      [c.claim.id, "expired"],
+    ]);
+    expect(store.documents[0]?.suspect).toEqual([
+      { claimId: c.claim.id, status: "expired" },
+    ]);
+    const doc = await runCheck(r.store, {
+      ast: analyzer,
+      now: later,
+      onlyDocument: c.claim.documentId,
+    });
+    expect(doc.verdicts[0]?.gates).toBe(true);
+    expect(doc.exitCode).toBe(2);
+  });
+
+  test("a pending pair warns with its cause and is the suspect status; a review finding is conflict:review", async () => {
+    const r = await repo();
+    const a = await recordKind(r, "attested", {
+      sentence: "Pro costs $29/month.",
+      ttl: "P90D",
+    });
+    const b = await recordKind(r, "attested", {
+      doc: "docs/faq.md",
+      sentence: "Pro costs $39/month.",
+      ttl: "P90D",
+    });
+    const pairId = [a.id, b.id].sort().join(":");
+    const pending: ConflictPassResult = {
+      findings: [],
+      duplicates: [],
+      pending: [pairId],
+      requests: 0,
+      pairs: [
+        {
+          pairId,
+          why: "shared rare tokens: pro",
+          outcome: "pending",
+          reason: "judge error: TypeSafe returned HTTP 400: bad",
+        },
+      ],
+      scope: "store",
+    };
+    const rep = await runCheck(r.store, { now: NOW, conflictPass: pending });
+    const va = rep.verdicts.find((v) => v.claimId === a.id);
+    expect(va?.warns).toBe(true);
+    expect(va?.reasons).toContain(
+      `conflict check pending with ${b.id}: judge error`,
+    );
+    const statuses = rep.documents.flatMap((d) => d.suspect);
+    expect(statuses.map((s) => s.status)).toEqual([
+      "conflict:pending",
+      "conflict:pending",
+    ]);
+    expect(statuses.every((s) => s.status !== "unchanged")).toBe(true);
+
+    const review: ConflictPassResult = {
+      ...pending,
+      pending: [],
+      pairs: [],
+      findings: [
+        {
+          claimId: a.id,
+          otherClaimId: b.id,
+          pairId,
+          probability: 0.6,
+          reason: "review: contradictory below threshold",
+          review: true,
+        },
+        {
+          claimId: b.id,
+          otherClaimId: a.id,
+          pairId,
+          probability: 0.6,
+          reason: "review: contradictory below threshold",
+          review: true,
+        },
+      ],
+    };
+    const rev = await runCheck(r.store, { now: NOW, conflictPass: review });
+    expect(
+      rev.documents.flatMap((d) => d.suspect).map((s) => s.status),
+    ).toEqual(["conflict:review", "conflict:review"]);
+    expect(rev.summary.conflictPass.scope).toBe("store");
   });
 });

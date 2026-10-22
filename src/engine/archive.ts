@@ -2,6 +2,8 @@
  * `archive --doc <p> [--successor <p>]`: move an obsolete document out of the
  * read path, leave a tombstone at the original path, and set the lifecycle to
  * `archived`. Live claims left on the document are reported, never moved.
+ * A path that is not a registered document is an error; a registered
+ * document whose file is gone is still archived (no file is moved).
  */
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
@@ -9,7 +11,7 @@ import { dirname, join } from "node:path";
 import type { Document } from "../core/model.ts";
 import { exists } from "../fs.ts";
 import type { ClaimStore } from "../store/store.ts";
-import { documentIdForPath, newDocument } from "./record.ts";
+import { documentIdForPath } from "./record.ts";
 import { isLiveClaimOn } from "./supersede.ts";
 
 function tombstone(docPath: string, successorPath?: string): string {
@@ -40,8 +42,12 @@ export async function archiveDocument(
 ): Promise<ArchiveResult> {
   const root = store.anchorRoot;
   const id = documentIdForPath(docPath);
-  const doc: Document =
-    (await store.getDocument(id)) ?? newDocument(id, docPath, new Date());
+  const doc: Document | undefined = await store.getDocument(id);
+  if (doc === undefined) {
+    throw new Error(
+      `${docPath} is not a registered document; nothing to archive (a document is registered when a claim is recorded on it).`,
+    );
+  }
   const dryRun = opts.dryRun ?? false;
 
   const abs = join(root, docPath);

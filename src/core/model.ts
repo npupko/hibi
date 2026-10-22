@@ -320,7 +320,7 @@ export const Config = z
     /** Cross-repository aliases: alias to a path relative to the repository root. */
     repos: z.record(z.string(), z.string()).default({}),
     judge: JudgeConfig,
-    /** Globs of documents hibi skips. */
+    /** Globs of documents `audit` refuses; nothing else reads it. */
     ignore: z.array(z.string()).default([]),
   })
   .meta({ id: "Config" });

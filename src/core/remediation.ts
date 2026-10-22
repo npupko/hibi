@@ -11,9 +11,11 @@
  *   2. judge `refuted`: `fix-evidence`, `fix-claim`; never reanchor, so a
  *      refuted claim gets no changed or ambiguous anchor section (an orphan
  *      still does: the span must be found before anything else)
- *   3. conflicts: `reconcile` naming the other claim, then `ack`
- *   4. expired: `attest` (a human vouch), `evidence`
- *   5. judge `review`: `ack`, `evidence`
+ *   3. conflicts: `reconcile` naming the other claim, then one `ack` per
+ *      other claim (`--ack conflict:<otherId>`)
+ *   4. expired: `attest` (a human vouch), `evidence` (attested claims only)
+ *   5. judge `review`: `ack` (`--ack review`), `evidence` (attested claims
+ *      only; a reference claim is judged from the referenced document)
  *   6. moved: `reanchor`
  *
  * `recommended` is the first section's recommendation (it may be null);
@@ -23,6 +25,7 @@
 
 import type {
   AnchorState,
+  ClaimKind,
   EvidenceState,
   JudgeState,
   Remediation,
@@ -32,6 +35,8 @@ import type {
 
 export interface RemediationInput {
   claimId: string;
+  /** The claim kind; `evidence` is offered only for `attested` claims. */
+  kind?: ClaimKind;
   doc: AnchorState;
   evidence?: EvidenceState;
   judge?: JudgeState;
@@ -145,7 +150,7 @@ function fixEvidence(): RemediationAction {
 }
 
 const evidenceCmd = (id: string): string =>
-  `echo '[{"claimId":"${id}","evidence":"<text>","source":"<where>","summary":"<one line>","by":"agent:<name>"}]' | hibi evidence --from-file -`;
+  `echo '[{"claimId":"${id}","evidence":"<text>","source":"<where>","summary":"<one line>"}]' | hibi evidence --from-file - --by agent:<name>`;
 
 function submitEvidence(id: string, why: string): RemediationAction {
   return {
@@ -166,12 +171,23 @@ function attest(id: string): RemediationAction {
   };
 }
 
-function ack(id: string, what: string): RemediationAction {
+function ackReview(id: string): RemediationAction {
   return {
     id: "ack",
-    title: `Acknowledge the ${what}`,
-    rationale: `if the ${what} is not a problem, record why; an ack never resets the ttl`,
-    command: `hibi attest ${id} --by <actor> --ack --note "<why>"`,
+    title: "Acknowledge the review finding",
+    rationale:
+      "if the review finding is not a problem, record why; an ack never resets the ttl",
+    command: `hibi attest ${id} --by <actor> --ack review --note "<why>"`,
+  };
+}
+
+function ackConflict(id: string, other: string): RemediationAction {
+  return {
+    id: "ack",
+    title: `Acknowledge the conflict with ${other}`,
+    rationale:
+      "if the conflict is not a problem, record why; the ack is written to both claims and never resets the ttl",
+    command: `hibi attest ${id} --by <actor> --ack conflict:${other} --note "<why>"`,
   };
 }
 
@@ -244,18 +260,27 @@ export function remediationFor(v: RemediationInput): Remediation | null {
   if (others.length > 0) {
     sections.push({
       recommended: "reconcile",
-      actions: [reconcileConflict(others), ack(id, "conflict")],
+      actions: [
+        reconcileConflict(others),
+        ...others.map((other) => ackConflict(id, other)),
+      ],
     });
   }
+  // `hibi evidence` accepts attested claims only.
+  const evidenceApplies = v.kind === undefined || v.kind === "attested";
   if (v.expired) {
     sections.push({
       recommended: null,
       actions: [
         attest(id),
-        submitEvidence(
-          id,
-          "the ttl ran out; judged evidence that supports the sentence resets it",
-        ),
+        ...(evidenceApplies
+          ? [
+              submitEvidence(
+                id,
+                "the ttl ran out; judged evidence that supports the sentence resets it",
+              ),
+            ]
+          : []),
       ],
     });
   }
@@ -263,11 +288,15 @@ export function remediationFor(v: RemediationInput): Remediation | null {
     sections.push({
       recommended: null,
       actions: [
-        ack(id, "review finding"),
-        submitEvidence(
-          id,
-          "the judge was not sure; evidence that addresses the sentence directly settles it",
-        ),
+        ackReview(id),
+        ...(evidenceApplies
+          ? [
+              submitEvidence(
+                id,
+                "the judge was not sure; evidence that addresses the sentence directly settles it",
+              ),
+            ]
+          : []),
       ],
     });
   }
@@ -303,6 +332,7 @@ export function topAction(rem: Remediation | null): RemediationAction | null {
 export function remediationForVerdict(verdict: Verdict): Remediation | null {
   return remediationFor({
     claimId: verdict.claimId,
+    kind: verdict.kind,
     doc: verdict.doc,
     evidence: verdict.evidence,
     judge: verdict.judge,

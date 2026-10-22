@@ -63,7 +63,8 @@ import {
   choiceConfidence,
   type EvidenceKind,
   type Judge,
-  JudgeUnavailable,
+  JudgeError,
+  judgeFailureLabel,
   type Region,
   type RegionKind,
   type TriageKind,
@@ -215,7 +216,7 @@ async function triage(
   docId: string,
 ): Promise<Triaged> {
   const cache = input.store.judgeCache();
-  const model = input.config.judge.model;
+  const model = input.judge.model;
   const doc = { path: input.docPath };
   const requests = buildTriageRequests(model, doc, regions);
   const now = input.now ?? (() => new Date());
@@ -232,17 +233,18 @@ async function triage(
         let response: Awaited<ReturnType<Judge["triage"]>>;
         try {
           response = await input.judge.triage(doc, chunk);
+          const raw = response.answers as Record<string, Answer>[];
+          if (!Array.isArray(raw) || raw.length !== 1) {
+            throw new JudgeError(
+              "The judge answered one triage chunk with more or fewer than one answer set.",
+            );
+          }
+          answers = raw[0] as Record<string, Answer>;
         } catch (e) {
-          if (e instanceof JudgeUnavailable) return [];
+          // Unavailable or unusable: the chunk's rows are pending.
+          if (judgeFailureLabel(e) !== undefined) return [];
           throw e;
         }
-        const raw = response.answers as Record<string, Answer>[];
-        if (!Array.isArray(raw) || raw.length !== 1) {
-          throw new Error(
-            "The judge answered one triage chunk with more or fewer than one answer set.",
-          );
-        }
-        answers = raw[0] as Record<string, Answer>;
         answered++;
         await cache.put({
           key,

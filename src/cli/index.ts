@@ -15,7 +15,7 @@ import { parseArgs } from "node:util";
 import pkg from "../../package.json" with { type: "json" };
 import { parseAck } from "../engine/attest.ts";
 import { auditExitCode } from "../engine/audit.ts";
-import { changedFiles, currentRef, userEmail } from "../git/git.ts";
+import { changedFiles, currentRef } from "../git/git.ts";
 import {
   ClaimStore,
   Engine,
@@ -23,6 +23,7 @@ import {
   EvidenceValidationError,
   type FailOn,
   type ListState,
+  normalizePath,
   type RecordCall,
   type RecordResult,
   type RegionSpec,
@@ -148,6 +149,35 @@ function spanSpec(quote: unknown, range: unknown): RegionSpec | undefined {
   return undefined;
 }
 
+/** Read `--from-file <path|->`: stdin for `-`, else a file under the anchor root. */
+async function readFromFile(root: string, fromFile: string): Promise<string> {
+  if (fromFile === "-") return Bun.stdin.text();
+  try {
+    return await readFile(absPath(root, fromFile), "utf8");
+  } catch (e) {
+    const code = (e as { code?: string }).code;
+    if (code === "ENOENT")
+      throw new Error(`--from-file ${fromFile}: no such file`);
+    throw e;
+  }
+}
+
+/** The replacement reference span of `reanchor` (`--ref-file` with `--ref-quote` or `--ref-range`). */
+function reanchorRefSide(values: Values): EvidenceTarget | undefined {
+  const refFile = str(values["ref-file"]);
+  const region = spanSpec(values["ref-quote"], values["ref-range"]);
+  if (refFile === undefined) {
+    if (region !== undefined) {
+      throw new Error("--ref-quote/--ref-range need --ref-file");
+    }
+    return undefined;
+  }
+  if (region === undefined) {
+    throw new Error(`--ref-file ${refFile} needs --ref-quote or --ref-range`);
+  }
+  return { file: refFile, region };
+}
+
 /** The replacement code span of `reanchor` (`--code-file` with `--code-quote` or `--code-range`). */
 function reanchorCodeSide(values: Values): EvidenceTarget[] {
   const codeFile = str(values["code-file"]);
@@ -172,7 +202,7 @@ type Token = {
   value?: string;
 };
 
-/** The `record` flags that `--from-file` replaces. */
+/** The `record` flags that `--from-file` replaces. `--by` stays: it is the default for items without `by`. */
 const RECORD_ITEM_FLAGS = [
   "doc",
   "doc-quote",
@@ -189,7 +219,6 @@ const RECORD_ITEM_FLAGS = [
   "suggest",
   "ttl",
   "owner",
-  "by",
 ];
 
 /**
@@ -246,7 +275,6 @@ function recordItemFromFlags(
       : {}),
     ttl: values.ttl,
     owner: values.owner,
-    by: values.by,
     ...(values.suggest ? { suggest: true } : {}),
   };
   for (const k of Object.keys(item)) if (item[k] === undefined) delete item[k];
@@ -398,7 +426,12 @@ async function main(argv: string[]): Promise<number> {
 
   switch (spec.name) {
     case "init": {
-      const engine = await Engine.init(loc);
+      let engine: Engine;
+      try {
+        engine = await Engine.init(loc);
+      } catch (e) {
+        return fail((e as Error).message, mode);
+      }
       const config = await engine.store.config();
       const instructionsFile = str(values.instructions);
       let instructions: { file: string; appended: boolean } | undefined;
@@ -429,8 +462,7 @@ async function main(argv: string[]): Promise<number> {
     case "record": {
       const engine = await open();
       const ref = await currentRef(anchorRoot);
-      const email = await userEmail(anchorRoot);
-      const defaultBy = email === null ? undefined : `human:${email}`;
+      const defaultBy = str(values.by);
       const fromFile = str(values["from-file"]);
 
       let items: unknown[];
@@ -442,18 +474,16 @@ async function main(argv: string[]): Promise<number> {
             mode,
           );
         }
-        const raw =
-          fromFile === "-"
-            ? await Bun.stdin.text()
-            : await Bun.file(absPath(anchorRoot, fromFile)).text();
         let parsed: unknown;
         try {
-          parsed = JSON.parse(raw);
+          const raw = await readFromFile(anchorRoot, fromFile);
+          try {
+            parsed = JSON.parse(raw);
+          } catch (e) {
+            throw new Error(`invalid JSON (${(e as Error).message})`);
+          }
         } catch (e) {
-          return fail(
-            `record --from-file: invalid JSON (${(e as Error).message})`,
-            mode,
-          );
+          return fail(`record --from-file: ${(e as Error).message}`, mode);
         }
         if (!Array.isArray(parsed)) {
           return fail(
@@ -562,20 +592,24 @@ async function main(argv: string[]): Promise<number> {
           return fail((e as Error).message, mode);
         }
       }
-      const report = await engine.check({
-        onlyFiles: files,
-        doc,
-        failOn: (str(values["fail-on"]) ?? "gating") as FailOn,
-        ref: await currentRef(anchorRoot),
-      });
+      let report: import("../index.ts").CheckReport;
+      try {
+        report = await engine.check({
+          onlyFiles: files,
+          doc,
+          failOn: (str(values["fail-on"]) ?? "gating") as FailOn,
+          ref: await currentRef(anchorRoot),
+        });
+      } catch (e) {
+        return fail((e as Error).message, mode);
+      }
       const extra: Record<string, unknown> = {};
       if (since !== undefined) {
         extra.since = since;
         extra.changedFiles = files;
       }
       if (doc !== undefined) {
-        extra.doc = doc;
-        extra.found = report.documents.length > 0;
+        extra.doc = normalizePath(engine.store.anchorRoot, doc);
       }
       const value = projectCheckReport(report, projection(mode), extra);
       await emit(mode, value, async () => {
@@ -598,9 +632,6 @@ async function main(argv: string[]): Promise<number> {
             `${style.dim("since")} ${style.bold(since)}  ${style.dim(`${files?.length ?? 0} changed file${files?.length === 1 ? "" : "s"}`)}`,
           );
         }
-        if (doc !== undefined && report.documents.length === 0) {
-          lead.push(style.dim(`${doc}: not tracked (no claims recorded)`));
-        }
         return renderCheck(await checkContext(engine, report, mode, lead));
       });
       return report.exitCode;
@@ -608,11 +639,16 @@ async function main(argv: string[]): Promise<number> {
 
     case "list": {
       const engine = await open();
-      const result = await engine.list({
-        state: (str(values.state) ?? "all") as ListState,
-        path: str(values.path),
-        ref: await currentRef(anchorRoot),
-      });
+      let result: import("../index.ts").ListResult;
+      try {
+        result = await engine.list({
+          state: (str(values.state) ?? "all") as ListState,
+          path: str(values.path),
+          ref: await currentRef(anchorRoot),
+        });
+      } catch (e) {
+        return fail((e as Error).message, mode);
+      }
       if (values["ids-only"]) {
         emitIds(result.claims.map((c) => c.claimId));
         return 0;
@@ -649,6 +685,9 @@ async function main(argv: string[]): Promise<number> {
         values["code-file"],
         values["code-quote"],
         values["code-range"],
+        values["ref-file"],
+        values["ref-quote"],
+        values["ref-range"],
         values["dry-run"],
       ].some((f) => f !== undefined && f !== false);
       if (values.suggest) {
@@ -677,11 +716,18 @@ async function main(argv: string[]): Promise<number> {
       try {
         const docSpec = spanSpec(values["doc-quote"], values["doc-range"]);
         const code = reanchorCodeSide(values);
+        const refSpan = reanchorRefSide(values);
+        if (code.length > 0 && refSpan !== undefined) {
+          throw new Error(
+            "pass either --code-* or --ref-* flags, not both; a claim is code or reference",
+          );
+        }
         const result = await engine.reanchor(claimId, {
           doc: str(values.doc),
           docQuote: docSpec?.quote,
           docRange: docSpec?.quote === undefined ? docSpec : undefined,
           evidence: code.length > 0 ? code : undefined,
+          reference: refSpan,
           ref: await currentRef(anchorRoot),
           dryRun,
         });
@@ -811,27 +857,36 @@ async function main(argv: string[]): Promise<number> {
     case "evidence": {
       const engine = await open();
       const fromFile = String(values["from-file"]);
-      const by = String(values.by);
-      const raw =
-        fromFile === "-"
-          ? await Bun.stdin.text()
-          : await Bun.file(absPath(anchorRoot, fromFile)).text();
+      const by = str(values.by);
       let parsed: unknown;
       try {
-        parsed = JSON.parse(raw);
+        const raw = await readFromFile(anchorRoot, fromFile);
+        try {
+          parsed = JSON.parse(raw);
+        } catch (e) {
+          throw new Error(`invalid JSON (${(e as Error).message})`);
+        }
       } catch (e) {
-        return fail(
-          `evidence --from-file: invalid JSON (${(e as Error).message})`,
-          mode,
-        );
+        return fail(`evidence --from-file: ${(e as Error).message}`, mode);
       }
-      const items = (Array.isArray(parsed) ? parsed : [parsed]).map((item) =>
-        typeof item === "object" &&
-        item !== null &&
-        !Array.isArray(item) &&
-        !("by" in item)
-          ? { ...item, by }
-          : item,
+      const isItem = (item: unknown): item is Record<string, unknown> =>
+        typeof item === "object" && item !== null && !Array.isArray(item);
+      const raws = Array.isArray(parsed) ? parsed : [parsed];
+      if (by === undefined) {
+        const missing = raws.flatMap((item, i) =>
+          isItem(item) && !("by" in item)
+            ? [
+                `item ${i}${typeof item.claimId === "string" ? ` (${item.claimId})` : ""}: no "by"; pass --by <actor> or a "by" key: human:<id>, agent:<name>, or process:<name>`,
+              ]
+            : [],
+        );
+        if (missing.length > 0) {
+          const err = new EvidenceValidationError(missing);
+          return fail(err.message, mode, err.errors);
+        }
+      }
+      const items = raws.map((item) =>
+        isItem(item) && !("by" in item) ? { ...item, by } : item,
       );
       try {
         const report = await engine.evidence(items);

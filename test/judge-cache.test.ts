@@ -2,7 +2,10 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { JudgeCacheEntry } from "../src/core/model.ts";
+import {
+  DEFAULT_JUDGE_MODEL,
+  type JudgeCacheEntry,
+} from "../src/core/model.ts";
 import { cacheKey, canonicalJson, JudgeCache } from "../src/judge/cache.ts";
 import {
   conflictAnswer,
@@ -198,9 +201,11 @@ describe("FakeJudge", () => {
     const res = await judge.supports(input);
     expect(res.result.relation).toBe("supports");
     expect(res.result.confidence).toBeCloseTo((0.9 - 1 / 3) / (1 - 1 / 3), 10);
-    expect(res.request).toEqual(buildSupportsRequest("fake-1.0.0", input));
+    expect(res.request).toEqual(
+      buildSupportsRequest(DEFAULT_JUDGE_MODEL, input),
+    );
     expect(mapSupportsAnswers(res.answers as never)).toEqual(res.result);
-    expect(res.model).toBe("fake-1.0.0");
+    expect(res.model).toBe(DEFAULT_JUDGE_MODEL);
     expect(judge.calls).toEqual([{ judgment: "supports", request: input }]);
     await expect(
       judge.supports({ ...input, sentence: "unscripted" }),
@@ -235,7 +240,6 @@ describe("FakeJudge", () => {
           narrative: 0.1,
         },
         kindConfidence: 0.6,
-        checkable: 0.9,
       }),
     });
     const res = await judge.triage({ path: "a.md" }, [

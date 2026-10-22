@@ -33,8 +33,6 @@ export interface TriageResult {
    */
   evidenceKind?: EvidenceKind;
   evidenceProbabilities?: Record<EvidenceKind, number>;
-  /** Noul probability that the region could be shown true or false by evidence. */
-  checkable: number;
 }
 
 export interface SupportsInput {
@@ -111,6 +109,38 @@ export class JudgeUnavailable extends Error {
     this.name = "JudgeUnavailable";
   }
 }
+
+/**
+ * Thrown when the judge answered but the answer cannot be used: a 4xx other
+ * than 401 or 403, a body that is not JSON, or a body without an `answers`
+ * object and a `model` string. Callers map it to `pending` with the label
+ * `judge error: <message>`; it never aborts a run.
+ */
+export class JudgeError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "JudgeError";
+  }
+}
+
+/**
+ * The reason label for a judge call that failed with `JudgeUnavailable` or
+ * `JudgeError`, or undefined for any other error (which the caller rethrows).
+ */
+export function judgeFailureLabel(e: unknown): string | undefined {
+  if (e instanceof JudgeUnavailable) return `judge unavailable: ${e.message}`;
+  if (e instanceof JudgeError) return `judge error: ${e.message}`;
+  return undefined;
+}
+
+/**
+ * The longest text sent to `supports` as evidence, in characters: submitted
+ * evidence and the referenced span of a `reference` claim. About 8k tokens at
+ * 4 characters per token, which keeps one `supports` request well inside the
+ * per-question budget of the Jev adapter (SPEC 8.2; `QUESTION_TOKEN_BUDGET`
+ * in src/judge/jev.ts).
+ */
+export const MAX_EVIDENCE_CHARS = 32_000;
 
 /** Choice confidence per the TypeSafe docs: (p_max - 1/n) / (1 - 1/n). */
 export function choiceConfidence(

@@ -31,6 +31,8 @@ const SEATS = "Pro includes 5 seats.";
 const ID_PRICE = "clm_00000000000000a1";
 const ID_SEATS = "clm_00000000000000b2";
 const ID_RETIRED = "clm_00000000000000c3";
+const ID_CODE = "clm_00000000000000d4";
+const ID_REF = "clm_00000000000000e5";
 
 function attested(id: string, sentence: string, over: Partial<Claim> = {}) {
   return {
@@ -92,6 +94,24 @@ async function setup(): Promise<TempRepo> {
   await repo.store.putClaim(
     attested(ID_RETIRED, "Old plan.", { enforcement: "retired" }),
   );
+  const span = (file: string) => ({
+    file,
+    selectors: [
+      { kind: "text-quote" as const, exact: "x = 1", prefix: "", suffix: "" },
+    ],
+  });
+  await repo.store.putClaim({
+    ...attested(ID_CODE, "Retries are capped at 5."),
+    kind: "code",
+    ttl: undefined,
+    evidence: [span("src/retry.ts")],
+  });
+  await repo.store.putClaim({
+    ...attested(ID_REF, "Refunds take two weeks."),
+    kind: "reference",
+    ttl: undefined,
+    evidence: [span("docs/billing.md")],
+  });
   return repo;
 }
 
@@ -138,6 +158,16 @@ describe("submitEvidence validation", () => {
       "no claim clm_ffffffffffffffff",
     ],
     ["retired claim", item({ claimId: ID_RETIRED }), "is retired"],
+    [
+      "code claim",
+      item({ claimId: ID_CODE }),
+      `claim ${ID_CODE} is a code claim; evidence applies to attested claims, and reference claims are judged from the referenced document`,
+    ],
+    [
+      "reference claim",
+      item({ claimId: ID_REF }),
+      `claim ${ID_REF} is a reference claim; evidence applies to attested claims, and reference claims are judged from the referenced document`,
+    ],
     ["empty evidence", item({ evidence: "  " }), '"evidence" is empty'],
     [
       "evidence over the limit",
@@ -523,6 +553,39 @@ describe("submitEvidence outcomes", () => {
       requests: 0,
     });
     expect(await snapshot(repo)).toEqual(before);
+  });
+
+  test("a judge error is pending with its label, writes nothing, and the batch goes on", async () => {
+    const repo = await setup();
+    const judge = new FakeJudge({ supports: { [PRICE]: SUPPORTED } });
+    judge.setError("TypeSafe returned HTTP 400: bad");
+    const before = await snapshot(repo);
+    const report = await submit(repo, judge, [item()]);
+    expect(report.results[0]).toMatchObject({
+      judge: "pending",
+      relation: null,
+      reasons: ["judge error: TypeSafe returned HTTP 400: bad"],
+      attested: false,
+    });
+    expect(report.summary.pending).toBe(1);
+    expect(await snapshot(repo)).toEqual(before);
+  });
+
+  test("the cache key uses the judge's model", async () => {
+    const repo = await setup();
+    const judge = new FakeJudge(
+      { supports: { [PRICE]: SUPPORTED } },
+      "jev-9.9.9",
+    );
+    await submit(repo, judge, [item()]);
+    const [entry] = await repo.store.judgeCache().list();
+    const request = buildSupportsRequest("jev-9.9.9", {
+      sentence: PRICE,
+      context: `context of ${ID_PRICE}`,
+      evidence: item().evidence,
+      source: item().source,
+    });
+    expect(entry?.key).toBe(cacheKey("jev-9.9.9", request));
   });
 
   test("two supported items on one claim append two attestations", async () => {

@@ -58,11 +58,15 @@ describe("contentTokens", () => {
   });
 });
 
-test("rarity cutoff: fewer than max(RARE_MIN_CLAIMS, 5% of claims)", () => {
+test("rarity cutoff: fewer than max(3, min(ceil(5% of claims), 10))", () => {
   expect(RARE_SHARE).toBe(0.05);
   expect(rareCutoff(10)).toBe(RARE_MIN_CLAIMS);
+  expect(rareCutoff(60)).toBe(3);
+  expect(rareCutoff(61)).toBe(4);
+  expect(rareCutoff(81)).toBe(5);
   expect(rareCutoff(200)).toBe(10);
-  expect(rareCutoff(1000)).toBe(50);
+  expect(rareCutoff(1000)).toBe(10);
+  expect(rareCutoff(100_000)).toBe(10);
 });
 
 describe("pairClaims", () => {

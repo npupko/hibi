@@ -4,6 +4,7 @@ import { getAnalyzer } from "../src/ast/analyzer.ts";
 import { archiveDocument } from "../src/engine/archive.ts";
 import { runCheck } from "../src/engine/check.ts";
 import { matchedSide } from "../src/engine/list.ts";
+import { documentIdForPath, newDocument } from "../src/engine/record.ts";
 import { exists } from "../src/fs.ts";
 import { makeRepo, record, type TempRepo } from "./helpers.ts";
 
@@ -23,10 +24,18 @@ afterEach(async () => {
   repos = [];
 });
 
+/** Register `path` as a document, as `record` does for its first claim. */
+async function register(r: TempRepo, path: string): Promise<void> {
+  await r.store.putDocument(
+    newDocument(documentIdForPath(path), path, new Date()),
+  );
+}
+
 describe("archival", () => {
   test("moves the doc out of the read path, writes a tombstone, sets lifecycle archived", async () => {
     const r = await repo();
     await r.write("old.md", "# Old policy\n\nOriginal content.\n");
+    await register(r, "old.md");
     const result = await archiveDocument(r.store, "old.md", "new.md");
     expect(result.document.lifecycle).toBe("archived");
     expect(result.archivedTo).toBe(join("archive", "old.md"));
@@ -44,13 +53,35 @@ describe("archival", () => {
   test("dry run neither moves the file nor writes the store", async () => {
     const r = await repo();
     await r.write("old.md", "# Old policy\n");
+    await register(r, "old.md");
     const result = await archiveDocument(r.store, "old.md", undefined, {
       dryRun: true,
     });
     expect(result.dryRun).toBe(true);
     expect(await r.read("old.md")).toBe("# Old policy\n");
     expect(await exists(join(r.root, "archive", "old.md"))).toBe(false);
-    expect(await r.store.getDocument(result.document.id)).toBeUndefined();
+    expect((await r.store.getDocument(result.document.id))?.lifecycle).toBe(
+      "active",
+    );
+  });
+
+  test("a path that is not a registered document is an error", async () => {
+    const r = await repo();
+    await r.write("old.md", "# Old policy\n");
+    await expect(archiveDocument(r.store, "old.md")).rejects.toThrow(
+      "old.md is not a registered document; nothing to archive (a document is registered when a claim is recorded on it).",
+    );
+    expect(await exists(join(r.root, "archive", "old.md"))).toBe(false);
+  });
+
+  test("a registered document whose file is gone is still archived", async () => {
+    const r = await repo();
+    await register(r, "gone.md");
+    const result = await archiveDocument(r.store, "gone.md");
+    expect(result.archivedTo).toBeNull();
+    expect((await r.store.getDocument(result.document.id))?.lifecycle).toBe(
+      "archived",
+    );
   });
 });
 

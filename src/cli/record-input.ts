@@ -15,7 +15,7 @@
  *     "procedure": { "instructions": "…", "steps": [{ "id": "…", "command": "…", "stdin": "…" }] },
  *     "ttl": "P90D",                                  // required on attested
  *     "owner": "human:alice@example.com",
- *     "by": "agent:opus",                             // default: human:<git user.email>
+ *     "by": "agent:opus",                             // required here or as --by
  *     "suggest": false                                // true: never gates
  *   }
  *
@@ -320,7 +320,7 @@ export function parseRecordItem(
   const by = typeof raw.by === "string" ? raw.by : context.defaultBy;
   if (by === undefined) {
     errors.push(
-      "no actor to record under: pass by (--by) or set git user.email",
+      "by is required: pass --by <actor> or a by key, as human:<id>, agent:<name>, or process:<name>",
     );
   }
   if (raw.suggest !== undefined && typeof raw.suggest !== "boolean") {

@@ -243,6 +243,7 @@ describe("renderCheck: v4 tags, reasons, and worklist", () => {
         pending: [],
         requests: 0,
         pairs: [],
+        scope: "store",
       },
     });
     return { r, report, code: code.claim, att: att.claim };

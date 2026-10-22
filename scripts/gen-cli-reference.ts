@@ -96,7 +96,7 @@ export function renderReference(): string {
     "",
     `Schema version: \`${MODEL_VERSION}\`. Every JSON envelope carries \`ok\`, \`action\`, and \`schemaVersion\`; most carry a \`next\` hint.`,
     "",
-    "Exit codes: `0` clean, `2` gating (a `changed`, `orphaned`, `ambiguous`, `expired`, or `refuted` verdict on an enforced claim, or `moved` under `--fail-on warn`), `1` operational error (bad flag, no store, missing file).",
+    "Exit codes: `0` clean or warnings only, `2` gating (on an enforced claim: a `changed`, `orphaned`, or `ambiguous` side, a `refuted` judge verdict, a conflict, or `expired` under `--doc`; under `--fail-on warn`, any warning also exits `2`), `1` operational error (bad flag, no store, missing file, `check --doc` on a path with no registered claims).",
     "",
     "Run `hibi <command> --help` for the same tables in the terminal; it never runs the command.",
     "",

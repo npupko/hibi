@@ -14,7 +14,8 @@
 
 import { readFile } from "node:fs/promises";
 import { isAbsolute, join, relative } from "node:path";
-import type { AstAnalyzer } from "./algo/resolve.ts";
+import { type AstAnalyzer, resolveClaimSides } from "./algo/resolve.ts";
+import { documentIdForPath } from "./core/ids.ts";
 import type {
   Claim,
   ClaimKind,
@@ -62,9 +63,11 @@ import {
   type RegionSpec,
   recordClaim,
 } from "./engine/record.ts";
+import { referenceTexts } from "./engine/reference.ts";
 import {
   assertAliasKnown,
   isAliasedFile,
+  type ResolvedFile,
   resolveFile,
 } from "./engine/repos.ts";
 import { type RetireResult, retire } from "./engine/retire.ts";
@@ -74,6 +77,7 @@ import {
   type SupersedeResult,
   supersede,
 } from "./engine/supersede.ts";
+import { normalizePath } from "./fs.ts";
 import { TypeSafeHttp } from "./judge/http.ts";
 import { JevJudge } from "./judge/jev.ts";
 import type { Judge } from "./judge/types.ts";
@@ -152,6 +156,7 @@ export {
   type SupersedeInput,
   type SupersedeResult,
 } from "./engine/supersede.ts";
+export { normalizePath } from "./fs.ts";
 export {
   cacheKey,
   canonicalJson,
@@ -164,8 +169,10 @@ export {
   choiceConfidence,
   type EvidenceKind,
   type Judge,
+  JudgeError,
   type JudgeResponse,
   JudgeUnavailable,
+  MAX_EVIDENCE_CHARS,
   noulConfidence,
   type Region as JudgeRegion,
   type RegionKind,
@@ -246,6 +253,21 @@ export interface CheckCall {
 
 const SKIP_DIRS = new Set(["node_modules", ".git", ".claims", "dist"]);
 
+/** Why `record` or `reanchor` refuses an evidence file it cannot read. */
+function recordRefusal(
+  file: string,
+  resolved: Extract<ResolvedFile, { unavailable: true }>,
+): Error {
+  if (resolved.escapes) {
+    return new Error(
+      `${file}: ${resolved.reason}; an evidence file must be inside ${resolved.alias === undefined ? "the anchor root" : `the directory of repo alias "${resolved.alias}"`}.`,
+    );
+  }
+  return new Error(
+    `${resolved.reason}; a claim is recorded against text on disk, so check out the sibling repo first.`,
+  );
+}
+
 export class Engine {
   private constructor(
     readonly store: ClaimStore,
@@ -295,16 +317,6 @@ export class Engine {
     }
   }
 
-  /** Read an evidence file, resolving a sibling-repo alias; null when missing or unavailable. */
-  private async readEvidence(
-    config: Config,
-    file: string,
-  ): Promise<string | null> {
-    const resolved = resolveFile(config, file, this.store.anchorRoot);
-    if ("unavailable" in resolved) return null;
-    return this.readAnchored(resolved.path);
-  }
-
   /**
    * The `claim_context` function for a set of claims (SPEC 8.3): each claim's
    * heading path and paragraph, read from its document's current text. A
@@ -325,9 +337,11 @@ export class Engine {
 
   /**
    * The contradiction and duplicate pass (SPEC 9) over the live claims of
-   * active documents. Cached pairs cost no judge call.
+   * active documents. Cached pairs cost no judge call. With `documentId`,
+   * only pairs with at least one claim on that document are judged
+   * (`check --doc`, `audit`); pairing still sees every live claim.
    */
-  async conflictPass(): Promise<ConflictPassResult> {
+  async conflictPass(documentId?: string): Promise<ConflictPassResult> {
     const config = await this.store.config();
     const active = new Set(
       (await this.store.allDocuments())
@@ -337,14 +351,25 @@ export class Engine {
     const claims = (await this.store.allClaims()).filter(
       (c) => c.enforcement !== "retired" && active.has(c.documentId),
     );
+    const scope =
+      documentId === undefined
+        ? undefined
+        : new Set(
+            claims.filter((c) => c.documentId === documentId).map((c) => c.id),
+          );
     return runConflictPass({
       store: this.store,
       judge: this.judgeFor(config),
       claims,
       context: await this.contextFor(claims),
       threshold: config.judge.threshold,
-      model: config.judge.model,
+      scope,
     });
+  }
+
+  /** A user-supplied path as the store keys it (`normalizePath`). */
+  private norm(p: string): string {
+    return normalizePath(this.store.anchorRoot, p);
   }
 
   /**
@@ -363,14 +388,22 @@ export class Engine {
     const claims = await this.store.allClaims();
     const evidenceFiles = claims.flatMap((c) => c.evidence.map((b) => b.file));
     const analyzer = await this.analyzerFor(evidenceFiles);
-    let onlyFiles = opts.onlyFiles ? new Set(opts.onlyFiles) : undefined;
+    let onlyFiles = opts.onlyFiles
+      ? new Set([...opts.onlyFiles].map((f) => this.norm(f)))
+      : undefined;
     let onlyDocument: string | undefined;
     if (opts.doc !== undefined) {
-      const scope = await documentScope(this.store, opts.doc);
+      const doc = this.norm(opts.doc);
+      const scope = await documentScope(this.store, doc);
+      if (!claims.some((c) => c.documentId === scope.documentId)) {
+        throw new Error(
+          `no claims are registered for ${doc}; run hibi audit --doc ${doc}`,
+        );
+      }
       onlyFiles = scope.files;
       onlyDocument = scope.documentId;
     }
-    const pass = await this.conflictPass();
+    const pass = await this.conflictPass(onlyDocument);
     const options: CheckOptions = {
       ast: analyzer,
       failOn: opts.failOn,
@@ -386,18 +419,18 @@ export class Engine {
   /** Record a claim. The doc span's text is the claim's sentence. */
   async record(call: RecordCall): Promise<RecordResult> {
     const config = await this.store.config();
-    const evidence = call.evidence ?? [];
-    const docContent = await this.readAnchored(call.docPath);
+    const evidence = (call.evidence ?? []).map((t) => ({
+      ...t,
+      file: this.norm(t.file),
+    }));
+    const docPath = this.norm(call.docPath);
+    const docContent = await this.readAnchored(docPath);
     const evidenceContents: Record<string, string | null> = {};
     for (const target of evidence) {
       if (target.file in evidenceContents) continue;
       assertAliasKnown(config, target.file);
       const resolved = resolveFile(config, target.file, this.store.anchorRoot);
-      if ("unavailable" in resolved) {
-        throw new Error(
-          `${resolved.reason}; a claim is recorded against text on disk, so check out the sibling repo first.`,
-        );
-      }
+      if ("unavailable" in resolved) throw recordRefusal(target.file, resolved);
       evidenceContents[target.file] = await this.readAnchored(resolved.path);
     }
     const analyzer =
@@ -406,7 +439,7 @@ export class Engine {
         : undefined;
     const contents: RecordContents = { docContent, evidenceContents };
     const input: RecordInput = {
-      docPath: call.docPath,
+      docPath,
       docSpec:
         call.docQuote !== undefined ? { quote: call.docQuote } : call.docRange,
       kind: call.kind,
@@ -428,13 +461,14 @@ export class Engine {
    * or matches an ignore glob. A covered row's `duplicateOf` comes from the
    * contradiction pass, run here on demand.
    */
-  async audit(docPath: string): Promise<AuditReport> {
+  async audit(path: string): Promise<AuditReport> {
+    const docPath = this.norm(path);
     const text = await this.readAnchored(docPath);
     if (text === null) {
       throw new Error(`Document not found on disk: ${docPath}`);
     }
     const config = await this.store.config();
-    const pass = await this.conflictPass();
+    const pass = await this.conflictPass(documentIdForPath(docPath));
     return runAudit({
       store: this.store,
       judge: this.judgeFor(config),
@@ -466,10 +500,38 @@ export class Engine {
     claimId: string,
     opts: { by: string; note?: string; ack?: AckTarget },
   ): Promise<AttestResult> {
-    return attestClaim({ store: this.store, claimId, ...opts });
+    const claim = await this.store.getClaim(claimId);
+    let reference: Parameters<typeof attestClaim>[0]["reference"];
+    if (claim?.kind === "reference" && opts.ack?.kind === "review") {
+      // The verdict `check` judges now: same sides, same request.
+      const config = await this.store.config();
+      const docText = await this.readAnchored(claim.doc.file);
+      const evidence = new Map<string, string | null>();
+      const unavailable = new Map<string, string>();
+      for (const b of claim.evidence) {
+        const r = resolveFile(config, b.file, this.store.anchorRoot);
+        if ("unavailable" in r) unavailable.set(b.file, r.reason);
+        else evidence.set(b.file, await this.readAnchored(r.path));
+      }
+      const sides = resolveClaimSides(claim, {
+        doc: docText,
+        evidence,
+        unavailable,
+      });
+      reference = {
+        model: this.judgeFor(config).model,
+        current: referenceTexts(claim, sides, docText),
+      };
+    }
+    return attestClaim({ store: this.store, claimId, ...opts, reference });
   }
 
-  /** Re-anchor an existing claim against current content. */
+  /**
+   * Re-anchor an existing claim against current content. `evidence` replaces
+   * a `code` claim's spans; `reference` replaces a `reference` claim's span.
+   * An evidence side in a sibling repo that is not checked out keeps its
+   * stored bundle, with a warning.
+   */
   async reanchor(
     claimId: string,
     opts: {
@@ -477,45 +539,69 @@ export class Engine {
       docQuote?: string;
       docRange?: RegionSpec;
       evidence?: EvidenceTarget[];
+      reference?: EvidenceTarget;
       ref?: string;
       dryRun?: boolean;
     } = {},
   ): Promise<ReanchorResult> {
     const claim = await this.store.getClaim(claimId);
     if (!claim) throw new Error(`No claim ${claimId} in the store.`);
+    if (opts.evidence !== undefined && claim.kind !== "code") {
+      throw new Error(
+        `claim ${claim.id} is a ${claim.kind} claim; --code-file, --code-quote, and --code-range are for code claims${claim.kind === "reference" ? "; pass --ref-file with --ref-quote or --ref-range" : ""}.`,
+      );
+    }
+    if (opts.reference !== undefined && claim.kind !== "reference") {
+      throw new Error(
+        `claim ${claim.id} is a ${claim.kind} claim; --ref-file, --ref-quote, and --ref-range are for reference claims.`,
+      );
+    }
     const document = await this.store.getDocument(claim.documentId);
 
-    const docFile = opts.doc ?? (claim.doc.file || document?.path);
+    const newDoc = opts.doc === undefined ? undefined : this.norm(opts.doc);
+    const docFile = newDoc ?? (claim.doc.file || document?.path);
     const docContent = docFile ? await this.readAnchored(docFile) : null;
-    if (opts.doc !== undefined && docContent === null) {
-      throw new Error(`Document not found on disk: ${opts.doc}`);
+    if (newDoc !== undefined && docContent === null) {
+      throw new Error(`Document not found on disk: ${newDoc}`);
     }
     const config = await this.store.config();
+    const targets = (
+      opts.reference !== undefined ? [opts.reference] : opts.evidence
+    )?.map((t) => ({ ...t, file: this.norm(t.file) }));
     const evidenceContents: Record<string, string | null> = {};
-    for (const bundle of claim.evidence) {
-      if (bundle.file in evidenceContents) continue;
-      evidenceContents[bundle.file] = await this.readEvidence(
-        config,
-        bundle.file,
-      );
+    const unavailable = new Map<string, string>();
+    if (targets === undefined) {
+      for (const bundle of claim.evidence) {
+        if (bundle.file in evidenceContents) continue;
+        const r = resolveFile(config, bundle.file, this.store.anchorRoot);
+        if ("unavailable" in r) {
+          unavailable.set(bundle.file, r.reason);
+          evidenceContents[bundle.file] = null;
+        } else {
+          evidenceContents[bundle.file] = await this.readAnchored(r.path);
+        }
+      }
     }
-    for (const target of opts.evidence ?? []) {
+    for (const target of targets ?? []) {
       if (target.file in evidenceContents) continue;
       assertAliasKnown(config, target.file);
-      evidenceContents[target.file] = await this.readEvidence(
-        config,
-        target.file,
-      );
+      const r = resolveFile(config, target.file, this.store.anchorRoot);
+      if ("unavailable" in r) throw recordRefusal(target.file, r);
+      evidenceContents[target.file] = await this.readAnchored(r.path);
     }
     const analyzer = await this.analyzerFor(Object.keys(evidenceContents));
 
-    const contents: RecordContents = { docContent, evidenceContents };
+    const contents: RecordContents = {
+      docContent,
+      evidenceContents,
+      unavailable,
+    };
     const input: ReanchorInput = {
       claimId,
-      docPath: opts.doc,
+      docPath: newDoc,
       docSpec:
         opts.docQuote !== undefined ? { quote: opts.docQuote } : opts.docRange,
-      evidence: opts.evidence,
+      evidence: targets,
       ref: opts.ref,
       analyzer,
       dryRun: opts.dryRun,
@@ -586,7 +672,7 @@ export class Engine {
         readDoc: (rel) => this.readAnchored(rel),
         reanchor: (id, o) => this.reanchor(id, o),
       },
-      input,
+      { ...input, from: this.norm(input.from), to: this.norm(input.to) },
     );
   }
 
@@ -596,7 +682,12 @@ export class Engine {
     successorPath?: string,
     opts: { dryRun?: boolean } = {},
   ): Promise<ArchiveResult> {
-    return archiveDocument(this.store, docPath, successorPath, opts);
+    return archiveDocument(
+      this.store,
+      this.norm(docPath),
+      successorPath === undefined ? undefined : this.norm(successorPath),
+      opts,
+    );
   }
 
   /** Withdraw a claim: enforcement → `retired`. Idempotent. */
@@ -620,7 +711,7 @@ export class Engine {
         (await this.store.allDocuments()).map((d) => [d.id, d.lifecycle]),
       ),
       state: opts.state ?? "all",
-      path: opts.path,
+      path: opts.path === undefined ? undefined : this.norm(opts.path),
     });
   }
 }

@@ -7,8 +7,8 @@
 
 import { ClaimKind } from "../core/model.ts";
 import { FAIL_ON } from "../engine/check.ts";
-import { MAX_EVIDENCE_CHARS } from "../engine/evidence.ts";
 import { LIST_STATES } from "../engine/list.ts";
+import { MAX_EVIDENCE_CHARS } from "../judge/types.ts";
 
 export interface OptionSpec {
   /** Long flag name without the leading dashes. */
@@ -192,7 +192,7 @@ const CHECK_OPTIONS: OptionSpec[] = [
     type: "string",
     values: FAIL_ON,
     placeholder: "<level>",
-    help: "When to exit 2: gating (default), warn (also on moved), never.",
+    help: "When to exit 2: gating (default); warn: any warning also fails; never: always exit 0.",
   },
 ];
 
@@ -217,12 +217,12 @@ export const COMMANDS: CommandSpec[] = [
     summary:
       "Record a claim: a document sentence, its kind, and where its truth can be observed.",
     description:
-      "The doc span's text is the claim's sentence. --kind is required: code (one or more code spans), reference (one span in another document), or attested (no span; a ttl, and optionally sources and a procedure). A new claim is enforced (it gates) unless --suggest is passed. It gets one vouch attestation by --by, or by human:<git user.email> when --by is absent. Agents should send a JSON array on stdin with --from-file -; each item has doc, docQuote or docRange, kind, code: [{file, quote | range}], ref: {file, quote | range}, sources: [{id?, resource, title?}], procedure: {instructions, steps?}, ttl, owner, by, suggest. Every item is validated first and every problem is reported, one line each; the batch is all or nothing.",
+      "The doc span's text is the claim's sentence. --kind is required: code (one or more code spans), reference (one span in another document), or attested (no span; a ttl, and optionally sources and a procedure). A new claim is enforced (it gates) unless --suggest is passed. It gets one vouch attestation by --by (or the item's by), which is required. Agents should send a JSON array on stdin with --from-file -; each item has doc, docQuote or docRange, kind, code: [{file, quote | range}], ref: {file, quote | range}, sources: [{id?, resource, title?}], procedure: {instructions, steps?}, ttl, owner, by, suggest. Every item is validated first and every problem is reported, one line each; the batch is all or nothing.",
     usage: [
       "hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind code --code-file <path> (--code-quote <text> | --code-range L1:L9) [options]",
       "hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind reference --ref-file <path> (--ref-quote <text> | --ref-range L1:L3) [options]",
       "hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind attested --ttl <duration> [--source <id>=<resource>] [--instructions <text>] [options]",
-      "hibi record --from-file <path|->",
+      "hibi record --from-file <path|-> [--by <actor>]",
     ],
     options: [
       {
@@ -275,19 +275,19 @@ export const COMMANDS: CommandSpec[] = [
         name: "by",
         type: "string",
         placeholder: "<actor>",
-        help: "The actor vouching for the claim. Default: human:<git user.email>.",
+        help: "The actor vouching for the claim: human:<id>, agent:<name>, or process:<name>. Required, here or as each item's by; with --from-file it is the default for items without by.",
       },
       {
         name: "from-file",
         type: "string",
         placeholder: "<path|->",
-        help: "Record a JSON array of claim items (- reads stdin). All or nothing; no other record flags.",
+        help: "Record a JSON array of claim items (- reads stdin). All or nothing; no other record flags except --by.",
       },
     ],
     examples: [
-      'hibi record --doc README.md --doc-quote "Retries are capped at 5 attempts" --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5"',
-      'hibi record --doc docs/pricing.md --doc-quote "Pro costs $29/month." --kind attested --ttl P90D --source stripe=https://dashboard.stripe.com/products/prod_123 --instructions "Open the Stripe dashboard and report the Pro monthly price."',
-      'echo \'[{"doc":"README.md","docQuote":"Retries are capped at 5 attempts","kind":"code","code":[{"file":"src/retry.ts","quote":"MAX_ATTEMPTS = 5"}]}]\' | hibi record --from-file -',
+      'hibi record --doc README.md --doc-quote "Retries are capped at 5 attempts" --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" --by agent:opus',
+      'hibi record --doc docs/pricing.md --doc-quote "Pro costs $29/month." --kind attested --ttl P90D --source stripe=https://dashboard.stripe.com/products/prod_123 --instructions "Open the Stripe dashboard and report the Pro monthly price." --by human:alice@example.com',
+      'echo \'[{"doc":"README.md","docQuote":"Retries are capped at 5 attempts","kind":"code","code":[{"file":"src/retry.ts","quote":"MAX_ATTEMPTS = 5"}]}]\' | hibi record --from-file - --by agent:opus',
     ],
   },
   {
@@ -295,7 +295,7 @@ export const COMMANDS: CommandSpec[] = [
     summary:
       "Verify every claim against the working tree and exit 0 (clean), 2 (gating), or 1 (error).",
     description:
-      "Resolves every span, consults the judge cache (asking the judge on a miss; without TYPESAFE_API_KEY the result is pending), runs the contradiction pass over the whole store, and lists the worklist: claims an agent should re-check. Writes nothing but judge cache entries. --since scopes the verdicts to claims touching files changed since a git ref; --doc scopes them to one document, where expired also gates. Warnings (moved, review, pending, unavailable, expired in a whole-store check) exit 0 unless --fail-on warn.",
+      "Resolves every span, consults the judge cache (asking the judge on a miss; without TYPESAFE_API_KEY the result is pending), runs the contradiction pass, and lists the worklist: claims an agent should re-check. Writes nothing but judge cache entries. --since scopes the verdicts to claims touching files changed since a git ref; --doc scopes them to one document, where expired also gates, and judges only the contradiction pairs with a claim in that document. --doc on a path with no registered claims is an error (exit 1). Warnings (moved, review, pending, unavailable, expired in a whole-store check) exit 0 unless --fail-on warn.",
     options: CHECK_OPTIONS,
     examples: [
       "hibi check",
@@ -339,7 +339,7 @@ export const COMMANDS: CommandSpec[] = [
     summary:
       "One row per region of a document: the claim that covers it, or the judge's triage kind.",
     description:
-      "Splits the document into regions, matches them to live claims by the claim's doc anchor, and triages uncovered regions with the judge (cached). Kinds: code, reference, attested (record them), unverifiable (rewrite as an attributed opinion, or remove), not-a-claim, unsure (triage confidence below judge.threshold), pending (judge unavailable). Recording is never automatic.",
+      "Splits the document into regions, matches them to live claims by the claim's doc anchor, and triages uncovered regions with the judge (cached). Kinds: code, reference, attested (record them), unverifiable (rewrite as an attributed opinion, or remove), not-a-claim, unsure (triage confidence below judge.threshold), pending (judge unavailable or its answer unusable). The contradiction pass judges only pairs with a claim in this document. Recording is never automatic.",
     options: [
       {
         name: "doc",
@@ -364,7 +364,7 @@ export const COMMANDS: CommandSpec[] = [
     summary:
       "Re-resolve a claim's spans and store the new baseline; or list candidate locations with --suggest.",
     description:
-      "Without span flags each side re-localizes through its stored selectors. A side that is not found is refused unless an explicit new span is given for it. --doc moves the claim to a different document (requires a doc span). The claim's sentence is refreshed from the new doc span.",
+      "Without span flags each side re-localizes through its stored selectors. A side that is not found is refused unless an explicit new span is given for it; an evidence side in a sibling repo that is not checked out is kept as stored, with a warning. --doc moves the claim to a different document (requires a doc span). --code-* flags replace a code claim's spans, --ref-* flags a reference claim's span. The claim's sentence is refreshed from the new doc span.",
     positional: {
       name: "claim-id",
       help: "The claim to reanchor.",
@@ -379,6 +379,7 @@ export const COMMANDS: CommandSpec[] = [
       },
       ...DOC_SPAN,
       ...codeSpan(false),
+      ...REF_SPAN,
       {
         name: "suggest",
         type: "boolean",
@@ -454,8 +455,8 @@ export const COMMANDS: CommandSpec[] = [
     name: "evidence",
     summary:
       "Submit evidence an agent collected; the judge decides whether it supports each claim.",
-    description: `Reads a JSON array (or one object) of {claimId, evidence, source, summary, by}; an item without by takes --by. The whole batch is validated before the judge is asked; one bad item rejects it. A supports verdict at or above judge.threshold appends an evidence attestation, which resets the ttl. The verdict is cached by model, sentence, context, evidence, and source; raw evidence text is never stored. Without TYPESAFE_API_KEY or with the network down, an item is pending and nothing is written for it. Evidence is limited to ${MAX_EVIDENCE_CHARS} characters per item.`,
-    usage: ["hibi evidence --from-file <path|-> --by <actor>"],
+    description: `Reads a JSON array (or one object) of {claimId, evidence, source, summary, by}; an item without by takes --by, which is required unless every item has by. Evidence applies to attested claims; a reference claim is judged from the referenced document. The whole batch is validated before the judge is asked; one bad item rejects it. A supports verdict at or above judge.threshold appends an evidence attestation, which resets the ttl. The verdict is cached by model, sentence, context, evidence, and source; raw evidence text is never stored. Without TYPESAFE_API_KEY or with the network down, an item is pending and nothing is written for it. Evidence is limited to ${MAX_EVIDENCE_CHARS} characters per item.`,
+    usage: ["hibi evidence --from-file <path|-> [--by <actor>]"],
     options: [
       {
         name: "from-file",
@@ -468,8 +469,7 @@ export const COMMANDS: CommandSpec[] = [
         name: "by",
         type: "string",
         placeholder: "<actor>",
-        help: "The actor submitting the evidence, for items without by: human:<id>, agent:<name>, or process:<name>.",
-        required: true,
+        help: "The actor submitting the evidence, for items without by: human:<id>, agent:<name>, or process:<name>. Required unless every item has by.",
       },
     ],
     examples: [
@@ -481,7 +481,7 @@ export const COMMANDS: CommandSpec[] = [
     summary:
       "Vouch for a claim, or acknowledge a review or conflict finding with a note.",
     description:
-      "Without --ack this records a vouch. Only a human: vouch resets the ttl; an agent: or process: vouch is recorded and does not. --ack review acknowledges the claim's newest supports verdict; --ack conflict:<id> acknowledges a contradiction with another claim and records the ack on both. An ack needs --note and never resets the ttl.",
+      "Without --ack this records a vouch. Only a human: vouch resets the ttl; an agent: or process: vouch is recorded and does not. --ack review acknowledges the claim's current supports verdict (for a reference claim, the one for its sentence and referenced span as they read now; for an attested claim, the newest); --ack conflict:<id> acknowledges a contradiction with another claim and records the ack on both. An ack needs --note and never resets the ttl.",
     positional: {
       name: "claim-id",
       help: "The claim to attest.",
@@ -511,6 +511,7 @@ export const COMMANDS: CommandSpec[] = [
     examples: [
       'hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --note "checked Stripe, still $29"',
       'hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --ack conflict:clm_9f8e7d6c5b4a3210 --note "different plans"',
+      'hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --ack review --note "the referenced page says the same in other words"',
     ],
   },
   {

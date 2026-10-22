@@ -60,7 +60,6 @@ const judge = new FakeJudge({
           kind: "narrative",
           kindProbabilities: SURE_NARRATIVE,
           kindConfidence: choiceConfidence(SURE_NARRATIVE),
-          checkable: 0.1,
         }
       : {
           kind: "factual_claim",
@@ -68,7 +67,6 @@ const judge = new FakeJudge({
           kindConfidence: choiceConfidence(SURE_FACT),
           evidenceKind: "external",
           evidenceProbabilities: SURE_EXTERNAL,
-          checkable: 0.9,
         },
   supports: () =>
     supportsAnswer({ supports: 0.95, refutes: 0.03, does_not_address: 0.02 }),
@@ -266,6 +264,8 @@ describe("the whole loop through the CLI", () => {
       "src/retry.ts",
       "--code-quote",
       "MAX_ATTEMPTS = 5",
+      "--by",
+      "human:dev@example.com",
     ]);
     expect(code.code).toBe(0);
     expect(code.json.kind).toBe("code");
@@ -283,6 +283,8 @@ describe("the whole loop through the CLI", () => {
       "docs/billing.md",
       "--ref-quote",
       "Refunds are issued within 14 days.",
+      "--by",
+      "human:dev@example.com",
     ]);
     expect(reference.code).toBe(0);
     expect(reference.json.evidence).toBe("docs/billing.md");
@@ -304,6 +306,8 @@ describe("the whole loop through the CLI", () => {
       "stripe=https://dashboard.stripe.com/products/prod_123",
       "--instructions",
       "Open the Stripe dashboard and report the Pro monthly price.",
+      "--by",
+      "human:dev@example.com",
     ]);
     expect(attested.code).toBe(0);
     ids.attested = attested.json.id as string;
@@ -325,6 +329,26 @@ describe("the whole loop through the CLI", () => {
     expect(stored.attestations[0]?.by).toBe("human:dev@example.com");
   });
 
+  test("record without --by is refused; git user.email is not a default", async () => {
+    const res = await hibi([
+      "record",
+      "--doc",
+      "README.md",
+      "--doc-quote",
+      CODE_SENTENCE,
+      "--kind",
+      "code",
+      "--code-file",
+      "src/retry.ts",
+      "--code-quote",
+      "MAX_ATTEMPTS = 5",
+    ]);
+    expect(res.code).toBe(1);
+    expect(res.json.errors).toEqual([
+      "by is required: pass --by <actor> or a by key, as human:<id>, agent:<name>, or process:<name>",
+    ]);
+  });
+
   test("an unknown sibling-repo alias is refused at record time", async () => {
     const res = await hibi([
       "record",
@@ -338,6 +362,8 @@ describe("the whole loop through the CLI", () => {
       "api:src/limits.ts",
       "--code-quote",
       "x",
+      "--by",
+      "human:dev@example.com",
     ]);
     expect(res.code).toBe(1);
     expect(res.json.errors).toEqual([
@@ -364,7 +390,7 @@ describe("the whole loop through the CLI", () => {
     expect(att?.procedure).not.toBeNull();
     expect(res.json.summary).toMatchObject({
       worklist: 2,
-      conflictPass: { pairs: 0, requests: 0, pending: 0 },
+      conflictPass: { pairs: 0, requests: 0, pending: 0, scope: "store" },
     });
 
     const pending = await hibi(["list", "--state", "pending"]);
@@ -372,6 +398,37 @@ describe("the whole loop through the CLI", () => {
     expect(
       (pending.json.claims as ListRow[]).map((r) => r.claimId).sort(),
     ).toEqual([ids.attested, ids.reference].sort());
+  });
+
+  test("check --doc on a document with no registered claims exits 1", async () => {
+    const res = await hibi(["check", "--doc", "AGENTS.md"]);
+    expect(res.code).toBe(1);
+    expect(res.json).toEqual({
+      ok: false,
+      error:
+        "no claims are registered for AGENTS.md; run hibi audit --doc AGENTS.md",
+    });
+  });
+
+  test("evidence is for attested claims only; code and reference items reject the batch", async () => {
+    const res = await hibi(
+      ["evidence", "--from-file", "-", "--by", "agent:x"],
+      {
+        judge: true,
+        stdin: [
+          {
+            claimId: ids.reference,
+            evidence: "Refunds take 14 days.",
+            source: "docs/billing.md",
+            summary: "billing page says 14 days",
+          },
+        ],
+      },
+    );
+    expect(res.code).toBe(1);
+    expect(res.json.errors).toEqual([
+      `item 0 (${ids.reference}): claim ${ids.reference} is a reference claim; evidence applies to attested claims, and reference claims are judged from the referenced document`,
+    ]);
   });
 
   test("evidence with supporting text attests the claim", async () => {
@@ -499,6 +556,8 @@ describe("the whole loop through the CLI", () => {
       "attested",
       "--ttl",
       "P30D",
+      "--by",
+      "human:dev@example.com",
     ]);
     expect(faq.code).toBe(0);
     ids.faq = faq.json.id as string;
@@ -540,6 +599,9 @@ describe("the whole loop through the CLI", () => {
     const scoped = await hibi(["check", "--doc", "docs/pricing.md"]);
     expect(scoped.code).toBe(2);
     expect(verdicts(scoped).map((x) => x.claimId)).toEqual([ids.attested]);
+    expect(scoped.json.summary).toMatchObject({
+      conflictPass: { pairs: 1, scope: "doc" },
+    });
 
     const ack = await hibi([
       "attest",

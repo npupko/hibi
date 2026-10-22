@@ -89,14 +89,6 @@
           ]
         }
       }
-    },
-    "checkable_{{i}}": {
-      "type": "noul",
-      "instructions": "Could `regions[{{i}}].text` be shown true or false by looking at evidence?",
-      "criteria": {
-        "true": "It makes a specific assertion that someone could confirm or refute by looking at something",
-        "false": "It is vague, subjective, an instruction, a heading, or about intent"
-      }
     }
   }
 }

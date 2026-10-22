@@ -40,11 +40,14 @@ const ROWS: Record<string, { text: string; values: Value[] }> = {
     values: [{ kind: "version", raw: "1.2", normalized: "1.2" }],
   },
   "currency-sign": {
-    text: "Pro costs $29/month, € 5 per seat, £1,299.00 a year.",
+    text: "Pro costs $29/month, € 5 per seat, £1,299.00 a year; raised $5m, $2.5k, $1.25bn.",
     values: [
       { kind: "money", raw: "$29", normalized: "29", unit: "USD" },
       { kind: "money", raw: "€ 5", normalized: "5", unit: "EUR" },
       { kind: "money", raw: "£1,299.00", normalized: "1299", unit: "GBP" },
+      { kind: "money", raw: "$5m", normalized: "5000000", unit: "USD" },
+      { kind: "money", raw: "$2.5k", normalized: "2500", unit: "USD" },
+      { kind: "money", raw: "$1.25bn", normalized: "1250000000", unit: "USD" },
     ],
   },
   "currency-code-after": {
@@ -189,6 +192,41 @@ describe("compareValues", () => {
     expect(cmp("Ships 2026-10-01.", "Ships November 1, 2026.")).toEqual({
       differs: true,
       label: "dates differ: 2026-10-01 vs 2026-11-01",
+    });
+  });
+
+  test("versions compare without a leading v and trailing .0 parts", () => {
+    expect(cmp("Needs v1.2.", "Needs 1.2.0.").differs).toBe(false);
+    expect(cmp("Needs v4.", "Needs version 4.0.").differs).toBe(false);
+    expect(cmp("Needs v2.0.0-beta.1.", "Needs v2-beta.1.").differs).toBe(false);
+    expect(cmp("Needs v1.2.", "Needs 1.2.1.")).toEqual({
+      differs: true,
+      label: "versions differ: 1.2 vs 1.2.1",
+    });
+    expect(cmp("Needs v1.10.", "Needs 1.1.0.").differs).toBe(true);
+  });
+
+  test("a currency sign wins over the duration-short rule: $5m is money, not minutes", () => {
+    expect(extractValues("We raised $5m.")).toEqual([
+      { kind: "money", raw: "$5m", normalized: "5000000", unit: "USD" },
+    ]);
+    expect(cmp("We raised $5m.", "We raised $5,000,000.").differs).toBe(false);
+    expect(cmp("We raised $5m.", "We raised $6m.")).toEqual({
+      differs: true,
+      label: "numbers differ: 5000000 vs 6000000",
+    });
+    expect(cmp("We raised $5m.", "The job runs every 5m.").differs).toBe(false);
+  });
+
+  test("exclude leaves a group out (supports excludes the unitless number group)", () => {
+    const a = extractValues("Retries 3 times, $29.");
+    const b = extractValues("Retries 5 times, $29.");
+    expect(compareValues(a, b).differs).toBe(true);
+    expect(compareValues(a, b, { exclude: ["number"] }).differs).toBe(false);
+    const c = extractValues("Retries 3 times, $39.");
+    expect(compareValues(a, c, { exclude: ["number"] })).toEqual({
+      differs: true,
+      label: "numbers differ: 29 vs 39",
     });
   });
 

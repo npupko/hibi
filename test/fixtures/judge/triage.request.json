@@ -122,14 +122,6 @@
         }
       }
     },
-    "checkable_0": {
-      "type": "noul",
-      "instructions": "Could `regions[0].text` be shown true or false by looking at evidence?",
-      "criteria": {
-        "true": "It makes a specific assertion that someone could confirm or refute by looking at something",
-        "false": "It is vague, subjective, an instruction, a heading, or about intent"
-      }
-    },
     "kind_1": {
       "type": "choice",
       "instructions": {
@@ -171,14 +163,6 @@
             "The rest of this page walks through an example."
           ]
         }
-      }
-    },
-    "checkable_1": {
-      "type": "noul",
-      "instructions": "Could `regions[1].text` be shown true or false by looking at evidence?",
-      "criteria": {
-        "true": "It makes a specific assertion that someone could confirm or refute by looking at something",
-        "false": "It is vague, subjective, an instruction, a heading, or about intent"
       }
     },
     "kind_2": {
@@ -265,14 +249,6 @@
         }
       }
     },
-    "checkable_2": {
-      "type": "noul",
-      "instructions": "Could `regions[2].text` be shown true or false by looking at evidence?",
-      "criteria": {
-        "true": "It makes a specific assertion that someone could confirm or refute by looking at something",
-        "false": "It is vague, subjective, an instruction, a heading, or about intent"
-      }
-    },
     "kind_3": {
       "type": "choice",
       "instructions": {
@@ -314,14 +290,6 @@
             "The rest of this page walks through an example."
           ]
         }
-      }
-    },
-    "checkable_3": {
-      "type": "noul",
-      "instructions": "Could `regions[3].text` be shown true or false by looking at evidence?",
-      "criteria": {
-        "true": "It makes a specific assertion that someone could confirm or refute by looking at something",
-        "false": "It is vague, subjective, an instruction, a heading, or about intent"
       }
     },
     "kind_4": {
@@ -406,14 +374,6 @@
             "Users will love the new flow."
           ]
         }
-      }
-    },
-    "checkable_4": {
-      "type": "noul",
-      "instructions": "Could `regions[4].text` be shown true or false by looking at evidence?",
-      "criteria": {
-        "true": "It makes a specific assertion that someone could confirm or refute by looking at something",
-        "false": "It is vague, subjective, an instruction, a heading, or about intent"
       }
     }
   }

@@ -101,6 +101,25 @@ function numbers(s: string): string {
   return (s.match(/\d+(?:\.\d+)?/g) ?? []).join(",");
 }
 
+/**
+ * The located text widened to whole numbers at its edges, so a quote `= 5`
+ * that now matches the start of `= 50` reads `= 50`.
+ */
+function withWholeNumbers(text: string, region: Region): string {
+  const digit = (i: number) => /\d/.test(text[i] ?? "");
+  let start = region.start;
+  let end = region.end;
+  if (digit(start)) while (digit(start - 1)) start--;
+  if (digit(end - 1)) {
+    for (;;) {
+      if (digit(end)) end++;
+      else if (text[end] === "." && digit(end + 1)) end += 2;
+      else break;
+    }
+  }
+  return text.slice(start, end);
+}
+
 /** Resolve one anchor side against its current file text. */
 export function resolveSide(
   bundle: SelectorBundle,
@@ -175,23 +194,27 @@ export function resolveSide(
     };
   }
 
-  // AST reason label (code side, analyzer present).
+  // AST and value checks run only when the analyzer can parse the span: the
+  // analyzer is on and a grammar for the language is loaded.
+  const language = astSel?.language ?? valSel?.language;
+  const analysis =
+    language !== undefined && opts.ast
+      ? opts.ast.analyze(currentText, language, region)
+      : null;
+  const structural = analysis !== null;
+
+  // AST reason label (code side).
   let astLabel: string | undefined;
-  if (astSel && opts.ast) {
-    const analysis = opts.ast.analyze(currentText, astSel.language, region);
-    if (analysis) {
-      if (analysis.semanticHash !== astSel.semanticHash) {
-        astLabel =
-          analysis.structuralHash === astSel.structuralHash
-            ? "identifiers or literals renamed"
-            : "restructured";
-      }
-    }
+  if (astSel && analysis && analysis.semanticHash !== astSel.semanticHash) {
+    astLabel =
+      analysis.structuralHash === astSel.structuralHash
+        ? "identifiers or literals renamed"
+        : "restructured";
   }
 
-  // In-span literal check (code side, analyzer present).
+  // In-span literal check (code side).
   let valueLabel: string | undefined;
-  if (valSel && opts.ast) {
+  if (valSel && structural && opts.ast) {
     const extracted = opts.ast.extractValue(
       currentText,
       valSel.language,
@@ -206,9 +229,13 @@ export function resolveSide(
     }
   }
 
-  // Prose: a numeric token changed inside the span.
+  // Prose, or code without structural checks (--no-ast, or no grammar for
+  // the language): a numeric token changed inside the span.
   let numberLabel: string | undefined;
-  if (!astSel && !valSel && numbers(liveText) !== numbers(tq.exact)) {
+  if (
+    !structural &&
+    numbers(withWholeNumbers(currentText, region)) !== numbers(tq.exact)
+  ) {
     numberLabel = "a number in the sentence changed";
   }
 
@@ -444,6 +471,7 @@ export function assembleVerdict(
     warns: gate.warns,
     remediation: remediationFor({
       claimId: claim.id,
+      kind: claim.kind,
       doc: sides.doc.state,
       evidence,
       judge: gatingJudge,

@@ -12,7 +12,7 @@
  *
  * | rule | state | label |
  * |---|---|---|
- * | relation is not `does_not_address` and the sentence and the evidence hold different values of the same kind and unit | `refuted` | `value differs: numbers differ: 29 vs 39` |
+ * | relation is not `does_not_address` and the sentence and the evidence hold different values of the same kind and unit (money, unit-bearing numbers, versions, dates; not the unitless `number` group) | `refuted` | `value differs: numbers differ: 29 vs 39` |
  * | `supports` at or above threshold | `supported` | `evidence supports the sentence (confidence 0.94 >= threshold 0.8)` |
  * | `refutes` at or above threshold | `refuted` | `evidence refutes the sentence (confidence 0.92 >= threshold 0.8)` |
  * | `supports` or `refutes` below threshold | `review` | `evidence leans supports, confidence 0.55 below threshold 0.8` |
@@ -23,18 +23,22 @@
  * (SPEC 4.3). It changes no state.
  */
 
+import type { ClaimSides } from "../algo/resolve.ts";
 import type {
   Claim,
+  EvidenceState,
   ExtractedValue,
   JudgeCacheEntry,
   JudgeState,
 } from "../core/model.ts";
 import { cacheKey, type JudgeCache } from "../judge/cache.ts";
-import type { Answer } from "../judge/http.ts";
+import type { Answer, SystemOneRequest } from "../judge/http.ts";
 import { buildSupportsRequest, mapSupportsAnswers } from "../judge/jev.ts";
 import {
   type Judge,
+  JudgeError,
   JudgeUnavailable,
+  MAX_EVIDENCE_CHARS,
   type SupportsResult,
 } from "../judge/types.ts";
 import { claimContext } from "./context.ts";
@@ -46,6 +50,12 @@ export interface JudgeOutcome {
   /** The cache key of the verdict, when there is one (an `ack` names it). */
   key?: string;
 }
+
+/**
+ * Value groups the value rule ignores on `supports`: a bare number in the
+ * evidence (a count, an id, a line number) says too little to refute.
+ */
+export const SUPPORTS_EXCLUDED_GROUPS: readonly string[] = ["number"];
 
 function fmt(p: number): string {
   return p.toFixed(2);
@@ -83,9 +93,11 @@ export function supportsOutcome(
     };
   }
   if (values !== undefined) {
+    // Only money, unit-bearing numbers, versions, and dates can refute.
     const cmp = compareValues(
       values.sentence.map((v) => ({ ...v, raw: v.normalized })),
       values.evidence.map((v) => ({ ...v, raw: v.normalized })),
+      { exclude: SUPPORTS_EXCLUDED_GROUPS },
     );
     if (cmp.differs && cmp.label !== undefined) {
       return { state: "refuted", reasons: [`value differs: ${cmp.label}`] };
@@ -171,6 +183,80 @@ export function cachedSupportsOutcome(
   };
 }
 
+/** The anchor states in which the judge is consulted for a `reference` claim. */
+const JUDGEABLE: ReadonlySet<EvidenceState> = new Set<EvidenceState>([
+  "unchanged",
+  "moved",
+]);
+
+/** The texts a `reference` claim is judged on, as they read now. */
+export interface ReferenceTexts {
+  /** The current text of the claim's document. */
+  docText: string;
+  /** The current sentence: the located doc span. */
+  sentence: string;
+  /** The current text of the referenced span. */
+  referencedText: string;
+}
+
+/**
+ * Whether a `reference` claim can be judged from its resolved sides (SPEC
+ * 7.3): both sides `unchanged` or `moved` and both texts located. Otherwise
+ * the reason label says why the judge is not consulted.
+ */
+export function referenceTexts(
+  claim: Pick<Claim, "sentence">,
+  sides: ClaimSides,
+  docText: string | null,
+): { texts: ReferenceTexts } | { reason: string } {
+  const ev = sides.evidence[0];
+  if (!JUDGEABLE.has(sides.doc.state)) {
+    return {
+      reason: `not consulted while the doc side is ${sides.doc.state}`,
+    };
+  }
+  if (ev === undefined || !JUDGEABLE.has(ev.state)) {
+    return {
+      reason: `not consulted while the evidence side is ${ev?.state ?? "missing"}`,
+    };
+  }
+  if (docText === null || ev.liveText === null) {
+    return { reason: "not consulted; the referenced span has no located text" };
+  }
+  return {
+    texts: {
+      docText,
+      sentence: sides.doc.liveText ?? claim.sentence,
+      referencedText: ev.liveText,
+    },
+  };
+}
+
+/** The label for a referenced span over `MAX_EVIDENCE_CHARS`. */
+export const REFERENCE_TOO_LONG = `referenced span is longer than ${MAX_EVIDENCE_CHARS.toLocaleString("en-US")} characters`;
+
+/**
+ * The `supports` request and cache key for a `reference` claim as its texts
+ * read now. `check` judges with it and `attest --ack review` names its key,
+ * so both always agree on which verdict is current.
+ */
+export function referenceSupportsRequest(
+  model: string,
+  claim: Pick<Claim, "id" | "sentence" | "doc" | "evidence">,
+  texts: ReferenceTexts,
+): { request: SystemOneRequest; key: string } {
+  const request = buildSupportsRequest(model, {
+    sentence: texts.sentence,
+    context: claimContext(texts.docText, {
+      ...claim,
+      sentence: texts.sentence,
+    }),
+    evidence: texts.referencedText,
+    source: claim.evidence[0]?.file ?? "",
+  });
+  return { request, key: cacheKey(model, request) };
+}
+
 export interface JudgeReferenceInput {
   claim: Pick<Claim, "id" | "sentence" | "doc" | "evidence">;
   /** The current text of the claim's document. */
@@ -182,7 +268,7 @@ export interface JudgeReferenceInput {
   /** Absent means no judge can answer: a cache miss is `pending`. */
   judge?: Judge;
   cache: JudgeCache;
-  /** `config.judge.model`. */
+  /** The model in the cache key when no judge is given; otherwise `judge.model` is used. */
   model: string;
   /** `config.judge.threshold`. */
   threshold: number;
@@ -194,18 +280,23 @@ export interface JudgeReferenceInput {
 export async function judgeReference(
   input: JudgeReferenceInput,
 ): Promise<JudgeOutcome> {
-  const sentence = input.sentence ?? input.claim.sentence;
-  const request = buildSupportsRequest(input.model, {
-    sentence,
-    context: claimContext(input.docText, { ...input.claim, sentence }),
-    evidence: input.referencedText,
-    source: input.claim.evidence[0]?.file ?? "",
-  });
-  const key = cacheKey(input.model, request);
+  const texts: ReferenceTexts = {
+    docText: input.docText,
+    sentence: input.sentence ?? input.claim.sentence,
+    referencedText: input.referencedText,
+  };
+  if (texts.referencedText.length > MAX_EVIDENCE_CHARS) {
+    return { state: "pending", reasons: [REFERENCE_TOO_LONG] };
+  }
+  const { request, key } = referenceSupportsRequest(
+    input.judge?.model ?? input.model,
+    input.claim,
+    texts,
+  );
   const hit = await input.cache.get(key);
   const values = {
-    sentence: storedValues(sentence),
-    evidence: storedValues(input.referencedText),
+    sentence: storedValues(texts.sentence),
+    evidence: storedValues(texts.referencedText),
   };
   if (hit !== undefined) {
     const outcome = supportsOutcome(
@@ -225,14 +316,17 @@ export async function judgeReference(
   let response: Awaited<ReturnType<Judge["supports"]>>;
   try {
     response = await input.judge.supports({
-      sentence,
+      sentence: texts.sentence,
       context: (request.state as { claim_context: string }).claim_context,
-      evidence: input.referencedText,
+      evidence: texts.referencedText,
       source: (request.state as { evidence_source: string }).evidence_source,
     });
   } catch (e) {
     if (e instanceof JudgeUnavailable) {
       return { state: "pending", reasons: [`pending: ${e.message}`] };
+    }
+    if (e instanceof JudgeError) {
+      return { state: "pending", reasons: [`judge error: ${e.message}`] };
     }
     throw e;
   }

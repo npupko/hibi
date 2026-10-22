@@ -107,7 +107,22 @@ describe("remediationFor (the verdict-to-action menu)", () => {
     expect(rem?.actions[0]?.command).toBe(
       'hibi attest clm_x --by human:<you> --note "<what you checked>"',
     );
-    expect(rem?.actions[1]?.command).toContain('"claimId":"clm_x"');
+    expect(rem?.actions[1]?.command).toBe(
+      'echo \'[{"claimId":"clm_x","evidence":"<text>","source":"<where>","summary":"<one line>"}]\' | hibi evidence --from-file - --by agent:<name>',
+    );
+  });
+
+  test("evidence is offered only for attested claims", () => {
+    for (const kind of ["code", "reference"] as const) {
+      const expired = remediationFor(input({ kind, expired: true }));
+      expect(expired?.actions.map((a) => a.id)).toEqual(["attest"]);
+      const review = remediationFor(input({ kind, judge: "review" }));
+      expect(review?.actions.map((a) => a.id)).toEqual(["ack"]);
+    }
+    const attested = remediationFor(
+      input({ kind: "attested", judge: "review" }),
+    );
+    expect(attested?.actions.map((a) => a.id)).toEqual(["ack", "evidence"]);
   });
 
   test("expired outranks moved: no recommendation, reanchor kept last", () => {
@@ -138,17 +153,23 @@ describe("remediationFor (the verdict-to-action menu)", () => {
     expect(rem?.recommended).toBeNull();
     expect(rem?.actions.map((a) => a.id)).toEqual(["ack", "evidence"]);
     expect(rem?.actions[0]?.command).toBe(
-      'hibi attest clm_x --by <actor> --ack --note "<why>"',
+      'hibi attest clm_x --by <actor> --ack review --note "<why>"',
     );
   });
 
-  test("conflicts recommend reconcile naming the other claim, then ack", () => {
+  test("conflicts recommend reconcile naming the other claim, then one ack per other claim", () => {
     const rem = remediationFor(
-      input({ conflicts: [{ claimId: "clm_other" }] }),
+      input({
+        conflicts: [{ claimId: "clm_other" }, { claimId: "clm_third" }],
+      }),
     );
     expect(rem?.recommended).toBe("reconcile");
-    expect(rem?.actions.map((a) => a.id)).toEqual(["reconcile", "ack"]);
-    expect(rem?.actions[0]?.title).toBe("Reconcile with clm_other");
+    expect(rem?.actions.map((a) => a.id)).toEqual(["reconcile", "ack", "ack"]);
+    expect(rem?.actions[0]?.title).toBe("Reconcile with clm_other, clm_third");
+    expect(rem?.actions.slice(1).map((a) => a.command)).toEqual([
+      'hibi attest clm_x --by <actor> --ack conflict:clm_other --note "<why>"',
+      'hibi attest clm_x --by <actor> --ack conflict:clm_third --note "<why>"',
+    ]);
   });
 
   test("pending and unavailable add no action", () => {

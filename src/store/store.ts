@@ -77,13 +77,18 @@ export class ClaimStore {
     };
   }
 
-  /** Initialize a store; idempotent, never clobbers an existing config. */
+  /**
+   * Initialize a store; idempotent, never clobbers an existing config. An
+   * existing store of another version is refused with the same message as
+   * `open`: there is no upgrade path.
+   */
   static async init(location: string | StoreLocation): Promise<ClaimStore> {
     const s = new ClaimStore(resolveLocation(location));
+    const configPath = join(s.dir, "config.json");
+    if (await exists(configPath)) await s.assertVersion();
     await mkdir(s.dir, { recursive: true });
     for (const sub of Object.values(SUBDIRS))
       await mkdir(join(s.dir, sub), { recursive: true });
-    const configPath = join(s.dir, "config.json");
     if (!(await exists(configPath))) {
       await writeFile(
         configPath,
@@ -103,17 +108,28 @@ export class ClaimStore {
     if (!(await exists(configPath))) {
       throw new Error(`No claim store at ${s.dir}. Run \`hibi init\` first.`);
     }
-    const raw = JSON.parse(await readFile(configPath, "utf8")) as {
-      version?: unknown;
-    };
-    const found = typeof raw.version === "string" ? raw.version : "unknown";
-    if (found !== MODEL_VERSION) {
-      throw new Error(
-        `this claim store is version ${found}; hibi ${MODEL_VERSION} has no upgrade path from it. Remove ${s.dir}, run \`hibi init\`, and re-record.`,
-      );
-    }
+    await s.assertVersion();
     await s.config();
     return s;
+  }
+
+  /** Throws the "no upgrade path" error when config.json is not a v4 store. */
+  private async assertVersion(): Promise<void> {
+    let raw: { version?: unknown };
+    try {
+      raw = JSON.parse(await readFile(join(this.dir, "config.json"), "utf8"));
+    } catch (e) {
+      throw new Error(
+        `.claims/config.json is not valid JSON (${(e as Error).message}).`,
+      );
+    }
+    const found =
+      raw !== null && typeof raw.version === "string" ? raw.version : "unknown";
+    if (found !== MODEL_VERSION) {
+      throw new Error(
+        `this claim store is version ${found}; hibi ${MODEL_VERSION} has no upgrade path from it. Remove ${this.dir}, run \`hibi init\`, and re-record.`,
+      );
+    }
   }
 
   static async isInitialized(

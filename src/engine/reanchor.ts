@@ -8,7 +8,8 @@
  * claim's `sentence` is refreshed from the new doc span.
  *
  * Safety: a side that resolves `orphaned` and has no explicit replacement is
- * refused; an empty span is never stored. The result carries the before and
+ * refused; an empty span is never stored. An evidence side in a sibling repo
+ * that is not checked out keeps its stored bundle unchanged, with a warning. The result carries the before and
  * after quotes per side so the caller can see what moved.
  */
 
@@ -16,15 +17,16 @@ import { fuzzyLocate, regionText } from "../algo/localize.ts";
 import { textSimilarity } from "../algo/normalize.ts";
 import {
   type AstAnalyzer,
+  type EvidenceSide,
   type ResolveFiles,
-  resolveSides,
-  type SideResult,
-  worstState,
+  resolveClaimSides,
+  worstEvidenceState,
 } from "../algo/resolve.ts";
 import type {
   AnchorState,
   Claim,
   ClaimKind,
+  EvidenceState,
   Region,
   SelectorBundle,
 } from "../core/model.ts";
@@ -66,7 +68,7 @@ export interface ReanchorResult {
   claim: Claim;
   doc: AnchorState;
   /** Absent when the claim has no evidence span. */
-  evidence?: AnchorState;
+  evidence?: EvidenceState;
   before: { doc: SideQuote; evidence: SideQuote[] };
   after: { doc: SideQuote; evidence: SideQuote[] };
   warnings: string[];
@@ -153,12 +155,24 @@ function toResolveFiles(contents: RecordContents): ResolveFiles {
   return {
     doc: contents.docContent,
     evidence: new Map(Object.entries(contents.evidenceContents)),
+    unavailable: contents.unavailable,
   };
 }
 
-function orphanError(id: string, side: string, file: string): Error {
+function orphanError(
+  id: string,
+  side: "doc" | "evidence",
+  file: string,
+  kind: ClaimKind,
+): Error {
+  const flags =
+    side === "doc"
+      ? "--doc-quote/--doc-range"
+      : kind === "reference"
+        ? "--ref-file with --ref-quote/--ref-range"
+        : "--code-file with --code-quote/--code-range";
   return new Error(
-    `claim ${id}: the ${side} span in ${file} was not found (orphaned). Pass an explicit new span for that side (${side === "doc" ? "--doc-quote/--doc-range" : "--code-file with --code-quote/--code-range"}), run --suggest to find candidates, or retire the claim.`,
+    `claim ${id}: the ${side} span in ${file} was not found (orphaned). Pass an explicit new span for that side (${flags}), run --suggest to find candidates, or retire the claim.`,
   );
 }
 
@@ -180,7 +194,7 @@ function bundleFromTarget(
 ): SelectorBundle {
   if (!target.region) {
     throw new Error(
-      `evidence target ${target.file} has no span; pass --code-quote or --code-range`,
+      `evidence target ${target.file} has no span; pass ${kind === "reference" ? "--ref-quote or --ref-range" : "--code-quote or --code-range"}`,
     );
   }
   const content = contents.evidenceContents[target.file];
@@ -194,18 +208,29 @@ function bundleFromTarget(
   });
 }
 
-/** Re-localize an existing evidence bundle in place from its resolved side result. */
+/**
+ * Re-localize an existing evidence bundle in place from its resolved side
+ * result. An `unavailable` side (sibling repo not checked out) keeps the
+ * stored bundle and adds a warning.
+ */
 function relocateEvidenceBundle(
   kind: ClaimKind,
   bundle: SelectorBundle,
   contents: RecordContents,
-  side: SideResult,
+  side: EvidenceSide,
   analyzer: AnchorAnalyzer | undefined,
   claimId: string,
+  warnings: string[],
 ): SelectorBundle {
+  if (side.state === "unavailable") {
+    warnings.push(
+      `evidence side ${bundle.file} kept unchanged: ${side.reasons.join("; ")}`,
+    );
+    return bundle;
+  }
   const content = contents.evidenceContents[bundle.file];
   if (content === undefined || content === null || !side.region) {
-    throw orphanError(claimId, "evidence", bundle.file);
+    throw orphanError(claimId, "evidence", bundle.file, kind);
   }
   return buildSelectorBundle(bundle.file, content, side.region, {
     language: evidenceLanguage(kind, bundle.file),
@@ -225,7 +250,7 @@ export async function reanchor(
   const warnings: string[] = [];
 
   // Resolve every span once.
-  const before = resolveSides(claim, files, { ast: input.analyzer });
+  const before = resolveClaimSides(claim, files, { ast: input.analyzer });
 
   // Doc side.
   const docFile = input.docPath ?? claim.doc.file;
@@ -246,7 +271,7 @@ export async function reanchor(
     docRegion = resolveRegion(contents.docContent, input.docSpec);
   } else {
     if (before.doc.state === "orphaned" || !before.doc.region) {
-      throw orphanError(claim.id, "doc", docFile);
+      throw orphanError(claim.id, "doc", docFile, claim.kind);
     }
     docRegion = before.doc.region;
   }
@@ -280,9 +305,10 @@ export async function reanchor(
         claim.kind,
         bundle,
         contents,
-        before.evidence[i] as SideResult,
+        before.evidence[i] as EvidenceSide,
         input.analyzer,
         claim.id,
+        warnings,
       ),
     );
   }
@@ -312,12 +338,12 @@ export async function reanchor(
     }
   }
 
-  const after = resolveSides(next, files, { ast: input.analyzer });
+  const after = resolveClaimSides(next, files, { ast: input.analyzer });
   return {
     claim: next,
     doc: after.doc.state,
     ...(after.evidence.length > 0
-      ? { evidence: worstState(after.evidence) }
+      ? { evidence: worstEvidenceState(after.evidence) }
       : {}),
     before: {
       doc: sideQuote(claim.doc),

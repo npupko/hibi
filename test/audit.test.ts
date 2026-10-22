@@ -179,7 +179,6 @@ function scriptedJev(model: string) {
               s.evidence ?? sure(EVIDENCE_KINDS, "nothing"),
             );
           }
-          answers[`checkable_${i}`] = { noul: 0.5 };
         });
         return { model, answers, usage: { input_tokens: 1, output_tokens: 1 } };
       },
@@ -537,6 +536,19 @@ describe("judge unavailable", () => {
   });
 });
 
+describe("judge error", () => {
+  test("an unusable answer leaves uncovered rows pending and never aborts the audit", async () => {
+    const f = await fixture();
+    const judge = new FakeJudge();
+    judge.setError("TypeSafe returned HTTP 400: bad");
+    const report = await audit(f, { judge });
+    const uncovered = report.rows.filter((r) => r.claimId === null);
+    expect(uncovered.every((r) => r.kind === "pending")).toBe(true);
+    expect(report.summary.covered).toBe(2);
+    expect(await f.engine.store.judgeCache().list()).toEqual([]);
+  });
+});
+
 describe("judge cache", () => {
   test("the second run over the same text asks the judge nothing and returns the same rows", async () => {
     const f = await fixture();
@@ -718,6 +730,12 @@ describe("renderer", () => {
     expect(lines.at(-1)).toBe(
       "13 regions, 2 covered, 11 uncovered; code 3, reference 1, attested 2, unverifiable 1, not-a-claim 4, unsure 2; 1 judge request",
     );
+    // The kind column fits `unverifiable`: the probability column lines up.
+    const probAt = (needle: string) => {
+      const line = lines.find((l) => l.includes(needle)) ?? "";
+      return line.search(/\d\.\d\d/);
+    };
+    expect(probAt("Customers love")).toBe(probAt("Pro costs"));
   });
 });
 

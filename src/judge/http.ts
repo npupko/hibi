@@ -7,7 +7,7 @@
  * design/evidence/typesafe-research-2026-10-22.md section 6). Retry numbers
  * below copy the SDK's documented defaults from the same section.
  */
-import { JudgeUnavailable } from "./types.ts";
+import { JudgeError, JudgeUnavailable } from "./types.ts";
 
 export const DEFAULT_BASE_URL = "https://api.typesafe.ai";
 export const API_KEY_ENV = "TYPESAFE_API_KEY";
@@ -82,7 +82,10 @@ function isRetryableStatus(status: number): boolean {
   return status === 408 || status === 429 || (status >= 500 && status <= 599);
 }
 
-/** Parses `retry-after` (seconds or HTTP date). Returns ms, or null when absent, invalid, or over the cap. */
+/**
+ * Parses `retry-after` (seconds or HTTP date). Returns ms, clamped to
+ * `MAX_RETRY_AFTER_MS`, or null when absent or invalid.
+ */
 export function parseRetryAfter(
   value: string | null,
   now = Date.now(),
@@ -92,8 +95,38 @@ export function parseRetryAfter(
   const ms = Number.isFinite(seconds)
     ? seconds * 1000
     : Date.parse(value) - now;
-  if (!Number.isFinite(ms) || ms < 0 || ms > MAX_RETRY_AFTER_MS) return null;
-  return ms;
+  if (!Number.isFinite(ms)) return null;
+  return Math.min(Math.max(ms, 0), MAX_RETRY_AFTER_MS);
+}
+
+/**
+ * Parse a 200 body. Throws `JudgeError` when it is not JSON or lacks an
+ * `answers` object and a `model` string.
+ */
+export function parseResponseBody(text: string): SystemOneResponse {
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch (e) {
+    throw new JudgeError(
+      `TypeSafe returned a body that is not JSON (${(e as Error).message}): ${text.slice(0, 200)}`,
+    );
+  }
+  const o = body as Record<string, unknown> | null;
+  if (
+    o === null ||
+    typeof o !== "object" ||
+    Array.isArray(o) ||
+    typeof o.model !== "string" ||
+    o.answers === null ||
+    typeof o.answers !== "object" ||
+    Array.isArray(o.answers)
+  ) {
+    throw new JudgeError(
+      `TypeSafe returned JSON without an "answers" object and a "model" string: ${text.slice(0, 200)}`,
+    );
+  }
+  return o as unknown as SystemOneResponse;
 }
 
 export class TypeSafeHttp implements SystemOneClient {
@@ -160,7 +193,7 @@ export class TypeSafeHttp implements SystemOneClient {
         continue;
       }
 
-      if (response.ok) return JSON.parse(text) as SystemOneResponse;
+      if (response.ok) return parseResponseBody(text);
 
       const { status } = response;
       if (status === 401 || status === 403) {
@@ -170,7 +203,7 @@ export class TypeSafeHttp implements SystemOneClient {
       }
       if (!isRetryableStatus(status)) {
         // 400, 422 and other 4xx: the request is wrong, not the service.
-        throw new Error(`TypeSafe returned HTTP ${status}: ${text}`);
+        throw new JudgeError(`TypeSafe returned HTTP ${status}: ${text}`);
       }
       lastFailure = `HTTP ${status}: ${text}`;
       if (retry >= MAX_RETRIES) break;

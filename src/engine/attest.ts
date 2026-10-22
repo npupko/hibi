@@ -6,8 +6,11 @@
  *   - `conflict:<otherClaimId>`: the same ack is written to both claims,
  *     pinned to the pair id and both sentence hashes, so it lapses when
  *     either sentence changes;
- *   - `review`: pinned to the cache key of the claim's newest `supports`
- *     verdict.
+ *   - `review`: pinned to the cache key of the claim's current `supports`
+ *     verdict. For a `reference` claim that is the key of the request built
+ *     from its sentence and referenced span as they read now
+ *     (`referenceSupportsRequest`, the same function `check` judges with);
+ *     for an `attested` claim it is the newest `supports` cache entry.
  *
  * Counting rule (SPEC 5): only a `human:` vouch resets the ttl. An `agent:`
  * or `process:` vouch is recorded and does not count; an ack never counts.
@@ -31,7 +34,11 @@ import {
 } from "../core/model.ts";
 import type { ClaimStore } from "../store/store.ts";
 import { sentenceHash } from "./hash.ts";
-import { newestSupports } from "./reference.ts";
+import {
+  newestSupports,
+  type ReferenceTexts,
+  referenceSupportsRequest,
+} from "./reference.ts";
 
 /** What `--ack` names: a contradiction with another claim, or a `review` verdict. */
 export type AckTarget =
@@ -45,6 +52,15 @@ export interface AttestInput {
   note?: string;
   ack?: AckTarget;
   now?: Date;
+  /**
+   * For `--ack review` on a `reference` claim: the claim's texts as they read
+   * now, or the reason the judge is not consulted, and the model in the cache
+   * key. The caller resolves the claim's sides.
+   */
+  reference?: {
+    model: string;
+    current: { texts: ReferenceTexts } | { reason: string };
+  };
 }
 
 export interface AttestResult {
@@ -88,6 +104,40 @@ async function newestSupportsKey(
   return newest.key;
 }
 
+/**
+ * The key of a `reference` claim's current `supports` verdict: the request
+ * built from its texts as they read now. It must already be in the cache,
+ * which `hibi check` fills.
+ */
+async function currentReferenceKey(
+  store: ClaimStore,
+  claim: Claim,
+  reference: AttestInput["reference"],
+): Promise<string> {
+  if (reference === undefined) {
+    throw new Error(
+      `claim ${claim.id} is a reference claim; its current texts are needed to name its verdict.`,
+    );
+  }
+  if ("reason" in reference.current) {
+    throw new Error(
+      `claim ${claim.id} has no current supports verdict to acknowledge: the judge is ${reference.current.reason}.`,
+    );
+  }
+  const { key } = referenceSupportsRequest(
+    reference.model,
+    claim,
+    reference.current.texts,
+  );
+  const entry = await store.judgeCache().get(key);
+  if (entry === undefined || entry.judgment !== "supports") {
+    throw new Error(
+      `claim ${claim.id} has no supports verdict for its current text; run \`hibi check\` first.`,
+    );
+  }
+  return key;
+}
+
 async function append(
   store: ClaimStore,
   claim: Claim,
@@ -129,7 +179,10 @@ export async function attestClaim(input: AttestInput): Promise<AttestResult> {
   }
 
   if (ack.kind === "review") {
-    const judgeKey = await newestSupportsKey(store, claim.id);
+    const judgeKey =
+      claim.kind === "reference"
+        ? await currentReferenceKey(store, claim, input.reference)
+        : await newestSupportsKey(store, claim.id);
     const attestation = Attestation.parse({
       by,
       at,

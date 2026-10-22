@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { renderAttest } from "../src/cli/render/attest.ts";
 import { resolveMode } from "../src/cli/render/mode.ts";
@@ -10,7 +12,9 @@ import {
   type JudgeCacheEntry,
 } from "../src/core/model.ts";
 import { attestClaim, parseAck } from "../src/engine/attest.ts";
+import { Engine } from "../src/index.ts";
 import { cacheKey } from "../src/judge/cache.ts";
+import { FakeJudge, supportsAnswer } from "../src/judge/fake.ts";
 import { makeRepo, type TempRepo } from "./helpers.ts";
 
 const NOW = new Date("2026-10-22T12:00:00.000Z");
@@ -47,9 +51,14 @@ function attested(id: string, sentence: string, over: Partial<Claim> = {}) {
 }
 
 let repos: TempRepo[] = [];
+let tmpRoots: string[] = [];
 afterEach(async () => {
   await Promise.all(repos.map((r) => r.cleanup()));
   repos = [];
+  await Promise.all(
+    tmpRoots.map((d) => rm(d, { recursive: true, force: true })),
+  );
+  tmpRoots = [];
 });
 
 async function setup(): Promise<TempRepo> {
@@ -308,6 +317,88 @@ describe("attestClaim: ack", () => {
   });
 });
 
+describe("Engine.attest --ack review on a reference claim", () => {
+  const REVIEW = supportsAnswer({
+    supports: 0.6,
+    refutes: 0.3,
+    does_not_address: 0.1,
+  });
+
+  test("names the key check judges for the current texts; check then stops warning", async () => {
+    const root = await mkdtemp(join(tmpdir(), "hibi-ackref-"));
+    tmpRoots.push(root);
+    await writeFile(
+      join(root, "README.md"),
+      "# Demo\n\nRefunds take two weeks.\n",
+    );
+    await mkdir(join(root, "docs"), { recursive: true });
+    await writeFile(
+      join(root, "docs/billing.md"),
+      "# Billing\n\nRefunds are issued within 14 days.\n",
+    );
+    const judge = new FakeJudge({ supports: () => REVIEW });
+    const e = await Engine.init(root, { judge, noAst: true });
+    const rec = await e.record({
+      kind: "reference",
+      by: "human:a@example.com",
+      docPath: "README.md",
+      docQuote: "Refunds take two weeks.",
+      evidence: [
+        {
+          file: "docs/billing.md",
+          region: { quote: "Refunds are issued within 14 days." },
+        },
+      ],
+    });
+    const id = rec.claim.id;
+    const ack = { by: "human:a@example.com", note: "same thing" };
+
+    // Before any check there is no verdict for the current texts.
+    await expect(
+      e.attest(id, { ...ack, ack: { kind: "review" } }),
+    ).rejects.toThrow(
+      `claim ${id} has no supports verdict for its current text; run \`hibi check\` first.`,
+    );
+
+    const first = await e.check();
+    expect(first.verdicts[0]?.judge).toBe("review");
+    expect(first.verdicts[0]?.warns).toBe(true);
+    const [entry] = await e.store.judgeCache().list({ claimId: id });
+
+    const res = await e.attest(id, { ...ack, ack: { kind: "review" } });
+    expect(res.attestation.ack).toEqual({ judgeKey: entry?.key as string });
+
+    const after = await e.check();
+    expect(after.verdicts[0]?.judge).toBe("review");
+    expect(after.verdicts[0]?.warns).toBe(false);
+    expect(after.worklist).toEqual([]);
+
+    // A newer, unrelated supports entry does not change which verdict is current.
+    await e.store.judgeCache().put({
+      ...(entry as JudgeCacheEntry),
+      key: "f".repeat(64),
+      at: "2099-01-01T00:00:00.000Z",
+    });
+    const res2 = await e.attest(id, { ...ack, ack: { kind: "review" } });
+    expect(res2.attestation.ack).toEqual({ judgeKey: entry?.key as string });
+
+    // A changed referenced text is a new verdict; the old ack no longer covers it.
+    await writeFile(
+      join(root, "docs/billing.md"),
+      "# Billing\n\nRefunds are issued within 14 days of the request.\n",
+    );
+    const reanchored = await e.reanchor(id, {
+      reference: {
+        file: "docs/billing.md",
+        region: { quote: "Refunds are issued within 14 days of the request." },
+      },
+    });
+    expect(reanchored.evidence).toBe("unchanged");
+    const changed = await e.check();
+    expect(changed.verdicts[0]?.warns).toBe(true);
+  });
+});
+
 describe("Attestation model: ack", () => {
   const pair = { pairId: `${A}:${B}`, sentenceHashes: ["h1", "h2"] };
 
@@ -424,6 +515,59 @@ describe("CLI: attest and evidence", () => {
       summary: { pending: 1, requests: 0 },
     });
     expect(await repo.store.judgeCache().list()).toEqual([]);
+  });
+
+  test("evidence --by is optional when every item carries by; a missing by names the item", async () => {
+    const repo = await setup();
+    const ok = await run(
+      repo.root,
+      ["evidence", "--from-file", "-"],
+      JSON.stringify([
+        {
+          claimId: A,
+          evidence: "Pro $29",
+          source: "stripe",
+          summary: "Stripe says $29",
+          by: "agent:opus",
+        },
+      ]),
+    );
+    expect(ok.code).toBe(0);
+    expect(ok.json.results[0].judge).toBe("pending");
+    const missing = await run(
+      repo.root,
+      ["evidence", "--from-file", "-"],
+      JSON.stringify([
+        {
+          claimId: A,
+          evidence: "Pro $29",
+          source: "stripe",
+          summary: "Stripe says $29",
+          by: "agent:opus",
+        },
+        { claimId: B, evidence: "Pro $39", source: "s", summary: "x" },
+      ]),
+    );
+    expect(missing.code).toBe(1);
+    expect(missing.json.errors).toEqual([
+      `item 1 (${B}): no "by"; pass --by <actor> or a "by" key: human:<id>, agent:<name>, or process:<name>`,
+    ]);
+  });
+
+  test("evidence --from-file on a missing file prints the JSON error envelope", async () => {
+    const repo = await setup();
+    const r = await run(repo.root, [
+      "evidence",
+      "--from-file",
+      "nope.json",
+      "--by",
+      "agent:opus",
+    ]);
+    expect(r.code).toBe(1);
+    expect(r.json).toEqual({
+      ok: false,
+      error: "evidence --from-file: --from-file nope.json: no such file",
+    });
   });
 
   test("evidence rejects an invalid batch with every error", async () => {

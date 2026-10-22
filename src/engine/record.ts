@@ -87,6 +87,11 @@ export interface RecordInput {
 export interface RecordContents {
   docContent: string | null;
   evidenceContents: Record<string, string | null>;
+  /**
+   * Evidence files in a sibling repo that is not checked out, with the reason
+   * label. `reanchor` keeps such a side's stored bundle.
+   */
+  unavailable?: ReadonlyMap<string, string>;
 }
 
 export interface RecordResult {
