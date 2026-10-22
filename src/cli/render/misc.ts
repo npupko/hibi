@@ -48,11 +48,11 @@ function warningLines(
 }
 
 export function renderInit(
-  result: { store: string; nonce: string; version: string },
+  result: { store: string; version: string },
   style: Style,
   mode: OutputMode,
 ): string {
-  return `${ok(style, mode)} initialized claim store  ${style.bold(result.store)}  ${style.dim(`(nonce ${result.nonce}, ${result.version})`)}\n`;
+  return `${ok(style, mode)} initialized claim store  ${style.bold(result.store)}  ${style.dim(`(${result.version})`)}\n`;
 }
 
 export function renderRecord(
@@ -60,16 +60,14 @@ export function renderRecord(
   style: Style,
   mode: OutputMode,
 ): string {
-  const a = result.assertion;
+  const c = result.claim;
   const doc = result.document.path;
-  const code = a.anchor.code[0]?.file;
-  const sides = code ? `${doc} ${arrow(mode)} ${code}` : doc;
-  const deduped = result.dedupedProposition ? style.dim(" (deduped)") : "";
-  const facets = [a.enforcement, a.verified ? "verified" : ""]
-    .filter(Boolean)
-    .join(", ");
-  let out = `${ok(style, mode)} recorded  ${style.cyan(a.id)}   ${sides}  ${style.dim(`(${facets})`)}${deduped}\n`;
-  if (a.enforcement === "suggested") {
+  const evidence = c.evidence[0]?.file;
+  const sides = evidence ? `${doc} ${arrow(mode)} ${evidence}` : doc;
+  const updated = result.updated ? style.dim(" (updated)") : "";
+  const facets = [c.kind, c.enforcement].join(", ");
+  let out = `${ok(style, mode)} recorded  ${style.cyan(c.id)}   ${sides}  ${style.dim(`(${facets})`)}${updated}\n`;
+  if (c.enforcement === "suggested") {
     out += `  ${warn(style, mode)} ${style.dim("suggested: this claim never gates")}\n`;
   }
   if (result.existingClaims.length > 0) {
@@ -86,7 +84,7 @@ export function renderReanchor(
 ): string {
   const verb = dryRun ? "would reanchor" : "reanchored";
   const lines = [
-    `${ok(style, mode)} ${verb}  ${style.cyan(result.assertion.id)}   ${style.dim(`doc:${result.doc}  code:${result.code}`)}${dryTag(style, dryRun)}`,
+    `${ok(style, mode)} ${verb}  ${style.cyan(result.claim.id)}   ${style.dim(`doc:${result.doc}${result.evidence !== undefined ? `  evidence:${result.evidence}` : ""}`)}${dryTag(style, dryRun)}`,
   ];
   const side = (
     label: string,
@@ -108,10 +106,10 @@ export function renderReanchor(
       lines.push(`    ${style.dim("after: ")} "${oneLine(a.quote)}"`);
     }
   };
-  side("doc ", result.before.doc, result.after.doc);
-  result.after.code.forEach((a, i) => {
-    const b = result.before.code[i] ?? a;
-    side("code", b, a);
+  side("doc     ", result.before.doc, result.after.doc);
+  result.after.evidence.forEach((a, i) => {
+    const b = result.before.evidence[i] ?? a;
+    side("evidence", b, a);
   });
   return `${lines.join("\n")}\n${warningLines(result.warnings, style, mode)}`;
 }
@@ -128,7 +126,7 @@ export function renderReanchorSuggest(
   }
   const lines = result.candidates.map((c) => {
     const sim = `${Math.round(c.similarity * 100)}%`;
-    return `  ${style.green(sim.padStart(4))}  ${style.dim(c.side.padEnd(4))} ${style.bold(c.file)} ${style.dim(`[${c.start}-${c.end}]`)}  ${style.dim(`"${oneLine(c.snippet)}"`)}`;
+    return `  ${style.green(sim.padStart(4))}  ${style.dim(c.side.padEnd(8))} ${style.bold(c.file)} ${style.dim(`[${c.start}-${c.end}]`)}  ${style.dim(`"${oneLine(c.snippet)}"`)}`;
   });
   return `${head}\n${lines.join("\n")}\n`;
 }
@@ -198,7 +196,7 @@ export function renderRetire(
 ): string {
   const note = result.alreadyRetired ? style.dim(" (already retired)") : "";
   const verb = dryRun && !result.alreadyRetired ? "would retire" : "retired";
-  return `${ok(style, mode)} ${verb}  ${style.cyan(result.assertion.id)}${note}${dryTag(style, dryRun)}\n`;
+  return `${ok(style, mode)} ${verb}  ${style.cyan(result.claim.id)}${note}${dryTag(style, dryRun)}\n`;
 }
 
 function listSeverity(s: ListSeverity): Severity {
@@ -227,7 +225,7 @@ export function renderList(
     r.status,
     r.claimId,
     r.documentPath ?? "—",
-    r.codePath ?? "—",
+    r.evidencePath ?? "—",
     r.recommended ?? "—",
   ]);
   out.push(
@@ -237,7 +235,7 @@ export function renderList(
         { header: "Status" },
         { header: "Claim" },
         { header: "Document", max: 32 },
-        { header: "Code", max: 32 },
+        { header: "Evidence", max: 32 },
         { header: "Action" },
       ],
       rows,
@@ -247,7 +245,7 @@ export function renderList(
   out.push("");
   for (const r of result.claims) {
     out.push(
-      `  ${style.cyan(r.claimId)}  ${style.dim(`"${oneLine(r.text)}"`)}`,
+      `  ${style.cyan(r.claimId)}  ${style.dim(`"${oneLine(r.sentence)}"`)}`,
     );
   }
   out.push("");

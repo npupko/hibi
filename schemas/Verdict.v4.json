@@ -1,0 +1,234 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "claimId": {
+      "type": "string"
+    },
+    "documentId": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "code",
+        "reference",
+        "attested"
+      ]
+    },
+    "doc": {
+      "$ref": "#/$defs/AnchorState"
+    },
+    "evidence": {
+      "$ref": "#/$defs/EvidenceState"
+    },
+    "judge": {
+      "type": "string",
+      "enum": [
+        "supported",
+        "refuted",
+        "review",
+        "pending"
+      ]
+    },
+    "expired": {
+      "type": "boolean"
+    },
+    "conflicts": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "claimId": {
+            "type": "string"
+          },
+          "probability": {
+            "type": "number"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "claimId",
+          "probability",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "gates": {
+      "type": "boolean"
+    },
+    "remediation": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "recommended": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "actions": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "title": {
+                    "type": "string"
+                  },
+                  "rationale": {
+                    "type": "string"
+                  },
+                  "command": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id",
+                  "title",
+                  "rationale"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "recommended",
+            "actions"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "detail": {
+      "type": "object",
+      "properties": {
+        "docRegion": {
+          "$ref": "#/$defs/Region"
+        },
+        "evidenceRegions": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Region"
+          }
+        },
+        "similarity": {
+          "type": "number"
+        },
+        "changes": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "ast",
+                  "value"
+                ]
+              },
+              "detail": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "kind"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "evidenceRegions",
+        "changes"
+      ],
+      "additionalProperties": false
+    },
+    "notes": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "claimId",
+    "documentId",
+    "kind",
+    "doc",
+    "expired",
+    "conflicts",
+    "gates",
+    "remediation",
+    "detail",
+    "notes"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "AnchorState": {
+      "type": "string",
+      "enum": [
+        "unchanged",
+        "moved",
+        "changed",
+        "ambiguous",
+        "orphaned"
+      ]
+    },
+    "EvidenceState": {
+      "type": "string",
+      "enum": [
+        "unchanged",
+        "moved",
+        "changed",
+        "ambiguous",
+        "orphaned",
+        "unavailable"
+      ]
+    },
+    "Region": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

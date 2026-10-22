@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { readdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { resolveRegion } from "../src/engine/record.ts";
+import { recordClaim, resolveRegion } from "../src/engine/record.ts";
 import { ClaimStore } from "../src/store/store.ts";
 import { makeRepo, record, type TempRepo } from "./helpers.ts";
 
@@ -59,17 +59,17 @@ afterEach(async () => {
 });
 
 describe("claim store", () => {
-  test("init writes a v3 config with a per-repo nonce", async () => {
+  test("init writes a complete v4 config and the three directories", async () => {
     const r = await repo();
     const config = await r.store.config();
-    expect(config.nonce).toBe("deadbeef");
-    expect(config.version).toBe("v3");
-  });
-
-  test("nonces are random hex by default", () => {
-    const n = ClaimStore.newNonce();
-    expect(n).toMatch(/^[0-9a-f]{8}$/);
-    expect(ClaimStore.newNonce()).not.toBe(n);
+    expect(config).toEqual({
+      version: "v4",
+      repos: {},
+      judge: { model: "jev-1.14.0", threshold: 0.8 },
+      ignore: [],
+    });
+    const entries = (await readdir(r.store.dir)).sort();
+    expect(entries).toEqual(["claims", "config.json", "documents", "judge"]);
   });
 
   test("one file per claim, never a monolithic lockfile", async () => {
@@ -92,7 +92,29 @@ describe("claim store", () => {
     expect(claimFiles.filter((f) => f.endsWith(".json")).length).toBe(2);
   });
 
-  test("propositions dedup by content fingerprint", async () => {
+  test("a recorded claim holds its sentence, v4 ids, and one initial vouch", async () => {
+    const r = await repo();
+    await r.write("src/a.ts", "export const A = 1;\n");
+    const { claim, document } = await record(r, {
+      doc: "d.md",
+      text: "A is 1 here",
+      file: "src/a.ts",
+      quote: "A = 1",
+      by: "human:alice@example.com",
+    });
+    expect(claim.id).toMatch(/^clm_[0-9a-f]{16}$/);
+    expect(document.id).toMatch(/^doc_[0-9a-f]{16}$/);
+    expect(claim.documentId).toBe(document.id);
+    expect(claim.kind).toBe("code");
+    expect(claim.sentence).toBe("A is 1 here");
+    expect(claim.attestations).toHaveLength(1);
+    expect(claim.attestations[0]?.by).toBe("human:alice@example.com");
+    expect(claim.attestations[0]?.basis).toBe("vouch");
+    expect(claim.createdAt).toBe(claim.attestations[0]?.at as string);
+    expect(document.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  test("the same sentence in two documents is two claims, each pointing at the other", async () => {
     const r = await repo();
     await r.write("src/a.ts", "export const A = 1;\nexport const B = 2;\n");
     const r1 = await record(r, {
@@ -107,14 +129,12 @@ describe("claim store", () => {
       file: "src/a.ts",
       quote: "B = 2",
     });
-    expect(r2.dedupedProposition).toBe(true);
-    expect(r2.proposition.id).toBe(r1.proposition.id);
-    const props = await r.store.allPropositions();
-    expect(props.length).toBe(1);
-    expect((await r.store.allAssertions()).length).toBe(2);
+    expect(r2.claim.id).not.toBe(r1.claim.id);
+    expect(r2.existingClaims).toEqual([r1.claim.id]);
+    expect((await r.store.allClaims()).length).toBe(2);
   });
 
-  test("re-recording the same sentence on the same document updates the claim in place", async () => {
+  test("re-recording the same sentence on the same document updates the claim and appends a vouch", async () => {
     const r = await repo();
     await r.write("src/a.ts", "export const A = 1;\n");
     const first = await record(r, {
@@ -128,47 +148,49 @@ describe("claim store", () => {
       text: "A is 1 here",
       file: "src/a.ts",
       quote: "A = 1",
-      verified: true,
+      by: "agent:opus",
     });
-    expect(second.assertion.id).toBe(first.assertion.id);
-    expect(second.assertion.verified).toBe(true);
-    expect((await r.store.allAssertions()).length).toBe(1);
+    expect(second.claim.id).toBe(first.claim.id);
+    expect(second.updated).toBe(true);
+    expect(second.claim.attestations.map((a) => a.by)).toEqual([
+      "human:tester@example.com",
+      "agent:opus",
+    ]);
+    expect((await r.store.allClaims()).length).toBe(1);
   });
 
-  test("records carry a bidirectional anchor + enforcement that validate on load", async () => {
+  test("records carry doc and evidence bundles that validate on load", async () => {
     const r = await repo();
     await r.write("src/a.ts", "export const A = 1;\n");
-    const { assertion } = await record(r, {
+    const { claim } = await record(r, {
       doc: "d.md",
       text: "A is 1 here",
       file: "src/a.ts",
       quote: "A = 1",
     });
     const reopened = await ClaimStore.open(r.root);
-    expect(reopened.upgradedFrom).toBeUndefined();
-    const loaded = await reopened.getAssertion(assertion.id);
-    expect(loaded?.anchor.doc.selectors.length).toBeGreaterThan(0);
-    expect(loaded?.anchor.code.length).toBeGreaterThan(0);
+    const loaded = await reopened.getClaim(claim.id);
+    expect(loaded?.doc.selectors.length).toBeGreaterThan(0);
+    expect(loaded?.evidence.length).toBeGreaterThan(0);
     expect(
-      loaded?.anchor.code.some((b) =>
+      loaded?.evidence.some((b) =>
         b.selectors.some((s) => s.kind === "ast-node"),
       ),
     ).toBe(true);
     // A precise code span records `enforced` by default.
     expect(loaded?.enforcement).toBe("enforced");
-    expect(loaded?.verified).toBe(false);
   });
 
   test("a line-range code target anchors the whole line", async () => {
     const r = await repo();
     await r.write("src/a.ts", "// header\nexport const A = 1;\n");
-    const { assertion } = await record(r, {
+    const { claim } = await record(r, {
       doc: "d.md",
       text: "A is 1 here",
       file: "src/a.ts",
       line: 2,
     });
-    const tq = assertion.anchor.code[0]?.selectors.find(
+    const tq = claim.evidence[0]?.selectors.find(
       (s) => s.kind === "text-quote",
     );
     expect(tq?.kind === "text-quote" ? tq.exact : "").toBe(
@@ -180,41 +202,54 @@ describe("claim store", () => {
     await expect(ClaimStore.open("/no/such/store/xyz")).rejects.toThrow();
   });
 
-  test("open refuses an unknown store version", async () => {
+  test("open refuses a v3 store with a one-line no-upgrade error", async () => {
     const r = await repo();
     await writeFile(
       join(r.store.dir, "config.json"),
-      `${JSON.stringify({ version: "v9", nonce: "deadbeef" })}\n`,
+      `${JSON.stringify({ version: "v3", nonce: "deadbeef" })}\n`,
     );
-    await expect(ClaimStore.open(r.root)).rejects.toThrow(/model v9/);
+    const err = await ClaimStore.open(r.root).then(
+      () => null,
+      (e: Error) => e,
+    );
+    expect(err?.message).toContain("version v3");
+    expect(err?.message).toContain("no upgrade path");
+    expect(err?.message).not.toContain("\n");
   });
 
-  test("a verified record with a precise bidirectional anchor is recorded enforced and verified", async () => {
+  test("open refuses a judge model alias with a one-line error", async () => {
     const r = await repo();
-    await r.write("src/a.ts", "export const A = 1;\n");
-    const { assertion } = await record(r, {
-      doc: "d.md",
-      text: "A is 1 here",
-      file: "src/a.ts",
-      quote: "A = 1",
-      verified: true,
-    });
-    expect(assertion.enforcement).toBe("enforced");
-    expect(assertion.verified).toBe(true);
+    const config = { ...ClaimStore.defaultConfig() };
+    config.judge = { model: "jev-latest", threshold: 0.8 };
+    await writeFile(join(r.store.dir, "config.json"), JSON.stringify(config));
+    const err = await ClaimStore.open(r.root).then(
+      () => null,
+      (e: Error) => e,
+    );
+    expect(err?.message).toContain("pinned versioned id");
+    expect(err?.message).not.toContain("\n");
   });
 
-  test("a coarse-only code side records suggested, even when verified", async () => {
+  test("open refuses a threshold outside [0, 1]", async () => {
+    const r = await repo();
+    const config = { ...ClaimStore.defaultConfig() };
+    config.judge = { model: "jev-1.14.0", threshold: 1.5 };
+    await writeFile(join(r.store.dir, "config.json"), JSON.stringify(config));
+    await expect(ClaimStore.open(r.root)).rejects.toThrow(
+      "judge.threshold must be a number in [0, 1]",
+    );
+  });
+
+  test("a coarse-only code side records suggested", async () => {
     const r = await repo();
     await r.write("src/a.ts", "export const A = 1;\n");
-    const { assertion } = await record(r, {
+    const { claim } = await record(r, {
       doc: "d.md",
-      text: "coarse verified",
+      text: "coarse suggested",
       file: "src/a.ts",
-      verified: true,
       coarse: true,
     });
-    expect(assertion.enforcement).toBe("suggested");
-    expect(assertion.verified).toBe(true);
+    expect(claim.enforcement).toBe("suggested");
   });
 
   test("an explicit `enforced` over a coarse-only code side is refused", async () => {
@@ -243,127 +278,88 @@ describe("claim store", () => {
       }),
     ).rejects.toThrow("too short");
   });
+
+  test("a recording actor outside the OKF forms is refused", async () => {
+    const r = await repo();
+    await r.write("src/a.ts", "export const A = 1;\n");
+    await expect(
+      record(r, {
+        doc: "d.md",
+        text: "A is 1 here",
+        file: "src/a.ts",
+        quote: "A = 1",
+        by: "alice",
+      }),
+    ).rejects.toThrow("human:<id>, agent:<name>, or process:<name>");
+  });
 });
 
-describe("v2 to v3 store upgrade", () => {
-  async function writeV2Store(root: string) {
-    const dir = join(root, ".claims");
-    for (const sub of ["documents", "propositions", "claims"]) {
-      await mkdir(join(dir, sub), { recursive: true });
-    }
-    const write = (rel: string, value: unknown) =>
-      writeFile(join(dir, rel), `${JSON.stringify(value, null, 2)}\n`);
-    await write("config.json", { version: "v2", nonce: "deadbeef" });
-    await write("documents/doc_1.json", {
-      id: "doc_1",
-      path: "README.md",
-      lifecycle: "active",
-      pristine: false,
-      frontmatterStatus: "code:changed",
-      edges: [
-        { type: "supersedes", target: "doc_0", derived: false },
-        { type: "superseded-by", source: "doc_9", derived: true },
-      ],
-    });
-    await write("propositions/prop_1.json", {
-      id: "prop_1",
-      textCache: "A is one.",
-      authoredTrust: "verified",
-      fingerprint: "f1",
-    });
-    await write("claims/asrt_1.json", {
-      id: "asrt_1",
-      propositionId: "prop_1",
-      documentId: "doc_1",
-      owner: "tester",
-      ref: "r",
-      anchor: {
-        doc: {
-          file: "README.md",
-          selectors: [
-            { kind: "text-quote", exact: "A is one.", prefix: "", suffix: "" },
-            { kind: "text-position", start: 0, end: 9 },
-            { kind: "inline-id", id: "hibi:claim:asrt_1" },
-          ],
-        },
-        code: [
-          { file: "src/a.ts", selectors: [{ kind: "path", path: "src/a.ts" }] },
-        ],
-      },
-      enforcement: "enforced",
-      behavioral: true,
-      evidenceBaseline: {},
-      verifiers: [{ kind: "command", ref: "bun test", proves: "x" }],
-      attrs: { reanchorDowngrade: true, keep: 1 },
-    });
-    return dir;
-  }
-
-  test("open rewrites a v2 store in place and a second open is a no-op", async () => {
+describe("record by kind", () => {
+  test("a reference claim stores exactly one document span and no AST selectors", async () => {
     const r = await repo();
-    const dir = await writeV2Store(r.root);
-
-    const store = await ClaimStore.open(r.root);
-    expect(store.upgradedFrom).toBe("v2");
-    expect((await store.config()).version).toBe("v3");
-    expect(
-      JSON.parse(await readFile(join(dir, "config.json"), "utf8")),
-    ).toEqual({
-      version: "v3",
-      nonce: "deadbeef",
-    });
-
-    const a = await store.getAssertion("asrt_1");
-    if (!a) throw new Error("upgraded assertion missing");
-    expect(a.verified).toBe(true);
-    expect(a.enforcement).toBe("enforced");
-    expect(a.anchor.code[0]?.selectors).toEqual([
-      { kind: "coarse", pattern: "src/a.ts" },
-    ]);
-    expect(a.anchor.doc.selectors.map((s) => s.kind)).toEqual([
+    await r.write("d.md", "Pro costs $29/month.\n");
+    await r.write(
+      "pricing.md",
+      "# Pricing\n\nThe Pro plan is $29 per month.\n",
+    );
+    const { claim } = await recordClaim(
+      r.store,
+      {
+        docContent: await r.read("d.md"),
+        evidenceContents: { "pricing.md": await r.read("pricing.md") },
+      },
+      {
+        docPath: "d.md",
+        docSpec: { quote: "Pro costs $29/month." },
+        kind: "reference",
+        evidence: [
+          {
+            file: "pricing.md",
+            region: { quote: "The Pro plan is $29 per month." },
+          },
+        ],
+        by: "human:tester@example.com",
+        ref: "r",
+      },
+    );
+    expect(claim.kind).toBe("reference");
+    expect(claim.evidence).toHaveLength(1);
+    expect(claim.evidence[0]?.selectors.map((s) => s.kind)).toEqual([
       "text-quote",
       "text-position",
     ]);
-    expect(a.verifiers).toEqual([{ kind: "command", ref: "bun test" }]);
-    expect(a.attrs).toEqual({ keep: 1 });
-
-    const raw = JSON.parse(
-      await readFile(join(dir, "claims/asrt_1.json"), "utf8"),
-    );
-    expect("behavioral" in raw).toBe(false);
-    expect("evidenceBaseline" in raw).toBe(false);
-
-    const p = await store.getProposition("prop_1");
-    expect(p).toEqual({
-      id: "prop_1",
-      textCache: "A is one.",
-      fingerprint: "f1",
-    });
-
-    const d = await store.getDocument("doc_1");
-    expect(d).toEqual({
-      id: "doc_1",
-      path: "README.md",
-      lifecycle: "active",
-      edges: [{ type: "supersedes", target: "doc_0" }],
-    });
-
-    const before = await readFile(join(dir, "claims/asrt_1.json"), "utf8");
-    const again = await ClaimStore.open(r.root);
-    expect(again.upgradedFrom).toBeUndefined();
-    expect(await readFile(join(dir, "claims/asrt_1.json"), "utf8")).toBe(
-      before,
-    );
   });
 
-  test("an unverified v2 proposition upgrades to verified false", async () => {
+  test("an attested claim stores sources and a procedure, and needs a ttl", async () => {
     const r = await repo();
-    const dir = await writeV2Store(r.root);
-    await writeFile(
-      join(dir, "propositions/prop_1.json"),
-      `${JSON.stringify({ id: "prop_1", textCache: "A is one.", authoredTrust: "inferred", fingerprint: "f1" })}\n`,
+    await r.write("d.md", "Pro costs $29/month.\n");
+    const base = {
+      docPath: "d.md",
+      docSpec: { quote: "Pro costs $29/month." },
+      kind: "attested" as const,
+      evidence: [],
+      sources: [{ id: "stripe", resource: "https://dashboard.stripe.com" }],
+      procedure: { instructions: "Open the dashboard and read the price." },
+      by: "human:tester@example.com",
+      ref: "r",
+    };
+    const contents = {
+      docContent: await r.read("d.md"),
+      evidenceContents: {},
+    };
+    await expect(recordClaim(r.store, contents, base)).rejects.toThrow(
+      "requires a ttl",
     );
-    const store = await ClaimStore.open(r.root);
-    expect((await store.getAssertion("asrt_1"))?.verified).toBe(false);
+    await expect(
+      recordClaim(r.store, contents, { ...base, ttl: "90 days" }),
+    ).rejects.toThrow("ISO 8601 duration");
+    const { claim } = await recordClaim(r.store, contents, {
+      ...base,
+      ttl: "P90D",
+    });
+    expect(claim.evidence).toEqual([]);
+    expect(claim.ttl).toBe("P90D");
+    expect(claim.sources[0]?.resource).toBe("https://dashboard.stripe.com");
+    expect(claim.procedure?.instructions).toContain("dashboard");
   });
 });

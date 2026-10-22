@@ -2,10 +2,10 @@
  * The machine-output projection: shapes the serialized JSON by verbosity
  * without mutating the engine's in-memory `Verdict`.
  *
- *   - concise (default): ids, the two anchor states, the behavioral state,
- *     `expired`/`gates`, a one-line `changed` summary, the `remediation` menu,
- *     and `notes`.
- *   - `--explain`: adds `evidence`, `advisories`, and the proposition `fingerprint`.
+ *   - concise (default): ids, kind, the doc and evidence states, the judge
+ *     state, `expired`/`conflicts`/`gates`, a one-line `changed` summary, the
+ *     `remediation` menu, and `notes`.
+ *   - `--explain`: adds `detail` (regions, changes, similarity).
  *
  * `--no-hints` (`HIBI_ADVICE=0`) drops the `remediation` block.
  */
@@ -39,31 +39,26 @@ export function envelope(
 export function projectVerdict(
   v: Verdict,
   opts: ProjectionOptions,
-  fingerprints?: ReadonlyMap<string, string>,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {
-    assertionId: v.assertionId,
-    propositionId: v.propositionId,
+    claimId: v.claimId,
     documentId: v.documentId,
+    kind: v.kind,
     doc: v.doc,
-    code: v.code,
   };
-  if (v.behavior !== undefined) out.behavior = v.behavior;
+  if (v.evidence !== undefined) out.evidence = v.evidence;
+  if (v.judge !== undefined) out.judge = v.judge;
   out.expired = v.expired;
+  out.conflicts = v.conflicts;
   out.gates = v.gates;
 
-  const c = v.evidence.changedEvidence[0];
+  const c = v.detail.changes[0];
   if (c) out.changed = `${c.path} ${c.kind}${c.detail ? `: ${c.detail}` : ""}`;
 
   if (opts.hints) out.remediation = v.remediation;
   out.notes = v.notes;
 
-  if (opts.explain) {
-    out.evidence = v.evidence;
-    out.advisories = v.advisories;
-    const fp = fingerprints?.get(v.propositionId);
-    if (fp) out.fingerprint = fp;
-  }
+  if (opts.explain) out.detail = v.detail;
   return out;
 }
 
@@ -72,14 +67,13 @@ export function projectCheckReport(
   report: CheckReport,
   opts: ProjectionOptions,
   extra?: Record<string, unknown>,
-  fingerprints?: ReadonlyMap<string, string>,
 ): Record<string, unknown> {
   return envelope("check", {
     ref: report.ref,
     ...extra,
     exitCode: report.exitCode,
     summary: report.summary,
-    verdicts: report.verdicts.map((v) => projectVerdict(v, opts, fingerprints)),
+    verdicts: report.verdicts.map((v) => projectVerdict(v, opts)),
     documents: report.documents,
   });
 }

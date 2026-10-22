@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "model": {
+      "type": "string"
+    },
+    "judgment": {
+      "type": "string",
+      "enum": [
+        "triage",
+        "supports",
+        "conflict"
+      ]
+    },
+    "subject": {
+      "type": "object",
+      "properties": {
+        "claimId": {
+          "type": "string"
+        },
+        "pairId": {
+          "type": "string"
+        },
+        "docId": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "request": {},
+    "answers": {},
+    "evidence": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "by": {
+          "$ref": "#/$defs/Actor"
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        }
+      },
+      "required": [
+        "hash",
+        "source",
+        "summary",
+        "by",
+        "at"
+      ],
+      "additionalProperties": false
+    },
+    "at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+    }
+  },
+  "required": [
+    "key",
+    "model",
+    "judgment",
+    "subject",
+    "request",
+    "answers",
+    "at"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "Actor": {
+      "type": "string",
+      "pattern": "^(human|agent|process):.+$"
+    }
+  }
+}

@@ -2,7 +2,7 @@
 
 This page is generated from `src/cli/options.ts` by `bun run build:cli-reference`. Do not edit it by hand.
 
-Schema version: `v3`. Every JSON envelope carries `ok`, `action`, and `schemaVersion`; most carry a `next` hint.
+Schema version: `v4`. Every JSON envelope carries `ok`, `action`, and `schemaVersion`; most carry a `next` hint.
 
 Exit codes: `0` clean, `2` gating (a `changed`, `orphaned`, `ambiguous`, `expired`, or `refuted` verdict on an enforced claim, or `moved` under `--fail-on warn`), `1` operational error (bad flag, no store, missing file).
 
@@ -16,7 +16,7 @@ Accepted by every command.
 |---|---|
 | `--format <f>` | Output format. Default: human on a terminal, json when piped. One of: `human`, `compact`, `json`, `json-pretty`. |
 | `--json` | Alias for --format json. |
-| `--explain` | Add the evidence tail (regions, changedEvidence, similarity) to JSON verdicts and the full record result. |
+| `--explain` | Add the detail tail (regions, changes, similarity) to JSON verdicts and the full record result. |
 | `--no-hints` | Drop the remediation menu (also HIBI_ADVICE=0). |
 | `--color <when>` | Color in human output (also NO_COLOR / FORCE_COLOR). One of: `auto`, `always`, `never`. |
 | `--cwd <dir>` | Anchor root the paths resolve against. Default: the current directory. |
@@ -28,7 +28,7 @@ Environment: `HIBI_ASCII=1` uses ASCII symbols in human output; `HIBI_ADVICE=0` 
 
 ## `hibi init`
 
-Create the claim store (.claims/) with a per-repo banner nonce.
+Create the claim store (.claims/) and its config.json.
 
 ```sh
 hibi init
@@ -42,7 +42,7 @@ hibi init
 
 Record a claim: a doc sentence anchored to the code it describes.
 
-The doc span's text is the claim. A new claim is enforced (it gates) unless --suggest is passed. Agents should send one JSON object per claim on stdin with --from-file -; keys mirror the flags in camelCase (doc, docQuote, docRange, codeFile, codeQuote, codeRange, glob, suggest, verified, verifier, ttl, owner).
+The doc span's text is the claim's sentence. A new claim is enforced (it gates) unless --suggest is passed. The claim gets one vouch attestation by --by, or by human:<git user.email> when --by is absent. Agents should send one JSON object per claim on stdin with --from-file -; keys mirror the flags in camelCase (doc, docQuote, docRange, codeFile, codeQuote, codeRange, glob, suggest, ttl, owner, by).
 
 ```sh
 hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --code-file <path> (--code-quote <text> | --code-range L1:L9) [options]
@@ -59,10 +59,9 @@ hibi record --from-file <path|->
 | `--code-range L1:L9` | Inclusive 1-based line range of the code span (or char offsets). |
 | `--glob <pattern>` | A coarse file or glob edge instead of a precise code span. Navigation only, never graded as drift. |
 | `--suggest` | Record an advisory claim that never gates (allows a coarse or empty code side). |
-| `--verified` | Mark that you confirmed the code backs the sentence. |
-| `--verifier kind:ref` | A verifier, e.g. command:"bun test retry". Runs only under check --run-verifiers. Repeatable. Repeatable. |
-| `--ttl <iso-8601>` | Instant after which the claim is expired and gates. |
-| `--owner <name>` | Attribution recorded on the claim. |
+| `--ttl <duration>` | ISO 8601 duration after which the claim needs re-attesting, e.g. P90D. |
+| `--owner <actor>` | The actor to contact when the claim expires: human:<id>, agent:<name>, or process:<name>. |
+| `--by <actor>` | The actor vouching for the claim. Default: human:<git user.email>. |
 | `--from-file <path|->` | Record a JSON array of claim specs (- reads stdin). All or nothing. |
 
 ```sh
@@ -74,7 +73,7 @@ echo '[{"doc":"README.md","docQuote":"Retries are capped at 5 attempts","codeFil
 
 Verify every claim against the working tree and exit 0 (clean), 2 (gating), or 1 (error).
 
-Read-only unless --write. --since scopes to files changed since a git ref; --doc scopes to one document; --overview renders the per-document table. A moved span is a warning: it exits 0 unless --fail-on warn.
+Read-only. --since scopes to files changed since a git ref; --doc scopes to one document; --overview renders the per-document table. A moved span is a warning: it exits 0 unless --fail-on warn.
 
 ```sh
 hibi check [options]
@@ -85,50 +84,14 @@ hibi check [options]
 | `--since <ref>` | Check only the claims touching a file changed since this git ref. |
 | `--doc <path>` | Check only the claims on this document. |
 | `--overview` | Render the per-document table instead of the per-claim report (human output). |
-| `--write` | Stamp a status banner into each suspect document and clear it from clean ones. |
 | `--fail-on <level>` | When to exit 2: gating (default), warn (also on moved), never. One of: `gating`, `warn`, `never`. |
-| `--run-verifiers` | Execute declared verifiers (repo-committed commands). Off by default. |
-| `--verifier-timeout <seconds>` | Per-verifier timeout in seconds. Default 120. |
 
 ```sh
 hibi check
 hibi check --since origin/main
 hibi check --doc CLAUDE.md
-hibi check --write --fail-on warn
+hibi check --fail-on warn
 ```
-
-## `hibi diff`
-
-Deprecated alias for check --since <ref>.
-
-Deprecated alias of `hibi check`. It prints a notice on stderr and will be removed in a later release.
-
-```sh
-hibi diff [options]
-```
-
-| Flag | Meaning |
-|---|---|
-| `--since <ref>` | Check only the claims touching a file changed since this git ref. |
-| `--write` | Stamp a status banner into each suspect document and clear it from clean ones. |
-| `--fail-on <level>` | When to exit 2: gating (default), warn (also on moved), never. One of: `gating`, `warn`, `never`. |
-| `--run-verifiers` | Execute declared verifiers (repo-committed commands). Off by default. |
-| `--verifier-timeout <seconds>` | Per-verifier timeout in seconds. Default 120. |
-
-## `hibi status`
-
-Deprecated alias for check --doc <path> or check --overview.
-
-Deprecated alias of `hibi check`. It prints a notice on stderr and will be removed in a later release.
-
-```sh
-hibi status [options]
-```
-
-| Flag | Meaning |
-|---|---|
-| `--doc <path>` | Check only the claims on this document. |
-| `--fail-on <level>` | When to exit 2: gating (default), warn (also on moved), never. One of: `gating`, `warn`, `never`. |
 
 ## `hibi list`
 
@@ -140,8 +103,8 @@ hibi list [options]
 
 | Flag | Meaning |
 |---|---|
-| `--state <state>` | Filter: all (default), gating, warning, clean, orphaned, suggested, stranded (live on a superseded or archived doc), duplicate (sentence claimed more than once). One of: `all`, `gating`, `warning`, `clean`, `orphaned`, `suggested`, `stranded`, `duplicate`. |
-| `--path <path>` | Only claims anchored to or covering this doc or code path (either side). |
+| `--state <state>` | Filter: all (default), gating, warning, clean, orphaned, suggested, stranded (live on a superseded or archived doc). One of: `all`, `gating`, `warning`, `clean`, `orphaned`, `suggested`, `stranded`. |
+| `--path <path>` | Only claims anchored to or covering this doc or evidence path (either side). |
 | `--ids-only` | Print bare claim ids, one per line, for shell loops. |
 
 ```sh
@@ -171,7 +134,7 @@ hibi coverage --doc README.md
 
 Re-resolve a claim's spans and store the new baseline; or list candidate locations with --suggest.
 
-Without span flags each side re-localizes through its stored selectors. A side that is not found is refused unless an explicit new span is given for it. --doc moves the claim to a different document (requires a doc span).
+Without span flags each side re-localizes through its stored selectors. A side that is not found is refused unless an explicit new span is given for it. --doc moves the claim to a different document (requires a doc span). The claim's sentence is refreshed from the new doc span.
 
 ```sh
 hibi reanchor <claim-id> [options]
@@ -188,13 +151,13 @@ hibi reanchor <claim-id> [options]
 | `--code-quote <text>` | The code span, verbatim. Quote the load-bearing token, e.g. the value. |
 | `--code-range L1:L9` | Inclusive 1-based line range of the code span (or char offsets). |
 | `--glob <pattern>` | A coarse file or glob edge instead of a precise code span. Navigation only, never graded as drift. |
-| `--suggest` | Read-only: rank candidate locations for the stored doc and code quotes. |
+| `--suggest` | Read-only: rank candidate locations for the stored doc and evidence quotes. |
 | `--dry-run` | Compute the result without writing the store or any document. |
 
 ```sh
-hibi reanchor asrt_1a2b3c4d
-hibi reanchor asrt_1a2b3c4d --suggest
-hibi reanchor asrt_1a2b3c4d --doc docs/retry.md --doc-quote "Retries are capped at 5 attempts"
+hibi reanchor clm_1a2b3c4d5e6f7a8b
+hibi reanchor clm_1a2b3c4d5e6f7a8b --suggest
+hibi reanchor clm_1a2b3c4d5e6f7a8b --doc docs/retry.md --doc-quote "Retries are capped at 5 attempts"
 ```
 
 ## `hibi retire`
@@ -212,14 +175,14 @@ hibi retire <claim-id> [options]
 | `--dry-run` | Compute the result without writing the store or any document. |
 
 ```sh
-hibi retire asrt_1a2b3c4d
+hibi retire clm_1a2b3c4d5e6f7a8b
 ```
 
 ## `hibi supersede`
 
 Mark a document superseded by another and relocate its live claims to the successor.
 
-A claim whose sentence appears verbatim in --to moves there (same id, code side, history). The rest are reported as misses for a manual reanchor or retire.
+A claim whose sentence appears verbatim in --to moves there (same id, evidence, attestations). The rest are reported as misses for a manual reanchor or retire. The old document records supersededBy.
 
 ```sh
 hibi supersede [options]
@@ -255,7 +218,7 @@ hibi archive --doc old.md --successor new.md
 
 ## `hibi schema`
 
-Print the JSON Schema of a model or protocol type, or the list of names.
+Print the JSON Schema of a model type, or the list of names.
 
 ```sh
 hibi schema [options]
@@ -263,7 +226,7 @@ hibi schema [options]
 
 | Flag | Meaning |
 |---|---|
-| `--name <Name>` | A schema name, e.g. Assertion, Verdict, ResolveParams. |
+| `--name <Name>` | A schema name, e.g. Claim, Verdict, Config. |
 
 ```sh
 hibi schema

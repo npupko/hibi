@@ -1,10 +1,11 @@
 /**
  * `reanchor`: re-point an existing claim at its current location.
  *
- * Both sides re-resolve against the current working tree and the stored
+ * Every span re-resolves against the current working tree and the stored
  * baseline is rewritten so a `moved`/`changed` claim settles back to
- * `unchanged`. Explicit replacement spans (`docSpec` / `code[]`) override;
- * otherwise each side re-localizes through its existing selectors.
+ * `unchanged`. Explicit replacement spans (`docSpec` / `evidence[]`) override;
+ * otherwise each span re-localizes through its existing selectors. The
+ * claim's `sentence` is refreshed from the new doc span.
  *
  * Safety: a side that resolves `orphaned` and has no explicit replacement is
  * refused; an empty span is never stored. The result carries the before and
@@ -18,13 +19,12 @@ import {
   type ResolveFiles,
   resolveSides,
   type SideResult,
-  worstCodeState,
+  worstState,
 } from "../algo/resolve.ts";
-import { newId, propositionFingerprint } from "../core/ids.ts";
 import type {
   AnchorState,
-  Assertion,
-  Proposition,
+  Claim,
+  ClaimKind,
   Region,
   SelectorBundle,
 } from "../core/model.ts";
@@ -33,13 +33,12 @@ import {
   type AnchorAnalyzer,
   buildCoarseBundle,
   buildSelectorBundle,
-  composeAnchor,
   isCoarseBundle,
 } from "./anchor.ts";
 import { languageForFile } from "./lang.ts";
 import {
-  type CodeTarget,
   documentIdForPath,
+  type EvidenceTarget,
   newDocument,
   type RecordContents,
   type RegionSpec,
@@ -53,12 +52,14 @@ export interface ReanchorInput {
   docSpec?: RegionSpec;
   /** Re-home the doc anchor to a different file (requires `docSpec`). */
   docPath?: string;
-  /** Replacement code-side targets; omit to re-localize the existing bundles. */
-  code?: CodeTarget[];
+  /** Replacement evidence targets; omit to re-localize the existing bundles. */
+  evidence?: EvidenceTarget[];
   /** The ref to stamp (the caller resolves git HEAD). */
   ref?: string;
   analyzer?: AnchorAnalyzer & AstAnalyzer;
   dryRun?: boolean;
+  /** Clock for a newly created document's `createdAt`. Default: now. */
+  now?: Date;
 }
 
 export interface SideQuote {
@@ -67,17 +68,18 @@ export interface SideQuote {
 }
 
 export interface ReanchorResult {
-  assertion: Assertion;
+  claim: Claim;
   doc: AnchorState;
-  code: AnchorState;
-  before: { doc: SideQuote; code: SideQuote[] };
-  after: { doc: SideQuote; code: SideQuote[] };
+  /** Absent when the claim has no evidence span. */
+  evidence?: AnchorState;
+  before: { doc: SideQuote; evidence: SideQuote[] };
+  after: { doc: SideQuote; evidence: SideQuote[] };
   warnings: string[];
 }
 
 /** One candidate location for `reanchor --suggest`. */
 export interface ReanchorCandidate {
-  side: "doc" | "code";
+  side: "doc" | "evidence";
   file: string;
   start: number;
   end: number;
@@ -111,7 +113,7 @@ function sideQuote(bundle: SelectorBundle): SideQuote {
  * are dropped and the rest sort by similarity, then path, then offset.
  */
 export function suggestForBundle(
-  side: "doc" | "code",
+  side: "doc" | "evidence",
   bundle: SelectorBundle,
   files: { path: string; content: string }[],
 ): ReanchorCandidate[] {
@@ -155,7 +157,7 @@ export function suggestForBundle(
 function toResolveFiles(contents: RecordContents): ResolveFiles {
   return {
     doc: contents.docContent,
-    code: new Map(Object.entries(contents.codeContents)),
+    evidence: new Map(Object.entries(contents.evidenceContents)),
   };
 }
 
@@ -165,31 +167,47 @@ function orphanError(id: string, side: string, file: string): Error {
   );
 }
 
-/** Rebuild one code bundle from an explicit replacement target. */
+/** The structural language of an evidence file: code claims only. */
+function evidenceLanguage(
+  kind: ClaimKind,
+  file: string,
+  override?: string,
+): string | undefined {
+  return kind === "code" ? (override ?? languageForFile(file)) : undefined;
+}
+
+/** Rebuild one evidence bundle from an explicit replacement target. */
 function bundleFromTarget(
-  target: CodeTarget,
+  kind: ClaimKind,
+  target: EvidenceTarget,
   contents: RecordContents,
   analyzer: AnchorAnalyzer | undefined,
 ): SelectorBundle {
-  if (target.coarse) return buildCoarseBundle(target.file);
+  if (target.coarse) {
+    if (kind !== "code") {
+      throw new Error("a reference claim needs a precise span, not a glob.");
+    }
+    return buildCoarseBundle(target.file);
+  }
   if (!target.region) {
     throw new Error(
-      `code target ${target.file} has no span; pass --code-quote or --code-range`,
+      `evidence target ${target.file} has no span; pass --code-quote or --code-range`,
     );
   }
-  const content = contents.codeContents[target.file];
+  const content = contents.evidenceContents[target.file];
   if (content === undefined || content === null) {
-    throw new Error(`Code file not found on disk: ${target.file}`);
+    throw new Error(`Evidence file not found on disk: ${target.file}`);
   }
   const region = resolveRegion(content, target.region);
   return buildSelectorBundle(target.file, content, region, {
-    language: target.language ?? languageForFile(target.file),
+    language: evidenceLanguage(kind, target.file, target.language),
     analyzer,
   });
 }
 
-/** Re-localize an existing code bundle in place from its resolved side result. */
-function relocateCodeBundle(
+/** Re-localize an existing evidence bundle in place from its resolved side result. */
+function relocateEvidenceBundle(
+  kind: ClaimKind,
   bundle: SelectorBundle,
   contents: RecordContents,
   side: SideResult,
@@ -197,12 +215,12 @@ function relocateCodeBundle(
   claimId: string,
 ): SelectorBundle {
   if (isCoarseBundle(bundle)) return bundle;
-  const content = contents.codeContents[bundle.file];
+  const content = contents.evidenceContents[bundle.file];
   if (content === undefined || content === null || !side.region) {
-    throw orphanError(claimId, "code", bundle.file);
+    throw orphanError(claimId, "evidence", bundle.file);
   }
   return buildSelectorBundle(bundle.file, content, side.region, {
-    language: languageForFile(bundle.file),
+    language: evidenceLanguage(kind, bundle.file),
     analyzer,
   });
 }
@@ -212,33 +230,27 @@ export async function reanchor(
   contents: RecordContents,
   input: ReanchorInput,
 ): Promise<ReanchorResult> {
-  const assertion = await store.getAssertion(input.claimId);
-  if (!assertion) throw new Error(`No claim ${input.claimId} in the store.`);
-  const proposition = await store.getProposition(assertion.propositionId);
-  if (!proposition) {
-    throw new Error(
-      `Proposition ${assertion.propositionId} missing for claim ${input.claimId}.`,
-    );
-  }
+  const claim = await store.getClaim(input.claimId);
+  if (!claim) throw new Error(`No claim ${input.claimId} in the store.`);
 
   const files = toResolveFiles(contents);
   const warnings: string[] = [];
 
-  // Resolve every side once.
-  const before = resolveSides(assertion, files, { ast: input.analyzer });
+  // Resolve every span once.
+  const before = resolveSides(claim, files, { ast: input.analyzer });
 
   // Doc side.
-  const docFile = input.docPath ?? assertion.anchor.doc.file;
+  const docFile = input.docPath ?? claim.doc.file;
   if (contents.docContent === null) {
     throw new Error(`Document not found on disk: ${docFile}`);
   }
   if (
     input.docPath !== undefined &&
-    input.docPath !== assertion.anchor.doc.file &&
+    input.docPath !== claim.doc.file &&
     !input.docSpec
   ) {
     throw new Error(
-      `relocating claim ${assertion.id} to ${input.docPath} requires an explicit doc span (--doc-quote/--doc-range); the existing selectors describe the old file.`,
+      `relocating claim ${claim.id} to ${input.docPath} requires an explicit doc span (--doc-quote/--doc-range); the existing selectors describe the old file.`,
     );
   }
   let docRegion: Region;
@@ -246,7 +258,7 @@ export async function reanchor(
     docRegion = resolveRegion(contents.docContent, input.docSpec);
   } else {
     if (before.doc.state === "orphaned" || !before.doc.region) {
-      throw orphanError(assertion.id, "doc", docFile);
+      throw orphanError(claim.id, "doc", docFile);
     }
     docRegion = before.doc.region;
   }
@@ -256,63 +268,57 @@ export async function reanchor(
     contents.docContent,
     docRegion,
   );
-  const confirmed = regionText(contents.docContent, docRegion);
+  const sentence = regionText(contents.docContent, docRegion);
 
-  // Code side.
-  let codeBundles: SelectorBundle[];
-  if (input.code !== undefined) {
-    codeBundles = input.code.map((t) =>
-      bundleFromTarget(t, contents, input.analyzer),
+  // Evidence side.
+  let evidence: SelectorBundle[];
+  if (input.evidence !== undefined) {
+    if (claim.kind === "attested" && input.evidence.length > 0) {
+      throw new Error(
+        `claim ${claim.id} is attested and has no evidence spans.`,
+      );
+    }
+    if (claim.kind === "reference" && input.evidence.length !== 1) {
+      throw new Error(
+        `claim ${claim.id} is a reference claim and needs exactly one evidence span.`,
+      );
+    }
+    evidence = input.evidence.map((t) =>
+      bundleFromTarget(claim.kind, t, contents, input.analyzer),
     );
   } else {
-    codeBundles = assertion.anchor.code.map((bundle, i) =>
-      relocateCodeBundle(
+    evidence = claim.evidence.map((bundle, i) =>
+      relocateEvidenceBundle(
+        claim.kind,
         bundle,
         contents,
-        before.code[i] as SideResult,
+        before.evidence[i] as SideResult,
         input.analyzer,
-        assertion.id,
+        claim.id,
       ),
     );
   }
 
   const documentId = input.docPath
     ? documentIdForPath(input.docPath)
-    : assertion.documentId;
+    : claim.documentId;
 
-  // Proposition refresh, split-on-write when shared.
-  const newFingerprint = propositionFingerprint(confirmed);
-  const shared = (await store.allAssertions()).some(
-    (x) => x.propositionId === proposition.id && x.id !== assertion.id,
-  );
-  let propositionId = assertion.propositionId;
-  if (shared && newFingerprint !== proposition.fingerprint) {
-    const fresh: Proposition = {
-      id: newId("prop"),
-      textCache: confirmed,
-      fingerprint: newFingerprint,
-    };
-    propositionId = fresh.id;
-    if (!input.dryRun) await store.putProposition(fresh);
-  } else {
-    proposition.textCache = confirmed;
-    proposition.fingerprint = newFingerprint;
-    if (!input.dryRun) await store.putProposition(proposition);
-  }
-
-  const next: Assertion = {
-    ...assertion,
+  const next: Claim = {
+    ...claim,
     documentId,
-    propositionId,
-    anchor: composeAnchor(docBundle, codeBundles),
-    ref: input.ref ?? assertion.ref,
+    sentence,
+    doc: docBundle,
+    evidence,
+    ref: input.ref ?? claim.ref,
   };
-  if (!input.dryRun) await store.putAssertion(next);
+  if (!input.dryRun) await store.putClaim(next);
 
-  if (!input.dryRun && input.docPath && documentId !== assertion.documentId) {
+  if (!input.dryRun && input.docPath && documentId !== claim.documentId) {
     const existing = await store.getDocument(documentId);
     if (!existing) {
-      await store.putDocument(newDocument(documentId, input.docPath));
+      await store.putDocument(
+        newDocument(documentId, input.docPath, input.now ?? new Date()),
+      );
     } else if (existing.lifecycle !== "active") {
       await store.putDocument({ ...existing, lifecycle: "active" });
     }
@@ -320,16 +326,18 @@ export async function reanchor(
 
   const after = resolveSides(next, files, { ast: input.analyzer });
   return {
-    assertion: next,
+    claim: next,
     doc: after.doc.state,
-    code: worstCodeState(after.code),
+    ...(after.evidence.length > 0
+      ? { evidence: worstState(after.evidence) }
+      : {}),
     before: {
-      doc: sideQuote(assertion.anchor.doc),
-      code: assertion.anchor.code.map(sideQuote),
+      doc: sideQuote(claim.doc),
+      evidence: claim.evidence.map(sideQuote),
     },
     after: {
-      doc: sideQuote(next.anchor.doc),
-      code: next.anchor.code.map(sideQuote),
+      doc: sideQuote(next.doc),
+      evidence: next.evidence.map(sideQuote),
     },
     warnings,
   };

@@ -4,22 +4,23 @@
  *
  * A menu, not a prescription: hibi cannot know intent, so `recommended` is set
  * only when the next step is clear, and `actions` are ordered by preference.
- * The lookup key is `(doc, code, behavior?, expired)`.
+ * The lookup key is `(doc, evidence?, judge?, expired)`.
  */
 
 import type {
   AnchorState,
-  BehaviorState,
+  EvidenceState,
+  JudgeState,
   Remediation,
   RemediationAction,
   Verdict,
 } from "./model.ts";
 
 export interface RemediationInput {
-  assertionId: string;
+  claimId: string;
   doc: AnchorState;
-  code: AnchorState;
-  behavior?: BehaviorState;
+  evidence?: EvidenceState;
+  judge?: JudgeState;
   expired: boolean;
 }
 
@@ -31,7 +32,7 @@ function updateThenReanchor(id: string): RemediationAction {
     id: "update-claim",
     title: "Update the sentence, then reanchor",
     rationale:
-      "the code changed; if the sentence is now wrong, rewrite it, then run the command",
+      "the evidence changed; if the sentence is now wrong, rewrite it, then run the command",
     command: reanchorCmd(id),
   };
 }
@@ -39,9 +40,9 @@ function updateThenReanchor(id: string): RemediationAction {
 function reverifyDoc(id: string): RemediationAction {
   return {
     id: "reverify-doc",
-    title: "Re-read the edited sentence against the code, then reanchor",
+    title: "Re-read the edited sentence against the evidence, then reanchor",
     rationale:
-      "the prose changed; confirm the code still backs it, then run the command",
+      "the prose changed; confirm the evidence still backs it, then run the command",
     command: reanchorCmd(id),
   };
 }
@@ -49,9 +50,9 @@ function reverifyDoc(id: string): RemediationAction {
 function reconcile(id: string): RemediationAction {
   return {
     id: "reconcile",
-    title: "Reconcile the doc and the code, then reanchor",
+    title: "Reconcile the doc and the evidence, then reanchor",
     rationale:
-      "both sides changed; re-verify the current sentence against the current code, then run the command",
+      "both sides changed; re-verify the current sentence against the current evidence, then run the command",
     command: reanchorCmd(id),
   };
 }
@@ -110,11 +111,11 @@ function supersede(): RemediationAction {
   };
 }
 
-function fixCode(): RemediationAction {
+function fixEvidence(): RemediationAction {
   return {
-    id: "fix-code",
-    title: "Fix the code to match the doc",
-    rationale: "if the doc is the spec, the code drifted from it",
+    id: "fix-evidence",
+    title: "Fix the evidence to match the doc",
+    rationale: "if the doc is the spec, the evidence drifted from it",
   };
 }
 
@@ -122,7 +123,8 @@ function fixClaim(): RemediationAction {
   return {
     id: "fix-claim",
     title: "Fix the documented claim",
-    rationale: "if the code is correct, the sentence is now wrong; rewrite it",
+    rationale:
+      "if the evidence is correct, the sentence is now wrong; rewrite it",
   };
 }
 
@@ -136,28 +138,28 @@ function reverifyAndReRecord(): RemediationAction {
 
 /** The remediation menu for a verdict, or `null` when there is nothing to do. */
 export function remediationFor(v: RemediationInput): Remediation | null {
-  const id = v.assertionId;
+  const id = v.claimId;
   let rem: Remediation | null = null;
 
-  const hasOrphan = v.doc === "orphaned" || v.code === "orphaned";
+  const hasOrphan = v.doc === "orphaned" || v.evidence === "orphaned";
   const docChanged = v.doc === "changed";
-  const codeChanged = v.code === "changed";
-  const hasAmbiguous = v.doc === "ambiguous" || v.code === "ambiguous";
-  const hasMoved = v.doc === "moved" || v.code === "moved";
+  const evidenceChanged = v.evidence === "changed";
+  const hasAmbiguous = v.doc === "ambiguous" || v.evidence === "ambiguous";
+  const hasMoved = v.doc === "moved" || v.evidence === "moved";
 
   if (hasOrphan) {
     rem = {
       recommended: "reanchor",
       actions: [reanchorSuggest(id), retire(id), supersede()],
     };
-  } else if (v.behavior === "refuted") {
-    rem = { recommended: null, actions: [fixCode(), fixClaim()] };
-  } else if (docChanged && codeChanged) {
+  } else if (v.judge === "refuted") {
+    rem = { recommended: null, actions: [fixEvidence(), fixClaim()] };
+  } else if (docChanged && evidenceChanged) {
     rem = {
       recommended: "reconcile",
       actions: [reconcile(id), reanchorAsIs(id), retire(id)],
     };
-  } else if (codeChanged) {
+  } else if (evidenceChanged) {
     rem = {
       recommended: "update-claim",
       actions: [updateThenReanchor(id), reanchorAsIs(id), retire(id)],
@@ -197,10 +199,10 @@ export function topAction(rem: Remediation | null): RemediationAction | null {
 
 export function remediationForVerdict(verdict: Verdict): Remediation | null {
   return remediationFor({
-    assertionId: verdict.assertionId,
+    claimId: verdict.claimId,
     doc: verdict.doc,
-    code: verdict.code,
-    behavior: verdict.behavior,
+    evidence: verdict.evidence,
+    judge: verdict.judge,
     expired: verdict.expired,
   });
 }

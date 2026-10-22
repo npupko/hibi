@@ -11,12 +11,11 @@
 import { isAbsolute, join } from "node:path";
 import { parseArgs } from "node:util";
 import pkg from "../../package.json" with { type: "json" };
-import type { Verifier } from "../core/model.ts";
-import { changedFiles, currentRef } from "../git/git.ts";
+import { changedFiles, currentRef, userEmail } from "../git/git.ts";
 import {
   ClaimStore,
-  type CodeTarget,
   Engine,
+  type EvidenceTarget,
   type FailOn,
   type ListState,
   type RecordCall,
@@ -27,7 +26,6 @@ import {
 import { completionScript, isShell } from "./completions.ts";
 import {
   COMMANDS,
-  type CommandSpec,
   commandHelp,
   commandSpec,
   parseArgsOptions,
@@ -106,15 +104,6 @@ function projection(mode: OutputMode): ProjectionOptions {
   return { explain: mode.explain, hints: mode.hints };
 }
 
-async function fingerprints(
-  engine: Engine,
-  mode: OutputMode,
-): Promise<Map<string, string> | undefined> {
-  if (!mode.explain) return undefined;
-  const props = await engine.store.allPropositions();
-  return new Map(props.map((p) => [p.id, p.fingerprint]));
-}
-
 /** Build the rich/compact `check` render context. */
 async function checkContext(
   engine: Engine,
@@ -122,14 +111,10 @@ async function checkContext(
   mode: OutputMode,
   lead?: string[],
 ) {
-  const [assertions, propositions] = await Promise.all([
-    engine.store.allAssertions(),
-    engine.store.allPropositions(),
-  ]);
+  const claims = await engine.store.allClaims();
   return {
     report,
-    assertionsById: new Map(assertions.map((a) => [a.id, a])),
-    propsById: new Map(propositions.map((p) => [p.id, p])),
+    claimsById: new Map(claims.map((c) => [c.id, c])),
     read: fileReader(engine.store.anchorRoot),
     style: makeStyle(mode.color),
     mode,
@@ -164,13 +149,13 @@ function spanSpec(quote: unknown, range: unknown): RegionSpec | undefined {
   return undefined;
 }
 
-/** The code side from `--code-file`/`--code-quote`/`--code-range`/`--glob` (or camelCase keys). */
+/** The code evidence from `--code-file`/`--code-quote`/`--code-range`/`--glob` (or camelCase keys). */
 function codeSideOf(v: {
   codeFile?: unknown;
   codeQuote?: unknown;
   codeRange?: unknown;
   glob?: unknown;
-}): CodeTarget[] {
+}): EvidenceTarget[] {
   const glob = str(v.glob);
   const codeFile = str(v.codeFile);
   if (glob && codeFile) {
@@ -192,52 +177,33 @@ function codeSideOf(v: {
   return [];
 }
 
-function verifierTimeoutMsOf(raw: unknown): number | undefined {
-  if (raw === undefined) return undefined;
-  const secs = Number(raw);
-  if (!Number.isFinite(secs) || secs <= 0) {
-    throw new Error(
-      `--verifier-timeout expects a positive number of seconds, got: ${String(raw)}`,
-    );
-  }
-  return secs * 1000;
-}
-
-/** Parse repeatable `kind:ref` verifiers. */
-function parseVerifiers(raw: unknown): Verifier[] {
-  if (raw === undefined) return [];
-  const items = Array.isArray(raw) ? raw : [raw];
-  return items.map((item) => {
-    const s = String(item);
-    const idx = s.indexOf(":");
-    if (idx <= 0) {
-      throw new Error(`--verifier expects kind:ref, got: ${s}`);
-    }
-    return { kind: s.slice(0, idx), ref: s.slice(idx + 1) };
-  });
-}
-
 /** A `RecordCall` from a JSON spec (one `--from-file` item) or the flag values. */
 function recordCallFromSpec(
   spec: Record<string, unknown>,
   ref: string,
+  defaultBy: string | undefined,
 ): RecordCall {
   const doc = spec.doc;
   if (typeof doc !== "string" || doc.length === 0)
     throw new Error("a claim needs a `doc` path");
   const docSpec = spanSpec(spec.docQuote, spec.docRange);
   if (!docSpec) throw new Error(`claim on ${doc} needs docQuote or docRange`);
+  const by = str(spec.by) ?? defaultBy;
+  if (by === undefined) {
+    throw new Error(
+      "no actor to record the claim under: pass --by <actor> (human:<id>, agent:<name>, process:<name>) or set git user.email",
+    );
+  }
   return {
     docPath: doc,
     docQuote: docSpec.quote,
     docRange: docSpec.quote === undefined ? docSpec : undefined,
-    code: codeSideOf(spec),
-    verified: Boolean(spec.verified),
+    evidence: codeSideOf(spec),
+    by,
     owner: str(spec.owner),
     ref,
     ttl: str(spec.ttl),
     enforcement: spec.suggest ? "suggested" : "enforced",
-    verifiers: parseVerifiers(spec.verifier),
   };
 }
 
@@ -251,21 +217,20 @@ function flagsToSpec(values: Values): Record<string, unknown> {
     codeRange: values["code-range"],
     glob: values.glob,
     suggest: values.suggest,
-    verified: values.verified,
-    verifier: values.verifier,
     ttl: values.ttl,
     owner: values.owner,
+    by: values.by,
   };
 }
 
 /** The lean `record` result: the handle plus what an agent needs next. */
 function recordSummary(r: RecordResult): Record<string, unknown> {
   return {
-    id: r.assertion.id,
+    id: r.claim.id,
+    kind: r.claim.kind,
     doc: r.document.path,
-    code: r.assertion.anchor.code[0]?.file ?? null,
-    enforcement: r.assertion.enforcement,
-    verified: r.assertion.verified,
+    evidence: r.claim.evidence[0]?.file ?? null,
+    enforcement: r.claim.enforcement,
     ...(r.warnings.length > 0 ? { warnings: r.warnings } : {}),
   };
 }
@@ -297,9 +262,7 @@ async function main(argv: string[]): Promise<number> {
   const spec = commandSpec(cmd);
   if (!spec) {
     return fail(
-      `unknown command: ${cmd}. Commands: ${COMMANDS.filter((c) => !c.aliasOf)
-        .map((c) => c.name)
-        .join(", ")}. Run \`hibi --help\`.`,
+      `unknown command: ${cmd}. Commands: ${COMMANDS.map((c) => c.name).join(", ")}. Run \`hibi --help\`.`,
       preMode(rest),
     );
   }
@@ -371,48 +334,21 @@ async function main(argv: string[]): Promise<number> {
     ? { anchorRoot, storeDir: absPath(anchorRoot, storeDir) }
     : anchorRoot;
 
-  const open = async (): Promise<Engine> => {
-    // Only a missing store means "run hibi init"; a version skew, a corrupt
-    // record, or a failed upgrade each carry their own actionable message.
-    const engine = await Engine.open(loc, { noAst }).catch(async (e) =>
+  const open = async (): Promise<Engine> =>
+    // Only a missing store means "run hibi init"; a version skew or a corrupt
+    // config each carry their own actionable message.
+    Engine.open(loc, { noAst }).catch(async (e) =>
       (await ClaimStore.isInitialized(loc))
         ? fail((e as Error).message, mode)
         : fail("No claim store. Run `hibi init`.", mode),
     );
-    if (engine.store.upgradedFrom) {
-      process.stderr.write(
-        `upgraded claim store from ${engine.store.upgradedFrom} to ${SCHEMA_VERSION} (one-time)\n`,
-      );
-    }
-    return engine;
-  };
 
-  // Deprecated aliases map onto `check`.
-  let effective = spec;
-  if (spec.aliasOf === "check") {
-    const replacement =
-      cmd === "diff"
-        ? "hibi check --since <ref>"
-        : values.doc
-          ? "hibi check --doc <path>"
-          : "hibi check --overview";
-    process.stderr.write(
-      `hibi ${cmd} is deprecated and will be removed; use \`${replacement}\`.\n`,
-    );
-    if (cmd === "diff" && !values.since) {
-      return fail("diff requires --since <ref>", mode);
-    }
-    if (cmd === "status" && !values.doc) values.overview = true;
-    effective = commandSpec("check") as CommandSpec;
-  }
-
-  switch (effective.name) {
+  switch (spec.name) {
     case "init": {
       const engine = await Engine.init(loc);
       const config = await engine.store.config();
       const payload = {
         store: engine.store.dir,
-        nonce: config.nonce,
         version: config.version,
       };
       await emit(
@@ -426,6 +362,8 @@ async function main(argv: string[]): Promise<number> {
     case "record": {
       const engine = await open();
       const ref = await currentRef(anchorRoot);
+      const email = await userEmail(anchorRoot);
+      const defaultBy = email === null ? undefined : `human:${email}`;
       const fromFile = str(values["from-file"]);
 
       if (fromFile !== undefined) {
@@ -455,7 +393,11 @@ async function main(argv: string[]): Promise<number> {
             return fail(`record --from-file: item ${i} is not an object`, mode);
           try {
             calls.push(
-              recordCallFromSpec(item as Record<string, unknown>, ref),
+              recordCallFromSpec(
+                item as Record<string, unknown>,
+                ref,
+                defaultBy,
+              ),
             );
           } catch (e) {
             return fail(
@@ -468,28 +410,18 @@ async function main(argv: string[]): Promise<number> {
         // fails. Records are snapshotted whole, not just by id, because
         // re-recording an existing claim updates it in place.
         const before = {
-          assertions: new Map(
-            (await engine.store.allAssertions()).map((x) => [x.id, x]),
-          ),
-          propositions: new Map(
-            (await engine.store.allPropositions()).map((x) => [x.id, x]),
+          claims: new Map(
+            (await engine.store.allClaims()).map((x) => [x.id, x]),
           ),
           documents: new Map(
             (await engine.store.allDocuments()).map((x) => [x.id, x]),
           ),
         };
         const rollback = async () => {
-          for (const x of await engine.store.allAssertions()) {
-            const original = before.assertions.get(x.id);
-            if (original === undefined)
-              await engine.store.deleteAssertion(x.id);
-            else await engine.store.putAssertion(original);
-          }
-          for (const x of await engine.store.allPropositions()) {
-            const original = before.propositions.get(x.id);
-            if (original === undefined)
-              await engine.store.deleteProposition(x.id);
-            else await engine.store.putProposition(original);
+          for (const x of await engine.store.allClaims()) {
+            const original = before.claims.get(x.id);
+            if (original === undefined) await engine.store.deleteClaim(x.id);
+            else await engine.store.putClaim(original);
           }
           for (const x of await engine.store.allDocuments()) {
             const original = before.documents.get(x.id);
@@ -525,7 +457,7 @@ async function main(argv: string[]): Promise<number> {
       let call: RecordCall;
       try {
         if (!values.doc) throw new Error("record requires --doc <path>");
-        call = recordCallFromSpec(flagsToSpec(values), ref);
+        call = recordCallFromSpec(flagsToSpec(values), ref, defaultBy);
       } catch (e) {
         return fail((e as Error).message, mode);
       }
@@ -536,7 +468,7 @@ async function main(argv: string[]): Promise<number> {
             ? "this sentence is already claimed; did you mean `hibi reanchor`?"
             : "hibi check";
         const payload = mode.explain
-          ? { ...result, claimId: result.assertion.id }
+          ? { ...result, claimId: result.claim.id }
           : recordSummary(result);
         await emit(mode, envelope("record", payload, next), () =>
           misc.renderRecord(result, style, mode),
@@ -549,12 +481,6 @@ async function main(argv: string[]): Promise<number> {
 
     case "check": {
       const engine = await open();
-      let verifierTimeoutMs: number | undefined;
-      try {
-        verifierTimeoutMs = verifierTimeoutMsOf(values["verifier-timeout"]);
-      } catch (e) {
-        return fail((e as Error).message, mode);
-      }
       const since = str(values.since);
       const doc = str(values.doc);
       let files: string[] | undefined;
@@ -568,11 +494,8 @@ async function main(argv: string[]): Promise<number> {
       const report = await engine.check({
         onlyFiles: files,
         doc,
-        write: Boolean(values.write),
         failOn: (str(values["fail-on"]) ?? "gating") as FailOn,
         ref: await currentRef(anchorRoot),
-        runVerifiers: Boolean(values["run-verifiers"]),
-        verifierTimeoutMs,
       });
       const extra: Record<string, unknown> = {};
       if (since !== undefined) {
@@ -583,23 +506,16 @@ async function main(argv: string[]): Promise<number> {
         extra.doc = doc;
         extra.found = report.documents.length > 0;
       }
-      const value = projectCheckReport(
-        report,
-        projection(mode),
-        extra,
-        await fingerprints(engine, mode),
-      );
+      const value = projectCheckReport(report, projection(mode), extra);
       await emit(mode, value, async () => {
         if (values.overview) {
-          const [assertions, propositions, config] = await Promise.all([
-            engine.store.allAssertions(),
-            engine.store.allPropositions(),
+          const [claims, config] = await Promise.all([
+            engine.store.allClaims(),
             engine.store.config(),
           ]);
           return renderOverview({
             report,
-            assertions,
-            propositions,
+            claims,
             storeVersion: config.version,
             style,
             mode,
@@ -709,19 +625,21 @@ async function main(argv: string[]): Promise<number> {
           doc: str(values.doc),
           docQuote: docSpec?.quote,
           docRange: docSpec?.quote === undefined ? docSpec : undefined,
-          code: code.length > 0 ? code : undefined,
+          evidence: code.length > 0 ? code : undefined,
           ref: await currentRef(anchorRoot),
           dryRun,
         });
         const payload = {
-          id: result.assertion.id,
+          id: result.claim.id,
           doc: result.doc,
-          code: result.code,
+          ...(result.evidence !== undefined
+            ? { evidence: result.evidence }
+            : {}),
           before: result.before,
           after: result.after,
           ...(result.warnings.length > 0 ? { warnings: result.warnings } : {}),
           ...(dryRun ? { dryRun: true } : {}),
-          ...(mode.explain ? { assertion: result.assertion } : {}),
+          ...(mode.explain ? { claim: result.claim } : {}),
         };
         await emit(
           mode,
@@ -749,7 +667,7 @@ async function main(argv: string[]): Promise<number> {
           envelope(
             "retire",
             {
-              id: result.assertion.id,
+              id: result.claim.id,
               alreadyRetired: result.alreadyRetired,
               ...(dryRun ? { dryRun: true } : {}),
             },
@@ -836,12 +754,8 @@ async function main(argv: string[]): Promise<number> {
 
     case "schema": {
       const { SCHEMAS } = await import("../core/model.ts");
-      const { PROTOCOL_SCHEMAS } = await import("../resolver/protocol.ts");
       const z = await import("zod");
-      const all: Record<string, import("zod").ZodType> = {
-        ...SCHEMAS,
-        ...PROTOCOL_SCHEMAS,
-      };
+      const all: Record<string, import("zod").ZodType> = { ...SCHEMAS };
       const name = str(values.name);
       // Machine output in every mode: indented unless the format is plain json.
       const pretty = mode.kind !== "json";

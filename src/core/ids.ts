@@ -1,25 +1,21 @@
 /**
- * Identity helpers. Entity ids are authored/explicit; the Proposition
- * fingerprint is a content hash (the dedup unit, §5) — never similarity-computed.
+ * Identity helpers (SPEC 6). Ids are `doc_` or `clm_` followed by 16 lowercase
+ * hex characters. A claim id is random; a document id is derived from the
+ * document's repository-relative path, so the same path always maps to the
+ * same document.
  */
 import { randomUUID } from "node:crypto";
-import { normalizeText } from "../algo/normalize.ts";
 
-/** A fresh opaque id with a short typed prefix (e.g. `prop_…`, `asrt_…`). */
-export function newId(prefix: string): string {
-  return `${prefix}_${randomUUID().replace(/-/g, "").slice(0, 16)}`;
+function hex16(): string {
+  return randomUUID().replace(/-/g, "").slice(0, 16);
 }
 
-/**
- * Content fingerprint of a Proposition (§5), the dedup unit. Computed from the
- * **confirmed text** — the live document span read at record/confirm time, not
- * the non-authoritative `textCache` (§4/§18-B). Identity is by normalized
- * content so two authors writing the same claim dedup, but it is *explicit
- * content*, not a similarity score. xxHash64 hex (§16).
- */
-export function propositionFingerprint(confirmedText: string): string {
-  return Bun.hash
-    .xxHash64(normalizeText(confirmedText))
-    .toString(16)
-    .padStart(16, "0");
+/** A fresh claim id: `clm_` plus 16 hex characters. */
+export function newClaimId(): string {
+  return `clm_${hex16()}`;
+}
+
+/** The stable document id for a repository-relative path: `doc_` plus the 16-hex xxHash64 of the path. */
+export function documentIdForPath(path: string): string {
+  return `doc_${Bun.hash.xxHash64(path).toString(16).padStart(16, "0")}`;
 }

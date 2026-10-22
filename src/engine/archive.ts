@@ -41,7 +41,7 @@ export async function archiveDocument(
   const root = store.anchorRoot;
   const id = documentIdForPath(docPath);
   const doc: Document =
-    (await store.getDocument(id)) ?? newDocument(id, docPath);
+    (await store.getDocument(id)) ?? newDocument(id, docPath, new Date());
   const dryRun = opts.dryRun ?? false;
 
   const abs = join(root, docPath);
@@ -62,7 +62,7 @@ export async function archiveDocument(
 
   doc.lifecycle = "archived";
   if (!dryRun) await store.putDocument(doc);
-  const strandedClaims = (await store.allAssertions())
+  const strandedClaims = (await store.allClaims())
     .filter((a) => isLiveClaimOn(a, doc.id))
     .map((a) => a.id);
   return {

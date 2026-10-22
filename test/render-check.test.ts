@@ -3,7 +3,7 @@ import { getAnalyzer } from "../src/ast/analyzer.ts";
 import { renderCheck } from "../src/cli/render/check.ts";
 import { fileReader } from "../src/cli/render/helpers.ts";
 import { resolveMode } from "../src/cli/render/mode.ts";
-import { duplicateCount, renderOverview } from "../src/cli/render/status.ts";
+import { renderOverview } from "../src/cli/render/status.ts";
 import { makeStyle } from "../src/cli/render/style.ts";
 import { runCheck } from "../src/engine/check.ts";
 import type { CheckReport } from "../src/index.ts";
@@ -31,14 +31,10 @@ async function ctx(r: TempRepo, report: CheckReport, kind: "rich" | "compact") {
     { color: "never", format: kind === "compact" ? "compact" : "human" },
     { isTTY: false },
   );
-  const [assertions, propositions] = await Promise.all([
-    r.store.allAssertions(),
-    r.store.allPropositions(),
-  ]);
+  const claims = await r.store.allClaims();
   return {
     report,
-    assertionsById: new Map(assertions.map((a) => [a.id, a])),
-    propsById: new Map(propositions.map((p) => [p.id, p])),
+    claimsById: new Map(claims.map((c) => [c.id, c])),
     read: fileReader(r.store.anchorRoot),
     style: makeStyle(false),
     mode,
@@ -78,7 +74,7 @@ describe("renderCheck: rich", () => {
     // biome-ignore lint/suspicious/noControlCharactersInRegex: assert no ANSI leaked.
     expect(text).not.toMatch(/\x1b\[/);
     expect(text).toContain("✖ README.md");
-    expect(text).toContain("code:changed");
+    expect(text).toContain("evidence:changed");
     expect(text).toContain('"Capped at 5 attempts"');
     expect(text).toContain("src/retry.ts:1");
     expect(text).toContain("help:");
@@ -123,7 +119,7 @@ describe("renderCheck: compact", () => {
     // biome-ignore lint/suspicious/noControlCharactersInRegex: assert no ANSI leaked.
     expect(text).not.toMatch(/\x1b\[/);
     expect(text).toContain("✖ README.md");
-    expect(text).toContain("code:changed");
+    expect(text).toContain("evidence:changed");
     expect(text).toContain("src/retry.ts:1");
     expect(text).not.toContain("help:");
   });
@@ -137,15 +133,11 @@ describe("renderOverview: repo-wide table", () => {
       { color: "never", format: "human" },
       { isTTY: false },
     );
-    const [assertions, propositions] = await Promise.all([
-      r.store.allAssertions(),
-      r.store.allPropositions(),
-    ]);
+    const claims = await r.store.allClaims();
     const text = renderOverview({
       report,
-      assertions,
-      propositions,
-      storeVersion: "v3",
+      claims,
+      storeVersion: "v4",
       style: makeStyle(false),
       mode,
     });
@@ -159,7 +151,6 @@ describe("renderOverview: repo-wide table", () => {
     // The gating doc sorts above the clean one.
     expect(text.indexOf("README.md")).toBeLessThan(text.indexOf("docs/api.md"));
     expect(text).toMatch(/Tracking 2 documents.* exit 2/);
-    expect(text).toContain("Store v3, 0 duplicate propositions.");
-    expect(duplicateCount(assertions, propositions)).toBe(0);
+    expect(text).toContain("Store v4.");
   });
 });

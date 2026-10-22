@@ -75,10 +75,10 @@ describe("coverage", () => {
   test("a claim covers exactly the region its doc anchor lands in", async () => {
     const engine = await repoWithDoc();
     const rec = await engine.record({
+      by: "human:tester@example.com",
       docPath: "README.md",
       docQuote: "The retry limit is five attempts",
-      code: [{ file: "src/x.ts", region: { quote: "RETRY = 5" } }],
-      verified: true,
+      evidence: [{ file: "src/x.ts", region: { quote: "RETRY = 5" } }],
       ref: "r",
     });
 
@@ -90,7 +90,7 @@ describe("coverage", () => {
     const covered = result.regions.filter((r) => r.covered);
     expect(covered).toHaveLength(1);
     expect(covered[0]?.preview).toContain("retry limit");
-    expect(covered[0]?.claimIds).toContain(rec.assertion.id);
+    expect(covered[0]?.claimIds).toContain(rec.claim.id);
     expect(
       result.regions.find((r) => r.preview.includes("background"))?.covered,
     ).toBe(false);
@@ -99,15 +99,15 @@ describe("coverage", () => {
   test("a retired claim no longer covers its region", async () => {
     const engine = await repoWithDoc();
     const rec = await engine.record({
+      by: "human:tester@example.com",
       docPath: "README.md",
       docQuote: "The retry limit is five attempts",
-      code: [{ file: "src/x.ts", region: { quote: "RETRY = 5" } }],
-      verified: true,
+      evidence: [{ file: "src/x.ts", region: { quote: "RETRY = 5" } }],
       ref: "r",
     });
     expect((await engine.coverage("README.md")).summary.covered).toBe(1);
 
-    await engine.retire(rec.assertion.id);
+    await engine.retire(rec.claim.id);
     const after = await engine.coverage("README.md");
     expect(after.summary.covered).toBe(0);
     expect(after.regions.every((r) => !r.covered)).toBe(true);
@@ -123,17 +123,17 @@ describe("coverage", () => {
     );
     const engine = await Engine.init(root);
     await engine.record({
+      by: "human:tester@example.com",
       docPath: "README.md",
       docQuote: "First the retry limit is five",
-      code: [{ file: "src/x.ts", region: { quote: "RETRY = 5" } }],
-      verified: true,
+      evidence: [{ file: "src/x.ts", region: { quote: "RETRY = 5" } }],
       ref: "r",
     });
     await engine.record({
+      by: "human:tester@example.com",
       docPath: "README.md",
       docQuote: "Second RETRY is the symbol",
-      code: [{ file: "src/x.ts", region: { quote: "RETRY" } }],
-      verified: true,
+      evidence: [{ file: "src/x.ts", region: { quote: "RETRY" } }],
       ref: "r",
     });
 
@@ -143,26 +143,27 @@ describe("coverage", () => {
     expect(result.summary.coverageRatio).toBe(1);
   });
 
-  test("a doc-only suggested claim with no code target grounds nothing", async () => {
+  test("an attested claim covers its region like any live claim", async () => {
     const engine = await repoWithDoc();
     await engine.record({
+      by: "human:tester@example.com",
       docPath: "README.md",
       docQuote: "The retry limit is five attempts",
-      enforcement: "suggested",
+      kind: "attested",
+      ttl: "P90D",
     });
 
     const result = await engine.coverage("README.md");
-    expect(result.summary.covered).toBe(0);
-    expect(result.regions.every((r) => !r.covered)).toBe(true);
+    expect(result.summary.covered).toBe(1);
   });
 
   test("a claim whose doc sentence drifted off no longer covers its region", async () => {
     const engine = await repoWithDoc();
     await engine.record({
+      by: "human:tester@example.com",
       docPath: "README.md",
       docQuote: "The retry limit is five attempts",
-      code: [{ file: "src/x.ts", region: { quote: "RETRY = 5" } }],
-      verified: true,
+      evidence: [{ file: "src/x.ts", region: { quote: "RETRY = 5" } }],
       ref: "r",
     });
     expect((await engine.coverage("README.md")).summary.covered).toBe(1);
@@ -199,9 +200,10 @@ describe("coverage", () => {
     );
     const engine = await Engine.init(root);
     await engine.record({
+      by: "human:tester@example.com",
       docPath: "README.md",
       docQuote: "The retry limit is five.",
-      code: [{ file: "src/x.ts", region: { quote: "RETRY = 5" } }],
+      evidence: [{ file: "src/x.ts", region: { quote: "RETRY = 5" } }],
       ref: "r",
     });
     const result = await engine.coverage("README.md");

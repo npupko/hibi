@@ -1,18 +1,13 @@
 /**
- * Anchor construction at record time. The anchor is bidirectional: a doc-side
- * bundle (the documented sentence) plus code-side bundles (the code it
- * describes). Each bundle is the baseline snapshot for its side: text-quote
- * (exact + prefix/suffix), text-position, and, with an analyzer, the ast-node
- * fingerprint and the in-span literal value.
+ * Selector construction at record time. A claim has a doc bundle (the
+ * documented sentence) plus evidence bundles (the code or document span that
+ * backs it). Each bundle is the baseline snapshot for its span: text-quote
+ * (exact + prefix/suffix), text-position, and, for code with an analyzer, the
+ * ast-node fingerprint and the in-span literal value.
  */
 
 import { TEXT_QUOTE_CONTEXT } from "../algo/params.ts";
-import type {
-  Anchor,
-  Region,
-  Selector,
-  SelectorBundle,
-} from "../core/model.ts";
+import type { Region, Selector, SelectorBundle } from "../core/model.ts";
 
 /** Record-time tree-sitter seam (implemented by `src/ast/analyzer.ts`). */
 export interface AnchorAnalyzer {
@@ -100,11 +95,4 @@ export function coarseCovers(pattern: string, path: string): boolean {
   } catch {
     return false;
   }
-}
-
-export function composeAnchor(
-  doc: SelectorBundle,
-  code: SelectorBundle[] = [],
-): Anchor {
-  return { doc, code };
 }

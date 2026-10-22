@@ -7,8 +7,8 @@
 
 import { isWarnVerdict } from "../core/gating.ts";
 import type {
-  Assertion,
-  Proposition,
+  Claim,
+  ClaimKind,
   SelectorBundle,
   Verdict,
 } from "../core/model.ts";
@@ -26,25 +26,23 @@ export const LIST_STATES = [
   "orphaned",
   "suggested",
   "stranded",
-  "duplicate",
 ] as const;
 export type ListState = (typeof LIST_STATES)[number];
 
 export interface ListRow {
   claimId: string;
-  propositionId: string;
-  /** The documented sentence (non-authoritative cache). */
-  text: string;
+  kind: ClaimKind;
+  sentence: string;
   documentPath: string | null;
-  codePath: string | null;
+  evidencePath: string | null;
   /** Worst side-tagged status, `retired`, or `unchanged` when clean. */
   status: string;
   severity: ListSeverity;
   gates: boolean;
-  enforcement: Assertion["enforcement"];
+  enforcement: Claim["enforcement"];
   recommended: string | null;
   /** Under `--path`: which side matched. */
-  side?: "doc" | "code";
+  side?: "doc" | "evidence";
 }
 
 export interface ListResult {
@@ -54,28 +52,9 @@ export interface ListResult {
   claims: ListRow[];
 }
 
-/**
- * How many live (non-retired) claims assert each proposition fingerprint. The
- * single source for both the `duplicate` list state and the overview footer.
- */
-export function liveFingerprintCounts(
-  assertions: Assertion[],
-  propositions: Proposition[],
-): Map<string, number> {
-  const fpByProp = new Map(propositions.map((p) => [p.id, p.fingerprint]));
-  const counts = new Map<string, number>();
-  for (const a of assertions) {
-    if (a.enforcement === "retired") continue;
-    const fp = fpByProp.get(a.propositionId);
-    if (!fp) continue;
-    counts.set(fp, (counts.get(fp) ?? 0) + 1);
-  }
-  return counts;
-}
-
 function severityOf(
   v: Verdict,
-  enforcement: Assertion["enforcement"],
+  enforcement: Claim["enforcement"],
 ): ListSeverity {
   if (v.gates) return "gating";
   if (isWarnVerdict(v, enforcement)) return "warning";
@@ -90,25 +69,20 @@ function bundleMatches(bundle: SelectorBundle, path: string): boolean {
   return false;
 }
 
-/** Which side of a claim's anchor targets or covers `path`, if any. */
+/** Which side of a claim targets or covers `path`, if any. */
 export function matchedSide(
-  a: Assertion,
+  c: Claim,
   path: string,
-): "doc" | "code" | undefined {
-  if (a.anchor.doc.file === path) return "doc";
-  if (a.anchor.code.some((b) => bundleMatches(b, path))) return "code";
+): "doc" | "evidence" | undefined {
+  if (c.doc.file === path) return "doc";
+  if (c.evidence.some((b) => bundleMatches(b, path))) return "evidence";
   return undefined;
 }
 
-function relevantCodePath(
-  v: Verdict,
-  assertion: Assertion | undefined,
-): string | null {
-  const codeFiles = assertion?.anchor.code.map((b) => b.file) ?? [];
-  const changed = v.evidence.changedEvidence.find((c) =>
-    codeFiles.includes(c.path),
-  );
-  return changed?.path ?? codeFiles[0] ?? null;
+function relevantEvidencePath(v: Verdict, claim: Claim): string | null {
+  const files = claim.evidence.map((b) => b.file);
+  const changed = v.detail.changes.find((c) => files.includes(c.path));
+  return changed?.path ?? files[0] ?? null;
 }
 
 export interface ToListRowsOptions {
@@ -119,50 +93,43 @@ export interface ToListRowsOptions {
 
 export function toListRows(
   report: CheckReport,
-  assertions: Assertion[],
-  propositions: Proposition[],
+  claims: Claim[],
   documents: DocumentReport[],
   opts: ToListRowsOptions = {},
 ): ListResult {
   const state = opts.state ?? "all";
   const hints = opts.hints ?? true;
-  const assertById = new Map(assertions.map((a) => [a.id, a]));
-  const propById = new Map(propositions.map((p) => [p.id, p]));
+  const claimById = new Map(claims.map((c) => [c.id, c]));
   const docById = new Map(documents.map((d) => [d.id, d]));
-
-  const liveByFingerprint = liveFingerprintCounts(assertions, propositions);
 
   const rows: ListRow[] = [];
   for (const v of report.verdicts) {
-    const assertion = assertById.get(v.assertionId);
-    if (!assertion) continue;
-    const enforcement = assertion.enforcement;
+    const claim = claimById.get(v.claimId);
+    if (!claim) continue;
+    const enforcement = claim.enforcement;
     const doc = docById.get(v.documentId);
     const retired = enforcement === "retired";
     const severity = retired ? "clean" : severityOf(v, enforcement);
     const lifecycle = doc?.lifecycle ?? "active";
 
-    let side: "doc" | "code" | undefined;
+    let side: "doc" | "evidence" | undefined;
     if (opts.path !== undefined) {
-      side = matchedSide(assertion, opts.path);
+      side = matchedSide(claim, opts.path);
       if (!side) continue;
     }
 
-    const fp = propById.get(assertion.propositionId)?.fingerprint;
     const matches = (() => {
       switch (state) {
         case "all":
           return true;
         case "orphaned":
-          return !retired && (v.doc === "orphaned" || v.code === "orphaned");
+          return (
+            !retired && (v.doc === "orphaned" || v.evidence === "orphaned")
+          );
         case "suggested":
           return enforcement === "suggested";
         case "stranded":
           return !retired && lifecycle !== "active";
-        case "duplicate":
-          return (
-            !retired && fp !== undefined && (liveByFingerprint.get(fp) ?? 0) > 1
-          );
         default:
           return !retired && severity === state;
       }
@@ -176,11 +143,11 @@ export function toListRows(
       hints && !retired ? (v.remediation?.recommended ?? null) : null;
 
     rows.push({
-      claimId: v.assertionId,
-      propositionId: v.propositionId,
-      text: propById.get(v.propositionId)?.textCache ?? "",
+      claimId: v.claimId,
+      kind: claim.kind,
+      sentence: claim.sentence,
       documentPath: doc?.path ?? null,
-      codePath: relevantCodePath(v, assertion),
+      evidencePath: relevantEvidencePath(v, claim),
       status,
       severity,
       gates: v.gates,

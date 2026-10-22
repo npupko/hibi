@@ -40,14 +40,14 @@ async function deps(r: TempRepo) {
   };
 }
 
-describe("supersession edges", () => {
-  test("supersedes flips the old doc to superseded and authors the edge on the new doc", async () => {
+describe("supersession", () => {
+  test("supersede flips the old doc to superseded and points it at the new doc", async () => {
     const r = await repo();
     await r.write("v2.md", "# v2\n");
     const { newDoc, oldDoc, relocated, misses, strandedClaims, dryRun } =
       await supersede(r.store, await deps(r), { from: "v1.md", to: "v2.md" });
-    expect(newDoc.edges).toEqual([{ type: "supersedes", target: oldDoc.id }]);
-    expect(oldDoc.edges).toEqual([]);
+    expect(oldDoc.supersededBy).toBe(newDoc.id);
+    expect(newDoc.supersededBy).toBeUndefined();
     expect(oldDoc.lifecycle).toBe("superseded");
     expect(newDoc.lifecycle).toBe("active");
     expect(relocated).toEqual([]);
@@ -69,13 +69,14 @@ describe("supersession edges", () => {
     ).rejects.toThrow("Document not found on disk: missing.md");
   });
 
-  test("edges are idempotent (re-authoring does not duplicate)", async () => {
+  test("re-running supersede is idempotent", async () => {
     const r = await repo();
     await r.write("v2.md", "# v2\n");
     await supersede(r.store, await deps(r), { from: "v1.md", to: "v2.md" });
     await supersede(r.store, await deps(r), { from: "v1.md", to: "v2.md" });
-    const newDoc = await r.store.getDocument(documentIdForPath("v2.md"));
-    expect(newDoc?.edges.filter((e) => e.type === "supersedes").length).toBe(1);
+    const oldDoc = await r.store.getDocument(documentIdForPath("v1.md"));
+    expect(oldDoc?.supersededBy).toBe(documentIdForPath("v2.md"));
+    expect(oldDoc?.lifecycle).toBe("superseded");
   });
 
   test("dry run reports the result without writing the store", async () => {
@@ -114,14 +115,14 @@ describe("claim relocation on supersede", () => {
       to: "v2.md",
     });
     expect(res.relocated).toEqual([
-      { claimId: claim.assertion.id, doc: "unchanged", code: "unchanged" },
+      { claimId: claim.claim.id, doc: "unchanged", evidence: "unchanged" },
     ]);
     expect(res.misses).toEqual([]);
     expect(res.strandedClaims).toEqual([]);
-    const moved = await r.store.getAssertion(claim.assertion.id);
+    const moved = await r.store.getClaim(claim.claim.id);
     expect(moved?.documentId).toBe(documentIdForPath("v2.md"));
-    expect(moved?.anchor.doc.file).toBe("v2.md");
-    expect(moved?.anchor.code[0]?.file).toBe("src/a.ts");
+    expect(moved?.doc.file).toBe("v2.md");
+    expect(moved?.evidence[0]?.file).toBe("src/a.ts");
     // The relocated claim resolves clean on the new document.
     const rep = await runCheck(r.store, { ast: analyzer });
     expect(rep.verdicts[0]?.doc).toBe("unchanged");
@@ -144,10 +145,10 @@ describe("claim relocation on supersede", () => {
       to: "v2.md",
     });
     expect(res.relocated).toEqual([]);
-    expect(res.misses.map((m) => m.claimId)).toEqual([claim.assertion.id]);
+    expect(res.misses.map((m) => m.claimId)).toEqual([claim.claim.id]);
     expect(res.misses[0]?.reason).toContain("not found in v2.md");
-    expect(res.strandedClaims).toEqual([claim.assertion.id]);
-    expect((await r.store.getAssertion(claim.assertion.id))?.documentId).toBe(
+    expect(res.strandedClaims).toEqual([claim.claim.id]);
+    expect((await r.store.getClaim(claim.claim.id))?.documentId).toBe(
       documentIdForPath("v1.md"),
     );
   });
@@ -163,8 +164,8 @@ describe("claim relocation on supersede", () => {
       file: "src/a.ts",
       quote: "A = 1",
     });
-    await r.store.putAssertion({ ...claim.assertion, enforcement: "retired" });
-    const retired = await r.store.getAssertion(claim.assertion.id);
+    await r.store.putClaim({ ...claim.claim, enforcement: "retired" });
+    const retired = await r.store.getClaim(claim.claim.id);
     if (!retired) throw new Error("claim missing");
     expect(isLiveClaimOn(retired, documentIdForPath("v1.md"))).toBe(false);
     const res = await supersede(r.store, await deps(r), {
@@ -191,15 +192,13 @@ describe("claim relocation on supersede", () => {
       to: "v2.md",
       dryRun: true,
     });
-    expect(res.relocated.map((x) => x.claimId)).toEqual([claim.assertion.id]);
-    expect(
-      (await r.store.getAssertion(claim.assertion.id))?.anchor.doc.file,
-    ).toBe("v1.md");
+    expect(res.relocated.map((x) => x.claimId)).toEqual([claim.claim.id]);
+    expect((await r.store.getClaim(claim.claim.id))?.doc.file).toBe("v1.md");
   });
 });
 
-describe("supersession and code drift are surfaced together", () => {
-  test("a superseded doc with a separately drifted claim shows both in the banner", async () => {
+describe("supersession and evidence drift are surfaced together", () => {
+  test("a superseded doc with a separately drifted claim reports both statuses", async () => {
     const r = await repo();
     await r.write("src/a.ts", "export const A = 1;\nexport const B = 2;\n");
     await r.write("doc.md", "# Doc\n\nText.\n");
@@ -222,24 +221,17 @@ describe("supersession and code drift are surfaced together", () => {
       from: "doc.md",
       to: "newer.md",
     });
-    expect(res.strandedClaims.sort()).toEqual(
-      [a.assertion.id, b.assertion.id].sort(),
-    );
+    expect(res.strandedClaims.sort()).toEqual([a.claim.id, b.claim.id].sort());
     await r.write("src/a.ts", "export const A = 1;\nexport const B = 22;\n");
 
-    const report = await runCheck(r.store, { ast: analyzer, write: true });
+    const report = await runCheck(r.store, { ast: analyzer });
     const docReport = report.documents.find((d) => d.path === "doc.md");
     expect(docReport?.lifecycle).toBe("superseded");
-    const statuses = docReport?.suspect.map((s) => s.status) ?? [];
-    expect(statuses).toContain("code:changed");
-    expect(statuses).toContain("superseded");
-
-    const banner = await r.read("doc.md");
-    expect(banner).toContain("[superseded]");
-    expect(banner).toContain("[code:changed]");
-    expect(banner).toContain(b.proposition.id);
-    expect(banner).toContain(a.proposition.id);
-    expect(banner).toContain("This document has been superseded.");
+    const byClaim = new Map(
+      (docReport?.suspect ?? []).map((s) => [s.claimId, s.status]),
+    );
+    expect(byClaim.get(b.claim.id)).toBe("evidence:changed");
+    expect(byClaim.get(a.claim.id)).toBe("superseded");
   });
 
   test("a claim suspect only because its document is superseded reports the lifecycle status", async () => {
@@ -255,11 +247,9 @@ describe("supersession and code drift are surfaced together", () => {
     });
     await supersede(r.store, await deps(r), { from: "doc.md", to: "newer.md" });
 
-    const report = await runCheck(r.store, { ast: analyzer, write: true });
+    const report = await runCheck(r.store, { ast: analyzer });
     const docReport = report.documents.find((d) => d.path === "doc.md");
-    const entry = docReport?.suspect.find(
-      (s) => s.propositionId === a.proposition.id,
-    );
+    const entry = docReport?.suspect.find((s) => s.claimId === a.claim.id);
     expect(entry?.status).toBe("superseded");
     // A lifecycle-only suspect never gates.
     expect(report.exitCode).toBe(0);

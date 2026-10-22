@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, test } from "bun:test";
-import { resolveAssertion } from "../src/algo/resolve.ts";
+import { resolveClaim } from "../src/algo/resolve.ts";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
-import type { Assertion } from "../src/core/model.ts";
-import { buildSelectorBundle, composeAnchor } from "../src/engine/anchor.ts";
+import { buildSelectorBundle } from "../src/engine/anchor.ts";
+import { codeClaim } from "./helpers.ts";
 
 let analyzer: Awaited<ReturnType<typeof getAnalyzer>>;
 beforeAll(async () => {
@@ -40,22 +40,11 @@ function anchorOn(original: string, quote: string, language = "typescript") {
     { start, end: start + quote.length },
     { language, analyzer },
   );
-  const a: Assertion = {
-    id: "a",
-    propositionId: "p",
-    documentId: "d",
-    owner: "o",
-    ref: "r",
-    anchor: composeAnchor(docBundle, [codeBundle]),
-    enforcement: "enforced",
-    verified: false,
-    verifiers: [],
-    attrs: {},
-  };
+  const a = codeClaim(docBundle, [codeBundle], "enforced");
   return (modified: string) =>
-    resolveAssertion(
+    resolveClaim(
       a,
-      { doc: DOC_CONTENT, code: new Map([[CODE_FILE, modified]]) },
+      { doc: DOC_CONTENT, evidence: new Map([[CODE_FILE, modified]]) },
       { ast: analyzer },
     );
 }
@@ -127,7 +116,8 @@ describe("precision rate (§10 — false-(changed|orphaned) ≤ ~2%, never uncha
         const edited = neutralEdit(base.src, base.quote, r);
         const v = resolve(edited);
         total++;
-        if (v.code === "changed" || v.code === "orphaned") falsePositive++;
+        if (v.evidence === "changed" || v.evidence === "orphaned")
+          falsePositive++;
         // Doc side is never touched by the fuzz.
         expect(v.doc).toBe("unchanged");
       }
@@ -148,7 +138,7 @@ describe("precision rate (§10 — false-(changed|orphaned) ≤ ~2%, never uncha
         if (drifted === base.src) continue; // skip non-mutations
         const v = resolve(drifted);
         total++;
-        if (v.code === "unchanged") falseUnchanged++;
+        if (v.evidence === "unchanged") falseUnchanged++;
         expect(v.doc).toBe("unchanged");
       }
     }

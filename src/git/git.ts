@@ -1,6 +1,7 @@
 /**
- * Advisory git access. git is used only to scope `check --since` and to fill
- * the recorded ref, never to compute a verdict. `check` is fully offline.
+ * Advisory git access. git is used only to scope `check --since`, to fill the
+ * recorded ref, and to default `record`'s actor to `human:<user.email>`; never
+ * to compute a verdict.
  */
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
@@ -62,4 +63,11 @@ export async function changedFiles(
       for (const line of out.split("\n")) if (line.trim()) set.add(line.trim());
   }
   return [...set];
+}
+
+/** `git config user.email`, or null when unset or git is unavailable. */
+export async function userEmail(cwd: string): Promise<string | null> {
+  const out = await git(["config", "user.email"], cwd);
+  const email = out?.trim() ?? "";
+  return email.length > 0 ? email : null;
 }

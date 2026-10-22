@@ -1,0 +1,117 @@
+{
+  "model": "jev-1.13.0",
+  "answers": {
+    "kind_0": {
+      "type": "choice",
+      "choice": "narrative",
+      "confidence": 0.9467,
+      "probabilities": {
+        "factual_claim": 0.02,
+        "instruction": 0.01,
+        "opinion": 0.01,
+        "narrative": 0.96
+      }
+    },
+    "evidenceKind_0": {
+      "type": "choice",
+      "choice": "other_doc",
+      "confidence": 0.2267,
+      "probabilities": {
+        "code": 0.31,
+        "other_doc": 0.42,
+        "external": 0.12,
+        "nothing": 0.15
+      }
+    },
+    "checkable_0": {
+      "type": "noul",
+      "noul": 0.04
+    },
+    "kind_1": {
+      "type": "choice",
+      "choice": "factual_claim",
+      "confidence": 0.9333,
+      "probabilities": {
+        "factual_claim": 0.95,
+        "instruction": 0.02,
+        "opinion": 0.01,
+        "narrative": 0.02
+      }
+    },
+    "checkable_1": {
+      "type": "noul",
+      "noul": 0.96
+    },
+    "kind_2": {
+      "type": "choice",
+      "choice": "factual_claim",
+      "confidence": 0.84,
+      "probabilities": {
+        "factual_claim": 0.88,
+        "instruction": 0.03,
+        "opinion": 0.06,
+        "narrative": 0.03
+      }
+    },
+    "evidenceKind_2": {
+      "type": "choice",
+      "choice": "other_doc",
+      "confidence": 0.4933,
+      "probabilities": {
+        "code": 0.05,
+        "other_doc": 0.62,
+        "external": 0.3,
+        "nothing": 0.03
+      }
+    },
+    "checkable_2": {
+      "type": "noul",
+      "noul": 0.81
+    },
+    "kind_3": {
+      "type": "choice",
+      "choice": "instruction",
+      "confidence": 0.9333,
+      "probabilities": {
+        "factual_claim": 0.03,
+        "instruction": 0.95,
+        "opinion": 0.01,
+        "narrative": 0.01
+      }
+    },
+    "checkable_3": {
+      "type": "noul",
+      "noul": 0.22
+    },
+    "kind_4": {
+      "type": "choice",
+      "choice": "opinion",
+      "confidence": 0.8667,
+      "probabilities": {
+        "factual_claim": 0.06,
+        "instruction": 0.02,
+        "opinion": 0.9,
+        "narrative": 0.02
+      }
+    },
+    "evidenceKind_4": {
+      "type": "choice",
+      "choice": "nothing",
+      "confidence": 0.6667,
+      "probabilities": {
+        "code": 0.08,
+        "other_doc": 0.12,
+        "external": 0.05,
+        "nothing": 0.75
+      }
+    },
+    "checkable_4": {
+      "type": "noul",
+      "noul": 0.09
+    }
+  },
+  "usage": {
+    "input_tokens": 3412,
+    "output_tokens": 39
+  }
+}

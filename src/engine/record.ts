@@ -1,7 +1,7 @@
 /**
- * Recording a claim: write a Proposition (deduplicated by content fingerprint
- * of the confirmed doc span), an Assertion, and the baseline Anchor. The doc
- * span's text is the claim; the code targets are the spans it describes.
+ * Recording a claim: write the Document (upserted by path) and the Claim with
+ * its doc span, its evidence spans, and one initial `vouch` attestation by the
+ * recording actor. The doc span's text is the claim's sentence.
  */
 
 import {
@@ -9,38 +9,37 @@ import {
   exactOccurrences,
   regionText,
 } from "../algo/localize.ts";
+import { normalizeText } from "../algo/normalize.ts";
 import {
   AMBIGUOUS_MIN_QUOTE_LENGTH,
   TEXT_QUOTE_CONTEXT,
 } from "../algo/params.ts";
-import { newId, propositionFingerprint } from "../core/ids.ts";
-import type {
-  Anchor,
-  Assertion,
-  Enforcement,
-  Proposition,
-  Region,
-  Selector,
-  SelectorBundle,
-  Verifier,
+import { documentIdForPath, newClaimId } from "../core/ids.ts";
+import {
+  ACTOR_PATTERN,
+  type Claim,
+  type ClaimKind,
+  Document,
+  DURATION_PATTERN,
+  type Enforcement,
+  type Procedure,
+  type Region,
+  type Selector,
+  type SelectorBundle,
+  type Source,
 } from "../core/model.ts";
-import { Document } from "../core/model.ts";
 import type { ClaimStore } from "../store/store.ts";
 import {
   type AnchorAnalyzer,
   buildCoarseBundle,
   buildSelectorBundle,
-  composeAnchor,
 } from "./anchor.ts";
 import { languageForFile } from "./lang.ts";
 
-/** Stable document id derived from its repo-relative path. */
-export function documentIdForPath(path: string): string {
-  return `doc_${Bun.hash.xxHash64(path).toString(16).padStart(16, "0")}`;
-}
+export { documentIdForPath };
 
-export function newDocument(id: string, path: string): Document {
-  return Document.parse({ id, path });
+export function newDocument(id: string, path: string, now: Date): Document {
+  return Document.parse({ id, path, createdAt: now.toISOString() });
 }
 
 /** How a call locates a span inside a file. */
@@ -55,13 +54,13 @@ export interface RegionSpec {
   endLine?: number;
 }
 
-/** A code target: a precise span in a file, or a coarse file/glob pattern. */
-export interface CodeTarget {
-  /** Repo-relative path of the code file, or the pattern when `coarse`. */
+/** An evidence target: a precise span in a file, or a coarse file/glob pattern. */
+export interface EvidenceTarget {
+  /** Repo-relative path of the evidence file, or the pattern when `coarse`. */
   file: string;
   /** The span inside `file`; required unless `coarse`. */
   region?: RegionSpec;
-  /** Coarse pattern edge: navigation only, never graded as drift. */
+  /** Coarse pattern: navigation only, never graded as drift. Code claims only. */
   coarse?: boolean;
   /** Optional language override; else derived from the extension. */
   language?: string;
@@ -70,33 +69,107 @@ export interface CodeTarget {
 export interface RecordInput {
   docPath: string;
   docSpec?: RegionSpec;
-  verified: boolean;
-  owner: string;
-  ref: string;
+  /** Default `code`. */
+  kind?: ClaimKind;
+  /** Code spans for `code`, one document span for `reference`, none for `attested`. */
+  evidence: EvidenceTarget[];
+  sources?: Source[];
+  procedure?: Procedure | null;
+  owner?: string;
   ttl?: string;
-  code: CodeTarget[];
-  /** Default `enforced`. `suggested` is advisory and allows a coarse or empty code side. */
+  /** The actor recorded on the initial `vouch` attestation. */
+  by: string;
+  ref: string;
+  /** Default `enforced`. `suggested` never gates and allows a coarse code side. */
   enforcement?: Enforcement;
-  verifiers?: Verifier[];
   analyzer?: AnchorAnalyzer;
-  attrs?: Record<string, unknown>;
+  /** Clock for `createdAt` and the attestation time. Default: now. */
+  now?: Date;
 }
 
-/** The on-disk content of the doc and each referenced code file. */
+/** The on-disk content of the doc and each referenced evidence file. */
 export interface RecordContents {
   docContent: string | null;
-  codeContents: Record<string, string | null>;
+  evidenceContents: Record<string, string | null>;
 }
 
 export interface RecordResult {
   document: Document;
-  proposition: Proposition;
-  assertion: Assertion;
-  dedupedProposition: boolean;
-  /** Other claim ids that already assert the same proposition. */
+  claim: Claim;
+  /** True when an existing claim on the same sentence in the same document was updated. */
+  updated: boolean;
+  /** Other claim ids, in other documents, whose sentence is the same text. */
   existingClaims: string[];
   /** Non-fatal notes, e.g. a doc quote that occurs more than once. */
   warnings: string[];
+}
+
+function sameSentence(a: string, b: string): boolean {
+  return normalizeText(a) === normalizeText(b);
+}
+
+/** Build the evidence bundles for a claim kind, enforcing the per-kind shape. */
+function evidenceBundles(
+  kind: ClaimKind,
+  enforcement: Enforcement,
+  targets: EvidenceTarget[],
+  contents: Record<string, string | null>,
+  analyzer: AnchorAnalyzer | undefined,
+): SelectorBundle[] {
+  if (kind === "attested") {
+    if (targets.length > 0) {
+      throw new Error(
+        "an attested claim has no evidence spans; use sources and a procedure to say where its truth lives.",
+      );
+    }
+    return [];
+  }
+  if (kind === "reference" && targets.length !== 1) {
+    throw new Error(
+      `a reference claim needs exactly one span in another document (got ${targets.length}).`,
+    );
+  }
+  if (kind === "code" && targets.length === 0) {
+    throw new Error(
+      "a code claim needs at least one code span (--code-file with --code-quote or --code-range, or --glob with --suggest).",
+    );
+  }
+  const bundles: SelectorBundle[] = [];
+  let hasPrecise = false;
+  for (const target of targets) {
+    if (target.coarse) {
+      if (kind !== "code") {
+        throw new Error("a reference claim needs a precise span, not a glob.");
+      }
+      bundles.push(buildCoarseBundle(target.file));
+      continue;
+    }
+    if (target.region === undefined) {
+      throw new Error(
+        `evidence target ${target.file} has no span; pass --code-quote or --code-range, or --glob for a coarse edge.`,
+      );
+    }
+    const content = contents[target.file];
+    if (content === undefined || content === null) {
+      throw new Error(`Evidence file not found on disk: ${target.file}`);
+    }
+    const region = resolveRegion(content, target.region);
+    hasPrecise = true;
+    bundles.push(
+      kind === "code"
+        ? buildSelectorBundle(target.file, content, region, {
+            language: target.language ?? languageForFile(target.file),
+            analyzer,
+          })
+        : buildSelectorBundle(target.file, content, region),
+    );
+  }
+  if (kind === "code" && enforcement === "enforced" && !hasPrecise) {
+    throw new Error(
+      "an enforced claim needs a precise code span (--code-file with --code-quote or --code-range); pass --suggest for an advisory claim with a coarse code side.",
+    );
+  }
+  return bundles;
 }
 
 export async function recordClaim(
@@ -104,8 +177,30 @@ export async function recordClaim(
   contents: RecordContents,
   input: RecordInput,
 ): Promise<RecordResult> {
-  const { docContent, codeContents } = contents;
+  const { docContent, evidenceContents } = contents;
   const warnings: string[] = [];
+  const now = input.now ?? new Date();
+  const kind: ClaimKind = input.kind ?? "code";
+  const enforcement: Enforcement = input.enforcement ?? "enforced";
+
+  if (!ACTOR_PATTERN.test(input.by)) {
+    throw new Error(
+      `the recording actor must be human:<id>, agent:<name>, or process:<name> (got ${JSON.stringify(input.by)}).`,
+    );
+  }
+  if (input.owner !== undefined && !ACTOR_PATTERN.test(input.owner)) {
+    throw new Error(
+      `owner must be human:<id>, agent:<name>, or process:<name> (got ${JSON.stringify(input.owner)}).`,
+    );
+  }
+  if (input.ttl !== undefined && !DURATION_PATTERN.test(input.ttl)) {
+    throw new Error(
+      `ttl must be an ISO 8601 duration such as P90D (got ${JSON.stringify(input.ttl)}).`,
+    );
+  }
+  if (kind === "attested" && input.ttl === undefined) {
+    throw new Error("an attested claim requires a ttl (e.g. P90D).");
+  }
 
   // Doc side.
   if (!input.docSpec) {
@@ -117,118 +212,87 @@ export async function recordClaim(
     throw new Error(`Document not found on disk: ${input.docPath}`);
   }
   const docRegion = resolveRegion(docContent, input.docSpec);
-  const confirmedText = regionText(docContent, docRegion);
+  const sentence = regionText(docContent, docRegion);
   warnings.push(...validateDocQuote(docContent, docRegion, input.docPath));
 
-  // Code side.
-  const enforcement: Enforcement = input.enforcement ?? "enforced";
-  const codeBundles: SelectorBundle[] = [];
-  let hasPreciseCode = false;
-  for (const target of input.code) {
-    if (target.coarse) {
-      codeBundles.push(buildCoarseBundle(target.file));
-      continue;
-    }
-    if (target.region === undefined) {
-      throw new Error(
-        `code target ${target.file} has no span; pass --code-quote or --code-range, or --glob for a coarse edge.`,
-      );
-    }
-    const content = codeContents[target.file];
-    if (content === undefined || content === null) {
-      throw new Error(`Code file not found on disk: ${target.file}`);
-    }
-    const region = resolveRegion(content, target.region);
-    hasPreciseCode = true;
-    codeBundles.push(
-      buildSelectorBundle(target.file, content, region, {
-        language: target.language ?? languageForFile(target.file),
-        analyzer: input.analyzer,
-      }),
-    );
-  }
-
-  if (enforcement === "enforced" && !hasPreciseCode) {
-    throw new Error(
-      "an enforced claim needs a precise code span (--code-file with --code-quote or --code-range); pass --suggest for an advisory claim with a coarse or empty code side.",
-    );
-  }
+  const evidence = evidenceBundles(
+    kind,
+    enforcement,
+    input.evidence,
+    evidenceContents,
+    input.analyzer,
+  );
 
   // Document (upsert by path).
   const docId = documentIdForPath(input.docPath);
   let document = await store.getDocument(docId);
   if (!document) {
-    document = newDocument(docId, input.docPath);
+    document = newDocument(docId, input.docPath, now);
     await store.putDocument(document);
   }
 
-  // Proposition (dedup by fingerprint of the confirmed text).
-  const fingerprint = propositionFingerprint(confirmedText);
-  let proposition = await store.findPropositionByFingerprint(fingerprint);
-  const deduped = proposition !== undefined;
-  if (!proposition) {
-    proposition = { id: newId("prop"), textCache: confirmedText, fingerprint };
-    await store.putProposition(proposition);
-  }
+  const doc = buildSelectorBundle(input.docPath, docContent, docRegion);
+  const vouch = {
+    by: input.by,
+    at: now.toISOString(),
+    basis: "vouch" as const,
+  };
 
-  const docBundle = buildSelectorBundle(input.docPath, docContent, docRegion);
-  const anchor: Anchor = composeAnchor(docBundle, codeBundles);
-
-  // One claim per (proposition, document): re-recording is idempotent.
-  const allAssertions = await store.allAssertions();
-  const sharingProposition = allAssertions.filter(
-    (x) => x.propositionId === proposition.id,
-  );
-  const existing = sharingProposition.find((x) => x.documentId === docId);
+  // One claim per (sentence, document): re-recording updates it in place.
+  const all = await store.allClaims();
+  const sharing = all.filter((c) => sameSentence(c.sentence, sentence));
+  const existing = sharing.find((c) => c.documentId === docId);
   if (existing) {
-    const updated: Assertion = {
+    const updated: Claim = {
       ...existing,
-      anchor: input.code.length > 0 ? anchor : existing.anchor,
+      kind,
+      sentence,
+      doc,
+      evidence,
       ref: input.ref,
-      // The same value the precise-code-span guard above validated against, so
-      // re-recording never leaves the claim `suggested`/`retired` behind the
-      // requirements it was just checked under.
+      // The same value the per-kind span rules above validated against.
       enforcement,
-      verified: input.verified || existing.verified,
-      ...(input.verifiers !== undefined && input.verifiers.length > 0
-        ? { verifiers: input.verifiers }
-        : {}),
+      ...(input.sources !== undefined ? { sources: input.sources } : {}),
+      ...(input.procedure !== undefined ? { procedure: input.procedure } : {}),
+      ...(input.owner !== undefined ? { owner: input.owner } : {}),
       ...(input.ttl !== undefined ? { ttl: input.ttl } : {}),
+      attestations: [...existing.attestations, vouch],
     };
-    await store.putAssertion(updated);
+    await store.putClaim(updated);
     return {
       document,
-      proposition,
-      assertion: updated,
-      dedupedProposition: deduped,
-      existingClaims: sharingProposition
-        .filter((x) => x.id !== existing.id)
-        .map((x) => x.id),
+      claim: updated,
+      updated: true,
+      existingClaims: sharing
+        .filter((c) => c.id !== existing.id)
+        .map((c) => c.id),
       warnings,
     };
   }
 
-  const assertion: Assertion = {
-    id: newId("asrt"),
-    propositionId: proposition.id,
+  const claim: Claim = {
+    id: newClaimId(),
     documentId: docId,
-    owner: input.owner,
-    ref: input.ref,
-    anchor,
+    kind,
+    sentence,
+    doc,
+    evidence,
+    sources: input.sources ?? [],
+    procedure: input.procedure ?? null,
+    ...(input.owner !== undefined ? { owner: input.owner } : {}),
+    ...(input.ttl !== undefined ? { ttl: input.ttl } : {}),
     enforcement,
-    verified: input.verified,
-    verifiers: input.verifiers ?? [],
-    ttl: input.ttl,
-    attrs: input.attrs ?? {},
+    attestations: [vouch],
+    createdAt: now.toISOString(),
+    ref: input.ref,
   };
-  await store.putAssertion(assertion);
+  await store.putClaim(claim);
 
   return {
     document,
-    proposition,
-    assertion,
-    dedupedProposition: deduped,
-    existingClaims: sharingProposition.map((x) => x.id),
+    claim,
+    updated: false,
+    existingClaims: sharing.map((c) => c.id),
     warnings,
   };
 }

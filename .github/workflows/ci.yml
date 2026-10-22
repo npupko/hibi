@@ -42,8 +42,3 @@ jobs:
         run: |
           bun run build:cli-reference
           git diff --exit-code docs/cli-reference.mdx plugins/hibi-cli/skills/hibi/references/cli-reference.md || (echo "generated CLI reference is stale — run bun run build:cli-reference" && exit 1)
-      - name: Dogfood — hibi checks its own docs (in-tree engine, read-only)
-        # Runs the current tree's engine read-only (no --write) and executes
-        # declared verifiers, so drift this PR introduces between docs/ and
-        # src/ fails the build via hibi itself.
-        run: bun run src/cli/index.ts check --run-verifiers --fail-on gating

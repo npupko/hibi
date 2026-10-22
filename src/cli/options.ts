@@ -37,8 +37,6 @@ export interface CommandSpec {
   positional?: PositionalSpec;
   options: OptionSpec[];
   examples?: string[];
-  /** A deprecated alias: help says so and the command maps onto `aliasOf`. */
-  aliasOf?: string;
   /** Extra usage lines for the help page. */
   usage?: string[];
 }
@@ -59,7 +57,7 @@ export const GLOBAL_OPTIONS: OptionSpec[] = [
   {
     name: "explain",
     type: "boolean",
-    help: "Add the evidence tail (regions, changedEvidence, similarity) to JSON verdicts and the full record result.",
+    help: "Add the detail tail (regions, changes, similarity) to JSON verdicts and the full record result.",
   },
   {
     name: "no-hints",
@@ -141,20 +139,6 @@ const DRY_RUN: OptionSpec = {
   help: "Compute the result without writing the store or any document.",
 };
 
-const VERIFIER_OPTIONS: OptionSpec[] = [
-  {
-    name: "run-verifiers",
-    type: "boolean",
-    help: "Execute declared verifiers (repo-committed commands). Off by default.",
-  },
-  {
-    name: "verifier-timeout",
-    type: "string",
-    placeholder: "<seconds>",
-    help: "Per-verifier timeout in seconds. Default 120.",
-  },
-];
-
 const CHECK_OPTIONS: OptionSpec[] = [
   {
     name: "since",
@@ -174,24 +158,18 @@ const CHECK_OPTIONS: OptionSpec[] = [
     help: "Render the per-document table instead of the per-claim report (human output).",
   },
   {
-    name: "write",
-    type: "boolean",
-    help: "Stamp a status banner into each suspect document and clear it from clean ones.",
-  },
-  {
     name: "fail-on",
     type: "string",
     values: FAIL_ON,
     placeholder: "<level>",
     help: "When to exit 2: gating (default), warn (also on moved), never.",
   },
-  ...VERIFIER_OPTIONS,
 ];
 
 export const COMMANDS: CommandSpec[] = [
   {
     name: "init",
-    summary: "Create the claim store (.claims/) with a per-repo banner nonce.",
+    summary: "Create the claim store (.claims/) and its config.json.",
     options: [],
     examples: ["hibi init"],
   },
@@ -200,7 +178,7 @@ export const COMMANDS: CommandSpec[] = [
     summary:
       "Record a claim: a doc sentence anchored to the code it describes.",
     description:
-      "The doc span's text is the claim. A new claim is enforced (it gates) unless --suggest is passed. Agents should send one JSON object per claim on stdin with --from-file -; keys mirror the flags in camelCase (doc, docQuote, docRange, codeFile, codeQuote, codeRange, glob, suggest, verified, verifier, ttl, owner).",
+      "The doc span's text is the claim's sentence. A new claim is enforced (it gates) unless --suggest is passed. The claim gets one vouch attestation by --by, or by human:<git user.email> when --by is absent. Agents should send one JSON object per claim on stdin with --from-file -; keys mirror the flags in camelCase (doc, docQuote, docRange, codeFile, codeQuote, codeRange, glob, suggest, ttl, owner, by).",
     usage: [
       "hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --code-file <path> (--code-quote <text> | --code-range L1:L9) [options]",
       "hibi record --from-file <path|->",
@@ -220,28 +198,22 @@ export const COMMANDS: CommandSpec[] = [
         help: "Record an advisory claim that never gates (allows a coarse or empty code side).",
       },
       {
-        name: "verified",
-        type: "boolean",
-        help: "Mark that you confirmed the code backs the sentence.",
-      },
-      {
-        name: "verifier",
-        type: "string",
-        placeholder: "kind:ref",
-        multiple: true,
-        help: 'A verifier, e.g. command:"bun test retry". Runs only under check --run-verifiers. Repeatable.',
-      },
-      {
         name: "ttl",
         type: "string",
-        placeholder: "<iso-8601>",
-        help: "Instant after which the claim is expired and gates.",
+        placeholder: "<duration>",
+        help: "ISO 8601 duration after which the claim needs re-attesting, e.g. P90D.",
       },
       {
         name: "owner",
         type: "string",
-        placeholder: "<name>",
-        help: "Attribution recorded on the claim.",
+        placeholder: "<actor>",
+        help: "The actor to contact when the claim expires: human:<id>, agent:<name>, or process:<name>.",
+      },
+      {
+        name: "by",
+        type: "string",
+        placeholder: "<actor>",
+        help: "The actor vouching for the claim. Default: human:<git user.email>.",
       },
       {
         name: "from-file",
@@ -260,30 +232,14 @@ export const COMMANDS: CommandSpec[] = [
     summary:
       "Verify every claim against the working tree and exit 0 (clean), 2 (gating), or 1 (error).",
     description:
-      "Read-only unless --write. --since scopes to files changed since a git ref; --doc scopes to one document; --overview renders the per-document table. A moved span is a warning: it exits 0 unless --fail-on warn.",
+      "Read-only. --since scopes to files changed since a git ref; --doc scopes to one document; --overview renders the per-document table. A moved span is a warning: it exits 0 unless --fail-on warn.",
     options: CHECK_OPTIONS,
     examples: [
       "hibi check",
       "hibi check --since origin/main",
       "hibi check --doc CLAUDE.md",
-      "hibi check --write --fail-on warn",
+      "hibi check --fail-on warn",
     ],
-  },
-  {
-    name: "diff",
-    summary: "Deprecated alias for check --since <ref>.",
-    aliasOf: "check",
-    options: CHECK_OPTIONS.filter(
-      (o) => o.name !== "doc" && o.name !== "overview",
-    ),
-  },
-  {
-    name: "status",
-    summary: "Deprecated alias for check --doc <path> or check --overview.",
-    aliasOf: "check",
-    options: CHECK_OPTIONS.filter(
-      (o) => o.name === "doc" || o.name === "fail-on",
-    ),
   },
   {
     name: "list",
@@ -295,13 +251,13 @@ export const COMMANDS: CommandSpec[] = [
         type: "string",
         values: LIST_STATES,
         placeholder: "<state>",
-        help: "Filter: all (default), gating, warning, clean, orphaned, suggested, stranded (live on a superseded or archived doc), duplicate (sentence claimed more than once).",
+        help: "Filter: all (default), gating, warning, clean, orphaned, suggested, stranded (live on a superseded or archived doc).",
       },
       {
         name: "path",
         type: "string",
         placeholder: "<path>",
-        help: "Only claims anchored to or covering this doc or code path (either side).",
+        help: "Only claims anchored to or covering this doc or evidence path (either side).",
       },
       {
         name: "ids-only",
@@ -340,7 +296,7 @@ export const COMMANDS: CommandSpec[] = [
     summary:
       "Re-resolve a claim's spans and store the new baseline; or list candidate locations with --suggest.",
     description:
-      "Without span flags each side re-localizes through its stored selectors. A side that is not found is refused unless an explicit new span is given for it. --doc moves the claim to a different document (requires a doc span).",
+      "Without span flags each side re-localizes through its stored selectors. A side that is not found is refused unless an explicit new span is given for it. --doc moves the claim to a different document (requires a doc span). The claim's sentence is refreshed from the new doc span.",
     positional: {
       name: "claim-id",
       help: "The claim to reanchor.",
@@ -358,14 +314,14 @@ export const COMMANDS: CommandSpec[] = [
       {
         name: "suggest",
         type: "boolean",
-        help: "Read-only: rank candidate locations for the stored doc and code quotes.",
+        help: "Read-only: rank candidate locations for the stored doc and evidence quotes.",
       },
       DRY_RUN,
     ],
     examples: [
-      "hibi reanchor asrt_1a2b3c4d",
-      "hibi reanchor asrt_1a2b3c4d --suggest",
-      'hibi reanchor asrt_1a2b3c4d --doc docs/retry.md --doc-quote "Retries are capped at 5 attempts"',
+      "hibi reanchor clm_1a2b3c4d5e6f7a8b",
+      "hibi reanchor clm_1a2b3c4d5e6f7a8b --suggest",
+      'hibi reanchor clm_1a2b3c4d5e6f7a8b --doc docs/retry.md --doc-quote "Retries are capped at 5 attempts"',
     ],
   },
   {
@@ -377,14 +333,14 @@ export const COMMANDS: CommandSpec[] = [
       required: true,
     },
     options: [DRY_RUN],
-    examples: ["hibi retire asrt_1a2b3c4d"],
+    examples: ["hibi retire clm_1a2b3c4d5e6f7a8b"],
   },
   {
     name: "supersede",
     summary:
       "Mark a document superseded by another and relocate its live claims to the successor.",
     description:
-      "A claim whose sentence appears verbatim in --to moves there (same id, code side, history). The rest are reported as misses for a manual reanchor or retire.",
+      "A claim whose sentence appears verbatim in --to moves there (same id, evidence, attestations). The rest are reported as misses for a manual reanchor or retire. The old document records supersededBy.",
     options: [
       {
         name: "from",
@@ -428,14 +384,13 @@ export const COMMANDS: CommandSpec[] = [
   },
   {
     name: "schema",
-    summary:
-      "Print the JSON Schema of a model or protocol type, or the list of names.",
+    summary: "Print the JSON Schema of a model type, or the list of names.",
     options: [
       {
         name: "name",
         type: "string",
         placeholder: "<Name>",
-        help: "A schema name, e.g. Assertion, Verdict, ResolveParams.",
+        help: "A schema name, e.g. Claim, Verdict, Config.",
       },
     ],
     examples: ["hibi schema", "hibi schema --name Verdict"],
@@ -527,11 +482,6 @@ function optionLines(options: OptionSpec[]): string[] {
 export function commandHelp(cmd: CommandSpec): string {
   const lines: string[] = [];
   lines.push(`hibi ${cmd.name}: ${cmd.summary}`);
-  if (cmd.aliasOf) {
-    lines.push(
-      `  This alias prints a deprecation notice and will be removed. Use \`hibi ${cmd.aliasOf}\`.`,
-    );
-  }
   if (cmd.description) lines.push("", cmd.description);
   lines.push("", "Usage:");
   if (cmd.usage) {
@@ -565,8 +515,7 @@ export function commandHelp(cmd: CommandSpec): string {
 
 /** The top-level `hibi --help` text. */
 export function usage(): string {
-  const shown = COMMANDS.filter((c) => !c.aliasOf);
-  const width = Math.max(...shown.map((c) => c.name.length)) + 2;
+  const width = Math.max(...COMMANDS.map((c) => c.name.length)) + 2;
   const lines = [
     "hibi: deterministic doc/code claim tracking",
     "",
@@ -574,12 +523,12 @@ export function usage(): string {
     "       hibi <command> --help",
     "",
     "Commands:",
-    ...shown.map((c) => `  ${c.name.padEnd(width)}${c.summary}`),
+    ...COMMANDS.map((c) => `  ${c.name.padEnd(width)}${c.summary}`),
     "",
     "Global options:",
     ...optionLines(GLOBAL_OPTIONS),
     "",
-    "Exit codes: 0 clean · 2 gating (changed/orphaned/ambiguous/expired/refuted on an enforced claim, or moved under --fail-on warn) · 1 error",
+    "Exit codes: 0 clean · 2 gating (changed/orphaned/ambiguous/expired on an enforced claim, or moved under --fail-on warn) · 1 error",
     "Env: HIBI_ASCII=1 for ASCII symbols · HIBI_ADVICE=0 to drop remediation hints",
   ];
   return `${lines.join("\n")}\n`;

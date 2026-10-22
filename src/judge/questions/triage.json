@@ -1,0 +1,102 @@
+{
+  "judgment": "triage",
+  "state": {
+    "doc": "The document the regions come from: { path }.",
+    "regions": "Every region of the document, in order: { id, kind, text, headingPath }. `kind` is the splitter's unit (sentence, heading, list-item, table-row, fenced); `headingPath` is the chain of headings above the region."
+  },
+  "placeholder": "{{i}}",
+  "questions": {
+    "kind_{{i}}": {
+      "type": "choice",
+      "instructions": {
+        "question": "What kind of statement is `regions[{{i}}].text`?",
+        "focus": "Judge this one region, not the section it is in. Use `regions[{{i}}].headingPath` only to understand what the region refers to."
+      },
+      "criteria": {
+        "factual_claim": {
+          "what": "States something as true about a system, file, command, setting, process, product, team, or the outside world, so it is either true or false right now",
+          "not_for": "Telling the reader to do something, a preference or recommendation, or framing that asserts nothing",
+          "examples": [
+            "The CLI exits with code 2 when a claim is stale.",
+            "The default request timeout is 10 seconds.",
+            "Refunds are processed within five business days."
+          ]
+        },
+        "instruction": {
+          "what": "Tells the reader or an agent to do something, or not to do something",
+          "not_for": "A statement of how things are, even when it describes a step a tool performs on its own",
+          "examples": [
+            "Run the test suite before committing.",
+            "Never edit generated files by hand."
+          ]
+        },
+        "opinion": {
+          "what": "A preference, recommendation, value judgment, or belief of the author",
+          "not_for": "A fact that evidence could confirm or refute, or a direct instruction",
+          "examples": [
+            "We think this is the cleanest approach.",
+            "Small pull requests are easier to review."
+          ]
+        },
+        "narrative": {
+          "what": "Framing, transitions, headings, labels, or summaries of what a section covers, asserting nothing checkable",
+          "not_for": "Any sentence that asserts a checkable fact, even inside an introduction",
+          "examples": [
+            "In this section we cover caching.",
+            "Installation",
+            "The rest of this page walks through an example."
+          ]
+        }
+      }
+    },
+    "evidenceKind_{{i}}": {
+      "type": "choice",
+      "instructions": {
+        "question": "If `regions[{{i}}].text` is a factual claim, where would an agent look first for evidence that settles whether it is true?",
+        "focus": "Answer as if the region is a factual claim, even when it is not. Pick the single place an agent would check first."
+      },
+      "criteria": {
+        "code": {
+          "what": "Source code, configuration, scripts, or tests in this repository",
+          "not_for": "Facts written down only in prose documents, or kept outside the repository",
+          "examples": [
+            "The CLI exits with code 2 when a claim is stale.",
+            "The default request timeout is 10 seconds."
+          ]
+        },
+        "other_doc": {
+          "what": "Another document in this repository, such as a policy, decision record, specification, or guide",
+          "not_for": "Facts the code itself shows, or facts kept outside the repository",
+          "examples": [
+            "Support replies to every ticket within one business day.",
+            "The team chose PostgreSQL over MySQL for its JSON support."
+          ]
+        },
+        "external": {
+          "what": "Something outside the repository: a dependency's documentation, a web page, a package registry, a dashboard, a person, or a third-party service",
+          "not_for": "Anything recorded in this repository",
+          "examples": [
+            "Bun supports Node's fs module.",
+            "The Pro plan costs $20 per month."
+          ]
+        },
+        "nothing": {
+          "what": "No evidence could settle it: a prediction, an intention, or a statement about something no one can observe",
+          "not_for": "Claims that are hard to check but could be checked by someone",
+          "examples": [
+            "This design will scale for years.",
+            "Users will love the new flow."
+          ]
+        }
+      }
+    },
+    "checkable_{{i}}": {
+      "type": "noul",
+      "instructions": "Could `regions[{{i}}].text` be shown true or false by looking at evidence?",
+      "criteria": {
+        "true": "It makes a specific assertion that someone could confirm or refute by looking at something",
+        "false": "It is vague, subjective, an instruction, a heading, or about intent"
+      }
+    }
+  }
+}

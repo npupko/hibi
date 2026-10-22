@@ -1,8 +1,9 @@
 import { beforeAll, describe, expect, test } from "bun:test";
-import { resolveAssertion } from "../src/algo/resolve.ts";
+import { resolveClaim } from "../src/algo/resolve.ts";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
-import type { Assertion, SelectorBundle } from "../src/core/model.ts";
-import { buildSelectorBundle, composeAnchor } from "../src/engine/anchor.ts";
+import type { Claim, SelectorBundle } from "../src/core/model.ts";
+import { buildSelectorBundle } from "../src/engine/anchor.ts";
+import { codeClaim } from "./helpers.ts";
 
 let analyzer: Awaited<ReturnType<typeof getAnalyzer>>;
 beforeAll(async () => {
@@ -20,24 +21,8 @@ function docBundle(docText: string, sentence: string): SelectorBundle {
 }
 
 /** Assemble an Assertion from a doc-side and a code-side bundle. */
-function makeAssertion(
-  doc: SelectorBundle,
-  code: SelectorBundle,
-  overrides: Partial<Assertion> = {},
-): Assertion {
-  return {
-    id: "asrt_1",
-    propositionId: "p",
-    documentId: "d",
-    owner: "x",
-    ref: "r",
-    anchor: composeAnchor(doc, [code]),
-    enforcement: "suggested",
-    verified: false,
-    verifiers: [],
-    attrs: {},
-    ...overrides,
-  };
+function makeAssertion(doc: SelectorBundle, code: SelectorBundle): Claim {
+  return codeClaim(doc, [code], "suggested");
 }
 
 describe("tree-sitter snapping and the two-tier hash", () => {
@@ -133,20 +118,18 @@ describe("end-to-end value check: a 5 to 50 change trips even at the boundary", 
       codeBundle,
     );
     const changed = "export const MAX_ATTEMPTS = 50;\n";
-    const verdict = resolveAssertion(
+    const verdict = resolveClaim(
       assertion,
-      { doc: docText, code: new Map([["src/retry.ts", changed]]) },
+      { doc: docText, evidence: new Map([["src/retry.ts", changed]]) },
       { ast: analyzer },
     );
     // Text similarity is near 1.0; the value check still grades the code side changed.
-    expect(verdict.code).toBe("changed");
+    expect(verdict.evidence).toBe("changed");
     expect(verdict.notes.join(" ")).toContain("value changed");
-    expect(
-      verdict.evidence.changedEvidence.some((c) => c.kind === "value"),
-    ).toBe(true);
+    expect(verdict.detail.changes.some((c) => c.kind === "value")).toBe(true);
   });
 
-  test("an unchanged file grades code:unchanged at similarity 1", () => {
+  test("an unchanged file grades evidence:unchanged at similarity 1", () => {
     const original = "export const MAX_ATTEMPTS = 5;\n";
     const codeBundle = buildSelectorBundle(
       "src/retry.ts",
@@ -158,14 +141,14 @@ describe("end-to-end value check: a 5 to 50 change trips even at the boundary", 
       docBundle(docText, docSentence),
       codeBundle,
     );
-    const verdict = resolveAssertion(
+    const verdict = resolveClaim(
       assertion,
-      { doc: docText, code: new Map([["src/retry.ts", original]]) },
+      { doc: docText, evidence: new Map([["src/retry.ts", original]]) },
       { ast: analyzer },
     );
-    expect(verdict.code).toBe("unchanged");
-    expect(verdict.evidence.similarity).toBeCloseTo(1, 5);
-    expect(verdict.evidence.changedEvidence).toEqual([]);
+    expect(verdict.evidence).toBe("unchanged");
+    expect(verdict.detail.similarity).toBeCloseTo(1, 5);
+    expect(verdict.detail.changes).toEqual([]);
   });
 
   test("a restructured node is labelled restructured", () => {
@@ -182,12 +165,12 @@ describe("end-to-end value check: a 5 to 50 change trips even at the boundary", 
     );
     const changed =
       "function retry(max: number, delay: number) { return max; }\n";
-    const verdict = resolveAssertion(
+    const verdict = resolveClaim(
       assertion,
-      { doc: docText, code: new Map([["src/retry.ts", changed]]) },
+      { doc: docText, evidence: new Map([["src/retry.ts", changed]]) },
       { ast: analyzer },
     );
-    expect(verdict.code).toBe("changed");
+    expect(verdict.evidence).toBe("changed");
     expect(verdict.notes.join(" ")).toContain("restructured");
   });
 });

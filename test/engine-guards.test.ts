@@ -39,9 +39,10 @@ describe("record-time doc-quote guard", () => {
     const engine = await Engine.init(d);
     await expect(
       engine.record({
+        by: "human:tester@example.com",
         docPath: "doc.md",
         docQuote: "abcdefg",
-        code: [{ file: "a.ts", region: { quote: "A = 1" } }],
+        evidence: [{ file: "a.ts", region: { quote: "A = 1" } }],
       }),
     ).rejects.toThrow(/shorter than 8 characters/);
   });
@@ -64,15 +65,17 @@ describe("record-time doc-quote guard", () => {
     const code = [{ file: "a.ts", region: { quote: "A = 1" } }];
     await expect(
       engine.record({
+        by: "human:tester@example.com",
         docPath: "same.md",
         docQuote: "The value is fixed here",
-        code,
+        evidence: code,
       }),
     ).rejects.toThrow(/does not select a single occurrence/);
     const ok = await engine.record({
+      by: "human:tester@example.com",
       docPath: "diff.md",
       docQuote: "The value is fixed here",
-      code,
+      evidence: code,
     });
     expect(ok.warnings[0]).toContain("occurs 2 times");
   });
@@ -83,22 +86,24 @@ describe("record-time doc-quote guard", () => {
     const engine = await Engine.init(d);
     await expect(
       engine.record({
+        by: "human:tester@example.com",
         docPath: "doc.md",
         docQuote: "The auth module is documented here.",
-        code: [{ file: "src/auth/**", coarse: true }],
+        evidence: [{ file: "src/auth/**", coarse: true }],
       }),
     ).rejects.toThrow(/precise code span/);
     const ok = await engine.record({
+      by: "human:tester@example.com",
       docPath: "doc.md",
       docQuote: "The auth module is documented here.",
-      code: [{ file: "src/auth/**", coarse: true }],
+      evidence: [{ file: "src/auth/**", coarse: true }],
       enforcement: "suggested",
     });
-    expect(ok.assertion.enforcement).toBe("suggested");
-    expect(ok.assertion.anchor.code[0]?.selectors[0]?.kind).toBe("coarse");
+    expect(ok.claim.enforcement).toBe("suggested");
+    expect(ok.claim.evidence[0]?.selectors[0]?.kind).toBe("coarse");
     const hits = await engine.list({ path: "src/auth/login.ts" });
     expect(hits.count).toBe(1);
-    expect(hits.claims[0]?.side).toBe("code");
+    expect(hits.claims[0]?.side).toBe("evidence");
   });
 });
 
@@ -113,19 +118,22 @@ describe("reanchor safety", () => {
     await write(d, "doc.md", "# D\n\nThe A constant is one.\n");
     const engine = await Engine.init(d);
     const rec = await engine.record({
+      by: "human:tester@example.com",
       docPath: "doc.md",
       docQuote: "The A constant is one.",
-      code: [{ file: "src/a.ts", region: { quote: "export function f()" } }],
+      evidence: [
+        { file: "src/a.ts", region: { quote: "export function f()" } },
+      ],
     });
-    return { d, engine, id: rec.assertion.id };
+    return { d, engine, id: rec.claim.id };
   }
 
   test("refuses when the code side is orphaned and no replacement span is given", async () => {
     const { d, engine, id } = await seed();
     await write(d, "src/a.ts", "export const A = 1;\n");
     await expect(engine.reanchor(id)).rejects.toThrow(/orphaned/);
-    const stored = await engine.store.getAssertion(id);
-    const tq = stored?.anchor.code[0]?.selectors.find(
+    const stored = await engine.store.getClaim(id);
+    const tq = stored?.evidence[0]?.selectors.find(
       (s) => s.kind === "text-quote",
     );
     expect(tq?.kind === "text-quote" ? tq.exact : "").toBe(
@@ -144,7 +152,7 @@ describe("reanchor safety", () => {
     await write(d, "src/a.ts", "\n\n\n\n\n");
     await expect(
       engine.reanchor(id, {
-        code: [{ file: "src/a.ts", region: { startLine: 2, endLine: 2 } }],
+        evidence: [{ file: "src/a.ts", region: { startLine: 2, endLine: 2 } }],
       }),
     ).rejects.toThrow(/empty span/);
   });
@@ -157,14 +165,14 @@ describe("reanchor safety", () => {
       "export const A = 1;\n\nexport function f(x: number) {\n  return x;\n}\n",
     );
     const res = await engine.reanchor(id, {
-      code: [
+      evidence: [
         { file: "src/a.ts", region: { quote: "export function f(x: number)" } },
       ],
     });
-    expect(res.before.code[0]?.quote).toBe("export function f()");
-    expect(res.after.code[0]?.quote).toBe("export function f(x: number)");
+    expect(res.before.evidence[0]?.quote).toBe("export function f()");
+    expect(res.after.evidence[0]?.quote).toBe("export function f(x: number)");
     expect(res.before.doc.quote).toBe(res.after.doc.quote);
-    expect(res.code).toBe("unchanged");
+    expect(res.evidence).toBe("unchanged");
   });
 
   test("--suggest lists the doc quote across documents and the code quote across same-language files", async () => {
@@ -172,16 +180,17 @@ describe("reanchor safety", () => {
     await write(d, "src/b.ts", "export function f() {\n  return 2;\n}\n");
     await write(d, "docs/other.md", "# O\n\nThe A constant is one.\n");
     await engine.record({
+      by: "human:tester@example.com",
       docPath: "docs/other.md",
       docQuote: "The A constant is one.",
-      code: [{ file: "src/b.ts", region: { quote: "return 2" } }],
+      evidence: [{ file: "src/b.ts", region: { quote: "return 2" } }],
     });
     const res = await engine.reanchorSuggest(id);
     const keys = res.candidates.map((c) => `${c.side}:${c.file}`);
     expect(keys).toContain("doc:doc.md");
     expect(keys).toContain("doc:docs/other.md");
-    expect(keys).toContain("code:src/a.ts");
-    expect(keys).toContain("code:src/b.ts");
+    expect(keys).toContain("evidence:src/a.ts");
+    expect(keys).toContain("evidence:src/b.ts");
   });
 });
 
@@ -228,29 +237,29 @@ describe("supersede relocation", () => {
     await write(d, "v1.md", "# V1\n\nA is one.\nB is two.\n");
     const engine = await Engine.init(d);
     const a = await engine.record({
+      by: "human:tester@example.com",
       docPath: "v1.md",
       docQuote: "A is one.",
-      code: [{ file: "src/a.ts", region: { quote: "A = 1" } }],
+      evidence: [{ file: "src/a.ts", region: { quote: "A = 1" } }],
     });
     const b = await engine.record({
+      by: "human:tester@example.com",
       docPath: "v1.md",
       docQuote: "B is two.",
-      code: [{ file: "src/a.ts", region: { quote: "B = 2" } }],
+      evidence: [{ file: "src/a.ts", region: { quote: "B = 2" } }],
     });
     await write(d, "v2.md", "# V2\n\nA is one.\n");
     const res = await engine.supersede({ from: "v1.md", to: "v2.md" });
-    expect(res.relocated.map((r) => r.claimId)).toEqual([a.assertion.id]);
-    expect(res.misses.map((m) => m.claimId)).toEqual([b.assertion.id]);
-    expect(res.strandedClaims).toEqual([b.assertion.id]);
+    expect(res.relocated.map((r) => r.claimId)).toEqual([a.claim.id]);
+    expect(res.misses.map((m) => m.claimId)).toEqual([b.claim.id]);
+    expect(res.strandedClaims).toEqual([b.claim.id]);
     expect(res.oldDoc.lifecycle).toBe("superseded");
-    expect(res.newDoc.edges).toEqual([
-      { type: "supersedes", target: res.oldDoc.id },
-    ]);
-    const moved = await engine.store.getAssertion(a.assertion.id);
+    expect(res.oldDoc.supersededBy).toBe(res.newDoc.id);
+    const moved = await engine.store.getClaim(a.claim.id);
     expect(moved?.documentId).toBe(documentIdForPath("v2.md"));
     const report = await engine.check();
-    expect(
-      report.verdicts.find((v) => v.assertionId === a.assertion.id)?.doc,
-    ).toBe("unchanged");
+    expect(report.verdicts.find((v) => v.claimId === a.claim.id)?.doc).toBe(
+      "unchanged",
+    );
   });
 });

@@ -1,0 +1,36 @@
+{
+  "judgment": "supports",
+  "state": {
+    "claim": "The sentence being checked.",
+    "claim_context": "Where the sentence sits: its heading path or a few neighbouring sentences, kept short.",
+    "evidence": "The evidence text an agent submitted: a code span, a passage of another document, or the output of a procedure.",
+    "evidence_source": "Where the evidence came from, for example `src/cli.ts:41-47` or a URL."
+  },
+  "questions": {
+    "relation": {
+      "type": "choice",
+      "instructions": {
+        "question": "How does `evidence` relate to `claim`?",
+        "focus": "Judge only what `evidence` says. Do not use outside knowledge. Use `claim_context` only to resolve what `claim` refers to."
+      },
+      "criteria": {
+        "supports": "`evidence` states the claim or directly implies that it is true",
+        "contradicts": "`evidence` states the opposite of the claim or implies it is false",
+        "says_nothing": "`evidence` does not address what the claim asserts, either way"
+      }
+    },
+    "addresses": {
+      "type": "noul",
+      "instructions": "Does `evidence` address what `claim` asserts, either confirming it or contradicting it?",
+      "criteria": {
+        "true": "`evidence` speaks to the thing `claim` asserts, whether it agrees or disagrees",
+        "false": "`evidence` is about something else, or is silent on what `claim` asserts"
+      }
+    }
+  },
+  "relationNames": {
+    "supports": "supports",
+    "contradicts": "refutes",
+    "says_nothing": "does_not_address"
+  }
+}

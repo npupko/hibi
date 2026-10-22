@@ -3,8 +3,8 @@
  * which are not. The uncovered regions are the candidates for grounding or
  * removal; hibi reports the structural fact and never judges a region.
  *
- * A region is covered iff a live, code-grounded claim's doc anchor resolves
- * cleanly (`unchanged`/`moved`) into it. Prose is split at sentence level;
+ * A region is covered iff a live claim's doc span resolves cleanly
+ * (`unchanged`/`moved`) into it. Prose is split at sentence level;
  * fenced code blocks stay whole; headings and list items are their own regions.
  */
 
@@ -19,9 +19,7 @@ export interface CoverageInput {
 
 export interface CoverageRegion {
   /**
-   * Char span in the banner-normalized document, the coordinate space every
-   * stored doc anchor uses. Ground a region by quoting its text, never by
-   * slicing the raw file at these offsets.
+   * Char span in the document. Ground a region by quoting its text.
    */
   range: Region;
   preview: string;
@@ -178,13 +176,12 @@ export async function coverage(
   input: CoverageInput,
   opts: CoverageOptions = {},
 ): Promise<CoverageResult> {
-  const assertions = await store.allAssertions();
+  const claims = await store.allClaims();
   const spans: { claimId: string; region: Region }[] = [];
-  for (const a of assertions) {
+  for (const a of claims) {
     if (a.enforcement === "retired") continue;
-    if (a.anchor.doc.file !== input.docPath) continue;
-    if (a.anchor.code.length === 0) continue;
-    const side = resolveSide(a.anchor.doc, docContent, { ast: opts.ast });
+    if (a.doc.file !== input.docPath) continue;
+    const side = resolveSide(a.doc, docContent, { ast: opts.ast });
     if (!side.region) continue;
     if (side.state !== "unchanged" && side.state !== "moved") continue;
     spans.push({ claimId: a.id, region: side.region });

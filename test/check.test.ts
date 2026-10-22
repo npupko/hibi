@@ -1,6 +1,5 @@
 import { afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
-import { hasBanner } from "../src/banner/banner.ts";
 import { computeExitCode, runCheck } from "../src/engine/check.ts";
 import { makeRepo, record, type TempRepo } from "./helpers.ts";
 
@@ -43,7 +42,7 @@ describe("exit-code contract", () => {
 });
 
 describe("end-to-end drift detection (two-axis)", () => {
-  test("an unchanged repo is clean (exit 0, code:unchanged)", async () => {
+  test("an unchanged repo is clean (exit 0, evidence:unchanged)", async () => {
     const r = await repo();
     await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
     await record(r, {
@@ -51,11 +50,10 @@ describe("end-to-end drift detection (two-axis)", () => {
       text: "Capped at 5",
       file: "src/retry.ts",
       quote: "MAX_ATTEMPTS = 5",
-      verified: true,
     });
     const rep = await check(r);
     expect(rep.verdicts[0]?.doc).toBe("unchanged");
-    expect(rep.verdicts[0]?.code).toBe("unchanged");
+    expect(rep.verdicts[0]?.evidence).toBe("unchanged");
     expect(rep.verdicts[0]?.expired).toBe(false);
     expect(rep.verdicts[0]?.gates).toBe(false);
     expect(rep.summary.clean).toBe(1);
@@ -74,7 +72,7 @@ describe("end-to-end drift detection (two-axis)", () => {
     });
     await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
     const rep = await check(r);
-    expect(rep.verdicts[0]?.code).toBe("changed");
+    expect(rep.verdicts[0]?.evidence).toBe("changed");
     expect(rep.verdicts[0]?.gates).toBe(true);
     expect(rep.exitCode).toBe(2);
   });
@@ -91,8 +89,8 @@ describe("end-to-end drift detection (two-axis)", () => {
     });
     await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
     const rep = await check(r);
-    // The drift still resolves to code:changed; only enforcement decides gating.
-    expect(rep.verdicts[0]?.code).toBe("changed");
+    // The drift still resolves to evidence:changed; only enforcement decides gating.
+    expect(rep.verdicts[0]?.evidence).toBe("changed");
     expect(rep.verdicts[0]?.gates).toBe(false);
     expect(rep.exitCode).toBe(0);
   });
@@ -127,11 +125,11 @@ describe("end-to-end drift detection (two-axis)", () => {
     });
     await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
     const rep = await check(r, { failOn: "never" });
-    expect(rep.verdicts[0]?.code).toBe("changed");
+    expect(rep.verdicts[0]?.evidence).toBe("changed");
     expect(rep.exitCode).toBe(0);
   });
 
-  test("a deleted anchored file grades code:orphaned and gates on enforced (exit 2)", async () => {
+  test("a deleted anchored file grades evidence:orphaned and gates on enforced (exit 2)", async () => {
     const r = await repo();
     await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
     await record(r, {
@@ -143,26 +141,8 @@ describe("end-to-end drift detection (two-axis)", () => {
     const { rm } = await import("node:fs/promises");
     await rm(`${r.root}/src/retry.ts`);
     const rep = await check(r);
-    expect(rep.verdicts[0]?.code).toBe("orphaned");
+    expect(rep.verdicts[0]?.evidence).toBe("orphaned");
     expect(rep.verdicts[0]?.gates).toBe(true);
-    expect(rep.exitCode).toBe(2);
-  });
-
-  test("expired via ttl is an orthogonal flag and gates on enforced", async () => {
-    const r = await repo();
-    await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-    await record(r, {
-      doc: "README.md",
-      text: "Capped at 5",
-      file: "src/retry.ts",
-      quote: "MAX_ATTEMPTS = 5",
-      ttl: "2000-01-01T00:00:00Z",
-    });
-    const rep = await check(r);
-    expect(rep.verdicts[0]?.expired).toBe(true);
-    expect(rep.verdicts[0]?.code).toBe("unchanged");
-    expect(rep.verdicts[0]?.gates).toBe(true);
-    expect(rep.summary.expired).toBe(1);
     expect(rep.exitCode).toBe(2);
   });
 
@@ -178,7 +158,7 @@ describe("end-to-end drift detection (two-axis)", () => {
     // Rewrite the file wholesale; a precise anchor would orphan, coarse must not.
     await r.write("src/retry.ts", "// totally different content\n");
     const rep = await check(r);
-    expect(rep.verdicts[0]?.code).toBe("unchanged");
+    expect(rep.verdicts[0]?.evidence).toBe("unchanged");
     expect(rep.verdicts[0]?.gates).toBe(false);
     expect(rep.exitCode).toBe(0);
   });
@@ -202,7 +182,7 @@ describe("end-to-end drift detection (two-axis)", () => {
     );
     const rep = await check(r);
     expect(rep.verdicts[0]?.doc).toBe("moved");
-    expect(rep.verdicts[0]?.code).toBe("unchanged");
+    expect(rep.verdicts[0]?.evidence).toBe("unchanged");
     expect(rep.verdicts[0]?.gates).toBe(false);
     expect(rep.summary.warning).toBe(1);
     expect(rep.exitCode).toBe(0);
@@ -239,78 +219,6 @@ describe("end-to-end drift detection (two-axis)", () => {
   });
 });
 
-describe("the write-time loop: banner stamping", () => {
-  test("--write stamps a banner into the suspect document (code:changed)", async () => {
-    const r = await repo();
-    await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-    await r.write("README.md", "# Retry Policy\n\nProse.\n");
-    await record(r, {
-      doc: "README.md",
-      text: "Capped at 5",
-      file: "src/retry.ts",
-      quote: "MAX_ATTEMPTS = 5",
-    });
-
-    await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
-    await check(r, { write: true });
-    const doc = await r.read("README.md");
-    expect(hasBanner(doc, "README.md", "deadbeef")).toBe(true);
-    expect(doc).toContain("Capped at 5");
-    expect(doc).toContain("[code:changed]");
-  });
-
-  // The engine-owned banner restates the live doc sentence verbatim. The
-  // engine strips its own banner before resolving the doc side, so a second
-  // --write run does not relocate the doc quote onto the banner copy.
-  test("--write banner is byte-stable, then clears on fix", async () => {
-    const r = await repo();
-    const pristine = "# Retry Policy\n\nCapped at 5 attempts.\n";
-    await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-    await r.write("README.md", pristine);
-    await record(r, {
-      doc: "README.md",
-      text: "Capped at 5 attempts",
-      file: "src/retry.ts",
-      quote: "MAX_ATTEMPTS = 5",
-    });
-
-    await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
-    await check(r, { write: true });
-    let doc = await r.read("README.md");
-    expect(hasBanner(doc, "README.md", "deadbeef")).toBe(true);
-    expect(doc).toContain("Capped at 5 attempts");
-
-    const before = await r.read("README.md");
-    const rep2 = await check(r, { write: true });
-    expect(await r.read("README.md")).toBe(before);
-    expect(rep2.verdicts[0]?.doc).toBe("unchanged");
-    expect(rep2.verdicts[0]?.code).toBe("changed");
-
-    await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-    await check(r, { write: true });
-    doc = await r.read("README.md");
-    expect(hasBanner(doc, "README.md", "deadbeef")).toBe(false);
-    expect(doc).toBe(pristine);
-  });
-
-  test("--write never writes a hibi-status frontmatter line", async () => {
-    const r = await repo();
-    await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-    await r.write("README.md", "---\ntitle: Doc\n---\n\n# Doc\n");
-    await record(r, {
-      doc: "README.md",
-      text: "Capped at 5",
-      file: "src/retry.ts",
-      quote: "MAX_ATTEMPTS = 5",
-    });
-    await r.write("src/retry.ts", "// gone\n");
-    await check(r, { write: true });
-    const doc = await r.read("README.md");
-    expect(hasBanner(doc, "README.md", "deadbeef")).toBe(true);
-    expect(doc).not.toContain("hibi-status");
-  });
-});
-
 describe("check is fully offline: no git on the verdict path", () => {
   test("verdicts are identical whether or not a git repo exists", async () => {
     const r = await repo();
@@ -324,10 +232,10 @@ describe("check is fully offline: no git on the verdict path", () => {
     // The temp dir is not a git repo; check must still succeed deterministically.
     const a = await check(r);
     const b = await check(r);
-    expect(a.verdicts[0]?.code).toBe("unchanged");
-    expect(a.verdicts[0]?.code).toBe(b.verdicts[0]?.code);
-    expect(a.verdicts[0]?.evidence.similarity).toBe(
-      b.verdicts[0]?.evidence.similarity,
+    expect(a.verdicts[0]?.evidence).toBe("unchanged");
+    expect(a.verdicts[0]?.evidence).toBe(b.verdicts[0]?.evidence);
+    expect(a.verdicts[0]?.detail.similarity).toBe(
+      b.verdicts[0]?.detail.similarity,
     );
     expect(a.ref).toBe("WORKTREE");
   });

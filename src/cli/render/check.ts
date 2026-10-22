@@ -1,7 +1,7 @@
 /**
  * Render a `CheckReport` for a human (rich and compact views). Diagnostics are
  * grouped by document; each suspect claim gets a status, the quoted sentence,
- * a `path:line` code anchor, owner, freshness, and a `help` line. Clean
+ * a `path:line` evidence anchor, owner, freshness, and a `help` line. Clean
  * documents collapse to a count.
  */
 
@@ -9,15 +9,13 @@ import { isWarnVerdict } from "../../core/gating.ts";
 import type { Remediation } from "../../core/model.ts";
 import { topAction } from "../../core/remediation.ts";
 import type {
-  Assertion,
   CheckReport,
+  Claim,
   DocumentReport,
-  Proposition,
   Verdict,
 } from "../../index.ts";
 import {
-  codeAnchor,
-  docSentence,
+  evidenceAnchor,
   type FileRead,
   freshness,
   oneLine,
@@ -34,8 +32,7 @@ import {
 
 export interface CheckRenderContext {
   report: CheckReport;
-  assertionsById: Map<string, Assertion>;
-  propsById: Map<string, Proposition>;
+  claimsById: Map<string, Claim>;
   read: FileRead;
   style: Style;
   mode: OutputMode;
@@ -46,9 +43,9 @@ export interface CheckRenderContext {
 interface SuspectClaim {
   status: string;
   severity: Severity;
-  assertion: Assertion | undefined;
+  claim: Claim | undefined;
   verdict: Verdict | undefined;
-  propositionId: string;
+  claimId: string;
 }
 
 function suspectsFor(
@@ -56,19 +53,11 @@ function suspectsFor(
   docVerdicts: Verdict[],
   ctx: CheckRenderContext,
 ): SuspectClaim[] {
-  // Propositions are deduplicated across documents by fingerprint, so the
-  // lookup must stay inside this document's own verdicts.
-  const verdictsByProp = new Map<string, Verdict>();
-  for (const v of docVerdicts) {
-    if (!verdictsByProp.has(v.propositionId))
-      verdictsByProp.set(v.propositionId, v);
-  }
+  const verdictsById = new Map(docVerdicts.map((v) => [v.claimId, v]));
   return doc.suspect.map((s) => {
-    const verdict = verdictsByProp.get(s.propositionId);
-    const assertion = verdict
-      ? ctx.assertionsById.get(verdict.assertionId)
-      : undefined;
-    const enforcement = assertion?.enforcement ?? "suggested";
+    const verdict = verdictsById.get(s.claimId);
+    const claim = ctx.claimsById.get(s.claimId);
+    const enforcement = claim?.enforcement ?? "suggested";
     const severity: Severity = verdict?.gates
       ? "gating"
       : verdict && isWarnVerdict(verdict, enforcement)
@@ -77,15 +66,15 @@ function suspectsFor(
     return {
       status: s.status,
       severity,
-      assertion,
+      claim,
       verdict,
-      propositionId: s.propositionId,
+      claimId: s.claimId,
     };
   });
 }
 
 function claimLabel(claim: SuspectClaim): string {
-  return claim.assertion?.id ?? claim.propositionId;
+  return claim.claimId;
 }
 
 function leadLine(ctx: CheckRenderContext): string {
@@ -149,18 +138,17 @@ function richBlock(claim: SuspectClaim, ctx: CheckRenderContext): string[] {
   const lines: string[] = [];
   lines.push(`  ${sym} ${status}   ${style.cyan(claimLabel(claim))}`);
   if (claim.verdict) {
-    const sentence = oneLine(docSentence(claim.verdict, ctx.propsById));
+    const sentence = oneLine(claim.claim?.sentence ?? "");
     lines.push(`     ${style.dim(`"${sentence}"`)}`);
-    const anchor = codeAnchor(claim.verdict, claim.assertion, ctx.read);
+    const anchor = evidenceAnchor(claim.verdict, claim.claim, ctx.read);
     const facets: string[] = [];
     if (anchor) facets.push(anchor);
-    if (claim.assertion?.owner && claim.assertion.owner !== "unknown")
-      facets.push(`owner ${claim.assertion.owner}`);
-    facets.push(freshness(claim.verdict, claim.assertion));
+    if (claim.claim?.owner) facets.push(`owner ${claim.claim.owner}`);
+    facets.push(freshness(claim.verdict, claim.claim));
     if (facets.length) lines.push(`     ${style.dim(facets.join("   "))}`);
     const reasons = [
       ...new Set(
-        claim.verdict.evidence.changedEvidence
+        claim.verdict.detail.changes
           .map((c) => c.detail)
           .filter((r): r is string => Boolean(r)),
       ),
@@ -204,10 +192,10 @@ function compactLine(claim: SuspectClaim, ctx: CheckRenderContext): string {
   )(severitySymbol(claim.severity, mode.unicode));
   const status = severityColor(claim.severity, style)(claim.status.padEnd(16));
   const anchor = claim.verdict
-    ? (codeAnchor(claim.verdict, claim.assertion, ctx.read) ?? "")
+    ? (evidenceAnchor(claim.verdict, claim.claim, ctx.read) ?? "")
     : "";
   const sentence = claim.verdict
-    ? oneLine(docSentence(claim.verdict, ctx.propsById), 40)
+    ? oneLine(claim.claim?.sentence ?? "", 40)
     : "";
   return `  ${sym} ${status} ${style.cyan(claimLabel(claim).padEnd(18))} ${style.dim(anchor)}   ${style.dim(`"${sentence}"`)}`;
 }
@@ -240,7 +228,7 @@ export function renderCheck(ctx: CheckRenderContext): string {
   const enriched = report.documents.map((doc) => {
     const docVerdicts = verdictsByDoc.get(doc.id) ?? [];
     const total = docVerdicts.filter(
-      (v) => ctx.assertionsById.get(v.assertionId)?.enforcement !== "retired",
+      (v) => ctx.claimsById.get(v.claimId)?.enforcement !== "retired",
     ).length;
     const suspects = suspectsFor(doc, docVerdicts, ctx);
     return { doc, total, suspects };

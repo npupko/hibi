@@ -27,8 +27,7 @@
     "hibi": "./src/cli/index.ts"
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./resolver": "./src/resolver/index.ts"
+    ".": "./src/index.ts"
   },
   "engines": {
     "bun": ">=1.0.0"

@@ -1,17 +1,7 @@
 import { afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
-import { hasBanner } from "../src/banner/banner.ts";
-import {
-  getFrontmatterStatus,
-  setFrontmatterStatus,
-  splitFrontmatter,
-} from "../src/banner/frontmatter.ts";
-import {
-  buildCoarseBundle,
-  coarseCovers,
-  composeAnchor,
-} from "../src/engine/anchor.ts";
+import { buildCoarseBundle, coarseCovers } from "../src/engine/anchor.ts";
 import { archiveDocument } from "../src/engine/archive.ts";
 import { runCheck } from "../src/engine/check.ts";
 import { matchedSide } from "../src/engine/list.ts";
@@ -32,51 +22,6 @@ async function repo() {
 afterEach(async () => {
   await Promise.all(repos.map((r) => r.cleanup()));
   repos = [];
-});
-
-describe("frontmatter helper (used only to strip a legacy hibi-status line)", () => {
-  test("setFrontmatterStatus only acts where frontmatter exists; round-trips", () => {
-    const withFm = "---\ntitle: Doc\n---\n\n# Body\n";
-    const set = setFrontmatterStatus(withFm, "code:changed");
-    expect(getFrontmatterStatus(set)).toBe("code:changed");
-    expect(splitFrontmatter(set).body).toBe("\n# Body\n");
-    const cleared = setFrontmatterStatus(set, null);
-    expect(getFrontmatterStatus(cleared)).toBeUndefined();
-    expect(cleared).toBe(withFm);
-
-    const noFm = "# Body only\n";
-    expect(setFrontmatterStatus(noFm, "code:changed")).toBe(noFm);
-  });
-
-  test("never clobbers an author's own status key", () => {
-    const t = "---\nstatus: published\n---\nbody\n";
-    const set = setFrontmatterStatus(t, "code:changed");
-    expect(set).toContain("status: published");
-    expect(getFrontmatterStatus(set)).toBe("code:changed");
-  });
-
-  test("check --write strips a legacy hibi-status line and never writes one", async () => {
-    const r = await repo();
-    await r.write("src/a.ts", "export const A = 1;\n");
-    await r.write(
-      "doc.md",
-      "---\ntitle: Doc\nhibi-status: code:changed\n---\n\n# Doc\n",
-    );
-    await record(r, {
-      doc: "doc.md",
-      text: "A is 1 here",
-      file: "src/a.ts",
-      quote: "A = 1",
-    });
-    await r.write("src/a.ts", "// gone\n");
-    const rep = await runCheck(r.store, { ast: analyzer, write: true });
-    const docReport = rep.documents.find((d) => d.path === "doc.md");
-    expect(docReport?.suspect.map((s) => s.status)).toEqual(["code:orphaned"]);
-    const doc = await r.read("doc.md");
-    expect(getFrontmatterStatus(doc)).toBeUndefined();
-    expect(doc.startsWith("---\ntitle: Doc\n---")).toBe(true);
-    expect(hasBanner(doc, "doc.md", "deadbeef")).toBe(true);
-  });
 });
 
 describe("archival", () => {
@@ -119,19 +64,19 @@ describe("coarse code targets", () => {
       file: "src/auth/**",
       glob: "src/auth/**",
     });
-    const a = (await r.store.allAssertions())[0];
-    if (a === undefined) throw new Error("expected a recorded assertion");
+    const a = (await r.store.allClaims())[0];
+    if (a === undefined) throw new Error("expected a recorded claim");
     expect(a.enforcement).toBe("suggested");
-    expect(a.anchor.code.length).toBe(1);
-    expect(a.anchor.code[0]?.selectors).toEqual([
+    expect(a.evidence.length).toBe(1);
+    expect(a.evidence[0]?.selectors).toEqual([
       { kind: "coarse", pattern: "src/auth/**" },
     ]);
-    expect(matchedSide(a, "src/auth/login.ts")).toBe("code");
+    expect(matchedSide(a, "src/auth/login.ts")).toBe("evidence");
     expect(matchedSide(a, "arch.md")).toBe("doc");
     expect(matchedSide(a, "src/other.ts")).toBeUndefined();
   });
 
-  test("buildCoarseBundle + composeAnchor: a swapped-in coarse code side still matches", async () => {
+  test("buildCoarseBundle: a swapped-in coarse evidence side still matches", async () => {
     const r = await repo();
     await record(r, {
       doc: "arch.md",
@@ -139,15 +84,13 @@ describe("coarse code targets", () => {
       file: "src/payments/**",
       glob: "src/payments/**",
     });
-    const a = (await r.store.allAssertions())[0];
-    if (a === undefined) throw new Error("expected a recorded assertion");
-    a.anchor = composeAnchor(a.anchor.doc, [
-      buildCoarseBundle("src/payments/**"),
-    ]);
-    await r.store.putAssertion(a);
-    const reloaded = await r.store.getAssertion(a.id);
-    if (reloaded === undefined) throw new Error("assertion did not persist");
-    expect(matchedSide(reloaded, "src/payments/charge.ts")).toBe("code");
+    const a = (await r.store.allClaims())[0];
+    if (a === undefined) throw new Error("expected a recorded claim");
+    a.evidence = [buildCoarseBundle("src/payments/**")];
+    await r.store.putClaim(a);
+    const reloaded = await r.store.getClaim(a.id);
+    if (reloaded === undefined) throw new Error("claim did not persist");
+    expect(matchedSide(reloaded, "src/payments/charge.ts")).toBe("evidence");
   });
 
   test("a coarse path covers on a `/` boundary, not a bare prefix", () => {
@@ -159,7 +102,7 @@ describe("coarse code targets", () => {
 });
 
 describe("moved-only verdict warns and exits 0", () => {
-  test("a position shift with intact content grades code moved (doc unchanged)", async () => {
+  test("a position shift with intact content grades evidence moved (doc unchanged)", async () => {
     const r = await repo();
     await r.write("src/a.ts", "export const MAX = 5;\n");
     await record(r, {
@@ -168,15 +111,15 @@ describe("moved-only verdict warns and exits 0", () => {
       file: "src/a.ts",
       quote: "MAX = 5",
     });
-    const a = (await r.store.allAssertions())[0];
-    if (a === undefined) throw new Error("expected a recorded assertion");
+    const a = (await r.store.allClaims())[0];
+    if (a === undefined) throw new Error("expected a recorded claim");
     expect(a.enforcement).toBe("enforced");
     await r.write(
       "src/a.ts",
       `${"// prologue line\n".repeat(3)}export const MAX = 5;\n`,
     );
     const rep = await runCheck(r.store, { ast: analyzer });
-    expect(rep.verdicts[0]?.code).toBe("moved");
+    expect(rep.verdicts[0]?.evidence).toBe("moved");
     expect(rep.verdicts[0]?.doc).toBe("unchanged");
     expect(rep.verdicts[0]?.gates).toBe(false);
     expect(rep.summary.warning).toBe(1);
@@ -198,14 +141,14 @@ describe("remediation menus on live verdicts", () => {
       file: "src/retry.ts",
       quote: "MAX_ATTEMPTS = 5",
     });
-    return { r, id: rec.assertion.id };
+    return { r, id: rec.claim.id };
   }
 
-  test("code changed: recommended update-claim with [update-claim, reanchor, retire]", async () => {
+  test("evidence changed: recommended update-claim with [update-claim, reanchor, retire]", async () => {
     const { r, id } = await seeded();
     await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
     const v = (await runCheck(r.store, { ast: analyzer })).verdicts[0];
-    expect(v?.code).toBe("changed");
+    expect(v?.evidence).toBe("changed");
     expect(v?.doc).toBe("unchanged");
     expect(v?.remediation?.recommended).toBe("update-claim");
     expect(v?.remediation?.actions.map((a) => a.id)).toEqual([
@@ -221,7 +164,7 @@ describe("remediation menus on live verdicts", () => {
     await r.write("README.md", "# Doc\n\nRetries are capped at 7 attempts.\n");
     const v = (await runCheck(r.store, { ast: analyzer })).verdicts[0];
     expect(v?.doc).toBe("changed");
-    expect(v?.code).toBe("unchanged");
+    expect(v?.evidence).toBe("unchanged");
     expect(v?.remediation?.recommended).toBe("reverify-doc");
     expect(v?.remediation?.actions.map((a) => a.id)).toEqual([
       "reverify-doc",
@@ -236,7 +179,7 @@ describe("remediation menus on live verdicts", () => {
     await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
     const v = (await runCheck(r.store, { ast: analyzer })).verdicts[0];
     expect(v?.doc).toBe("changed");
-    expect(v?.code).toBe("changed");
+    expect(v?.evidence).toBe("changed");
     expect(v?.remediation?.recommended).toBe("reconcile");
     expect(v?.remediation?.actions.map((a) => a.id)).toEqual([
       "reconcile",
@@ -249,7 +192,7 @@ describe("remediation menus on live verdicts", () => {
     const { r, id } = await seeded();
     await r.write("src/retry.ts", "export const OTHER = 1;\n");
     const v = (await runCheck(r.store, { ast: analyzer })).verdicts[0];
-    expect(v?.code).toBe("orphaned");
+    expect(v?.evidence).toBe("orphaned");
     expect(v?.remediation?.recommended).toBe("reanchor");
     const ids = v?.remediation?.actions.map((a) => a.id) ?? [];
     expect(ids).toContain("retire");

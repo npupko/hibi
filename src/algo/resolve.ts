@@ -12,19 +12,19 @@
  *
  * Position is a tiebreaker only. Both AST hashes are kept as reason labels:
  * structural equal and semantic different is "identifiers or literals renamed";
- * both different is "restructured". Freshness is computed from the stored
- * anchor and the current files alone; `check` never reads git.
+ * both different is "restructured". Resolution is computed from the stored
+ * selectors and the current files alone; `check` never reads git.
  */
 
 import { computeGates } from "../core/gating.ts";
 import {
   type AnchorState,
-  type Assertion,
-  type ChangedEvidence,
+  type Claim,
   COARSE_SELECTOR_KINDS,
   type Region,
   type Selector,
   type SelectorBundle,
+  type SpanChange,
   type Verdict,
 } from "../core/model.ts";
 import { remediationFor } from "../core/remediation.ts";
@@ -52,16 +52,14 @@ export interface AstAnalyzer {
   ): string | null;
 }
 
-/** Current content of every file an anchor points into (null = missing). */
+/** Current content of every file a claim's spans point into (null = missing). */
 export interface ResolveFiles {
   doc: string | null;
-  code: ReadonlyMap<string, string | null>;
+  evidence: ReadonlyMap<string, string | null>;
 }
 
 export interface ResolveOptions {
   ast?: AstAnalyzer;
-  /** Current time for ttl evaluation; defaults to Date.now(). */
-  now?: number;
 }
 
 const STATE_RANK: Record<AnchorState, number> = {
@@ -78,7 +76,7 @@ export interface SideResult {
   /** Normalized similarity of the located text to the stored quote (0 when not found). */
   similarity: number;
   notes: string[];
-  changedEvidence: ChangedEvidence[];
+  changedEvidence: SpanChange[];
   /** The live text at the located region. */
   liveText: string | null;
 }
@@ -167,7 +165,7 @@ export function resolveSide(
   const liveText = regionText(currentText, region);
   const similarity = textSimilarity(liveText, tq.exact);
   const notes: string[] = [];
-  const changedEvidence: ChangedEvidence[] = [];
+  const changedEvidence: SpanChange[] = [];
 
   // 6. Several equally good matches.
   if (located.ambiguous) {
@@ -279,108 +277,92 @@ export function resolveSide(
   };
 }
 
-/** TTL expiry. A datetime with no timezone suffix is read as UTC. */
-function parseTtl(
-  ttl: string,
-  now: number,
-): { expired: boolean; invalid: boolean } {
-  const normalized =
-    ttl.includes("T") && !/(Z|[+-]\d{2}:?\d{2})$/i.test(ttl) ? `${ttl}Z` : ttl;
-  const at = Date.parse(normalized);
-  if (Number.isNaN(at)) return { expired: true, invalid: true };
-  return { expired: at <= now, invalid: false };
-}
-
 export interface SidesResult {
   doc: SideResult;
-  /** Index-aligned with `assertion.anchor.code`. */
-  code: SideResult[];
+  /** Index-aligned with `claim.evidence`. */
+  evidence: SideResult[];
 }
 
-/** Resolve every side once. The doc side resolves first. */
+/** Resolve every span once. The doc span resolves first. */
 export function resolveSides(
-  assertion: Assertion,
+  claim: Pick<Claim, "doc" | "evidence">,
   files: ResolveFiles,
   opts: ResolveOptions = {},
 ): SidesResult {
-  const anchor = assertion.anchor;
-  const doc = resolveSide(anchor.doc, files.doc, opts);
-  const code = anchor.code.map((bundle) =>
-    resolveSide(bundle, files.code.get(bundle.file) ?? null, opts),
+  const doc = resolveSide(claim.doc, files.doc, opts);
+  const evidence = claim.evidence.map((bundle) =>
+    resolveSide(bundle, files.evidence.get(bundle.file) ?? null, opts),
   );
-  return { doc, code };
+  return { doc, evidence };
 }
 
-/** Worst state over the code-side bundles. */
-export function worstCodeState(code: SideResult[]): AnchorState {
+/** Worst state over the evidence spans. */
+export function worstState(sides: SideResult[]): AnchorState {
   let state: AnchorState = "unchanged";
-  for (const side of code) {
+  for (const side of sides) {
     if (STATE_RANK[side.state] > STATE_RANK[state]) state = side.state;
   }
   return state;
 }
 
-/** Resolve a single assertion against the current working tree. */
-export function resolveAssertion(
-  assertion: Assertion,
+/**
+ * Resolve a single claim against the current working tree. The `evidence`
+ * axis is absent when the claim has no evidence span. Expiry and the judge
+ * axis are not computed here.
+ */
+export function resolveClaim(
+  claim: Claim,
   files: ResolveFiles,
   opts: ResolveOptions = {},
 ): Verdict {
-  const now = opts.now ?? Date.now();
-  const sides = resolveSides(assertion, files, opts);
-  const code = worstCodeState(sides.code);
+  const sides = resolveSides(claim, files, opts);
+  const evidence =
+    sides.evidence.length > 0 ? worstState(sides.evidence) : undefined;
   // The reported similarity describes the side that decided the verdict, so a
-  // `doc:changed` claim never reports an untouched code side's 1.0.
-  const primary = [sides.doc, ...sides.code].reduce((worst, side) =>
+  // `doc:changed` claim never reports an untouched evidence side's 1.0.
+  const primary = [sides.doc, ...sides.evidence].reduce((worst, side) =>
     STATE_RANK[side.state] > STATE_RANK[worst.state] ? side : worst,
   );
 
-  const ttl =
-    assertion.ttl !== undefined ? parseTtl(assertion.ttl, now) : undefined;
-  const expired = ttl?.expired ?? false;
-
+  const expired = false;
   const gates = computeGates(
-    { doc: sides.doc.state, code, expired },
-    assertion.enforcement,
+    { doc: sides.doc.state, evidence, expired },
+    claim.enforcement,
   );
 
   const notes = [
     ...sides.doc.notes.map((n) => `doc: ${n}`),
-    ...sides.code.flatMap((s) => s.notes.map((n) => `code: ${n}`)),
-    ttl?.invalid
-      ? `unparseable ttl "${assertion.ttl}": treated as expired (fix or clear the ttl)`
-      : "",
-  ].filter(Boolean);
+    ...sides.evidence.flatMap((s) => s.notes.map((n) => `evidence: ${n}`)),
+  ];
 
-  const changedEvidence = [
+  const changes = [
     ...sides.doc.changedEvidence,
-    ...sides.code.flatMap((s) => s.changedEvidence),
+    ...sides.evidence.flatMap((s) => s.changedEvidence),
   ];
 
   return {
-    assertionId: assertion.id,
-    propositionId: assertion.propositionId,
-    documentId: assertion.documentId,
+    claimId: claim.id,
+    documentId: claim.documentId,
+    kind: claim.kind,
     doc: sides.doc.state,
-    code,
-    behavior: undefined,
+    ...(evidence !== undefined ? { evidence } : {}),
     expired,
+    conflicts: [],
     gates,
     remediation: remediationFor({
-      assertionId: assertion.id,
+      claimId: claim.id,
       doc: sides.doc.state,
-      code,
+      evidence,
       expired,
     }),
-    evidence: {
+    detail: {
       docRegion: sides.doc.region ?? undefined,
-      codeRegions: sides.code
+      evidenceRegions: sides.evidence
         .map((s) => s.region)
         .filter((r): r is Region => r !== null),
       similarity: primary.similarity,
-      changedEvidence,
+      changes,
     },
     notes,
-    advisories: [],
   };
 }

@@ -57,12 +57,6 @@ function commandSection(cmd: CommandSpec): string[] {
   const lines: string[] = [];
   lines.push(`## \`hibi ${cmd.name}\``, "");
   lines.push(cmd.summary, "");
-  if (cmd.aliasOf) {
-    lines.push(
-      `Deprecated alias of \`hibi ${cmd.aliasOf}\`. It prints a notice on stderr and will be removed in a later release.`,
-      "",
-    );
-  }
   if (cmd.description) lines.push(cmd.description, "");
   lines.push("```sh");
   if (cmd.usage) lines.push(...cmd.usage);

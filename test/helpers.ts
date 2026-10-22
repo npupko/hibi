@@ -2,8 +2,8 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
-import type { Enforcement, Verifier } from "../src/core/model.ts";
-import { type CodeTarget, recordClaim } from "../src/engine/record.ts";
+import type { Claim, Enforcement, SelectorBundle } from "../src/core/model.ts";
+import { type EvidenceTarget, recordClaim } from "../src/engine/record.ts";
 import { ClaimStore } from "../src/store/store.ts";
 
 export interface TempRepo {
@@ -16,7 +16,7 @@ export interface TempRepo {
 
 export async function makeRepo(): Promise<TempRepo> {
   const root = await mkdtemp(join(tmpdir(), "ce-test-"));
-  const store = await ClaimStore.init(root, "deadbeef");
+  const store = await ClaimStore.init(root);
   return {
     root,
     store,
@@ -49,12 +49,11 @@ export async function record(
     file: string;
     quote?: string;
     line?: number;
-    verified?: boolean;
     ttl?: string;
     coarse?: boolean;
     glob?: string;
     enforcement?: Enforcement;
-    verifiers?: Verifier[];
+    by?: string;
   },
 ) {
   const analyzer = await getAnalyzer();
@@ -73,7 +72,7 @@ export async function record(
   }
 
   const codeContents: Record<string, string | null> = {};
-  let code: CodeTarget[];
+  let code: EvidenceTarget[];
   let coarse = false;
   if (opts.glob) {
     code = [{ file: opts.glob, coarse: true }];
@@ -95,18 +94,39 @@ export async function record(
 
   return recordClaim(
     repo.store,
-    { docContent, codeContents },
+    { docContent, evidenceContents: codeContents },
     {
       docPath: opts.doc,
       docSpec: { quote: opts.text },
-      verified: opts.verified ?? false,
-      owner: "tester",
+      by: opts.by ?? "human:tester@example.com",
+      owner: "human:tester@example.com",
       ref: "testref",
       ttl: opts.ttl,
-      code,
+      evidence: code,
       enforcement,
-      verifiers: opts.verifiers,
       analyzer,
     },
   );
+}
+
+/** A hand-built `code` claim over the given bundles, for resolver-level tests. */
+export function codeClaim(
+  doc: SelectorBundle,
+  evidence: SelectorBundle[],
+  enforcement: Enforcement = "enforced",
+): Claim {
+  return {
+    id: "clm_0000000000000001",
+    documentId: "doc_0000000000000001",
+    kind: "code",
+    sentence: "a sentence",
+    doc,
+    evidence,
+    sources: [],
+    procedure: null,
+    enforcement,
+    attestations: [],
+    createdAt: "2026-10-22T00:00:00.000Z",
+    ref: "r",
+  };
 }

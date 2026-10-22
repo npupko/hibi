@@ -15,7 +15,7 @@ import {
   MOVE_AWARENESS_CHARS,
   SAME_TEXT_SIMILARITY,
 } from "../src/algo/params.ts";
-import { resolveAssertion, resolveSide } from "../src/algo/resolve.ts";
+import { resolveClaim, resolveSide } from "../src/algo/resolve.ts";
 import type { SelectorBundle } from "../src/core/model.ts";
 import { buildSelectorBundle } from "../src/engine/anchor.ts";
 import { MATCH_MAX_BITS, matchMain } from "../src/vendor/bitap.ts";
@@ -275,75 +275,28 @@ describe("resolveSide: the ordered cascade", () => {
   });
 });
 
-describe("expired is a resolve-level flag, orthogonal to the anchor states", () => {
-  test("resolveAssertion sets verdict.expired without disturbing doc/code", async () => {
+describe("resolveClaim leaves expiry, judge, and conflicts to later passes", () => {
+  test("a code claim with a ttl resolves its spans and nothing else", async () => {
     const repo = await makeRepo();
     try {
       await repo.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-      const { assertion } = await record(repo, {
+      const { claim } = await record(repo, {
         doc: "README.md",
         text: "Retries are capped at five attempts.",
         file: "src/retry.ts",
         quote: "export const MAX_ATTEMPTS = 5;",
-        verified: true,
-        ttl: "2000-01-01T00:00:00.000Z",
+        ttl: "P90D",
       });
-
-      const docContent = await repo.read("README.md");
-      const codeContent = await repo.read("src/retry.ts");
-      const verdict = resolveAssertion(assertion, {
-        doc: docContent,
-        code: new Map([["src/retry.ts", codeContent]]),
+      const verdict = resolveClaim(claim, {
+        doc: await repo.read("README.md"),
+        evidence: new Map([["src/retry.ts", await repo.read("src/retry.ts")]]),
       });
-
-      expect(verdict.expired).toBe(true);
       expect(verdict.doc).toBe("unchanged");
-      expect(verdict.code).toBe("unchanged");
-      expect(verdict.gates).toBe(true);
-    } finally {
-      await repo.cleanup();
-    }
-  });
-
-  test("an un-expired claim leaves verdict.expired false", async () => {
-    const repo = await makeRepo();
-    try {
-      await repo.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-      const { assertion } = await record(repo, {
-        doc: "README.md",
-        text: "Retries are capped at five attempts.",
-        file: "src/retry.ts",
-        quote: "export const MAX_ATTEMPTS = 5;",
-        verified: true,
-      });
-      const verdict = resolveAssertion(assertion, {
-        doc: await repo.read("README.md"),
-        code: new Map([["src/retry.ts", await repo.read("src/retry.ts")]]),
-      });
+      expect(verdict.evidence).toBe("unchanged");
       expect(verdict.expired).toBe(false);
-      expect(verdict.behavior).toBeUndefined();
-    } finally {
-      await repo.cleanup();
-    }
-  });
-
-  test("an unparseable ttl is treated as expired and noted", async () => {
-    const repo = await makeRepo();
-    try {
-      await repo.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-      const { assertion } = await record(repo, {
-        doc: "README.md",
-        text: "Retries are capped at five attempts.",
-        file: "src/retry.ts",
-        quote: "export const MAX_ATTEMPTS = 5;",
-        ttl: "not-a-date",
-      });
-      const verdict = resolveAssertion(assertion, {
-        doc: await repo.read("README.md"),
-        code: new Map([["src/retry.ts", await repo.read("src/retry.ts")]]),
-      });
-      expect(verdict.expired).toBe(true);
-      expect(verdict.notes.join(" ")).toContain("unparseable ttl");
+      expect(verdict.judge).toBeUndefined();
+      expect(verdict.conflicts).toEqual([]);
+      expect(verdict.gates).toBe(false);
     } finally {
       await repo.cleanup();
     }

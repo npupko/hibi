@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, test } from "bun:test";
-import { resolveAssertion } from "../src/algo/resolve.ts";
+import { resolveClaim } from "../src/algo/resolve.ts";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
-import type { Assertion } from "../src/core/model.ts";
-import { buildSelectorBundle, composeAnchor } from "../src/engine/anchor.ts";
+import { buildSelectorBundle } from "../src/engine/anchor.ts";
+import { codeClaim } from "./helpers.ts";
 
 let analyzer: Awaited<ReturnType<typeof getAnalyzer>>;
 beforeAll(async () => {
@@ -36,23 +36,12 @@ function anchorOn(original: string, quote: string, language = "typescript") {
     { language, analyzer },
   );
 
-  const a: Assertion = {
-    id: "a",
-    propositionId: "p",
-    documentId: "d",
-    owner: "o",
-    ref: "r",
-    anchor: composeAnchor(docBundle, [codeBundle]),
-    enforcement: "enforced",
-    verified: false,
-    verifiers: [],
-    attrs: {},
-  };
+  const a = codeClaim(docBundle, [codeBundle], "enforced");
 
   return (modified: string) =>
-    resolveAssertion(
+    resolveClaim(
       a,
-      { doc: DOC_CONTENT, code: new Map([[CODE_FILE, modified]]) },
+      { doc: DOC_CONTENT, evidence: new Map([[CODE_FILE, modified]]) },
       { ast: analyzer },
     );
 }
@@ -93,7 +82,7 @@ describe("never report a drifted claim as `unchanged`", () => {
   for (const c of cases) {
     test(c.name, () => {
       const v = anchorOn(c.original, c.quote)(c.drifted);
-      expect(v.code).not.toBe("unchanged");
+      expect(v.evidence).not.toBe("unchanged");
       expect(v.doc).toBe("unchanged");
     });
   }
@@ -105,17 +94,17 @@ describe("neutral edits do not produce false `changed`/`orphaned`", () => {
     const reindented = "function f() {\n        return 5;\n}\n";
     const v = anchorOn(original, "return 5")(reindented);
     // The region start shifted, so the side is `moved` at most; never `changed`.
-    expect(["unchanged", "moved"]).toContain(v.code);
-    expect(v.code).not.toBe("changed");
+    expect(["unchanged", "moved"]).toContain(String(v.evidence));
+    expect(v.evidence).not.toBe("changed");
     expect(v.doc).toBe("unchanged");
-    expect(v.evidence.similarity).toBe(1);
+    expect(v.detail.similarity).toBe(1);
   });
 
   test("reflow (added blank lines elsewhere) stays unchanged", () => {
     const original = "export const MAX = 5;\nexport const MIN = 1;\n";
     const reflowed = "export const MAX = 5;\n\n\nexport const MIN = 1;\n";
     const v = anchorOn(original, "MAX = 5")(reflowed);
-    expect(v.code).toBe("unchanged");
+    expect(v.evidence).toBe("unchanged");
     expect(v.doc).toBe("unchanged");
   });
 
@@ -124,7 +113,7 @@ describe("neutral edits do not produce false `changed`/`orphaned`", () => {
     const edited =
       "export const MAX = 5;\nexport function helper() { return 42; }\n";
     const v = anchorOn(original, "MAX = 5")(edited);
-    expect(v.code).toBe("unchanged");
+    expect(v.evidence).toBe("unchanged");
     expect(v.doc).toBe("unchanged");
   });
 
@@ -137,7 +126,7 @@ describe("neutral edits do not produce false `changed`/`orphaned`", () => {
       "export   const   MAX   =   5;\nexport const NAME = 'a';\n",
     ];
     const states = neutralEdits.map(
-      (e) => anchorOn(original, "MAX = 5")(e).code,
+      (e) => anchorOn(original, "MAX = 5")(e).evidence,
     );
     expect(states.filter((s) => s === "changed" || s === "orphaned")).toEqual(
       [],
@@ -150,11 +139,11 @@ describe("a rename grades `changed` with the rename reason label", () => {
     const original = "export const MAX_ATTEMPTS = 5;\n";
     const renamed = "export const MAX_TRIES = 5;\n";
     const v = anchorOn(original, "const MAX_ATTEMPTS = 5;")(renamed);
-    expect(v.code).toBe("changed");
+    expect(v.evidence).toBe("changed");
     expect(v.doc).toBe("unchanged");
     expect(v.notes.join(" ")).toContain("identifiers or literals renamed");
     expect(
-      v.evidence.changedEvidence.some(
+      v.detail.changes.some(
         (c) =>
           c.kind === "ast" && c.detail === "identifiers or literals renamed",
       ),
@@ -169,7 +158,7 @@ describe("a rename grades `changed` with the rename reason label", () => {
       original,
       "const result = computeTotal(items);",
     )(renamed);
-    expect(v.code).toBe("changed");
+    expect(v.evidence).toBe("changed");
     expect(v.doc).toBe("unchanged");
     expect(v.notes.join(" ")).toContain("identifiers or literals renamed");
   });
@@ -183,7 +172,7 @@ describe("a rename grades `changed` with the rename reason label", () => {
       original,
       "function retryWithBackoff(maxAttempts: number)",
     )(renamed);
-    expect(v.code).toBe("changed");
+    expect(v.evidence).toBe("changed");
     expect(v.doc).toBe("unchanged");
     expect(v.notes.join(" ")).toContain("identifiers or literals renamed");
   });
@@ -196,7 +185,7 @@ describe("orphaned detection", () => {
     const deleted =
       "export const OTHER = 99;\nexport function brandNew() { return 0; }\n";
     const v = anchorOn(original, "MAX_ATTEMPTS = 5")(deleted);
-    expect(v.code).toBe("orphaned");
+    expect(v.evidence).toBe("orphaned");
     expect(v.doc).toBe("unchanged");
     expect(v.remediation?.recommended).toBe("reanchor");
   });
@@ -209,7 +198,7 @@ describe("a moved-but-intact region grades moved", () => {
       "// ".concat("x".repeat(400), "\n").repeat(1) +
       "export const MAX_ATTEMPTS = 5;\n";
     const v = anchorOn(original, "MAX_ATTEMPTS = 5")(moved);
-    expect(v.code).toBe("moved");
+    expect(v.evidence).toBe("moved");
     expect(v.doc).toBe("unchanged");
     expect(v.gates).toBe(false);
     expect(v.notes.join(" ")).toContain("span moved");

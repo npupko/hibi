@@ -1,0 +1,52 @@
+{
+  "judgment": "conflict",
+  "state": {
+    "a": "The first sentence: { text, doc, context }. `doc` is its document path; `context` is its heading path or a few neighbouring sentences.",
+    "b": "The second sentence, same shape as `a`."
+  },
+  "questions": {
+    "same_subject": {
+      "type": "noul",
+      "instructions": "Are `a.text` and `b.text` about the same thing, such as the same file, command, option, behavior, value, process, or policy?",
+      "criteria": {
+        "true": "Both sentences describe the same thing, whether or not they agree about it",
+        "false": "The sentences describe different things"
+      }
+    },
+    "relation": {
+      "type": "choice",
+      "instructions": {
+        "question": "How does `a.text` relate to `b.text`?",
+        "focus": "Use `a.context` and `b.context` only to resolve what each sentence refers to. Judge the two sentences, not the documents they come from."
+      },
+      "criteria": {
+        "consistent": {
+          "what": "Both can be true at the same time: they agree, repeat each other, or describe compatible facts about the same thing",
+          "examples": [
+            "A: The cache lives in .hibi/cache.json. B: hibi keeps its cache under the .hibi folder."
+          ]
+        },
+        "contradictory": {
+          "what": "They cannot both be true: they assert incompatible facts about the same thing",
+          "examples": [
+            "A: The cache lives in .hibi/cache.json. B: The cache lives in ~/.cache/hibi."
+          ]
+        },
+        "unrelated": {
+          "what": "They are about different things, so neither bears on the other",
+          "examples": [
+            "A: The cache lives in .hibi/cache.json. B: Releases are tagged on Fridays."
+          ]
+        }
+      }
+    },
+    "contradicts": {
+      "type": "noul",
+      "instructions": "Does `b.text` assert something that cannot be true if `a.text` is true?",
+      "criteria": {
+        "true": "Incompatible values, locations, behaviors, or conditions for the same thing",
+        "false": "Compatible, or about different things"
+      }
+    }
+  }
+}

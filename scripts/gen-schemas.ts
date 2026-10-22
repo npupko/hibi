@@ -1,21 +1,19 @@
 /**
- * Generate versioned JSON Schema (`schemas/*.v2.json`) from the canonical Zod
- * model (§5). The Zod model is the single source of truth; this is a derived
+ * Generate versioned JSON Schema (`schemas/*.v4.json`) from the canonical Zod
+ * model (design/SPEC.md section 6). The Zod model is the single source of truth; this is a derived
  * artifact, regenerated, never hand-edited.
  */
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import * as z from "zod";
 import { MODEL_VERSION, SCHEMAS } from "../src/core/model.ts";
-import { PROTOCOL_SCHEMAS } from "../src/resolver/protocol.ts";
 
 const OUT_DIR = join(import.meta.dir, "..", "schemas");
 
 export async function generateSchemas(outDir = OUT_DIR): Promise<string[]> {
   await mkdir(outDir, { recursive: true });
   const written: string[] = [];
-  const all = { ...SCHEMAS, ...PROTOCOL_SCHEMAS };
-  for (const [name, schema] of Object.entries(all)) {
+  for (const [name, schema] of Object.entries(SCHEMAS)) {
     // Shared shapes are deduplicated into `$defs` by their registered `.meta({
     // id })` (stable, human-readable keys like `Selector`/`Region`). We do NOT
     // use `reused: "ref"`: it also hoists anonymous leaf scalars into churny

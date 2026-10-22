@@ -1,536 +1,440 @@
 import { describe, expect, test } from "bun:test";
 import * as z from "zod";
 import { computeGates, isWarnVerdict } from "../src/core/gating.ts";
+import { documentIdForPath, newClaimId } from "../src/core/ids.ts";
 import {
-  Anchor,
   AnchorState,
-  Assertion,
-  BehaviorState,
-  ChangedEvidenceKind,
+  Attestation,
+  Claim,
+  Config,
   Document,
   DocumentLifecycle,
-  Edge,
   Enforcement,
+  EvidenceState,
+  JudgeCacheEntry,
+  JudgeState,
   MODEL_VERSION,
-  Proposition,
-  RemediationAction,
+  Procedure,
   SCHEMAS,
   Selector,
   SelectorBundle,
+  Source,
   Verdict,
-  Verifier,
 } from "../src/core/model.ts";
-import { PROTOCOL_SCHEMAS } from "../src/resolver/protocol.ts";
 
-type JsonSchemaNode = {
-  $ref?: string;
-  $defs?: Record<string, JsonSchemaNode>;
-  anyOf?: unknown[];
-  oneOf?: unknown[];
+const AT = "2026-10-22T09:12:00Z";
+
+const docBundle = {
+  file: "docs/pricing.md",
+  selectors: [
+    {
+      kind: "text-quote",
+      exact: "Pro costs $29/month.",
+      prefix: "",
+      suffix: "",
+    },
+  ],
+};
+const codeBundle = {
+  file: "src/billing.ts",
+  selectors: [
+    { kind: "text-quote", exact: "PRO = 29", prefix: "", suffix: "" },
+  ],
 };
 
-function resolveRootRef(schema: JsonSchemaNode): JsonSchemaNode {
-  const ref = schema.$ref;
-  if (!ref) return schema;
-  const name = ref.replace("#/$defs/", "");
-  const target = schema.$defs?.[name];
-  if (!target) throw new Error(`unresolvable root $ref: ${ref}`);
-  return target;
+const base = {
+  id: "clm_0123456789abcdef",
+  documentId: "doc_0123456789abcdef",
+  kind: "code",
+  sentence: "Pro costs $29/month.",
+  doc: docBundle,
+  evidence: [codeBundle],
+  createdAt: AT,
+  ref: "HEAD",
+};
+
+function issues(schema: z.ZodType, value: unknown): string[] {
+  const r = schema.safeParse(value);
+  return r.success ? [] : r.error.issues.map((i) => i.message);
 }
 
-const docOnlyAnchor = {
-  doc: {
-    file: "README.md",
-    selectors: [{ kind: "text-quote", exact: "x", prefix: "", suffix: "" }],
-  },
-};
-
-const baseAssertion = {
-  id: "a",
-  propositionId: "p",
-  documentId: "d",
-  owner: "x",
-  ref: "r",
-  anchor: docOnlyAnchor,
-};
-
-describe("canonical model is the single source of truth", () => {
-  test("MODEL_VERSION is v3", () => {
-    expect(MODEL_VERSION).toBe("v3");
+describe("canonical model", () => {
+  test("MODEL_VERSION is v4", () => {
+    expect(MODEL_VERSION).toBe("v4");
   });
 
-  test("every SCHEMAS + PROTOCOL_SCHEMAS entry exports to JSON Schema without throwing", () => {
-    for (const [name, schema] of Object.entries({
-      ...SCHEMAS,
-      ...PROTOCOL_SCHEMAS,
-    })) {
+  test("every SCHEMAS entry exports to JSON Schema without throwing", () => {
+    for (const [name, schema] of Object.entries(SCHEMAS)) {
       expect(
-        () =>
-          z.toJSONSchema(schema, { target: "draft-2020-12", reused: "ref" }),
+        () => z.toJSONSchema(schema, { target: "draft-2020-12" }),
         name,
       ).not.toThrow();
     }
   });
 
-  test("SCHEMAS carries no BehaviorScope entry", () => {
-    expect("BehaviorScope" in SCHEMAS).toBe(false);
+  test("SCHEMAS names exactly the v4 shapes", () => {
+    expect(Object.keys(SCHEMAS).sort()).toEqual(
+      [
+        "Attestation",
+        "Claim",
+        "Config",
+        "Document",
+        "JudgeCacheEntry",
+        "Procedure",
+        "Remediation",
+        "RemediationAction",
+        "Selector",
+        "SelectorBundle",
+        "Source",
+        "Verdict",
+      ].sort(),
+    );
   });
 
-  // Enum option lists.
-
-  test("Enforcement options", () => {
-    expect(Enforcement.options).toEqual(["suggested", "enforced", "retired"]);
+  test("Selector is the unchanged five-variant union", () => {
+    const kinds = Selector.options.map(
+      (o) => (o.shape.kind as z.ZodLiteral<string>).value,
+    );
+    expect(new Set(kinds)).toEqual(
+      new Set(["text-quote", "text-position", "ast-node", "value", "coarse"]),
+    );
+    expect(SelectorBundle.safeParse({ file: "a", selectors: [] }).success).toBe(
+      false,
+    );
   });
 
-  test("AnchorState options: one vocabulary, both sides", () => {
-    expect(AnchorState.options).toEqual([
-      "unchanged",
-      "moved",
-      "changed",
-      "ambiguous",
-      "orphaned",
-    ]);
-  });
-
-  test("BehaviorState options", () => {
-    expect(BehaviorState.options).toEqual(["supported", "refuted"]);
-  });
-
-  test("DocumentLifecycle options", () => {
+  test("enumerations", () => {
+    expect(Enforcement.options).toEqual(["enforced", "suggested", "retired"]);
     expect(DocumentLifecycle.options).toEqual([
       "active",
       "superseded",
       "archived",
     ]);
-  });
-
-  test("ChangedEvidenceKind options", () => {
-    expect(ChangedEvidenceKind.options).toEqual([
-      "text",
-      "ast",
-      "value",
-      "verifier-source",
+    expect(EvidenceState.options).toEqual([
+      ...AnchorState.options,
+      "unavailable",
+    ]);
+    expect(JudgeState.options).toEqual([
+      "supported",
+      "refuted",
+      "review",
+      "pending",
     ]);
   });
+});
 
-  // Selector union.
-
-  test("Selector is a discriminated union of exactly 5 variants", () => {
-    // zod emits the root schema either inline or as a `$ref` into `$defs`,
-    // so follow a root `$ref` before reading the union branches.
-    const js = z.toJSONSchema(Selector) as JsonSchemaNode;
-    const root = resolveRootRef(js);
-    const variants = root.oneOf ?? root.anyOf;
-    expect(Array.isArray(variants)).toBe(true);
-    // text-quote, text-position, ast-node, value, coarse
-    expect(variants?.length).toBe(5);
+describe("ids", () => {
+  test("new claim ids and document ids are prefix plus 16 hex", () => {
+    expect(newClaimId()).toMatch(/^clm_[0-9a-f]{16}$/);
+    expect(newClaimId()).not.toBe(newClaimId());
+    expect(documentIdForPath("docs/a.md")).toMatch(/^doc_[0-9a-f]{16}$/);
+    expect(documentIdForPath("docs/a.md")).toBe(documentIdForPath("docs/a.md"));
   });
 
-  test("Selector accepts the coarse variant", () => {
+  test("Claim and Document reject ids of the wrong form", () => {
     expect(
-      Selector.safeParse({ kind: "coarse", pattern: "src/**" }).success,
-    ).toBe(true);
-  });
-
-  test("the removed selector kinds are rejected", () => {
-    expect(Selector.safeParse({ kind: "bogus" }).success).toBe(false);
-    expect(Selector.safeParse({ kind: "path", path: "src/a.ts" }).success).toBe(
-      false,
-    );
-    expect(Selector.safeParse({ kind: "glob", glob: "src/**" }).success).toBe(
+      Claim.safeParse({ ...base, id: "asrt_0123456789abcdef" }).success,
+    ).toBe(false);
+    expect(Claim.safeParse({ ...base, id: "clm_0123" }).success).toBe(false);
+    expect(Claim.safeParse({ ...base, documentId: "doc_1" }).success).toBe(
       false,
     );
     expect(
-      Selector.safeParse({ kind: "inline-id", id: "hibi:claim:abc" }).success,
-    ).toBe(false);
-  });
-
-  // Bidirectional Anchor + SelectorBundle round-trip.
-
-  test("SelectorBundle is { file, selectors[] } with min 1 selector", () => {
-    const ok = SelectorBundle.safeParse({
-      file: "a.ts",
-      selectors: [{ kind: "text-quote", exact: "x", prefix: "", suffix: "" }],
-    });
-    expect(ok.success).toBe(true);
-
-    const empty = SelectorBundle.safeParse({ file: "a.ts", selectors: [] });
-    expect(empty.success).toBe(false);
-  });
-
-  test("Anchor is bidirectional { doc: SelectorBundle, code: SelectorBundle[] }", () => {
-    const a = Anchor.parse({
-      doc: {
-        file: "README.md",
-        selectors: [
-          { kind: "text-quote", exact: "the sentence", prefix: "", suffix: "" },
-        ],
-      },
-      code: [
-        {
-          file: "src/x.ts",
-          selectors: [
-            { kind: "text-quote", exact: "fn()", prefix: "", suffix: "" },
-          ],
-        },
-      ],
-    });
-    expect(a.doc.file).toBe("README.md");
-    expect(a.code).toHaveLength(1);
-    expect(a.code[0]?.file).toBe("src/x.ts");
-  });
-
-  test("Anchor defaults code to []", () => {
-    const a = Anchor.parse(docOnlyAnchor);
-    expect(a.code).toEqual([]);
-  });
-
-  test("the old flat anchor shape { file, selectors } does not validate", () => {
-    const flat = {
-      file: "a.ts",
-      selectors: [{ kind: "text-quote", exact: "x" }],
-    };
-    expect(Anchor.safeParse(flat).success).toBe(false);
-  });
-
-  // Assertion.
-
-  test("a valid Assertion round-trips with the bidirectional anchor", () => {
-    const a = {
-      ...baseAssertion,
-      anchor: {
-        ...docOnlyAnchor,
-        code: [
-          {
-            file: "a.ts",
-            selectors: [
-              { kind: "text-quote", exact: "y", prefix: "", suffix: "" },
-            ],
-          },
-        ],
-      },
-    };
-    expect(() => Assertion.parse(a)).not.toThrow();
-  });
-
-  test("Assertion defaults: enforcement enforced, verified false, verifiers [], attrs {}", () => {
-    const a = Assertion.parse(baseAssertion);
-    expect(a.enforcement).toBe("enforced");
-    expect(a.verified).toBe(false);
-    expect(a.verifiers).toEqual([]);
-    expect(a.attrs).toEqual({});
-    expect(a.ttl).toBeUndefined();
-  });
-
-  test("Assertion rejects an out-of-enum enforcement", () => {
-    expect(
-      Assertion.safeParse({ ...baseAssertion, enforcement: "mandatory" })
+      Document.safeParse({ id: "doc_XYZ", path: "a.md", createdAt: AT })
         .success,
-    ).toBe(false);
-  });
-
-  test("Assertion accepts verified, verifiers, ttl and attrs", () => {
-    const a = Assertion.parse({
-      ...baseAssertion,
-      verified: true,
-      verifiers: [{ kind: "command", ref: "bun test" }],
-      ttl: "2030-01-01T00:00:00Z",
-      attrs: { note: "x" },
-    });
-    expect(a.verified).toBe(true);
-    expect(a.verifiers[0]?.ref).toBe("bun test");
-    expect(a.ttl).toBe("2030-01-01T00:00:00Z");
-    expect(a.attrs).toEqual({ note: "x" });
-  });
-
-  test("Assertion rejects the removed v2 fields", () => {
-    for (const extra of [
-      { behavioral: true },
-      { behaviorScope: { include: ["fixtures/**"] } },
-      { evidenceBaseline: { "src/x.ts": "deadbeef" } },
-      { suppressed: true },
-    ]) {
-      expect(Assertion.safeParse({ ...baseAssertion, ...extra }).success).toBe(
-        false,
-      );
-    }
-  });
-
-  test("Verifier is {kind, ref} with an open, non-empty kind", () => {
-    for (const kind of ["command", "metamorphic", "my-custom-runner"]) {
-      expect(Verifier.safeParse({ kind, ref: "x" }).success).toBe(true);
-    }
-    expect(Verifier.safeParse({ kind: "", ref: "x" }).success).toBe(false);
-    expect(
-      Verifier.safeParse({ kind: "command", ref: "x", proves: "y" }).success,
-    ).toBe(false);
-  });
-
-  test("an invalid selector kind inside an anchor bundle is rejected", () => {
-    expect(
-      Assertion.safeParse({
-        ...baseAssertion,
-        anchor: { doc: { file: "a.ts", selectors: [{ kind: "bogus" }] } },
-      }).success,
-    ).toBe(false);
-  });
-
-  test("an empty selector bundle on the doc side is rejected (min 1)", () => {
-    expect(
-      Assertion.safeParse({
-        ...baseAssertion,
-        anchor: { doc: { file: "a.ts", selectors: [] } },
-      }).success,
-    ).toBe(false);
-  });
-
-  // Document.
-
-  test("Document applies defaults (lifecycle active, edges [])", () => {
-    const d = Document.parse({ id: "d", path: "x.md" });
-    expect(d.lifecycle).toBe("active");
-    expect(d.edges).toEqual([]);
-  });
-
-  test("Document rejects pristine and frontmatterStatus", () => {
-    expect(
-      Document.safeParse({ id: "d", path: "x.md", pristine: false }).success,
-    ).toBe(false);
-    expect(
-      Document.safeParse({ id: "d", path: "x.md", frontmatterStatus: "x" })
-        .success,
-    ).toBe(false);
-  });
-
-  test("Edge is only supersedes {type, target}", () => {
-    expect(
-      Edge.safeParse({ type: "supersedes", target: "doc_1" }).success,
-    ).toBe(true);
-    expect(
-      Edge.safeParse({ type: "supersedes", target: "doc_1", derived: false })
-        .success,
-    ).toBe(false);
-    expect(
-      Edge.safeParse({ type: "superseded-by", source: "doc_1" }).success,
-    ).toBe(false);
-    expect(
-      Edge.safeParse({ type: "amends", target: "doc_1", propositions: [] })
-        .success,
-    ).toBe(false);
-  });
-
-  // Proposition.
-
-  test("Proposition is {id, textCache, fingerprint} and nothing else", () => {
-    const p = Proposition.parse({
-      id: "p",
-      textCache: "the documented sentence",
-      fingerprint: "f",
-    });
-    expect(p.textCache).toBe("the documented sentence");
-
-    expect(
-      Proposition.safeParse({ id: "p", text: "t", fingerprint: "f" }).success,
-    ).toBe(false);
-    expect(
-      Proposition.safeParse({
-        id: "p",
-        textCache: "t",
-        fingerprint: "f",
-        authoredTrust: "verified",
-      }).success,
-    ).toBe(false);
-  });
-
-  // Remediation.
-
-  test("RemediationAction is {id, title, rationale, command?}", () => {
-    expect(
-      RemediationAction.safeParse({
-        id: "retire",
-        title: "Retire the claim",
-        rationale: "obsolete",
-        command: "hibi retire a",
-      }).success,
-    ).toBe(true);
-    expect(
-      RemediationAction.safeParse({
-        id: "retire",
-        title: "Retire the claim",
-        rationale: "obsolete",
-        applicability: "manual",
-      }).success,
-    ).toBe(false);
-  });
-
-  // Verdict.
-
-  test("Verdict (ephemeral, two-axis) validates", () => {
-    const v: z.infer<typeof Verdict> = {
-      assertionId: "a",
-      propositionId: "p",
-      documentId: "d",
-      doc: "unchanged",
-      code: "changed",
-      behavior: "supported",
-      expired: false,
-      gates: false,
-      remediation: {
-        recommended: null,
-        actions: [
-          {
-            id: "retire",
-            title: "Retire the claim",
-            rationale: "the claim is obsolete",
-            command: "hibi retire a",
-          },
-        ],
-      },
-      evidence: {
-        docRegion: { start: 0, end: 5 },
-        codeRegions: [{ start: 10, end: 20 }],
-        similarity: 0.3,
-        changedEvidence: [
-          { path: "a.ts", kind: "ast", detail: "restructured" },
-        ],
-      },
-      notes: [],
-      advisories: [],
-    };
-    expect(() => Verdict.parse(v)).not.toThrow();
-  });
-
-  test("Verdict behavior is optional and defaults apply", () => {
-    const v = Verdict.parse({
-      assertionId: "a",
-      propositionId: "p",
-      documentId: "d",
-      doc: "unchanged",
-      code: "unchanged",
-      expired: false,
-      gates: false,
-      remediation: null,
-      evidence: { codeRegions: [] },
-    });
-    expect(v.behavior).toBeUndefined();
-    expect(v.evidence.changedEvidence).toEqual([]);
-    expect(v.evidence.similarity).toBeUndefined();
-    expect(v.remediation).toBeNull();
-    expect(v.notes).toEqual([]);
-    expect(v.advisories).toEqual([]);
-  });
-
-  test("Verdict rejects an out-of-enum anchor state and the removed fields", () => {
-    const base = {
-      assertionId: "a",
-      propositionId: "p",
-      documentId: "d",
-      doc: "unchanged",
-      code: "unchanged",
-      expired: false,
-      gates: false,
-      remediation: null,
-      evidence: { codeRegions: [] },
-    };
-    expect(Verdict.safeParse({ ...base, doc: "fresh" }).success).toBe(false);
-    expect(Verdict.safeParse({ ...base, behavior: "at-risk" }).success).toBe(
-      false,
-    );
-    expect(Verdict.safeParse({ ...base, suppressed: false }).success).toBe(
-      false,
-    );
-    expect(
-      Verdict.safeParse({
-        ...base,
-        evidence: { codeRegions: [], confidence: 1 },
-      }).success,
-    ).toBe(false);
-    expect(
-      Verdict.safeParse({
-        ...base,
-        evidence: {
-          codeRegions: [],
-          changedEvidence: [{ path: "a", kind: "bogus" }],
-        },
-      }).success,
     ).toBe(false);
   });
 });
 
-describe("fitness functions", () => {
-  test("AnchorState is exactly {unchanged, moved, changed, ambiguous, orphaned}", () => {
-    expect(new Set(AnchorState.options)).toEqual(
-      new Set(["unchanged", "moved", "changed", "ambiguous", "orphaned"]),
-    );
+describe("Claim validation", () => {
+  test("a code claim round-trips with defaults applied", () => {
+    const c = Claim.parse(base);
+    expect(c.sources).toEqual([]);
+    expect(c.procedure).toBeNull();
+    expect(c.enforcement).toBe("enforced");
+    expect(c.attestations).toEqual([]);
+    expect(c.owner).toBeUndefined();
+    expect(c.ttl).toBeUndefined();
   });
 
-  test("no AnchorState value carries a doc-/code-/behavior- prefix", () => {
-    for (const state of AnchorState.options) {
-      expect(state).not.toMatch(/^(doc|code|behavior)-/);
+  test("code needs at least one evidence span", () => {
+    expect(issues(Claim, { ...base, evidence: [] })).toEqual([
+      "a code claim needs at least one evidence span",
+    ]);
+    expect(
+      Claim.safeParse({ ...base, evidence: [codeBundle, codeBundle] }).success,
+    ).toBe(true);
+  });
+
+  test("reference needs exactly one evidence span", () => {
+    const ref = { ...base, kind: "reference" };
+    expect(Claim.safeParse(ref).success).toBe(true);
+    expect(issues(Claim, { ...ref, evidence: [] })).toEqual([
+      "a reference claim needs exactly one evidence span (got 0)",
+    ]);
+    expect(
+      issues(Claim, { ...ref, evidence: [codeBundle, codeBundle] }),
+    ).toEqual(["a reference claim needs exactly one evidence span (got 2)"]);
+  });
+
+  test("attested has no evidence and requires a ttl", () => {
+    const att = { ...base, kind: "attested", evidence: [], ttl: "P90D" };
+    expect(Claim.safeParse(att).success).toBe(true);
+    expect(issues(Claim, { ...att, ttl: undefined })).toEqual([
+      "an attested claim requires a ttl",
+    ]);
+    expect(issues(Claim, { ...att, evidence: [codeBundle] })).toEqual([
+      "an attested claim has no evidence spans",
+    ]);
+  });
+
+  test("ttl is an ISO 8601 duration, optional outside attested", () => {
+    for (const ok of ["P90D", "P1Y", "P2W", "PT12H", "P1DT2H30M", "PT45S"]) {
+      expect(Claim.safeParse({ ...base, ttl: ok }).success, ok).toBe(true);
+    }
+    for (const bad of ["P", "PT", "90D", "P1.5D", "2027-01-01T00:00:00Z", ""]) {
+      expect(Claim.safeParse({ ...base, ttl: bad }).success, bad).toBe(false);
     }
   });
 
-  test("the words drift/stale/ghost/fresh appear in no machine enum", () => {
-    const banned = ["drift", "stale", "ghost", "fresh"];
-    const allEnumValues = [
-      ...AnchorState.options,
-      ...BehaviorState.options,
-      ...Enforcement.options,
-      ...DocumentLifecycle.options,
-    ];
-    for (const value of allEnumValues) {
-      for (const word of banned) {
-        expect(value.includes(word)).toBe(false);
-      }
+  test("owner and attestation actors must be human:, agent:, or process:", () => {
+    for (const ok of ["human:alice@example.com", "agent:opus", "process:ci"]) {
+      expect(Claim.safeParse({ ...base, owner: ok }).success, ok).toBe(true);
+    }
+    for (const bad of ["alice", "human:", "robot:x", "Human:alice"]) {
+      expect(Claim.safeParse({ ...base, owner: bad }).success, bad).toBe(false);
+      expect(
+        Attestation.safeParse({ by: bad, at: AT, basis: "vouch" }).success,
+        bad,
+      ).toBe(false);
     }
   });
 
-  test("only refuted + changed/orphaned/ambiguous/expired gate; moved never gates", () => {
-    const base = {
-      doc: "unchanged",
-      code: "unchanged",
-      expired: false,
-    } as const;
+  test("Attestation shape: by, at, basis, optional note and evidenceHash", () => {
+    expect(
+      Attestation.parse({
+        by: "human:alice@example.com",
+        at: AT,
+        basis: "evidence",
+        note: "checked Stripe",
+        evidenceHash: "abc",
+      }),
+    ).toBeDefined();
+    expect(
+      Attestation.safeParse({ by: "agent:x", at: AT, basis: "trust-me" })
+        .success,
+    ).toBe(false);
+    expect(
+      Attestation.safeParse({ by: "agent:x", at: "yesterday", basis: "ack" })
+        .success,
+    ).toBe(false);
+  });
 
-    for (const state of ["changed", "orphaned", "ambiguous"] as const) {
-      expect(computeGates({ ...base, code: state }, "enforced")).toBe(true);
-      expect(computeGates({ ...base, doc: state }, "enforced")).toBe(true);
+  test("Source requires resource; Procedure requires instructions", () => {
+    expect(Source.safeParse({ id: "stripe" }).success).toBe(false);
+    expect(Source.parse({ resource: "https://x" })).toEqual({
+      resource: "https://x",
+    });
+    expect(Procedure.safeParse({ steps: [] }).success).toBe(false);
+    expect(
+      Procedure.parse({
+        instructions: "Read the price.",
+        steps: [{ id: "price", command: "stripe prices list", stdin: "" }],
+      }).steps?.[0]?.id,
+    ).toBe("price");
+    expect(
+      Procedure.safeParse({ instructions: "x", steps: [{ id: "a" }] }).success,
+    ).toBe(false);
+  });
+
+  test("the removed v3 fields are rejected", () => {
+    for (const field of [
+      "propositionId",
+      "anchor",
+      "verified",
+      "verifiers",
+      "attrs",
+      "authoredTrust",
+    ]) {
+      expect(Claim.safeParse({ ...base, [field]: [] }).success, field).toBe(
+        false,
+      );
     }
-    expect(computeGates({ ...base, expired: true }, "enforced")).toBe(true);
-    expect(computeGates({ ...base, behavior: "refuted" }, "enforced")).toBe(
-      true,
-    );
-    expect(computeGates({ ...base, behavior: "supported" }, "enforced")).toBe(
+  });
+});
+
+describe("Document", () => {
+  test("lifecycle defaults to active; supersededBy is an optional doc id", () => {
+    const d = Document.parse({
+      id: "doc_0123456789abcdef",
+      path: "a.md",
+      createdAt: AT,
+    });
+    expect(d.lifecycle).toBe("active");
+    expect(d.supersededBy).toBeUndefined();
+    expect(
+      Document.safeParse({ ...d, supersededBy: "doc_fedcba9876543210" })
+        .success,
+    ).toBe(true);
+    expect(Document.safeParse({ ...d, supersededBy: "v2.md" }).success).toBe(
       false,
     );
+    expect(Document.safeParse({ ...d, edges: [] }).success).toBe(false);
+    expect(
+      Document.safeParse({ id: d.id, path: "a.md" }).success,
+      "createdAt is required",
+    ).toBe(false);
+  });
+});
 
-    expect(computeGates({ ...base, code: "moved" }, "enforced")).toBe(false);
-    expect(
-      isWarnVerdict({ ...base, code: "moved", gates: false }, "enforced"),
-    ).toBe(true);
-    expect(
-      isWarnVerdict({ ...base, doc: "moved", gates: false }, "enforced"),
-    ).toBe(true);
-    expect(isWarnVerdict({ ...base, gates: false }, "enforced")).toBe(false);
+describe("Config", () => {
+  const cfg = {
+    version: "v4",
+    repos: { api: "../api" },
+    judge: { model: "jev-1.14.0", threshold: 0.8 },
+    ignore: ["docs/generated/**"],
+  };
+
+  test("the SPEC example parses", () => {
+    expect(Config.parse(cfg)).toEqual(cfg as z.infer<typeof Config>);
   });
 
-  test("only enforced claims gate; suggested/retired never gate or warn", () => {
+  test("only v4 is accepted", () => {
+    expect(Config.safeParse({ ...cfg, version: "v3" }).success).toBe(false);
+  });
+
+  test("judge.model must be a pinned versioned jev id", () => {
+    for (const bad of ["jev-latest", "jev-preview", "jev-1.14", "gpt-4"]) {
+      const msgs = issues(Config, {
+        ...cfg,
+        judge: { ...cfg.judge, model: bad },
+      });
+      expect(msgs.join(" "), bad).toContain("pinned versioned id");
+    }
+  });
+
+  test("judge.threshold is a number in [0, 1]", () => {
+    for (const t of [0, 0.5, 1]) {
+      expect(
+        Config.safeParse({ ...cfg, judge: { ...cfg.judge, threshold: t } })
+          .success,
+      ).toBe(true);
+    }
+    for (const t of [-0.1, 1.1, "0.8"]) {
+      expect(
+        issues(Config, { ...cfg, judge: { ...cfg.judge, threshold: t } }),
+      ).toEqual(["judge.threshold must be a number in [0, 1]"]);
+    }
+  });
+
+  test("the removed v3 keys are rejected", () => {
+    expect(Config.safeParse({ ...cfg, nonce: "deadbeef" }).success).toBe(false);
+    expect(Config.safeParse({ ...cfg, pristine: [] }).success).toBe(false);
+  });
+});
+
+describe("JudgeCacheEntry", () => {
+  test("the SPEC 6.4 shape parses; raw evidence text has no field", () => {
+    const entry = {
+      key: "a".repeat(64),
+      model: "jev-1.14.0",
+      judgment: "supports",
+      subject: { claimId: "clm_0123456789abcdef" },
+      request: { state: {}, questions: [] },
+      answers: { relation: { supports: 0.9 } },
+      evidence: {
+        hash: "h",
+        source: "stripe",
+        summary: "$29",
+        by: "agent:opus",
+        at: AT,
+      },
+      at: AT,
+    };
+    expect(JudgeCacheEntry.parse(entry)).toEqual(entry as JudgeCacheEntry);
+    expect(
+      JudgeCacheEntry.safeParse({
+        ...entry,
+        evidence: { ...entry.evidence, text: "raw" },
+      }).success,
+    ).toBe(false);
+    expect(JudgeCacheEntry.safeParse({ ...entry, key: "short" }).success).toBe(
+      false,
+    );
+    expect(
+      JudgeCacheEntry.safeParse({ ...entry, judgment: "verify" }).success,
+    ).toBe(false);
+  });
+});
+
+describe("Verdict", () => {
+  test("evidence and judge are optional axes; conflicts default to []", () => {
+    const v = Verdict.parse({
+      claimId: "clm_0123456789abcdef",
+      documentId: "doc_0123456789abcdef",
+      kind: "attested",
+      doc: "unchanged",
+      expired: false,
+      gates: false,
+      detail: {},
+    });
+    expect(v.evidence).toBeUndefined();
+    expect(v.judge).toBeUndefined();
+    expect(v.conflicts).toEqual([]);
+    expect(
+      Verdict.safeParse({ ...v, behavior: "refuted" }).success,
+      "behavior is gone",
+    ).toBe(false);
+  });
+});
+
+describe("gating fitness functions", () => {
+  const clean = {
+    doc: "unchanged",
+    evidence: "unchanged",
+    expired: false,
+  } as const;
+
+  test("changed/orphaned/ambiguous on either side, expired, or refuted gate; moved and unavailable never do", () => {
+    for (const state of ["changed", "orphaned", "ambiguous"] as const) {
+      expect(computeGates({ ...clean, evidence: state }, "enforced")).toBe(
+        true,
+      );
+      expect(computeGates({ ...clean, doc: state }, "enforced")).toBe(true);
+    }
+    expect(computeGates({ ...clean, expired: true }, "enforced")).toBe(true);
+    expect(computeGates({ ...clean, judge: "refuted" }, "enforced")).toBe(true);
+    expect(computeGates({ ...clean, judge: "supported" }, "enforced")).toBe(
+      false,
+    );
+    expect(computeGates({ ...clean, evidence: "moved" }, "enforced")).toBe(
+      false,
+    );
+    expect(
+      computeGates({ ...clean, evidence: "unavailable" }, "enforced"),
+    ).toBe(false);
+    expect(
+      computeGates({ doc: "unchanged", expired: false }, "enforced"),
+      "no evidence axis",
+    ).toBe(false);
+    expect(
+      isWarnVerdict({ ...clean, evidence: "moved", gates: false }, "enforced"),
+    ).toBe(true);
+  });
+
+  test("only enforced claims gate; suggested and retired never gate or warn", () => {
     const gating = {
       doc: "changed",
-      code: "orphaned",
+      evidence: "orphaned",
       expired: true,
-      behavior: "refuted",
+      judge: "refuted",
     } as const;
     expect(computeGates(gating, "enforced")).toBe(true);
     for (const e of ["suggested", "retired"] as const) {
       expect(computeGates(gating, e)).toBe(false);
-      expect(isWarnVerdict({ ...gating, gates: false }, e)).toBe(false);
-      expect(
-        isWarnVerdict(
-          { doc: "moved", code: "unchanged", expired: false, gates: false },
-          e,
-        ),
-      ).toBe(false);
+      expect(isWarnVerdict({ ...clean, doc: "moved", gates: false }, e)).toBe(
+        false,
+      );
     }
   });
 });

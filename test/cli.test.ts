@@ -22,18 +22,18 @@ interface Remediation {
   actions?: RemediationAction[];
 }
 interface CliVerdict {
-  assertionId?: string;
+  claimId?: string;
+  kind?: string;
   doc?: string;
-  code?: string;
-  behavior?: string;
+  evidence?: string;
+  judge?: string;
   expired?: boolean;
+  conflicts?: unknown[];
   gates?: boolean;
   changed?: string;
   remediation?: Remediation | null;
   notes?: string[];
-  evidence?: unknown;
-  advisories?: unknown;
-  fingerprint?: string;
+  detail?: unknown;
 }
 interface ListRow {
   claimId?: string;
@@ -42,9 +42,9 @@ interface ListRow {
   gates?: boolean;
   recommended?: string | null;
   documentPath?: string | null;
-  codePath?: string | null;
+  evidencePath?: string | null;
   side?: string;
-  text?: string;
+  sentence?: string;
 }
 interface CliJson {
   ok?: boolean;
@@ -52,19 +52,19 @@ interface CliJson {
   action?: string;
   schemaVersion?: string;
   next?: string;
-  nonce?: string;
   store?: string;
+  version?: string;
   id?: string;
+  kind?: string;
   doc?: string;
-  code?: string;
+  evidence?: string;
   enforcement?: string;
-  verified?: boolean;
   warnings?: string[];
   alreadyRetired?: boolean;
   batch?: boolean;
   results?: { id?: string }[];
-  before?: { doc?: { quote?: string }; code?: { quote?: string }[] };
-  after?: { doc?: { quote?: string }; code?: { quote?: string }[] };
+  before?: { doc?: { quote?: string }; evidence?: { quote?: string }[] };
+  after?: { doc?: { quote?: string }; evidence?: { quote?: string }[] };
   summary?: {
     clean?: number;
     total?: number;
@@ -84,9 +84,9 @@ interface CliJson {
   misses?: { claimId?: string }[];
   strandedClaims?: string[];
   dryRun?: boolean;
-  assertion?: unknown;
+  claim?: unknown;
   type?: string;
-  properties?: { anchor?: unknown };
+  properties?: Record<string, unknown>;
   exitCode?: number;
 }
 
@@ -177,7 +177,7 @@ async function seeded(): Promise<{ d: string; id: string }> {
     "--code-quote",
     "MAX_ATTEMPTS = 5",
     "--owner",
-    "alice",
+    "human:alice@example.com",
   ]);
   return { d, id: rec.json.id ?? "" };
 }
@@ -187,8 +187,8 @@ describe("CLI end-to-end", () => {
     const { d } = await seeded();
     const init = await run(d, ["init"]);
     expect(init.code).toBe(0);
-    expect(init.json.nonce).toMatch(/^[0-9a-f]{8}$/);
-    expect(init.json.schemaVersion).toBe("v3");
+    expect(init.json.version).toBe("v4");
+    expect(init.json.schemaVersion).toBe("v4");
 
     const clean = await run(d, ["check"]);
     expect(clean.code).toBe(0);
@@ -197,14 +197,14 @@ describe("CLI end-to-end", () => {
     await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
     const drifted = await run(d, ["check"]);
     expect(drifted.code).toBe(2);
-    expect(drifted.json.verdicts?.[0]?.code).toBe("changed");
+    expect(drifted.json.verdicts?.[0]?.evidence).toBe("changed");
     expect(drifted.json.verdicts?.[0]?.gates).toBe(true);
     expect(drifted.json.verdicts?.[0]?.changed).toContain("value changed");
   });
 
   test("piped record returns the lean summary; --explain returns the full result", async () => {
     const { d, id } = await seeded();
-    expect(id).toMatch(/^asrt_/);
+    expect(id).toMatch(/^clm_[0-9a-f]{16}$/);
     const rec = await run(d, [
       "record",
       "--doc",
@@ -219,14 +219,14 @@ describe("CLI end-to-end", () => {
     expect(Object.keys(rec.json).sort()).toEqual(
       [
         "action",
-        "code",
         "doc",
         "enforcement",
+        "evidence",
         "id",
+        "kind",
         "next",
         "ok",
         "schemaVersion",
-        "verified",
       ].sort(),
     );
     expect(rec.json.enforcement).toBe("enforced");
@@ -242,10 +242,10 @@ describe("CLI end-to-end", () => {
       "MAX_ATTEMPTS = 5",
       "--explain",
     ]);
-    expect(full.json.assertion).toBeDefined();
+    expect(full.json.claim).toBeDefined();
   });
 
-  test("record --suggest never gates; --verified is recorded", async () => {
+  test("record --suggest never gates; the vouch defaults to the git user", async () => {
     const d = await repo();
     await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
     await write(d, "README.md", "# Doc\n\nRetries are capped at 5 attempts.\n");
@@ -261,14 +261,20 @@ describe("CLI end-to-end", () => {
       "--code-quote",
       "MAX_ATTEMPTS = 5",
       "--suggest",
-      "--verified",
+      "--explain",
     ]);
-    expect(rec.json.enforcement).toBe("suggested");
-    expect(rec.json.verified).toBe(true);
+    const claim = rec.json.claim as {
+      enforcement?: string;
+      attestations?: { by?: string; basis?: string }[];
+    };
+    expect(claim.enforcement).toBe("suggested");
+    expect(claim.attestations).toEqual([
+      expect.objectContaining({ by: "human:t@t.co", basis: "vouch" }),
+    ]);
     await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
     const drifted = await run(d, ["check"]);
     expect(drifted.code).toBe(0);
-    expect(drifted.json.verdicts?.[0]?.code).toBe("changed");
+    expect(drifted.json.verdicts?.[0]?.evidence).toBe("changed");
     expect(drifted.json.verdicts?.[0]?.gates).toBe(false);
   });
 
@@ -337,7 +343,7 @@ describe("CLI end-to-end", () => {
           docQuote: "The cache TTL is 60000ms",
           codeFile: "src/conf.ts",
           codeQuote: "TTL_MS = 60000",
-          verified: true,
+          by: "agent:batch",
         },
         {
           doc: "docs/conf.md",
@@ -370,22 +376,6 @@ describe("CLI end-to-end", () => {
     expect(sameStore(before, await snapshotStore(d))).toBe(true);
   });
 
-  test("check --write stamps a banner without a checksum, then clears it", async () => {
-    const { d } = await seeded();
-    await write(d, "src/retry.ts", "// removed\n");
-    const res = await run(d, ["check", "--write"]);
-    expect(res.code).toBe(2);
-    const doc = await readFile(join(d, "README.md"), "utf8");
-    expect(doc).toContain("HIBI:BEGIN");
-    expect(doc).toContain("STALE DOCUMENT");
-    expect(doc).not.toContain("sha=");
-    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-    await run(d, ["check", "--write"]);
-    expect(await readFile(join(d, "README.md"), "utf8")).not.toContain(
-      "HIBI:BEGIN",
-    );
-  });
-
   test("moved exits 0 as a warning and 2 under --fail-on warn", async () => {
     const { d } = await seeded();
     await write(
@@ -395,7 +385,7 @@ describe("CLI end-to-end", () => {
     );
     const soft = await run(d, ["check"]);
     expect(soft.code).toBe(0);
-    expect(soft.json.verdicts?.[0]?.code).toBe("moved");
+    expect(soft.json.verdicts?.[0]?.evidence).toBe("moved");
     expect(soft.json.summary?.warning).toBe(1);
     expect((await run(d, ["check", "--fail-on", "warn"])).code).toBe(2);
     expect((await run(d, ["check", "--fail-on", "never"])).code).toBe(0);
@@ -490,16 +480,13 @@ describe("CLI end-to-end", () => {
     expect(untracked.json.found).toBe(false);
   });
 
-  test("diff and status are deprecated aliases that print a notice", async () => {
+  test("diff and status are gone", async () => {
     const { d } = await seeded();
-    await commit(d);
-    const diff = await run(d, ["diff", "--since", "HEAD"]);
-    expect(diff.code).toBe(0);
-    expect(diff.json.action).toBe("check");
-    expect(diff.stderr).toContain("deprecated");
-    const status = await run(d, ["status", "--doc", "README.md"]);
-    expect(status.json.action).toBe("check");
-    expect(status.stderr).toContain("hibi check --doc");
+    for (const verb of ["diff", "status"]) {
+      const res = await run(d, [verb]);
+      expect(res.code).toBe(1);
+      expect(res.json.error).toContain(`unknown command: ${verb}`);
+    }
   });
 
   test("retired claims are excluded from clean and never gate", async () => {
@@ -526,15 +513,15 @@ describe("CLI end-to-end", () => {
     const all = await run(d, ["list"]);
     const row = all.json.claims?.[0];
     expect(row?.claimId).toBe(id);
-    expect(row?.status).toBe("code:changed");
+    expect(row?.status).toBe("evidence:changed");
     expect(row?.severity).toBe("gating");
-    expect(row?.text).toContain("Retries are capped");
+    expect(row?.sentence).toContain("Retries are capped");
     expect(row?.recommended).toBe("update-claim");
     expect((await run(d, ["list", "--state", "gating"])).json.count).toBe(1);
     expect((await run(d, ["list", "--state", "clean"])).json.count).toBe(0);
     const byPath = await run(d, ["list", "--path", "src/retry.ts"]);
     expect(byPath.json.count).toBe(1);
-    expect(byPath.json.claims?.[0]?.side).toBe("code");
+    expect(byPath.json.claims?.[0]?.side).toBe("evidence");
     expect(
       (await run(d, ["list", "--path", "README.md"])).json.claims?.[0]?.side,
     ).toBe("doc");
@@ -548,7 +535,7 @@ describe("CLI end-to-end", () => {
     expect(noHints.json.claims?.[0]?.recommended).toBeNull();
   });
 
-  test("list --state orphaned drains after retire; stranded and duplicate filters", async () => {
+  test("list --state orphaned drains after retire; stranded filter", async () => {
     const d = await repo();
     await write(d, "src/a.ts", "export const A = 1;\n");
     await write(d, "src/gone.ts", "export const X = 1;\n");
@@ -595,7 +582,7 @@ describe("CLI end-to-end", () => {
         (c) => c.claimId,
       ),
     ).toEqual([orphan.json.id ?? ""]);
-    expect((await run(d, ["list", "--state", "duplicate"])).json.count).toBe(2);
+    expect((await run(d, ["list", "--state", "duplicate"])).code).toBe(1);
     await run(d, ["retire", orphan.json.id ?? ""]);
     expect((await run(d, ["list", "--state", "orphaned"])).json.count).toBe(0);
     await write(d, "new.md", "# New\n\nSomething else.\n");
@@ -620,10 +607,9 @@ describe("CLI end-to-end", () => {
     expect(stripped.json.verdicts?.[0]?.remediation).toBeUndefined();
     expect(stripped.json.verdicts?.[0]?.gates).toBe(true);
     const explained = await run(d, ["check", "--explain"]);
-    expect(explained.json.verdicts?.[0]?.evidence).toBeDefined();
-    expect(explained.json.verdicts?.[0]?.fingerprint).toBeDefined();
+    expect(explained.json.verdicts?.[0]?.detail).toBeDefined();
     expect(
-      (await run(d, ["check"])).json.verdicts?.[0]?.evidence,
+      (await run(d, ["check"])).json.verdicts?.[0]?.detail,
     ).toBeUndefined();
   });
 
@@ -631,7 +617,7 @@ describe("CLI end-to-end", () => {
     const { d, id } = await seeded();
     await rm(join(d, "src/retry.ts"));
     const v = (await run(d, ["check"])).json.verdicts?.[0];
-    expect(v?.code).toBe("orphaned");
+    expect(v?.evidence).toBe("orphaned");
     expect(v?.remediation?.recommended).toBe("reanchor");
     expect(v?.remediation?.actions?.[0]?.command).toBe(
       `hibi reanchor ${id} --suggest`,
@@ -654,9 +640,9 @@ describe("CLI end-to-end", () => {
       "MAX_ATTEMPTS = 5",
     ]);
     expect(moved.code).toBe(0);
-    expect(moved.json.code).toBe("unchanged");
-    expect(moved.json.before?.code?.[0]?.quote).toBe("MAX_ATTEMPTS = 5");
-    expect(moved.json.after?.code?.[0]?.quote).toBe("MAX_ATTEMPTS = 5");
+    expect(moved.json.evidence).toBe("unchanged");
+    expect(moved.json.before?.evidence?.[0]?.quote).toBe("MAX_ATTEMPTS = 5");
+    expect(moved.json.after?.evidence?.[0]?.quote).toBe("MAX_ATTEMPTS = 5");
     expect((await run(d, ["check"])).code).toBe(0);
   });
 
@@ -667,14 +653,16 @@ describe("CLI end-to-end", () => {
       "src/retry.ts",
       `${"// p\n".repeat(4)}export const MAX_ATTEMPTS = 5;\n`,
     );
-    expect((await run(d, ["check"])).json.verdicts?.[0]?.code).toBe("moved");
+    expect((await run(d, ["check"])).json.verdicts?.[0]?.evidence).toBe(
+      "moved",
+    );
     const before = await snapshotStore(d);
     const dry = await run(d, ["reanchor", id, "--dry-run"]);
     expect(dry.json.dryRun).toBe(true);
     expect(sameStore(before, await snapshotStore(d))).toBe(true);
     const re = await run(d, ["reanchor", id]);
-    expect(re.json.code).toBe("unchanged");
-    expect((await run(d, ["check"])).json.verdicts?.[0]?.code).toBe(
+    expect(re.json.evidence).toBe("unchanged");
+    expect((await run(d, ["check"])).json.verdicts?.[0]?.evidence).toBe(
       "unchanged",
     );
   });
@@ -704,7 +692,7 @@ describe("CLI end-to-end", () => {
     expect(sug.json.action).toBe("reanchor-suggest");
     const sides = sug.json.candidates?.map((c) => `${c.side}:${c.file}`);
     expect(sides).toContain("doc:doc.md");
-    expect(sides).toContain("code:src/b.ts");
+    expect(sides).toContain("evidence:src/b.ts");
     expect(sameStore(before, await snapshotStore(d))).toBe(true);
     const bad = await run(d, ["reanchor", id, "--suggest", "--doc-quote", "x"]);
     expect(bad.code).toBe(1);
@@ -875,7 +863,7 @@ describe("CLI end-to-end", () => {
       ["check"],
       ["check", "--doc", "README.md"],
       ["list"],
-      ["schema", "--name", "Assertion"],
+      ["schema", "--name", "Claim"],
       ["version"],
     ]) {
       const def = await run(d, args);
@@ -900,7 +888,7 @@ describe("CLI end-to-end", () => {
       "--color",
       "never",
     ]);
-    expect(overview.stdout).toContain("Store v3");
+    expect(overview.stdout).toContain("Store v4");
   });
 
   test("--store-dir decouples the store from the anchor root", async () => {
@@ -933,14 +921,15 @@ describe("CLI end-to-end", () => {
     ).toBe(1);
   });
 
-  test("schema emits generated JSON Schema by name and lists protocol schemas", async () => {
+  test("schema emits generated JSON Schema by name and lists the model schemas", async () => {
     const d = await repo();
-    const res = await run(d, ["schema", "--name", "Assertion"]);
+    const res = await run(d, ["schema", "--name", "Claim"]);
     expect(res.code).toBe(0);
     expect(res.json.type).toBe("object");
-    expect(res.json.properties?.anchor).toBeDefined();
+    expect(res.json.properties?.attestations).toBeDefined();
     const list = await run(d, ["schema"]);
-    expect(list.stdout).toContain("ResolveParams");
+    expect(list.stdout).toContain("JudgeCacheEntry");
+    expect(list.stdout).not.toContain("ResolveParams");
     expect((await run(d, ["schema", "--name", "Nope"])).code).toBe(1);
   });
 
@@ -960,8 +949,6 @@ describe("CLI end-to-end", () => {
     const baseline = await snapshotStore(d);
     for (const args of [
       ["check"],
-      ["check", "--write"],
-      ["check", "--run-verifiers"],
       ["check", "--fail-on", "never"],
       ["check", "--overview"],
       ["list"],
@@ -972,84 +959,87 @@ describe("CLI end-to-end", () => {
     }
   });
 
-  test("a v2 store is upgraded once at open and then checks clean", async () => {
+  test("removed flags are unknown options", async () => {
+    const { d } = await seeded();
+    for (const args of [
+      ["check", "--write"],
+      ["check", "--run-verifiers"],
+      ["check", "--verifier-timeout", "5"],
+      ["record", "--verified"],
+      ["record", "--verifier", "command:x"],
+    ]) {
+      const res = await run(d, args);
+      expect(res.code).toBe(1);
+      expect(res.json.error).toContain("unknown option");
+    }
+  });
+
+  test("a v3 store is refused with a one-line no-upgrade error", async () => {
     const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(d, "doc.md", "# Doc\n\nA is 1 here.\n");
-    const docId = "doc_1";
     await write(
       d,
       ".claims/config.json",
-      JSON.stringify({ version: "v2", nonce: "deadbeef" }),
-    );
-    await write(
-      d,
-      `.claims/documents/${docId}.json`,
-      JSON.stringify({
-        id: docId,
-        path: "doc.md",
-        lifecycle: "active",
-        edges: [],
-        pristine: false,
-      }),
-    );
-    await write(
-      d,
-      ".claims/propositions/prop_1.json",
-      JSON.stringify({
-        id: "prop_1",
-        textCache: "A is 1 here",
-        authoredTrust: "verified",
-        fingerprint: "f",
-      }),
-    );
-    const docText = "# Doc\n\nA is 1 here.\n";
-    const s = docText.indexOf("A is 1 here");
-    await write(
-      d,
-      ".claims/claims/asrt_1.json",
-      JSON.stringify({
-        id: "asrt_1",
-        propositionId: "prop_1",
-        documentId: docId,
-        owner: "o",
-        ref: "r",
-        anchor: {
-          doc: {
-            file: "doc.md",
-            selectors: [
-              {
-                kind: "text-quote",
-                exact: "A is 1 here",
-                prefix: "# Doc\n\n",
-                suffix: ".\n",
-              },
-              { kind: "text-position", start: s, end: s + 11 },
-              { kind: "inline-id", id: "x" },
-            ],
-          },
-          code: [
-            {
-              file: "src/a.ts",
-              selectors: [{ kind: "path", path: "src/a.ts" }],
-            },
-          ],
-        },
-        enforcement: "enforced",
-        behavioral: true,
-        evidenceBaseline: {},
-        verifiers: [],
-        attrs: {},
-      }),
+      JSON.stringify({ version: "v3", nonce: "deadbeef" }),
     );
     const res = await run(d, ["check"]);
-    expect(res.stderr).toContain("upgraded claim store from v2 to v3");
-    expect(res.code).toBe(0);
+    expect(res.code).toBe(1);
+    expect(res.json.error).toContain("version v3");
+    expect(res.json.error).toContain("no upgrade path");
+  });
+
+  test("record without --by and without a git user.email fails with a clear error", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "doc.md", "# Doc\n\nA is 1 here.\n");
+    await run(d, ["init"]);
+    await Bun.spawn(["git", "config", "--unset", "user.email"], { cwd: d })
+      .exited;
+    const empty = join(d, "empty-gitconfig");
+    await writeFile(empty, "");
+    const args = [
+      "run",
+      CLI,
+      "record",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "A is 1 here",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ];
+    const proc = Bun.spawn(["bun", ...args], {
+      cwd: d,
+      env: {
+        ...process.env,
+        GIT_CONFIG_GLOBAL: empty,
+        GIT_CONFIG_NOSYSTEM: "1",
+      },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const out = JSON.parse((await new Response(proc.stdout).text()).trim());
+    expect(await proc.exited).toBe(1);
+    expect(out.error).toContain("--by");
+    const withBy = await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "A is 1 here",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+      "--by",
+      "agent:opus",
+      "--explain",
+    ]);
+    expect(withBy.code).toBe(0);
     expect(
-      JSON.parse(await readFile(join(d, ".claims/config.json"), "utf8"))
-        .version,
-    ).toBe("v3");
-    const again = await run(d, ["check"]);
-    expect(again.stderr).not.toContain("upgraded");
+      (withBy.json.claim as { attestations?: { by?: string }[] })
+        .attestations?.[0]?.by,
+    ).toBe("agent:opus");
   });
 });
