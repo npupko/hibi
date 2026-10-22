@@ -1,6 +1,6 @@
 {
   "name": "hibi-cli",
-  "description": "Set up and operate the hibi CLI: record code-anchored documentation claims, run check/list/coverage, respond to drift with reanchor and retire, wire CI, and manage doc lifecycle with supersede and archive. Bundles the `hibi` Agent Skill.",
+  "description": "Operate the hibi CLI: audit documents, record code, reference, and attested claims, run check before trusting a doc or after a change, submit agent-collected evidence for the judge, attest, resolve contradictions and expired claims, and wire CI. Bundles the `hibi` Agent Skill.",
   "author": {
     "name": "Nick Pupko",
     "email": "lazynick7@gmail.com"
