@@ -521,11 +521,14 @@ describe("the whole loop through the CLI", () => {
     });
     const v = verdictOf(res, ids.attested);
     expect(v.gates).toBe(true);
+    // The label lists the values in pair order: the smaller claim id first.
+    // Claim ids are random, so the expected order follows the ids.
+    const values = ids.attested < ids.faq ? "29 vs 39" : "39 vs 29";
     expect(v.conflicts).toEqual([
       {
         claimId: ids.faq,
         probability: 1,
-        reason: "numbers differ: 29 vs 39",
+        reason: `numbers differ: ${values}`,
       },
     ]);
     const conflict = await hibi(["list", "--state", "conflict"]);
