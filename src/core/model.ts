@@ -76,7 +76,7 @@ export type EvidenceState = z.infer<typeof EvidenceState>;
 export const JudgeState = z.enum(["supported", "refuted", "review", "pending"]);
 export type JudgeState = z.infer<typeof JudgeState>;
 
-// ── Anchor selectors (unchanged from v3) ─────────────────────────────────────
+// ── Anchor selectors (SPEC 6.3) ──────────────────────────────────────────────
 
 /** `text-quote`: exact + prefix + suffix (W3C TextQuoteSelector). */
 export const TextQuoteSelector = z.strictObject({
@@ -114,22 +114,12 @@ export const ValueSelector = z.strictObject({
   value: z.string(),
 });
 
-/** `coarse`: a file or glob pattern. Navigation only, never graded as drift. */
-export const CoarseSelector = z.strictObject({
-  kind: z.literal("coarse"),
-  pattern: z.string(),
-});
-
-/** The coarse selector kinds, never reported as drift. */
-export const COARSE_SELECTOR_KINDS = ["coarse"] as const;
-
 export const Selector = z
   .discriminatedUnion("kind", [
     TextQuoteSelector,
     TextPositionSelector,
     AstNodeSelector,
     ValueSelector,
-    CoarseSelector,
   ])
   .meta({ id: "Selector" });
 export type Selector = z.infer<typeof Selector>;
@@ -350,6 +340,18 @@ export const JudgeSubject = z.strictObject({
 });
 export type JudgeSubject = z.infer<typeof JudgeSubject>;
 
+/**
+ * A value extracted from text for the numeric rule (SPEC 8.5): its kind, its
+ * canonical form, and its unit when it has one. Only the value is kept, never
+ * the text around it.
+ */
+export const ExtractedValue = z.strictObject({
+  kind: z.enum(["number", "version", "date", "money"]),
+  normalized: z.string(),
+  unit: z.string().optional(),
+});
+export type ExtractedValue = z.infer<typeof ExtractedValue>;
+
 /** The evidence a `supports` verdict was asked about. Raw text is never stored. */
 export const CachedEvidence = z.strictObject({
   hash: z.string(),
@@ -357,6 +359,11 @@ export const CachedEvidence = z.strictObject({
   summary: z.string(),
   by: Actor,
   at: Instant,
+  /**
+   * The numbers, money, versions, and dates in the evidence text, so `check`
+   * can apply the value rule (SPEC 8.5) without the raw text.
+   */
+  values: z.array(ExtractedValue).optional(),
 });
 export type CachedEvidence = z.infer<typeof CachedEvidence>;
 
@@ -450,10 +457,12 @@ export const Verdict = z
     expired: z.boolean(),
     conflicts: z.array(ConflictFinding).default([]),
     gates: z.boolean(),
+    /** True when the verdict warns and does not gate (SPEC 7.4); never both. */
+    warns: z.boolean(),
     remediation: Remediation.nullable().default(null),
     detail: VerdictDetail,
-    /** Reason labels, e.g. "identifiers or literals renamed". */
-    notes: z.array(z.string()).default([]),
+    /** Every reason label: anchors, expiry, judge, conflicts, and gating rules. */
+    reasons: z.array(z.string()).default([]),
   })
   .meta({ id: "Verdict" });
 export type Verdict = z.infer<typeof Verdict>;

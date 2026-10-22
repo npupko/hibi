@@ -12,6 +12,7 @@ import type {
   JudgeState,
 } from "../src/core/model.ts";
 import { computeExitCode, runCheck } from "../src/engine/check.ts";
+import type { ConflictPassResult } from "../src/engine/conflict.ts";
 import { recordClaim } from "../src/engine/record.ts";
 import { cacheKey } from "../src/judge/cache.ts";
 import { FakeJudge, supportsAnswer } from "../src/judge/fake.ts";
@@ -159,23 +160,6 @@ describe("end-to-end drift detection (two-axis)", () => {
     expect(rep.verdicts[0]?.evidence).toBe("orphaned");
     expect(rep.verdicts[0]?.gates).toBe(true);
     expect(rep.exitCode).toBe(2);
-  });
-
-  test("coarse anchors are navigational and never reported as drift", async () => {
-    const r = await repo();
-    await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
-    await record(r, {
-      doc: "README.md",
-      text: "Touches retry module",
-      file: "src/retry.ts",
-      coarse: true,
-    });
-    // Rewrite the file wholesale; a precise anchor would orphan, coarse must not.
-    await r.write("src/retry.ts", "// totally different content\n");
-    const rep = await check(r);
-    expect(rep.verdicts[0]?.evidence).toBe("unchanged");
-    expect(rep.verdicts[0]?.gates).toBe(false);
-    expect(rep.exitCode).toBe(0);
   });
 
   test("a relocated documented sentence grades doc:moved, warns, and exits 0", async () => {
@@ -821,23 +805,31 @@ describe("conflicts from the contradiction pass", () => {
       sentence: "Pro costs $39/month.",
       ttl: "P90D",
     });
-    const conflictsFor = (id: string) =>
-      id === a.id
-        ? [
-            {
-              claimId: b.id,
-              probability: 1,
-              reason: "numbers differ: 29 vs 39",
-            },
-          ]
-        : [
-            {
-              claimId: a.id,
-              probability: 0.6,
-              reason: "contradictory below threshold",
-            },
-          ];
-    const rep = await runCheck(r.store, { now: NOW, conflictsFor });
+    const pairId = [a.id, b.id].sort().join(":");
+    const conflictPass: ConflictPassResult = {
+      findings: [
+        {
+          claimId: a.id,
+          otherClaimId: b.id,
+          pairId,
+          probability: 1,
+          reason: "numbers differ: 29 vs 39",
+        },
+        {
+          claimId: b.id,
+          otherClaimId: a.id,
+          pairId,
+          probability: 0.6,
+          reason: "review: contradictory below threshold",
+          review: true,
+        },
+      ],
+      duplicates: [],
+      pending: [],
+      requests: 0,
+      pairs: [],
+    };
+    const rep = await runCheck(r.store, { now: NOW, conflictPass });
     const va = rep.verdicts.find((v) => v.claimId === a.id);
     const vb = rep.verdicts.find((v) => v.claimId === b.id);
     expect(va?.gates).toBe(true);
@@ -848,7 +840,11 @@ describe("conflicts from the contradiction pass", () => {
     );
     expect(vb?.gates).toBe(false);
     expect(vb?.warns).toBe(true);
-    expect(rep.summary.conflicts).toBe(2);
+    expect(vb?.conflicts).toEqual([]);
+    expect(vb?.reasons).toContain(
+      `possible conflict with ${a.id}: review: contradictory below threshold`,
+    );
+    expect(rep.summary.conflicts).toBe(1);
     expect(rep.exitCode).toBe(2);
   });
 });
@@ -926,7 +922,7 @@ describe("check JSON shape: one claim of each kind", () => {
       warns: false,
       remediation: null,
       reasons: [
-        "judge: evidence supports the sentence (confidence 0.95 at or above threshold 0.8)",
+        "judge: evidence supports the sentence (confidence 0.95 >= threshold 0.8)",
       ],
     });
     expect(byId(att.id)).toEqual({
@@ -981,6 +977,7 @@ describe("check JSON shape: one claim of each kind", () => {
       expired: 0,
       conflicts: 0,
       worklist: 1,
+      conflictPass: { pairs: 0, requests: 0, pending: 0 },
     });
     const explained = projectCheckReport(rep, {
       explain: true,

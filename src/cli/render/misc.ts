@@ -7,11 +7,11 @@
 import type {
   ArchiveResult,
   ListResult,
-  ListSeverity,
   ReanchorResult,
   ReanchorSuggestResult,
   RecordResult,
   RetireResult,
+  RowState,
   SupersedeResult,
 } from "../../index.ts";
 import { oneLine } from "./helpers.ts";
@@ -47,11 +47,21 @@ function warningLines(
 }
 
 export function renderInit(
-  result: { store: string; version: string },
+  result: {
+    store: string;
+    version: string;
+    instructions?: { file: string; appended: boolean };
+  },
   style: Style,
   mode: OutputMode,
 ): string {
-  return `${ok(style, mode)} initialized claim store  ${style.bold(result.store)}  ${style.dim(`(${result.version})`)}\n`;
+  let out = `${ok(style, mode)} initialized claim store  ${style.bold(result.store)}  ${style.dim(`(${result.version})`)}\n`;
+  if (result.instructions) {
+    out += result.instructions.appended
+      ? `${ok(style, mode)} added the hibi check line to ${style.bold(result.instructions.file)}\n`
+      : `  ${style.dim(`${result.instructions.file} already has the hibi check line`)}\n`;
+  }
+  return out;
 }
 
 export function renderRecord(
@@ -179,7 +189,8 @@ export function renderRetire(
   return `${ok(style, mode)} ${verb}  ${style.cyan(result.claim.id)}${note}${dryTag(style, dryRun)}\n`;
 }
 
-function listSeverity(s: ListSeverity): Severity {
+function rowSeverity(s: RowState): Severity {
+  if (s === "retired") return "neutral";
   return s === "warning" ? "warn" : s;
 }
 
@@ -197,26 +208,22 @@ export function renderList(
     return `${out.join("\n")}\n`;
   }
   const rows = result.claims.map((r) => [
-    badge(
-      r.status === "retired" ? "neutral" : listSeverity(r.severity),
-      mode.unicode,
-      style,
-    ),
-    r.status,
+    badge(rowSeverity(r.state), mode.unicode, style),
+    r.state,
     r.claimId,
-    r.documentPath ?? "—",
-    r.evidencePath ?? "—",
-    r.recommended ?? "—",
+    r.kind,
+    r.expiresAt ?? "—",
+    r.owner ?? "—",
   ]);
   out.push(
     ...renderTable(
       [
         { header: "" },
-        { header: "Status" },
+        { header: "State" },
         { header: "Claim" },
-        { header: "Document", max: 32 },
-        { header: "Evidence", max: 32 },
-        { header: "Action" },
+        { header: "Kind" },
+        { header: "Expires" },
+        { header: "Owner", max: 32 },
       ],
       rows,
       { unicode: mode.unicode, indent: "  " },
@@ -227,6 +234,9 @@ export function renderList(
     out.push(
       `  ${style.cyan(r.claimId)}  ${style.dim(`"${oneLine(r.sentence)}"`)}`,
     );
+    for (const d of r.duplicates ?? []) {
+      out.push(`    ${style.dim(`duplicates ${d.claimId}: ${d.why}`)}`);
+    }
   }
   out.push("");
   const n = result.count;

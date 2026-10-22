@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Claim, Config } from "../src/core/model.ts";
+import { runCheck } from "../src/engine/check.ts";
 import {
   type EvidenceItem,
   EvidenceValidationError,
@@ -106,8 +107,6 @@ function submit(
     items: items as EvidenceItem[],
     context: (c) => `context of ${c.id}`,
     config: CONFIG,
-    // FakeJudge's answers are the result itself.
-    decodeCached: (answers) => answers as SupportsResult,
     now: NOW,
     ...over,
   });
@@ -285,6 +284,7 @@ describe("submitEvidence outcomes", () => {
       summary: it.summary,
       by: "agent:opus",
       at: NOW.toISOString(),
+      values: [{ kind: "money", normalized: "29", unit: "USD" }],
     });
     expect(
       (entry?.request as { state: Record<string, unknown> }).state,
@@ -316,6 +316,47 @@ describe("submitEvidence outcomes", () => {
     expect(report.summary.refuted).toBe(1);
     expect((await repo.store.getClaim(ID_PRICE))?.attestations).toEqual([]);
     expect(await repo.store.judgeCache().list()).toHaveLength(1);
+  });
+
+  test("value rule: evidence with a different price is refuted with one label, and check agrees", async () => {
+    const repo = await setup();
+    const judge = new FakeJudge({ supports: { [PRICE]: SUPPORTED } });
+    const report = await submit(repo, judge, [
+      item({ evidence: "Pro plan, monthly: USD 39.00" }),
+    ]);
+    expect(report.results[0]).toMatchObject({
+      judge: "refuted",
+      relation: "supports",
+      attested: false,
+      reasons: ["value differs: numbers differ: 29 vs 39"],
+    });
+    expect((await repo.store.getClaim(ID_PRICE))?.attestations).toEqual([]);
+    // check has no evidence text; it applies the rule to the stored values.
+    const check = await runCheck(repo.store, { now: NOW });
+    const v = check.verdicts.find((x) => x.claimId === ID_PRICE);
+    expect(v?.judge).toBe("refuted");
+    expect(v?.gates).toBe(true);
+    expect(v?.reasons).toContain(
+      "judge: value differs: numbers differ: 29 vs 39",
+    );
+  });
+
+  test("a source matching a declared source adds a label and changes nothing else", async () => {
+    const repo = await setup();
+    await repo.store.putClaim(
+      attested(ID_PRICE, PRICE, {
+        sources: [{ id: "stripe", resource: "https://stripe.example/p/1" }],
+      }),
+    );
+    const judge = new FakeJudge({ supports: { [PRICE]: SUPPORTED } });
+    const report = await submit(repo, judge, [
+      item({ source: "https://stripe.example/p/1" }),
+    ]);
+    expect(report.results[0]?.judge).toBe("supported");
+    expect(report.results[0]?.reasons).toEqual([
+      "evidence supports the sentence (confidence 0.94 >= threshold 0.8)",
+      'source matches declared source "https://stripe.example/p/1"',
+    ]);
   });
 
   test("supports or refutes below threshold is review and appends nothing", async () => {

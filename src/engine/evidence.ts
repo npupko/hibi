@@ -28,8 +28,17 @@
  *     "summary": { "supported": 1, "refuted": 0, "review": 0, "pending": 0,
  *                  "requests": 1 } }  // requests: judge calls answered in this run
  *
+ * The outcome comes from `supportsOutcome` in `reference.ts`, shared with
+ * `check`, including the value rule (SPEC 8.5): when the sentence and the
+ * evidence hold different values of the same kind and unit, the result is
+ * `refuted` with `value differs: …`. When `source` equals one of the claim's
+ * `sources[].id` or `sources[].resource`, the reasons add `source matches
+ * declared source "<id or resource>"` (SPEC 4.3).
+ *
  * The cache entry's `request` is the request as sent with `state.evidence`
  * replaced by `sha256:<hash>`; the key is computed over the request as sent.
+ * Its `evidence` block keeps the hash, source, summary, actor, time, and the
+ * values extracted from the evidence text, never the text itself.
  *
  * Validation runs over the whole batch before any judge call; one invalid
  * item rejects the batch and nothing is asked or written.
@@ -53,6 +62,11 @@ import {
   type SupportsResult,
 } from "../judge/types.ts";
 import type { ClaimStore } from "../store/store.ts";
+import {
+  declaredSourceLabel,
+  storedValues,
+  supportsOutcome,
+} from "./reference.ts";
 
 /**
  * The longest evidence text accepted, in characters. About 8k tokens at 4
@@ -106,12 +120,11 @@ export interface EvidenceReport {
 export interface SubmitEvidenceInput {
   store: ClaimStore;
   judge: Judge;
-  items: EvidenceItem[];
+  /** Raw items; validated as a batch before any judge call. */
+  items: unknown[];
   /** The text around the claim's sentence in its document. */
   context: (claim: Claim) => string;
   config: Config;
-  /** Turns cached `answers` back into a result. Default: the Jev mapper. */
-  decodeCached?: (answers: unknown) => SupportsResult;
   now?: Date;
 }
 
@@ -130,10 +143,6 @@ const ITEM_KEYS = ["claimId", "evidence", "source", "summary", "by"] as const;
 /** sha256 hex of the evidence text as submitted. */
 export function evidenceHash(evidence: string): string {
   return createHash("sha256").update(evidence).digest("hex");
-}
-
-function fmt(p: number): string {
-  return p.toFixed(2);
 }
 
 /** Problems with one item, given the claims it may name. */
@@ -208,51 +217,6 @@ export function validateEvidenceItems(
   return items as EvidenceItem[];
 }
 
-/** The SPEC 8.4 outcome of one `supports` result under one threshold, with its reason labels. */
-export function supportsOutcome(
-  result: SupportsResult,
-  threshold: number,
-): { judge: Exclude<JudgeState, "pending">; reasons: string[] } {
-  const c = fmt(result.confidence);
-  const t = `${threshold}`;
-  if (result.relation === "does_not_address") {
-    const reason =
-      result.forced === "addresses"
-        ? `evidence did not address the sentence (addresses=${fmt(result.addresses)})`
-        : "evidence did not address the sentence";
-    return { judge: "review", reasons: [reason] };
-  }
-  const above = result.confidence >= threshold;
-  if (result.relation === "supports") {
-    return above
-      ? {
-          judge: "supported",
-          reasons: [
-            `evidence supports the sentence (confidence ${c} >= threshold ${t})`,
-          ],
-        }
-      : {
-          judge: "review",
-          reasons: [
-            `evidence leans supports, confidence ${c} below threshold ${t}`,
-          ],
-        };
-  }
-  return above
-    ? {
-        judge: "refuted",
-        reasons: [
-          `evidence refutes the sentence (confidence ${c} >= threshold ${t})`,
-        ],
-      }
-    : {
-        judge: "review",
-        reasons: [
-          `evidence leans refutes, confidence ${c} below threshold ${t}`,
-        ],
-      };
-}
-
 /**
  * The request as stored in the cache: the exact request with `state.evidence`
  * replaced by `sha256:<hash>`, because raw evidence text is never stored
@@ -295,10 +259,8 @@ export async function submitEvidence(
 ): Promise<EvidenceReport> {
   const { store, judge, config, context } = input;
   const now = (input.now ?? new Date()).toISOString();
-  const decode =
-    input.decodeCached ??
-    ((answers: unknown) =>
-      mapSupportsAnswers(answers as Record<string, Answer>));
+  const decode = (answers: unknown) =>
+    mapSupportsAnswers(answers as Record<string, Answer>);
   const cache = store.judgeCache();
   const model = config.judge.model;
   const threshold = config.judge.threshold;
@@ -345,7 +307,7 @@ export async function submitEvidence(
           kind: "answered",
           model: response.model,
           answers: response.answers,
-          result: response.result,
+          result: decode(response.answers),
         };
       } catch (e) {
         if (e instanceof JudgeUnavailable) {
@@ -381,12 +343,14 @@ export async function submitEvidence(
       });
       continue;
     }
+    const evidenceValues = storedValues(p.item.evidence);
     const block = {
       hash: p.hash,
       source: p.item.source,
       summary: p.item.summary,
       by: p.item.by,
       at: now,
+      values: evidenceValues,
     };
     if (a.kind === "cached") {
       await cache.put({ ...a.entry, evidence: block });
@@ -404,10 +368,15 @@ export async function submitEvidence(
       });
     }
 
-    const outcome = supportsOutcome(a.result, threshold);
-    summary[outcome.judge] += 1;
+    const outcome = supportsOutcome(a.result, threshold, {
+      sentence: storedValues(p.claim.sentence),
+      evidence: evidenceValues,
+    });
+    const source = declaredSourceLabel(p.claim, p.item.source);
+    if (source !== undefined) outcome.reasons.push(source);
+    summary[outcome.state] += 1;
     let attested = false;
-    if (outcome.judge === "supported") {
+    if (outcome.state === "supported") {
       const attestation: Attestation = {
         by: p.item.by,
         at: now,
@@ -425,7 +394,7 @@ export async function submitEvidence(
     }
     results.push({
       claimId: p.claim.id,
-      judge: outcome.judge,
+      judge: outcome.state,
       relation: a.result.relation,
       confidence: a.result.confidence,
       probabilities: a.result.probabilities,

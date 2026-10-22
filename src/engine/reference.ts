@@ -1,5 +1,5 @@
 /**
- * The judge axis (SPEC 7.3, 8.4).
+ * The judge axis (SPEC 7.3, 8.4, 8.5).
  *
  * `judgeReference` asks `supports(sentence, referencedText)` for a `reference`
  * claim, once per `(model, request)`: the cache is checked first, and a miss
@@ -7,16 +7,30 @@
  * network failure, or no judge supplied) is `pending`.
  *
  * `supportsOutcome` maps a `SupportsResult` to a judge state with the one
- * threshold, `config.judge.threshold`:
+ * threshold, `config.judge.threshold`. It is the only such mapping; `check`
+ * and `evidence` both use it. One label per rule:
  *
- *   - `supports` at or above threshold: `supported`
- *   - `refutes` at or above threshold: `refuted` (gates)
- *   - anything else (`refutes` or `supports` below threshold,
- *     `does_not_address`): `review` (warns)
+ * | rule | state | label |
+ * |---|---|---|
+ * | relation is not `does_not_address` and the sentence and the evidence hold different values of the same kind and unit | `refuted` | `value differs: numbers differ: 29 vs 39` |
+ * | `supports` at or above threshold | `supported` | `evidence supports the sentence (confidence 0.94 >= threshold 0.8)` |
+ * | `refutes` at or above threshold | `refuted` | `evidence refutes the sentence (confidence 0.92 >= threshold 0.8)` |
+ * | `supports` or `refutes` below threshold | `review` | `evidence leans supports, confidence 0.55 below threshold 0.8` |
+ * | `does_not_address` | `review` | `evidence did not address the sentence` (with `addresses=…` when the Noul floor forced it) |
+ *
+ * `declaredSourceLabel` adds `source matches declared source "<id or
+ * resource>"` when an evidence source equals one of the claim's `sources[]`
+ * (SPEC 4.3). It changes no state.
  */
 
-import type { Claim, JudgeCacheEntry, JudgeState } from "../core/model.ts";
+import type {
+  Claim,
+  ExtractedValue,
+  JudgeCacheEntry,
+  JudgeState,
+} from "../core/model.ts";
 import { cacheKey, type JudgeCache } from "../judge/cache.ts";
+import type { Answer } from "../judge/http.ts";
 import { buildSupportsRequest, mapSupportsAnswers } from "../judge/jev.ts";
 import {
   type Judge,
@@ -24,6 +38,7 @@ import {
   type SupportsResult,
 } from "../judge/types.ts";
 import { claimContext } from "./context.ts";
+import { compareValues, extractValues } from "./values.ts";
 
 export interface JudgeOutcome {
   state: JudgeState;
@@ -36,51 +51,124 @@ function fmt(p: number): string {
   return p.toFixed(2);
 }
 
-/** The judge state and reason labels for one `supports` result (SPEC 8.4). */
+/** The values the numeric rule compares, as stored with cached evidence. */
+export function storedValues(text: string): ExtractedValue[] {
+  return extractValues(text).map((v) => ({
+    kind: v.kind,
+    normalized: v.normalized,
+    ...(v.unit !== undefined ? { unit: v.unit } : {}),
+  }));
+}
+
+/**
+ * The judge state and reason labels for one `supports` result (SPEC 8.4),
+ * with the value rule (SPEC 8.5) when the sentence and evidence values are
+ * given.
+ */
 export function supportsOutcome(
   result: SupportsResult,
   threshold: number,
+  values?: { sentence: ExtractedValue[]; evidence: ExtractedValue[] },
 ): JudgeOutcome {
   const c = fmt(result.confidence);
+  const t = `${threshold}`;
   if (result.relation === "does_not_address") {
     return {
       state: "review",
       reasons: [
-        result.forced
+        result.forced === "addresses"
           ? `evidence did not address the sentence (addresses=${fmt(result.addresses)})`
-          : `judge: evidence does not address the sentence (confidence ${c})`,
+          : "evidence did not address the sentence",
       ],
     };
   }
-  const verb = result.relation === "supports" ? "supports" : "refutes";
+  if (values !== undefined) {
+    const cmp = compareValues(
+      values.sentence.map((v) => ({ ...v, raw: v.normalized })),
+      values.evidence.map((v) => ({ ...v, raw: v.normalized })),
+    );
+    if (cmp.differs && cmp.label !== undefined) {
+      return { state: "refuted", reasons: [`value differs: ${cmp.label}`] };
+    }
+  }
+  const verb = result.relation;
   if (result.confidence >= threshold) {
     return {
-      state: result.relation === "supports" ? "supported" : "refuted",
+      state: verb === "supports" ? "supported" : "refuted",
       reasons: [
-        `judge: evidence ${verb} the sentence (confidence ${c} at or above threshold ${threshold})`,
+        `evidence ${verb} the sentence (confidence ${c} >= threshold ${t})`,
       ],
     };
   }
   return {
     state: "review",
-    reasons: [
-      `judge: evidence leans ${verb} below threshold (confidence ${c} < ${threshold})`,
-    ],
+    reasons: [`evidence leans ${verb}, confidence ${c} below threshold ${t}`],
   };
 }
 
-/** The outcome stored in a cached `supports` entry. */
+/** `source matches declared source "<id or resource>"` when `source` names one of the claim's sources. */
+export function declaredSourceLabel(
+  claim: Pick<Claim, "sources">,
+  source: string,
+): string | undefined {
+  for (const s of claim.sources) {
+    if (s.id !== undefined && s.id === source) {
+      return `source matches declared source "${s.id}"`;
+    }
+    if (s.resource === source) {
+      return `source matches declared source "${s.resource}"`;
+    }
+  }
+  return undefined;
+}
+
+/** When a cache entry was last written for its claim: the later of its `at` and its evidence time. */
+function touchedAt(e: JudgeCacheEntry): string {
+  return e.evidence !== undefined && e.evidence.at > e.at
+    ? e.evidence.at
+    : e.at;
+}
+
+/** The newest `supports` entry among `entries`, by `touchedAt`; the later one wins a tie. */
+export function newestSupports(
+  entries: JudgeCacheEntry[],
+): JudgeCacheEntry | undefined {
+  let best: JudgeCacheEntry | undefined;
+  for (const e of entries) {
+    if (e.judgment !== "supports") continue;
+    if (best === undefined || touchedAt(e) >= touchedAt(best)) best = e;
+  }
+  return best;
+}
+
+/**
+ * The outcome stored in a cached `supports` entry for `claim`. The value rule
+ * uses the values stored with the evidence, and the source label its source.
+ */
 export function cachedSupportsOutcome(
   entry: JudgeCacheEntry,
   threshold: number,
+  claim: Pick<Claim, "sentence" | "sources">,
 ): JudgeOutcome {
   const outcome = supportsOutcome(
-    mapSupportsAnswers(
-      entry.answers as Parameters<typeof mapSupportsAnswers>[0],
-    ),
+    mapSupportsAnswers(entry.answers as Record<string, Answer>),
     threshold,
+    entry.evidence !== undefined
+      ? {
+          sentence: storedValues(claim.sentence),
+          evidence: entry.evidence.values ?? [],
+        }
+      : undefined,
   );
-  return { ...outcome, key: entry.key };
+  const source =
+    entry.evidence !== undefined
+      ? declaredSourceLabel(claim, entry.evidence.source)
+      : undefined;
+  return {
+    ...outcome,
+    reasons: source ? [...outcome.reasons, source] : outcome.reasons,
+    key: entry.key,
+  };
 }
 
 export interface JudgeReferenceInput {
@@ -115,14 +203,23 @@ export async function judgeReference(
   });
   const key = cacheKey(input.model, request);
   const hit = await input.cache.get(key);
-  if (hit !== undefined) return cachedSupportsOutcome(hit, input.threshold);
+  const values = {
+    sentence: storedValues(sentence),
+    evidence: storedValues(input.referencedText),
+  };
+  if (hit !== undefined) {
+    const outcome = supportsOutcome(
+      mapSupportsAnswers(hit.answers as Record<string, Answer>),
+      input.threshold,
+      values,
+    );
+    return { ...outcome, key };
+  }
 
   if (input.judge === undefined) {
     return {
       state: "pending",
-      reasons: [
-        "judge: pending: no judge is configured (set TYPESAFE_API_KEY)",
-      ],
+      reasons: ["pending: no judge is configured (set TYPESAFE_API_KEY)"],
     };
   }
   let response: Awaited<ReturnType<Judge["supports"]>>;
@@ -135,7 +232,7 @@ export async function judgeReference(
     });
   } catch (e) {
     if (e instanceof JudgeUnavailable) {
-      return { state: "pending", reasons: [`judge: pending: ${e.message}`] };
+      return { state: "pending", reasons: [`pending: ${e.message}`] };
     }
     throw e;
   }
@@ -148,5 +245,12 @@ export async function judgeReference(
     answers: response.answers,
     at: (input.now ?? new Date()).toISOString(),
   });
-  return { ...supportsOutcome(response.result, input.threshold), key };
+  return {
+    ...supportsOutcome(
+      mapSupportsAnswers(response.answers as Record<string, Answer>),
+      input.threshold,
+      values,
+    ),
+    key,
+  };
 }

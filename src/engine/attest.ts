@@ -23,7 +23,6 @@
  *     "countsTowardTtl": true }
  */
 
-import { createHash } from "node:crypto";
 import {
   ACTOR_PATTERN,
   Attestation,
@@ -31,6 +30,8 @@ import {
   type Claim,
 } from "../core/model.ts";
 import type { ClaimStore } from "../store/store.ts";
+import { sentenceHash } from "./hash.ts";
+import { newestSupports } from "./reference.ts";
 
 /** What `--ack` names: a contradiction with another claim, or a `review` verdict. */
 export type AckTarget =
@@ -64,15 +65,6 @@ export function parseAck(value: string): AckTarget {
   );
 }
 
-/**
- * sha256 of a sentence after NFC normalization, whitespace collapsed to one
- * space, and trimming. The pair hash for conflict acks (SPEC 9.4).
- */
-function sentenceHash(sentence: string): string {
-  const normalized = sentence.normalize("NFC").replace(/\s+/g, " ").trim();
-  return createHash("sha256").update(normalized).digest("hex");
-}
-
 async function liveClaim(store: ClaimStore, id: string): Promise<Claim> {
   const claim = await store.getClaim(id);
   if (!claim) throw new Error(`No claim ${id} in the store.`);
@@ -82,26 +74,18 @@ async function liveClaim(store: ClaimStore, id: string): Promise<Claim> {
   return claim;
 }
 
-/** The key of the claim's newest `supports` verdict: by the later of its `at` and its evidence time. */
+/** The key of the claim's newest `supports` verdict (`newestSupports`, shared with `check`). */
 async function newestSupportsKey(
   store: ClaimStore,
   claimId: string,
 ): Promise<string> {
-  const entries = (await store.judgeCache().list({ claimId })).filter(
-    (e) => e.judgment === "supports",
-  );
-  let best: { key: string; at: string } | undefined;
-  for (const e of entries) {
-    const at =
-      e.evidence !== undefined && e.evidence.at > e.at ? e.evidence.at : e.at;
-    if (best === undefined || at >= best.at) best = { key: e.key, at };
-  }
-  if (best === undefined) {
+  const newest = newestSupports(await store.judgeCache().list({ claimId }));
+  if (newest === undefined) {
     throw new Error(
       `claim ${claimId} has no supports verdict to acknowledge; submit evidence with \`hibi evidence\` first.`,
     );
   }
-  return best.key;
+  return newest.key;
 }
 
 async function append(

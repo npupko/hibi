@@ -5,6 +5,7 @@
  * reference (`scripts/gen-cli-reference.ts`) all read these tables.
  */
 
+import { ClaimKind } from "../core/model.ts";
 import { FAIL_ON } from "../engine/check.ts";
 import { MAX_EVIDENCE_CHARS } from "../engine/evidence.ts";
 import { LIST_STATES } from "../engine/list.ts";
@@ -41,6 +42,10 @@ export interface CommandSpec {
   /** Extra usage lines for the help page. */
   usage?: string[];
 }
+
+/** The line `init --instructions` appends to an agent instruction file. */
+export const INSTRUCTIONS_LINE =
+  "Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.";
 
 export const FORMATS = ["human", "compact", "json", "json-pretty"] as const;
 export type Format = (typeof FORMATS)[number];
@@ -107,30 +112,54 @@ const DOC_SPAN: OptionSpec[] = [
   },
 ];
 
-const CODE_SPAN: OptionSpec[] = [
+/** Code span flags. `multiple` on `record`, where each --code-file opens a span. */
+function codeSpan(multiple: boolean): OptionSpec[] {
+  const m = multiple ? { multiple: true } : {};
+  return [
+    {
+      name: "code-file",
+      type: "string",
+      placeholder: "<path>",
+      help: multiple
+        ? "A code file the sentence describes (alias:path for a sibling repo). Repeat for several spans; each takes the --code-quote or --code-range that follows it."
+        : "The code file the sentence describes (alias:path for a sibling repo).",
+      ...m,
+    },
+    {
+      name: "code-quote",
+      type: "string",
+      placeholder: "<text>",
+      help: "The code span, verbatim. Quote the load-bearing token, e.g. the value.",
+      ...m,
+    },
+    {
+      name: "code-range",
+      type: "string",
+      placeholder: "L1:L9",
+      help: "Inclusive 1-based line range of the code span (or char offsets).",
+      ...m,
+    },
+  ];
+}
+
+const REF_SPAN: OptionSpec[] = [
   {
-    name: "code-file",
+    name: "ref-file",
     type: "string",
     placeholder: "<path>",
-    help: "The code file the sentence describes.",
+    help: "The document a reference claim points to (alias:path for a sibling repo).",
   },
   {
-    name: "code-quote",
+    name: "ref-quote",
     type: "string",
     placeholder: "<text>",
-    help: "The code span, verbatim. Quote the load-bearing token, e.g. the value.",
+    help: "The referenced span, verbatim.",
   },
   {
-    name: "code-range",
+    name: "ref-range",
     type: "string",
-    placeholder: "L1:L9",
-    help: "Inclusive 1-based line range of the code span (or char offsets).",
-  },
-  {
-    name: "glob",
-    type: "string",
-    placeholder: "<pattern>",
-    help: "A coarse file or glob edge instead of a precise code span. Navigation only, never graded as drift.",
+    placeholder: "L1:L3",
+    help: "Inclusive 1-based line range of the referenced span (or char offsets).",
   },
 ];
 
@@ -171,17 +200,28 @@ export const COMMANDS: CommandSpec[] = [
   {
     name: "init",
     summary: "Create the claim store (.claims/) and its config.json.",
-    options: [],
-    examples: ["hibi init"],
+    description:
+      "Writes config.json with the pinned judge model, the threshold, no repos, and no ignore globs. --instructions appends one line to an agent instruction file (created if missing), unless the line is already there.",
+    options: [
+      {
+        name: "instructions",
+        type: "string",
+        placeholder: "<path>",
+        help: `Append the line "${INSTRUCTIONS_LINE}" to this file, e.g. CLAUDE.md or AGENTS.md.`,
+      },
+    ],
+    examples: ["hibi init", "hibi init --instructions AGENTS.md"],
   },
   {
     name: "record",
     summary:
-      "Record a claim: a doc sentence anchored to the code it describes.",
+      "Record a claim: a document sentence, its kind, and where its truth can be observed.",
     description:
-      "The doc span's text is the claim's sentence. A new claim is enforced (it gates) unless --suggest is passed. The claim gets one vouch attestation by --by, or by human:<git user.email> when --by is absent. Agents should send one JSON object per claim on stdin with --from-file -; keys mirror the flags in camelCase (doc, docQuote, docRange, codeFile, codeQuote, codeRange, glob, suggest, ttl, owner, by).",
+      "The doc span's text is the claim's sentence. --kind is required: code (one or more code spans), reference (one span in another document), or attested (no span; a ttl, and optionally sources and a procedure). A new claim is enforced (it gates) unless --suggest is passed. It gets one vouch attestation by --by, or by human:<git user.email> when --by is absent. Agents should send a JSON array on stdin with --from-file -; each item has doc, docQuote or docRange, kind, code: [{file, quote | range}], ref: {file, quote | range}, sources: [{id?, resource, title?}], procedure: {instructions, steps?}, ttl, owner, by, suggest. Every item is validated first and every problem is reported, one line each; the batch is all or nothing.",
     usage: [
-      "hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --code-file <path> (--code-quote <text> | --code-range L1:L9) [options]",
+      "hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind code --code-file <path> (--code-quote <text> | --code-range L1:L9) [options]",
+      "hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind reference --ref-file <path> (--ref-quote <text> | --ref-range L1:L3) [options]",
+      "hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind attested --ttl <duration> [--source <id>=<resource>] [--instructions <text>] [options]",
       "hibi record --from-file <path|->",
     ],
     options: [
@@ -192,17 +232,38 @@ export const COMMANDS: CommandSpec[] = [
         help: "The document making the claim.",
       },
       ...DOC_SPAN,
-      ...CODE_SPAN,
+      {
+        name: "kind",
+        type: "string",
+        values: ClaimKind.options,
+        placeholder: "<kind>",
+        help: "The claim kind.",
+      },
+      ...codeSpan(true),
+      ...REF_SPAN,
+      {
+        name: "source",
+        type: "string",
+        placeholder: "<id>=<resource>",
+        multiple: true,
+        help: "A pointer to where the claim's truth lives; never dereferenced. Repeatable.",
+      },
+      {
+        name: "instructions",
+        type: "string",
+        placeholder: "<text>",
+        help: "How an agent re-checks an attested claim (the procedure; steps only via --from-file).",
+      },
       {
         name: "suggest",
         type: "boolean",
-        help: "Record an advisory claim that never gates (allows a coarse or empty code side).",
+        help: "Record an advisory claim that never gates.",
       },
       {
         name: "ttl",
         type: "string",
         placeholder: "<duration>",
-        help: "ISO 8601 duration after which the claim needs re-attesting, e.g. P90D.",
+        help: "ISO 8601 duration after which the claim needs re-checking, e.g. P90D. Required on attested.",
       },
       {
         name: "owner",
@@ -220,12 +281,13 @@ export const COMMANDS: CommandSpec[] = [
         name: "from-file",
         type: "string",
         placeholder: "<path|->",
-        help: "Record a JSON array of claim specs (- reads stdin). All or nothing.",
+        help: "Record a JSON array of claim items (- reads stdin). All or nothing; no other record flags.",
       },
     ],
     examples: [
-      'hibi record --doc README.md --doc-quote "Retries are capped at 5 attempts" --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5"',
-      'echo \'[{"doc":"README.md","docQuote":"Retries are capped at 5 attempts","codeFile":"src/retry.ts","codeQuote":"MAX_ATTEMPTS = 5"}]\' | hibi record --from-file -',
+      'hibi record --doc README.md --doc-quote "Retries are capped at 5 attempts" --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5"',
+      'hibi record --doc docs/pricing.md --doc-quote "Pro costs $29/month." --kind attested --ttl P90D --source stripe=https://dashboard.stripe.com/products/prod_123 --instructions "Open the Stripe dashboard and report the Pro monthly price."',
+      'echo \'[{"doc":"README.md","docQuote":"Retries are capped at 5 attempts","kind":"code","code":[{"file":"src/retry.ts","quote":"MAX_ATTEMPTS = 5"}]}]\' | hibi record --from-file -',
     ],
   },
   {
@@ -233,7 +295,7 @@ export const COMMANDS: CommandSpec[] = [
     summary:
       "Verify every claim against the working tree and exit 0 (clean), 2 (gating), or 1 (error).",
     description:
-      "Read-only. --since scopes to files changed since a git ref; --doc scopes to one document; --overview renders the per-document table. A moved span is a warning: it exits 0 unless --fail-on warn.",
+      "Resolves every span, consults the judge cache (asking the judge on a miss; without TYPESAFE_API_KEY the result is pending), runs the contradiction pass over the whole store, and lists the worklist: claims an agent should re-check. Writes nothing but judge cache entries. --since scopes the verdicts to claims touching files changed since a git ref; --doc scopes them to one document, where expired also gates. Warnings (moved, review, pending, unavailable, expired in a whole-store check) exit 0 unless --fail-on warn.",
     options: CHECK_OPTIONS,
     examples: [
       "hibi check",
@@ -252,13 +314,13 @@ export const COMMANDS: CommandSpec[] = [
         type: "string",
         values: LIST_STATES,
         placeholder: "<state>",
-        help: "Filter: all (default), gating, warning, clean, orphaned, suggested, stranded (live on a superseded or archived doc).",
+        help: "Filter: all (default); gating, warning, clean (the verdict); pending (the check worklist); expired (ttl ran out); conflict (a contradiction finding); duplicate (a duplicate candidate or the same sentence); suggested; stranded (live on a superseded or archived doc).",
       },
       {
         name: "path",
         type: "string",
         placeholder: "<path>",
-        help: "Only claims anchored to or covering this doc or evidence path (either side).",
+        help: "Only claims whose doc or evidence side names this path.",
       },
       {
         name: "ids-only",
@@ -269,7 +331,7 @@ export const COMMANDS: CommandSpec[] = [
     examples: [
       "hibi list --state gating",
       "hibi list --path src/auth.ts",
-      "hibi list --state orphaned --ids-only",
+      "hibi list --state pending --ids-only",
     ],
   },
   {
@@ -316,7 +378,7 @@ export const COMMANDS: CommandSpec[] = [
         help: "Move the doc anchor to this document (with --doc-quote or --doc-range).",
       },
       ...DOC_SPAN,
-      ...CODE_SPAN,
+      ...codeSpan(false),
       {
         name: "suggest",
         type: "boolean",
@@ -586,7 +648,7 @@ export function commandHelp(cmd: CommandSpec): string {
 export function usage(): string {
   const width = Math.max(...COMMANDS.map((c) => c.name.length)) + 2;
   const lines = [
-    "hibi: deterministic doc/code claim tracking",
+    "hibi: track the checkable sentences in documents and report which are stale",
     "",
     "Usage: hibi <command> [options]",
     "       hibi <command> --help",
@@ -597,7 +659,7 @@ export function usage(): string {
     "Global options:",
     ...optionLines(GLOBAL_OPTIONS),
     "",
-    "Exit codes: 0 clean · 2 gating (changed/orphaned/ambiguous/expired on an enforced claim, or moved under --fail-on warn) · 1 error",
+    "Exit codes: 0 clean or warnings · 2 gating (changed/orphaned/ambiguous span, refuted, or a conflict on an enforced claim; expired under check --doc; any warning under --fail-on warn) · 1 error",
     "Env: HIBI_ASCII=1 for ASCII symbols · HIBI_ADVICE=0 to drop remediation hints",
   ];
   return `${lines.join("\n")}\n`;

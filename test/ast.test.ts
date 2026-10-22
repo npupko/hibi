@@ -125,7 +125,7 @@ describe("end-to-end value check: a 5 to 50 change trips even at the boundary", 
     );
     // Text similarity is near 1.0; the value check still grades the code side changed.
     expect(verdict.evidence).toBe("changed");
-    expect(verdict.notes.join(" ")).toContain("value changed");
+    expect(verdict.reasons.join(" ")).toContain("value changed");
     expect(verdict.detail.changes.some((c) => c.kind === "value")).toBe(true);
   });
 
@@ -171,6 +171,6 @@ describe("end-to-end value check: a 5 to 50 change trips even at the boundary", 
       { ast: analyzer },
     );
     expect(verdict.evidence).toBe("changed");
-    expect(verdict.notes.join(" ")).toContain("restructured");
+    expect(verdict.reasons.join(" ")).toContain("restructured");
   });
 });

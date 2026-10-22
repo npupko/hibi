@@ -39,6 +39,7 @@ describe("record-time doc-quote guard", () => {
     const engine = await Engine.init(d);
     await expect(
       engine.record({
+        kind: "code",
         by: "human:tester@example.com",
         docPath: "doc.md",
         docQuote: "abcdefg",
@@ -65,6 +66,7 @@ describe("record-time doc-quote guard", () => {
     const code = [{ file: "a.ts", region: { quote: "A = 1" } }];
     await expect(
       engine.record({
+        kind: "code",
         by: "human:tester@example.com",
         docPath: "same.md",
         docQuote: "The value is fixed here",
@@ -72,38 +74,13 @@ describe("record-time doc-quote guard", () => {
       }),
     ).rejects.toThrow(/does not select a single occurrence/);
     const ok = await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "diff.md",
       docQuote: "The value is fixed here",
       evidence: code,
     });
     expect(ok.warnings[0]).toContain("occurs 2 times");
-  });
-
-  test("an enforced claim needs a precise code span; --suggest allows a coarse one", async () => {
-    const d = await repo();
-    await write(d, "doc.md", "# D\n\nThe auth module is documented here.\n");
-    const engine = await Engine.init(d);
-    await expect(
-      engine.record({
-        by: "human:tester@example.com",
-        docPath: "doc.md",
-        docQuote: "The auth module is documented here.",
-        evidence: [{ file: "src/auth/**", coarse: true }],
-      }),
-    ).rejects.toThrow(/precise code span/);
-    const ok = await engine.record({
-      by: "human:tester@example.com",
-      docPath: "doc.md",
-      docQuote: "The auth module is documented here.",
-      evidence: [{ file: "src/auth/**", coarse: true }],
-      enforcement: "suggested",
-    });
-    expect(ok.claim.enforcement).toBe("suggested");
-    expect(ok.claim.evidence[0]?.selectors[0]?.kind).toBe("coarse");
-    const hits = await engine.list({ path: "src/auth/login.ts" });
-    expect(hits.count).toBe(1);
-    expect(hits.claims[0]?.side).toBe("evidence");
   });
 });
 
@@ -118,6 +95,7 @@ describe("reanchor safety", () => {
     await write(d, "doc.md", "# D\n\nThe A constant is one.\n");
     const engine = await Engine.init(d);
     const rec = await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "doc.md",
       docQuote: "The A constant is one.",
@@ -180,6 +158,7 @@ describe("reanchor safety", () => {
     await write(d, "src/b.ts", "export function f() {\n  return 2;\n}\n");
     await write(d, "docs/other.md", "# O\n\nThe A constant is one.\n");
     await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "docs/other.md",
       docQuote: "The A constant is one.",
@@ -237,12 +216,14 @@ describe("supersede relocation", () => {
     await write(d, "v1.md", "# V1\n\nA is one.\nB is two.\n");
     const engine = await Engine.init(d);
     const a = await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "v1.md",
       docQuote: "A is one.",
       evidence: [{ file: "src/a.ts", region: { quote: "A = 1" } }],
     });
     const b = await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "v1.md",
       docQuote: "B is two.",

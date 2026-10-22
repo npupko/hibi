@@ -209,7 +209,7 @@ describe("resolveSide: the ordered cascade", () => {
       `# Doc\n\nA new paragraph.\n\n${sentence}\n`,
     );
     expect(side.state).toBe("moved");
-    expect(side.notes.join(" ")).toContain("span moved");
+    expect(side.reasons.join(" ")).toContain("span moved");
   });
 
   test("a changed number in a sentence is changed even at high similarity", () => {
@@ -218,7 +218,9 @@ describe("resolveSide: the ordered cascade", () => {
       "# Doc\n\nRetries are capped at 7 attempts.\n",
     );
     expect(side.state).toBe("changed");
-    expect(side.notes.join(" ")).toContain("a number in the sentence changed");
+    expect(side.reasons.join(" ")).toContain(
+      "a number in the sentence changed",
+    );
     expect(side.changedEvidence[0]?.kind).toBe("text");
   });
 
@@ -229,7 +231,7 @@ describe("resolveSide: the ordered cascade", () => {
     );
     expect(side.state).toBe("changed");
     expect(side.similarity).toBeLessThan(SAME_TEXT_SIMILARITY);
-    expect(side.notes.join(" ")).toContain("text changed");
+    expect(side.reasons.join(" ")).toContain("text changed");
   });
 
   test("a quote that is not found is orphaned", () => {
@@ -242,7 +244,7 @@ describe("resolveSide: the ordered cascade", () => {
   test("a missing file is orphaned with a file-not-found note", () => {
     const side = resolveSide(bundle, null);
     expect(side.state).toBe("orphaned");
-    expect(side.notes[0]).toBe("file not found: README.md");
+    expect(side.reasons[0]).toBe("file not found: README.md");
     expect(side.changedEvidence[0]?.detail).toBe("file missing");
   });
 
@@ -256,22 +258,12 @@ describe("resolveSide: the ordered cascade", () => {
     };
     const side = resolveSide(noContext, `${sentence}\n\n${sentence}\n`);
     expect(side.state).toBe("ambiguous");
-    expect(side.notes[0]).toContain("several places");
+    expect(side.reasons[0]).toContain("several places");
   });
 
   test("context selects one of several exact matches", () => {
     const side = resolveSide(bundle, `# Doc\n\n${sentence}\n\n${sentence}\n`);
     expect(["unchanged", "moved"]).toContain(side.state);
-  });
-
-  test("a coarse-only bundle is unchanged and navigational", () => {
-    const coarse: SelectorBundle = {
-      file: "src/**",
-      selectors: [{ kind: "coarse", pattern: "src/**" }],
-    };
-    const side = resolveSide(coarse, "anything at all");
-    expect(side.state).toBe("unchanged");
-    expect(side.notes[0]).toContain("coarse anchor");
   });
 });
 

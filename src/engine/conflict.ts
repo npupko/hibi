@@ -216,26 +216,6 @@ export function isAcked(pair: Pair): boolean {
   return false;
 }
 
-function isConflictResult(x: unknown): x is ConflictResult {
-  if (x === null || typeof x !== "object") return false;
-  const o = x as Record<string, unknown>;
-  return (
-    typeof o.relation === "string" &&
-    typeof o.sameSubject === "number" &&
-    typeof o.contradicts === "number"
-  );
-}
-
-/**
- * The result stored in a cache entry. Jev stores raw System One answers,
- * mapped again here by the same pure function. The test judge stores the
- * result object itself.
- */
-function resultFromAnswers(answers: unknown): ConflictResult {
-  if (isConflictResult(answers)) return answers;
-  return mapConflictAnswers(answers as Record<string, Answer>);
-}
-
 function side(claim: Claim, context: (claim: Claim) => string): ConflictSide {
   return { text: claim.sentence, doc: claim.doc.file, context: context(claim) };
 }
@@ -301,7 +281,7 @@ export async function runConflictPass(
     let result: ConflictResult;
     const hit = await cache.get(key);
     if (hit !== undefined) {
-      result = resultFromAnswers(hit.answers);
+      result = mapConflictAnswers(hit.answers as Record<string, Answer>);
     } else {
       let response: Awaited<ReturnType<Judge["conflict"]>>;
       try {
@@ -328,7 +308,7 @@ export async function runConflictPass(
         at: new Date().toISOString(),
       };
       await cache.put(entry);
-      result = response.result;
+      result = mapConflictAnswers(response.answers as Record<string, Answer>);
     }
 
     const decision = decidePair(

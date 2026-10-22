@@ -5,7 +5,12 @@ import { join } from "node:path";
 import type { Claim } from "../src/core/model.ts";
 import { buildSelectorBundle } from "../src/engine/anchor.ts";
 import { claimContext } from "../src/engine/context.ts";
-import { judgeReference, supportsOutcome } from "../src/engine/reference.ts";
+import {
+  declaredSourceLabel,
+  judgeReference,
+  storedValues,
+  supportsOutcome,
+} from "../src/engine/reference.ts";
 import { cacheKey, JudgeCache } from "../src/judge/cache.ts";
 import { FakeJudge, supportsAnswer } from "../src/judge/fake.ts";
 import { buildSupportsRequest } from "../src/judge/jev.ts";
@@ -71,7 +76,7 @@ describe("supportsOutcome (SPEC 8.4, one threshold)", () => {
     expect(supportsOutcome(r({ confidence: 0.8 }), 0.8)).toEqual({
       state: "supported",
       reasons: [
-        "judge: evidence supports the sentence (confidence 0.80 at or above threshold 0.8)",
+        "evidence supports the sentence (confidence 0.80 >= threshold 0.8)",
       ],
     });
   });
@@ -84,8 +89,8 @@ describe("supportsOutcome (SPEC 8.4, one threshold)", () => {
     for (const relation of ["supports", "refutes"] as const) {
       const out = supportsOutcome(r({ relation, confidence: 0.5 }), 0.8);
       expect(out.state).toBe("review");
-      expect(out.reasons[0]).toContain(
-        "below threshold (confidence 0.50 < 0.8)",
+      expect(out.reasons[0]).toBe(
+        `evidence leans ${relation}, confidence 0.50 below threshold 0.8`,
       );
     }
   });
@@ -97,9 +102,7 @@ describe("supportsOutcome (SPEC 8.4, one threshold)", () => {
       ),
     ).toEqual({
       state: "review",
-      reasons: [
-        "judge: evidence does not address the sentence (confidence 0.90)",
-      ],
+      reasons: ["evidence did not address the sentence"],
     });
     expect(
       supportsOutcome(
@@ -119,6 +122,63 @@ describe("supportsOutcome (SPEC 8.4, one threshold)", () => {
     expect(supportsOutcome(r({ confidence: 0.6 }), 0.5).state).toBe(
       "supported",
     );
+  });
+  test("value rule (SPEC 8.5): a differing value is refuted with one label", () => {
+    const values = {
+      sentence: storedValues("Pro costs $29/month."),
+      evidence: storedValues("The Pro plan is $39 per month."),
+    };
+    expect(supportsOutcome(r({}), 0.8, values)).toEqual({
+      state: "refuted",
+      reasons: ["value differs: numbers differ: 29 vs 39"],
+    });
+    // Below threshold too: the rule does not depend on the judge's confidence.
+    expect(supportsOutcome(r({ confidence: 0.4 }), 0.8, values).state).toBe(
+      "refuted",
+    );
+  });
+  test("value rule: same values, no values, or does_not_address leave the outcome alone", () => {
+    const same = {
+      sentence: storedValues("Pro costs $29/month."),
+      evidence: storedValues("Pro: $29.00 per month"),
+    };
+    expect(supportsOutcome(r({}), 0.8, same).state).toBe("supported");
+    const none = {
+      sentence: storedValues("Pro costs $29/month."),
+      evidence: storedValues("Pro is the paid plan"),
+    };
+    expect(supportsOutcome(r({}), 0.8, none).state).toBe("supported");
+    const differs = {
+      sentence: storedValues("Pro costs $29/month."),
+      evidence: storedValues("Team costs $99/month."),
+    };
+    expect(
+      supportsOutcome(r({ relation: "does_not_address" }), 0.8, differs),
+    ).toEqual({
+      state: "review",
+      reasons: ["evidence did not address the sentence"],
+    });
+  });
+});
+
+describe("declaredSourceLabel (SPEC 4.3)", () => {
+  const claim = {
+    sources: [
+      { id: "stripe", resource: "https://dashboard.stripe.com/p/1" },
+      { resource: "docs/pricing-sheet.md" },
+    ],
+  };
+  test("matches a source id or resource; nothing otherwise", () => {
+    expect(declaredSourceLabel(claim, "stripe")).toBe(
+      'source matches declared source "stripe"',
+    );
+    expect(declaredSourceLabel(claim, "https://dashboard.stripe.com/p/1")).toBe(
+      'source matches declared source "https://dashboard.stripe.com/p/1"',
+    );
+    expect(declaredSourceLabel(claim, "docs/pricing-sheet.md")).toBe(
+      'source matches declared source "docs/pricing-sheet.md"',
+    );
+    expect(declaredSourceLabel(claim, "a blog post")).toBeUndefined();
   });
 });
 
@@ -210,7 +270,7 @@ describe("judgeReference", () => {
     });
     expect(out).toEqual({
       state: "pending",
-      reasons: ["judge: pending: no TYPESAFE_API_KEY"],
+      reasons: ["pending: no TYPESAFE_API_KEY"],
     });
     expect(await c.list()).toHaveLength(0);
   });
@@ -226,7 +286,7 @@ describe("judgeReference", () => {
     });
     expect(out.state).toBe("pending");
     expect(out.reasons[0]).toBe(
-      "judge: pending: no judge is configured (set TYPESAFE_API_KEY)",
+      "pending: no judge is configured (set TYPESAFE_API_KEY)",
     );
   });
 

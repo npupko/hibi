@@ -61,6 +61,9 @@
     "gates": {
       "type": "boolean"
     },
+    "warns": {
+      "type": "boolean"
+    },
     "remediation": {
       "default": null,
       "anyOf": [
@@ -167,7 +170,7 @@
       ],
       "additionalProperties": false
     },
-    "notes": {
+    "reasons": {
       "default": [],
       "type": "array",
       "items": {
@@ -183,9 +186,10 @@
     "expired",
     "conflicts",
     "gates",
+    "warns",
     "remediation",
     "detail",
-    "notes"
+    "reasons"
   ],
   "additionalProperties": false,
   "$defs": {

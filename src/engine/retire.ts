@@ -1,12 +1,12 @@
 /**
- * `retire` (§9) — withdraw a single claim so it no longer gates or warns.
+ * `retire` (SPEC 11): withdraw a single claim so it no longer gates or warns.
  *
  * Flips the claim's `enforcement` to `retired` (the model already carries
  * that value) and persists it, rather than deleting the record: the audit trail
- * is kept and the action is reversible. A retired assertion is excluded from
- * gating/warning by the gating policy (`computeGates`/`isWarnVerdict`), so a
- * retired claim is simply ignored by `check`. Idempotent — retiring an
- * already-retired claim is a no-op success (`alreadyRetired: true`).
+ * is kept and the action is reversible. The gating policy (`gateVerdict`)
+ * never gates or warns on a retired claim, and the contradiction pass skips
+ * it. Idempotent: retiring an already-retired claim is a no-op success
+ * (`alreadyRetired: true`).
  */
 
 import type { Claim } from "../core/model.ts";

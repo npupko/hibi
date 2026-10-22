@@ -16,14 +16,20 @@ import { readFile } from "node:fs/promises";
 import { isAbsolute, join, relative } from "node:path";
 import type { AstAnalyzer } from "./algo/resolve.ts";
 import type {
+  Claim,
   ClaimKind,
+  Config,
   Enforcement,
   Procedure,
   Source,
 } from "./core/model.ts";
 import type { AnchorAnalyzer } from "./engine/anchor.ts";
-import { isCoarseBundle } from "./engine/anchor.ts";
 import { type ArchiveResult, archiveDocument } from "./engine/archive.ts";
+import {
+  type AckTarget,
+  type AttestResult,
+  attestClaim,
+} from "./engine/attest.ts";
 import { type AuditReport, runAudit } from "./engine/audit.ts";
 import {
   type CheckOptions,
@@ -31,6 +37,13 @@ import {
   type FailOn,
   runCheck,
 } from "./engine/check.ts";
+import {
+  type ConflictPassResult,
+  duplicateOf,
+  runConflictPass,
+} from "./engine/conflict.ts";
+import { claimContext } from "./engine/context.ts";
+import { type EvidenceReport, submitEvidence } from "./engine/evidence.ts";
 import { languageForFile } from "./engine/lang.ts";
 import { type ListResult, type ListState, toListRows } from "./engine/list.ts";
 import {
@@ -49,6 +62,11 @@ import {
   type RegionSpec,
   recordClaim,
 } from "./engine/record.ts";
+import {
+  assertAliasKnown,
+  isAliasedFile,
+  resolveFile,
+} from "./engine/repos.ts";
 import { type RetireResult, retire } from "./engine/retire.ts";
 import { documentScope } from "./engine/status.ts";
 import {
@@ -62,15 +80,15 @@ import type { Judge } from "./judge/types.ts";
 import { ClaimStore, type StoreLocation } from "./store/store.ts";
 
 export type { AstAnalyzer } from "./algo/resolve.ts";
-export {
-  computeGates,
-  isGatingAnchor,
-  isWarnAnchor,
-  isWarnVerdict,
-} from "./core/gating.ts";
+export { gateVerdict } from "./core/gating.ts";
 export * from "./core/model.ts";
 export type { AnchorAnalyzer } from "./engine/anchor.ts";
 export type { ArchiveResult } from "./engine/archive.ts";
+export {
+  type AckTarget,
+  type AttestResult,
+  parseAck,
+} from "./engine/attest.ts";
 export {
   AUDIT_KINDS,
   type AuditInput,
@@ -92,12 +110,24 @@ export {
   type SuspectEntry as CheckSuspectEntry,
 } from "./engine/check.ts";
 export {
+  type ConflictPassResult,
+  conflictReviewsFor,
+  conflictsFor,
+  duplicateOf,
+} from "./engine/conflict.ts";
+export {
+  type EvidenceItem,
+  type EvidenceReport,
+  type EvidenceResult,
+  EvidenceValidationError,
+} from "./engine/evidence.ts";
+export {
+  type DuplicateRef,
   LIST_STATES,
   type ListResult,
   type ListRow,
-  type ListSeverity,
   type ListState,
-  toListRows,
+  type RowState,
 } from "./engine/list.ts";
 export {
   type ReanchorCandidate,
@@ -173,6 +203,12 @@ export async function loadAnalyzer(): Promise<Analyzer | undefined> {
 export interface EngineOptions {
   /** Skip the tree-sitter analyzer; text drift still runs. */
   noAst?: boolean;
+  /**
+   * The judge for `check`, `audit`, and `evidence`. Default: Jev over HTTP
+   * with `config.judge.model`; without `TYPESAFE_API_KEY` every judgment the
+   * cache cannot answer is `pending`.
+   */
+  judge?: Judge;
 }
 
 /** A `record` call: the doc span plus the evidence its kind needs. */
@@ -180,9 +216,12 @@ export interface RecordCall {
   docPath: string;
   docQuote?: string;
   docRange?: RegionSpec;
-  /** Default `code`. */
-  kind?: ClaimKind;
-  /** Code spans for `code`, one document span for `reference`, none for `attested`. */
+  kind: ClaimKind;
+  /**
+   * Code spans for `code`, one document span for `reference`, none for
+   * `attested`. A file may be aliased (`api:src/x.ts`); the alias must be in
+   * `config.repos` and checked out.
+   */
   evidence?: EvidenceTarget[];
   sources?: Source[];
   procedure?: Procedure | null;
@@ -227,6 +266,14 @@ export class Engine {
     return new Engine(await ClaimStore.init(location), options);
   }
 
+  /** The one judge factory: the injected judge, else Jev over HTTP with the configured model. */
+  private judgeFor(config: Config): Judge {
+    return (
+      this.options.judge ??
+      new JevJudge({ model: config.judge.model, http: new TypeSafeHttp() })
+    );
+  }
+
   /** The analyzer with the grammars for `files` loaded, or undefined under `noAst`. */
   private async analyzerFor(
     files: Iterable<string>,
@@ -248,12 +295,73 @@ export class Engine {
     }
   }
 
-  /** Verify every claim against the working tree. Read-only. */
-  async check(opts: CheckCall = {}): Promise<CheckReport> {
-    const claims = await this.store.allClaims();
-    const evidenceFiles = claims.flatMap((c) =>
-      c.evidence.filter((b) => !isCoarseBundle(b)).map((b) => b.file),
+  /** Read an evidence file, resolving a sibling-repo alias; null when missing or unavailable. */
+  private async readEvidence(
+    config: Config,
+    file: string,
+  ): Promise<string | null> {
+    const resolved = resolveFile(config, file, this.store.anchorRoot);
+    if ("unavailable" in resolved) return null;
+    return this.readAnchored(resolved.path);
+  }
+
+  /**
+   * The `claim_context` function for a set of claims (SPEC 8.3): each claim's
+   * heading path and paragraph, read from its document's current text. A
+   * claim whose document is missing gets its sentence alone.
+   */
+  private async contextFor(claims: Claim[]): Promise<(claim: Claim) => string> {
+    const texts = new Map<string, string | null>();
+    for (const c of claims) {
+      if (!texts.has(c.doc.file)) {
+        texts.set(c.doc.file, await this.readAnchored(c.doc.file));
+      }
+    }
+    return (claim) => {
+      const text = texts.get(claim.doc.file) ?? null;
+      return text === null ? claim.sentence : claimContext(text, claim);
+    };
+  }
+
+  /**
+   * The contradiction and duplicate pass (SPEC 9) over the live claims of
+   * active documents. Cached pairs cost no judge call.
+   */
+  async conflictPass(): Promise<ConflictPassResult> {
+    const config = await this.store.config();
+    const active = new Set(
+      (await this.store.allDocuments())
+        .filter((d) => d.lifecycle === "active")
+        .map((d) => d.id),
     );
+    const claims = (await this.store.allClaims()).filter(
+      (c) => c.enforcement !== "retired" && active.has(c.documentId),
+    );
+    return runConflictPass({
+      store: this.store,
+      judge: this.judgeFor(config),
+      claims,
+      context: await this.contextFor(claims),
+      threshold: config.judge.threshold,
+      model: config.judge.model,
+    });
+  }
+
+  /**
+   * Verify every claim against the working tree. The contradiction pass runs
+   * over the whole store; `doc` and `onlyFiles` scope only the verdicts.
+   * Writes nothing but judge cache entries.
+   */
+  async check(opts: CheckCall = {}): Promise<CheckReport> {
+    return (await this.checkWithPass(opts)).report;
+  }
+
+  private async checkWithPass(
+    opts: CheckCall,
+  ): Promise<{ report: CheckReport; pass: ConflictPassResult }> {
+    const config = await this.store.config();
+    const claims = await this.store.allClaims();
+    const evidenceFiles = claims.flatMap((c) => c.evidence.map((b) => b.file));
     const analyzer = await this.analyzerFor(evidenceFiles);
     let onlyFiles = opts.onlyFiles ? new Set(opts.onlyFiles) : undefined;
     let onlyDocument: string | undefined;
@@ -262,31 +370,39 @@ export class Engine {
       onlyFiles = scope.files;
       onlyDocument = scope.documentId;
     }
+    const pass = await this.conflictPass();
     const options: CheckOptions = {
       ast: analyzer,
       failOn: opts.failOn,
       onlyFiles,
       onlyDocument,
       ref: opts.ref,
+      judge: this.judgeFor(config),
+      conflictPass: pass,
     };
-    return runCheck(this.store, options);
+    return { report: await runCheck(this.store, options), pass };
   }
 
   /** Record a claim. The doc span's text is the claim's sentence. */
   async record(call: RecordCall): Promise<RecordResult> {
+    const config = await this.store.config();
     const evidence = call.evidence ?? [];
     const docContent = await this.readAnchored(call.docPath);
     const evidenceContents: Record<string, string | null> = {};
     for (const target of evidence) {
-      if (target.coarse) continue;
       if (target.file in evidenceContents) continue;
-      evidenceContents[target.file] = await this.readAnchored(target.file);
+      assertAliasKnown(config, target.file);
+      const resolved = resolveFile(config, target.file, this.store.anchorRoot);
+      if ("unavailable" in resolved) {
+        throw new Error(
+          `${resolved.reason}; a claim is recorded against text on disk, so check out the sibling repo first.`,
+        );
+      }
+      evidenceContents[target.file] = await this.readAnchored(resolved.path);
     }
     const analyzer =
-      (call.kind ?? "code") === "code"
-        ? await this.analyzerFor(
-            evidence.filter((t) => !t.coarse).map((t) => t.file),
-          )
+      call.kind === "code"
+        ? await this.analyzerFor(evidence.map((t) => t.file))
         : undefined;
     const contents: RecordContents = { docContent, evidenceContents };
     const input: RecordInput = {
@@ -309,33 +425,48 @@ export class Engine {
 
   /**
    * Audit a document (SPEC 10). Throws when the document is missing on disk
-   * or matches an ignore glob. The default judge is Jev over HTTP with the
-   * configured model.
+   * or matches an ignore glob. A covered row's `duplicateOf` comes from the
+   * contradiction pass, run here on demand.
    */
-  async audit(
-    docPath: string,
-    opts: {
-      judge?: Judge;
-      duplicateOf?: (claimId: string) => string | null;
-    } = {},
-  ): Promise<AuditReport> {
+  async audit(docPath: string): Promise<AuditReport> {
     const text = await this.readAnchored(docPath);
     if (text === null) {
       throw new Error(`Document not found on disk: ${docPath}`);
     }
     const config = await this.store.config();
-    const judge =
-      opts.judge ??
-      new JevJudge({ model: config.judge.model, http: new TypeSafeHttp() });
+    const pass = await this.conflictPass();
     return runAudit({
       store: this.store,
-      judge,
+      judge: this.judgeFor(config),
       docPath,
       text,
       claims: await this.store.allClaims(),
       config,
-      duplicateOf: opts.duplicateOf,
+      duplicateOf: (id) => duplicateOf(pass, id),
     });
+  }
+
+  /**
+   * Submit evidence an agent collected (`hibi evidence`): the judge answers
+   * `supports` for each item, with the claim's document context.
+   */
+  async evidence(items: unknown[]): Promise<EvidenceReport> {
+    const config = await this.store.config();
+    return submitEvidence({
+      store: this.store,
+      judge: this.judgeFor(config),
+      items,
+      context: await this.contextFor(await this.store.allClaims()),
+      config,
+    });
+  }
+
+  /** Vouch for a claim, or acknowledge a `review` or `conflict` finding (`hibi attest`). */
+  async attest(
+    claimId: string,
+    opts: { by: string; note?: string; ack?: AckTarget },
+  ): Promise<AttestResult> {
+    return attestClaim({ store: this.store, claimId, ...opts });
   }
 
   /** Re-anchor an existing claim against current content. */
@@ -359,15 +490,22 @@ export class Engine {
     if (opts.doc !== undefined && docContent === null) {
       throw new Error(`Document not found on disk: ${opts.doc}`);
     }
+    const config = await this.store.config();
     const evidenceContents: Record<string, string | null> = {};
     for (const bundle of claim.evidence) {
       if (bundle.file in evidenceContents) continue;
-      evidenceContents[bundle.file] = await this.readAnchored(bundle.file);
+      evidenceContents[bundle.file] = await this.readEvidence(
+        config,
+        bundle.file,
+      );
     }
     for (const target of opts.evidence ?? []) {
-      if (target.coarse) continue;
       if (target.file in evidenceContents) continue;
-      evidenceContents[target.file] = await this.readAnchored(target.file);
+      assertAliasKnown(config, target.file);
+      evidenceContents[target.file] = await this.readEvidence(
+        config,
+        target.file,
+      );
     }
     const analyzer = await this.analyzerFor(Object.keys(evidenceContents));
 
@@ -388,7 +526,8 @@ export class Engine {
   /**
    * Candidate locations for a claim's stored quotes: the doc quote across every
    * registered document, and each evidence quote across files of the same
-   * extension (and language, for code). Read-only.
+   * extension (and language, for code) in this repository. An evidence side
+   * in a sibling repo (`alias:path`) gets no candidates. Read-only.
    */
   async reanchorSuggest(claimId: string): Promise<ReanchorSuggestResult> {
     const claim = await this.store.getClaim(claimId);
@@ -405,7 +544,7 @@ export class Engine {
       docs,
     );
     for (const bundle of claim.evidence) {
-      if (isCoarseBundle(bundle)) continue;
+      if (isAliasedFile(bundle.file)) continue;
       const language = languageForFile(bundle.file);
       const files = await this.sameLanguageFiles(language, bundle.file);
       candidates.push(...suggestForBundle("evidence", bundle, files));
@@ -468,21 +607,20 @@ export class Engine {
     return retire(this.store, claimId, opts);
   }
 
-  /** Triage rows from a live check, filtered by state and path. */
+  /** One row per claim from a live check, filtered by state and path. */
   async list(
-    opts: {
-      state?: ListState;
-      path?: string;
-      ref?: string;
-      hints?: boolean;
-    } = {},
+    opts: { state?: ListState; path?: string; ref?: string } = {},
   ): Promise<ListResult> {
-    const report = await this.check({ ref: opts.ref });
-    const claims = await this.store.allClaims();
-    return toListRows(report, claims, report.documents, {
+    const { report, pass } = await this.checkWithPass({ ref: opts.ref });
+    return toListRows({
+      report,
+      claims: await this.store.allClaims(),
+      pass,
+      lifecycle: new Map(
+        (await this.store.allDocuments()).map((d) => [d.id, d.lifecycle]),
+      ),
       state: opts.state ?? "all",
       path: opts.path,
-      hints: opts.hints ?? true,
     });
   }
 }

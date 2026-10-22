@@ -16,6 +16,8 @@
  *     expired,                                       // claims with expired: true
  *     conflicts,                                     // claims with a non-empty conflicts[]
  *     worklist,                                      // worklist.length
+ *     conflictPass: { pairs, requests, pending },    // pairs formed over the whole store,
+ *                                                    // judge calls answered, pairs pending
  *   }
  *   verdicts[]: {
  *     claimId, documentId, kind: "code" | "reference" | "attested",
@@ -41,7 +43,18 @@
  *   }
  *   documents[]: { id, path, lifecycle, suspect: [{ claimId, status }] }
  *
- * Worklist membership (SPEC 7.5), over claims that are not retired: an
+ * The contradiction pass (SPEC 9) runs over the whole store before this
+ * module is called (`conflictPass`); a scoped check (`--doc`, `--since`)
+ * still sees findings against claims outside its scope. On each claim:
+ * a gating finding is a `conflicts[]` entry; a `review` finding warns with
+ * its label; a pair the judge could not answer warns with
+ * `conflict check pending with <id>: judge unavailable`.
+ *
+ * Judge outcome labels carry the prefix `judge: ` (see `reference.ts` for the
+ * labels themselves).
+ *
+ * Worklist membership (SPEC 7.5), over claims that are not retired and whose
+ * document is active: an
  * `attested` claim that is expired, or that has no `supports` cache entry
  * (`never-checked`); and a `reference` or `attested` claim whose judge state
  * is `review` (not acknowledged) or `pending`. A claim is listed once, with
@@ -50,7 +63,7 @@
  */
 
 import { readFile } from "node:fs/promises";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import {
   type AstAnalyzer,
   assembleVerdict,
@@ -64,7 +77,6 @@ import type {
   Claim,
   ClaimKind,
   Config,
-  ConflictFinding,
   Document,
   DocumentLifecycle,
   EvidenceState,
@@ -77,9 +89,15 @@ import { exists } from "../fs.ts";
 import type { Judge } from "../judge/types.ts";
 import type { ClaimStore } from "../store/store.ts";
 import {
+  type ConflictPassResult,
+  conflictReviewsFor,
+  conflictsFor,
+} from "./conflict.ts";
+import {
   cachedSupportsOutcome,
   type JudgeOutcome,
   judgeReference,
+  newestSupports,
 } from "./reference.ts";
 import { resolveFile } from "./repos.ts";
 
@@ -140,8 +158,8 @@ export interface CheckOptions {
   now?: Date;
   /** Answers `supports` for `reference` claims on a cache miss. Absent: a miss is `pending`. */
   judge?: Judge;
-  /** Findings of the contradiction pass. Default: none. */
-  conflictsFor?: (claimId: string) => ConflictFinding[];
+  /** The contradiction pass over the whole store. Default: no pass ran. */
+  conflictPass?: ConflictPassResult;
 }
 
 export interface SuspectEntry {
@@ -172,6 +190,8 @@ export interface CheckSummary {
   /** Claims with at least one conflict finding. */
   conflicts: number;
   worklist: number;
+  /** The contradiction pass: pairs formed, judge calls answered, pairs pending. */
+  conflictPass: { pairs: number; requests: number; pending: number };
 }
 
 export const WORKLIST_REASONS = [
@@ -195,7 +215,7 @@ export interface WorklistItem {
   reason: WorklistReason;
 }
 
-/** A `check` verdict: the model verdict plus `warns` and every reason label. */
+/** A `check` verdict. */
 export type CheckVerdict = ClaimVerdict;
 
 export interface CheckReport {
@@ -326,16 +346,24 @@ export async function runCheck(
   const config: Config = await store.config();
   const threshold = config.judge.threshold;
   const cache = store.judgeCache();
-  const conflictsFor = options.conflictsFor ?? (() => []);
+  const pass = options.conflictPass;
+  const pendingWith = new Map<string, string[]>();
+  for (const pairId of pass?.pending ?? []) {
+    const [a, b] = pairId.split(":") as [string, string];
+    pendingWith.set(a, [...(pendingWith.get(a) ?? []), b]);
+    pendingWith.set(b, [...(pendingWith.get(b) ?? []), a]);
+  }
   const documents = await store.allDocuments();
   const claims = await store.allClaims();
+  const lifecycleById = new Map(documents.map((d) => [d.id, d.lifecycle]));
   const supports = await supportsEntriesByClaim(store);
   const enforcementById = new Map(claims.map((c) => [c.id, c.enforcement]));
 
   const fileCache = new Map<string, string | null>();
   const readFileText = async (rel: string): Promise<string | null> => {
     if (fileCache.has(rel)) return fileCache.get(rel) ?? null;
-    const abs = join(root, rel);
+    // An aliased evidence file may resolve to an absolute path (SPEC 4.1).
+    const abs = isAbsolute(rel) ? rel : join(root, rel);
     const text = (await exists(abs)) ? await readFile(abs, "utf8") : null;
     fileCache.set(rel, text);
     return text;
@@ -399,9 +427,9 @@ export async function runCheck(
           });
         }
       } else if (c.kind === "attested") {
-        const newest = entries.at(-1);
+        const newest = newestSupports(entries);
         if (newest !== undefined) {
-          outcome = cachedSupportsOutcome(newest, threshold);
+          outcome = cachedSupportsOutcome(newest, threshold, c);
         }
       }
     }
@@ -413,10 +441,27 @@ export async function runCheck(
         `review acknowledged by ${ack.by} at ${ack.at}${ack.note ? `: ${ack.note}` : ""}; it no longer warns`,
       );
     }
+    const live = c.enforcement !== "retired";
+    const warnings =
+      live && pass !== undefined
+        ? [
+            ...conflictReviewsFor(pass, c.id).map(
+              (f) => `possible conflict with ${f.claimId}: ${f.reason}`,
+            ),
+            ...(pendingWith.get(c.id) ?? []).map(
+              (other) =>
+                `conflict check pending with ${other}: judge unavailable`,
+            ),
+          ]
+        : [];
     const findings: ClaimFindings = {
       judge: outcome?.state,
-      conflicts: c.enforcement === "retired" ? [] : conflictsFor(c.id),
-      reasons: [...(outcome?.reasons ?? []), ...findingReasons],
+      conflicts: live && pass !== undefined ? conflictsFor(pass, c.id) : [],
+      warnings,
+      reasons: [
+        ...(outcome?.reasons ?? []).map((r) => `judge: ${r}`),
+        ...findingReasons,
+      ],
       reviewAcknowledged: ack !== undefined,
     };
     const v = assembleVerdict(c, sides, {
@@ -426,7 +471,10 @@ export async function runCheck(
       threshold,
     });
 
-    const reason = worklistReason(c, v, ack !== undefined, entries.length > 0);
+    const active = (lifecycleById.get(c.documentId) ?? "active") === "active";
+    const reason = active
+      ? worklistReason(c, v, ack !== undefined, entries.length > 0)
+      : undefined;
     if (reason !== undefined) {
       v.reasons.push(WORKLIST_LABEL[reason]);
       const withEvidence = entries.filter((e) => e.evidence !== undefined);
@@ -530,6 +578,11 @@ export async function runCheck(
     expired: expiredCount,
     conflicts: conflictCount,
     worklist: worklist.length,
+    conflictPass: {
+      pairs: pass?.pairs.length ?? 0,
+      requests: pass?.requests ?? 0,
+      pending: pass?.pending.length ?? 0,
+    },
   };
 
   return {

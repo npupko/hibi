@@ -71,28 +71,3 @@ export function buildSelectorBundle(
 
   return { file, selectors };
 }
-
-/** Build a coarse bundle for a file or glob pattern (navigational, never drift). */
-export function buildCoarseBundle(pattern: string): SelectorBundle {
-  return { file: pattern, selectors: [{ kind: "coarse", pattern }] };
-}
-
-/** True when every selector in the bundle is coarse. */
-export function isCoarseBundle(bundle: SelectorBundle): boolean {
-  return bundle.selectors.every((s) => s.kind === "coarse");
-}
-
-/**
- * Does a coarse pattern cover `path`? Exact file, a directory ancestor on a
- * `/` boundary, or a glob match.
- */
-export function coarseCovers(pattern: string, path: string): boolean {
-  if (pattern === path) return true;
-  const dir = pattern.endsWith("/") ? pattern : `${pattern}/`;
-  if (path.startsWith(dir)) return true;
-  try {
-    return new Bun.Glob(pattern).match(path);
-  } catch {
-    return false;
-  }
-}

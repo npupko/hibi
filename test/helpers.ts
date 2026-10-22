@@ -38,8 +38,7 @@ export async function makeRepo(): Promise<TempRepo> {
  * Record a claim against a code file already in the repo. The documented
  * sentence (`text`) is anchored in the doc file; the helper appends the
  * sentence to the doc when it is not already there so the doc side resolves
- * `unchanged`. Enforcement defaults to `enforced` for a precise code span and
- * `suggested` for a coarse or glob target; `enforcement` overrides.
+ * `unchanged`. Enforcement defaults to `enforced`.
  */
 export async function record(
   repo: TempRepo,
@@ -50,8 +49,6 @@ export async function record(
     quote?: string;
     line?: number;
     ttl?: string;
-    coarse?: boolean;
-    glob?: string;
     enforcement?: Enforcement;
     by?: string;
   },
@@ -71,26 +68,15 @@ export async function record(
     await repo.write(opts.doc, docContent);
   }
 
-  const codeContents: Record<string, string | null> = {};
-  let code: EvidenceTarget[];
-  let coarse = false;
-  if (opts.glob) {
-    code = [{ file: opts.glob, coarse: true }];
-    coarse = true;
-  } else if (opts.coarse) {
-    code = [{ file: opts.file, coarse: true }];
-    coarse = true;
-  } else {
-    const content = await repo.read(opts.file);
-    codeContents[opts.file] = content;
-    const region =
-      opts.line !== undefined
-        ? { startLine: opts.line, endLine: opts.line }
-        : { quote: opts.quote };
-    code = [{ file: opts.file, region }];
-  }
-
-  const enforcement = opts.enforcement ?? (coarse ? "suggested" : "enforced");
+  const codeContents: Record<string, string | null> = {
+    [opts.file]: await repo.read(opts.file),
+  };
+  const region =
+    opts.line !== undefined
+      ? { startLine: opts.line, endLine: opts.line }
+      : { quote: opts.quote };
+  const code: EvidenceTarget[] = [{ file: opts.file, region }];
+  const enforcement = opts.enforcement ?? "enforced";
 
   return recordClaim(
     repo.store,
@@ -98,6 +84,7 @@ export async function record(
     {
       docPath: opts.doc,
       docSpec: { quote: opts.text },
+      kind: "code",
       by: opts.by ?? "human:tester@example.com",
       owner: "human:tester@example.com",
       ref: "testref",

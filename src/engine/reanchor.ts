@@ -29,12 +29,7 @@ import type {
   SelectorBundle,
 } from "../core/model.ts";
 import type { ClaimStore } from "../store/store.ts";
-import {
-  type AnchorAnalyzer,
-  buildCoarseBundle,
-  buildSelectorBundle,
-  isCoarseBundle,
-} from "./anchor.ts";
+import { type AnchorAnalyzer, buildSelectorBundle } from "./anchor.ts";
 import { languageForFile } from "./lang.ts";
 import {
   documentIdForPath,
@@ -183,12 +178,6 @@ function bundleFromTarget(
   contents: RecordContents,
   analyzer: AnchorAnalyzer | undefined,
 ): SelectorBundle {
-  if (target.coarse) {
-    if (kind !== "code") {
-      throw new Error("a reference claim needs a precise span, not a glob.");
-    }
-    return buildCoarseBundle(target.file);
-  }
   if (!target.region) {
     throw new Error(
       `evidence target ${target.file} has no span; pass --code-quote or --code-range`,
@@ -214,7 +203,6 @@ function relocateEvidenceBundle(
   analyzer: AnchorAnalyzer | undefined,
   claimId: string,
 ): SelectorBundle {
-  if (isCoarseBundle(bundle)) return bundle;
   const content = contents.evidenceContents[bundle.file];
   if (content === undefined || content === null || !side.region) {
     throw orphanError(claimId, "evidence", bundle.file);

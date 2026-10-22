@@ -11,6 +11,7 @@
  * | expired                                              | warn    | gate          |
  * | moved, review, pending, unavailable                  | warn    | warn          |
  * | a conflict below threshold                           | warn    | warn          |
+ * | a warning finding (conflict review, conflict pending) | warn    | warn          |
  * | suggested or retired claim                           | never   | never         |
  *
  * `warns` is false whenever `gates` is true.
@@ -43,11 +44,11 @@ const WARN_JUDGE: ReadonlySet<JudgeState> = new Set<JudgeState>([
   "pending",
 ]);
 
-export function isGatingAnchor(state: EvidenceState | undefined): boolean {
+function isGatingAnchor(state: EvidenceState | undefined): boolean {
   return state !== undefined && GATING_ANCHOR.has(state);
 }
 
-export function isWarnAnchor(state: EvidenceState | undefined): boolean {
+function isWarnAnchor(state: EvidenceState | undefined): boolean {
   return state !== undefined && WARN_ANCHOR.has(state);
 }
 
@@ -57,6 +58,11 @@ export interface VerdictDimensions {
   judge?: JudgeState;
   expired: boolean;
   conflicts?: readonly ConflictFinding[];
+  /**
+   * Findings that warn and never gate, each already a reason label: a
+   * contradiction in `review`, or a pair the judge could not answer.
+   */
+  warnings?: readonly string[];
 }
 
 export interface GateOptions {
@@ -107,6 +113,11 @@ export function gateVerdict(
     }
   }
 
+  for (const w of v.warnings ?? []) {
+    warns = true;
+    reasons.push(w);
+  }
+
   if (v.expired) {
     if (mode === "doc") {
       gates = true;
@@ -126,26 +137,4 @@ export function gateVerdict(
     return { gates: false, warns: false, reasons };
   }
   return { gates, warns: warns && !gates, reasons };
-}
-
-/** Whether the verdict gates (SPEC 7.4). */
-export function computeGates(
-  v: VerdictDimensions,
-  enforcement: Enforcement,
-  opts: GateOptions = {},
-): boolean {
-  return gateVerdict(v, enforcement, opts).gates;
-}
-
-/**
- * Whether the verdict warns. A `check` verdict carries `warns` and that value
- * is returned; otherwise the table is applied in `store` mode.
- */
-export function isWarnVerdict(
-  v: VerdictDimensions & { gates: boolean; warns?: boolean },
-  enforcement: Enforcement,
-): boolean {
-  if (enforcement !== "enforced" || v.gates) return false;
-  if (v.warns !== undefined) return v.warns;
-  return gateVerdict(v, enforcement).warns;
 }

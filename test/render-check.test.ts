@@ -229,16 +229,21 @@ describe("renderCheck: v4 tags, reasons, and worklist", () => {
       ref: "WORKTREE",
       judge,
       now: NOW,
-      conflictsFor: (id) =>
-        id === code.claim.id
-          ? [
-              {
-                claimId: att.claim.id,
-                probability: 0.95,
-                reason: "numbers differ",
-              },
-            ]
-          : [],
+      conflictPass: {
+        findings: [
+          {
+            claimId: code.claim.id,
+            otherClaimId: att.claim.id,
+            pairId: [code.claim.id, att.claim.id].sort().join(":"),
+            probability: 0.95,
+            reason: "numbers differ",
+          },
+        ],
+        duplicates: [],
+        pending: [],
+        requests: 0,
+        pairs: [],
+      },
     });
     return { r, report, code: code.claim, att: att.claim };
   }

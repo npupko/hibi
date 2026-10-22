@@ -29,11 +29,7 @@ import {
   type Source,
 } from "../core/model.ts";
 import type { ClaimStore } from "../store/store.ts";
-import {
-  type AnchorAnalyzer,
-  buildCoarseBundle,
-  buildSelectorBundle,
-} from "./anchor.ts";
+import { type AnchorAnalyzer, buildSelectorBundle } from "./anchor.ts";
 import { languageForFile } from "./lang.ts";
 
 export { documentIdForPath };
@@ -54,14 +50,12 @@ export interface RegionSpec {
   endLine?: number;
 }
 
-/** An evidence target: a precise span in a file, or a coarse file/glob pattern. */
+/** An evidence target: a span in a file. The file may be aliased (`api:src/x.ts`, SPEC 4.1). */
 export interface EvidenceTarget {
-  /** Repo-relative path of the evidence file, or the pattern when `coarse`. */
+  /** Repo-relative path of the evidence file, or `<alias>:<path>` for a sibling repo. */
   file: string;
-  /** The span inside `file`; required unless `coarse`. */
-  region?: RegionSpec;
-  /** Coarse pattern: navigation only, never graded as drift. Code claims only. */
-  coarse?: boolean;
+  /** The span inside `file`. */
+  region: RegionSpec;
   /** Optional language override; else derived from the extension. */
   language?: string;
 }
@@ -69,8 +63,7 @@ export interface EvidenceTarget {
 export interface RecordInput {
   docPath: string;
   docSpec?: RegionSpec;
-  /** Default `code`. */
-  kind?: ClaimKind;
+  kind: ClaimKind;
   /** Code spans for `code`, one document span for `reference`, none for `attested`. */
   evidence: EvidenceTarget[];
   sources?: Source[];
@@ -80,14 +73,17 @@ export interface RecordInput {
   /** The actor recorded on the initial `vouch` attestation. */
   by: string;
   ref: string;
-  /** Default `enforced`. `suggested` never gates and allows a coarse code side. */
+  /** Default `enforced`. `suggested` never gates. */
   enforcement?: Enforcement;
   analyzer?: AnchorAnalyzer;
   /** Clock for `createdAt` and the attestation time. Default: now. */
   now?: Date;
 }
 
-/** The on-disk content of the doc and each referenced evidence file. */
+/**
+ * The on-disk content of the doc and each referenced evidence file, keyed by
+ * the target's `file` as given (an aliased file is keyed by its alias form).
+ */
 export interface RecordContents {
   docContent: string | null;
   evidenceContents: Record<string, string | null>;
@@ -111,7 +107,6 @@ function sameSentence(a: string, b: string): boolean {
 /** Build the evidence bundles for a claim kind, enforcing the per-kind shape. */
 function evidenceBundles(
   kind: ClaimKind,
-  enforcement: Enforcement,
   targets: EvidenceTarget[],
   contents: Record<string, string | null>,
   analyzer: AnchorAnalyzer | undefined,
@@ -131,45 +126,23 @@ function evidenceBundles(
   }
   if (kind === "code" && targets.length === 0) {
     throw new Error(
-      "a code claim needs at least one code span (--code-file with --code-quote or --code-range, or --glob with --suggest).",
+      "a code claim needs at least one code span (--code-file with --code-quote or --code-range).",
     );
   }
-  const bundles: SelectorBundle[] = [];
-  let hasPrecise = false;
-  for (const target of targets) {
-    if (target.coarse) {
-      if (kind !== "code") {
-        throw new Error("a reference claim needs a precise span, not a glob.");
-      }
-      bundles.push(buildCoarseBundle(target.file));
-      continue;
-    }
-    if (target.region === undefined) {
-      throw new Error(
-        `evidence target ${target.file} has no span; pass --code-quote or --code-range, or --glob for a coarse edge.`,
-      );
-    }
+  return targets.map((target) => {
     const content = contents[target.file];
     if (content === undefined || content === null) {
       throw new Error(`Evidence file not found on disk: ${target.file}`);
     }
     const region = resolveRegion(content, target.region);
-    hasPrecise = true;
-    bundles.push(
-      kind === "code"
-        ? buildSelectorBundle(target.file, content, region, {
-            language: target.language ?? languageForFile(target.file),
-            analyzer,
-          })
-        : buildSelectorBundle(target.file, content, region),
-    );
-  }
-  if (kind === "code" && enforcement === "enforced" && !hasPrecise) {
-    throw new Error(
-      "an enforced claim needs a precise code span (--code-file with --code-quote or --code-range); pass --suggest for an advisory claim with a coarse code side.",
-    );
-  }
-  return bundles;
+    // A reference span is located like a doc span: text selectors only.
+    return kind === "code"
+      ? buildSelectorBundle(target.file, content, region, {
+          language: target.language ?? languageForFile(target.file),
+          analyzer,
+        })
+      : buildSelectorBundle(target.file, content, region);
+  });
 }
 
 export async function recordClaim(
@@ -180,7 +153,7 @@ export async function recordClaim(
   const { docContent, evidenceContents } = contents;
   const warnings: string[] = [];
   const now = input.now ?? new Date();
-  const kind: ClaimKind = input.kind ?? "code";
+  const kind: ClaimKind = input.kind;
   const enforcement: Enforcement = input.enforcement ?? "enforced";
 
   if (!ACTOR_PATTERN.test(input.by)) {
@@ -217,7 +190,6 @@ export async function recordClaim(
 
   const evidence = evidenceBundles(
     kind,
-    enforcement,
     input.evidence,
     evidenceContents,
     input.analyzer,

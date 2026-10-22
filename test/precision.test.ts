@@ -141,7 +141,7 @@ describe("a rename grades `changed` with the rename reason label", () => {
     const v = anchorOn(original, "const MAX_ATTEMPTS = 5;")(renamed);
     expect(v.evidence).toBe("changed");
     expect(v.doc).toBe("unchanged");
-    expect(v.notes.join(" ")).toContain("identifiers or literals renamed");
+    expect(v.reasons.join(" ")).toContain("identifiers or literals renamed");
     expect(
       v.detail.changes.some(
         (c) =>
@@ -160,7 +160,7 @@ describe("a rename grades `changed` with the rename reason label", () => {
     )(renamed);
     expect(v.evidence).toBe("changed");
     expect(v.doc).toBe("unchanged");
-    expect(v.notes.join(" ")).toContain("identifiers or literals renamed");
+    expect(v.reasons.join(" ")).toContain("identifiers or literals renamed");
   });
 
   test("a rename of a parameter inside a function anchor is changed with the rename label", () => {
@@ -174,7 +174,7 @@ describe("a rename grades `changed` with the rename reason label", () => {
     )(renamed);
     expect(v.evidence).toBe("changed");
     expect(v.doc).toBe("unchanged");
-    expect(v.notes.join(" ")).toContain("identifiers or literals renamed");
+    expect(v.reasons.join(" ")).toContain("identifiers or literals renamed");
   });
 });
 
@@ -201,6 +201,6 @@ describe("a moved-but-intact region grades moved", () => {
     expect(v.evidence).toBe("moved");
     expect(v.doc).toBe("unchanged");
     expect(v.gates).toBe(false);
-    expect(v.notes.join(" ")).toContain("span moved");
+    expect(v.reasons.join(" ")).toContain("span moved");
   });
 });

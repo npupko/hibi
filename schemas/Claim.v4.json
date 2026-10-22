@@ -225,23 +225,6 @@
             "value"
           ],
           "additionalProperties": false
-        },
-        {
-          "type": "object",
-          "properties": {
-            "kind": {
-              "type": "string",
-              "const": "coarse"
-            },
-            "pattern": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "kind",
-            "pattern"
-          ],
-          "additionalProperties": false
         }
       ]
     },

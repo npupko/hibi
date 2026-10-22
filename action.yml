@@ -1,15 +1,19 @@
 name: "Hibi"
-description: "Fail the build when documentation claims drift from the code they describe."
+description: "Fail the build when a document sentence is stale: its anchored text moved or changed, its evidence was refuted, or it contradicts another sentence."
 branding:
   icon: "anchor"
   color: "purple"
 inputs:
   fail-on:
-    description: "Strictness: gating | warn | never."
+    description: "When to fail: gating | warn | never."
     required: false
     default: "gating"
   since:
-    description: "Base ref to compare against (runs `check --since <ref>`)."
+    description: "Base ref; report only the claims touching files changed since it (`check --since <ref>`)."
+    required: false
+    default: ""
+  doc:
+    description: "Check one document (`check --doc <path>`); an expired claim then gates."
     required: false
     default: ""
   working-directory:
@@ -24,12 +28,19 @@ runs:
     - name: Run Hibi
       shell: bash
       working-directory: ${{ inputs.working-directory }}
+      # The judge reads TYPESAFE_API_KEY from the job environment. Without it,
+      # judgments the cache in .claims/judge cannot answer are pending (a warning).
+      env:
+        HIBI_FAIL_ON: ${{ inputs.fail-on }}
+        HIBI_SINCE: ${{ inputs.since }}
+        HIBI_DOC: ${{ inputs.doc }}
       run: |
-        ARGS="check --fail-on ${{ inputs.fail-on }}"
-        if [ -n "${{ inputs.since }}" ]; then ARGS="$ARGS --since ${{ inputs.since }}"; fi
+        ARGS=(check --fail-on "$HIBI_FAIL_ON")
+        if [ -n "$HIBI_SINCE" ]; then ARGS+=(--since "$HIBI_SINCE"); fi
+        if [ -n "$HIBI_DOC" ]; then ARGS+=(--doc "$HIBI_DOC"); fi
         # Use a published binary if present, else run via bunx from npm.
         if command -v hibi >/dev/null 2>&1; then
-          hibi $ARGS
+          hibi "${ARGS[@]}"
         else
-          bunx @npupko/hibi $ARGS
+          bunx @npupko/hibi "${ARGS[@]}"
         fi

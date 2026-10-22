@@ -20,7 +20,6 @@ import { type GateMode, gateVerdict } from "../core/gating.ts";
 import {
   type AnchorState,
   type Claim,
-  COARSE_SELECTOR_KINDS,
   type ConflictFinding,
   DEFAULT_JUDGE_THRESHOLD,
   type EvidenceState,
@@ -85,7 +84,7 @@ export interface SideResult {
   region: Region | null;
   /** Normalized similarity of the located text to the stored quote (0 when not found). */
   similarity: number;
-  notes: string[];
+  reasons: string[];
   changedEvidence: SpanChange[];
   /** The live text at the located region. */
   liveText: string | null;
@@ -113,24 +112,10 @@ export function resolveSide(
       state: "orphaned",
       region: null,
       similarity: 0,
-      notes: [`file not found: ${bundle.file}`],
+      reasons: [`file not found: ${bundle.file}`],
       changedEvidence: [
         { path: bundle.file, kind: "text", detail: "file missing" },
       ],
-      liveText: null,
-    };
-  }
-
-  const coarseOnly = bundle.selectors.every((s) =>
-    (COARSE_SELECTOR_KINDS as readonly string[]).includes(s.kind),
-  );
-  if (coarseOnly) {
-    return {
-      state: "unchanged",
-      region: null,
-      similarity: 1,
-      notes: ["coarse anchor: navigational, never drift"],
-      changedEvidence: [],
       liveText: null,
     };
   }
@@ -151,7 +136,7 @@ export function resolveSide(
       state: "orphaned",
       region: null,
       similarity: 0,
-      notes: ["no text-quote selector"],
+      reasons: ["no text-quote selector"],
       changedEvidence: [],
       liveText: null,
     };
@@ -164,7 +149,7 @@ export function resolveSide(
       state: "orphaned",
       region: null,
       similarity: 0,
-      notes: ["quote not found"],
+      reasons: ["quote not found"],
       changedEvidence: [
         { path: bundle.file, kind: "text", detail: "documented span orphaned" },
       ],
@@ -174,17 +159,17 @@ export function resolveSide(
   const region = located.region;
   const liveText = regionText(currentText, region);
   const similarity = textSimilarity(liveText, tq.exact);
-  const notes: string[] = [];
+  const reasons: string[] = [];
   const changedEvidence: SpanChange[] = [];
 
   // 6. Several equally good matches.
   if (located.ambiguous) {
-    notes.push("quote matched in several places equally well");
+    reasons.push("quote matched in several places equally well");
     return {
       state: "ambiguous",
       region,
       similarity,
-      notes,
+      reasons,
       changedEvidence,
       liveText,
     };
@@ -253,12 +238,12 @@ export function resolveSide(
           `text changed (${Math.round(similarity * 100)}% similar)`,
       });
     }
-    for (const c of changedEvidence) if (c.detail) notes.push(c.detail);
+    for (const c of changedEvidence) if (c.detail) reasons.push(c.detail);
     return {
       state: "changed",
       region,
       similarity,
-      notes,
+      reasons,
       changedEvidence,
       liveText,
     };
@@ -267,12 +252,12 @@ export function resolveSide(
   // 2 and 3. Unchanged or moved.
   const delta = tp ? Math.abs(region.start - tp.start) : 0;
   if (delta > MOVE_AWARENESS_CHARS) {
-    notes.push(`span moved ${delta} chars`);
+    reasons.push(`span moved ${delta} chars`);
     return {
       state: "moved",
       region,
       similarity,
-      notes,
+      reasons,
       changedEvidence,
       liveText,
     };
@@ -281,7 +266,7 @@ export function resolveSide(
     state: "unchanged",
     region,
     similarity,
-    notes,
+    reasons,
     changedEvidence,
     liveText,
   };
@@ -352,7 +337,7 @@ export function resolveClaimSides(
         state: "unavailable",
         region: null,
         similarity: 0,
-        notes: [label],
+        reasons: [label],
         changedEvidence: [],
         liveText: null,
       };
@@ -375,6 +360,8 @@ export function worstEvidenceState(sides: EvidenceSide[]): EvidenceState {
 export interface ClaimFindings {
   judge?: JudgeState;
   conflicts?: ConflictFinding[];
+  /** Warn-only findings, each a reason label (a conflict in review, a pending pair). */
+  warnings?: string[];
   /** Reason labels from those passes (judge outcome, why the judge was not asked). */
   reasons?: string[];
   /** A `review` verdict an `ack` attestation names; it stays `review` and no longer warns. */
@@ -390,13 +377,8 @@ export interface ResolveClaimOptions extends ResolveOptions, ClaimFindings {
   threshold?: number;
 }
 
-/** A verdict with the gating outcome and every reason label (`notes` holds the anchor labels only). */
-export type ClaimVerdict = Verdict & {
-  /** True when the verdict warns and does not gate (SPEC 7.4). */
-  warns: boolean;
-  /** Every reason label: anchors, expiry, judge, conflicts, and gating rules. */
-  reasons: string[];
-};
+/** The per-claim result of `check`. */
+export type ClaimVerdict = Verdict;
 
 /** Build the verdict for resolved sides plus the later passes' findings. */
 export function assembleVerdict(
@@ -424,17 +406,21 @@ export function assembleVerdict(
   const gatingJudge =
     opts.judge === "review" && opts.reviewAcknowledged ? undefined : opts.judge;
   const gate = gateVerdict(
-    { doc: sides.doc.state, evidence, judge: gatingJudge, expired, conflicts },
+    {
+      doc: sides.doc.state,
+      evidence,
+      judge: gatingJudge,
+      expired,
+      conflicts,
+      warnings: opts.warnings,
+    },
     claim.enforcement,
     { mode: opts.mode, threshold: opts.threshold ?? DEFAULT_JUDGE_THRESHOLD },
   );
 
-  const notes = [
-    ...sides.doc.notes.map((n) => `doc: ${n}`),
-    ...sides.evidence.flatMap((s) => s.notes.map((n) => `evidence: ${n}`)),
-  ];
   const reasons = [
-    ...notes,
+    ...sides.doc.reasons.map((n) => `doc: ${n}`),
+    ...sides.evidence.flatMap((s) => s.reasons.map((n) => `evidence: ${n}`)),
     ...(expiry !== undefined ? [expiry] : []),
     ...(opts.reasons ?? []),
     ...gate.reasons,
@@ -472,7 +458,6 @@ export function assembleVerdict(
       similarity: primary.similarity,
       changes,
     },
-    notes,
     reasons,
   };
 }

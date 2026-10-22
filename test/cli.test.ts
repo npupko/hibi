@@ -32,23 +32,21 @@ interface CliVerdict {
   gates?: boolean;
   changed?: string;
   remediation?: Remediation | null;
-  notes?: string[];
+  reasons?: string[];
   detail?: unknown;
 }
 interface ListRow {
   claimId?: string;
-  status?: string;
-  severity?: string;
-  gates?: boolean;
-  recommended?: string | null;
-  documentPath?: string | null;
-  evidencePath?: string | null;
+  kind?: string;
+  state?: string;
   side?: string;
   sentence?: string;
+  duplicates?: { claimId?: string; why?: string }[];
 }
 interface CliJson {
   ok?: boolean;
   error?: string;
+  errors?: string[];
   action?: string;
   schemaVersion?: string;
   next?: string;
@@ -102,8 +100,11 @@ async function run(
   args: string[],
   stdin?: string,
 ): Promise<RunResult> {
+  const env: Record<string, string | undefined> = { ...process.env };
+  delete env.TYPESAFE_API_KEY;
   const proc = Bun.spawn(["bun", "run", CLI, ...args], {
     cwd,
+    env,
     stdout: "pipe",
     stderr: "pipe",
     stdin: stdin === undefined ? "ignore" : new TextEncoder().encode(stdin),
@@ -168,6 +169,8 @@ async function seeded(): Promise<{ d: string; id: string }> {
   await run(d, ["init"]);
   const rec = await run(d, [
     "record",
+    "--kind",
+    "code",
     "--doc",
     "README.md",
     "--doc-quote",
@@ -207,6 +210,8 @@ describe("CLI end-to-end", () => {
     expect(id).toMatch(/^clm_[0-9a-f]{16}$/);
     const rec = await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "README.md",
       "--doc-quote",
@@ -232,6 +237,8 @@ describe("CLI end-to-end", () => {
     expect(rec.json.enforcement).toBe("enforced");
     const full = await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "README.md",
       "--doc-quote",
@@ -252,6 +259,8 @@ describe("CLI end-to-end", () => {
     await run(d, ["init"]);
     const rec = await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "README.md",
       "--doc-quote",
@@ -278,12 +287,119 @@ describe("CLI end-to-end", () => {
     expect(drifted.json.verdicts?.[0]?.gates).toBe(false);
   });
 
+  test("record flags: every problem is one line, all reported", async () => {
+    const d = await repo();
+    await write(d, "doc.md", "# Doc\n\nThe price is $29 per month.\n");
+    await run(d, ["init"]);
+    const res = await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "The price is $29 per month.",
+      "--kind",
+      "reference",
+      "--source",
+      "no-equals-sign",
+      "--code-quote",
+      "x",
+    ]);
+    expect(res.code).toBe(1);
+    expect(res.json.errors).toEqual([
+      "--code-quote needs a --code-file before it",
+      '--source expects <id>=<resource>, e.g. stripe=https://dashboard.stripe.com/products/prod_123 (got "no-equals-sign")',
+    ]);
+    const res2 = await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "The price is $29 per month.",
+      "--kind",
+      "reference",
+    ]);
+    expect(res2.json.errors).toEqual([
+      "kind reference needs ref: { file, quote | range }",
+    ]);
+    const mixed = await run(
+      d,
+      ["record", "--from-file", "-", "--doc", "doc.md"],
+      "[]",
+    );
+    expect(mixed.code).toBe(1);
+    expect(mixed.json.error).toContain("drop --doc");
+  });
+
+  test("record refuses a sibling-repo alias that is not checked out", async () => {
+    const d = await repo();
+    await write(d, "doc.md", "# Doc\n\nLimits are 100 requests.\n");
+    await run(d, ["init"]);
+    const configPath = join(d, ".claims", "config.json");
+    const config = JSON.parse(await readFile(configPath, "utf8"));
+    await writeFile(
+      configPath,
+      JSON.stringify({ ...config, repos: { api: "../no-such-sibling" } }),
+    );
+    const res = await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "Limits are 100 requests.",
+      "--kind",
+      "code",
+      "--code-file",
+      "api:src/limits.ts",
+      "--code-quote",
+      "LIMIT = 100",
+    ]);
+    expect(res.code).toBe(1);
+    expect(res.json.errors?.[0]).toContain(
+      'sibling repo "api" is not checked out at ../no-such-sibling',
+    );
+  });
+
+  test("record reads an aliased evidence file from the sibling repo", async () => {
+    const d = await repo();
+    const sibling = await mkdtemp(join(tmpdir(), "ce-sibling-"));
+    dirs.push(sibling);
+    await write(sibling, "src/limits.ts", "export const LIMIT = 100;\n");
+    await write(d, "doc.md", "# Doc\n\nLimits are 100 requests.\n");
+    await run(d, ["init"]);
+    const configPath = join(d, ".claims", "config.json");
+    const config = JSON.parse(await readFile(configPath, "utf8"));
+    await writeFile(
+      configPath,
+      JSON.stringify({ ...config, repos: { api: sibling } }),
+    );
+    const res = await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "Limits are 100 requests.",
+      "--kind",
+      "code",
+      "--code-file",
+      "api:src/limits.ts",
+      "--code-quote",
+      "LIMIT = 100",
+    ]);
+    expect(res.code).toBe(0);
+    expect(res.json.evidence).toBe("api:src/limits.ts");
+    const check = await run(d, ["check"]);
+    expect(check.code).toBe(0);
+    expect(check.json.verdicts?.[0]?.evidence).toBe("unchanged");
+  });
+
   test("record rejects a nonexistent --code-file with exit 1", async () => {
     const d = await repo();
     await write(d, "README.md", "# Doc\n\nRetries are capped at 5 attempts.\n");
     await run(d, ["init"]);
     const rec = await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "README.md",
       "--doc-quote",
@@ -308,6 +424,8 @@ describe("CLI end-to-end", () => {
     await run(d, ["init"]);
     const rec = await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "README.md",
       "--doc-quote",
@@ -341,15 +459,15 @@ describe("CLI end-to-end", () => {
         {
           doc: "docs/conf.md",
           docQuote: "The cache TTL is 60000ms",
-          codeFile: "src/conf.ts",
-          codeQuote: "TTL_MS = 60000",
+          kind: "code",
+          code: [{ file: "src/conf.ts", quote: "TTL_MS = 60000" }],
           by: "agent:batch",
         },
         {
           doc: "docs/conf.md",
           docQuote: "Retries default to 3",
-          codeFile: "src/conf.ts",
-          codeQuote: "RETRIES = 3",
+          kind: "code",
+          code: [{ file: "src/conf.ts", range: "L2:L2" }],
         },
       ]),
     );
@@ -366,13 +484,52 @@ describe("CLI end-to-end", () => {
         {
           doc: "docs/conf.md",
           docQuote: "The cache TTL is 60000ms",
-          codeFile: "src/conf.ts",
-          codeQuote: "TTL_MS = 60000",
+          kind: "code",
+          code: [{ file: "src/conf.ts", quote: "TTL_MS = 60000" }],
         },
-        { doc: "docs/conf.md", docQuote: "NOT PRESENT IN THE FILE" },
+        {
+          doc: "docs/conf.md",
+          docQuote: "NOT PRESENT IN THE FILE",
+          kind: "code",
+          code: [{ file: "src/conf.ts", quote: "RETRIES = 3" }],
+        },
+        {
+          doc: "docs/conf.md",
+          docQuote: "Retries default to 3",
+          kind: "code",
+          code: [{ file: "src/missing.ts", quote: "RETRIES = 3" }],
+        },
       ]),
     );
     expect(bad.code).toBe(1);
+    expect(bad.json.errors).toHaveLength(2);
+    expect(bad.json.errors?.[0]).toStartWith("item 1: ");
+    expect(bad.json.errors?.[1]).toStartWith("item 2: ");
+    expect(sameStore(before, await snapshotStore(d))).toBe(true);
+
+    // Shape problems are all reported, one line each, before anything is read.
+    const invalid = await run(
+      d,
+      ["record", "--from-file", "-"],
+      JSON.stringify([
+        { doc: "docs/conf.md", docQuote: "Retries default to 3", ttl: "90d" },
+        {
+          doc: "docs/conf.md",
+          docRange: "L4:L4",
+          kind: "attested",
+          code: [{ file: "src/conf.ts", quote: "x" }],
+          extra: 1,
+        },
+      ]),
+    );
+    expect(invalid.code).toBe(1);
+    expect(invalid.json.errors).toEqual([
+      "item 0: kind must be one of code, reference, attested (got undefined)",
+      'item 0: ttl must be an ISO 8601 duration such as P90D (got "90d")',
+      'item 1: unknown key "extra"; allowed: doc, docQuote, docRange, kind, code, ref, sources, procedure, ttl, owner, by, suggest',
+      "item 1: code is only for kind code (kind is attested)",
+      "item 1: kind attested needs a ttl, e.g. P90D",
+    ]);
     expect(sameStore(before, await snapshotStore(d))).toBe(true);
   });
 
@@ -399,6 +556,8 @@ describe("CLI end-to-end", () => {
     await run(d, ["init"]);
     await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "doc.md",
       "--doc-quote",
@@ -410,6 +569,8 @@ describe("CLI end-to-end", () => {
     ]);
     await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "doc.md",
       "--doc-quote",
@@ -439,6 +600,8 @@ describe("CLI end-to-end", () => {
     await run(d, ["init"]);
     await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "a.md",
       "--doc-quote",
@@ -450,6 +613,8 @@ describe("CLI end-to-end", () => {
     ]);
     await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "b.md",
       "--doc-quote",
@@ -504,7 +669,7 @@ describe("CLI end-to-end", () => {
     const row = (await run(d, ["list"])).json.claims?.find(
       (r) => r.claimId === id,
     );
-    expect(row?.status).toBe("retired");
+    expect(row?.state).toBe("retired");
   });
 
   test("list filters by --state and --path, and --ids-only prints bare ids", async () => {
@@ -513,10 +678,20 @@ describe("CLI end-to-end", () => {
     const all = await run(d, ["list"]);
     const row = all.json.claims?.[0];
     expect(row?.claimId).toBe(id);
-    expect(row?.status).toBe("evidence:changed");
-    expect(row?.severity).toBe("gating");
+    expect(row?.state).toBe("gating");
+    expect(row?.kind).toBe("code");
     expect(row?.sentence).toContain("Retries are capped");
-    expect(row?.recommended).toBe("update-claim");
+    expect(Object.keys(row ?? {}).sort()).toEqual([
+      "claimId",
+      "documentId",
+      "enforcement",
+      "expiresAt",
+      "kind",
+      "owner",
+      "sentence",
+      "state",
+      "ttl",
+    ]);
     expect((await run(d, ["list", "--state", "gating"])).json.count).toBe(1);
     expect((await run(d, ["list", "--state", "clean"])).json.count).toBe(0);
     const byPath = await run(d, ["list", "--path", "src/retry.ts"]);
@@ -531,11 +706,10 @@ describe("CLI end-to-end", () => {
     const ids = await run(d, ["list", "--ids-only"]);
     expect(ids.stdout.trim()).toBe(id);
     expect((await run(d, ["list", "--state", "bogus"])).code).toBe(1);
-    const noHints = await run(d, ["list", "--no-hints"]);
-    expect(noHints.json.claims?.[0]?.recommended).toBeNull();
+    expect((await run(d, ["list", "--state", "orphaned"])).code).toBe(1);
   });
 
-  test("list --state orphaned drains after retire; stranded filter", async () => {
+  test("list --state gating drains after retire; duplicate and stranded filters", async () => {
     const d = await repo();
     await write(d, "src/a.ts", "export const A = 1;\n");
     await write(d, "src/gone.ts", "export const X = 1;\n");
@@ -545,6 +719,8 @@ describe("CLI end-to-end", () => {
     await run(d, ["init"]);
     await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "ok.md",
       "--doc-quote",
@@ -556,6 +732,8 @@ describe("CLI end-to-end", () => {
     ]);
     await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "dup.md",
       "--doc-quote",
@@ -567,6 +745,8 @@ describe("CLI end-to-end", () => {
     ]);
     const orphan = await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "o.md",
       "--doc-quote",
@@ -578,18 +758,21 @@ describe("CLI end-to-end", () => {
     ]);
     await rm(join(d, "src/gone.ts"));
     expect(
-      (await run(d, ["list", "--state", "orphaned"])).json.claims?.map(
+      (await run(d, ["list", "--state", "gating"])).json.claims?.map(
         (c) => c.claimId,
       ),
     ).toEqual([orphan.json.id ?? ""]);
-    expect((await run(d, ["list", "--state", "duplicate"])).code).toBe(1);
+    // ok.md and dup.md hold the same sentence: a duplicate by text, both ways.
+    const dup = await run(d, ["list", "--state", "duplicate"]);
+    expect(dup.json.count).toBe(2);
+    expect(dup.json.claims?.[0]?.duplicates?.[0]?.why).toBe("same sentence");
     await run(d, ["retire", orphan.json.id ?? ""]);
-    expect((await run(d, ["list", "--state", "orphaned"])).json.count).toBe(0);
+    expect((await run(d, ["list", "--state", "gating"])).json.count).toBe(0);
     await write(d, "new.md", "# New\n\nSomething else.\n");
     await run(d, ["supersede", "--from", "ok.md", "--to", "new.md"]);
     const stranded = await run(d, ["list", "--state", "stranded"]);
     expect(stranded.json.count).toBe(1);
-    expect(stranded.json.claims?.[0]?.status).toBe("superseded");
+    expect(stranded.json.claims?.[0]?.state).toBe("clean");
   });
 
   test("a gating verdict carries the remediation menu with commands, --no-hints strips it", async () => {
@@ -674,6 +857,8 @@ describe("CLI end-to-end", () => {
     await run(d, ["init"]);
     const rec = await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "doc.md",
       "--doc-quote",
@@ -706,6 +891,8 @@ describe("CLI end-to-end", () => {
     await run(d, ["init"]);
     const rec = await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "wip.md",
       "--doc-quote",
@@ -740,6 +927,8 @@ describe("CLI end-to-end", () => {
     await run(d, ["init"]);
     const a = await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "v1.md",
       "--doc-quote",
@@ -751,6 +940,8 @@ describe("CLI end-to-end", () => {
     ]);
     const b = await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "v1.md",
       "--doc-quote",
@@ -811,6 +1002,8 @@ describe("CLI end-to-end", () => {
     await run(d, ["init"]);
     const badRange = await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "x.md",
       "--doc-range",
@@ -874,6 +1067,8 @@ describe("CLI end-to-end", () => {
       "record",
       "--store-dir",
       storeDir,
+      "--kind",
+      "code",
       "--doc",
       "doc.md",
       "--doc-quote",
@@ -935,6 +1130,7 @@ describe("CLI end-to-end", () => {
       ["check", "--verifier-timeout", "5"],
       ["record", "--verified"],
       ["record", "--verifier", "command:x"],
+      ["record", "--glob", "src/**"],
     ]) {
       const res = await run(d, args);
       expect(res.code).toBe(1);
@@ -968,6 +1164,8 @@ describe("CLI end-to-end", () => {
       "run",
       CLI,
       "record",
+      "--kind",
+      "code",
       "--doc",
       "doc.md",
       "--doc-quote",
@@ -992,6 +1190,8 @@ describe("CLI end-to-end", () => {
     expect(out.error).toContain("--by");
     const withBy = await run(d, [
       "record",
+      "--kind",
+      "code",
       "--doc",
       "doc.md",
       "--doc-quote",

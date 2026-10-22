@@ -749,9 +749,11 @@ describe("hibi audit", () => {
   test("serves cached verdicts, exits 2 under --fail-uncovered, and 1 for a missing or ignored doc", async () => {
     const f = await fixture();
     // Seed the cache in-process; the CLI has no API key and must not need one.
-    await f.engine.audit(DOC_PATH, {
-      judge: scriptedJev(f.config.judge.model).judge,
-    });
+    await (
+      await Engine.open(f.root, {
+        judge: scriptedJev(f.config.judge.model).judge,
+      })
+    ).audit(DOC_PATH);
 
     const plain = await cli(f.root, ["audit", "--doc", DOC_PATH]);
     expect(plain.code).toBe(0);

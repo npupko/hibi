@@ -16,7 +16,12 @@ import {
 import { sentenceHash } from "../src/engine/hash.ts";
 import { pairClaims } from "../src/engine/pairing.ts";
 import { cacheKey } from "../src/judge/cache.ts";
-import { conflictAnswer, FakeJudge, pairKey } from "../src/judge/fake.ts";
+import {
+  conflictAnswer,
+  encodeConflict,
+  FakeJudge,
+  pairKey,
+} from "../src/judge/fake.ts";
 import { buildConflictRequest } from "../src/judge/jev.ts";
 import type {
   ConflictResult,
@@ -538,7 +543,7 @@ test(`at most ${MAX_IN_FLIGHT} judge calls are in flight`, async () => {
       return {
         model: "slow-1.0.0",
         request: { a, b },
-        answers: CONSISTENT,
+        answers: encodeConflict(CONSISTENT),
         result: CONSISTENT,
       };
     },

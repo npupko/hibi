@@ -240,32 +240,6 @@ describe("claim store", () => {
     );
   });
 
-  test("a coarse-only code side records suggested", async () => {
-    const r = await repo();
-    await r.write("src/a.ts", "export const A = 1;\n");
-    const { claim } = await record(r, {
-      doc: "d.md",
-      text: "coarse suggested",
-      file: "src/a.ts",
-      coarse: true,
-    });
-    expect(claim.enforcement).toBe("suggested");
-  });
-
-  test("an explicit `enforced` over a coarse-only code side is refused", async () => {
-    const r = await repo();
-    await r.write("src/a.ts", "export const A = 1;\n");
-    await expect(
-      record(r, {
-        doc: "d.md",
-        text: "coarse enforced",
-        file: "src/a.ts",
-        coarse: true,
-        enforcement: "enforced",
-      }),
-    ).rejects.toThrow("an enforced claim needs a precise code span");
-  });
-
   test("a doc quote shorter than 8 characters is refused", async () => {
     const r = await repo();
     await r.write("src/a.ts", "export const A = 1;\n");

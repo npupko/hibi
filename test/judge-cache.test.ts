@@ -10,6 +10,7 @@ import {
   pairKey,
   supportsAnswer,
 } from "../src/judge/fake.ts";
+import { buildSupportsRequest, mapSupportsAnswers } from "../src/judge/jev.ts";
 import { JudgeUnavailable } from "../src/judge/types.ts";
 import { makeRepo } from "./helpers.ts";
 
@@ -197,7 +198,8 @@ describe("FakeJudge", () => {
     const res = await judge.supports(input);
     expect(res.result.relation).toBe("supports");
     expect(res.result.confidence).toBeCloseTo((0.9 - 1 / 3) / (1 - 1 / 3), 10);
-    expect(res.request).toEqual(input);
+    expect(res.request).toEqual(buildSupportsRequest("fake-1.0.0", input));
+    expect(mapSupportsAnswers(res.answers as never)).toEqual(res.result);
     expect(res.model).toBe("fake-1.0.0");
     expect(judge.calls).toEqual([{ judgment: "supports", request: input }]);
     await expect(

@@ -1,24 +1,26 @@
 #!/usr/bin/env bun
 /**
  * The hibi CLI: JSON-first, the consumer is usually an agent. Verbs: init,
- * record, check, list, audit, reanchor, retire, supersede, archive, schema,
- * completions, version. Exit codes: 0 clean, 2 gating, 1 operational error.
+ * record, check, list, audit, evidence, attest, reanchor, retire, supersede,
+ * archive, schema, completions, version. Exit codes: 0 clean or warnings,
+ * 2 gating, 1 operational error.
  *
  * A thin imperative shell: it parses argv against the per-command option
  * tables (`options.ts`), resolves git into plain values, delegates to the
  * `Engine` facade, and serializes the result.
  */
+import { appendFile, readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, join } from "node:path";
 import { parseArgs } from "node:util";
 import pkg from "../../package.json" with { type: "json" };
-import { attestClaim, parseAck } from "../engine/attest.ts";
+import { parseAck } from "../engine/attest.ts";
 import { auditExitCode } from "../engine/audit.ts";
-import { submitEvidence } from "../engine/evidence.ts";
 import { changedFiles, currentRef, userEmail } from "../git/git.ts";
 import {
   ClaimStore,
   Engine,
   type EvidenceTarget,
+  EvidenceValidationError,
   type FailOn,
   type ListState,
   type RecordCall,
@@ -26,17 +28,22 @@ import {
   type RegionSpec,
   type StoreLocation,
 } from "../index.ts";
-import { TypeSafeHttp } from "../judge/http.ts";
-import { JevJudge } from "../judge/jev.ts";
 import { completionScript, isShell } from "./completions.ts";
 import {
   COMMANDS,
   commandHelp,
   commandSpec,
+  INSTRUCTIONS_LINE,
   parseArgsOptions,
   usage,
   validateValues,
 } from "./options.ts";
+import {
+  parseRange,
+  parseRecordItems,
+  parseSourceFlag,
+  RecordValidationError,
+} from "./record-input.ts";
 import { renderAttest } from "./render/attest.ts";
 import { renderAudit } from "./render/audit.ts";
 import { renderCheck } from "./render/check.ts";
@@ -91,11 +98,15 @@ async function emit(
   else out(value, mode.kind === "json-pretty");
 }
 
-function fail(message: string, mode: OutputMode): never {
+/** Report an operational error and exit 1. `errors` (one line each) also goes into the JSON. */
+function fail(message: string, mode: OutputMode, errors?: string[]): never {
   if (isHuman(mode)) {
     process.stderr.write(`${makeStyle(mode.color).red("error:")} ${message}\n`);
   } else {
-    out({ ok: false, error: message }, mode.kind === "json-pretty");
+    out(
+      { ok: false, error: message, ...(errors ? { errors } : {}) },
+      mode.kind === "json-pretty",
+    );
   }
   process.exit(EXIT_OPERATIONAL_ERROR);
 }
@@ -130,105 +141,136 @@ async function checkContext(
   };
 }
 
-/**
- * Parse a span: `--*-quote <text>` (literal) or `--*-range L42:L44` (1-based
- * lines) / `100:130` (char offsets). Undefined when neither was given.
- */
+/** A span from `--*-quote <text>` or `--*-range L42:L44 | 100:130`; undefined when neither was given. */
 function spanSpec(quote: unknown, range: unknown): RegionSpec | undefined {
   if (quote !== undefined) return { quote: String(quote) };
-  if (range !== undefined) {
-    const raw = String(range).trim();
-    const colon = raw.indexOf(":");
-    if (colon < 0) {
-      throw new Error(
-        `a range is start:end (L42:L44 for lines, or 100:130 for char offsets), got: ${raw}`,
-      );
-    }
-    const aRaw = raw.slice(0, colon);
-    const bRaw = raw.slice(colon + 1);
-    const isLine = /^L/i.test(aRaw) || /^L/i.test(bRaw);
-    const a = Number(aRaw.replace(/^L/i, ""));
-    const b = Number(bRaw.replace(/^L/i, ""));
-    if (!Number.isFinite(a) || !Number.isFinite(b)) {
-      throw new Error(`a range needs numeric bounds, got: ${raw}`);
-    }
-    return isLine ? { startLine: a, endLine: b } : { start: a, end: b };
-  }
+  if (range !== undefined) return parseRange(String(range));
   return undefined;
 }
 
-/** The code evidence from `--code-file`/`--code-quote`/`--code-range`/`--glob` (or camelCase keys). */
-function codeSideOf(v: {
-  codeFile?: unknown;
-  codeQuote?: unknown;
-  codeRange?: unknown;
-  glob?: unknown;
-}): EvidenceTarget[] {
-  const glob = str(v.glob);
-  const codeFile = str(v.codeFile);
-  if (glob && codeFile) {
-    throw new Error("pass either --glob or --code-file, not both");
-  }
-  if (glob) return [{ file: glob, coarse: true }];
-  if (codeFile) {
-    const region = spanSpec(v.codeQuote, v.codeRange);
-    if (!region) {
-      throw new Error(
-        `--code-file ${codeFile} needs --code-quote or --code-range (or use --glob for a coarse edge)`,
-      );
+/** The replacement code span of `reanchor` (`--code-file` with `--code-quote` or `--code-range`). */
+function reanchorCodeSide(values: Values): EvidenceTarget[] {
+  const codeFile = str(values["code-file"]);
+  const region = spanSpec(values["code-quote"], values["code-range"]);
+  if (codeFile === undefined) {
+    if (region !== undefined) {
+      throw new Error("--code-quote/--code-range need --code-file");
     }
-    return [{ file: codeFile, region }];
+    return [];
   }
-  if (v.codeQuote !== undefined || v.codeRange !== undefined) {
-    throw new Error("--code-quote/--code-range need --code-file");
-  }
-  return [];
-}
-
-/** A `RecordCall` from a JSON spec (one `--from-file` item) or the flag values. */
-function recordCallFromSpec(
-  spec: Record<string, unknown>,
-  ref: string,
-  defaultBy: string | undefined,
-): RecordCall {
-  const doc = spec.doc;
-  if (typeof doc !== "string" || doc.length === 0)
-    throw new Error("a claim needs a `doc` path");
-  const docSpec = spanSpec(spec.docQuote, spec.docRange);
-  if (!docSpec) throw new Error(`claim on ${doc} needs docQuote or docRange`);
-  const by = str(spec.by) ?? defaultBy;
-  if (by === undefined) {
+  if (region === undefined) {
     throw new Error(
-      "no actor to record the claim under: pass --by <actor> (human:<id>, agent:<name>, process:<name>) or set git user.email",
+      `--code-file ${codeFile} needs --code-quote or --code-range`,
     );
   }
-  return {
-    docPath: doc,
-    docQuote: docSpec.quote,
-    docRange: docSpec.quote === undefined ? docSpec : undefined,
-    evidence: codeSideOf(spec),
-    by,
-    owner: str(spec.owner),
-    ref,
-    ttl: str(spec.ttl),
-    enforcement: spec.suggest ? "suggested" : "enforced",
-  };
+  return [{ file: codeFile, region }];
 }
 
-function flagsToSpec(values: Values): Record<string, unknown> {
-  return {
+type Token = {
+  kind: string;
+  name?: string;
+  value?: string;
+};
+
+/** The `record` flags that `--from-file` replaces. */
+const RECORD_ITEM_FLAGS = [
+  "doc",
+  "doc-quote",
+  "doc-range",
+  "kind",
+  "code-file",
+  "code-quote",
+  "code-range",
+  "ref-file",
+  "ref-quote",
+  "ref-range",
+  "source",
+  "instructions",
+  "suggest",
+  "ttl",
+  "owner",
+  "by",
+];
+
+/**
+ * The JSON item the `record` flags describe, so flags and `--from-file` share
+ * one validation. Code spans come from the flag order: each `--code-file`
+ * opens a span that takes the `--code-quote` or `--code-range` after it.
+ */
+function recordItemFromFlags(
+  values: Values,
+  tokens: Token[],
+): { item: Record<string, unknown>; errors: string[] } {
+  const errors: string[] = [];
+  const code: Record<string, string>[] = [];
+  for (const t of tokens) {
+    if (t.kind !== "option" || t.value === undefined) continue;
+    if (t.name === "code-file") {
+      code.push({ file: t.value });
+    } else if (t.name === "code-quote" || t.name === "code-range") {
+      const last = code.at(-1);
+      const key = t.name === "code-quote" ? "quote" : "range";
+      if (last === undefined) {
+        errors.push(`--${t.name} needs a --code-file before it`);
+      } else if (last.quote !== undefined || last.range !== undefined) {
+        errors.push(
+          `--code-file ${last.file} already has a span; pass one --code-quote or --code-range per --code-file`,
+        );
+      } else {
+        last[key] = t.value;
+      }
+    }
+  }
+  const ref: Record<string, unknown> = {};
+  if (values["ref-file"] !== undefined) ref.file = values["ref-file"];
+  if (values["ref-quote"] !== undefined) ref.quote = values["ref-quote"];
+  if (values["ref-range"] !== undefined) ref.range = values["ref-range"];
+  const sources = [];
+  for (const raw of (values.source as string[] | undefined) ?? []) {
+    try {
+      sources.push(parseSourceFlag(raw));
+    } catch (e) {
+      errors.push((e as Error).message);
+    }
+  }
+  const item: Record<string, unknown> = {
     doc: values.doc,
     docQuote: values["doc-quote"],
     docRange: values["doc-range"],
-    codeFile: values["code-file"],
-    codeQuote: values["code-quote"],
-    codeRange: values["code-range"],
-    glob: values.glob,
-    suggest: values.suggest,
+    kind: values.kind,
+    ...(code.length > 0 ? { code } : {}),
+    ...(Object.keys(ref).length > 0 ? { ref } : {}),
+    ...(sources.length > 0 ? { sources } : {}),
+    ...(values.instructions !== undefined
+      ? { procedure: { instructions: values.instructions } }
+      : {}),
     ttl: values.ttl,
     owner: values.owner,
     by: values.by,
+    ...(values.suggest ? { suggest: true } : {}),
   };
+  for (const k of Object.keys(item)) if (item[k] === undefined) delete item[k];
+  return { item, errors };
+}
+
+/** Append the instruction line to `file` unless it is already there. Creates the file. */
+async function appendInstructionLine(
+  file: string,
+): Promise<{ file: string; appended: boolean }> {
+  let text: string | null = null;
+  try {
+    text = await readFile(file, "utf8");
+  } catch (e) {
+    if ((e as { code?: string }).code !== "ENOENT") throw e;
+  }
+  if (text === null) {
+    await writeFile(file, `${INSTRUCTIONS_LINE}\n`);
+    return { file, appended: true };
+  }
+  if (text.includes(INSTRUCTIONS_LINE)) return { file, appended: false };
+  const sep = text === "" || text.endsWith("\n") ? "" : "\n";
+  await appendFile(file, `${sep}${INSTRUCTIONS_LINE}\n`);
+  return { file, appended: true };
 }
 
 /** The lean `record` result: the handle plus what an agent needs next. */
@@ -281,15 +323,18 @@ async function main(argv: string[]): Promise<number> {
 
   let values: Values;
   let positionals: string[];
+  let tokens: Token[];
   try {
     const parsed = parseArgs({
       args: rest,
       allowPositionals: true,
       strict: true,
+      tokens: true,
       options: parseArgsOptions(spec),
     });
     values = parsed.values as Values;
     positionals = parsed.positionals;
+    tokens = parsed.tokens as Token[];
   } catch (e) {
     const err = e as { code?: string; message: string };
     const m = /'(--?[^']+)'/.exec(err.message);
@@ -355,9 +400,23 @@ async function main(argv: string[]): Promise<number> {
     case "init": {
       const engine = await Engine.init(loc);
       const config = await engine.store.config();
+      const instructionsFile = str(values.instructions);
+      let instructions: { file: string; appended: boolean } | undefined;
+      if (instructionsFile !== undefined) {
+        try {
+          const r = await appendInstructionLine(
+            absPath(anchorRoot, instructionsFile),
+          );
+          instructions = { file: instructionsFile, appended: r.appended };
+        } catch (e) {
+          return fail((e as Error).message, mode);
+        }
+      }
       const payload = {
         store: engine.store.dir,
         version: config.version,
+        judge: config.judge,
+        ...(instructions !== undefined ? { instructions } : {}),
       };
       await emit(
         mode,
@@ -374,117 +433,121 @@ async function main(argv: string[]): Promise<number> {
       const defaultBy = email === null ? undefined : `human:${email}`;
       const fromFile = str(values["from-file"]);
 
+      let items: unknown[];
       if (fromFile !== undefined) {
+        const extra = RECORD_ITEM_FLAGS.filter((f) => values[f] !== undefined);
+        if (extra.length > 0) {
+          return fail(
+            `--from-file takes every field from the JSON; drop ${extra.map((f) => `--${f}`).join(", ")}`,
+            mode,
+          );
+        }
         const raw =
           fromFile === "-"
             ? await Bun.stdin.text()
             : await Bun.file(absPath(anchorRoot, fromFile)).text();
-        let items: unknown;
+        let parsed: unknown;
         try {
-          items = JSON.parse(raw);
+          parsed = JSON.parse(raw);
         } catch (e) {
           return fail(
             `record --from-file: invalid JSON (${(e as Error).message})`,
             mode,
           );
         }
-        if (!Array.isArray(items)) {
+        if (!Array.isArray(parsed)) {
           return fail(
-            "record --from-file expects a JSON array of claim specs",
+            "record --from-file expects a JSON array of claim items",
             mode,
           );
         }
-        const calls: RecordCall[] = [];
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i];
-          if (typeof item !== "object" || item === null)
-            return fail(`record --from-file: item ${i} is not an object`, mode);
-          try {
-            calls.push(
-              recordCallFromSpec(
-                item as Record<string, unknown>,
-                ref,
-                defaultBy,
-              ),
-            );
-          } catch (e) {
-            return fail(
-              `record --from-file item ${i}: ${(e as Error).message}`,
-              mode,
-            );
-          }
+        items = parsed;
+      } else {
+        const { item, errors } = recordItemFromFlags(values, tokens);
+        if (errors.length > 0) {
+          const err = new RecordValidationError(errors);
+          return fail(err.message, mode, err.errors);
         }
-        // All or nothing: roll back everything this batch wrote if an item
-        // fails. Records are snapshotted whole, not just by id, because
-        // re-recording an existing claim updates it in place.
-        const before = {
-          claims: new Map(
-            (await engine.store.allClaims()).map((x) => [x.id, x]),
-          ),
-          documents: new Map(
-            (await engine.store.allDocuments()).map((x) => [x.id, x]),
-          ),
-        };
-        const rollback = async () => {
-          for (const x of await engine.store.allClaims()) {
-            const original = before.claims.get(x.id);
-            if (original === undefined) await engine.store.deleteClaim(x.id);
-            else await engine.store.putClaim(original);
-          }
-          for (const x of await engine.store.allDocuments()) {
-            const original = before.documents.get(x.id);
-            if (original === undefined) await engine.store.deleteDocument(x.id);
-            else await engine.store.putDocument(original);
-          }
-        };
-        const results: Record<string, unknown>[] = [];
-        for (const [i, call] of calls.entries()) {
-          try {
-            results.push(recordSummary(await engine.record(call)));
-          } catch (e) {
-            await rollback();
-            return fail(
-              `record --from-file item ${i} (${call.docPath}): ${(e as Error).message}`,
-              mode,
-            );
-          }
+        items = [item];
+      }
+
+      let calls: RecordCall[];
+      try {
+        calls = parseRecordItems(
+          items,
+          { ref, defaultBy },
+          fromFile !== undefined,
+        );
+      } catch (e) {
+        if (e instanceof RecordValidationError) {
+          return fail(e.message, mode, e.errors);
         }
+        return fail((e as Error).message, mode);
+      }
+
+      // All or nothing: every item is attempted so every problem is
+      // reported; if any fails, everything this batch wrote is rolled back.
+      // Records are snapshotted whole, not just by id, because re-recording
+      // an existing claim updates it in place.
+      const before = {
+        claims: new Map((await engine.store.allClaims()).map((x) => [x.id, x])),
+        documents: new Map(
+          (await engine.store.allDocuments()).map((x) => [x.id, x]),
+        ),
+      };
+      const rollback = async () => {
+        for (const x of await engine.store.allClaims()) {
+          const original = before.claims.get(x.id);
+          if (original === undefined) await engine.store.deleteClaim(x.id);
+          else await engine.store.putClaim(original);
+        }
+        for (const x of await engine.store.allDocuments()) {
+          const original = before.documents.get(x.id);
+          if (original === undefined) await engine.store.deleteDocument(x.id);
+          else await engine.store.putDocument(original);
+        }
+      };
+      const results: RecordResult[] = [];
+      const errors: string[] = [];
+      for (const [i, call] of calls.entries()) {
+        try {
+          results.push(await engine.record(call));
+        } catch (e) {
+          const where = fromFile !== undefined ? `item ${i}: ` : "";
+          errors.push(`${where}${(e as Error).message.split("\n").join(" ")}`);
+        }
+      }
+      if (errors.length > 0) {
+        await rollback();
+        const err = new RecordValidationError(errors);
+        return fail(err.message, mode, err.errors);
+      }
+
+      if (fromFile !== undefined) {
+        const summaries = results.map(recordSummary);
         await emit(
           mode,
           envelope(
             "record",
-            { batch: true, count: results.length, results },
+            { batch: true, count: summaries.length, results: summaries },
             "hibi check",
           ),
-          () =>
-            `recorded ${results.length} claim${results.length === 1 ? "" : "s"} from ${fromFile}\n`,
+          () => results.map((r) => misc.renderRecord(r, style, mode)).join(""),
         );
         return 0;
       }
-
-      let call: RecordCall;
-      try {
-        if (!values.doc) throw new Error("record requires --doc <path>");
-        call = recordCallFromSpec(flagsToSpec(values), ref, defaultBy);
-      } catch (e) {
-        return fail((e as Error).message, mode);
-      }
-      try {
-        const result = await engine.record(call);
-        const next =
-          result.existingClaims.length > 0
-            ? "this sentence is already claimed; did you mean `hibi reanchor`?"
-            : "hibi check";
-        const payload = mode.explain
-          ? { ...result, claimId: result.claim.id }
-          : recordSummary(result);
-        await emit(mode, envelope("record", payload, next), () =>
-          misc.renderRecord(result, style, mode),
-        );
-        return 0;
-      } catch (e) {
-        return fail((e as Error).message, mode);
-      }
+      const result = results[0] as RecordResult;
+      const next =
+        result.existingClaims.length > 0
+          ? "this sentence is already claimed; did you mean `hibi reanchor`?"
+          : "hibi check";
+      const payload = mode.explain
+        ? { ...result, claimId: result.claim.id }
+        : recordSummary(result);
+      await emit(mode, envelope("record", payload, next), () =>
+        misc.renderRecord(result, style, mode),
+      );
+      return 0;
     }
 
     case "check": {
@@ -549,7 +612,6 @@ async function main(argv: string[]): Promise<number> {
         state: (str(values.state) ?? "all") as ListState,
         path: str(values.path),
         ref: await currentRef(anchorRoot),
-        hints: mode.hints,
       });
       if (values["ids-only"]) {
         emitIds(result.claims.map((c) => c.claimId));
@@ -587,7 +649,6 @@ async function main(argv: string[]): Promise<number> {
         values["code-file"],
         values["code-quote"],
         values["code-range"],
-        values.glob,
         values["dry-run"],
       ].some((f) => f !== undefined && f !== false);
       if (values.suggest) {
@@ -615,12 +676,7 @@ async function main(argv: string[]): Promise<number> {
       const dryRun = Boolean(values["dry-run"]);
       try {
         const docSpec = spanSpec(values["doc-quote"], values["doc-range"]);
-        const code = codeSideOf({
-          codeFile: values["code-file"],
-          codeQuote: values["code-quote"],
-          codeRange: values["code-range"],
-          glob: values.glob,
-        });
+        const code = reanchorCodeSide(values);
         const result = await engine.reanchor(claimId, {
           doc: str(values.doc),
           docQuote: docSpec?.quote,
@@ -778,18 +834,7 @@ async function main(argv: string[]): Promise<number> {
           : item,
       );
       try {
-        const config = await engine.store.config();
-        const report = await submitEvidence({
-          store: engine.store,
-          judge: new JevJudge({
-            model: config.judge.model,
-            http: new TypeSafeHttp(),
-          }),
-          items,
-          // Phase 3 wires the claim's document context here.
-          context: () => "",
-          config,
-        });
+        const report = await engine.evidence(items);
         const next =
           report.summary.pending > 0
             ? "set TYPESAFE_API_KEY or restore the network, then re-submit the pending items"
@@ -799,6 +844,9 @@ async function main(argv: string[]): Promise<number> {
         );
         return 0;
       } catch (e) {
+        if (e instanceof EvidenceValidationError) {
+          return fail(e.message, mode, e.errors);
+        }
         return fail((e as Error).message, mode);
       }
     }
@@ -807,9 +855,7 @@ async function main(argv: string[]): Promise<number> {
       const engine = await open();
       try {
         const ackValue = str(values.ack);
-        const result = await attestClaim({
-          store: engine.store,
-          claimId: positionals[0] as string,
+        const result = await engine.attest(positionals[0] as string, {
           by: String(values.by),
           note: str(values.note),
           ack: ackValue === undefined ? undefined : parseAck(ackValue),

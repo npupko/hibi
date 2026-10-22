@@ -78,7 +78,7 @@ export function renderOverview(ctx: OverviewContext): string {
     const refs = [...(refsByDoc.get(doc.id) ?? [])].filter(
       (r) => r !== "WORKTREE",
     );
-    const verified =
+    const ref =
       refs.length === 0
         ? "—"
         : refs.length === 1
@@ -94,7 +94,7 @@ export function renderOverview(ctx: OverviewContext): string {
         doc.path,
         counts,
         owner ?? "—",
-        verified,
+        ref,
         doc.lifecycle,
       ],
     });

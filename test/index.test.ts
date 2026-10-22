@@ -53,6 +53,7 @@ describe("library facade", () => {
     expect(await ClaimStore.isInitialized({ anchorRoot, storeDir })).toBe(true);
 
     await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "README.md",
       docQuote: "Retries are capped at 5 attempts",
@@ -78,6 +79,7 @@ describe("library facade", () => {
 
     // The default enforcement is `enforced`, so a code change gates (exit 2).
     const rec = await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "doc.md",
       docQuote: "N is 5 in code",
@@ -108,17 +110,27 @@ describe("library facade", () => {
       "ref",
       "summary",
       "verdicts",
+      "worklist",
     ]);
     expect(Object.keys(report.summary).sort()).toEqual([
       "clean",
+      "conflictPass",
+      "conflicts",
       "doc",
       "evidence",
       "expired",
       "gating",
+      "judge",
       "retired",
       "total",
       "warning",
+      "worklist",
     ]);
+    expect(report.summary.conflictPass).toEqual({
+      pairs: 0,
+      requests: 0,
+      pending: 0,
+    });
   });
 
   test("list, check --doc, supersede, archive, retire via the facade", async () => {
@@ -129,6 +141,7 @@ describe("library facade", () => {
     const e = await Engine.init(anchorRoot);
 
     const rec = await e.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "v1.md",
       docQuote: "N is 5 in code",
@@ -137,9 +150,9 @@ describe("library facade", () => {
 
     const rows = await e.list({ path: "code.ts" });
     expect(rows.count).toBe(1);
-    expect(rows.claims[0]?.documentPath).toBe("v1.md");
+    expect(rows.claims[0]?.documentId).toBe(rec.document.id);
     expect(rows.claims[0]?.side).toBe("evidence");
-    expect(rows.claims[0]?.severity).toBe("clean");
+    expect(rows.claims[0]?.state).toBe("clean");
 
     const scoped = await e.check({ doc: "v1.md" });
     expect(scoped.verdicts).toHaveLength(1);
@@ -166,6 +179,31 @@ describe("library facade", () => {
     expect((await e.retire(rec.claim.id)).alreadyRetired).toBe(true);
   });
 
+  test("the worklist leaves out claims on a superseded document", async () => {
+    const anchorRoot = await tmp();
+    await writeFile(
+      join(anchorRoot, "v1.md"),
+      "# v1\n\nPro costs $29/month.\n",
+    );
+    await writeFile(join(anchorRoot, "v2.md"), "# v2\n\nPricing moved.\n");
+    const e = await Engine.init(anchorRoot);
+    const rec = await e.record({
+      kind: "attested",
+      by: "human:tester@example.com",
+      docPath: "v1.md",
+      docQuote: "Pro costs $29/month.",
+      ttl: "P90D",
+    });
+    expect((await e.check()).worklist.map((w) => w.claimId)).toEqual([
+      rec.claim.id,
+    ]);
+    await e.supersede({ from: "v1.md", to: "v2.md" });
+    const after = await e.check();
+    expect(after.worklist).toEqual([]);
+    expect((await e.list({ state: "stranded" })).count).toBe(1);
+    expect((await e.list({ state: "pending" })).count).toBe(0);
+  });
+
   test("opening a store that was never initialized rejects", async () => {
     await expect(Engine.open(join(await tmp(), "nope"))).rejects.toThrow();
   });
@@ -178,6 +216,7 @@ describe("library facade", () => {
     await mkdir(join(anchorRoot, "adir"), { recursive: true });
     await expect(
       engine.record({
+        kind: "code",
         by: "human:tester@example.com",
         docPath: "doc.md",
         docQuote: "x is here",
@@ -187,6 +226,7 @@ describe("library facade", () => {
     // An empty code path resolves to the anchor-root dir, also EISDIR.
     await expect(
       engine.record({
+        kind: "code",
         by: "human:tester@example.com",
         docPath: "doc.md",
         docQuote: "x is here",
@@ -201,6 +241,7 @@ describe("library facade", () => {
     const engine = await Engine.init(anchorRoot);
     await expect(
       engine.record({
+        kind: "code",
         by: "human:tester@example.com",
         docPath: "d.md",
         docQuote: "x is here",
@@ -209,37 +250,13 @@ describe("library facade", () => {
     ).rejects.toThrow("Evidence file not found on disk: nope.ts");
   });
 
-  test("an enforced claim without a precise code span is refused; suggested allows a coarse one", async () => {
-    const anchorRoot = await tmp();
-    await writeFile(join(anchorRoot, "d.md"), "# D\n\nx is here\n");
-    const engine = await Engine.init(anchorRoot);
-    await expect(
-      engine.record({
-        by: "human:tester@example.com",
-        docPath: "d.md",
-        docQuote: "x is here",
-        evidence: [{ file: "src/**", coarse: true }],
-      }),
-    ).rejects.toThrow("an enforced claim needs a precise code span");
-    const rec = await engine.record({
-      by: "human:tester@example.com",
-      docPath: "d.md",
-      docQuote: "x is here",
-      evidence: [{ file: "src/**", coarse: true }],
-      enforcement: "suggested",
-    });
-    expect(rec.claim.enforcement).toBe("suggested");
-    expect(rec.claim.evidence[0]?.selectors).toEqual([
-      { kind: "coarse", pattern: "src/**" },
-    ]);
-  });
-
   test("noAst runs text drift only and still detects a removed span", async () => {
     const anchorRoot = await tmp();
     await writeFile(join(anchorRoot, "code.ts"), "export const N = 5;\n");
     await writeFile(join(anchorRoot, "doc.md"), "# D\n\nN is 5 in code\n");
     const engine = await Engine.init(anchorRoot, { noAst: true });
     const rec = await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "doc.md",
       docQuote: "N is 5 in code",
@@ -265,6 +282,7 @@ describe("library facade", () => {
     await writeFile(join(anchorRoot, "b.md"), "# B\n\nB is 2 here\n");
     const e = await Engine.init(anchorRoot);
     await e.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "a.md",
       docQuote: "A is 1 here",
@@ -272,6 +290,7 @@ describe("library facade", () => {
       ref: "r",
     });
     await e.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "b.md",
       docQuote: "B is 2 here",
@@ -304,6 +323,7 @@ describe("reanchor", () => {
     );
     const engine = await Engine.init(anchorRoot);
     const rec = await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "README.md",
       docQuote: "The A constant is one",
@@ -336,6 +356,7 @@ describe("reanchor", () => {
     );
     const engine = await Engine.init(anchorRoot);
     const rec = await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "README.md",
       docQuote: "The A constant is one",
@@ -365,6 +386,7 @@ describe("reanchor", () => {
     );
     const engine = await Engine.init(anchorRoot);
     const rec = await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "README.md",
       docQuote: "The A constant is one",
@@ -398,6 +420,7 @@ describe("reanchor", () => {
     );
     const engine = await Engine.init(anchorRoot);
     const rec = await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "wip.md",
       docQuote: "The A constant is one",
@@ -449,6 +472,7 @@ describe("reanchor", () => {
     const destId = documentIdForPath("docs/a.md");
 
     await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "docs/a.md",
       docQuote: "The A constant is one",
@@ -460,6 +484,7 @@ describe("reanchor", () => {
     await engine.store.putDocument({ ...dest, lifecycle: "superseded" });
 
     const rec = await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "wip.md",
       docQuote: "The A constant is one",
@@ -475,8 +500,8 @@ describe("reanchor", () => {
   });
 });
 
-describe("record duplicate-proposition detection", () => {
-  test("existingClaims lists the prior claims sharing a deduped proposition", async () => {
+describe("record: the same sentence in another document", () => {
+  test("existingClaims lists the prior claims with the same normalized sentence", async () => {
     const root = await tmp();
     await mkdir(join(root, "src"), { recursive: true });
     await writeFile(join(root, "src/a.ts"), "export const A = 1;\n");
@@ -485,6 +510,7 @@ describe("record duplicate-proposition detection", () => {
     const engine = await Engine.init(root);
 
     const first = await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "a.md",
       docQuote: "The A constant is one.",
@@ -494,6 +520,7 @@ describe("record duplicate-proposition detection", () => {
     expect(first.existingClaims).toEqual([]);
 
     const second = await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "b.md",
       docQuote: "The A constant is one.",
@@ -513,6 +540,7 @@ describe("record duplicate-proposition detection", () => {
     );
     const engine = await Engine.init(root);
     const rec = await engine.record({
+      kind: "code",
       by: "human:tester@example.com",
       docPath: "a.md",
       docQuote: "The A constant is one.",

@@ -1,7 +1,6 @@
 import { afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
-import { buildCoarseBundle, coarseCovers } from "../src/engine/anchor.ts";
 import { archiveDocument } from "../src/engine/archive.ts";
 import { runCheck } from "../src/engine/check.ts";
 import { matchedSide } from "../src/engine/list.ts";
@@ -55,49 +54,21 @@ describe("archival", () => {
   });
 });
 
-describe("coarse code targets", () => {
-  test("a glob code-side anchor records as suggested with a coarse selector", async () => {
+describe("list --path", () => {
+  test("matchedSide names the side whose file equals the path", async () => {
     const r = await repo();
+    await r.write("src/auth/login.ts", "export const TOKEN_TTL = 3600;\n");
     await record(r, {
       doc: "arch.md",
-      text: "Decisions about the auth module",
-      file: "src/auth/**",
-      glob: "src/auth/**",
+      text: "Tokens live for an hour, 3600 seconds",
+      file: "src/auth/login.ts",
+      quote: "TOKEN_TTL = 3600",
     });
     const a = (await r.store.allClaims())[0];
     if (a === undefined) throw new Error("expected a recorded claim");
-    expect(a.enforcement).toBe("suggested");
-    expect(a.evidence.length).toBe(1);
-    expect(a.evidence[0]?.selectors).toEqual([
-      { kind: "coarse", pattern: "src/auth/**" },
-    ]);
     expect(matchedSide(a, "src/auth/login.ts")).toBe("evidence");
     expect(matchedSide(a, "arch.md")).toBe("doc");
-    expect(matchedSide(a, "src/other.ts")).toBeUndefined();
-  });
-
-  test("buildCoarseBundle: a swapped-in coarse evidence side still matches", async () => {
-    const r = await repo();
-    await record(r, {
-      doc: "arch.md",
-      text: "Decisions about the payments module",
-      file: "src/payments/**",
-      glob: "src/payments/**",
-    });
-    const a = (await r.store.allClaims())[0];
-    if (a === undefined) throw new Error("expected a recorded claim");
-    a.evidence = [buildCoarseBundle("src/payments/**")];
-    await r.store.putClaim(a);
-    const reloaded = await r.store.getClaim(a.id);
-    if (reloaded === undefined) throw new Error("claim did not persist");
-    expect(matchedSide(reloaded, "src/payments/charge.ts")).toBe("evidence");
-  });
-
-  test("a coarse path covers on a `/` boundary, not a bare prefix", () => {
-    expect(coarseCovers("src", "src/main.ts")).toBe(true);
-    expect(coarseCovers("src", "src2/main.ts")).toBe(false);
-    expect(coarseCovers("src/a.ts", "src/a.ts")).toBe(true);
-    expect(coarseCovers("src/**/*.ts", "src/x/y.ts")).toBe(true);
+    expect(matchedSide(a, "src/auth")).toBeUndefined();
   });
 });
 

@@ -2,8 +2,25 @@
  * FakeJudge: the judge used in tests. It answers from a script, keyed by
  * sentence text or computed by a caller-supplied function, and throws
  * `JudgeUnavailable` when told to. It never touches the network.
+ *
+ * Answers are encoded in the Jev wire shape (the System One `answers`
+ * object), and the returned `result` is decoded from them by the same
+ * mappers the Jev adapter uses. A cache entry written by this judge is
+ * therefore read back exactly as one written by Jev: there is one decode
+ * path for judge answers.
  */
 
+import type { Answer } from "./http.ts";
+import {
+  buildConflictRequest,
+  buildSupportsRequest,
+  buildTriageRequests,
+  isCodeByConstruction,
+  mapConflictAnswers,
+  mapSupportsAnswers,
+  mapTriageAnswers,
+} from "./jev.ts";
+import supportsFile from "./questions/supports.json";
 import {
   type ConflictRelation,
   type ConflictResult,
@@ -78,29 +95,39 @@ export class FakeJudge implements Judge {
     this.calls.push({ judgment, request });
   }
 
-  private respond<T>(request: unknown, result: T): JudgeResponse<T> {
-    return { model: this.model, request, answers: result, result };
-  }
-
   async triage(
     doc: { path: string },
     regions: Region[],
   ): Promise<JudgeResponse<TriageResult[]>> {
-    const request = { doc, regions };
-    this.begin("triage", request);
-    const result = regions.map((region) => {
-      const answer = lookup(this.script.triage, region.text, [region]);
-      if (answer === undefined) {
-        throw new Error(
-          `FakeJudge has no scripted triage answer for region ${JSON.stringify(region.text)}`,
+    const requests = buildTriageRequests(this.model, doc, regions);
+    this.begin("triage", { doc, regions });
+    const answers = requests.map((request) => {
+      const chunk = (request.state as { regions: Region[] }).regions;
+      const out: Record<string, Answer> = {};
+      chunk.forEach((region, i) => {
+        const answer = lookup(this.script.triage, region.text, [region]);
+        if (answer === undefined) {
+          throw new Error(
+            `FakeJudge has no scripted triage answer for region ${JSON.stringify(region.text)}`,
+          );
+        }
+        Object.assign(
+          out,
+          encodeTriage(i, answer, isCodeByConstruction(region)),
         );
-      }
-      return { ...answer, regionId: region.id };
+      });
+      return out;
     });
-    return this.respond(request, result);
+    return {
+      model: this.model,
+      request: requests,
+      answers,
+      result: mapTriageAnswers(requests, answers),
+    };
   }
 
   async supports(input: SupportsInput): Promise<JudgeResponse<SupportsResult>> {
+    const request = buildSupportsRequest(this.model, input);
     this.begin("supports", input);
     const answer = lookup(this.script.supports, input.sentence, [input]);
     if (answer === undefined) {
@@ -108,15 +135,21 @@ export class FakeJudge implements Judge {
         `FakeJudge has no scripted supports answer for ${JSON.stringify(input.sentence)}`,
       );
     }
-    return this.respond(input, answer);
+    const answers = encodeSupports(answer);
+    return {
+      model: this.model,
+      request,
+      answers,
+      result: mapSupportsAnswers(answers),
+    };
   }
 
   async conflict(
     a: ConflictSide,
     b: ConflictSide,
   ): Promise<JudgeResponse<ConflictResult>> {
-    const request = { a, b };
-    this.begin("conflict", request);
+    const request = buildConflictRequest(this.model, a, b);
+    this.begin("conflict", { a, b });
     const answer = lookup(this.script.conflict, pairKey(a.text, b.text), [
       a,
       b,
@@ -126,8 +159,94 @@ export class FakeJudge implements Judge {
         `FakeJudge has no scripted conflict answer for ${JSON.stringify(a.text)} and ${JSON.stringify(b.text)}`,
       );
     }
-    return this.respond(request, answer);
+    const answers = encodeConflict(answer);
+    return {
+      model: this.model,
+      request,
+      answers,
+      result: mapConflictAnswers(answers),
+    };
   }
+}
+
+// ── Wire encoding: a result as the System One answers that decode to it ──
+
+function choiceAnswer(
+  choice: string,
+  probabilities: Record<string, number>,
+): Answer {
+  return {
+    type: "choice",
+    choice,
+    confidence: choiceConfidence(probabilities),
+    probabilities,
+  };
+}
+
+function noulAnswer(p: number): Answer {
+  return { type: "noul", noul: p };
+}
+
+/** The Jev option name for each supports relation (inverse of `relationNames`). */
+const SUPPORTS_OPTION = Object.fromEntries(
+  Object.entries(supportsFile.relationNames).map(([option, relation]) => [
+    relation,
+    option,
+  ]),
+) as Record<SupportsRelation, string>;
+
+/**
+ * The System One answers for a supports result. A result forced to
+ * `does_not_address` by the `addresses` floor keeps the Choice winner of its
+ * probabilities as the raw choice.
+ */
+export function encodeSupports(r: SupportsResult): Record<string, Answer> {
+  const choice = r.forced ? winner(r.probabilities) : r.relation;
+  const probabilities = Object.fromEntries(
+    Object.entries(r.probabilities).map(([relation, p]) => [
+      SUPPORTS_OPTION[relation as SupportsRelation],
+      p,
+    ]),
+  );
+  return {
+    relation: choiceAnswer(SUPPORTS_OPTION[choice], probabilities),
+    addresses: noulAnswer(r.addresses),
+  };
+}
+
+/** The System One answers for a conflict result. */
+export function encodeConflict(r: ConflictResult): Record<string, Answer> {
+  const choice = r.forced ? winner(r.probabilities) : r.relation;
+  return {
+    same_subject: noulAnswer(r.sameSubject),
+    relation: choiceAnswer(choice, r.probabilities),
+    contradicts: noulAnswer(r.contradicts),
+  };
+}
+
+/** The System One answers for one triage region at index `i` of its request. */
+export function encodeTriage(
+  i: number,
+  r: Omit<TriageResult, "regionId">,
+  codeByConstruction: boolean,
+): Record<string, Answer> {
+  const out: Record<string, Answer> = {
+    [`kind_${i}`]: choiceAnswer(r.kind, r.kindProbabilities),
+    [`checkable_${i}`]: noulAnswer(r.checkable),
+  };
+  if (!codeByConstruction) {
+    const probabilities = r.evidenceProbabilities ?? {
+      code: 0.25,
+      other_doc: 0.25,
+      external: 0.25,
+      nothing: 0.25,
+    };
+    out[`evidenceKind_${i}`] = choiceAnswer(
+      r.evidenceKind ?? winner(probabilities),
+      probabilities,
+    );
+  }
+  return out;
 }
 
 function winner<K extends string>(probabilities: Record<K, number>): K {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import * as z from "zod";
-import { computeGates, isWarnVerdict } from "../src/core/gating.ts";
+import { gateVerdict } from "../src/core/gating.ts";
 import { documentIdForPath, newClaimId } from "../src/core/ids.ts";
 import {
   AnchorState,
@@ -91,12 +91,12 @@ describe("canonical model", () => {
     );
   });
 
-  test("Selector is the unchanged five-variant union", () => {
+  test("Selector is the four-variant union", () => {
     const kinds = Selector.options.map(
       (o) => (o.shape.kind as z.ZodLiteral<string>).value,
     );
     expect(new Set(kinds)).toEqual(
-      new Set(["text-quote", "text-position", "ast-node", "value", "coarse"]),
+      new Set(["text-quote", "text-position", "ast-node", "value"]),
     );
     expect(SelectorBundle.safeParse({ file: "a", selectors: [] }).success).toBe(
       false,
@@ -376,14 +376,16 @@ describe("Verdict", () => {
       doc: "unchanged",
       expired: false,
       gates: false,
+      warns: false,
       detail: {},
     });
     expect(v.evidence).toBeUndefined();
     expect(v.judge).toBeUndefined();
     expect(v.conflicts).toEqual([]);
+    expect(v.reasons).toEqual([]);
     expect(
-      Verdict.safeParse({ ...v, behavior: "refuted" }).success,
-      "behavior is gone",
+      Verdict.safeParse({ ...v, notes: [] }).success,
+      "notes is gone",
     ).toBe(false);
   });
 });
@@ -394,32 +396,36 @@ describe("gating fitness functions", () => {
     evidence: "unchanged",
     expired: false,
   } as const;
+  const gates = (
+    v: Parameters<typeof gateVerdict>[0],
+    e: Parameters<typeof gateVerdict>[1] = "enforced",
+    mode: "store" | "doc" = "store",
+  ) => gateVerdict(v, e, { mode }).gates;
+  const warns = (
+    v: Parameters<typeof gateVerdict>[0],
+    e: Parameters<typeof gateVerdict>[1] = "enforced",
+  ) => gateVerdict(v, e).warns;
 
-  test("changed/orphaned/ambiguous on either side, expired, or refuted gate; moved and unavailable never do", () => {
+  test("changed/orphaned/ambiguous on either side or refuted gate; moved and unavailable never do", () => {
     for (const state of ["changed", "orphaned", "ambiguous"] as const) {
-      expect(computeGates({ ...clean, evidence: state }, "enforced")).toBe(
-        true,
-      );
-      expect(computeGates({ ...clean, doc: state }, "enforced")).toBe(true);
+      expect(gates({ ...clean, evidence: state })).toBe(true);
+      expect(gates({ ...clean, doc: state })).toBe(true);
     }
-    expect(computeGates({ ...clean, expired: true }, "enforced")).toBe(true);
-    expect(computeGates({ ...clean, judge: "refuted" }, "enforced")).toBe(true);
-    expect(computeGates({ ...clean, judge: "supported" }, "enforced")).toBe(
-      false,
-    );
-    expect(computeGates({ ...clean, evidence: "moved" }, "enforced")).toBe(
-      false,
-    );
+    expect(gates({ ...clean, judge: "refuted" })).toBe(true);
+    expect(gates({ ...clean, judge: "supported" })).toBe(false);
+    expect(gates({ ...clean, evidence: "moved" })).toBe(false);
+    expect(gates({ ...clean, evidence: "unavailable" })).toBe(false);
     expect(
-      computeGates({ ...clean, evidence: "unavailable" }, "enforced"),
-    ).toBe(false);
-    expect(
-      computeGates({ doc: "unchanged", expired: false }, "enforced"),
+      gates({ doc: "unchanged", expired: false }),
       "no evidence axis",
     ).toBe(false);
-    expect(
-      isWarnVerdict({ ...clean, evidence: "moved", gates: false }, "enforced"),
-    ).toBe(true);
+    expect(warns({ ...clean, evidence: "moved" })).toBe(true);
+  });
+
+  test("expired warns in a whole-store check and gates under check --doc", () => {
+    expect(gates({ ...clean, expired: true })).toBe(false);
+    expect(warns({ ...clean, expired: true })).toBe(true);
+    expect(gates({ ...clean, expired: true }, "enforced", "doc")).toBe(true);
   });
 
   test("only enforced claims gate; suggested and retired never gate or warn", () => {
@@ -429,12 +435,10 @@ describe("gating fitness functions", () => {
       expired: true,
       judge: "refuted",
     } as const;
-    expect(computeGates(gating, "enforced")).toBe(true);
+    expect(gates(gating)).toBe(true);
     for (const e of ["suggested", "retired"] as const) {
-      expect(computeGates(gating, e)).toBe(false);
-      expect(isWarnVerdict({ ...clean, doc: "moved", gates: false }, e)).toBe(
-        false,
-      );
+      expect(gates(gating, e)).toBe(false);
+      expect(warns({ ...clean, doc: "moved" }, e)).toBe(false);
     }
   });
 });

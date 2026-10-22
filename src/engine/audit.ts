@@ -161,8 +161,21 @@ export function auditKindOf(result: TriageResult): AuditKind {
   }
 }
 
+/** A row with its keys in the documented order: region, claimId, kind, the kind's fields, duplicateOf. */
+function row(
+  base: Pick<AuditRow, "region" | "claimId" | "duplicateOf">,
+  fields: Omit<AuditRow, "region" | "claimId" | "duplicateOf">,
+): AuditRow {
+  return {
+    region: base.region,
+    claimId: base.claimId,
+    ...fields,
+    duplicateOf: base.duplicateOf,
+  };
+}
+
 function triageRow(
-  base: Omit<AuditRow, "kind">,
+  base: Pick<AuditRow, "region" | "claimId" | "duplicateOf">,
   result: TriageResult,
   threshold: number,
 ): AuditRow {
@@ -174,17 +187,16 @@ function triageRow(
         ? "evidenceKind"
         : null;
   if (unsure === null) {
-    return {
-      ...base,
+    return row(base, {
       kind: auditKindOf(result),
       probability: result.kindProbabilities[result.kind],
-    };
+    });
   }
   const probabilities: AuditProbabilities = { kind: result.kindProbabilities };
   if (result.evidenceProbabilities !== undefined) {
     probabilities.evidenceKind = result.evidenceProbabilities;
   }
-  return { ...base, kind: "unsure", unsure, probabilities };
+  return row(base, { kind: "unsure", unsure, probabilities });
 }
 
 interface Triaged {
@@ -293,15 +305,13 @@ export async function runAudit(input: AuditInput): Promise<AuditReport> {
     };
     const claim = coveredBy.get(region.id);
     if (claim) {
-      return {
-        ...base,
-        claimId: claim.id,
-        kind: claim.kind,
-        duplicateOf: duplicateOf(claim.id),
-      };
+      return row(
+        { ...base, claimId: claim.id, duplicateOf: duplicateOf(claim.id) },
+        { kind: claim.kind },
+      );
     }
     const result = results.get(region.id);
-    if (!result) return { ...base, kind: "pending" };
+    if (!result) return row(base, { kind: "pending" });
     return triageRow(base, result, config.judge.threshold);
   });
 
