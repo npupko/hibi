@@ -4,7 +4,7 @@
  *     the warning on a disambiguated repeat;
  *   - reanchor refuses an orphaned side and never stores an empty span;
  *   - reanchor resolves once per side and reports before/after quotes;
- *   - coverage sentence-level regions and the missing-doc error;
+ *   - audit sentence-level regions and the missing-doc error;
  *   - supersede relocation.
  */
 
@@ -12,7 +12,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { splitRegions } from "../src/engine/coverage.ts";
+import { splitRegions } from "../src/engine/regions.ts";
 import { documentIdForPath, Engine } from "../src/index.ts";
 
 let dirs: string[] = [];
@@ -194,7 +194,7 @@ describe("reanchor safety", () => {
   });
 });
 
-describe("coverage regions", () => {
+describe("audit regions", () => {
   test("prose splits at sentence boundaries; fences, headings, and list items stay whole", () => {
     const text = [
       "# Heading",
@@ -226,7 +226,7 @@ describe("coverage regions", () => {
   test("a missing document is an error, not an empty result", async () => {
     const d = await repo();
     const engine = await Engine.init(d);
-    await expect(engine.coverage("nope.md")).rejects.toThrow(/not found/);
+    await expect(engine.audit("nope.md")).rejects.toThrow(/not found/);
   });
 });
 

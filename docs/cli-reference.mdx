@@ -116,21 +116,24 @@ hibi list --path src/auth.ts
 hibi list --state orphaned --ids-only
 ```
 
-## `hibi coverage`
+## `hibi audit`
 
-Which sentences of a document are backed by a claim and which are not.
+One row per region of a document: the claim that covers it, or the judge's triage kind.
+
+Splits the document into regions, matches them to live claims by the claim's doc anchor, and triages uncovered regions with the judge (cached). Kinds: code, reference, attested (record them), unverifiable (rewrite as an attributed opinion, or remove), not-a-claim, unsure (triage confidence below judge.threshold), pending (judge unavailable). Recording is never automatic.
 
 ```sh
-hibi coverage [options]
+hibi audit [options]
 ```
 
 | Flag | Meaning |
 |---|---|
-| `--doc <path>` | The document to measure. Required. |
-| `--fail-uncovered` | Exit 2 when any region is uncovered. |
+| `--doc <path>` | The document to audit. Required. |
+| `--fail-uncovered` | Exit 2 when any uncovered region is code, reference, or attested. |
 
 ```sh
-hibi coverage --doc README.md
+hibi audit --doc README.md
+hibi audit --doc docs/pricing.md --fail-uncovered
 ```
 
 ## `hibi reanchor`
@@ -217,6 +220,48 @@ hibi archive [options]
 
 ```sh
 hibi archive --doc old.md --successor new.md
+```
+
+## `hibi evidence`
+
+Submit evidence an agent collected; the judge decides whether it supports each claim.
+
+Reads a JSON array (or one object) of {claimId, evidence, source, summary, by}; an item without by takes --by. The whole batch is validated before the judge is asked; one bad item rejects it. A supports verdict at or above judge.threshold appends an evidence attestation, which resets the ttl. The verdict is cached by model, sentence, context, evidence, and source; raw evidence text is never stored. Without TYPESAFE_API_KEY or with the network down, an item is pending and nothing is written for it. Evidence is limited to 32000 characters per item.
+
+```sh
+hibi evidence --from-file <path|-> --by <actor>
+```
+
+| Flag | Meaning |
+|---|---|
+| `--from-file <path|->` | JSON array of evidence items (- reads stdin). All or nothing. Required. |
+| `--by <actor>` | The actor submitting the evidence, for items without by: human:<id>, agent:<name>, or process:<name>. Required. |
+
+```sh
+echo '[{"claimId":"clm_1a2b3c4d5e6f7a8b","evidence":"Pro plan: $29.00 / month","source":"stripe prices list --product prod_123","summary":"Stripe lists Pro at $29/month"}]' | hibi evidence --from-file - --by agent:opus
+```
+
+## `hibi attest`
+
+Vouch for a claim, or acknowledge a review or conflict finding with a note.
+
+Without --ack this records a vouch. Only a human: vouch resets the ttl; an agent: or process: vouch is recorded and does not. --ack review acknowledges the claim's newest supports verdict; --ack conflict:<id> acknowledges a contradiction with another claim and records the ack on both. An ack needs --note and never resets the ttl.
+
+```sh
+hibi attest <claim-id> [options]
+```
+
+`<claim-id>`: The claim to attest.
+
+| Flag | Meaning |
+|---|---|
+| `--by <actor>` | The attesting actor: human:<id>, agent:<name>, or process:<name>. Required. |
+| `--note <text>` | What was checked, or why the finding is acceptable. Required with --ack. |
+| `--ack <finding>` | Acknowledge a finding: conflict:<claim-id> or review. |
+
+```sh
+hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --note "checked Stripe, still $29"
+hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --ack conflict:clm_9f8e7d6c5b4a3210 --note "different plans"
 ```
 
 ## `hibi schema`

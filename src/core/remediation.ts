@@ -4,7 +4,21 @@
  *
  * A menu, not a prescription: hibi cannot know intent, so `recommended` is set
  * only when the next step is clear, and `actions` are ordered by preference.
- * The lookup key is `(doc, evidence?, judge?, expired)`.
+ *
+ * Each condition contributes a section, most severe first:
+ *
+ *   1. anchor gating (orphaned, changed, ambiguous): reanchor / update / retire
+ *   2. judge `refuted`: `fix-evidence`, `fix-claim`; never reanchor, so a
+ *      refuted claim gets no changed or ambiguous anchor section (an orphan
+ *      still does: the span must be found before anything else)
+ *   3. conflicts: `reconcile` naming the other claim, then `ack`
+ *   4. expired: `attest` (a human vouch), `evidence`
+ *   5. judge `review`: `ack`, `evidence`
+ *   6. moved: `reanchor`
+ *
+ * `recommended` is the first section's recommendation (it may be null);
+ * `actions` are the sections' actions in order, each (id, title) once.
+ * `pending` and `unavailable` add nothing: the reason label says what to do.
  */
 
 import type {
@@ -22,6 +36,8 @@ export interface RemediationInput {
   evidence?: EvidenceState;
   judge?: JudgeState;
   expired: boolean;
+  /** Other claims this one conflicts with. */
+  conflicts?: ReadonlyArray<{ claimId: string }>;
 }
 
 const reanchorCmd = (id: string): string => `hibi reanchor ${id}`;
@@ -111,80 +127,167 @@ function supersede(): RemediationAction {
   };
 }
 
-function fixEvidence(): RemediationAction {
-  return {
-    id: "fix-evidence",
-    title: "Fix the evidence to match the doc",
-    rationale: "if the doc is the spec, the evidence drifted from it",
-  };
-}
-
-function fixClaim(): RemediationAction {
+function fixClaim(id: string): RemediationAction {
   return {
     id: "fix-claim",
     title: "Fix the documented claim",
-    rationale:
-      "if the evidence is correct, the sentence is now wrong; rewrite it",
+    rationale: `the judge found the evidence refutes ${id}; if the evidence is right, rewrite the sentence`,
   };
 }
 
-function reverifyAndReRecord(): RemediationAction {
+function fixEvidence(): RemediationAction {
   return {
-    id: "reverify-and-rerecord",
-    title: "Re-verify and re-record",
-    rationale: "the claim's ttl has passed; re-verify, then re-record it",
+    id: "fix-evidence",
+    title: "Fix the evidence to match the claim",
+    rationale:
+      "if the sentence is the source of truth, the evidence drifted from it; correct the evidence, or submit newer evidence",
   };
+}
+
+const evidenceCmd = (id: string): string =>
+  `echo '[{"claimId":"${id}","evidence":"<text>","source":"<where>","summary":"<one line>","by":"agent:<name>"}]' | hibi evidence --from-file -`;
+
+function submitEvidence(id: string, why: string): RemediationAction {
+  return {
+    id: "evidence",
+    title: "Collect evidence and submit it",
+    rationale: why,
+    command: evidenceCmd(id),
+  };
+}
+
+function attest(id: string): RemediationAction {
+  return {
+    id: "attest",
+    title: "Have a human re-check and vouch",
+    rationale:
+      "only a human vouch or judged evidence resets the ttl; an agent vouch does not count",
+    command: `hibi attest ${id} --by human:<you> --note "<what you checked>"`,
+  };
+}
+
+function ack(id: string, what: string): RemediationAction {
+  return {
+    id: "ack",
+    title: `Acknowledge the ${what}`,
+    rationale: `if the ${what} is not a problem, record why; an ack never resets the ttl`,
+    command: `hibi attest ${id} --by <actor> --ack --note "<why>"`,
+  };
+}
+
+function reconcileConflict(others: string[]): RemediationAction {
+  const list = others.join(", ");
+  return {
+    id: "reconcile",
+    title: `Reconcile with ${list}`,
+    rationale: `this sentence contradicts ${list}; rewrite whichever is wrong`,
+  };
+}
+
+interface Section {
+  recommended: string | null;
+  actions: RemediationAction[];
+}
+
+function anchorSection(v: RemediationInput): Section | null {
+  const id = v.claimId;
+  const hasOrphan = v.doc === "orphaned" || v.evidence === "orphaned";
+  const docChanged = v.doc === "changed";
+  const evidenceChanged = v.evidence === "changed";
+  const hasAmbiguous = v.doc === "ambiguous" || v.evidence === "ambiguous";
+  if (hasOrphan) {
+    return {
+      recommended: "reanchor",
+      actions: [reanchorSuggest(id), retire(id), supersede()],
+    };
+  }
+  if (docChanged && evidenceChanged) {
+    return {
+      recommended: "reconcile",
+      actions: [reconcile(id), reanchorAsIs(id), retire(id)],
+    };
+  }
+  if (evidenceChanged) {
+    return {
+      recommended: "update-claim",
+      actions: [updateThenReanchor(id), reanchorAsIs(id), retire(id)],
+    };
+  }
+  if (docChanged) {
+    return {
+      recommended: "reverify-doc",
+      actions: [reverifyDoc(id), reanchorAsIs(id), retire(id)],
+    };
+  }
+  if (hasAmbiguous) {
+    return { recommended: "reanchor", actions: [reanchorTighten(id)] };
+  }
+  return null;
 }
 
 /** The remediation menu for a verdict, or `null` when there is nothing to do. */
 export function remediationFor(v: RemediationInput): Remediation | null {
   const id = v.claimId;
-  let rem: Remediation | null = null;
+  const sections: Section[] = [];
 
-  const hasOrphan = v.doc === "orphaned" || v.evidence === "orphaned";
-  const docChanged = v.doc === "changed";
-  const evidenceChanged = v.evidence === "changed";
-  const hasAmbiguous = v.doc === "ambiguous" || v.evidence === "ambiguous";
-  const hasMoved = v.doc === "moved" || v.evidence === "moved";
-
-  if (hasOrphan) {
-    rem = {
-      recommended: "reanchor",
-      actions: [reanchorSuggest(id), retire(id), supersede()],
-    };
-  } else if (v.judge === "refuted") {
-    rem = { recommended: null, actions: [fixEvidence(), fixClaim()] };
-  } else if (docChanged && evidenceChanged) {
-    rem = {
+  const refuted = v.judge === "refuted";
+  const orphaned = v.doc === "orphaned" || v.evidence === "orphaned";
+  const anchor = refuted && !orphaned ? null : anchorSection(v);
+  if (anchor) sections.push(anchor);
+  if (refuted) {
+    sections.push({
+      recommended: null,
+      actions: [fixEvidence(), fixClaim(id)],
+    });
+  }
+  const others = (v.conflicts ?? []).map((c) => c.claimId);
+  if (others.length > 0) {
+    sections.push({
       recommended: "reconcile",
-      actions: [reconcile(id), reanchorAsIs(id), retire(id)],
-    };
-  } else if (evidenceChanged) {
-    rem = {
-      recommended: "update-claim",
-      actions: [updateThenReanchor(id), reanchorAsIs(id), retire(id)],
-    };
-  } else if (docChanged) {
-    rem = {
-      recommended: "reverify-doc",
-      actions: [reverifyDoc(id), reanchorAsIs(id), retire(id)],
-    };
-  } else if (hasAmbiguous) {
-    rem = { recommended: "reanchor", actions: [reanchorTighten(id)] };
-  } else if (hasMoved) {
-    rem = { recommended: "reanchor", actions: [reanchorMoved(id)] };
+      actions: [reconcileConflict(others), ack(id, "conflict")],
+    });
   }
-
   if (v.expired) {
-    const base = rem ?? { recommended: null, actions: [] };
-    const recommended =
-      base.recommended === "reanchor" || rem === null
-        ? "reverify-and-rerecord"
-        : base.recommended;
-    rem = { recommended, actions: [...base.actions, reverifyAndReRecord()] };
+    sections.push({
+      recommended: null,
+      actions: [
+        attest(id),
+        submitEvidence(
+          id,
+          "the ttl ran out; judged evidence that supports the sentence resets it",
+        ),
+      ],
+    });
+  }
+  if (v.judge === "review") {
+    sections.push({
+      recommended: null,
+      actions: [
+        ack(id, "review finding"),
+        submitEvidence(
+          id,
+          "the judge was not sure; evidence that addresses the sentence directly settles it",
+        ),
+      ],
+    });
+  }
+  if (v.doc === "moved" || v.evidence === "moved") {
+    sections.push({ recommended: "reanchor", actions: [reanchorMoved(id)] });
   }
 
-  return rem;
+  const first = sections[0];
+  if (first === undefined) return null;
+  const actions: RemediationAction[] = [];
+  const seen = new Set<string>();
+  for (const section of sections) {
+    for (const a of section.actions) {
+      const key = `${a.id}\0${a.title}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      actions.push(a);
+    }
+  }
+  return { recommended: first.recommended, actions };
 }
 
 /** The single action a one-line surface shows: `recommended`, else the first. */
@@ -204,5 +307,6 @@ export function remediationForVerdict(verdict: Verdict): Remediation | null {
     evidence: verdict.evidence,
     judge: verdict.judge,
     expired: verdict.expired,
+    conflicts: verdict.conflicts,
   });
 }

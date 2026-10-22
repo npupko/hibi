@@ -150,7 +150,32 @@ export type SelectorBundle = z.infer<typeof SelectorBundle>;
 export const AttestationBasis = z.enum(["vouch", "evidence", "ack"]);
 export type AttestationBasis = z.infer<typeof AttestationBasis>;
 
-/** One append-only record that an actor stood behind the claim at a time. */
+/**
+ * What an `ack` attestation acknowledges (SPEC 9.4, 8.4): a contradiction
+ * pair, pinned to both sentences so the ack lapses when either changes; or
+ * the cached `supports` verdict that was in `review`.
+ */
+export const AttestationAck = z.union([
+  z.strictObject({
+    /** The two claim ids, sorted, joined with `:`. */
+    pairId: z.string().min(1),
+    /** sha256 of each normalized sentence, in `pairId` order. */
+    sentenceHashes: z
+      .tuple([z.string().min(1), z.string().min(1)])
+      // Zod emits no length bounds for a tuple; state them for the JSON Schema.
+      .meta({ minItems: 2, maxItems: 2 }),
+  }),
+  z.strictObject({
+    /** The judge cache key of the acknowledged `supports` verdict. */
+    judgeKey: z.string().min(1),
+  }),
+]);
+export type AttestationAck = z.infer<typeof AttestationAck>;
+
+/**
+ * One append-only record that an actor stood behind the claim at a time.
+ * `ack` is set exactly when `basis` is `ack`.
+ */
 export const Attestation = z
   .strictObject({
     by: Actor,
@@ -158,6 +183,23 @@ export const Attestation = z
     basis: AttestationBasis,
     note: z.string().optional(),
     evidenceHash: z.string().optional(),
+    ack: AttestationAck.optional(),
+  })
+  .superRefine((a, ctx) => {
+    if (a.basis === "ack" && a.ack === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["ack"],
+        message: "an ack attestation names what it acknowledges in `ack`",
+      });
+    }
+    if (a.basis !== "ack" && a.ack !== undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["ack"],
+        message: `\`ack\` is only valid on an ack attestation (basis is ${a.basis})`,
+      });
+    }
   })
   .meta({ id: "Attestation" });
 export type Attestation = z.infer<typeof Attestation>;

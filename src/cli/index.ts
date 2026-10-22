@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /**
  * The hibi CLI: JSON-first, the consumer is usually an agent. Verbs: init,
- * record, check, list, coverage, reanchor, retire, supersede, archive, schema,
+ * record, check, list, audit, reanchor, retire, supersede, archive, schema,
  * completions, version. Exit codes: 0 clean, 2 gating, 1 operational error.
  *
  * A thin imperative shell: it parses argv against the per-command option
@@ -11,6 +11,9 @@
 import { isAbsolute, join } from "node:path";
 import { parseArgs } from "node:util";
 import pkg from "../../package.json" with { type: "json" };
+import { attestClaim, parseAck } from "../engine/attest.ts";
+import { auditExitCode } from "../engine/audit.ts";
+import { submitEvidence } from "../engine/evidence.ts";
 import { changedFiles, currentRef, userEmail } from "../git/git.ts";
 import {
   ClaimStore,
@@ -23,6 +26,8 @@ import {
   type RegionSpec,
   type StoreLocation,
 } from "../index.ts";
+import { TypeSafeHttp } from "../judge/http.ts";
+import { JevJudge } from "../judge/jev.ts";
 import { completionScript, isShell } from "./completions.ts";
 import {
   COMMANDS,
@@ -32,7 +37,10 @@ import {
   usage,
   validateValues,
 } from "./options.ts";
+import { renderAttest } from "./render/attest.ts";
+import { renderAudit } from "./render/audit.ts";
 import { renderCheck } from "./render/check.ts";
+import { renderEvidence } from "./render/evidence.ts";
 import { fileReader } from "./render/helpers.ts";
 import {
   envelope,
@@ -353,7 +361,7 @@ async function main(argv: string[]): Promise<number> {
       };
       await emit(
         mode,
-        envelope("init", payload, "hibi coverage --doc <file>"),
+        envelope("init", payload, "hibi audit --doc <file>"),
         () => misc.renderInit(payload, style, mode),
       );
       return 0;
@@ -553,25 +561,17 @@ async function main(argv: string[]): Promise<number> {
       return 0;
     }
 
-    case "coverage": {
+    case "audit": {
       const engine = await open();
       const doc = String(values.doc);
       try {
-        const result = await engine.coverage(doc);
-        const next =
-          result.summary.uncovered > 0
-            ? "ground or remove the uncovered regions: `hibi record --from-file -`"
-            : "hibi check";
-        await emit(
-          mode,
-          envelope(
-            "coverage",
-            { doc, summary: result.summary, regions: result.regions },
-            next,
-          ),
-          () => misc.renderCoverage(doc, result, style, mode),
+        const report = await engine.audit(doc);
+        await emit(mode, envelope("audit", { ...report }), () =>
+          renderAudit(report, style, mode),
         );
-        return values["fail-uncovered"] && result.summary.uncovered > 0 ? 2 : 0;
+        return auditExitCode(report, {
+          failUncovered: Boolean(values["fail-uncovered"]),
+        });
       } catch (e) {
         return fail((e as Error).message, mode);
       }
@@ -745,6 +745,77 @@ async function main(argv: string[]): Promise<number> {
             next,
           ),
           () => misc.renderArchive(result, style, mode),
+        );
+        return 0;
+      } catch (e) {
+        return fail((e as Error).message, mode);
+      }
+    }
+
+    case "evidence": {
+      const engine = await open();
+      const fromFile = String(values["from-file"]);
+      const by = String(values.by);
+      const raw =
+        fromFile === "-"
+          ? await Bun.stdin.text()
+          : await Bun.file(absPath(anchorRoot, fromFile)).text();
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch (e) {
+        return fail(
+          `evidence --from-file: invalid JSON (${(e as Error).message})`,
+          mode,
+        );
+      }
+      const items = (Array.isArray(parsed) ? parsed : [parsed]).map((item) =>
+        typeof item === "object" &&
+        item !== null &&
+        !Array.isArray(item) &&
+        !("by" in item)
+          ? { ...item, by }
+          : item,
+      );
+      try {
+        const config = await engine.store.config();
+        const report = await submitEvidence({
+          store: engine.store,
+          judge: new JevJudge({
+            model: config.judge.model,
+            http: new TypeSafeHttp(),
+          }),
+          items,
+          // Phase 3 wires the claim's document context here.
+          context: () => "",
+          config,
+        });
+        const next =
+          report.summary.pending > 0
+            ? "set TYPESAFE_API_KEY or restore the network, then re-submit the pending items"
+            : "hibi check";
+        await emit(mode, envelope("evidence", { ...report }, next), () =>
+          renderEvidence(report, style, mode),
+        );
+        return 0;
+      } catch (e) {
+        return fail((e as Error).message, mode);
+      }
+    }
+
+    case "attest": {
+      const engine = await open();
+      try {
+        const ackValue = str(values.ack);
+        const result = await attestClaim({
+          store: engine.store,
+          claimId: positionals[0] as string,
+          by: String(values.by),
+          note: str(values.note),
+          ack: ackValue === undefined ? undefined : parseAck(ackValue),
+        });
+        await emit(mode, envelope("attest", { ...result }, "hibi check"), () =>
+          renderAttest(result, style, mode),
         );
         return 0;
       } catch (e) {

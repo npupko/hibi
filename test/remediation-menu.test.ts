@@ -100,32 +100,60 @@ describe("remediationFor (the verdict-to-action menu)", () => {
     expect(amb?.actions[0]?.title).toBe("Reanchor to a unique span");
   });
 
-  test("expired on a clean verdict recommends reverify-and-rerecord", () => {
+  test("expired on a clean verdict offers a human attest or evidence, no recommendation", () => {
     const rem = remediationFor(input({ expired: true }));
-    expect(rem?.recommended).toBe("reverify-and-rerecord");
-    expect(rem?.actions.map((a) => a.id)).toEqual(["reverify-and-rerecord"]);
+    expect(rem?.recommended).toBeNull();
+    expect(rem?.actions.map((a) => a.id)).toEqual(["attest", "evidence"]);
+    expect(rem?.actions[0]?.command).toBe(
+      'hibi attest clm_x --by human:<you> --note "<what you checked>"',
+    );
+    expect(rem?.actions[1]?.command).toContain('"claimId":"clm_x"');
   });
 
-  test("expired on a moved verdict promotes reverify-and-rerecord and keeps reanchor", () => {
+  test("expired outranks moved: no recommendation, reanchor kept last", () => {
     const rem = remediationFor(input({ evidence: "moved", expired: true }));
-    expect(rem?.recommended).toBe("reverify-and-rerecord");
+    expect(rem?.recommended).toBeNull();
     expect(rem?.actions.map((a) => a.id)).toEqual([
+      "attest",
+      "evidence",
       "reanchor",
-      "reverify-and-rerecord",
     ]);
   });
 
-  test("expired on an orphan promotes reverify-and-rerecord", () => {
+  test("an orphan outranks expired", () => {
     const rem = remediationFor(input({ evidence: "orphaned", expired: true }));
-    expect(rem?.recommended).toBe("reverify-and-rerecord");
-    expect(rem?.actions.map((a) => a.id)).toContain("reverify-and-rerecord");
+    expect(rem?.recommended).toBe("reanchor");
+    expect(rem?.actions.map((a) => a.id)).toContain("attest");
     expect(rem?.actions.map((a) => a.id)).toContain("supersede");
   });
 
   test("expired keeps update-claim recommended for a code change", () => {
     const rem = remediationFor(input({ evidence: "changed", expired: true }));
     expect(rem?.recommended).toBe("update-claim");
-    expect(rem?.actions.map((a) => a.id)).toContain("reverify-and-rerecord");
+    expect(rem?.actions.map((a) => a.id)).toContain("attest");
+  });
+
+  test("review offers ack then evidence", () => {
+    const rem = remediationFor(input({ judge: "review" }));
+    expect(rem?.recommended).toBeNull();
+    expect(rem?.actions.map((a) => a.id)).toEqual(["ack", "evidence"]);
+    expect(rem?.actions[0]?.command).toBe(
+      'hibi attest clm_x --by <actor> --ack --note "<why>"',
+    );
+  });
+
+  test("conflicts recommend reconcile naming the other claim, then ack", () => {
+    const rem = remediationFor(
+      input({ conflicts: [{ claimId: "clm_other" }] }),
+    );
+    expect(rem?.recommended).toBe("reconcile");
+    expect(rem?.actions.map((a) => a.id)).toEqual(["reconcile", "ack"]);
+    expect(rem?.actions[0]?.title).toBe("Reconcile with clm_other");
+  });
+
+  test("pending and unavailable add no action", () => {
+    expect(remediationFor(input({ judge: "pending" }))).toBeNull();
+    expect(remediationFor(input({ evidence: "unavailable" }))).toBeNull();
   });
 });
 

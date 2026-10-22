@@ -794,37 +794,6 @@ describe("CLI end-to-end", () => {
     expect(arch.json.strandedClaims).toEqual([b.json.id ?? ""]);
   });
 
-  test("coverage splits prose at sentence level, gates with --fail-uncovered, and errors on a missing doc", async () => {
-    const d = await repo();
-    await write(d, "src/a.ts", "export const A = 1;\n");
-    await write(
-      d,
-      "doc.md",
-      "The A constant is one. Nothing backs this sentence.\n",
-    );
-    await run(d, ["init"]);
-    await run(d, [
-      "record",
-      "--doc",
-      "doc.md",
-      "--doc-quote",
-      "The A constant is one.",
-      "--code-file",
-      "src/a.ts",
-      "--code-quote",
-      "A = 1",
-    ]);
-    const cov = await run(d, ["coverage", "--doc", "doc.md"]);
-    expect(cov.code).toBe(0);
-    expect(cov.json.summary?.uncovered).toBe(1);
-    expect(
-      (await run(d, ["coverage", "--doc", "doc.md", "--fail-uncovered"])).code,
-    ).toBe(2);
-    const missing = await run(d, ["coverage", "--doc", "nope.md"]);
-    expect(missing.code).toBe(1);
-    expect(missing.json.error).toContain("not found");
-  });
-
   test("--help prints the command's table and never runs it; unknown flags exit 1", async () => {
     const d = await repo();
     const help = await run(d, ["init", "--help"]);
@@ -952,7 +921,6 @@ describe("CLI end-to-end", () => {
       ["check", "--fail-on", "never"],
       ["check", "--overview"],
       ["list"],
-      ["coverage", "--doc", "README.md"],
     ]) {
       await run(d, args);
       expect(sameStore(baseline, await snapshotStore(d))).toBe(true);

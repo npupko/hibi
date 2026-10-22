@@ -24,13 +24,13 @@ import type {
 import type { AnchorAnalyzer } from "./engine/anchor.ts";
 import { isCoarseBundle } from "./engine/anchor.ts";
 import { type ArchiveResult, archiveDocument } from "./engine/archive.ts";
+import { type AuditReport, runAudit } from "./engine/audit.ts";
 import {
   type CheckOptions,
   type CheckReport,
   type FailOn,
   runCheck,
 } from "./engine/check.ts";
-import { type CoverageResult, coverage } from "./engine/coverage.ts";
 import { languageForFile } from "./engine/lang.ts";
 import { type ListResult, type ListState, toListRows } from "./engine/list.ts";
 import {
@@ -56,6 +56,9 @@ import {
   type SupersedeResult,
   supersede,
 } from "./engine/supersede.ts";
+import { TypeSafeHttp } from "./judge/http.ts";
+import { JevJudge } from "./judge/jev.ts";
+import type { Judge } from "./judge/types.ts";
 import { ClaimStore, type StoreLocation } from "./store/store.ts";
 
 export type { AstAnalyzer } from "./algo/resolve.ts";
@@ -69,6 +72,16 @@ export * from "./core/model.ts";
 export type { AnchorAnalyzer } from "./engine/anchor.ts";
 export type { ArchiveResult } from "./engine/archive.ts";
 export {
+  AUDIT_KINDS,
+  type AuditInput,
+  type AuditKind,
+  type AuditReport,
+  type AuditRow,
+  type AuditSummary,
+  auditExitCode,
+  runAudit,
+} from "./engine/audit.ts";
+export {
   type CheckOptions,
   type CheckReport,
   type CheckSummary,
@@ -78,13 +91,6 @@ export {
   type FailOn,
   type SuspectEntry as CheckSuspectEntry,
 } from "./engine/check.ts";
-export {
-  type CoverageInput,
-  type CoverageRegion,
-  type CoverageResult,
-  type CoverageSummary,
-  coverage as docCoverage,
-} from "./engine/coverage.ts";
 export {
   LIST_STATES,
   type ListResult,
@@ -109,6 +115,7 @@ export {
   type RegionSpec,
   resolveRegion,
 } from "./engine/record.ts";
+export { type DocRegion, splitRegions } from "./engine/regions.ts";
 export { type RetireResult, retire as retireClaim } from "./engine/retire.ts";
 export {
   isLiveClaimOn,
@@ -300,13 +307,35 @@ export class Engine {
     return recordClaim(this.store, contents, input);
   }
 
-  /** Doc-side coverage of a document. Throws when the document is missing on disk. */
-  async coverage(docPath: string): Promise<CoverageResult> {
-    const docContent = await this.readAnchored(docPath);
-    if (docContent === null) {
+  /**
+   * Audit a document (SPEC 10). Throws when the document is missing on disk
+   * or matches an ignore glob. The default judge is Jev over HTTP with the
+   * configured model.
+   */
+  async audit(
+    docPath: string,
+    opts: {
+      judge?: Judge;
+      duplicateOf?: (claimId: string) => string | null;
+    } = {},
+  ): Promise<AuditReport> {
+    const text = await this.readAnchored(docPath);
+    if (text === null) {
       throw new Error(`Document not found on disk: ${docPath}`);
     }
-    return coverage(this.store, docContent, { docPath });
+    const config = await this.store.config();
+    const judge =
+      opts.judge ??
+      new JevJudge({ model: config.judge.model, http: new TypeSafeHttp() });
+    return runAudit({
+      store: this.store,
+      judge,
+      docPath,
+      text,
+      claims: await this.store.allClaims(),
+      config,
+      duplicateOf: opts.duplicateOf,
+    });
   }
 
   /** Re-anchor an existing claim against current content. */

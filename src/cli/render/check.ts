@@ -1,19 +1,21 @@
 /**
  * Render a `CheckReport` for a human (rich and compact views). Diagnostics are
- * grouped by document; each suspect claim gets a status, the quoted sentence,
- * a `path:line` evidence anchor, owner, freshness, and a `help` line. Clean
- * documents collapse to a count.
+ * grouped by document; each suspect claim gets its status tags (anchor
+ * states, `judge:<state>`, `conflict:<other id>`, `expired`), the quoted
+ * sentence, a `path:line` evidence anchor, owner, freshness, and a `help`
+ * line. `--explain` adds every reason label. Clean documents collapse to a
+ * count. The worklist follows the documents.
  */
 
-import { isWarnVerdict } from "../../core/gating.ts";
 import type { Remediation } from "../../core/model.ts";
 import { topAction } from "../../core/remediation.ts";
-import type {
-  CheckReport,
-  Claim,
-  DocumentReport,
-  Verdict,
-} from "../../index.ts";
+import {
+  type CheckVerdict,
+  orderStatuses,
+  verdictStatuses,
+  type WorklistItem,
+} from "../../engine/check.ts";
+import type { CheckReport, Claim, DocumentReport } from "../../index.ts";
 import {
   evidenceAnchor,
   type FileRead,
@@ -44,27 +46,38 @@ interface SuspectClaim {
   status: string;
   severity: Severity;
   claim: Claim | undefined;
-  verdict: Verdict | undefined;
+  verdict: CheckVerdict | undefined;
   claimId: string;
+}
+
+/**
+ * The status column: every tag of the verdict, most severe first, with the
+ * other claim named on each conflict (`conflict:<id>`).
+ */
+export function statusTags(v: CheckVerdict, lcTags: string[] = []): string {
+  const tags = orderStatuses([...verdictStatuses(v), ...lcTags]).flatMap((t) =>
+    t === "conflict" ? v.conflicts.map((c) => `conflict:${c.claimId}`) : [t],
+  );
+  return tags.join(" ") || "unchanged";
 }
 
 function suspectsFor(
   doc: DocumentReport,
-  docVerdicts: Verdict[],
+  docVerdicts: CheckVerdict[],
   ctx: CheckRenderContext,
 ): SuspectClaim[] {
   const verdictsById = new Map(docVerdicts.map((v) => [v.claimId, v]));
+  const lcTags = doc.lifecycle === "active" ? [] : [doc.lifecycle];
   return doc.suspect.map((s) => {
     const verdict = verdictsById.get(s.claimId);
     const claim = ctx.claimsById.get(s.claimId);
-    const enforcement = claim?.enforcement ?? "suggested";
     const severity: Severity = verdict?.gates
       ? "gating"
-      : verdict && isWarnVerdict(verdict, enforcement)
+      : verdict?.warns
         ? "warn"
         : "neutral";
     return {
-      status: s.status,
+      status: verdict ? statusTags(verdict, lcTags) : s.status,
       severity,
       claim,
       verdict,
@@ -88,13 +101,14 @@ function leadLine(ctx: CheckRenderContext): string {
 
 function footer(ctx: CheckRenderContext): string {
   const { style, report } = ctx;
-  const { gating, warning } = report.summary;
+  const { gating, warning, worklist } = report.summary;
   const docCount = report.documents.length;
   const parts: string[] = [];
   parts.push(gating > 0 ? style.red(`${gating} gating`) : `${gating} gating`);
   parts.push(
     warning > 0 ? style.yellow(`${warning} warning`) : `${warning} warning`,
   );
+  if (worklist > 0) parts.push(`${worklist} in worklist`);
   const exit =
     report.exitCode === 0
       ? style.green("exit 0")
@@ -146,15 +160,20 @@ function richBlock(claim: SuspectClaim, ctx: CheckRenderContext): string[] {
     if (claim.claim?.owner) facets.push(`owner ${claim.claim.owner}`);
     facets.push(freshness(claim.verdict, claim.claim));
     if (facets.length) lines.push(`     ${style.dim(facets.join("   "))}`);
-    const reasons = [
-      ...new Set(
-        claim.verdict.detail.changes
-          .map((c) => c.detail)
-          .filter((r): r is string => Boolean(r)),
-      ),
-    ];
-    if (reasons.length)
-      lines.push(`     ${style.dim(`reason: ${reasons.join("; ")}`)}`);
+    if (mode.explain) {
+      for (const r of claim.verdict.reasons)
+        lines.push(`     ${style.dim(`reason: ${r}`)}`);
+    } else {
+      const reasons = [
+        ...new Set(
+          claim.verdict.detail.changes
+            .map((c) => c.detail)
+            .filter((r): r is string => Boolean(r)),
+        ),
+      ];
+      if (reasons.length)
+        lines.push(`     ${style.dim(`reason: ${reasons.join("; ")}`)}`);
+    }
   }
   if (mode.hints) {
     const help =
@@ -200,11 +219,50 @@ function compactLine(claim: SuspectClaim, ctx: CheckRenderContext): string {
   return `  ${sym} ${status} ${style.cyan(claimLabel(claim).padEnd(18))} ${style.dim(anchor)}   ${style.dim(`"${sentence}"`)}`;
 }
 
+function worklistLines(item: WorklistItem, ctx: CheckRenderContext): string[] {
+  const { style, mode } = ctx;
+  const head = `  ${style.yellow(item.reason.padEnd(13))} ${style.cyan(item.claimId)}   ${style.dim(item.document)}`;
+  if (mode.kind === "compact") {
+    return [`${head}   ${style.dim(`"${oneLine(item.sentence, 40)}"`)}`];
+  }
+  const lines = [head, `     ${style.dim(`"${oneLine(item.sentence)}"`)}`];
+  const facets: string[] = [`kind ${item.kind}`];
+  if (item.owner) facets.push(`owner ${item.owner}`);
+  if (item.sources.length > 0)
+    facets.push(
+      `sources ${item.sources.map((s) => s.id ?? s.resource).join(", ")}`,
+    );
+  lines.push(`     ${style.dim(facets.join("   "))}`);
+  if (item.procedure)
+    lines.push(
+      `     ${style.dim(`procedure: ${oneLine(item.procedure.instructions)}`)}`,
+    );
+  if (item.lastEvidence) {
+    const e = item.lastEvidence;
+    lines.push(
+      `     ${style.dim(`last evidence: ${oneLine(e.summary, 48)} (${e.source}, ${e.by}, ${e.at})`)}`,
+    );
+  }
+  return lines;
+}
+
+function worklistSection(ctx: CheckRenderContext): string[] {
+  const items = ctx.report.worklist;
+  if (items.length === 0) return [];
+  const out = [ctx.style.bold(`Worklist (${items.length})`)];
+  for (const item of items) {
+    out.push(...worklistLines(item, ctx));
+    if (ctx.mode.kind !== "compact") out.push("");
+  }
+  if (ctx.mode.kind === "compact") out.push("");
+  return out;
+}
+
 export function renderCheck(ctx: CheckRenderContext): string {
   const { report, mode } = ctx;
   const compact = mode.kind === "compact";
 
-  const verdictsByDoc = new Map<string, Verdict[]>();
+  const verdictsByDoc = new Map<string, CheckVerdict[]>();
   for (const v of report.verdicts) {
     const list = verdictsByDoc.get(v.documentId) ?? [];
     list.push(v);
@@ -252,6 +310,7 @@ export function renderCheck(ctx: CheckRenderContext): string {
   }
 
   if (out[out.length - 1] !== "") out.push("");
+  out.push(...worklistSection(ctx));
   out.push(footer(ctx));
   return `${out.join("\n")}\n`;
 }

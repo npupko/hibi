@@ -3,15 +3,15 @@
  * without mutating the engine's in-memory `Verdict`.
  *
  *   - concise (default): ids, kind, the doc and evidence states, the judge
- *     state, `expired`/`conflicts`/`gates`, a one-line `changed` summary, the
- *     `remediation` menu, and `notes`.
+ *     state, `expired`/`conflicts`/`gates`/`warns`, a one-line `changed`
+ *     summary, the `remediation` menu, and `reasons`.
  *   - `--explain`: adds `detail` (regions, changes, similarity).
  *
  * `--no-hints` (`HIBI_ADVICE=0`) drops the `remediation` block.
  */
 
-import { MODEL_VERSION, type Verdict } from "../../core/model.ts";
-import type { CheckReport } from "../../engine/check.ts";
+import { MODEL_VERSION } from "../../core/model.ts";
+import type { CheckReport, CheckVerdict } from "../../engine/check.ts";
 
 export interface ProjectionOptions {
   explain: boolean;
@@ -37,7 +37,7 @@ export function envelope(
 }
 
 export function projectVerdict(
-  v: Verdict,
+  v: CheckVerdict,
   opts: ProjectionOptions,
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {
@@ -51,18 +51,19 @@ export function projectVerdict(
   out.expired = v.expired;
   out.conflicts = v.conflicts;
   out.gates = v.gates;
+  out.warns = v.warns;
 
   const c = v.detail.changes[0];
   if (c) out.changed = `${c.path} ${c.kind}${c.detail ? `: ${c.detail}` : ""}`;
 
   if (opts.hints) out.remediation = v.remediation;
-  out.notes = v.notes;
+  out.reasons = v.reasons;
 
   if (opts.explain) out.detail = v.detail;
   return out;
 }
 
-/** Project a `check` report: `ok`, `action`, `schemaVersion`, context, `exitCode`, `summary`, `verdicts`, `documents`. */
+/** Project a `check` report: `ok`, `action`, `schemaVersion`, context, `exitCode`, `summary`, `verdicts`, `worklist`, `documents`. */
 export function projectCheckReport(
   report: CheckReport,
   opts: ProjectionOptions,
@@ -74,6 +75,7 @@ export function projectCheckReport(
     exitCode: report.exitCode,
     summary: report.summary,
     verdicts: report.verdicts.map((v) => projectVerdict(v, opts)),
+    worklist: report.worklist,
     documents: report.documents,
   });
 }

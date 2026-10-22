@@ -4,8 +4,8 @@
  * lifecycle, plus a footer with the store version.
  */
 
-import { isWarnVerdict } from "../../core/gating.ts";
-import type { CheckReport, Claim, Verdict } from "../../index.ts";
+import type { CheckVerdict } from "../../engine/check.ts";
+import type { CheckReport, Claim } from "../../index.ts";
 import type { OutputMode } from "./mode.ts";
 import type { Style } from "./style.ts";
 import {
@@ -29,7 +29,7 @@ export function renderOverview(ctx: OverviewContext): string {
   const { report, claims, style, mode } = ctx;
 
   const claimById = new Map(claims.map((c) => [c.id, c]));
-  const verdictsByDoc = new Map<string, Verdict[]>();
+  const verdictsByDoc = new Map<string, CheckVerdict[]>();
   for (const v of report.verdicts) {
     const list = verdictsByDoc.get(v.documentId) ?? [];
     list.push(v);
@@ -55,7 +55,7 @@ export function renderOverview(ctx: OverviewContext): string {
       const enf = claimById.get(v.claimId)?.enforcement ?? "suggested";
       if (enf === "retired") retired += 1;
       else if (v.gates) gating += 1;
-      else if (isWarnVerdict(v, enf)) warn += 1;
+      else if (v.warns) warn += 1;
     }
     const clean = verdicts.length - gating - warn - retired;
 

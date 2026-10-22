@@ -6,6 +6,7 @@
  */
 
 import { FAIL_ON } from "../engine/check.ts";
+import { MAX_EVIDENCE_CHARS } from "../engine/evidence.ts";
 import { LIST_STATES } from "../engine/list.ts";
 
 export interface OptionSpec {
@@ -272,24 +273,29 @@ export const COMMANDS: CommandSpec[] = [
     ],
   },
   {
-    name: "coverage",
+    name: "audit",
     summary:
-      "Which sentences of a document are backed by a claim and which are not.",
+      "One row per region of a document: the claim that covers it, or the judge's triage kind.",
+    description:
+      "Splits the document into regions, matches them to live claims by the claim's doc anchor, and triages uncovered regions with the judge (cached). Kinds: code, reference, attested (record them), unverifiable (rewrite as an attributed opinion, or remove), not-a-claim, unsure (triage confidence below judge.threshold), pending (judge unavailable). Recording is never automatic.",
     options: [
       {
         name: "doc",
         type: "string",
         placeholder: "<path>",
-        help: "The document to measure.",
+        help: "The document to audit.",
         required: true,
       },
       {
         name: "fail-uncovered",
         type: "boolean",
-        help: "Exit 2 when any region is uncovered.",
+        help: "Exit 2 when any uncovered region is code, reference, or attested.",
       },
     ],
-    examples: ["hibi coverage --doc README.md"],
+    examples: [
+      "hibi audit --doc README.md",
+      "hibi audit --doc docs/pricing.md --fail-uncovered",
+    ],
   },
   {
     name: "reanchor",
@@ -381,6 +387,69 @@ export const COMMANDS: CommandSpec[] = [
       DRY_RUN,
     ],
     examples: ["hibi archive --doc old.md --successor new.md"],
+  },
+  {
+    name: "evidence",
+    summary:
+      "Submit evidence an agent collected; the judge decides whether it supports each claim.",
+    description: `Reads a JSON array (or one object) of {claimId, evidence, source, summary, by}; an item without by takes --by. The whole batch is validated before the judge is asked; one bad item rejects it. A supports verdict at or above judge.threshold appends an evidence attestation, which resets the ttl. The verdict is cached by model, sentence, context, evidence, and source; raw evidence text is never stored. Without TYPESAFE_API_KEY or with the network down, an item is pending and nothing is written for it. Evidence is limited to ${MAX_EVIDENCE_CHARS} characters per item.`,
+    usage: ["hibi evidence --from-file <path|-> --by <actor>"],
+    options: [
+      {
+        name: "from-file",
+        type: "string",
+        placeholder: "<path|->",
+        help: "JSON array of evidence items (- reads stdin). All or nothing.",
+        required: true,
+      },
+      {
+        name: "by",
+        type: "string",
+        placeholder: "<actor>",
+        help: "The actor submitting the evidence, for items without by: human:<id>, agent:<name>, or process:<name>.",
+        required: true,
+      },
+    ],
+    examples: [
+      'echo \'[{"claimId":"clm_1a2b3c4d5e6f7a8b","evidence":"Pro plan: $29.00 / month","source":"stripe prices list --product prod_123","summary":"Stripe lists Pro at $29/month"}]\' | hibi evidence --from-file - --by agent:opus',
+    ],
+  },
+  {
+    name: "attest",
+    summary:
+      "Vouch for a claim, or acknowledge a review or conflict finding with a note.",
+    description:
+      "Without --ack this records a vouch. Only a human: vouch resets the ttl; an agent: or process: vouch is recorded and does not. --ack review acknowledges the claim's newest supports verdict; --ack conflict:<id> acknowledges a contradiction with another claim and records the ack on both. An ack needs --note and never resets the ttl.",
+    positional: {
+      name: "claim-id",
+      help: "The claim to attest.",
+      required: true,
+    },
+    options: [
+      {
+        name: "by",
+        type: "string",
+        placeholder: "<actor>",
+        help: "The attesting actor: human:<id>, agent:<name>, or process:<name>.",
+        required: true,
+      },
+      {
+        name: "note",
+        type: "string",
+        placeholder: "<text>",
+        help: "What was checked, or why the finding is acceptable. Required with --ack.",
+      },
+      {
+        name: "ack",
+        type: "string",
+        placeholder: "<finding>",
+        help: "Acknowledge a finding: conflict:<claim-id> or review.",
+      },
+    ],
+    examples: [
+      'hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --note "checked Stripe, still $29"',
+      'hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --ack conflict:clm_9f8e7d6c5b4a3210 --note "different plans"',
+    ],
   },
   {
     name: "schema",

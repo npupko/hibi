@@ -23,6 +23,52 @@
     },
     "evidenceHash": {
       "type": "string"
+    },
+    "ack": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "pairId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "sentenceHashes": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "string",
+                  "minLength": 1
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "pairId",
+            "sentenceHashes"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "judgeKey": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "judgeKey"
+          ],
+          "additionalProperties": false
+        }
+      ]
     }
   },
   "required": [

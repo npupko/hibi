@@ -16,11 +16,15 @@
  * selectors and the current files alone; `check` never reads git.
  */
 
-import { computeGates } from "../core/gating.ts";
+import { type GateMode, gateVerdict } from "../core/gating.ts";
 import {
   type AnchorState,
   type Claim,
   COARSE_SELECTOR_KINDS,
+  type ConflictFinding,
+  DEFAULT_JUDGE_THRESHOLD,
+  type EvidenceState,
+  type JudgeState,
   type Region,
   type Selector,
   type SelectorBundle,
@@ -28,6 +32,7 @@ import {
   type Verdict,
 } from "../core/model.ts";
 import { remediationFor } from "../core/remediation.ts";
+import { expiryLabel } from "../engine/expiry.ts";
 import { localizeTextQuote, regionText } from "./localize.ts";
 import { collapseWhitespace, textSimilarity } from "./normalize.ts";
 import { MOVE_AWARENESS_CHARS, SAME_TEXT_SIMILARITY } from "./params.ts";
@@ -56,6 +61,11 @@ export interface AstAnalyzer {
 export interface ResolveFiles {
   doc: string | null;
   evidence: ReadonlyMap<string, string | null>;
+  /**
+   * Evidence files in a sibling repo that is not checked out (SPEC 4.1), with
+   * the reason label. Those sides resolve `unavailable`.
+   */
+  unavailable?: ReadonlyMap<string, string>;
 }
 
 export interface ResolveOptions {
@@ -305,34 +315,129 @@ export function worstState(sides: SideResult[]): AnchorState {
   return state;
 }
 
-/**
- * Resolve a single claim against the current working tree. The `evidence`
- * axis is absent when the claim has no evidence span. Expiry and the judge
- * axis are not computed here.
- */
-export function resolveClaim(
-  claim: Claim,
+// ── Claim level ──────────────────────────────────────────────────────────────
+
+/** An evidence side: an anchor result, or `unavailable` when its repo is not checked out. */
+export type EvidenceSide =
+  | SideResult
+  | (Omit<SideResult, "state"> & { state: "unavailable" });
+
+export interface ClaimSides {
+  doc: SideResult;
+  /** Index-aligned with `claim.evidence`. */
+  evidence: EvidenceSide[];
+}
+
+/** `unavailable` ranks above `moved` and below the gating states. */
+const EVIDENCE_RANK: Record<EvidenceState, number> = {
+  orphaned: 5,
+  ambiguous: 4,
+  changed: 3,
+  unavailable: 2,
+  moved: 1,
+  unchanged: 0,
+};
+
+/** Resolve the doc span and every evidence span, marking sibling-repo sides `unavailable`. */
+export function resolveClaimSides(
+  claim: Pick<Claim, "doc" | "evidence">,
   files: ResolveFiles,
   opts: ResolveOptions = {},
-): Verdict {
-  const sides = resolveSides(claim, files, opts);
+): ClaimSides {
+  const doc = resolveSide(claim.doc, files.doc, opts);
+  const evidence = claim.evidence.map((bundle): EvidenceSide => {
+    const label = files.unavailable?.get(bundle.file);
+    if (label !== undefined) {
+      return {
+        state: "unavailable",
+        region: null,
+        similarity: 0,
+        notes: [label],
+        changedEvidence: [],
+        liveText: null,
+      };
+    }
+    return resolveSide(bundle, files.evidence.get(bundle.file) ?? null, opts);
+  });
+  return { doc, evidence };
+}
+
+/** Worst state over evidence sides that may include `unavailable`. */
+export function worstEvidenceState(sides: EvidenceSide[]): EvidenceState {
+  let state: EvidenceState = "unchanged";
+  for (const side of sides) {
+    if (EVIDENCE_RANK[side.state] > EVIDENCE_RANK[state]) state = side.state;
+  }
+  return state;
+}
+
+/** What later passes found about a claim: the judge axis and the contradiction pass. */
+export interface ClaimFindings {
+  judge?: JudgeState;
+  conflicts?: ConflictFinding[];
+  /** Reason labels from those passes (judge outcome, why the judge was not asked). */
+  reasons?: string[];
+  /** A `review` verdict an `ack` attestation names; it stays `review` and no longer warns. */
+  reviewAcknowledged?: boolean;
+}
+
+export interface ResolveClaimOptions extends ResolveOptions, ClaimFindings {
+  /** Clock for expiry. Default: now. */
+  now?: Date;
+  /** `doc` for `check --doc`, where `expired` gates. Default `store`. */
+  mode?: GateMode;
+  /** `config.judge.threshold`. */
+  threshold?: number;
+}
+
+/** A verdict with the gating outcome and every reason label (`notes` holds the anchor labels only). */
+export type ClaimVerdict = Verdict & {
+  /** True when the verdict warns and does not gate (SPEC 7.4). */
+  warns: boolean;
+  /** Every reason label: anchors, expiry, judge, conflicts, and gating rules. */
+  reasons: string[];
+};
+
+/** Build the verdict for resolved sides plus the later passes' findings. */
+export function assembleVerdict(
+  claim: Claim,
+  sides: ClaimSides,
+  opts: ResolveClaimOptions = {},
+): ClaimVerdict {
   const evidence =
-    sides.evidence.length > 0 ? worstState(sides.evidence) : undefined;
-  // The reported similarity describes the side that decided the verdict, so a
-  // `doc:changed` claim never reports an untouched evidence side's 1.0.
-  const primary = [sides.doc, ...sides.evidence].reduce((worst, side) =>
+    sides.evidence.length > 0 ? worstEvidenceState(sides.evidence) : undefined;
+  // The reported similarity describes the located side that decided the
+  // verdict, so a `doc:changed` claim never reports an untouched evidence
+  // side's 1.0, and an unavailable side reports nothing.
+  const located = [
+    sides.doc,
+    ...sides.evidence.filter((s): s is SideResult => s.state !== "unavailable"),
+  ];
+  const primary = located.reduce((worst, side) =>
     STATE_RANK[side.state] > STATE_RANK[worst.state] ? side : worst,
   );
 
-  const expired = false;
-  const gates = computeGates(
-    { doc: sides.doc.state, evidence, expired },
+  const now = opts.now ?? new Date();
+  const expiry = expiryLabel(claim, now);
+  const expired = expiry !== undefined;
+  const conflicts = opts.conflicts ?? [];
+  const gatingJudge =
+    opts.judge === "review" && opts.reviewAcknowledged ? undefined : opts.judge;
+  const gate = gateVerdict(
+    { doc: sides.doc.state, evidence, judge: gatingJudge, expired, conflicts },
     claim.enforcement,
+    { mode: opts.mode, threshold: opts.threshold ?? DEFAULT_JUDGE_THRESHOLD },
   );
 
   const notes = [
     ...sides.doc.notes.map((n) => `doc: ${n}`),
     ...sides.evidence.flatMap((s) => s.notes.map((n) => `evidence: ${n}`)),
+  ];
+  const reasons = [
+    ...notes,
+    ...(expiry !== undefined ? [expiry] : []),
+    ...(opts.reasons ?? []),
+    ...gate.reasons,
   ];
 
   const changes = [
@@ -346,14 +451,18 @@ export function resolveClaim(
     kind: claim.kind,
     doc: sides.doc.state,
     ...(evidence !== undefined ? { evidence } : {}),
+    ...(opts.judge !== undefined ? { judge: opts.judge } : {}),
     expired,
-    conflicts: [],
-    gates,
+    conflicts,
+    gates: gate.gates,
+    warns: gate.warns,
     remediation: remediationFor({
       claimId: claim.id,
       doc: sides.doc.state,
       evidence,
+      judge: gatingJudge,
       expired,
+      conflicts,
     }),
     detail: {
       docRegion: sides.doc.region ?? undefined,
@@ -364,5 +473,20 @@ export function resolveClaim(
       changes,
     },
     notes,
+    reasons,
   };
+}
+
+/**
+ * Resolve a single claim against the current working tree: anchors, expiry
+ * (SPEC 5 counting rule), and gating with whatever judge and conflict
+ * findings the caller passes. The `evidence` axis is absent when the claim
+ * has no evidence span; `judge` is absent unless passed.
+ */
+export function resolveClaim(
+  claim: Claim,
+  files: ResolveFiles,
+  opts: ResolveClaimOptions = {},
+): ClaimVerdict {
+  return assembleVerdict(claim, resolveClaimSides(claim, files, opts), opts);
 }

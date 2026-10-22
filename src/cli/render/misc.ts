@@ -6,7 +6,6 @@
 
 import type {
   ArchiveResult,
-  CoverageResult,
   ListResult,
   ListSeverity,
   ReanchorResult,
@@ -128,25 +127,6 @@ export function renderReanchorSuggest(
     const sim = `${Math.round(c.similarity * 100)}%`;
     return `  ${style.green(sim.padStart(4))}  ${style.dim(c.side.padEnd(8))} ${style.bold(c.file)} ${style.dim(`[${c.start}-${c.end}]`)}  ${style.dim(`"${oneLine(c.snippet)}"`)}`;
   });
-  return `${head}\n${lines.join("\n")}\n`;
-}
-
-export function renderCoverage(
-  doc: string,
-  result: CoverageResult,
-  style: Style,
-  mode: OutputMode,
-): string {
-  const { regions, covered, uncovered, coverageRatio } = result.summary;
-  const pct = Math.round(coverageRatio * 100);
-  const head = `${ok(style, mode)} ${style.bold(doc)}  ${style.dim(`${covered}/${regions} regions backed by a claim (${pct}%)`)}`;
-  if (uncovered === 0) return `${head}\n`;
-  const lines = result.regions
-    .filter((r) => !r.covered)
-    .map(
-      (r) =>
-        `  ${style.yellow(mode.unicode ? "○" : "o")} ${style.dim(`[${r.range.start}-${r.range.end}]`)} ${style.dim(`"${r.preview}"`)}`,
-    );
   return `${head}\n${lines.join("\n")}\n`;
 }
 
