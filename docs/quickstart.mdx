@@ -1,93 +1,224 @@
 ---
-title: "Install Hibi and Record Your First Claim"
+title: "Quickstart: Record Three Claims and Run the Loop"
 sidebarTitle: "Quickstart"
-description: "Install Hibi, record a claim anchored to source code, run hibi check, and read the verdict."
+description: "Install hibi, create the store, audit a document, record a code, a reference, and an attested claim, then check, submit evidence, and attest."
 icon: "rocket"
 ---
 
-Hibi tracks **claims**: sentences in your docs or agent instruction files, each anchored to the code it describes. `hibi check` flags a claim when either side changes. A flag is a request to re-verify, not a statement that the doc is wrong.
+This page walks through the whole loop in a small repository: a retry constant in code, a refund policy in another document, and a price that lives in Stripe.
 
-## Install
-
-<CodeGroup>
-
-```sh Prebuilt binary
-curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | sh
+```
+src/retry.ts       export const MAX_ATTEMPTS = 5;
+docs/billing.md    Refunds are issued within 14 days.
+README.md          Retries are capped at 5 attempts.
+                   Refunds are issued within two weeks of a request.
+docs/pricing.md    The Pro plan costs $29 per month.
 ```
 
-```sh Bun
+## 1. Install
+
+```sh
+# Prebuilt single-file executable (no runtime needed)
+curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | sh
+
+# Or, in a Bun or JS project
 bun add @npupko/hibi        # then: bunx hibi …
 bunx @npupko/hibi --help    # or run it once without installing
 ```
 
-</CodeGroup>
-
-<Note>
-  The npm package targets [Bun](https://bun.sh). For a machine with no JS runtime, use the prebuilt binary.
-</Note>
-
-## Record and check a claim
-
-<Steps>
-  <Step title="Initialize the store">
-    `hibi init` creates a `.claims/` directory with a per-repo banner nonce. One file per claim. Commit it.
-
-    ```sh
-    hibi init
-    ```
-  </Step>
-  <Step title="Record a claim">
-    Point at the documented sentence and at the code span that backs it. Quote the load-bearing token on the code side.
-
-    ```sh
-    hibi record \
-      --doc README.md --doc-quote "Retries are capped at 5 attempts" \
-      --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" \
-      --verified --owner alice
-    ```
-
-    The claim is enforced by default. `--verified` records that you confirmed the code backs the sentence. Because the code span contains the literal `5`, changing it to `50` later trips the claim even if nothing else moves.
-
-    Agents record in batches on stdin:
-
-    ```sh
-    echo '[{"doc":"README.md","docQuote":"Retries are capped at 5 attempts",
-            "codeFile":"src/retry.ts","codeQuote":"MAX_ATTEMPTS = 5","verified":true}]' \
-      | hibi record --from-file -
-    ```
-  </Step>
-  <Step title="Check">
-    ```sh
-    hibi check              # verify every claim
-    hibi check --write      # also stamp a banner into each suspect document
-    ```
-  </Step>
-</Steps>
-
-`hibi check` exits `0` when clean, `2` when an enforced claim gates (`changed`, `orphaned`, or `ambiguous` on either side, `expired`, or `refuted`), and `1` on an operational error. A `moved` side is a warning and exits `0` unless you pass `--fail-on warn`.
-
-## Everyday commands
+The judge needs a TypeSafe API key. Without one, everything except judge calls works, and judgments are `pending`.
 
 ```sh
-hibi check --doc CLAUDE.md         # is this document still current?
-hibi check --since origin/main     # what did this change invalidate?
-hibi check --overview              # per-document table
-hibi list --path src/retry.ts      # which claims depend on this file?
-hibi list --state gating           # one row per gating claim
-hibi coverage --doc README.md      # which sentences have no claim?
-hibi reanchor <claim-id>           # re-resolve and store the new baseline
-hibi reanchor <claim-id> --suggest # candidate locations for a lost span
-hibi retire <claim-id>             # withdraw a claim
-hibi supersede --from v1.md --to v2.md
-hibi archive --doc old.md --successor new.md
+export TYPESAFE_API_KEY=…
 ```
 
-Every suspect verdict carries a remediation menu: a `recommended` action id and an ordered `actions` list, each with a `command` when Hibi can perform the step.
+## 2. Create the store
 
-<Note>
-  Output is JSON when piped and human-readable on a TTY. `--format human|compact|json|json-pretty` overrides; `--json` is short for `--format json`. `--explain` adds the evidence tail; `--no-hints` drops the remediation menu. `hibi <cmd> --help` prints that command's options.
-</Note>
+```sh
+hibi init --instructions AGENTS.md
+```
 
-<Card title="Verdicts" icon="scale-balanced" href="/verdicts">
-  The claim model, the five anchor states, the gates rule, and the exit codes.
-</Card>
+```json
+{
+  "ok": true,
+  "action": "init",
+  "schemaVersion": "v4",
+  "store": "/path/to/repo/.claims",
+  "version": "v4",
+  "judge": { "model": "jev-1.14.0", "threshold": 0.8 },
+  "instructions": { "file": "AGENTS.md", "appended": true },
+  "next": "hibi audit --doc <file>"
+}
+```
+
+`--instructions` appends one line to the file, once:
+
+> Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.
+
+## 3. Audit a document
+
+```sh
+hibi audit --doc README.md
+```
+
+```
+README.md
+  L1  not-a-claim  0.94  "# Demo"
+  L3  code         0.94  record  "Retries are capped at 5 attempts."
+  L5  reference    0.94  record  "Refunds are issued within two weeks of a request."
+3 regions, 0 covered, 3 uncovered; code 1, reference 1, not-a-claim 1; 1 judge request
+```
+
+Each uncovered region gets a kind from the judge's triage, with the judge's probability. `code`, `reference`, and `attested` rows say `record`; an `unverifiable` row says `rewrite as an attributed opinion, or remove`. Hibi never records on its own. Without an API key the rows are `pending`. See [Audit](/audit).
+
+## 4. Record one claim of each kind
+
+```sh
+# code: the sentence is backed by a code span
+hibi record --doc README.md --doc-quote "Retries are capped at 5 attempts." \
+  --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5"
+
+# reference: the sentence is backed by a span in another document
+hibi record --doc README.md --doc-quote "Refunds are issued within two weeks of a request." \
+  --kind reference --ref-file docs/billing.md --ref-quote "Refunds are issued within 14 days."
+
+# attested: the truth lives outside the repo; it needs a ttl
+hibi record --doc docs/pricing.md --doc-quote "The Pro plan costs $29 per month." \
+  --kind attested --ttl P90D --owner human:alice@example.com \
+  --source stripe=https://dashboard.stripe.com/products/prod_123 \
+  --instructions "Open the Stripe dashboard and report the Pro monthly price."
+```
+
+```json
+{
+  "ok": true,
+  "action": "record",
+  "schemaVersion": "v4",
+  "id": "clm_418fde0aee55433e",
+  "kind": "attested",
+  "doc": "docs/pricing.md",
+  "evidence": null,
+  "enforcement": "enforced",
+  "next": "hibi check"
+}
+```
+
+Quote the load-bearing token on the code side (`MAX_ATTEMPTS = 5`, not the whole file), so a change from `5` to `50` is caught. Agents usually send all three as a JSON array to `hibi record --from-file -`; see [Claims](/claims).
+
+## 5. Check
+
+```sh
+hibi check
+```
+
+```
+hibi check worktree
+
+⚠ README.md   1 suspect · 1 clean
+  ⚠ judge:pending   clm_ed3e7d37f89b41b8
+     "Refunds are issued within two weeks of a request."
+     docs/billing.md:3   worktree
+
+✓ docs/pricing.md   1 claim clean
+
+Worklist (2)
+  never-checked clm_418fde0aee55433e   docs/pricing.md
+     "The Pro plan costs $29 per month."
+     kind attested   owner human:alice@example.com   sources stripe
+     procedure: Open the Stripe dashboard and report the Pro monthly price.
+
+  pending       clm_ed3e7d37f89b41b8   README.md
+     "Refunds are issued within two weeks of a request."
+     kind reference
+
+Found 0 gating, 1 warning, 2 in worklist across 2 documents.  exit 0
+```
+
+This run had no API key, so the reference claim is `pending` (a warning). The attested claim is in the worklist because no evidence has been judged for it yet. With a key, the reference claim is judged once and the verdict is cached in `.claims/judge/`. Piped, `check` prints JSON; the full shape is on [Verdicts](/verdicts).
+
+## 6. Submit evidence
+
+An agent follows the procedure, then submits what it saw. Hibi does not open Stripe; the agent does.
+
+```sh
+echo '[{"claimId":"clm_418fde0aee55433e","evidence":"Pro plan: $29.00 per month",
+        "source":"stripe","summary":"Stripe lists Pro at $29/month"}]' \
+  | hibi evidence --from-file - --by agent:opus
+```
+
+```json
+{
+  "ok": true,
+  "action": "evidence",
+  "schemaVersion": "v4",
+  "results": [
+    {
+      "claimId": "clm_418fde0aee55433e",
+      "judge": "supported",
+      "relation": "supports",
+      "confidence": 0.9249999999999999,
+      "probabilities": { "supports": 0.95, "refutes": 0.03, "does_not_address": 0.02 },
+      "reasons": [
+        "evidence supports the sentence (confidence 0.92 >= threshold 0.8)",
+        "source matches declared source \"stripe\""
+      ],
+      "attested": true,
+      "cached": false
+    }
+  ],
+  "summary": { "supported": 1, "refuted": 0, "review": 0, "pending": 0, "requests": 1 },
+  "next": "hibi check"
+}
+```
+
+`attested: true` means an `evidence` attestation was appended, and the 90-day ttl now counts from it. The raw evidence text is not stored; the cache keeps its sha256, the source, the summary, and the judge's probabilities.
+
+## 7. Attest
+
+A person who checked the price can vouch for it:
+
+```sh
+hibi attest clm_418fde0aee55433e --by human:alice@example.com --note "checked Stripe"
+```
+
+```json
+{
+  "ok": true,
+  "action": "attest",
+  "schemaVersion": "v4",
+  "claimIds": ["clm_418fde0aee55433e"],
+  "attestation": { "by": "human:alice@example.com", "at": "2026-10-22T18:16:03.426Z", "basis": "vouch", "note": "checked Stripe" },
+  "countsTowardTtl": true,
+  "next": "hibi check"
+}
+```
+
+The same command with `--by agent:opus` is recorded with `countsTowardTtl: false`. See [Attestations](/attestations).
+
+## 8. Break it
+
+Change `MAX_ATTEMPTS = 5` to `50` and run `hibi check` again:
+
+```
+✖ README.md   1 suspect · 1 clean
+  ✖ evidence:changed   clm_b87be1a1752b4a49
+     "Retries are capped at 5 attempts."
+     src/retry.ts:1   worktree
+     reason: value changed (was `5`); identifiers or literals renamed
+     help: hibi reanchor clm_b87be1a1752b4a49  (Update the sentence, then reanchor: …)
+
+Found 1 gating, 0 warning across 2 documents.  exit 2
+```
+
+Fix the sentence (or the code), then run `hibi reanchor clm_b87be1a1752b4a49` to store the new baseline.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Workflows" icon="route" href="/workflows">
+    When to run which command, for agents, people, and CI.
+  </Card>
+  <Card title="Claude Code" icon="wand-magic-sparkles" href="/claude-code">
+    Install the skill that teaches an agent this loop.
+  </Card>
+</CardGroup>

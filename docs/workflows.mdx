@@ -1,88 +1,167 @@
 ---
-title: "Workflows: When to Run Which Hibi Command"
+title: "Workflows: When to Run Which Command"
 sidebarTitle: "Workflows"
-description: "Eight moments, each with the one command that answers it: trust-check, post-change check, blast radius, grounding audit, plan gating, triage, document consolidation, orphan recovery."
+description: "The agent loop (before trusting a document, after a change, auditing a new document, periodic hygiene, scheduled evidence collection), the human loop, and CI."
 icon: "route"
 ---
 
-Each section is a moment, the command for it, and what to do with the result. The same flows appear as an agent playbook with raw JSON in the [skill cookbook](https://github.com/npupko/hibi/blob/main/plugins/hibi-cli/skills/hibi/references/cookbook.md).
+Each section names a moment, the command for it, and what to do with the result. Commands print JSON when piped, so the examples use `jq`.
 
-Running example: `src/retry.ts` (`MAX_ATTEMPTS = 5`), `src/auth.ts` (`TOKEN_TTL_MIN = 30`), a `README.md`, and a `CLAUDE.md` that says "Auth tokens expire after 30 minutes."
+## The agent loop
 
-## 1. Trust-check before following an instruction file
+### 1. Before trusting a document
 
 ```sh
 hibi check --doc CLAUDE.md
 ```
 
-Exit 2 means a sentence in the file no longer matches the code. `doc: unchanged`, `code: changed` means the sentence is intact and the code moved. Do not act on that sentence as written. The verdict's `remediation.recommended` is `update-claim`: rewrite the sentence if it is now wrong, then run `hibi reanchor <id>`.
+Run this before acting on an instruction file, a README, or any page in a knowledge repository.
 
-## 2. Keep docs honest in the same PR as the code change
+| exit | meaning | what to do |
+|---|---|---|
+| `0` | no claim on the document gates | use the document; read any warnings in `reasons[]` |
+| `2` | at least one claim gates | do not act on the flagged sentences as written; read their `verdicts[]` entries |
+| `1` | operational error | read `error` |
+
+Under `--doc`, an `expired` claim gates. In a whole-store `check` it only warns. If the document has no claims, the JSON has `found: false` and the exit is 0: hibi knows nothing about the file, which is different from the file being clean.
+
+### 2. After a change
 
 ```sh
 hibi check --since origin/main
 ```
 
-Only claims touching a file changed since the ref are evaluated. `changedFiles` lists the files; `documents` names the docs whose sentences the edit invalidated. Fix the prose in the same PR. `--explain` adds `evidence.changedEvidence` when the one-line `changed` field is not enough. An unknown ref exits 1.
+Only claims whose doc or evidence side names a file changed since the ref are evaluated. The JSON adds `since` and `changedFiles`. `documents[].suspect[]` names the sentences the change invalidated. Fix the prose in the same change, then follow each verdict's `remediation` (usually `hibi reanchor <id>` after you re-read the sentence). An unknown ref exits 1.
 
-## 3. See the blast radius before you refactor
+The contradiction pass still runs over the whole store, so a scoped check still reports a conflict with a claim outside its scope.
 
-```sh
-hibi list --path src/auth.ts
-```
-
-One row per claim anchored to that path on either side, with `claimId`, `text`, `documentPath`, `codePath`, `status`, `severity`, `enforcement`, `recommended`, and `side`. Keep the ids: after the edit you `reanchor` the claims still true and `retire` the ones now wrong.
-
-## 4. Go from zero to protected on an existing repo
+### 3. A new or unaudited document
 
 ```sh
-hibi init
-hibi coverage --doc README.md
+hibi audit --doc docs/pricing.md
 ```
 
-`coverage` splits the document into sentence-level regions and reports each as covered or uncovered, with a `coverageRatio`. Hibi does not extract claims from prose. For each uncovered region, either record a claim (a code span backs the sentence) or remove the sentence (nothing does). Record the grounded set in one batch:
+`audit` returns one row per region (sentence, heading, list item, table row, fenced block). A covered row names its claim. An uncovered row has a kind from the judge's triage: `code`, `reference`, `attested`, `unverifiable`, `not-a-claim`, `unsure`, or `pending`. See [Audit](/audit).
+
+For each uncovered `code`, `reference`, or `attested` row, decide the evidence and record the claim. Recording is never automatic. Send a batch:
 
 ```sh
-echo '[{"doc":"README.md","docQuote":"Requests are retried up to 5 times before failing.",
-        "codeFile":"src/retry.ts","codeQuote":"MAX_ATTEMPTS = 5","verified":true}]' \
-  | hibi record --from-file -
+echo '[
+  {"doc":"README.md","docQuote":"Retries are capped at 5 attempts.","kind":"code",
+   "code":[{"file":"src/retry.ts","quote":"MAX_ATTEMPTS = 5"}]},
+  {"doc":"docs/pricing.md","docQuote":"The Pro plan costs $29 per month.","kind":"attested",
+   "ttl":"P90D","owner":"human:alice@example.com","by":"agent:opus",
+   "sources":[{"id":"stripe","resource":"https://dashboard.stripe.com/products/prod_123"}],
+   "procedure":{"instructions":"Open the Stripe dashboard and report the Pro monthly price.",
+                "steps":[{"id":"price","command":"stripe prices list --product prod_123"}]}}
+]' | hibi record --from-file -
 ```
 
-The batch is validated before any write; a bad item fails the whole batch. New claims are enforced by default; pass `"suggest": true` for an advisory claim. Re-run `coverage` to confirm the ratio rose, then `hibi check`.
+`record` adds one `vouch` attestation by `by`, or by `human:<git user.email>` when `by` is absent. An `attested` claim recorded with `"by": "agent:…"` has no counting attestation, so it is expired from the start: it warns in `check`, gates in `check --doc`, and appears in the worklist with reason `expired` until evidence is judged `supports`.
 
-## 5. Verify built code against a plan
+For an `unverifiable` row, rewrite the sentence as an attributed opinion, or remove it. Run `audit` again to confirm.
+
+### 4. Periodic hygiene in a knowledge repository
+
+Run a whole-store check and read the worklist:
 
 ```sh
-hibi coverage --doc plan.md --fail-uncovered
+hibi check | jq '.worklist[] | {claimId, reason, sentence, procedure, sources, owner}'
 ```
 
-Exit 2 while any region of the plan is uncovered, 0 once every region is backed by a claim. A sentence you cannot anchor to code is an unimplemented plan item. Give behavioral promises a `--verifier command:"…"` and prove them with `hibi check --run-verifiers`.
+Each worklist item has a `reason`:
 
-## 6. Triage
+| reason | meaning | what to do |
+|---|---|---|
+| `expired` | an `attested` claim's ttl ran out | follow `procedure` and `sources`, then submit evidence |
+| `never-checked` | an `attested` claim has never had evidence judged | the same |
+| `review` | the judge was not sure, or the evidence did not address the sentence | submit evidence that addresses the sentence directly, or acknowledge |
+| `pending` | the judge could not answer (no key, or network down) | set `TYPESAFE_API_KEY` and run `check` again |
+
+`hibi list --state pending` returns the same claims as one row each. `lastEvidence` on an item shows the summary, source, time, and actor of the newest judged evidence.
+
+Collect the evidence the procedure asks for, then submit it:
 
 ```sh
-hibi list --state gating
+echo '[{"claimId":"clm_1a2b3c4d5e6f7a8b",
+        "evidence":"Pro plan: $29.00 per month, billed monthly.",
+        "source":"stripe",
+        "summary":"Stripe lists Pro at $29/month"}]' \
+  | hibi evidence --from-file - --by agent:opus
 ```
 
-One row per gating claim, most severe first. Act on each row's `claimId`: `hibi reanchor <id>` if the sentence still holds, `hibi retire <id>` if it is obsolete. Other filters: `warning`, `clean`, `orphaned`, `suggested`, `stranded` (live on a superseded or archived doc), `duplicate` (a sentence claimed more than once). `--ids-only` prints bare ids for a shell loop.
+A `supported` result appends an `evidence` attestation, which resets the ttl. A `refuted` result gates the claim: fix the sentence or the source of truth. See [Attestations](/attestations).
 
-## 7. Consolidate a document and bring its claims along
+Then look at contradictions and duplicates:
 
 ```sh
-hibi supersede --from docs/old.md --to docs/merged.md
+hibi list --state conflict    # claims with a contradiction finding, gating or review
+hibi list --state duplicate   # duplicate candidates and claims with the same sentence
 ```
 
-Authors the `supersedes` edge, flips the old document to `superseded`, and relocates every live claim whose sentence appears verbatim in the new document. Claims whose sentence was reworded or cut come back in `misses`; `strandedClaims` lists what is still on the old document. Resolve each miss with `hibi reanchor <id> --doc docs/merged.md --doc-quote "…"` or `hibi retire <id>`. When `strandedClaims` is empty, delete or `archive` the old file. Add `--dry-run` to preview.
+Reconcile a contradiction by rewriting whichever sentence is wrong. If both are correct (for example, they describe different plans), acknowledge it. See [Conflicts](/conflicts).
 
-## 8. Recover an orphaned claim
+### 5. Scheduled evidence collection
+
+Hibi never runs `procedure.steps` and never fetches a `sources[].resource`. An outer runner does: a Lobster workflow, a cron job, or a scheduled CI job. The runner reads the worklist, runs the steps it trusts, and pipes the results to `hibi evidence`.
+
+A minimal cron script that handles items whose procedure has steps:
 
 ```sh
-hibi reanchor asrt_1a2b3c --suggest
-hibi reanchor asrt_1a2b3c --doc docs/retry.md --doc-quote "Retries are capped at 5 attempts"
+#!/bin/sh
+# Runs the commands stored in .claims/; review them before scheduling this.
+hibi check | jq -c '.worklist[] | select(.procedure.steps != null)' |
+while read -r item; do
+  id=$(echo "$item" | jq -r .claimId)
+  out=$(echo "$item" | jq -r '.procedure.steps[].command' | sh 2>&1 | head -c 32000)
+  jq -n --arg id "$id" --arg ev "$out" \
+    '[{claimId: $id, evidence: $ev, source: "procedure steps", summary: "output of the stored steps"}]' |
+    hibi evidence --from-file - --by process:cron
+done
 ```
 
-`--suggest` is read-only. It ranks candidate locations for the stored doc quote across every registered document and for each code quote across files in the same language; each candidate has `side`, `file`, `start`, `end`, `similarity`, `snippet`. Reanchor to the one you pick with an explicit span. `reanchor` refuses to proceed on a side that was not found unless you pass a new span for it. If no candidate fits, `hibi retire asrt_1a2b3c`.
+`steps` uses the Lobster step shape (`id`, `command`, optional `stdin`), so a Lobster workflow can run the same steps. Evidence is limited to 32000 characters per item. Items without steps need an agent that reads `procedure.instructions`.
 
-## How to respond to a flag
+A `process:` actor can submit evidence, and judged evidence counts toward the ttl. A `process:` or `agent:` vouch does not.
 
-Every suspect verdict carries a [remediation menu](/verdicts#the-remediation-menu). Read `recommended`, run its `command`, or do the prose work its `title` names. Do not rewrite a sentence to make a banner go away; re-verify, then act.
+## The human loop
+
+The owner of an `attested` claim is the actor to contact when it expires.
+
+```sh
+hibi list --state expired | jq '.claims[] | {claimId, sentence, owner, ttl, expiresAt}'
+```
+
+`expiresAt` is null when the claim has a ttl and no counting attestation; such a claim is already expired.
+
+The owner re-checks the fact and vouches:
+
+```sh
+hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --note "checked Stripe, still $29"
+```
+
+Only a `human:` vouch or judged evidence resets the ttl. The result's `countsTowardTtl` says which applied.
+
+To accept a finding instead of changing a sentence, acknowledge it with a note:
+
+```sh
+hibi attest <id> --by human:alice@example.com --ack review --note "the dashboard wording differs; the price matches"
+hibi attest <id> --by human:alice@example.com --ack conflict:<other-id> --note "the FAQ describes the annual plan"
+```
+
+An ack stops that finding from warning or gating. It never resets the ttl. A conflict ack is recorded on both claims and lapses when either sentence changes.
+
+## CI
+
+Run `hibi check` on every pull request and `hibi check --since <base>` to scope it. See [CI](/ci) for the GitHub Action, the API key as a secret, and what runs without a key.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Verdicts" icon="scale-balanced" href="/verdicts">
+    The axes, the gating table, and the worklist.
+  </Card>
+  <Card title="Attestations" icon="signature" href="/attestations">
+    Who can reset a ttl, and how.
+  </Card>
+</CardGroup>

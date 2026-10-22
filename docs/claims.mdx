@@ -1,0 +1,242 @@
+---
+title: "Claims: Kinds, Evidence Sides, Sources, and the Store"
+sidebarTitle: "Claims"
+description: "A claim is one sentence in one document with a kind, zero or more evidence sides, optional sources and a procedure, and an append-only list of attestations."
+icon: "quote-left"
+---
+
+A **claim** is one sentence in one document that asserts something checkable. Hibi stores where the sentence is, what kind of claim it is, where its truth can be observed, and who stood behind it and when.
+
+## Kinds
+
+Every claim has exactly one kind. You choose it with `--kind` at record time. Hibi does not infer it.
+
+| kind | evidence side | what makes it stale |
+|---|---|---|
+| `code` | one or more code spans | a span on either side is `changed`, `orphaned`, or `ambiguous` |
+| `reference` | exactly one span in another document | the same anchor states, or the [judge](/judge) finds the referenced text no longer supports the sentence |
+| `attested` | none | its `ttl` ran out since the newest counting attestation, or submitted evidence was judged to refute it |
+
+`audit` also names two region classes that are never recorded: `unverifiable` (a stated fact nothing could confirm) and `not-a-claim` (an instruction, opinion, narrative, or heading). See [Audit](/audit).
+
+## Sides
+
+Each claim has a **doc side**: the sentence, located in its document by selectors. The text of the doc span is the claim's `sentence`.
+
+`code` and `reference` claims also have **evidence sides** in `evidence[]`:
+
+- A `code` claim has one or more code spans. Each code span stores text selectors and, for supported languages, an AST fingerprint and the literal inside the span.
+- A `reference` claim has exactly one span in another document. It stores text selectors only.
+- An `attested` claim has an empty `evidence[]`. Its truth lives outside the repository.
+
+At check time every side is located again and graded `unchanged`, `moved`, `changed`, `ambiguous`, or `orphaned`. See [Anchors](/anchors).
+
+## Sources
+
+Any claim may carry `sources[]`: pointers to where its truth lives.
+
+```json
+"sources": [
+  { "id": "stripe", "resource": "https://dashboard.stripe.com/products/prod_123", "title": "Stripe product" }
+]
+```
+
+| field | required | meaning |
+|---|---|---|
+| `resource` | yes | an opaque pointer: a URL, a dashboard name, a person, a file in another system |
+| `id` | no | a short name evidence can refer to |
+| `title` | no | a label for people |
+
+Hibi never opens, fetches, or checks a `resource`. When submitted evidence names a `source` equal to a listed `id` or `resource`, the result adds the reason label `source matches declared source "<id or resource>"`. That label changes no state.
+
+On the command line: `--source <id>=<resource>`, repeatable. With `--from-file`, pass the full objects.
+
+## Procedure
+
+An `attested` claim may carry a `procedure`: how an agent re-checks it.
+
+```json
+"procedure": {
+  "instructions": "Open the Stripe dashboard, find the Pro plan, report its monthly price.",
+  "steps": [{ "id": "price", "command": "stripe prices list --product prod_123 --json" }]
+}
+```
+
+| field | required | meaning |
+|---|---|---|
+| `instructions` | yes, when `procedure` is present | the contract: what to check and what to report |
+| `steps[]` | no | hints in the shape of Lobster workflow steps: `id`, `command`, optional `stdin` |
+
+Hibi never runs `instructions` or `steps`. An agent, a cron job, or a Lobster workflow runs them and submits what it observed with `hibi evidence`. The worklist in `check` output carries each claim's `procedure` and `sources` so the agent has what it needs. See [Workflows](/workflows).
+
+On the command line: `--instructions <text>`. Steps are only accepted through `--from-file`.
+
+## Owner and ttl
+
+| field | meaning |
+|---|---|
+| `owner` | the actor to contact when the claim expires: `human:<id>`, `agent:<name>`, or `process:<name>`; separate from who attested |
+| `ttl` | an ISO 8601 duration such as `P90D` or `PT12H`; required on `attested`, optional on the other kinds; no store-wide default |
+
+How `ttl` is counted is on the [Attestations](/attestations) page.
+
+## Enforcement
+
+| value | meaning |
+|---|---|
+| `enforced` | the default; the claim may gate |
+| `suggested` | recorded with `--suggest`; never gates or warns |
+| `retired` | withdrawn with `hibi retire`; kept for history, ignored by every verdict |
+
+See [Lifecycle](/lifecycle).
+
+## Cross-repository evidence
+
+`config.repos` maps an alias to a path relative to the repository root:
+
+```json
+{ "repos": { "api": "../api" } }
+```
+
+A code or reference span may then name `api:src/limits.ts`.
+
+- An alias that is not in `config.repos` is refused at record time.
+- At check time, an alias whose directory does not exist resolves the side to `unavailable`. That is a warning and never gates. The reason label names the alias and the path.
+
+Without aliases, nothing changes.
+
+## Recording
+
+One claim from flags:
+
+```sh
+hibi record --doc README.md --doc-quote "Retries are capped at 5 attempts." \
+  --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5"
+```
+
+Agents send a JSON array on stdin. The batch is validated first and is all or nothing; every problem is reported on its own line.
+
+```sh
+hibi record --from-file - <<'EOF'
+[
+  { "doc": "README.md", "docQuote": "Retries are capped at 5 attempts.", "kind": "code",
+    "code": [{ "file": "src/retry.ts", "quote": "MAX_ATTEMPTS = 5" }] },
+  { "doc": "README.md", "docQuote": "Refunds are issued within two weeks of a request.", "kind": "reference",
+    "ref": { "file": "docs/billing.md", "quote": "Refunds are issued within 14 days." } },
+  { "doc": "docs/pricing.md", "docQuote": "The Pro plan costs $29 per month.", "kind": "attested",
+    "ttl": "P90D", "owner": "human:alice@example.com",
+    "sources": [{ "id": "stripe", "resource": "https://dashboard.stripe.com/products/prod_123" }],
+    "procedure": { "instructions": "Open the Stripe dashboard and report the Pro monthly price." } }
+]
+EOF
+```
+
+| item key | meaning |
+|---|---|
+| `doc` | the document path; required |
+| `docQuote` or `docRange` | the sentence verbatim, or `L<a>:L<b>` lines, or `<a>:<b>` char offsets; exactly one |
+| `kind` | `code`, `reference`, or `attested`; required |
+| `code` | for `code`: `[{ file, quote \| range }]`, one or more |
+| `ref` | for `reference`: `{ file, quote \| range }`, exactly one |
+| `sources` | `[{ id?, resource, title? }]` |
+| `procedure` | `{ instructions, steps? }` |
+| `ttl` | ISO 8601 duration; required on `attested` |
+| `owner` | actor |
+| `by` | the actor recorded as vouching; default `human:<git user.email>` |
+| `suggest` | `true` records a claim that never gates |
+
+Each new claim gets one `vouch` attestation by `by`. A `human:` vouch counts toward the ttl; an `agent:` or `process:` vouch does not. So an `attested` claim recorded with `"by": "agent:<name>"` has no counting attestation and is `expired` until evidence or a human vouch arrives.
+
+## Store layout
+
+`.claims/` sits at the repository root and is committed.
+
+```
+.claims/
+  config.json
+  documents/<doc_id>.json
+  claims/<claim_id>.json
+  judge/<sha256>.json        # cached judge verdicts
+```
+
+Ids are `doc_` or `clm_` followed by 16 hex characters. The store version is `v4`. v3 stores are not upgraded.
+
+`config.json` as `hibi init` writes it:
+
+```json
+{
+  "version": "v4",
+  "repos": {},
+  "judge": { "model": "jev-1.14.0", "threshold": 0.8 },
+  "ignore": []
+}
+```
+
+| key | meaning |
+|---|---|
+| `repos` | cross-repository aliases |
+| `judge.model` | the pinned judge model id; an alias such as `jev-latest` is refused |
+| `judge.threshold` | the one confidence threshold for every judgment, from 0 to 1 |
+| `ignore` | globs of documents `audit` refuses to audit; `check` does not read it |
+
+A document record:
+
+```json
+{ "id": "doc_504a75fb91854951", "path": "docs/pricing.md", "lifecycle": "active", "createdAt": "2026-10-22T18:16:02.977Z" }
+```
+
+A superseded document also has `supersededBy`.
+
+## A full claim
+
+A `code` claim as stored, after `record`:
+
+```json
+{
+  "id": "clm_b87be1a1752b4a49",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "Retries are capped at 5 attempts.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      { "kind": "text-quote", "exact": "Retries are capped at 5 attempts.",
+        "prefix": "# Demo\n\n", "suffix": "\n\nRefunds are issued within two weeks of a reque" },
+      { "kind": "text-position", "start": 8, "end": 41 }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/retry.ts",
+      "selectors": [
+        { "kind": "text-quote", "exact": "MAX_ATTEMPTS = 5", "prefix": "export const ", "suffix": ";\n" },
+        { "kind": "text-position", "start": 13, "end": 29 },
+        { "kind": "ast-node", "language": "typescript", "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f", "semanticHash": "d1da9573420cdd7d" },
+        { "kind": "value", "language": "typescript", "nodeKind": "number", "value": "5" }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    { "by": "human:dev@example.com", "at": "2026-10-22T18:16:02.854Z", "basis": "vouch" }
+  ],
+  "createdAt": "2026-10-22T18:16:02.854Z",
+  "ref": "WORKTREE"
+}
+```
+
+An `attested` claim has `"evidence": []`, a `ttl`, and usually `owner`, `sources`, and `procedure`. `ref` is the git HEAD the claim was recorded or last reanchored against. `hibi schema --name Claim` prints the JSON Schema.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Attestations" icon="signature" href="/attestations">
+    Actors, bases, the ttl counting rule, and expiry.
+  </Card>
+  <Card title="Verdicts" icon="scale-balanced" href="/verdicts">
+    What `check` computes for each claim and when it gates.
+  </Card>
+</CardGroup>

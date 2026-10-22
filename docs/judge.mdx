@@ -1,0 +1,218 @@
+---
+title: "The Judge: Jev Behind a Small Interface"
+sidebarTitle: "Judge"
+description: "Three judgments (triage, supports, conflict), one threshold, three-way outcomes, and a cache that keeps the same tree on the same verdicts."
+icon: "gavel"
+---
+
+Some questions cannot be answered by comparing text. Does this passage of the billing guide still support the sentence in the README? Do these two sentences contradict each other? Is this region a factual claim at all? Hibi sends these questions to a model, the **judge**, and decides the outcome in code from the probabilities it returns.
+
+The judge is an interface with three methods. The shipped implementation is **Jev**, TypeSafe's System One model. Tests use a fake implementation that answers from fixtures.
+
+## The interface
+
+| method | input | result |
+|---|---|---|
+| `triage(doc, regions[])` | a document path and its regions | per region: `kind`, `kindProbabilities`, `kindConfidence`, `evidenceKind` (factual claims only), `evidenceProbabilities`, `checkable` |
+| `supports(input)` | `sentence`, `context`, `evidence`, `source` | `relation` (`supports`, `refutes`, `does_not_address`), `probabilities`, `confidence`, `addresses` |
+| `conflict(a, b)` | two sides, each `{ text, doc, context }` | `relation` (`consistent`, `contradictory`, `unrelated`), `probabilities`, `confidence`, `sameSubject`, `contradicts` |
+
+Every call returns the model id, the exact request, the raw answers, and the result. Hibi stores the first three in the [cache](#the-cache).
+
+Who calls which judgment:
+
+| judgment | called by | when |
+|---|---|---|
+| `triage` | `hibi audit` | for the regions no claim covers |
+| `supports` | `hibi check`, `hibi list` | for a `reference` claim, when no cached verdict exists for the current sentence, context, and referenced text |
+| `supports` | `hibi evidence` | for each submitted item |
+| `conflict` | `hibi check`, `hibi list`, `hibi audit` | once per pair from the [contradiction pass](/conflicts) |
+
+## Jev and TypeSafe
+
+Hibi calls TypeSafe's System One API over plain HTTP:
+
+```
+POST https://api.typesafe.ai/v1/systemone
+Authorization: Bearer $TYPESAFE_API_KEY
+{ "model": "jev-1.14.0", "state": { … }, "questions": { … } }
+```
+
+| setting | where |
+|---|---|
+| API key | `TYPESAFE_API_KEY` in the environment |
+| base URL | `TYPESAFE_BASE_URL` in the environment; default `https://api.typesafe.ai` |
+| model | `judge.model` in `.claims/config.json` |
+| threshold | `judge.threshold` in `.claims/config.json` |
+
+`hibi init` writes `{ "model": "jev-1.14.0", "threshold": 0.8 }`. The model id must be a pinned version of the form `jev-X.Y.Z`. An alias such as `jev-latest` is refused when the config is loaded, because an alias can point at a different model tomorrow and change verdicts without a change in the repository.
+
+The official `@typesafe-ai/sdk` package is not used. Under Bun it reads the response body twice and every request fails (as of 0.7.0).
+
+### Retries and limits
+
+The numbers copy the SDK's documented defaults. They live in `src/judge/http.ts` and `src/judge/jev.ts`.
+
+| rule | value |
+|---|---|
+| retried statuses | 408, 429, and every 5xx (which includes 529), plus connection errors and timeouts |
+| retries | 2, so at most 3 attempts |
+| backoff | 500 ms doubled up to 5 s, minus up to 25 percent jitter |
+| `retry-after` | honored when it is at most 60 s |
+| per-attempt timeout | 10 s |
+| requests in flight | at most 8 per process |
+| request budget | 48,000 estimated tokens for state plus questions (model limit 64k) |
+| question budget | 24,000 estimated tokens for state plus any one question (model limit 32k) |
+
+Tokens are estimated at 4 characters per token. `triage` splits a long document into several requests that each carry the document path and only their own regions. `hibi evidence` refuses an evidence text longer than 32,000 characters.
+
+A 401 or 403, or a failure after the last retry, makes the judgment `pending`. A 400, a 422, or another 4xx means the request is malformed; the command exits 1.
+
+## The three judgments
+
+The questions are JSON files in [`src/judge/questions/`](https://github.com/npupko/hibi/tree/main/src/judge/questions): `triage.json`, `supports.json`, `conflict.json`. Each file lists the state fields and the TypeSafe question objects sent as written, with their instructions and criteria. When a verdict looks wrong, read the question first. Sentences and evidence are always passed as named state fields; they are never pasted into the instructions. Choice options are sent in a fixed order.
+
+### triage
+
+| | |
+|---|---|
+| state | `doc: { path }`, `regions: [{ id, kind, text, headingPath }]` |
+| `kind_<i>` | Choice over `factual_claim`, `instruction`, `opinion`, `narrative` |
+| `evidenceKind_<i>` | Choice over `code`, `other_doc`, `external`, `nothing`: where an agent would look first for evidence |
+| `checkable_<i>` | Noul: could the region be shown true or false by looking at evidence |
+
+Code rule: a region is `code` by construction when it is a fenced block, contains a fence, contains an inline code span holding a path or a command, or contains a file path in prose. Such a region is not asked the `evidenceKind` question; when its `kind` is `factual_claim`, its evidence kind is `code` with probability 1. URLs are not paths, and names such as `Node.js` are not files.
+
+[Audit](/audit) maps the result to a row kind.
+
+### supports
+
+| | |
+|---|---|
+| state | `claim`, `claim_context`, `evidence`, `evidence_source` |
+| `relation` | Choice over `supports`, `contradicts`, `says_nothing` (the options of TypeSafe's citation-check cookbook), reported as `supports`, `refutes`, `does_not_address` |
+| `addresses` | Noul: does the evidence speak to what the claim asserts, either way |
+
+`claim_context` is the heading path above the sentence and the paragraph that contains it, at most 600 characters, built in code. For a `reference` claim, `evidence` is the current text of the referenced span and `evidence_source` is its file path.
+
+Code rule: when `addresses` is below 0.3, the relation is `does_not_address` whatever the Choice said.
+
+### conflict
+
+| | |
+|---|---|
+| state | `a: { text, doc, context }`, `b: { text, doc, context }` |
+| `same_subject` | Noul: are both sentences about the same thing |
+| `relation` | Choice over `consistent`, `contradictory`, `unrelated` |
+| `contradicts` | Noul: does `b` assert something that cannot be true if `a` is true |
+
+Code rules: when `same_subject` is below 0.3, the relation is `unrelated` whatever the Choice said. A `contradictory` relation with `contradicts` below 0.5 is a review case, not a finding. The full decision table is on [Conflicts](/conflicts).
+
+## Confidence and the threshold
+
+Hibi turns probabilities into a confidence with the formulas from the TypeSafe docs:
+
+| answer type | confidence |
+|---|---|
+| Choice with `n` options | `(p_max - 1/n) / (1 - 1/n)` |
+| Noul with probability `p` | `abs(2p - 1)` |
+
+With three options, confidence 0.8 means the top probability is about 0.867.
+
+There is one threshold, `judge.threshold`, default `0.8`. It applies to every judgment. There are no per-judgment thresholds and no review band.
+
+| judgment | gates | review (warns) | clean |
+|---|---|---|---|
+| `supports` | `refutes` at or above the threshold, or the value rule fires | `supports` or `refutes` below the threshold, or `does_not_address` | `supports` at or above the threshold |
+| `conflict` | `contradictory` with confidence, `same_subject`, and `contradicts` all at their bars; or the value rule fires | `contradictory` with any of those below its bar | everything else |
+| `triage` | never | never | n/a: a row below the threshold is `unsure` |
+
+On a verdict, `supports` outcomes appear as the `judge` axis: `supported`, `refuted`, `review`, or `pending`. Every outcome carries a reason label, prefixed `judge: ` on the verdict:
+
+| outcome | label |
+|---|---|
+| supported | `evidence supports the sentence (confidence 0.92 >= threshold 0.8)` |
+| refuted | `evidence refutes the sentence (confidence 0.92 >= threshold 0.8)` |
+| refuted by the value rule | `value differs: numbers differ: 29 vs 39` |
+| review | `evidence leans supports, confidence 0.55 below threshold 0.8` |
+| review | `evidence did not address the sentence` (with `(addresses=0.12)` when the Noul forced it) |
+| pending | `pending: TYPESAFE_API_KEY is not set; the judge cannot answer.` |
+
+When the evidence `source` equals one of the claim's `sources[].id` or `sources[].resource`, the reasons also include `source matches declared source "<id or resource>"`. It changes no state.
+
+## What stays in code
+
+The model is not asked to compare quantities. Hibi extracts values from text with a fixed table of regular expressions in `src/engine/values.ts`:
+
+| kind | examples | normalized |
+|---|---|---|
+| `date` | `2026-10-22`, `October 22, 2026` | `2026-10-22` |
+| `version` | `v1.2.3`, `1.2.3`, `version 1.2` | `1.2.3` |
+| `money` | `$29`, `€ 5`, `29 USD`, `USD 29` | `29` with unit `USD` |
+| `number` | `5%`, `5 days`, `90d`, `500ms`, `1,299.50` | `1299.5`, with a unit for `%` and durations |
+
+Values are compared only within the same kind and unit. A group differs when both texts have values in it and share none of them: `$29` against `$39` differs, `$29 or $49` against `$29` does not, `5 days` against `5%` is not compared.
+
+| where | when the values differ | label |
+|---|---|---|
+| `supports` | the relation is not `does_not_address` | `value differs: numbers differ: 29 vs 39` (state `refuted`) |
+| `conflict` | `same_subject` is at or above the threshold | `numbers differ: 29 vs 39` (a conflict with probability 1) |
+
+Versions and dates use `versions differ: …` and `dates differ: …`. For submitted evidence, the extracted values are stored in the cache entry, so `check` applies the rule without the raw text.
+
+## The cache
+
+Every answer is written to `.claims/judge/<key>.json`. The key is the sha256 hex of the model id, a newline, and the canonical JSON of the request (object keys sorted, no whitespace). The cache is committed with the store.
+
+| field | content |
+|---|---|
+| `key` | the sha256 above |
+| `model` | the model id the response named |
+| `judgment` | `triage`, `supports`, or `conflict` |
+| `subject` | `{ claimId }`, `{ pairId }`, or `{ docId }` |
+| `request` | the state and questions sent |
+| `answers` | the probabilities returned |
+| `evidence` | for submitted evidence: `hash`, `source`, `summary`, `by`, `at`, `values` |
+| `at` | when it was written |
+
+Raw evidence text is never stored. In the stored request, `state.evidence` is replaced by `sha256:<hash>`; the key is computed over the request as sent.
+
+A key that is in the cache is never asked again, so a second run over the same tree answers from the cache and cannot flip a verdict. A new key is asked when any input changes: the sentence, its context paragraph, the referenced text, the evidence, the source, a question file, or `judge.model`. Changing the model therefore asks every judgment again. Hibi does not delete old entries.
+
+## Without a key
+
+There is no offline flag. Without `TYPESAFE_API_KEY`, or when the API cannot be reached, every judgment the cache cannot answer is `pending`. Nothing else changes.
+
+| command | effect |
+|---|---|
+| `check` | a `reference` claim with no cached verdict has `judge: pending` and warns; a new pair warns with `conflict check pending with <id>: judge unavailable`; both appear in the worklist or the summary. Exit code 0 unless `--fail-on warn`. |
+| `evidence` | each item is `pending`; nothing is written for it; `next` says to set the key and re-submit |
+| `audit` | uncovered regions are `pending` |
+
+Cached verdicts keep working without a key. CI without the secret still gates on anchors, cached verdicts, cached conflicts, and expiry.
+
+## Cost and latency
+
+<Warning>
+  These figures come from TypeSafe's documentation and the research note in `design/evidence/typesafe-research-2026-10-22.md`. Hibi has not measured them in live runs.
+</Warning>
+
+| item | figure |
+|---|---|
+| price | $0.042 per million input tokens; output tokens are free |
+| typical latency | about 100 ms per request |
+| `triage` of 500 regions | about 10 to 20 requests, 250k to 400k tokens, $0.01 to $0.02, a few seconds |
+| `supports` for 500 claims | 500 requests, 0.15M to 0.75M tokens, $0.006 to $0.03, about 10 s at 8 in flight |
+
+Rate limits are set per organization in the TypeSafe console; the docs do not state default values. Because answers are cached, a repeated `check` on an unchanged tree makes no requests.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Conflicts" icon="code-compare" href="/conflicts">
+    How pairs are formed and how a `conflict` answer becomes a finding.
+  </Card>
+  <Card title="Verdicts" icon="scale-balanced" href="/verdicts">
+    How the judge axis combines with anchors, expiry, and conflicts.
+  </Card>
+</CardGroup>

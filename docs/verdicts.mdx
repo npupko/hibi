@@ -1,157 +1,236 @@
 ---
-title: "Hibi Verdicts: Claim States, Remediation, and Exit Codes"
+title: "Verdicts, Gating, Exit Codes, and the Worklist"
 sidebarTitle: "Verdicts"
-description: "How Hibi models a claim, grades it on anchor resolution and behavior, attaches a remediation menu, and maps the result to an exit code."
+description: "hibi check computes a verdict per claim on five axes, decides gate, warn, or clean from one table, and lists the claims an agent should re-check."
 icon: "scale-balanced"
 ---
-Hibi tracks **claims**: a sentence in a document, anchored to the code it describes. On every `hibi check`, each claim produces a **verdict**: a per-side anchor state, an optional behavior state, an `expired` flag, a `gates` flag, and a remediation menu. Verdicts are computed from the current files and never stored.
 
-## The model
+`hibi check` resolves every claim against the working tree, consults the judge cache, runs the [contradiction pass](/conflicts), and prints one **verdict** per claim. Verdicts are computed at check time and never stored. Only judge answers are cached.
 
-- A **Document** is a file with claims on it. It has a lifecycle: `active`, `superseded`, or `archived`.
-- A **Proposition** is the sentence, deduplicated by content fingerprint. Two documents that state the same sentence share one proposition.
-- An **Assertion** is one claim: this sentence, in this document, anchored to this code, with an owner, an enforcement level, an optional ttl, and zero or more verifiers.
-- An **Anchor** has a **doc side** (one selector bundle for the sentence) and a **code side** (zero or more bundles for the code). The code side may be empty only on a `suggested` claim.
-
-The store holds anchors, not copies of the prose. The stored quote is anchoring material; the live document span is the truth and is re-read on every run. Selector kinds and the resolution rules are on the [Anchors](/anchors) page.
-
-<Info>
-  A flag is a request to re-verify. Hibi reports that the text or code under a claim moved. It does not decide that the sentence is wrong, and it never edits prose.
-</Info>
-
-## The flow
-
-<Steps>
-  <Step title="Record">
-    `hibi record` stores an anchor for the doc span and the code span(s). The anchor is the baseline, so `check` runs offline and under a shallow clone.
-  </Step>
-  <Step title="Resolve the doc side">
-    `check` locates the documented sentence in the current document. If the sentence is gone or changed, the verdict says so on the doc side.
-  </Step>
-  <Step title="Resolve the code side">
-    Each code bundle is located in its file and graded through the cascade on the Anchors page. The worst code bundle sets the verdict's `code` state.
-  </Step>
-  <Step title="Verifiers (opt-in)">
-    Under `check --run-verifiers`, a claim with verifiers runs them and gets a `behavior` state. See [Behavioral claims](/behavioral).
-  </Step>
-  <Step title="Verdict, exit code, banner">
-    Hibi emits the verdict, sets the process exit code, and with `--write` stamps a banner into each suspect document.
-  </Step>
-</Steps>
-
-## The two axes
-
-### Anchor resolution
-
-One vocabulary, applied to each side and reported as `doc:<state>` and `code:<state>`.
-
-| State | Meaning |
-|---|---|
-| `unchanged` | found, same text, same place |
-| `moved` | found, same text, new place |
-| `changed` | found, but the text, the AST, or a literal inside the span differs |
-| `ambiguous` | matches in several places equally well |
-| `orphaned` | not found |
-
-### Behavior
-
-Present only when a verifier ran. A claim is behavioral if and only if it carries at least one `--verifier kind:ref`.
-
-| State | Meaning |
-|---|---|
-| `supported` | every verifier that ran passed |
-| `refuted` | at least one verifier failed |
-
-Without `--run-verifiers`, or on a claim with no verifier, the `behavior` field is absent.
-
-### The `expired` flag
-
-A claim may carry a `ttl` (an ISO-8601 instant). Past it, the verdict has `expired: true`. It is a flag alongside the axes, not a state on them.
-
-## The gates rule
-
-`gates` is true if and only if the claim is `enforced` and at least one of these holds:
-
-- `doc` or `code` is `changed`, `orphaned`, or `ambiguous`;
-- `expired` is true;
-- `behavior` is `refuted`.
-
-`moved` never gates. A `moved` side on an enforced claim is a **warning**. A `suggested` claim never gates and never warns. A `retired` claim is listed but counted as neither clean, gating, nor warning.
-
-## The verdict shape
-
-```json
-{
-  "assertionId": "asrt_897e054b48d040db",
-  "propositionId": "prop_d6185fc85e2a4e52",
-  "documentId": "doc_5c9e4f99d90e2cfd",
-  "doc": "unchanged",
-  "code": "changed",
-  "expired": false,
-  "gates": true,
-  "changed": "src/auth.ts: value changed (was `30`)",
-  "remediation": { "recommended": "update-claim", "actions": [ /* … */ ] },
-  "notes": ["code: value changed (was `30`)"]
-}
+```sh
+hibi check                      # every claim
+hibi check --doc CLAUDE.md      # the claims on one document; expired gates here
+hibi check --since origin/main  # the claims touching a file changed since the ref
 ```
 
-`behavior` appears only when a verifier ran. `changed` is a one-line summary present when a side is `changed`. `notes` carries the reason labels ("identifiers or literals renamed", "restructured", "value changed", "a number in the sentence changed", "quote not found").
+`check` writes nothing except new judge cache entries in `.claims/judge/`.
 
-Pass `--explain` to append the evidence tail: `evidence.docRegion`, `evidence.codeRegions`, `evidence.similarity` (normalized similarity of the located span to the stored quote), and `evidence.changedEvidence` (`{ path, kind: text|ast|value|verifier-source, detail }`), plus `advisories`.
+## Axes
 
-The full `check` payload is `{ ok, action: "check", schemaVersion: "v3", ref, since?, changedFiles?, doc?, exitCode, summary, verdicts, documents }`. `summary` has `total`, `gating`, `warning`, `clean`, `retired`, per-state histograms `doc`, `code`, `behavior`, and `expired`. Each entry in `documents` has `id`, `path`, `lifecycle`, `suspect: [{ propositionId, status }]`, and `bannerAction` when `--write` touched the file. The `status` vocabulary is side-tagged: `code:changed`, `doc:orphaned`, `code:moved`, `behavior:refuted`, `expired`, `superseded`, `archived`.
-
-## The remediation menu
-
-Every suspect verdict carries a `remediation` block: `recommended` (an action id, or `null` when Hibi cannot infer intent) and an ordered `actions` list. Each action is `{ id, title, rationale, command? }`. `command` is present when Hibi can perform the step, with the claim id filled in.
-
-| Verdict | `recommended` | Actions, in order |
+| axis | values | present |
 |---|---|---|
-| `code:changed` | `update-claim` | `update-claim` ("Update the sentence, then reanchor", `hibi reanchor <id>`), `reanchor` (as is), `retire` |
-| `doc:changed` | `reverify-doc` | `reverify-doc`, `reanchor`, `retire` |
-| `doc:changed` and `code:changed` | `reconcile` | `reconcile`, `reanchor`, `retire` |
-| `*:orphaned` | `reanchor` | `reanchor` (`hibi reanchor <id> --suggest`), `retire`, `supersede` |
-| `*:ambiguous` | `reanchor` | `reanchor` (pass a wider span) |
-| `*:moved` | `reanchor` | `reanchor` |
-| `behavior:refuted` | `null` | `fix-code`, `fix-claim` |
-| any of the above with `expired` | as above, or `reverify-and-rerecord` | the row's actions plus `reverify-and-rerecord` |
+| `doc` | `unchanged`, `moved`, `changed`, `ambiguous`, `orphaned` | always |
+| `evidence` | the same five, plus `unavailable` | when the claim has evidence sides; the worst state over them |
+| `judge` | `supported`, `refuted`, `review`, `pending` | when a judgment applies: `reference` claims, and `attested` claims with judged evidence |
+| `expired` | boolean | always; see [Attestations](/attestations) |
+| `conflicts` | `[{ claimId, probability, reason }]` | always; empty when there are none |
 
-Notes on the table:
+The anchor states are defined on [Anchors](/anchors). The judge states are defined on [Judge](/judge).
 
-- The orphan menu leads with a runnable command: `hibi reanchor <id> --suggest` lists candidate locations, after which you reanchor with an explicit span.
-- `behavior:refuted` never offers `reanchor`. A failing verifier means the behavior is wrong, not that the anchor moved.
-- `expired` composes. When the base menu recommends `reanchor`, or there is no base menu, the recommendation becomes `reverify-and-rerecord`.
-- Orphan precedence: an orphaned side produces the orphan menu even when a verifier was refuted.
+For a `reference` claim, the judge is consulted only when both sides are `unchanged` or `moved`. Otherwise the reasons say `judge: not consulted while the doc side is <state>` or `... the evidence side is <state>`, and `judge` is absent. For an `attested` claim, `judge` comes from the newest cached `supports` verdict for evidence submitted with `hibi evidence`.
 
-`--no-hints` (or `HIBI_ADVICE=0`) drops the `remediation` block from every verdict and `list` row.
+## gates, warns, reasons
+
+Each verdict has two booleans and a list of labels:
+
+| field | meaning |
+|---|---|
+| `gates` | the verdict fails the check |
+| `warns` | the verdict needs attention and does not fail the check; never `true` together with `gates` |
+| `reasons` | every reason label: anchor changes (prefixed `doc:` or `evidence:`), judge outcomes (prefixed `judge:`), conflict findings, expiry, worklist membership, and gating rules |
+
+Every rule hibi applies shows up as a label. A label you do not understand is a question for the code, not a hidden rule.
+
+## The gating table
+
+| condition | `check` | `check --doc` |
+|---|---|---|
+| `changed`, `orphaned`, or `ambiguous` on either side | gate | gate |
+| `judge: refuted` (only produced at or above `judge.threshold`) | gate | gate |
+| a conflict at or above `judge.threshold` | gate | gate |
+| `expired` | warn | gate |
+| `moved`, `review`, `pending`, `unavailable` | warn | warn |
+| a conflict in review, or a conflict check pending | warn | warn |
+| `suggested` or `retired` claim | never | never |
+
+A `suggested` claim that would gate or warn gets the label `suggested claim: never gates or warns`.
 
 ## Exit codes
 
-| Code | Meaning |
+| code | meaning |
 |---|---|
-| `0` | clean, or only warnings |
-| `2` | at least one gating verdict; or a warning under `--fail-on warn` |
-| `1` | operational error: no store, unknown flag, unknown `--since` ref, missing document |
+| `0` | clean, or warnings only |
+| `2` | at least one verdict gates; or, under `--fail-on warn`, at least one warns |
+| `1` | operational error: no store, an unknown flag, an unknown `--since` ref, an invalid input |
 
-`--fail-on` sets the threshold: `gating` (default), `warn` (a `moved` side also exits 2), `never` (always exit 0; read the JSON).
+`--fail-on` sets the threshold:
 
-## Finding ungrounded sentences
+| `--fail-on` | exit 2 when |
+|---|---|
+| `gating` | a verdict gates (the default) |
+| `warn` | a verdict gates or warns |
+| `never` | never; the JSON still reports everything |
 
-Claims enter the store deliberately; Hibi does not extract them from prose. `hibi coverage --doc <path>` splits a document into sentence-level regions and reports which are backed by a live, code-grounded claim. The uncovered regions are the candidates for a new claim or for removal. `--fail-uncovered` exits 2 while any region is uncovered. A missing document is exit 1.
+## Remediation
 
-## Where to go next
+A verdict that needs action carries `remediation`: a menu, most severe condition first. `recommended` names the action to start with, or is `null` when hibi cannot know which is right. `--no-hints` (or `HIBI_ADVICE=0`) drops the menu.
+
+| condition | actions, in order |
+|---|---|
+| a side `orphaned` | `reanchor` (runs `hibi reanchor <id> --suggest` to find the span), `retire`, `supersede` |
+| both sides `changed` | `reconcile`, `reanchor`, `retire` |
+| evidence `changed` | `update-claim` (rewrite the sentence if it is now wrong, then reanchor), `reanchor`, `retire` |
+| doc `changed` | `reverify-doc`, `reanchor`, `retire` |
+| a side `ambiguous` | `reanchor` with a wider span |
+| `judge: refuted` | `fix-evidence`, `fix-claim` (no reanchor) |
+| conflicts | `reconcile` (names the other claim), `ack` |
+| `expired` | `attest` (a human vouch), `evidence` |
+| `judge: review` | `ack`, `evidence` |
+| a side `moved` | `reanchor` |
+
+Each action has `id`, `title`, `rationale`, and a `command` when one exists. `pending` and `unavailable` add no actions; the reason label says what is missing.
+
+## The worklist
+
+`check` output includes `worklist[]`: the claims an agent should re-check now. A live claim on an active document is listed when:
+
+| reason | claims |
+|---|---|
+| `expired` | an `attested` claim whose ttl ran out |
+| `review` | a `reference` or `attested` claim whose judge state is `review` and not acknowledged |
+| `pending` | a `reference` or `attested` claim whose judge state is `pending` |
+| `never-checked` | an `attested` claim with no judged evidence yet |
+
+A claim is listed once, with the first matching reason in the order above. Its verdict also carries a `worklist: …` reason. `hibi list --state pending` returns the same claims.
+
+Each item:
+
+| field | meaning |
+|---|---|
+| `claimId`, `sentence`, `kind` | the claim |
+| `document` | the claim's document path |
+| `procedure` | `{ instructions, steps? }` or `null` |
+| `sources` | `[{ id?, resource, title? }]` |
+| `owner` | the actor to contact, or `null` |
+| `lastEvidence` | `{ summary, source, at, by }` from the newest judged evidence, when there is any |
+| `reason` | `expired`, `review`, `pending`, or `never-checked` |
+
+## Full output
+
+`hibi check` with no API key, after recording one claim of each kind:
+
+```json
+{
+  "ok": true,
+  "action": "check",
+  "schemaVersion": "v4",
+  "ref": "WORKTREE",
+  "exitCode": 0,
+  "summary": {
+    "total": 3, "gating": 0, "warning": 1, "clean": 2, "retired": 0,
+    "doc": { "unchanged": 3, "moved": 0, "changed": 0, "ambiguous": 0, "orphaned": 0 },
+    "evidence": { "unchanged": 2, "moved": 0, "changed": 0, "ambiguous": 0, "orphaned": 0, "unavailable": 0 },
+    "judge": { "supported": 0, "refuted": 0, "review": 0, "pending": 1 },
+    "expired": 0,
+    "conflicts": 0,
+    "worklist": 2,
+    "conflictPass": { "pairs": 0, "requests": 0, "pending": 0 }
+  },
+  "verdicts": [
+    {
+      "claimId": "clm_418fde0aee55433e", "documentId": "doc_504a75fb91854951", "kind": "attested",
+      "doc": "unchanged", "expired": false, "conflicts": [], "gates": false, "warns": false,
+      "remediation": null,
+      "reasons": ["worklist: never checked; no evidence has been judged for this claim"]
+    },
+    {
+      "claimId": "clm_b87be1a1752b4a49", "documentId": "doc_d068824e08521674", "kind": "code",
+      "doc": "unchanged", "evidence": "unchanged", "expired": false, "conflicts": [],
+      "gates": false, "warns": false, "remediation": null, "reasons": []
+    },
+    {
+      "claimId": "clm_ed3e7d37f89b41b8", "documentId": "doc_d068824e08521674", "kind": "reference",
+      "doc": "unchanged", "evidence": "unchanged", "judge": "pending", "expired": false, "conflicts": [],
+      "gates": false, "warns": true, "remediation": null,
+      "reasons": [
+        "judge: pending: TYPESAFE_API_KEY is not set; the judge cannot answer.",
+        "worklist: the judge verdict is pending"
+      ]
+    }
+  ],
+  "worklist": [
+    {
+      "claimId": "clm_418fde0aee55433e", "sentence": "The Pro plan costs $29 per month.", "kind": "attested",
+      "document": "docs/pricing.md",
+      "procedure": { "instructions": "Open the Stripe dashboard and report the Pro monthly price." },
+      "sources": [{ "id": "stripe", "resource": "https://dashboard.stripe.com/products/prod_123" }],
+      "owner": "human:alice@example.com",
+      "reason": "never-checked"
+    },
+    {
+      "claimId": "clm_ed3e7d37f89b41b8", "sentence": "Refunds are issued within two weeks of a request.", "kind": "reference",
+      "document": "README.md", "procedure": null, "sources": [], "owner": null,
+      "reason": "pending"
+    }
+  ],
+  "documents": [
+    { "id": "doc_504a75fb91854951", "path": "docs/pricing.md", "lifecycle": "active", "suspect": [] },
+    { "id": "doc_d068824e08521674", "path": "README.md", "lifecycle": "active",
+      "suspect": [{ "claimId": "clm_ed3e7d37f89b41b8", "status": "judge:pending" }] }
+  ]
+}
+```
+
+After `MAX_ATTEMPTS = 5` becomes `50` in `src/retry.ts`, the code claim gates and `check` exits 2:
+
+```json
+{
+  "claimId": "clm_b87be1a1752b4a49", "documentId": "doc_d068824e08521674", "kind": "code",
+  "doc": "unchanged", "evidence": "changed", "expired": false, "conflicts": [],
+  "gates": true, "warns": false,
+  "changed": "src/retry.ts value: value changed (was `5`)",
+  "remediation": {
+    "recommended": "update-claim",
+    "actions": [
+      { "id": "update-claim", "title": "Update the sentence, then reanchor",
+        "rationale": "the evidence changed; if the sentence is now wrong, rewrite it, then run the command",
+        "command": "hibi reanchor clm_b87be1a1752b4a49" },
+      { "id": "reanchor", "title": "Reanchor as is",
+        "rationale": "the sentence is still true; accept the new span",
+        "command": "hibi reanchor clm_b87be1a1752b4a49" },
+      { "id": "retire", "title": "Retire the claim",
+        "rationale": "the claim is obsolete; withdraw it so it no longer gates",
+        "command": "hibi retire clm_b87be1a1752b4a49" }
+    ]
+  },
+  "reasons": ["evidence: value changed (was `5`)", "evidence: identifiers or literals renamed"]
+}
+```
+
+| top-level key | meaning |
+|---|---|
+| `ref` | the git HEAD, or `WORKTREE` when there is no commit |
+| `since`, `changedFiles` | with `--since` only |
+| `doc`, `found` | with `--doc` only; `found` is false when no claim is recorded on that document |
+| `summary` | counts; `retired` claims are in none of `gating`, `warning`, `clean` |
+| `summary.conflictPass` | pairs formed over the whole store, judge requests answered in this run, pairs still pending |
+| `documents[].suspect[]` | per claim that gates or warns, its most severe status, such as `evidence:changed`, `judge:pending`, `conflict`, `expired`, `superseded` |
+
+`--explain` adds `detail` to each verdict: `docRegion`, `evidenceRegions[]`, `similarity`, and `changes[]` (`{ path, kind: text | ast | value, detail }`). `hibi schema --name Verdict` prints the schema.
+
+`--doc` and `--since` scope the verdicts. The contradiction pass still runs over the whole store, so a scoped check sees a conflict with a claim outside its scope.
+
+## Output format
+
+Human output on a terminal, JSON when piped. `--format human|compact|json|json-pretty` or `--json` overrides. `--overview` renders a per-document table in human output.
+
+## Next
 
 <CardGroup cols={2}>
   <Card title="Anchors" icon="anchor" href="/anchors">
-    The selector kinds and the resolution cascade that produces each state.
+    How each side resolves to one of the five states.
   </Card>
-  <Card title="Behavioral claims" icon="flask-vial" href="/behavioral">
-    Verifiers, `--run-verifiers`, and the doc-first guard.
-  </Card>
-  <Card title="Lifecycle" icon="arrows-spin" href="/lifecycle">
-    `retire`, `supersede`, and `archive`.
-  </Card>
-  <Card title="CLI reference" icon="terminal" href="/cli-reference">
-    Every command and flag.
+  <Card title="Judge" icon="gavel" href="/judge">
+    How `supported`, `refuted`, `review`, and `pending` are decided.
   </Card>
 </CardGroup>

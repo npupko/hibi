@@ -1,90 +1,105 @@
 ---
-title: "Why Hibi: Deterministic Doc-Drift Detection"
+title: "Why Hibi: The Problem and the Design"
 sidebarTitle: "Why Hibi"
-description: "The problem Hibi solves, its threat model (a reader trusts the raw file), and the principles behind every design decision."
+description: "The problem hibi solves, its threat model (a reader asks hibi before trusting a file), its six principles, why a model now sits on the verdict path, and what was removed."
 icon: "compass"
 ---
 
-Documentation drifts. Someone edits the code, the sentence that described it stays, and the page now misleads whoever reads it. Often that reader is an AI coding agent that loads `CLAUDE.md` or a README at the start of a session and acts on every line. Hibi makes that drift detectable and visible in the file itself, deterministically.
+## The problem
 
-For the mechanics, start with [Verdicts](/verdicts).
+Repositories hold more than code. They hold instruction files (`CLAUDE.md`, `AGENTS.md`), READMEs, decision records, process pages, and whole knowledge repositories of policies, prices, and facts about the outside world. Coding agents load these files and act on every line. The sentences in them go stale in three ways:
 
-## The problem and the threat model
+| what changed | example |
+|---|---|
+| the code | a page says "retries 5 times" after the constant became `50` |
+| another document | a page says "refunds within two weeks" after the billing guide changed to 14 days |
+| the world | a page says "Pro costs $29" after the price changed in the billing dashboard |
 
-A **claim** is a sentence in a document anchored to the code it describes. Claims rot in three ways:
+Only the first can be detected by reading the repository's code. Hibi covers all three, with one claim kind each: `code`, `reference`, and `attested` (see [Claims](/claims)). It also finds sentences that contradict each other and sentences nothing could ever verify.
 
-| Drift type | What changed | Example |
-|---|---|---|
-| Code drift | The code moved on; the prose stayed. | A doc says "retries 5 times" after the constant became `50`. |
-| Doc drift | The documented sentence was edited or deleted. | Someone rewrote the paragraph; the claim no longer points at live text. |
-| Supersession | A newer document replaced this one. | An ADR is marked superseded; readers still find the old page. |
+## The threat model
 
-The threat model is one sentence: **a reader reads the raw file and trusts it.** It does not consult a dashboard or a CI log. So the status has to land in the file. That is what `check --write` and the [banner](/banners) are for.
+**A reader asks hibi before trusting a file.** The reader is usually an agent that runs `hibi check --doc <file>` and reads the exit code and JSON. Hibi does not try to reach readers that do not ask. `init --instructions` adds one line to an agent instruction file so the agent knows to ask.
 
-<Info>
-  A flag is a request to re-verify. Hibi reports that the text or code under a sentence moved. A person or agent decides what the prose should now say. Hibi never rewrites prose.
-</Info>
-
-## The principles
+## Principles
 
 <AccordionGroup>
-  <Accordion title="Determinism" icon="scale-balanced">
-    No model runs in the check loop. The same working tree yields the same verdicts. Resolution is an ordered cascade with named constants ([Anchors](/anchors)), not a score. An external advisory resolver may attach notes; it never decides a verdict and never gates.
+  <Accordion title="1. Hibi runs nothing and fetches nothing" icon="hand">
+    No command execution, no URL fetching, no network except the judge API. A claim can carry a procedure and sources, but an agent or an outer runner carries them out and submits the evidence with `hibi evidence`.
   </Accordion>
 
-  <Accordion title="Suspect, not false" icon="circle-question">
-    Hibi reports that evidence moved, never that a claim is false. Confirming falsity means reading both sides and judging intent, which is a human or agent act.
+  <Accordion title="2. Same tree, same verdicts" icon="equals">
+    Anchor resolution is deterministic. Judge verdicts are cached by model and exact request, and never asked again for the same input, so a second run cannot change them.
   </Accordion>
 
-  <Accordion title="Over-flagging is the main failure mode" icon="flag">
-    A tool that flags too much gets muted. Coarse anchors are never reported as drift. `moved` is a warning, not a gate. When several exact matches tie, the answer is `ambiguous`, not a guess.
+  <Accordion title="3. A flag means re-verify" icon="flag">
+    Hibi reports that evidence moved, expired, was refuted, or conflicts. It never rewrites prose and never declares a sentence false on its own authority.
   </Accordion>
 
-  <Accordion title="The documented span is the source of truth" icon="quote-left">
-    The store holds anchors, not a copy of the prose. Re-reading the live sentence at check time is what catches doc drift as well as code drift.
+  <Accordion title="4. Nothing clears without evidence or a human" icon="user-check">
+    An agent cannot vouch a claim fresh. Evidence the judge found to support the sentence, or a `human:` attestation, can. See [Attestations](/attestations).
   </Accordion>
 
-  <Accordion title="Agents author claims, and new claims gate" icon="robot">
-    The primary user is a coding agent. JSON is the contract, and `record --from-file -` is the primary recording path. A new claim is enforced by default; a claim that cannot fail anything does not prevent false claims. `--suggest` opts out.
+  <Accordion title="5. One knob per concept, no hidden rules" icon="sliders">
+    One judge threshold for every judgment. Every automatic rule that fires appears as a reason label in the report.
   </Accordion>
 
-  <Accordion title="Any file is text" icon="file-lines">
-    There is no per-format parser. Markdown, plain text, AsciiDoc, and editor rule files are all handled the same way; the only format-specific knowledge is which comment syntax wraps a banner.
+  <Accordion title="6. Contracts are data" icon="file-code">
+    The store schema, the judge request and response shapes, and the judge questions are JSON. Tests use JSON fixtures. The implementation language can be replaced.
   </Accordion>
 </AccordionGroup>
 
-## Why no model sits on the verdict path
+## Why a model sits on the verdict path
 
-Published results on model-based doc verification are not strong enough to gate on:
+Text anchoring can tell that a referenced span changed. It cannot tell whether "Refunds are issued within two weeks of a request" is still supported by "Refunds are issued within 14 days", or whether evidence an agent pasted from a dashboard supports a price. Those questions need a reader. Hibi asks one, with limits:
 
-- The best published doc-behavior verification tops out at an F1 of about 0.58 (precision about 0.72, recall about 0.48).
-- LLM-as-judge consistency falls to about 0.57 under sampling, and audits have shown judges accepting up to about 63% of intentionally wrong answers.
-- Noisy analyzers report up to about 96% spurious warnings, and trust lost in one tier spreads to every tier.
+- **One small interface.** Three judgments: `triage` (what kind of region is this), `supports` (does this evidence support this sentence), and `conflict` (do these two sentences contradict). Jev, from TypeSafe, is the only shipped implementation. See [Judge](/judge).
+- **One threshold, three outcomes.** A judgment gates, goes to `review` (a warning), or is clean. `judge.threshold` in `.claims/config.json` sets the line for all of them.
+- **Numbers stay in code.** Numbers, money, versions, and dates are extracted and compared by code, not by the model.
+- **Cached verdicts.** Each answer is stored in `.claims/judge/` under the hash of the pinned model id and the canonical request. The same tree gives the same verdicts on every run and on every machine that has the committed cache.
+- **No key means pending.** Without `TYPESAFE_API_KEY`, or with the network down, an unanswered judgment is `pending`, which warns. It is never reported as a pass.
 
-So Hibi splits the work. Text and AST resolution say where something changed. Author-supplied verifiers, run only under `check --run-verifiers`, judge behavior. A model may advise through an advisory resolver, but it may not gate and may not mark a claim supported.
+## Why there are no banners
+
+Earlier versions wrote a status comment into each stale document. That was removed:
+
+- An HTML comment is invisible in rendered documentation; only readers of the raw file saw it.
+- It needed a write path into every document, a comment syntax per format, and it produced diff churn on every status change.
+- The trust call is `hibi check --doc <file>`, which gives the reader the current state instead of the state at the last write.
+
+## What was removed, and why
+
+| removed | reason |
+|---|---|
+| status comments written into documents | the trust call is `check --doc`; see above |
+| commands run by `check` | hibi executes nothing; agent-run procedures and `hibi evidence` replace them |
+| the external extension protocol | the judge interface is the one extension point |
+| a separate layer of normalized statements | duplicates come from sentence text and the contradiction pass; `supersede` matches sentences verbatim |
+| topics | pairing for the contradiction pass is done in code and needs none |
+| a `verified` boolean | replaced by attestations with actors and bases |
+| store upgrade code | v3 stores are not upgraded |
 
 ## Prior art
 
-| Prior work | What Hibi takes from it |
+| prior work | what hibi takes from it |
 |---|---|
-| Hypothesis fuzzy anchoring | The ordered cascade: exact match with context, then fuzzy match within an error budget, position as a weak bias. |
-| W3C Web Annotation Data Model | The `text-quote` and `text-position` selectors; several matches means ambiguous, not a guess. |
-| Fiberplane Drift | tree-sitter plus an AST fingerprint committed to a lock. Hibi adds the doc side, graded states, supersession, and in-file stamping. |
-| Doorstop | A link marked "suspect" that demands an explicit re-baseline. |
-| Gerrit ported comments | Degrade precision rather than guess. |
-| RFC Obsoletes / ADR supersession | A typed `supersedes` edge authored on the new document. |
-| FEVER | The `supported` / `refuted` vocabulary. |
+| Hypothesis fuzzy anchoring | the ordered cascade: exact match with context, then a fuzzy match within an error budget, position as a weak bias |
+| W3C Web Annotation Data Model | the `text-quote` and `text-position` selectors; several equal matches is `ambiguous`, not a guess |
+| Fiberplane Drift | tree-sitter node fingerprints for code spans |
+| Doorstop | a link marked suspect that needs an explicit re-baseline (`reanchor`) |
+| RFC Obsoletes, ADR supersession | a superseded document that records its successor (`supersededBy`) |
+| FEVER | the `supported` / `refuted` vocabulary, plus "not enough info" as `does_not_address` |
+| OKF (Open Knowledge Format) | actor ids (`human:`, `agent:`, `process:`) and the `sources[]` shape |
+| Lobster | the step shape of a procedure (`id`, `command`, `stdin`) |
+| TypeSafe citation-check cookbook | the three-way `supports` question and the `addresses` check that forces `does_not_address` |
 
-## Where the reasoning becomes mechanics
+## Next
 
 <CardGroup cols={2}>
-  <Card title="Verdicts" icon="scale-balanced" href="/verdicts">
-    The claim model, the two axes, the remediation menu, and the exit codes.
+  <Card title="Claims" icon="quote-left" href="/claims">
+    The three kinds and the store layout.
   </Card>
-  <Card title="Anchors" icon="anchor" href="/anchors">
-    The selectors and the resolution cascade with its constants.
-  </Card>
-  <Card title="Behavioral claims" icon="flask-vial" href="/behavioral">
-    Verifiers and why they are opt-in.
+  <Card title="Judge" icon="gavel" href="/judge">
+    The interface, the threshold, and the cache.
   </Card>
 </CardGroup>

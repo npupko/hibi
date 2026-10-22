@@ -1,34 +1,47 @@
 ---
-title: "Anchors and Resolution: How Hibi Pins Claims to Code"
+title: "Anchors and Resolution: How Hibi Locates a Span"
 sidebarTitle: "Anchors"
-description: "Each side of a claim stores a text quote with context, a position, and on the code side an AST fingerprint and a literal. Resolution is an ordered cascade with fixed constants."
+description: "Each side of a claim stores a text quote with context, a position, and on code sides an AST fingerprint and a literal. Resolution is an ordered cascade with fixed constants."
 icon: "anchor"
 ---
-A claim has two sides. The **doc side** is the documented sentence. The **code side** is one or more spans of code the sentence describes. Each side is a **selector bundle**: one file plus a list of selectors that point at the same span in different ways.
 
-```
-Anchor = { doc: SelectorBundle, code: SelectorBundle[] }
+A claim has a **doc side**, the sentence in its document. `code` and `reference` claims also have **evidence sides**: one or more code spans for `code`, exactly one span in another document for `reference`. `attested` claims have no evidence side. See [Claims](/claims).
+
+Each side is a **selector bundle**: one file plus a list of selectors that point at the same span in different ways.
+
+```json
+{ "file": "src/retry.ts", "selectors": [ { "kind": "text-quote", … }, { "kind": "text-position", … } ] }
 ```
 
-The store holds the anchor, not a copy of the prose. At check time Hibi re-reads the live span from the file.
+The store holds the selectors, not a copy of the file. At check time hibi re-reads each file from the working tree and locates the span again. `check` never reads git history.
 
 ## Selector kinds
 
-| Selector | Side | What it stores |
+| selector | sides | what it stores |
 |---|---|---|
-| `text-quote` | both | the exact text plus 48 characters of prefix and suffix context |
-| `text-position` | both | the character offsets at record time; a locate bias and the `moved` tiebreaker |
-| `ast-node` | code | the smallest enclosing named tree-sitter node with a structural hash and a semantic hash; used for reason labels |
-| `value` | code | the first literal that lies inside the quoted span, so `5` becoming `50` is caught |
-| `coarse` | code | a file or glob pattern (`--glob`); navigation only, never graded as drift |
+| `text-quote` | all | the exact text, plus up to 48 characters of prefix and suffix context |
+| `text-position` | all | the character offsets at record time; a locate bias and the `moved` tiebreaker |
+| `ast-node` | code spans | the smallest enclosing named tree-sitter node, with a structural hash and a semantic hash; used for reason labels |
+| `value` | code spans | the first literal inside the quoted span, so `5` becoming `50` is caught |
 
-The `value` selector is stored only when a literal lies inside the quoted span. If the span has no literal, no value selector is stored and no value check runs. Quote the load-bearing token (`MAX_ATTEMPTS = 5`), not the whole line.
+Doc sides and `reference` evidence sides store `text-quote` and `text-position` only.
 
-<Warning>
-  A coarse anchor is never reported as drift. It answers "which claims touch this area" and nothing more. A claim whose only code side is coarse cannot gate; record it with `--suggest`.
-</Warning>
+The `value` selector is stored only when a literal lies inside the quoted span. Quote the load-bearing token (`MAX_ATTEMPTS = 5`), not the whole line.
 
-Tree-sitter grammars (TypeScript, Python, Rust, Go, Java) load lazily, per language present in the anchors being checked. `--no-ast` skips them.
+## Tree-sitter
+
+Hibi embeds the official tree-sitter grammars for these languages and loads them per language, only for the files being checked:
+
+| language | extensions |
+|---|---|
+| TypeScript and JavaScript | `.ts`, `.js`, `.mjs`, `.cjs` |
+| TSX and JSX | `.tsx`, `.jsx` |
+| Python | `.py`, `.pyi` |
+| Rust | `.rs` |
+| Go | `.go` |
+| Java | `.java` |
+
+A code span in any other language gets `text-quote` and `text-position` only, with no warning. `--no-ast` skips tree-sitter entirely: no `ast-node` or `value` selector is recorded, and at check time stored `ast-node` and `value` selectors are not compared.
 
 ## The resolution cascade
 
@@ -36,16 +49,16 @@ Each side is resolved by an ordered cascade. There is no weighted score.
 
 <Steps>
   <Step title="Locate the quote">
-    Find exact occurrences of the stored quote. If there are several, rank them by how well the stored 48-character prefix and suffix match. If there is no exact occurrence, run a bitap fuzzy match biased toward the stored position. The match is accepted only when its edit distance to the stored quote is within the error budget `min(256, floor(len × 0.4))`, where `len` is the quote length. A candidate over the budget counts as not found.
+    Find exact occurrences of the stored quote. If there are several, rank them by how well the stored prefix and suffix match. If there is no exact occurrence, run a bitap fuzzy match biased toward the stored position. The match is accepted only when its edit distance to the stored quote is within `min(256, floor(len × 0.4))`, where `len` is the quote length.
   </Step>
   <Step title="Not found: orphaned">
     A missing file, or no match within the budget, is `orphaned`.
   </Step>
   <Step title="Several equally good exact matches: ambiguous">
-    When more than one exact occurrence ties on context, the side is `ambiguous`. Quotes shorter than 8 characters are exempt from this check; their candidates are picked by position.
+    When more than one exact occurrence ties on context, the side is `ambiguous`. Quotes shorter than 8 characters are exempt; their candidates are picked by position.
   </Step>
   <Step title="Changed">
-    The side is `changed` when any of these holds: normalized text similarity to the stored quote is below 0.9; the semantic AST hash differs; the literal inside the quoted span differs from the stored value; on a prose span, a number in the sentence changed.
+    The side is `changed` when any of these holds: normalized text similarity to the stored quote is below 0.9; the semantic AST hash differs; the literal inside the span differs from the stored value; on a span with no `ast-node` or `value` selector, a number in the text changed.
   </Step>
   <Step title="Unchanged or moved">
     Otherwise the text is the same. If the located start is within 4 characters of the stored position, the side is `unchanged`; further away, it is `moved`.
@@ -54,23 +67,29 @@ Each side is resolved by an ordered cascade. There is no weighted score.
 
 Position is only a bias during locate and the tiebreaker between `unchanged` and `moved`. It never decides `changed`.
 
+A claim with several evidence sides reports the worst one on the `evidence` axis, in this order from worst: `orphaned`, `ambiguous`, `changed`, `unavailable`, `moved`, `unchanged`.
+
 ## Reason labels
 
-A `changed` side carries a reason in `notes` and in `evidence.changedEvidence`:
+Every side's labels appear in the verdict's `reasons[]`, prefixed `doc: ` or `evidence: `. A `changed` side also adds entries to `detail.changes[]` (shown with `--explain`), each `{ path, kind, detail }`. The first change is repeated in the verdict's one-line `changed` field, for example ``src/retry.ts value: value changed (was `5`)``.
 
-| Condition | Label | `changedEvidence.kind` |
+| condition | label | `changes[].kind` |
 |---|---|---|
+| in-span literal differs | ``value changed (was `5`)`` | `value` |
 | semantic hash differs, structural hash equal | `identifiers or literals renamed` | `ast` |
 | both hashes differ | `restructured` | `ast` |
-| in-span literal differs | ``value changed (was `5`)`` | `value` |
-| number in a prose sentence differs | `a number in the sentence changed` | `text` |
+| a number in a span without AST selectors differs | `a number in the sentence changed` | `text` |
 | similarity below 0.9 | `text changed (NN% similar)` | `text` |
+| quote not located | `quote not found` | `text` |
+| file missing | `file not found: <path>` | `text` |
+| several equal matches | `quote matched in several places equally well` | none |
+| same text at a new offset | `span moved N chars` | none |
 
 ## The constants
 
-All constants live in `src/algo/params.ts`. There are no hidden weights.
+All resolution constants live in `src/algo/params.ts`. There are no hidden weights.
 
-| Constant | Value | Effect |
+| constant | value | effect |
 |---|---|---|
 | fuzzy error budget | `min(256, floor(len × 0.4))` edits | a candidate over it is `orphaned` |
 | text-quote context | 48 characters each side | ranks exact occurrences |
@@ -78,21 +97,46 @@ All constants live in `src/algo/params.ts`. There are no hidden weights.
 | move awareness | 4 characters | beyond it, same text is `moved` |
 | ambiguity minimum quote length | 8 characters | shorter quotes are never `ambiguous` |
 
-## Doc-first resolution
+## Sides in another repository
 
-The doc side resolves first. The documented span is the source of truth, and a verifier runs only when the doc side is `unchanged` or `moved` (see [Behavioral claims](/behavioral)). The verdict still reports both sides, so a `doc:changed` verdict also shows what the code did.
+`config.repos` in `.claims/config.json` maps an alias to a directory relative to the repository root:
+
+```json
+{ "repos": { "api": "../api" } }
+```
+
+An evidence side's file may then be `api:src/limits.ts`. At check time:
+
+| situation | state | reason label |
+|---|---|---|
+| the directory exists | resolved like any other side | |
+| the directory does not exist | `unavailable` | `sibling repo "api" is not checked out at ../api` |
+| the alias was removed from config | `unavailable` | `repo alias "api" is not defined in .claims/config.json repos` |
+
+`unavailable` warns and never gates. Without aliases nothing changes.
+
+## Anchors and the judge
+
+For a `reference` claim, the judge is asked whether the referenced text still supports the sentence only when both sides were located as `unchanged` or `moved`. Otherwise the verdict carries a label such as `judge: not consulted while the doc side is changed` or `judge: not consulted while the evidence side is orphaned`, and the anchor state decides the outcome. Fix the anchor first; the judge runs on the next `check`.
 
 ## Record-time checks
 
-`record` and `reanchor` refuse a doc quote shorter than 8 characters, a quote that does not occur in its file, and a `--code-file` that does not exist. A doc quote that occurs more than once is refused when the context cannot single out one occurrence, and recorded with a warning when it can; widen the span with `--doc-range` to avoid both.
+`record` and `reanchor` refuse:
+
+- a doc quote shorter than 8 characters;
+- a quote or range that does not occur in its file, or covers only whitespace;
+- an evidence file that does not exist on disk;
+- an alias that `config.repos` does not define.
+
+A doc quote that occurs more than once is refused when the stored context cannot single out one occurrence, and recorded with a warning when it can. Widen the span with `--doc-range` to avoid both.
 
 ## Next
 
 <CardGroup cols={2}>
   <Card title="Verdicts" icon="scale-balanced" href="/verdicts">
-    How the five states become a verdict, a remediation menu, and an exit code.
+    How anchor states combine with the judge, expiry, and conflicts into an exit code.
   </Card>
-  <Card title="Behavioral claims" icon="flask-vial" href="/behavioral">
-    Verifiers for sentences that text and AST resolution cannot judge.
+  <Card title="Lifecycle" icon="arrows-spin" href="/lifecycle">
+    Reanchor, retire, supersede, and archive.
   </Card>
 </CardGroup>
