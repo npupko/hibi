@@ -1,0 +1,65 @@
+{
+  "id": "clm_017fd8dc05b04abb",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "`evidence`: observed text, at most 32,000 characters, never secrets; only its hash is stored.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`evidence`: observed text, at most 32,000 characters, never secrets; only its hash is stored.",
+        "prefix": "ary\":\"Stripe lists Pro at $29/month\"}]\nEOF\n```\n\n",
+        "suffix": " `summary`: one stored line. `--by` is required "
+      },
+      {
+        "kind": "text-position",
+        "start": 4513,
+        "end": 4606
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "MAX_EVIDENCE_CHARS = 32_000",
+          "prefix": "DGET`\n * in src/judge/jev.ts).\n */\nexport const ",
+          "suffix": ";\n\n/** Choice confidence per the TypeSafe docs: "
+        },
+        {
+          "kind": "text-position",
+          "start": 4185,
+          "end": 4212
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "93110d923bb52349"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "32_000"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.861Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.861Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

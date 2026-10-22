@@ -1,0 +1,94 @@
+{
+  "id": "clm_703927316dc4474a",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "`--format human|compact|json|json-pretty`, `--json`, `--explain` (detail tail), `--no-hints` (drop the remediation menu), and `--color auto|always|never` override it.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--format human|compact|json|json-pretty`, `--json`, `--explain` (detail tail), `--no-hints` (drop the remediation menu), and `--color auto|always|never` override it.",
+        "prefix": "put is human on a terminal and JSON when piped. ",
+        "suffix": "\n\n### Exit codes\n\n| code | meaning |\n|------|---"
+      },
+      {
+        "kind": "text-position",
+        "start": 5044,
+        "end": 5210
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "[\"human\", \"compact\", \"json\", \"json-pretty\"]",
+          "prefix": "tence in it is stale.\";\n\nexport const FORMATS = ",
+          "suffix": " as const;\nexport type Format = (typeof FORMATS)"
+        },
+        {
+          "kind": "text-position",
+          "start": 1543,
+          "end": 1586
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "40a74bde400ad9b9",
+          "semanticHash": "7aeb705fd5f01bd9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"human\",\"compact\",\"json\",\"json-pretty\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "[\"auto\", \"always\", \"never\"]",
+          "prefix": " name: \"color\",\n    type: \"string\",\n    values: ",
+          "suffix": ",\n    placeholder: \"<when>\",\n    help: \"Color in"
+        },
+        {
+          "kind": "text-position",
+          "start": 2297,
+          "end": 2324
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "4f22346ddf3f12c8",
+          "semanticHash": "4eff790b7fd919f5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"auto\",\"always\",\"never\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.768Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.768Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

@@ -1,0 +1,94 @@
+{
+  "id": "clm_47980c2f9e684ed9",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "Verdicts cache in `.claims/judge/`; commit `.claims/` whole.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Verdicts cache in `.claims/judge/`; commit `.claims/` whole.",
+        "prefix": "ents are `pending`, a warning, never a failure. ",
+        "suffix": " Paths are normalized relative to the repo root;"
+      },
+      {
+        "kind": "text-position",
+        "start": 2151,
+        "end": 2211
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "STORE_DIR = \".claims\"",
+          "prefix": "Cache } from \"../judge/cache.ts\";\n\nexport const ",
+          "suffix": ";\n\nconst SUBDIRS = {\n  documents: \"documents\",\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 797,
+          "end": 818
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "8bec3950d5682efb",
+          "semanticHash": "30eb4c405c764808"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".claims\""
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "judge: \"judge\"",
+          "prefix": "  documents: \"documents\",\n  claims: \"claims\",\n  ",
+          "suffix": ",\n} as const;\n\n/**\n * Where a store lives and wh"
+        },
+        {
+          "kind": "text-position",
+          "start": 887,
+          "end": 901
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "c927c4d119444c65"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"judge\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.857Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.857Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

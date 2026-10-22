@@ -17,7 +17,8 @@ import type { Style } from "./style.ts";
  * - `not-a-claim`: nothing
  * - `unsure` on the triage kind: "unsure: read it yourself"
  * - `unsure` on the evidence kind: "unsure: evidence kind"
- * - `pending`: "pending: judge unavailable"
+ * - `pending`: "pending: judge unavailable" or "pending: judge error", from
+ *   the row's `reason` (`judge unavailable: …` or `judge error: …`)
  */
 export function adviceFor(row: AuditRow): string | null {
   if (row.claimId !== null) return null;
@@ -35,7 +36,9 @@ export function adviceFor(row: AuditRow): string | null {
         ? "unsure: evidence kind"
         : "unsure: read it yourself";
     case "pending":
-      return "pending: judge unavailable";
+      return row.reason?.startsWith("judge error")
+        ? "pending: judge error"
+        : "pending: judge unavailable";
   }
 }
 

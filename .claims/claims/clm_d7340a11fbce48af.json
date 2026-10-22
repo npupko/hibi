@@ -1,0 +1,65 @@
+{
+  "id": "clm_d7340a11fbce48af",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "Judge: `supported`, `refuted`, `review` (unsure, or evidence did not address it), `pending` (judge not reached, or its answer unusable).",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Judge: `supported`, `refuted`, `review` (unsure, or evidence did not address it), `pending` (judge not reached, or its answer unusable).",
+        "prefix": "uous`, `orphaned`; evidence also `unavailable`. ",
+        "suffix": "\n\nAttestations are append-only `{by, at, basis: "
+      },
+      {
+        "kind": "text-position",
+        "start": 1202,
+        "end": 1338
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "[\"supported\", \"refuted\", \"review\", \"pending\"]",
+          "prefix": "(SPEC 7.2). */\nexport const JudgeState = z.enum(",
+          "suffix": ");\nexport type JudgeState = z.infer<typeof Judge"
+        },
+        {
+          "kind": "text-position",
+          "start": 3151,
+          "end": 3196
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "40a74bde400ad9b9",
+          "semanticHash": "cc3afda2787e1eb5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"supported\",\"refuted\",\"review\",\"pending\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.829Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.829Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

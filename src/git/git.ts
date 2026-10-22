@@ -1,7 +1,6 @@
 /**
- * Advisory git access. git is used only to scope `check --since`, to fill the
- * recorded ref, and to default `record`'s actor to `human:<user.email>`; never
- * to compute a verdict.
+ * Advisory git access. git is used only to scope `check --since` and to fill
+ * the recorded ref; never to pick an actor and never to compute a verdict.
  */
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";

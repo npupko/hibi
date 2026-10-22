@@ -1,0 +1,50 @@
+{
+  "id": "clm_78d3fa11a1d54308",
+  "documentId": "doc_da671669435c5749",
+  "kind": "attested",
+  "sentence": "Rate limits are set per organization in the TypeSafe console; the docs do not state default values.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Rate limits are set per organization in the TypeSafe console; the docs do not state default values.",
+        "prefix": ", $0.006 to $0.03, about 10 s at 8 in flight |\n\n",
+        "suffix": " Because answers are cached, a repeated `check` "
+      },
+      {
+        "kind": "text-position",
+        "start": 14415,
+        "end": 14514
+      }
+    ]
+  },
+  "evidence": [],
+  "sources": [
+    {
+      "id": "research-note",
+      "resource": "design/evidence/typesafe-research-2026-10-22.md",
+      "title": "TypeSafe research note, 2026-10-22"
+    },
+    {
+      "id": "typesafe-rate-limits",
+      "resource": "https://console.typesafe.ai/rate-limits",
+      "title": "TypeSafe console: rate limits"
+    }
+  ],
+  "procedure": {
+    "instructions": "Search the TypeSafe docs (https://docs.typesafe.ai) for rate limits and open https://console.typesafe.ai/rate-limits. Report whether limits are per organization and whether the docs now publish default values. Submit the quoted text with hibi evidence."
+  },
+  "owner": "human:mikita@peechapp.co",
+  "ttl": "P90D",
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:58.034Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:58.034Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

@@ -2,10 +2,13 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { evidenceNext } from "../src/cli/render/evidence.ts";
 import type { Claim, Config } from "../src/core/model.ts";
 import { runCheck } from "../src/engine/check.ts";
 import {
   type EvidenceItem,
+  type EvidenceReport,
+  type EvidenceResult,
   EvidenceValidationError,
   MAX_EVIDENCE_CHARS,
   type SubmitEvidenceInput,
@@ -600,5 +603,60 @@ describe("submitEvidence outcomes", () => {
       sha256("Pro plan, monthly: USD 29.00"),
       sha256("Pricing page: Pro $29"),
     ]);
+  });
+});
+
+describe("the next hint", () => {
+  const result = (judge: EvidenceResult["judge"], reasons: string[]) =>
+    ({
+      claimId: "clm_0000000000000001",
+      judge,
+      relation: null,
+      confidence: null,
+      probabilities: null,
+      reasons,
+      attested: false,
+      cached: false,
+    }) satisfies EvidenceResult;
+  const report = (results: EvidenceResult[]): EvidenceReport => ({
+    results,
+    summary: {
+      supported: 0,
+      refuted: 0,
+      review: 0,
+      pending: results.filter((r) => r.judge === "pending").length,
+      requests: 0,
+    },
+  });
+
+  test("nothing pending points at check", () => {
+    expect(evidenceNext(report([result("supported", [])]))).toBe("hibi check");
+  });
+
+  test("an unavailable judge names the key and the network", () => {
+    expect(
+      evidenceNext(report([result("pending", ["judge unavailable: no key"])])),
+    ).toBe(
+      "set TYPESAFE_API_KEY or restore the network, then re-submit the pending items",
+    );
+  });
+
+  test("a judge error says so and does not mention the key", () => {
+    const next = evidenceNext(
+      report([result("pending", ["judge error: TypeSafe returned HTTP 400"])]),
+    );
+    expect(next).toContain("judge error");
+    expect(next).not.toContain("TYPESAFE_API_KEY");
+  });
+
+  test("both causes are both named", () => {
+    const next = evidenceNext(
+      report([
+        result("pending", ["judge unavailable: no key"]),
+        result("pending", ["judge error: bad answer"]),
+      ]),
+    );
+    expect(next).toContain("TYPESAFE_API_KEY");
+    expect(next).toContain("judge error");
   });
 });

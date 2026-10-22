@@ -1,0 +1,59 @@
+{
+  "id": "clm_fd6799787e98426a",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "One threshold, `judge.threshold` in `.claims/config.json`, decides when a judgment gates.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "One threshold, `judge.threshold` in `.claims/config.json`, decides when a judgment gates.",
+        "prefix": "oney, versions, and dates are compared in code. ",
+        "suffix": " Every rule that fires is a reason label in the "
+      },
+      {
+        "kind": "text-position",
+        "start": 6884,
+        "end": 6973
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const threshold = config.judge.threshold;",
+          "prefix": " const config: Config = await store.config();\n  ",
+          "suffix": "\n  // Cache keys use the judge's model; the conf"
+        },
+        {
+          "kind": "text-position",
+          "start": 13211,
+          "end": 13252
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "e163f29f0b06410c",
+          "semanticHash": "818a52178afbf025"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.805Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.805Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

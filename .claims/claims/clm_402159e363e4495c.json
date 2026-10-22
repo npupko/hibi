@@ -1,0 +1,94 @@
+{
+  "id": "clm_402159e363e4495c",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "Anchor states: `unchanged`, `moved`, `changed`, `ambiguous`, `orphaned`; evidence also `unavailable`.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Anchor states: `unchanged`, `moved`, `changed`, `ambiguous`, `orphaned`; evidence also `unavailable`.",
+        "prefix": "quired | ttl elapsed, or evidence refutes it |\n\n",
+        "suffix": " Judge: `supported`, `refuted`, `review` (unsure"
+      },
+      {
+        "kind": "text-position",
+        "start": 1100,
+        "end": 1201
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"unchanged\", // found, same text, same place\n    \"moved\", // found, same text, new place\n    \"changed\", // found, text or structure differs\n    \"ambiguous\", // matches in several places equally well\n    \"orphaned\", // not found",
+          "prefix": ". */\nexport const AnchorState = z\n  .enum([\n    ",
+          "suffix": "\n  ])\n  .meta({ id: \"AnchorState\" });\nexport typ"
+        },
+        {
+          "kind": "text-position",
+          "start": 2475,
+          "end": 2702
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "c60db945f7b10227",
+          "semanticHash": "d4363f35552a4758"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unchanged\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "[...AnchorState.options, \"unavailable\"]",
+          "prefix": "out). */\nexport const EvidenceState = z\n  .enum(",
+          "suffix": ")\n  .meta({ id: \"EvidenceState\" });\nexport type "
+        },
+        {
+          "kind": "text-position",
+          "start": 2936,
+          "end": 2975
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "2d7714bbe544609f",
+          "semanticHash": "a41ea25e74f7ddbb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[...AnchorState.options,\"unavailable\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.823Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.823Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

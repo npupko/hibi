@@ -48,7 +48,7 @@ import {
 import { renderAttest } from "./render/attest.ts";
 import { renderAudit } from "./render/audit.ts";
 import { renderCheck } from "./render/check.ts";
-import { renderEvidence } from "./render/evidence.ts";
+import { evidenceNext, renderEvidence } from "./render/evidence.ts";
 import { fileReader } from "./render/helpers.ts";
 import {
   envelope,
@@ -890,10 +890,7 @@ async function main(argv: string[]): Promise<number> {
       );
       try {
         const report = await engine.evidence(items);
-        const next =
-          report.summary.pending > 0
-            ? "set TYPESAFE_API_KEY or restore the network, then re-submit the pending items"
-            : "hibi check";
+        const next = evidenceNext(report);
         await emit(mode, envelope("evidence", { ...report }, next), () =>
           renderEvidence(report, style, mode),
         );

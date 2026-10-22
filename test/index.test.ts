@@ -638,6 +638,22 @@ describe("user-supplied paths are normalized to the store's form", () => {
       "no claims are registered for docs/a.md; run hibi audit --doc docs/a.md",
     );
   });
+
+  test("check --doc on a document whose claims are all retired throws the same error", async () => {
+    const { e } = await seeded();
+    const rec = await e.record({
+      kind: "code",
+      by: "human:t@example.com",
+      docPath: "docs/a.md",
+      docQuote: "A is 1 here, always.",
+      evidence: [{ file: "src/a.ts", region: { quote: "A = 1" } }],
+    });
+    expect((await e.check({ doc: "docs/a.md" })).exitCode).toBe(0);
+    await e.retire(rec.claim.id);
+    await expect(e.check({ doc: "docs/a.md" })).rejects.toThrow(
+      "no claims are registered for docs/a.md; run hibi audit --doc docs/a.md",
+    );
+  });
 });
 
 describe("evidence file containment", () => {

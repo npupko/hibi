@@ -373,9 +373,11 @@ export class Engine {
   }
 
   /**
-   * Verify every claim against the working tree. The contradiction pass runs
-   * over the whole store; `doc` and `onlyFiles` scope only the verdicts.
-   * Writes nothing but judge cache entries.
+   * Verify every claim against the working tree. `doc` scopes the verdicts to
+   * one document and the contradiction pass to the pairs with a claim in it;
+   * a document with no live claims is an error. Otherwise the pass runs over
+   * the whole store, and `onlyFiles` scopes only the verdicts. Writes nothing
+   * but judge cache entries.
    */
   async check(opts: CheckCall = {}): Promise<CheckReport> {
     return (await this.checkWithPass(opts)).report;
@@ -395,7 +397,11 @@ export class Engine {
     if (opts.doc !== undefined) {
       const doc = this.norm(opts.doc);
       const scope = await documentScope(this.store, doc);
-      if (!claims.some((c) => c.documentId === scope.documentId)) {
+      // Retired claims do not count: a document with only those is unregistered.
+      const live = claims.some(
+        (c) => c.documentId === scope.documentId && c.enforcement !== "retired",
+      );
+      if (!live) {
         throw new Error(
           `no claims are registered for ${doc}; run hibi audit --doc ${doc}`,
         );

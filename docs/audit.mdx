@@ -86,6 +86,7 @@ The decision is taken only when the confidence of the `kind` Choice is at or abo
 | `probability` | decided uncovered rows | the judge's probability for the triage kind it picked |
 | `unsure` | `unsure` rows | `kind` or `evidenceKind` |
 | `probabilities` | `unsure` rows | the `kind` distribution, plus the `evidenceKind` distribution when the top kind is `factual_claim` |
+| `reason` | `pending` rows | `judge unavailable: <message>` or `judge error: <message>` |
 | `duplicateOf` | always | for a covered row, the claim its claim most likely duplicates (from the [contradiction pass](/conflicts)); otherwise `null` |
 
 The contradiction pass that `audit` runs judges only the pairs with at least one claim in this document, and pairs those claims against every live claim in the store.
@@ -139,7 +140,7 @@ The JSON carries `kind` and no advice. The human output prints one to-do per row
 | `not-a-claim` | none |
 | `unsure` on `kind` | `unsure: read it yourself` |
 | `unsure` on `evidenceKind` | `unsure: evidence kind` |
-| `pending` | `pending: judge unavailable` (also printed when the judge answered with something hibi could not use) |
+| `pending` | `pending: judge unavailable`, or `pending: judge error` when the judge answered with something hibi could not use (from the row's `reason`) |
 
 ```
 README.md

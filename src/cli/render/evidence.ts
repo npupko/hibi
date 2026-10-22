@@ -1,4 +1,7 @@
-/** Human output for `hibi evidence`: one line per item, then its reason labels. */
+/**
+ * Human output for `hibi evidence`: one line per item, then its reason labels.
+ * `evidenceNext` is the envelope's `next` hint.
+ */
 
 import type { EvidenceReport, EvidenceResult } from "../../engine/evidence.ts";
 import type { OutputMode } from "./mode.ts";
@@ -35,4 +38,26 @@ export function renderEvidence(
     ),
   );
   return `${lines.join("\n")}\n`;
+}
+
+/**
+ * The `next` hint for an evidence report. A pending item's reason starts with
+ * `judge unavailable:` (no key, network) or `judge error:` (an answer hibi
+ * could not use); the hint names the cause the pending items actually have.
+ */
+export function evidenceNext(report: EvidenceReport): string {
+  const reasons = report.results
+    .filter((r) => r.judge === "pending")
+    .flatMap((r) => r.reasons);
+  if (reasons.length === 0) return "hibi check";
+  const unavailable = reasons.some((r) => r.startsWith("judge unavailable"));
+  const error = reasons.some((r) => r.startsWith("judge error"));
+  const steps: string[] = [];
+  if (unavailable) steps.push("set TYPESAFE_API_KEY or restore the network");
+  if (error) {
+    steps.push(
+      "read the judge error in results[].reasons and fix its cause (the request or the judge's answer)",
+    );
+  }
+  return `${steps.join("; ")}, then re-submit the pending items`;
 }

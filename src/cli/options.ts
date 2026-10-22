@@ -286,7 +286,7 @@ export const COMMANDS: CommandSpec[] = [
     ],
     examples: [
       'hibi record --doc README.md --doc-quote "Retries are capped at 5 attempts" --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" --by agent:opus',
-      'hibi record --doc docs/pricing.md --doc-quote "Pro costs $29/month." --kind attested --ttl P90D --source stripe=https://dashboard.stripe.com/products/prod_123 --instructions "Open the Stripe dashboard and report the Pro monthly price." --by human:alice@example.com',
+      "hibi record --doc docs/pricing.md --doc-quote 'Pro costs $29/month.' --kind attested --ttl P90D --source stripe=https://dashboard.stripe.com/products/prod_123 --instructions 'Open the Stripe dashboard and report the Pro monthly price.' --by human:alice@example.com",
       'echo \'[{"doc":"README.md","docQuote":"Retries are capped at 5 attempts","kind":"code","code":[{"file":"src/retry.ts","quote":"MAX_ATTEMPTS = 5"}]}]\' | hibi record --from-file - --by agent:opus',
     ],
   },
@@ -295,7 +295,7 @@ export const COMMANDS: CommandSpec[] = [
     summary:
       "Verify every claim against the working tree and exit 0 (clean), 2 (gating), or 1 (error).",
     description:
-      "Resolves every span, consults the judge cache (asking the judge on a miss; without TYPESAFE_API_KEY the result is pending), runs the contradiction pass, and lists the worklist: claims an agent should re-check. Writes nothing but judge cache entries. --since scopes the verdicts to claims touching files changed since a git ref; --doc scopes them to one document, where expired also gates, and judges only the contradiction pairs with a claim in that document. --doc on a path with no registered claims is an error (exit 1). Warnings (moved, review, pending, unavailable, expired in a whole-store check) exit 0 unless --fail-on warn.",
+      "Resolves every span, consults the judge cache (asking the judge on a miss; without TYPESAFE_API_KEY the result is pending), runs the contradiction pass, and lists the worklist: claims an agent should re-check. Writes nothing but judge cache entries. --since scopes the verdicts to claims touching files changed since a git ref; --doc scopes them to one document, where expired also gates, and judges only the contradiction pairs with a claim in that document. --doc on a path with no registered claims (retired claims do not count) is an error (exit 1). Warnings (moved, review, pending, unavailable, expired in a whole-store check) exit 0 unless --fail-on warn.",
     options: CHECK_OPTIONS,
     examples: [
       "hibi check",
@@ -509,7 +509,7 @@ export const COMMANDS: CommandSpec[] = [
       },
     ],
     examples: [
-      'hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --note "checked Stripe, still $29"',
+      "hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --note 'checked Stripe, still $29'",
       'hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --ack conflict:clm_9f8e7d6c5b4a3210 --note "different plans"',
       'hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --ack review --note "the referenced page says the same in other words"',
     ],
@@ -660,7 +660,7 @@ export function usage(): string {
     "Global options:",
     ...optionLines(GLOBAL_OPTIONS),
     "",
-    "Exit codes: 0 clean or warnings · 2 gating (changed/orphaned/ambiguous span, refuted, or a conflict on an enforced claim; expired under check --doc; any warning under --fail-on warn) · 1 error",
+    "Exit codes: 0 clean or warnings only; 2 gating; 1 operational error (bad flag, no store, missing file, check --doc on a path with no registered claims)",
     "Env: HIBI_ASCII=1 for ASCII symbols · HIBI_ADVICE=0 to drop remediation hints",
   ];
   return `${lines.join("\n")}\n`;

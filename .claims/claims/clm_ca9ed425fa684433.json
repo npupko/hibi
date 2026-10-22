@@ -1,0 +1,94 @@
+{
+  "id": "clm_ca9ed425fa684433",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "The judge needs `TYPESAFE_API_KEY`; without it uncached judgments are `pending`, a warning, never a failure.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The judge needs `TYPESAFE_API_KEY`; without it uncached judgments are `pending`, a warning, never a failure.",
+        "prefix": " it. Every flag: `references/cli-reference.md`. ",
+        "suffix": " Verdicts cache in `.claims/judge/`; commit `.cl"
+      },
+      {
+        "kind": "text-position",
+        "start": 2042,
+        "end": 2150
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"TYPESAFE_API_KEY\"",
+          "prefix": "://api.typesafe.ai\";\nexport const API_KEY_ENV = ",
+          "suffix": ";\nexport const BASE_URL_ENV = \"TYPESAFE_BASE_URL"
+        },
+        {
+          "kind": "text-position",
+          "start": 537,
+          "end": 555
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "3bead81b8a224d20"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"TYPESAFE_API_KEY\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"review\",\n  \"pending\",",
+          "prefix": "adonlySet<JudgeState> = new Set<JudgeState>([\n  ",
+          "suffix": "\n]);\n\nfunction isGatingAnchor(state: EvidenceSta"
+        },
+        {
+          "kind": "text-position",
+          "start": 1680,
+          "end": 1702
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "67c7db62f72d6def",
+          "semanticHash": "dac259d410757412"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"review\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.854Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.854Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

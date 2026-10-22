@@ -1,0 +1,52 @@
+{
+  "id": "clm_4ea1b97659de448d",
+  "documentId": "doc_d068824e08521674",
+  "kind": "reference",
+  "sentence": "- **Same tree, same verdicts.** Anchor resolution is deterministic, and judge verdicts are cached and never re-asked.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **Same tree, same verdicts.** Anchor resolution is deterministic, and judge verdicts are cached and never re-asked.",
+        "prefix": "d and does not count.\n\n## What you can rely on\n\n",
+        "suffix": "\n- **A flag means re-verify.** Hibi reports that"
+      },
+      {
+        "kind": "text-position",
+        "start": 7255,
+        "end": 7372
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**Same tree, same verdicts.** Deterministic passes are deterministic. Model verdicts are cached and never re-asked for the same input, so a second run cannot flip them.",
+          "prefix": ". An agent collects evidence and submits it.\n2. ",
+          "suffix": "\n3. **A flag means re-verify.** Hibi reports tha"
+        },
+        {
+          "kind": "text-position",
+          "start": 1395,
+          "end": 1563
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.820Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.820Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

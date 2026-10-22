@@ -1,0 +1,94 @@
+{
+  "id": "clm_d723d5c803564282",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "| Python | `.py`, `.pyi` |",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| Python | `.py`, `.pyi` |",
+        "prefix": "mjs`, `.cjs` |\n| TSX and JSX | `.tsx`, `.jsx` |\n",
+        "suffix": "\n| Rust | `.rs` |\n| Go | `.go` |\n| Java | `.java"
+      },
+      {
+        "kind": "text-position",
+        "start": 2057,
+        "end": 2083
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/lang.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\".py\": \"python\"",
+          "prefix": "\".mjs\": \"typescript\",\n  \".cjs\": \"typescript\",\n  ",
+          "suffix": ",\n  \".pyi\": \"python\",\n  \".rs\": \"rust\",\n  \".go\": "
+        },
+        {
+          "kind": "text-position",
+          "start": 343,
+          "end": 358
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "af5da0359bc343ec",
+          "semanticHash": "8d2df9b3acd32368"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".py\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/lang.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\".pyi\": \"python\"",
+          "prefix": "\",\n  \".cjs\": \"typescript\",\n  \".py\": \"python\",\n  ",
+          "suffix": ",\n  \".rs\": \"rust\",\n  \".go\": \"go\",\n  \".java\": \"ja"
+        },
+        {
+          "kind": "text-position",
+          "start": 362,
+          "end": 378
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "af5da0359bc343ec",
+          "semanticHash": "37838448d1839805"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".pyi\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.983Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.983Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

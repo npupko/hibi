@@ -1,0 +1,52 @@
+{
+  "id": "clm_6e362a2d1c864917",
+  "documentId": "doc_da671669435c5749",
+  "kind": "reference",
+  "sentence": "A judge failure never aborts a run and never exits 1.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A judge failure never aborts a run and never exits 1.",
+        "prefix": " longer than 32,000 characters`.\n\n### Failures\n\n",
+        "suffix": " It makes the judgment `pending`, which warns.\n\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 4138,
+        "end": 4191
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "A judge that is unreachable or whose answer cannot be used is never an operational error; it yields `pending`.",
+          "prefix": "eck --doc` on a path with no registered claims. ",
+          "suffix": " `--fail-on gating|warn|never`: `gating` is the "
+        },
+        {
+          "kind": "text-position",
+          "start": 24351,
+          "end": 24461
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:58.013Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:58.013Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

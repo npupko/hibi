@@ -1,0 +1,52 @@
+{
+  "id": "clm_33e2f65c63bf4696",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "`bun run build` writes a single-file executable to `dist/hibi`.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`bun run build` writes a single-file executable to `dist/hibi`.",
+        "prefix": "bun test` (the judge is a fake; no key needed). ",
+        "suffix": " Details are in [CONTRIBUTING.md](CONTRIBUTING.m"
+      },
+      {
+        "kind": "text-position",
+        "start": 8286,
+        "end": 8349
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "--compile src/cli/index.ts --outfile dist/hibi",
+          "prefix": "mas && bun run build:cli-reference && bun build ",
+          "suffix": "\",\n    \"test\": \"bun test\",\n    \"lint\": \"biome li"
+        },
+        {
+          "kind": "text-position",
+          "start": 1214,
+          "end": 1260
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.817Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.817Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

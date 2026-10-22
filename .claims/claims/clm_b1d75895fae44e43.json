@@ -1,0 +1,123 @@
+{
+  "id": "clm_b1d75895fae44e43",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "| `2`  | gating: a `changed` / `orphaned` / `ambiguous` side, a `refuted` judgment, or a contradiction on an enforced claim; `expired` also gates under `check --doc`; under `--fail-on warn`, any warning |",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `2`  | gating: a `changed` / `orphaned` / `ambiguous` side, a `refuted` judgment, or a contradiction on an enforced claim; `expired` also gates under `check --doc`; under `--fail-on warn`, any warning |",
+        "prefix": "-|---------|\n| `0`  | clean, or warnings only |\n",
+        "suffix": "\n| `1`  | operational error, including `check --"
+      },
+      {
+        "kind": "text-position",
+        "start": 5301,
+        "end": 5505
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.gating) return 2;",
+          "prefix": " number {\n  if (failOn === \"never\") return 0;\n  ",
+          "suffix": "\n  if (flags.warn && failOn === \"warn\") return 2"
+        },
+        {
+          "kind": "text-position",
+          "start": 22173,
+          "end": 22200
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "53162d0ab7dd4ae4",
+          "semanticHash": "a4b4953657e79651"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.warn && failOn === \"warn\") return 2;",
+          "prefix": "ver\") return 0;\n  if (flags.gating) return 2;\n  ",
+          "suffix": "\n  return 0;\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 22203,
+          "end": 22249
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "bccaa0a62493fb72",
+          "semanticHash": "a278e5457df0d7f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"warn\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"changed\",\n  \"orphaned\",\n  \"ambiguous\",",
+          "prefix": "Set<EvidenceState> = new Set<EvidenceState>([\n  ",
+          "suffix": "\n]);\n\nconst WARN_ANCHOR: ReadonlySet<EvidenceSta"
+        },
+        {
+          "kind": "text-position",
+          "start": 1461,
+          "end": 1500
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "066da354b73acab7",
+          "semanticHash": "685b8475d8f82019"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"changed\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.774Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.774Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_5b5dcfa9191f4be8",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Code rules: when `same_subject` is below 0.3, the relation is `unrelated` whatever the Choice said.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Code rules: when `same_subject` is below 0.3, the relation is `unrelated` whatever the Choice said.",
+        "prefix": "something that cannot be true if `a` is true |\n\n",
+        "suffix": " A `contradictory` relation with `contradicts` b"
+      },
+      {
+        "kind": "text-position",
+        "start": 7729,
+        "end": 7828
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "SAME_SUBJECT_FLOOR = 0.3",
+          "prefix": "t\"` and the Noul's confidence.\n */\nexport const ",
+          "suffix": ";\n\n/** Token estimate: 4 characters per token, c"
+        },
+        {
+          "kind": "text-position",
+          "start": 1672,
+          "end": 1696
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "b91c323048909c19"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.929Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.929Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

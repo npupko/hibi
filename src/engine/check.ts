@@ -240,6 +240,10 @@ export interface CheckReport {
   exitCode: number;
 }
 
+/**
+ * One label per worklist reason. `hibi evidence` takes `attested` claims only,
+ * so an expired `code` or `reference` claim gets `EXPIRED_NO_EVIDENCE_LABEL`.
+ */
 const WORKLIST_LABEL: Record<WorklistReason, string> = {
   expired:
     "worklist: expired; re-check the claim and submit evidence, or have a human attest",
@@ -248,6 +252,15 @@ const WORKLIST_LABEL: Record<WorklistReason, string> = {
   "never-checked":
     "worklist: never checked; no evidence has been judged for this claim",
 };
+
+const EXPIRED_NO_EVIDENCE_LABEL =
+  "worklist: expired; have a human attest, or re-record after re-verifying";
+
+function worklistLabel(reason: WorklistReason, kind: ClaimKind): string {
+  return reason === "expired" && kind !== "attested"
+    ? EXPIRED_NO_EVIDENCE_LABEL
+    : WORKLIST_LABEL[reason];
+}
 
 function emptyAnchorHistogram(): Record<AnchorState, number> {
   return { unchanged: 0, moved: 0, changed: 0, ambiguous: 0, orphaned: 0 };
@@ -497,7 +510,7 @@ export async function runCheck(
       ? worklistReason(c, v, ack !== undefined, entries.length > 0)
       : undefined;
     if (reason !== undefined) {
-      v.reasons.push(WORKLIST_LABEL[reason]);
+      v.reasons.push(worklistLabel(reason, c.kind));
       const withEvidence = entries.filter((e) => e.evidence !== undefined);
       const last = withEvidence.at(-1)?.evidence;
       worklist.push({

@@ -45,7 +45,10 @@
  *   `evidenceKind`; `kind` is checked first), and carries `probabilities` (the
  *   triage kind distribution, plus the evidence-kind distribution when the top
  *   kind is `factual_claim`) instead of `probability`. `pending` means the
- *   judge was unavailable; such a row has neither field.
+ *   judge was unavailable or its answer for the region's chunk could not be
+ *   used; such a row has neither field and carries `reason`.
+ * - `reason`: on a `pending` row only, `judge unavailable: <message>` or
+ *   `judge error: <message>` (the same labels as `check` and `evidence`).
  * - `probability`: the judge's probability for the triage kind it picked.
  * - `duplicateOf`: for a covered row, the claim this row's claim duplicates
  *   (from the contradiction and duplicate pass); null otherwise.
@@ -102,6 +105,8 @@ export interface AuditRow {
   probabilities?: AuditProbabilities;
   /** On an `unsure` row: the Choice whose confidence fell below `judge.threshold`. */
   unsure?: "kind" | "evidenceKind";
+  /** On a `pending` row: `judge unavailable: <message>` or `judge error: <message>`. */
+  reason?: string;
   duplicateOf: string | null;
 }
 
@@ -202,13 +207,15 @@ function triageRow(
 
 interface Triaged {
   results: Map<string, TriageResult>;
+  /** Region id to the failure label of its chunk, for regions left pending. */
+  pending: Map<string, string>;
   answered: number;
 }
 
 /**
  * Triage `regions`: one request per chunk, each looked up in the judge cache
  * first. Only misses reach the judge. A chunk the judge cannot answer leaves
- * its regions without a result (pending).
+ * its regions without a result (pending) and records the failure label.
  */
 async function triage(
   input: AuditInput,
@@ -221,6 +228,7 @@ async function triage(
   const requests = buildTriageRequests(model, doc, regions);
   const now = input.now ?? (() => new Date());
   let answered = 0;
+  const pending = new Map<string, string>();
   const perRequest = await Promise.all(
     requests.map(async (request) => {
       const key = cacheKey(model, request);
@@ -242,8 +250,10 @@ async function triage(
           answers = raw[0] as Record<string, Answer>;
         } catch (e) {
           // Unavailable or unusable: the chunk's rows are pending.
-          if (judgeFailureLabel(e) !== undefined) return [];
-          throw e;
+          const label = judgeFailureLabel(e);
+          if (label === undefined) throw e;
+          for (const region of chunk) pending.set(region.id, label);
+          return [];
         }
         answered++;
         await cache.put({
@@ -261,7 +271,7 @@ async function triage(
   );
   const results = new Map<string, TriageResult>();
   for (const r of perRequest.flat()) results.set(r.regionId, r);
-  return { results, answered };
+  return { results, pending, answered };
 }
 
 /** Audit one document. Throws when the document matches an ignore glob. */
@@ -292,7 +302,7 @@ export async function runAudit(input: AuditInput): Promise<AuditReport> {
     if (hit) coveredBy.set(region.id, hit.claim);
   }
   const uncovered = regions.filter((r) => !coveredBy.has(r.id));
-  const { results, answered } = await triage(input, uncovered, docId);
+  const { results, pending, answered } = await triage(input, uncovered, docId);
 
   const rows = regions.map((region: DocRegion): AuditRow => {
     const base = {
@@ -313,7 +323,12 @@ export async function runAudit(input: AuditInput): Promise<AuditReport> {
       );
     }
     const result = results.get(region.id);
-    if (!result) return row(base, { kind: "pending" });
+    if (!result) {
+      return row(base, {
+        kind: "pending",
+        reason: pending.get(region.id) ?? "judge unavailable",
+      });
+    }
     return triageRow(base, result, config.judge.threshold);
   });
 

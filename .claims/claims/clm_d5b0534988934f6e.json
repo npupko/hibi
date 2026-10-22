@@ -1,0 +1,152 @@
+{
+  "id": "clm_d5b0534988934f6e",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "| TypeScript and JavaScript | `.ts`, `.js`, `.mjs`, `.cjs` |",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| TypeScript and JavaScript | `.ts`, `.js`, `.mjs`, `.cjs` |",
+        "prefix": "g checked:\n\n| language | extensions |\n|---|---|\n",
+        "suffix": "\n| TSX and JSX | `.tsx`, `.jsx` |\n| Python | `.p"
+      },
+      {
+        "kind": "text-position",
+        "start": 1963,
+        "end": 2023
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/lang.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\".ts\": \"typescript\"",
+          "prefix": "h\";\n\nconst BY_EXT: Record<string, string> = {\n  ",
+          "suffix": ",\n  \".tsx\": \"tsx\",\n  \".js\": \"typescript\",\n  \".js"
+        },
+        {
+          "kind": "text-position",
+          "start": 215,
+          "end": 234
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "af5da0359bc343ec",
+          "semanticHash": "d7201b1cb95dd44e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".ts\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/lang.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\".js\": \"typescript\"",
+          "prefix": "> = {\n  \".ts\": \"typescript\",\n  \".tsx\": \"tsx\",\n  ",
+          "suffix": ",\n  \".jsx\": \"tsx\",\n  \".mjs\": \"typescript\",\n  \".c"
+        },
+        {
+          "kind": "text-position",
+          "start": 255,
+          "end": 274
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "af5da0359bc343ec",
+          "semanticHash": "7245ea9569bdb320"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".js\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/lang.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\".mjs\": \"typescript\"",
+          "prefix": "tsx\",\n  \".js\": \"typescript\",\n  \".jsx\": \"tsx\",\n  ",
+          "suffix": ",\n  \".cjs\": \"typescript\",\n  \".py\": \"python\",\n  \""
+        },
+        {
+          "kind": "text-position",
+          "start": 295,
+          "end": 315
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "af5da0359bc343ec",
+          "semanticHash": "3c0add89b05386e9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".mjs\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/lang.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\".cjs\": \"typescript\"",
+          "prefix": "pt\",\n  \".jsx\": \"tsx\",\n  \".mjs\": \"typescript\",\n  ",
+          "suffix": ",\n  \".py\": \"python\",\n  \".pyi\": \"python\",\n  \".rs\""
+        },
+        {
+          "kind": "text-position",
+          "start": 319,
+          "end": 339
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "af5da0359bc343ec",
+          "semanticHash": "cbe502f879727708"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".cjs\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.979Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.979Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

@@ -1,0 +1,94 @@
+{
+  "id": "clm_1999375587884be1",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "On `check`, each side resolves to `unchanged`, `moved`, `changed`, `ambiguous`, or `orphaned`; a side in a sibling repo that is not checked out is `unavailable`.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "On `check`, each side resolves to `unchanged`, `moved`, `changed`, `ambiguous`, or `orphaned`; a side in a sibling repo that is not checked out is `unavailable`.",
+        "prefix": "age without a grammar gets text selectors only. ",
+        "suffix": "\n\nA model judge (TypeSafe's Jev, over HTTP) answ"
+      },
+      {
+        "kind": "text-position",
+        "start": 6279,
+        "end": 6440
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"unchanged\", // found, same text, same place\n    \"moved\", // found, same text, new place\n    \"changed\", // found, text or structure differs\n    \"ambiguous\", // matches in several places equally well\n    \"orphaned\", // not found",
+          "prefix": ". */\nexport const AnchorState = z\n  .enum([\n    ",
+          "suffix": "\n  ])\n  .meta({ id: \"AnchorState\" });\nexport typ"
+        },
+        {
+          "kind": "text-position",
+          "start": 2475,
+          "end": 2702
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "c60db945f7b10227",
+          "semanticHash": "d4363f35552a4758"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unchanged\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "[...AnchorState.options, \"unavailable\"]",
+          "prefix": "out). */\nexport const EvidenceState = z\n  .enum(",
+          "suffix": ")\n  .meta({ id: \"EvidenceState\" });\nexport type "
+        },
+        {
+          "kind": "text-position",
+          "start": 2936,
+          "end": 2975
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "2d7714bbe544609f",
+          "semanticHash": "a41ea25e74f7ddbb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[...AnchorState.options,\"unavailable\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.796Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.796Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

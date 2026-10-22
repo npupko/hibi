@@ -571,7 +571,7 @@ describe("reference claims: the judge axis", () => {
     expect(pending.verdicts[0]?.judge).toBe("pending");
     expect(pending.verdicts[0]?.warns).toBe(true);
     expect(pending.verdicts[0]?.reasons).toContain(
-      "judge: pending: network down",
+      "judge: judge unavailable: network down",
     );
     expect(pending.worklist.map((w) => [w.claimId, w.reason])).toEqual([
       [c2.id, "pending"],
@@ -1024,6 +1024,16 @@ describe("worklist, suspects, and pending pairs", () => {
     expect(store.worklist.map((w) => [w.claimId, w.reason])).toEqual([
       [c.claim.id, "expired"],
     ]);
+    // `hibi evidence` takes attested claims only: nothing points a code claim at it.
+    expect(store.verdicts[0]?.reasons).toContain(
+      "worklist: expired; have a human attest, or re-record after re-verifying",
+    );
+    const worklistLabels =
+      store.verdicts[0]?.reasons.filter((l) => l.startsWith("worklist:")) ?? [];
+    expect(worklistLabels.join(" ")).not.toContain("evidence");
+    const actions = store.verdicts[0]?.remediation?.actions ?? [];
+    expect(actions.map((a) => a.id)).not.toContain("evidence");
+    expect(JSON.stringify(actions)).not.toContain("evidence");
     expect(store.documents[0]?.suspect).toEqual([
       { claimId: c.claim.id, status: "expired" },
     ]);

@@ -161,12 +161,13 @@ function submitEvidence(id: string, why: string): RemediationAction {
   };
 }
 
-function attest(id: string): RemediationAction {
+function attest(id: string, evidenceApplies: boolean): RemediationAction {
   return {
     id: "attest",
     title: "Have a human re-check and vouch",
-    rationale:
-      "only a human vouch or judged evidence resets the ttl; an agent vouch does not count",
+    rationale: evidenceApplies
+      ? "only a human vouch or judged evidence resets the ttl; an agent vouch does not count"
+      : "only a human vouch resets the ttl; an agent vouch does not count",
     command: `hibi attest ${id} --by human:<you> --note "<what you checked>"`,
   };
 }
@@ -272,7 +273,7 @@ export function remediationFor(v: RemediationInput): Remediation | null {
     sections.push({
       recommended: null,
       actions: [
-        attest(id),
+        attest(id, evidenceApplies),
         ...(evidenceApplies
           ? [
               submitEvidence(

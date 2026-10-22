@@ -1,0 +1,88 @@
+{
+  "id": "clm_517fb0cbf7014b5e",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "The key is the sha256 hex of the model id, a newline, and the canonical JSON of the request (object keys sorted, no whitespace).",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The key is the sha256 hex of the model id, a newline, and the canonical JSON of the request (object keys sorted, no whitespace).",
+        "prefix": "nswer is written to `.claims/judge/<key>.json`. ",
+        "suffix": " The cache is committed with the store.\n\n| field"
+      },
+      {
+        "kind": "text-position",
+        "start": 11948,
+        "end": 12076
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/cache.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "createHash(\"sha256\")",
+          "prefix": "l: string, request: unknown): string {\n  return ",
+          "suffix": "\n    .update(`${model}\\n${canonicalJson(request)"
+        },
+        {
+          "kind": "text-position",
+          "start": 1901,
+          "end": 1921
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "bbfb3ae4b10a2136",
+          "semanticHash": "1a6c89c6b3b51b23"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"sha256\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/cache.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`${model}\\n${canonicalJson(request)}`",
+          "prefix": "ing {\n  return createHash(\"sha256\")\n    .update(",
+          "suffix": ")\n    .digest(\"hex\");\n}\n\nfunction matches(subjec"
+        },
+        {
+          "kind": "text-position",
+          "start": 1934,
+          "end": 1971
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "1a2c1d4f694b2aeb",
+          "semanticHash": "321a28a187a0b5a3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.949Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.949Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

@@ -4,7 +4,9 @@
  * `judgeReference` asks `supports(sentence, referencedText)` for a `reference`
  * claim, once per `(model, request)`: the cache is checked first, and a miss
  * calls the judge and stores the verdict. `JudgeUnavailable` (no API key, a
- * network failure, or no judge supplied) is `pending`.
+ * network failure, or no judge supplied) and `JudgeError` (an answer hibi
+ * cannot use) are `pending`, with the reason `judge unavailable: <message>`
+ * or `judge error: <message>`.
  *
  * `supportsOutcome` maps a `SupportsResult` to a judge state with the one
  * threshold, `config.judge.threshold`. It is the only such mapping; `check`
@@ -36,8 +38,7 @@ import type { Answer, SystemOneRequest } from "../judge/http.ts";
 import { buildSupportsRequest, mapSupportsAnswers } from "../judge/jev.ts";
 import {
   type Judge,
-  JudgeError,
-  JudgeUnavailable,
+  judgeFailureLabel,
   MAX_EVIDENCE_CHARS,
   type SupportsResult,
 } from "../judge/types.ts";
@@ -310,7 +311,9 @@ export async function judgeReference(
   if (input.judge === undefined) {
     return {
       state: "pending",
-      reasons: ["pending: no judge is configured (set TYPESAFE_API_KEY)"],
+      reasons: [
+        "judge unavailable: no judge is configured (set TYPESAFE_API_KEY)",
+      ],
     };
   }
   let response: Awaited<ReturnType<Judge["supports"]>>;
@@ -322,13 +325,9 @@ export async function judgeReference(
       source: (request.state as { evidence_source: string }).evidence_source,
     });
   } catch (e) {
-    if (e instanceof JudgeUnavailable) {
-      return { state: "pending", reasons: [`pending: ${e.message}`] };
-    }
-    if (e instanceof JudgeError) {
-      return { state: "pending", reasons: [`judge error: ${e.message}`] };
-    }
-    throw e;
+    const label = judgeFailureLabel(e);
+    if (label === undefined) throw e;
+    return { state: "pending", reasons: [label] };
   }
   await input.cache.put({
     key,

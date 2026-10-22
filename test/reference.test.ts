@@ -301,7 +301,7 @@ describe("judgeReference", () => {
     });
     expect(out).toEqual({
       state: "pending",
-      reasons: ["pending: no TYPESAFE_API_KEY"],
+      reasons: ["judge unavailable: no TYPESAFE_API_KEY"],
     });
     expect(await c.list()).toHaveLength(0);
   });
@@ -389,7 +389,7 @@ describe("judgeReference", () => {
     });
     expect(out.state).toBe("pending");
     expect(out.reasons[0]).toBe(
-      "pending: no judge is configured (set TYPESAFE_API_KEY)",
+      "judge unavailable: no judge is configured (set TYPESAFE_API_KEY)",
     );
   });
 

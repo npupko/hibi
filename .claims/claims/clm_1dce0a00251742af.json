@@ -1,0 +1,52 @@
+{
+  "id": "clm_1dce0a00251742af",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "reference",
+  "sentence": "`check --doc` on a path with no registered claims exits 1 with `no claims are registered for <path>; run hibi audit --doc <path>`.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`check --doc` on a path with no registered claims exits 1 with `no claims are registered for <path>; run hibi audit --doc <path>`.",
+        "prefix": "ument, and the JSON echoes the normalized form. ",
+        "suffix": " Retired claims do not count, so a document whos"
+      },
+      {
+        "kind": "text-position",
+        "start": 1003,
+        "end": 1133
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`check --doc` on a path with no registered claims exits `1` with `no claims are registered for <path>; run hibi audit --doc <path>`",
+          "prefix": "laim in the document under `--doc` (section 9). ",
+          "suffix": "; retired claims do not count, so a document who"
+        },
+        {
+          "kind": "text-position",
+          "start": 52930,
+          "end": 53061
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:58.019Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:58.019Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

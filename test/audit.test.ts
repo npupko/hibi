@@ -526,6 +526,12 @@ describe("judge unavailable", () => {
     expect(uncovered.every((r) => r.kind === "pending")).toBe(true);
     expect(uncovered.every((r) => r.probability === undefined)).toBe(true);
     expect(uncovered.every((r) => r.probabilities === undefined)).toBe(true);
+    expect(
+      uncovered.every((r) => r.reason?.startsWith("judge unavailable: ")),
+    ).toBe(true);
+    expect(report.rows.filter((r) => r.claimId !== null)).toSatisfy((rows) =>
+      rows.every((r) => r.reason === undefined),
+    );
     expect(report.summary.byKind.pending).toBe(11);
     expect(report.summary.covered).toBe(2);
     expect(report.summary.requests).toBe(0);
@@ -544,8 +550,16 @@ describe("judge error", () => {
     const report = await audit(f, { judge });
     const uncovered = report.rows.filter((r) => r.claimId === null);
     expect(uncovered.every((r) => r.kind === "pending")).toBe(true);
+    expect(
+      uncovered.every(
+        (r) => r.reason === "judge error: TypeSafe returned HTTP 400: bad",
+      ),
+    ).toBe(true);
     expect(report.summary.covered).toBe(2);
     expect(await f.engine.store.judgeCache().list()).toEqual([]);
+    const out = renderAudit(report, makeStyle(false), MODE);
+    expect(out).toContain("pending: judge error");
+    expect(out).not.toContain("pending: judge unavailable");
   });
 });
 

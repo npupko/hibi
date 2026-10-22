@@ -1,0 +1,65 @@
+{
+  "id": "clm_7ee55e5a698344cc",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "| `sources` | `[{id?, resource, title?}]`, never fetched |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `sources` | `[{id?, resource, title?}]`, never fetched |",
+        "prefix": "f` | reference only: `{file, quote or range}` |\n",
+        "suffix": "\n| `procedure` | `{instructions, steps?}`; steps"
+      },
+      {
+        "kind": "text-position",
+        "start": 3676,
+        "end": 3734
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "[\"id\", \"resource\", \"title\"]",
+          "prefix": "[\"file\", \"quote\", \"range\"];\nconst SOURCE_KEYS = ",
+          "suffix": ";\nconst PROCEDURE_KEYS = [\"instructions\", \"steps"
+        },
+        {
+          "kind": "text-position",
+          "start": 1907,
+          "end": 1934
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "4f22346ddf3f12c8",
+          "semanticHash": "3d0bb18c0409ba76"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"id\",\"resource\",\"title\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.873Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.873Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

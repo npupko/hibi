@@ -1,0 +1,65 @@
+{
+  "id": "clm_d4083542f21649bd",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "code",
+  "sentence": "Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.",
+        "prefix": "or AGENTS.md\n```\n\nThe line it appends:\n\n```text\n",
+        "suffix": "\n```\n\nIf the line is already in the file, `init`"
+      },
+      {
+        "kind": "text-position",
+        "start": 1258,
+        "end": 1358
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.\"",
+          "prefix": "ion file. */\nexport const INSTRUCTIONS_LINE =\n  ",
+          "suffix": ";\n\nexport const FORMATS = [\"human\", \"compact\", \""
+        },
+        {
+          "kind": "text-position",
+          "start": 1415,
+          "end": 1517
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "4d8b5b38ea3dae8b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:58.005Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:58.005Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

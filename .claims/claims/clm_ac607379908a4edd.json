@@ -1,0 +1,65 @@
+{
+  "id": "clm_ac607379908a4edd",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "The judge reads `TYPESAFE_API_KEY`.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The judge reads `TYPESAFE_API_KEY`.",
+        "prefix": "elp    # or run it once without installing\n```\n\n",
+        "suffix": " Without it, everything else works and uncached "
+      },
+      {
+        "kind": "text-position",
+        "start": 2431,
+        "end": 2466
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"TYPESAFE_API_KEY\"",
+          "prefix": "://api.typesafe.ai\";\nexport const API_KEY_ENV = ",
+          "suffix": ";\nexport const BASE_URL_ENV = \"TYPESAFE_BASE_URL"
+        },
+        {
+          "kind": "text-position",
+          "start": 537,
+          "end": 555
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "3bead81b8a224d20"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"TYPESAFE_API_KEY\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.736Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.736Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

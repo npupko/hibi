@@ -238,8 +238,8 @@ Every judgment is looked up in the judge cache first. The judge is asked only on
 - `evidence` verb: once per request key `(model, sentence, context, evidence, source)`.
 - contradiction pass: once per pair request key (section 9).
 - `audit`: once per triage chunk request key.
-- No API key, a rejected key, or a network failure after retries is `JudgeUnavailable`. It maps to `pending` for a `reference` claim (reason `pending: <message>`), to a `pending` item in `evidence` with the label `judge unavailable: <message>` (nothing is written for it), to `pending` rows for every region of the audit chunk, and to a `pending` conflict pair. Nothing else changes. There is no offline flag.
-- An answer the judge gave but hibi cannot use is `JudgeError` (section 8.2). It never aborts a run and never exits `1`: it maps to `pending` for a `reference` claim and for an `evidence` item, both with the reason `judge error: <message>`; to `pending` rows for the audit chunk; and to a `pending` conflict pair, which warns on both claims with `conflict check pending with <id>: judge error`. Nothing is cached for it.
+- No API key, a rejected key, or a network failure after retries is `JudgeUnavailable`. It maps to `pending` for a `reference` claim (reason `judge unavailable: <message>`), to a `pending` item in `evidence` with the same label (nothing is written for it), to `pending` rows for every region of the audit chunk (each row's `reason` carries the label), and to a `pending` conflict pair (the pair's reason carries the label). Nothing else changes. There is no offline flag.
+- An answer the judge gave but hibi cannot use is `JudgeError` (section 8.2). It never aborts a run and never exits `1`: it maps to `pending` for a `reference` claim and for an `evidence` item, both with the reason `judge error: <message>`; to `pending` rows for the audit chunk, with the same `reason`; and to a `pending` conflict pair, which warns on both claims with `conflict check pending with <id>: judge error`. Nothing is cached for it.
 - A `reference` claim whose referenced span is longer than 32,000 characters is `pending` with the reason `referenced span is longer than 32,000 characters`; the judge is not asked. Submitted evidence has the same limit, enforced as a validation error (section 11).
 
 ### 7.4 Gating
@@ -434,11 +434,11 @@ Output:
 - An uncovered row takes its kind from triage (section 8.3). The decision is taken only when the `kind` Choice confidence is at or above `judge.threshold` and, for a `factual_claim`, the `evidenceKind` Choice confidence is too. `kind` is checked first. A region that is `code` by construction passes the second check.
 - `probability` is the probability of the triage kind the judge picked (`kindProbabilities[kind]`), not of the evidence kind.
 - Otherwise the row is `unsure`. It carries `unsure: "kind" | "evidenceKind"`, naming the Choice that fell short, and `probabilities: { kind: {…}, evidenceKind?: {…} }` instead of `probability`. `evidenceKind` is present when the top kind is `factual_claim`.
-- A `pending` row means the judge was unavailable or its answer for the region's chunk could not be used (section 7.3); every region of that chunk is `pending`. It has neither `probability` nor `probabilities`.
+- A `pending` row means the judge was unavailable or its answer for the region's chunk could not be used (section 7.3); every region of that chunk is `pending`. It has neither `probability` nor `probabilities`, and carries `reason`: `judge unavailable: <message>` or `judge error: <message>`.
 
 - `summary.requests` is the number of triage requests the judge answered in this run. Cache hits are not counted, so a second run over the same text reports 0. `byKind` has a key for every row kind.
 
-No advice field in JSON. The human renderer prints a to-do line per row from a fixed mapping: covered → nothing; uncovered `code / reference / attested` → "record"; `unverifiable` → "rewrite as an attributed opinion, or remove"; `not-a-claim` → nothing; `unsure` on `kind` → "unsure: read it yourself"; `unsure` on `evidenceKind` → "unsure: evidence kind"; `pending` → "pending: judge unavailable". The mapping lives in one function and in the docs.
+No advice field in JSON. The human renderer prints a to-do line per row from a fixed mapping: covered → nothing; uncovered `code / reference / attested` → "record"; `unverifiable` → "rewrite as an attributed opinion, or remove"; `not-a-claim` → nothing; `unsure` on `kind` → "unsure: read it yourself"; `unsure` on `evidenceKind` → "unsure: evidence kind"; `pending` → "pending: judge unavailable" or "pending: judge error", from the row's `reason`. The mapping lives in one function and in the docs.
 
 Recording is never automatic. The agent decides anchors and sources and calls `record`.
 
@@ -499,7 +499,7 @@ The result reports `instructions: { file, appended }`.
 - One claim exists per normalized sentence per document. Recording a sentence already recorded on the same document updates that claim in place: kind, sentence, anchors, evidence, `ref`, and enforcement are replaced; `sources`, `procedure`, `owner`, and `ttl` are replaced when given; and a vouch is appended. `existingClaims` in the result lists claims on other documents with the same sentence.
 - Result: `{ id, kind, doc, evidence (first evidence file or null), enforcement, warnings? }`; a batch returns `{ batch: true, count, results: [...] }`.
 
-**check.** JSON fields: `ref`, `exitCode`, `summary`, `verdicts`, `worklist`, `documents`, plus `since` and `changedFiles` under `--since`, and `doc` (the normalized path) under `--doc`. `--since` scopes verdicts to claims touching a file changed since the git ref; `--doc` scopes them to one document. The contradiction pass judges every pair for a whole-store or `--since` check, and only the pairs with a claim in the document under `--doc` (section 9). `check --doc` on a path with no registered claims exits `1` with `no claims are registered for <path>; run hibi audit --doc <path>`. `check` writes only judge cache entries.
+**check.** JSON fields: `ref`, `exitCode`, `summary`, `verdicts`, `worklist`, `documents`, plus `since` and `changedFiles` under `--since`, and `doc` (the normalized path) under `--doc`. `--since` scopes verdicts to claims touching a file changed since the git ref; `--doc` scopes them to one document. The contradiction pass judges every pair for a whole-store or `--since` check, and only the pairs with a claim in the document under `--doc` (section 9). `check --doc` on a path with no registered claims exits `1` with `no claims are registered for <path>; run hibi audit --doc <path>`; retired claims do not count, so a document whose claims are all retired gets the same error. `check` writes only judge cache entries.
 
 ```
 summary: { total, gating, warning, clean, retired,
@@ -572,9 +572,9 @@ Order, all done on branch v4-redesign:
 7. Plugin skill rewritten from this document. `docs/` and README rewritten from scratch. Old ADRs and PRD deleted. Done.
 8. Fix pass: judge errors map to `pending`, runnable remediation commands, path normalization and containment, evidence for `attested` claims only, the value rule and pairing bounds, `record --by` required; this document, `docs/`, README, and the plugin skill synced to it. Done.
 
-Everything above is done. One step remains:
+9. CI dogfood: `.claims/` is re-initialized in this repository with `code` and `reference` claims on README, `docs/`, and the plugin skill, and `attested` claims for the TypeSafe figures in `docs/judge.mdx`. Done.
 
-9. CI dogfood returns when `.claims/` is re-initialized in this repository. Tune nothing until fixtures exist for the failures observed.
+Everything above is done. CI runs `check --fail-on gating --json` over the whole store and `check --doc README.md --fail-on gating --json` as a hard gate, both without `TYPESAFE_API_KEY`, so judge passes are `pending` and only warn. Tune nothing until fixtures exist for the failures observed.
 
 Open items the user must supply: a `TYPESAFE_API_KEY` for live fixtures. The fixtures in `test/fixtures/judge/` are synthetic: the requests are the exact bodies the adapter sends, and the responses are plausible shapes with made-up probabilities. Everything in section 8 beyond request shapes was taken from the docs, not from live runs.
 
@@ -621,7 +621,7 @@ Open items the user must supply: a `TYPESAFE_API_KEY` for live fixtures. The fix
 | 36 | a review acknowledgement leaves the judge state `review`; it stops the warning and the worklist entry, not the verdict |
 | 37 | a judge answer hibi cannot use (`JudgeError`: a 4xx other than 401 or 403, a malformed body, undecodable answers) is `pending` like an unreachable judge; it never exits 1 |
 | 38 | `hibi evidence` accepts `attested` claims only; a `reference` claim is judged from the referenced document, and remediation offers the `evidence` action only for `attested` claims |
-| 39 | `check --doc` on a path with no registered claims exits 1 and points to `hibi audit --doc` |
+| 39 | `check --doc` on a path with no registered claims (retired claims do not count) exits 1 and points to `hibi audit --doc` |
 | 40 | every user path is normalized to a POSIX path relative to the anchor root, and JSON echoes the normalized form; an evidence file must stay inside the anchor root or its alias directory |
 | 41 | `record --by` is required, as a flag or an item key; there is no default from git |
 | 42 | on `supports` the value rule excludes the unitless `number` group; on `conflict` every group counts |

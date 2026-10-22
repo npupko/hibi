@@ -1,0 +1,65 @@
+{
+  "id": "clm_a44aee1985fe40f3",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "`--fail-on gating|warn|never` sets when to exit 2.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--fail-on gating|warn|never` sets when to exit 2.",
+        "prefix": "ailable`, and `expired` in a whole-store check. ",
+        "suffix": " `record --suggest` makes a claim advisory.\n\n## "
+      },
+      {
+        "kind": "text-position",
+        "start": 5693,
+        "end": 5743
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "[\"gating\", \"warn\", \"never\"]",
+          "prefix": "view\",\n  \"pending\",\n]);\n\nexport const FAIL_ON = ",
+          "suffix": " as const;\nexport type FailOn = (typeof FAIL_ON)"
+        },
+        {
+          "kind": "text-position",
+          "start": 5862,
+          "end": 5889
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "4f22346ddf3f12c8",
+          "semanticHash": "00a1c991c4a7625b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"gating\",\"warn\",\"never\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.790Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.790Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

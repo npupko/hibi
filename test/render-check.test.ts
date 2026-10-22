@@ -1,6 +1,6 @@
 import { afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
-import { renderCheck } from "../src/cli/render/check.ts";
+import { renderCheck, statusTags } from "../src/cli/render/check.ts";
 import { fileReader } from "../src/cli/render/helpers.ts";
 import { resolveMode } from "../src/cli/render/mode.ts";
 import { renderOverview } from "../src/cli/render/status.ts";
@@ -266,13 +266,42 @@ describe("renderCheck: v4 tags, reasons, and worklist", () => {
     expect(text.indexOf("Worklist")).toBeGreaterThan(text.indexOf("README.md"));
   });
 
+  test("a claim that warns only from the contradiction pass shows conflict:pending, not unchanged", async () => {
+    const { report, code } = await v4Repo();
+    const base = report.verdicts.find((v) => v.claimId === code.id);
+    if (base === undefined) throw new Error("no verdict");
+    const pendingOnly = {
+      ...base,
+      conflicts: [],
+      gates: false,
+      warns: true,
+      reasons: [
+        "conflict check pending with clm_0123456789abcdef: judge unavailable",
+      ],
+    };
+    expect(statusTags(pendingOnly)).toBe("conflict:pending");
+    const reviewOnly = {
+      ...pendingOnly,
+      reasons: [
+        "possible conflict with clm_0123456789abcdef: review: contradictory, confidence=0.55 below threshold 0.80",
+      ],
+    };
+    expect(statusTags(reviewOnly)).toBe("conflict:review");
+    // The engine's suspect status fills in a tag the verdict does not show.
+    expect(
+      statusTags({ ...pendingOnly, reasons: [] }, [], "judge:pending"),
+    ).toBe("judge:pending");
+  });
+
   test("--explain prints every reason label", async () => {
     const { r, report } = await v4Repo();
     const text = renderCheck(await ctx(r, report, "rich", true));
     expect(text).toContain(
       "reason: expired: ttl P10D is set and no attestation counts (only evidence or a human vouch resets ttl)",
     );
-    expect(text).toContain("reason: judge: pending: no TYPESAFE_API_KEY");
+    expect(text).toContain(
+      "reason: judge: judge unavailable: no TYPESAFE_API_KEY",
+    );
     expect(text).toMatch(
       /reason: conflicts with clm_[0-9a-f]{16} \(p=0\.95 at or above threshold 0\.8\): numbers differ/,
     );

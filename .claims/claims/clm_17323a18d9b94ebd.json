@@ -1,0 +1,59 @@
+{
+  "id": "clm_17323a18d9b94ebd",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "Paths are stored as POSIX paths relative to the anchor root, so `./README.md` and `README.md` are the same document.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Paths are stored as POSIX paths relative to the anchor root, so `./README.md` and `README.md` are the same document.",
+        "prefix": "` claim is judged from the referenced document. ",
+        "suffix": "\n\nCommands: `init`, `record`, `check`, `list`, `"
+      },
+      {
+        "kind": "text-position",
+        "start": 4665,
+        "end": 4781
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/fs.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "relative(resolve(root), resolve(root, p))",
+          "prefix": "lish(resolve(root)), realish(resolve(p)))\n    : ",
+          "suffix": ";\n  return sep === \"/\" ? rel : rel.split(sep).jo"
+        },
+        {
+          "kind": "text-position",
+          "start": 1221,
+          "end": 1262
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "d8a0f21ac38be78c",
+          "semanticHash": "cb0b067817edaac2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.765Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.765Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

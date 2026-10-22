@@ -1,0 +1,65 @@
+{
+  "id": "clm_d11d4f8567aa4aed",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "Each side stores selectors against one file: the quoted text with 48 characters of context, its position, and on code sides the enclosing tree-sitter node hash and the literal inside the span, so changing `MAX_ATTEMPTS = 5` to `50` flags the claim.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each side stores selectors against one file: the quoted text with 48 characters of context, its position, and on code sides the enclosing tree-sitter node hash and the literal inside the span, so changing `MAX_ATTEMPTS = 5` to `50` flags the claim.",
+        "prefix": "nd, for `code` and `reference`, evidence sides. ",
+        "suffix": " The tree-sitter grammars are embedded in the bi"
+      },
+      {
+        "kind": "text-position",
+        "start": 5895,
+        "end": 6143
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/params.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "TEXT_QUOTE_CONTEXT = 48",
+          "prefix": "and suffix a text-quote stores. */\nexport const ",
+          "suffix": ";\n\n/**\n * Normalized text similarity at or above"
+        },
+        {
+          "kind": "text-position",
+          "start": 1152,
+          "end": 1175
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "3e47faab960c1c6f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "48"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.795Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.795Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

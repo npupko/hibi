@@ -1,0 +1,210 @@
+{
+  "id": "clm_f94babd2b4e74166",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "The official tree-sitter grammars for these languages are embedded in the hibi binary; nothing is downloaded.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The official tree-sitter grammars for these languages are embedded in the hibi binary; nothing is downloaded.",
+        "prefix": "PTS = 5`), not the whole line.\n\n## Tree-sitter\n\n",
+        "suffix": " Hibi loads them per language, only for the file"
+      },
+      {
+        "kind": "text-position",
+        "start": 1752,
+        "end": 1861
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/ast/analyzer.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"../../grammars/tree-sitter-go.wasm\"",
+          "prefix": "m\" with {\n  type: \"file\",\n};\nimport goWasm from ",
+          "suffix": " with { type: \"file\" };\nimport javaWasm from \".."
+        },
+        {
+          "kind": "text-position",
+          "start": 537,
+          "end": 573
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "9ee1c55ebc280238"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"../../grammars/tree-sitter-go.wasm\""
+        }
+      ]
+    },
+    {
+      "file": "src/ast/analyzer.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"../../grammars/tree-sitter-java.wasm\"",
+          "prefix": "sm\" with { type: \"file\" };\nimport javaWasm from ",
+          "suffix": " with {\n  type: \"file\",\n};\nimport pyWasm from \"."
+        },
+        {
+          "kind": "text-position",
+          "start": 618,
+          "end": 656
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "976cadcf58bfb70e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"../../grammars/tree-sitter-java.wasm\""
+        }
+      ]
+    },
+    {
+      "file": "src/ast/analyzer.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"../../grammars/tree-sitter-python.wasm\"",
+          "prefix": "m\" with {\n  type: \"file\",\n};\nimport pyWasm from ",
+          "suffix": " with {\n  type: \"file\",\n};\nimport rsWasm from \"."
+        },
+        {
+          "kind": "text-position",
+          "start": 702,
+          "end": 742
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "fd3c2c0e5548e6eb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"../../grammars/tree-sitter-python.wasm\""
+        }
+      ]
+    },
+    {
+      "file": "src/ast/analyzer.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"../../grammars/tree-sitter-rust.wasm\"",
+          "prefix": "m\" with {\n  type: \"file\",\n};\nimport rsWasm from ",
+          "suffix": " with { type: \"file\" };\nimport tsxWasm from \"../"
+        },
+        {
+          "kind": "text-position",
+          "start": 788,
+          "end": 826
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "603731f0d388ef15"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"../../grammars/tree-sitter-rust.wasm\""
+        }
+      ]
+    },
+    {
+      "file": "src/ast/analyzer.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"../../grammars/tree-sitter-tsx.wasm\"",
+          "prefix": "asm\" with { type: \"file\" };\nimport tsxWasm from ",
+          "suffix": " with { type: \"file\" };\nimport tsWasm from \"../."
+        },
+        {
+          "kind": "text-position",
+          "start": 870,
+          "end": 907
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "141ece2edd5848d9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"../../grammars/tree-sitter-tsx.wasm\""
+        }
+      ]
+    },
+    {
+      "file": "src/ast/analyzer.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"../../grammars/tree-sitter-typescript.wasm\"",
+          "prefix": "wasm\" with { type: \"file\" };\nimport tsWasm from ",
+          "suffix": " with {\n  type: \"file\",\n};\nimport type { AstAnal"
+        },
+        {
+          "kind": "text-position",
+          "start": 950,
+          "end": 994
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "fda7c9432e96f46b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"../../grammars/tree-sitter-typescript.wasm\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.972Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.972Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

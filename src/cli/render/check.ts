@@ -50,12 +50,30 @@ interface SuspectClaim {
   claimId: string;
 }
 
+/** A contradiction-pass warning label: a pending pair or a review finding. */
+const PENDING_PAIR = /^conflict check pending with clm_[0-9a-f]+: /;
+const REVIEW_PAIR = /^possible conflict with clm_[0-9a-f]+: /;
+
 /**
  * The status column: every tag of the verdict, most severe first, with the
- * other claim named on each conflict (`conflict:<id>`).
+ * other claim named on each conflict (`conflict:<id>`). The contradiction
+ * pass's warnings (`conflict:pending`, `conflict:review`) are read from the
+ * verdict's reasons, and `suspectStatus` (the engine's most severe tag for
+ * the claim) is added when the verdict alone does not show it, so a warning
+ * claim never prints as `unchanged`.
  */
-export function statusTags(v: CheckVerdict, lcTags: string[] = []): string {
-  const tags = orderStatuses([...verdictStatuses(v), ...lcTags]).flatMap((t) =>
+export function statusTags(
+  v: CheckVerdict,
+  lcTags: string[] = [],
+  suspectStatus?: string,
+): string {
+  const own = [...verdictStatuses(v), ...lcTags];
+  if (v.reasons.some((r) => REVIEW_PAIR.test(r))) own.push("conflict:review");
+  if (v.reasons.some((r) => PENDING_PAIR.test(r))) own.push("conflict:pending");
+  if (suspectStatus !== undefined && !own.includes(suspectStatus)) {
+    own.push(suspectStatus);
+  }
+  const tags = orderStatuses(own).flatMap((t) =>
     t === "conflict" ? v.conflicts.map((c) => `conflict:${c.claimId}`) : [t],
   );
   return tags.join(" ") || "unchanged";
@@ -77,7 +95,7 @@ function suspectsFor(
         ? "warn"
         : "neutral";
     return {
-      status: verdict ? statusTags(verdict, lcTags) : s.status,
+      status: verdict ? statusTags(verdict, lcTags, s.status) : s.status,
       severity,
       claim,
       verdict,

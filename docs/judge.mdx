@@ -77,7 +77,7 @@ A judge failure never aborts a run and never exits 1. It makes the judgment `pen
 | a 200 whose body is not JSON, or has no `answers` object and `model` string | error |
 | an answer that is missing, of the wrong type, or names an unknown option | error |
 
-An error carries the label `judge error: <message>`, for example `judge error: TypeSafe returned HTTP 400: …`. An unavailable judge carries `pending: <message>` on a `reference` claim and `judge unavailable: <message>` on an evidence item or a conflict pair.
+An error carries the label `judge error: <message>`, for example `judge error: TypeSafe returned HTTP 400: …`. An unavailable judge carries `judge unavailable: <message>` on a `reference` claim, an evidence item, a conflict pair, and an audit row.
 
 Where the label appears:
 
@@ -86,7 +86,7 @@ Where the label appears:
 | `supports` for a `reference` claim | the claim's `judge` is `pending`; its reasons carry the label |
 | `supports` for a submitted evidence item | the item's `judge` is `pending`, nothing is written for it, and its `reasons` carry the label |
 | `conflict` | the pair is pending; both claims warn with `conflict check pending with <id>: judge unavailable` or `conflict check pending with <id>: judge error` |
-| `triage` | the regions of that request are `pending` rows |
+| `triage` | the regions of that request are `pending` rows; each row's `reason` carries the label |
 
 ## The three judgments
 
@@ -156,7 +156,7 @@ On a verdict, `supports` outcomes appear as the `judge` axis: `supported`, `refu
 | refuted by the value rule | `value differs: numbers differ: 29 vs 39` |
 | review | `evidence leans supports, confidence 0.55 below threshold 0.8` |
 | review | `evidence did not address the sentence` (with `(addresses=0.12)` when the Noul forced it) |
-| pending | `pending: TYPESAFE_API_KEY is not set; the judge cannot answer.` |
+| pending | `judge unavailable: TYPESAFE_API_KEY is not set; the judge cannot answer.` |
 | pending | `judge error: TypeSafe returned HTTP 400: …` |
 | pending | `referenced span is longer than 32,000 characters` |
 

@@ -42,3 +42,11 @@ jobs:
         run: |
           bun run build:cli-reference
           git diff --exit-code docs/cli-reference.mdx plugins/hibi-cli/skills/hibi/references/cli-reference.md || (echo "generated CLI reference is stale — run bun run build:cli-reference" && exit 1)
+      # Dogfood: hibi checks its own docs against its own code. There is no
+      # TYPESAFE_API_KEY in CI, so judge passes are pending, which warns and
+      # never gates; changed, orphaned, or ambiguous anchors gate, and under
+      # --doc an expired claim gates too.
+      - name: Claims in .claims/ hold (whole store)
+        run: bun run src/cli/index.ts check --fail-on gating --json
+      - name: README.md claims hold (doc gate; README has only code and reference claims)
+        run: bun run src/cli/index.ts check --doc README.md --fail-on gating --json

@@ -1,0 +1,50 @@
+{
+  "id": "clm_a5c57777c8b0409f",
+  "documentId": "doc_da671669435c5749",
+  "kind": "attested",
+  "sentence": "| typical latency | about 100 ms per request |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| typical latency | about 100 ms per request |",
+        "prefix": " million input tokens; output tokens are free |\n",
+        "suffix": "\n| `triage` of 500 regions | about 10 to 20 requ"
+      },
+      {
+        "kind": "text-position",
+        "start": 14149,
+        "end": 14195
+      }
+    ]
+  },
+  "evidence": [],
+  "sources": [
+    {
+      "id": "research-note",
+      "resource": "design/evidence/typesafe-research-2026-10-22.md",
+      "title": "TypeSafe research note, 2026-10-22"
+    },
+    {
+      "id": "typesafe-docs",
+      "resource": "https://docs.typesafe.ai",
+      "title": "TypeSafe documentation"
+    }
+  ],
+  "procedure": {
+    "instructions": "Open the TypeSafe docs (https://docs.typesafe.ai, the how-to-build page) and find the stated typical query latency. If you have TYPESAFE_API_KEY, also time a few hibi check runs that miss the cache. Submit the quoted text with hibi evidence."
+  },
+  "owner": "human:mikita@peechapp.co",
+  "ttl": "P90D",
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:58.031Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:58.031Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

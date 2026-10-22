@@ -1,0 +1,65 @@
+{
+  "id": "clm_27c4ea4a3598455f",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "There is one threshold, `judge.threshold`, default `0.8`.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "There is one threshold, `judge.threshold`, default `0.8`.",
+        "prefix": " 0.8 means the top probability is about 0.867.\n\n",
+        "suffix": " It applies to every judgment. There are no per-"
+      },
+      {
+        "kind": "text-position",
+        "start": 8315,
+        "end": 8372
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "DEFAULT_JUDGE_THRESHOLD = 0.8",
+          "prefix": " new store's config (SPEC 8.4). */\nexport const ",
+          "suffix": ";\n\n// ── Ids and actors ────────────────────────"
+        },
+        {
+          "kind": "text-position",
+          "start": 624,
+          "end": 653
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "a56b92b9befadadb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.8"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.938Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.938Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}

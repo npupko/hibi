@@ -1,0 +1,65 @@
+{
+  "id": "clm_c9e8fef5e76a4788",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "`claim_context` is the heading path above the sentence and the paragraph that contains it, at most 600 characters, built in code.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`claim_context` is the heading path above the sentence and the paragraph that contains it, at most 600 characters, built in code.",
+        "prefix": " speak to what the claim asserts, either way |\n\n",
+        "suffix": " For a `reference` claim, `evidence` is the curr"
+      },
+      {
+        "kind": "text-position",
+        "start": 7049,
+        "end": 7178
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "CONTEXT_MAX_CHARS = 600",
+          "prefix": " Claim } from \"../core/model.ts\";\n\nexport const ",
+          "suffix": ";\n\nconst ELLIPSIS = \"…\";\nconst HEADING = /^ {0,3"
+        },
+        {
+          "kind": "text-position",
+          "start": 778,
+          "end": 801
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "376e656cd23f2e48"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "600"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.920Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.920Z",
+  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+}
