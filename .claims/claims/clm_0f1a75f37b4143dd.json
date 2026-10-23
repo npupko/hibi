@@ -1,0 +1,59 @@
+{
+  "id": "clm_0f1a75f37b4143dd",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "The cache is local and is not committed: `hibi init` writes `.claims/.gitignore` with the line `judge/`.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The cache is local and is not committed: `hibi init` writes `.claims/.gitignore` with the line `judge/`.",
+        "prefix": "he request (object keys sorted, no whitespace). ",
+        "suffix": " CI restores it with its own cache step; see [CI"
+      },
+      {
+        "kind": "text-position",
+        "start": 12888,
+        "end": 12992
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await writeFile(gitignore, `${SUBDIRS.judge}/\\n`);",
+          "prefix": "\");\n    if (!(await exists(gitignore))) {\n      ",
+          "suffix": "\n    }\n    return s;\n  }\n\n  /**\n   * Open an exi"
+        },
+        {
+          "kind": "text-position",
+          "start": 3429,
+          "end": 3479
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "3173e9bc5ec04bb4",
+          "semanticHash": "df0de62e936b77fb"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:44.868Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:44.868Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

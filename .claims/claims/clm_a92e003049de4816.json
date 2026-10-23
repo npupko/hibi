@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 10511,
-        "end": 10621
+        "start": 10599,
+        "end": 10709
       }
     ]
   },
@@ -26,13 +26,13 @@
         {
           "kind": "text-quote",
           "exact": "outcome = cachedSupportsOutcome(newest, threshold, c);",
-          "prefix": ";\n        if (newest !== undefined) {\n          ",
-          "suffix": "\n        }\n      }\n    }\n\n    const ack =\n      "
+          "prefix": "ies);\n      if (newest !== undefined) {\n        ",
+          "suffix": "\n      }\n    }\n\n    const ack =\n      outcome?.s"
         },
         {
           "kind": "text-position",
-          "start": 16539,
-          "end": 16593
+          "start": 16677,
+          "end": 16731
         },
         {
           "kind": "ast-node",
@@ -84,5 +84,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:24:09.305Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

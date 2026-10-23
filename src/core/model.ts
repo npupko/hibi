@@ -72,6 +72,18 @@ export const EvidenceState = z
   .meta({ id: "EvidenceState" });
 export type EvidenceState = z.infer<typeof EvidenceState>;
 
+/** A verdict's doc axis: an anchor state, or `retired` (a retired claim is not resolved). */
+export const VerdictDocState = z
+  .enum([...AnchorState.options, "retired"])
+  .meta({ id: "VerdictDocState" });
+export type VerdictDocState = z.infer<typeof VerdictDocState>;
+
+/** A verdict's evidence axis: an evidence state, or `retired` (a retired claim is not resolved). */
+export const VerdictEvidenceState = z
+  .enum([...EvidenceState.options, "retired"])
+  .meta({ id: "VerdictEvidenceState" });
+export type VerdictEvidenceState = z.infer<typeof VerdictEvidenceState>;
+
 /** The judge axis of a verdict (SPEC 7.2). */
 export const JudgeState = z.enum(["supported", "refuted", "review", "pending"]);
 export type JudgeState = z.infer<typeof JudgeState>;
@@ -451,9 +463,10 @@ export const Verdict = z
     claimId: z.string(),
     documentId: z.string(),
     kind: ClaimKind,
-    doc: AnchorState,
-    /** Worst state over the evidence spans; absent when the claim has none. */
-    evidence: EvidenceState.optional(),
+    /** `retired` for a retired claim, whose spans are not resolved. */
+    doc: VerdictDocState,
+    /** Worst state over the evidence spans, or `retired`; absent when the claim has none. */
+    evidence: VerdictEvidenceState.optional(),
     /** Absent when no judgment applies. */
     judge: JudgeState.optional(),
     expired: z.boolean(),

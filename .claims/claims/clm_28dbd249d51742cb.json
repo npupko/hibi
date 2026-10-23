@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 55043,
-        "end": 55232
+        "start": 56812,
+        "end": 57001
       }
     ]
   },
@@ -50,18 +50,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/version.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "envelope(\"version\", { name: \"hibi\", version: pkg.version }),",
-          "prefix": "ion\": {\n      await emit(\n        mode,\n        ",
-          "suffix": "\n        () => misc.renderVersion(pkg.version, s"
+          "prefix": "ode, style } = ctx;\n  await emit(\n    mode,\n    ",
+          "suffix": "\n    () => misc.renderVersion(pkg.version, style"
         },
         {
           "kind": "text-position",
-          "start": 31964,
-          "end": 32024
+          "start": 466,
+          "end": 526
         },
         {
           "kind": "ast-node",
@@ -90,5 +90,5 @@
     }
   ],
   "createdAt": "2026-10-23T13:54:07.068Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

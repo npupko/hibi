@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 3139,
-        "end": 3241
+        "start": 3314,
+        "end": 3416
       }
     ]
   },
@@ -72,13 +72,13 @@
         {
           "kind": "text-quote",
           "exact": "doc: after.doc.state,",
-          "prefix": "{\n    claim: next,\n    relocated,\n    kept,\n    ",
+          "prefix": "   relocated,\n    relocatedSides,\n    kept,\n    ",
           "suffix": "\n    ...(after.evidence.length > 0\n      ? { evi"
         },
         {
           "kind": "text-position",
-          "start": 13777,
-          "end": 13798
+          "start": 16229,
+          "end": 16250
         },
         {
           "kind": "ast-node",
@@ -101,5 +101,5 @@
     }
   ],
   "createdAt": "2026-10-23T13:54:41.734Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

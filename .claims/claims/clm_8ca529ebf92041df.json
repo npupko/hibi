@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "`hibi list --path api:src/limits.ts` finds the claims anchored there.",
-        "prefix": "t ../api`); the doc side is still re-resolved.\n\n",
+        "prefix": "); it exits 0 when another side was relocated.\n\n",
         "suffix": " `check --since <ref>` diffs only the knowledge "
       },
       {
         "kind": "text-position",
-        "start": 20070,
-        "end": 20139
+        "start": 20378,
+        "end": 20447
       }
     ]
   },
@@ -61,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:24:11.838Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

@@ -14,25 +14,25 @@
       },
       {
         "kind": "text-position",
-        "start": 3931,
-        "end": 4080
+        "start": 4187,
+        "end": 4336
       }
     ]
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/shared.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "const EXIT_OPERATIONAL_ERROR = 1;",
-          "prefix": "import { makeStyle } from \"./render/style.ts\";\n\n",
-          "suffix": "\n\ntype Values = Record<string, string | boolean "
+          "prefix": " type Style } from \"./render/style.ts\";\n\nexport ",
+          "suffix": "\n\nexport type Values = Record<string, string | b"
         },
         {
           "kind": "text-position",
-          "start": 2019,
-          "end": 2052
+          "start": 451,
+          "end": 484
         },
         {
           "kind": "ast-node",
@@ -60,8 +60,8 @@
         },
         {
           "kind": "text-position",
-          "start": 13070,
-          "end": 13114
+          "start": 3892,
+          "end": 3936
         },
         {
           "kind": "ast-node",
@@ -106,21 +106,21 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "`no claims are registered for ${doc}; run hibi audit --doc ${doc}`,",
-          "prefix": "if (!live) {\n        throw new Error(\n          ",
+          "exact": "      if (!live) {\n        throw new Error(\n          `no claims are registered for ${doc}; run hibi audit --doc ${doc}`,",
+          "prefix": "mentId && c.enforcement !== \"retired\",\n      );\n",
           "suffix": "\n        );\n      }\n      onlyFiles = scope.file"
         },
         {
           "kind": "text-position",
-          "start": 12797,
-          "end": 12864
+          "start": 12878,
+          "end": 12999
         },
         {
           "kind": "ast-node",
           "language": "typescript",
-          "nodeType": "template_string",
-          "structuralHash": "1249b007122c9694",
-          "semanticHash": "d6a9d9f48dc91234"
+          "nodeType": "if_statement",
+          "structuralHash": "8ff8819ebe617bd6",
+          "semanticHash": "6fe669982b89c5b0"
         }
       ]
     }
@@ -136,5 +136,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:28:12.786Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

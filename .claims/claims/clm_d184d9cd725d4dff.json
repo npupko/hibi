@@ -21,18 +21,18 @@
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "batch: true,",
-          "prefix": "          \"record\",\n            {\n              ",
-          "suffix": "\n              count: summaries.length,\n        "
+          "prefix": "envelope(\n        \"record\",\n        {\n          ",
+          "suffix": "\n          count: summaries.length,\n          up"
         },
         {
           "kind": "text-position",
-          "start": 18730,
-          "end": 18742
+          "start": 5930,
+          "end": 5942
         },
         {
           "kind": "ast-node",
@@ -50,18 +50,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "count: summaries.length,",
-          "prefix": "     {\n              batch: true,\n              ",
-          "suffix": "\n              updated: results.filter((r) => r."
+          "prefix": "rd\",\n        {\n          batch: true,\n          ",
+          "suffix": "\n          updated: results.filter((r) => r.upda"
         },
         {
           "kind": "text-position",
-          "start": 18757,
-          "end": 18781
+          "start": 5953,
+          "end": 5977
         },
         {
           "kind": "ast-node",
@@ -73,18 +73,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "updated: results.filter((r) => r.updated).length,",
-          "prefix": "         count: summaries.length,\n              ",
-          "suffix": "\n              results: summaries,\n            }"
+          "prefix": "e,\n          count: summaries.length,\n          ",
+          "suffix": "\n          results: summaries,\n        },\n      "
         },
         {
           "kind": "text-position",
-          "start": 18796,
-          "end": 18845
+          "start": 5988,
+          "end": 6037
         },
         {
           "kind": "ast-node",
@@ -107,5 +107,5 @@
     }
   ],
   "createdAt": "2026-10-23T13:54:42.426Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

@@ -78,6 +78,7 @@ import {
   type ClaimFindings,
   type ClaimVerdict,
   resolveClaimSides,
+  retiredVerdict,
 } from "../algo/resolve.ts";
 import type { GateMode } from "../core/gating.ts";
 import type {
@@ -133,7 +134,7 @@ const STATUS_PRECEDENCE = [
   "archived",
 ];
 
-const REPORTABLE_STATE: ReadonlySet<EvidenceState> = new Set<EvidenceState>([
+const REPORTABLE_STATE: ReadonlySet<string> = new Set<EvidenceState>([
   "orphaned",
   "ambiguous",
   "changed",
@@ -431,6 +432,13 @@ export async function runCheck(
     }
     evaluatedDocs.add(c.documentId);
 
+    // A retired claim is not resolved, judged, or listed (SPEC 7.2).
+    if (c.enforcement === "retired") {
+      verdicts.push(retiredVerdict(c));
+      statusTags.set(c.id, []);
+      continue;
+    }
+
     const evidence = new Map<string, string | null>();
     const unavailable = new Map<string, string>();
     for (const f of evidenceFiles) {
@@ -445,27 +453,25 @@ export async function runCheck(
     const entries = supports.get(c.id) ?? [];
     let outcome: JudgeOutcome | undefined;
     const findingReasons: string[] = [];
-    if (c.enforcement !== "retired") {
-      if (c.kind === "reference") {
-        const judgeable = referenceTexts(c, sides, docText);
-        if ("reason" in judgeable) {
-          findingReasons.push(`judge: ${judgeable.reason}`);
-        } else {
-          outcome = await judgeReference({
-            claim: c,
-            ...judgeable.texts,
-            judge: options.judge,
-            cache,
-            model,
-            threshold,
-            now,
-          });
-        }
-      } else if (c.kind === "attested") {
-        const newest = newestSupports(entries);
-        if (newest !== undefined) {
-          outcome = cachedSupportsOutcome(newest, threshold, c);
-        }
+    if (c.kind === "reference") {
+      const judgeable = referenceTexts(c, sides, docText);
+      if ("reason" in judgeable) {
+        findingReasons.push(`judge: ${judgeable.reason}`);
+      } else {
+        outcome = await judgeReference({
+          claim: c,
+          ...judgeable.texts,
+          judge: options.judge,
+          cache,
+          model,
+          threshold,
+          now,
+        });
+      }
+    } else if (c.kind === "attested") {
+      const newest = newestSupports(entries);
+      if (newest !== undefined) {
+        outcome = cachedSupportsOutcome(newest, threshold, c);
       }
     }
 
@@ -476,17 +482,15 @@ export async function runCheck(
         `review acknowledged by ${ack.by} at ${ack.at}${ack.note ? `: ${ack.note}` : ""}; it no longer warns`,
       );
     }
-    const live = c.enforcement !== "retired";
-    const reviews =
-      live && pass !== undefined ? conflictReviewsFor(pass, c.id) : [];
-    const pendingPairs = live ? (pendingCount.get(c.id) ?? 0) : 0;
+    const reviews = pass !== undefined ? conflictReviewsFor(pass, c.id) : [];
+    const pendingPairs = pendingCount.get(c.id) ?? 0;
     const warnings = [
       ...reviews.map((f) => `possible conflict with ${f.claimId}: ${f.reason}`),
       ...(pendingPairs > 0 ? [`conflict checks pending: ${pendingPairs}`] : []),
     ];
     const findings: ClaimFindings = {
       judge: outcome?.state,
-      conflicts: live && pass !== undefined ? conflictsFor(pass, c.id) : [],
+      conflicts: pass !== undefined ? conflictsFor(pass, c.id) : [],
       warnings,
       reasons: [
         ...(outcome?.reasons ?? []).map((r) => `judge: ${r}`),
@@ -554,13 +558,13 @@ export async function runCheck(
 
   // A retired claim counts only in `retired`, never in the axis histograms or `expired`.
   for (const v of verdicts) {
-    const enforcement = enforcementById.get(v.claimId) ?? "suggested";
-    if (enforcement === "retired") {
+    if (v.doc === "retired") {
       retiredCount += 1;
       continue;
     }
     docHist[v.doc] += 1;
-    if (v.evidence !== undefined) evidenceHist[v.evidence] += 1;
+    if (v.evidence !== undefined && v.evidence !== "retired")
+      evidenceHist[v.evidence] += 1;
     if (v.judge !== undefined) judgeHist[v.judge] += 1;
     if (v.expired) expiredCount += 1;
     if (v.conflicts.length > 0) conflictCount += 1;

@@ -3,13 +3,9 @@
   "type": "object",
   "properties": {
     "recommended": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
+      "type": [
+        "string",
+        "null"
       ]
     },
     "actions": {

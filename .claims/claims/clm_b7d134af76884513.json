@@ -1,0 +1,65 @@
+{
+  "id": "clm_b7d134af76884513",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It exits 0 unless an operational error occurs.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It exits 0 unless an operational error occurs.",
+        "prefix": " Human output prints one line per listed claim. ",
+        "suffix": "\n\n**supersede.** `--from` must be a registered d"
+      },
+      {
+        "kind": "text-position",
+        "start": 72689,
+        "end": 72735
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/commands/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "        () => misc.renderReanchorMoved(result, style, mode, dryRun),\n      );\n      return 0;",
+          "prefix": " --dry-run to apply\" : \"hibi check\",\n        ),\n",
+          "suffix": "\n    } catch (e) {\n      return fail((e as Error"
+        },
+        {
+          "kind": "text-position",
+          "start": 4050,
+          "end": 4143
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "1f1b72f9608cba08",
+          "semanticHash": "4d5f3bb81581bdb4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:54.057Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:54.057Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

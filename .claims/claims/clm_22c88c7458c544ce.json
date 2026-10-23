@@ -10,12 +10,12 @@
         "kind": "text-quote",
         "exact": "- An evidence side in a sibling repo that is not checked out is kept as stored, with a warning such as `evidence side api:src/limits.ts kept unchanged: sibling repo \"api\" is not checked out at ../api`. The other sides are re-resolved.",
         "prefix": "ote, and --ref-range are for reference claims.`\n",
-        "suffix": "\n- `--suggest` is read-only. It ranks candidate "
+        "suffix": "\n- An explicit `--code-file` span in a sibling r"
       },
       {
         "kind": "text-position",
-        "start": 6751,
-        "end": 6985
+        "start": 6975,
+        "end": 7209
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 8044,
-          "end": 8118
+          "start": 10106,
+          "end": 10180
         },
         {
           "kind": "ast-node",
@@ -84,5 +84,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:19:29.413Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

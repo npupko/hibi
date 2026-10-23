@@ -2,20 +2,20 @@
   "id": "clm_f8fc196b0ce74d44",
   "documentId": "doc_a5670d6387fe08ca",
   "kind": "code",
-  "sentence": "| `review` | `contradictory`, with any of those three below its bar | `review: contradictory, confidence=0.55 below threshold 0.80` |",
+  "sentence": "| `review` | `contradictory`, with `same_subject` at or above the threshold and confidence below the threshold or `contradicts` below 0.5 | `review: contradictory, confidence=0.55 below threshold 0.80`, `review: contradictory, contradicts=0.48 below 0.50` |",
   "doc": {
     "file": "docs/conflicts.mdx",
     "selectors": [
       {
         "kind": "text-quote",
-        "exact": "| `review` | `contradictory`, with any of those three below its bar | `review: contradictory, confidence=0.55 below threshold 0.80` |",
+        "exact": "| `review` | `contradictory`, with `same_subject` at or above the threshold and confidence below the threshold or `contradicts` below 0.5 | `review: contradictory, confidence=0.55 below threshold 0.80`, `review: contradictory, contradicts=0.48 below 0.50` |",
         "prefix": "| `contradictory (p=0.93, same_subject=0.95)` |\n",
         "suffix": "\n| `duplicate` | `consistent`, with `same_subjec"
       },
       {
         "kind": "text-position",
         "start": 3791,
-        "end": 3924
+        "end": 4048
       }
     ]
   },
@@ -25,27 +25,21 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "reason: `review: contradictory, ${below.join(\", \")}`,",
-          "prefix": "me: \"review\",\n      probability: pContra,\n      ",
-          "suffix": "\n    };\n  }\n  if (r.relation === \"consistent\" &&"
+          "exact": "reason: `review: contradictory, confidence=${f2(r.confidence)} below threshold ${f2(threshold)}`,",
+          "prefix": "\"review\",\n        probability: pContra,\n        ",
+          "suffix": "\n      };\n    }\n    if (r.contradicts < CONTRADI"
         },
         {
           "kind": "text-position",
-          "start": 6708,
-          "end": 6761
+          "start": 6687,
+          "end": 6784
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "pair",
-          "structuralHash": "6908d4a7dad25f2e",
-          "semanticHash": "055921eea214b7a2"
-        },
-        {
-          "kind": "value",
-          "language": "typescript",
-          "nodeKind": "string",
-          "value": "\", \""
+          "structuralHash": "453c24b1bf22b001",
+          "semanticHash": "ebdbdb1b96fa876a"
         }
       ]
     },
@@ -54,21 +48,21 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "`confidence=${f2(r.confidence)} below threshold ${f2(threshold)}`,",
-          "prefix": "idence < threshold) {\n      below.push(\n        ",
-          "suffix": "\n      );\n    }\n    if (r.sameSubject < threshol"
+          "exact": "reason: `review: contradictory, contradicts=${f2(r.contradicts)} below ${f2(CONTRADICTS_FLOOR)}`,",
+          "prefix": "\"review\",\n        probability: pContra,\n        ",
+          "suffix": "\n      };\n    }\n    return {\n      outcome: \"con"
         },
         {
           "kind": "text-position",
-          "start": 6200,
-          "end": 6266
+          "start": 6925,
+          "end": 7022
         },
         {
           "kind": "ast-node",
           "language": "typescript",
-          "nodeType": "template_string",
-          "structuralHash": "a5b5b4e43f98f11a",
-          "semanticHash": "7cb8a56745dc8039"
+          "nodeType": "pair",
+          "structuralHash": "453c24b1bf22b001",
+          "semanticHash": "7ed76779a39b738c"
         }
       ]
     }
@@ -84,5 +78,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:23:25.888Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

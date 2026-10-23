@@ -10,12 +10,12 @@
         "kind": "text-quote",
         "exact": "| `acked` | a `conflict` or `review` outcome covered by an `ack` on either claim | `acknowledged: numbers differ: 29 vs 39` |",
         "prefix": "related (confidence=0.80, same_subject=0.40)` |\n",
-        "suffix": "\n\nThe `review` label lists every bar missed, for"
+        "suffix": "\n\nEach reason label names one condition. A `cont"
       },
       {
         "kind": "text-position",
-        "start": 45671,
-        "end": 45796
+        "start": 47104,
+        "end": 47229
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 11569,
-          "end": 11613
+          "start": 11998,
+          "end": 12042
         },
         {
           "kind": "ast-node",
@@ -54,8 +54,8 @@
         },
         {
           "kind": "text-position",
-          "start": 7836,
-          "end": 7875
+          "start": 8265,
+          "end": 8304
         },
         {
           "kind": "ast-node",
@@ -84,5 +84,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:19:15.011Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

@@ -1,0 +1,136 @@
+{
+  "id": "clm_f581823ce1da4e61",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "It prints one line per claim with a side relocated or kept, and exits 0.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It prints one line per claim with a side relocated or kept, and exits 0.",
+        "prefix": "ous`, and `orphaned` sides are kept and listed. ",
+        "suffix": " The JSON is `{ \"action\": \"reanchor\", \"moved\": t"
+      },
+      {
+        "kind": "text-position",
+        "start": 7761,
+        "end": 7833
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/misc.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  for (const c of result.claims) {\n    const moved = c.relocated.map((r) => `${r.side} ${r.file}`).join(\", \");",
+          "prefix": "length} claim(s)${dryTag(style, dryRun)}`,\n  ];\n",
+          "suffix": "\n    const kept = c.kept.map((k) => k.reason).jo"
+        },
+        {
+          "kind": "text-position",
+          "start": 4582,
+          "end": 4692
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "f7cac73d3e2a71bb",
+          "semanticHash": "890473583ee3e32e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\", \""
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.relocated === 0 && r.kept.length === 0) continue;",
+          "prefix": "f,\n        dryRun: opts.dryRun,\n      });\n      ",
+          "suffix": "\n      relocated += r.relocated;\n      out.push("
+        },
+        {
+          "kind": "text-position",
+          "start": 23962,
+          "end": 24017
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "adc94b5ed5647c6f",
+          "semanticHash": "28a6bdd817662884"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/commands/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "        () => misc.renderReanchorMoved(result, style, mode, dryRun),\n      );\n      return 0;",
+          "prefix": " --dry-run to apply\" : \"hibi check\",\n        ),\n",
+          "suffix": "\n    } catch (e) {\n      return fail((e as Error"
+        },
+        {
+          "kind": "text-position",
+          "start": 4050,
+          "end": 4143
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "1f1b72f9608cba08",
+          "semanticHash": "4d5f3bb81581bdb4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:46.712Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:21:45.835Z",
+      "basis": "ack",
+      "note": "value rule read the decision row number 61; the row is plain reanchor's exit 1, the other sentence is reanchor --moved's exit 0, two different commands",
+      "ack": {
+        "pairId": "clm_071c53aa56f04da2:clm_f581823ce1da4e61",
+        "sentenceHashes": [
+          "c80e833635e4bf29843c07eb3cf8676621f23072112d50cf36549487523f83a7",
+          "f346949ea04690547239b9c63cd621ab5a5892f3c371f9c18dca8c6f0712583b"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:46.712Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

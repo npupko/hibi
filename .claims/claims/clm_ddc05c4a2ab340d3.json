@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 68793,
-        "end": 68962
+        "start": 70725,
+        "end": 70894
       }
     ]
   },
@@ -25,21 +25,21 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "    evidence = input.evidence.map((t) =>\n      bundleFromTarget(claim.kind, t, contents, input.analyzer),\n    );",
-          "prefix": "eds exactly one evidence span.`,\n      );\n    }\n",
-          "suffix": "\n    relocated += evidence.length;\n  } else {\n  "
+          "exact": "evidence = input.evidence.map((t, i) => {",
+          "prefix": "exactly one evidence span.`,\n      );\n    }\n    ",
+          "suffix": "\n      const reason = contents.unavailable?.get("
         },
         {
           "kind": "text-position",
-          "start": 12296,
-          "end": 12408
+          "start": 14427,
+          "end": 14468
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "assignment_expression",
-          "structuralHash": "41f492312e981289",
-          "semanticHash": "b599141008d59086"
+          "structuralHash": "4ba7a634c1e53e2f",
+          "semanticHash": "bf0ea795d3eb40fa"
         }
       ]
     }
@@ -55,5 +55,5 @@
     }
   ],
   "createdAt": "2026-10-23T14:28:04.249Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

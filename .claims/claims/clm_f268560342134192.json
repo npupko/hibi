@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 32391,
-        "end": 32436
+        "start": 33448,
+        "end": 33493
       }
     ]
   },
@@ -26,13 +26,13 @@
         {
           "kind": "text-quote",
           "exact": "\"factual_claim\": {",
-          "prefix": "efers to.\"\n      },\n      \"criteria\": {\n        ",
-          "suffix": "\n          \"what\": \"States something as true abo"
+          "prefix": "software.\"\n      },\n      \"criteria\": {\n        ",
+          "suffix": "\n          \"definition\": \"Asserts something abou"
         },
         {
           "kind": "text-position",
-          "start": 699,
-          "end": 717
+          "start": 1015,
+          "end": 1033
         }
       ]
     },
@@ -80,5 +80,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:51.440Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

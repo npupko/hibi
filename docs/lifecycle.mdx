@@ -30,7 +30,7 @@ Sets the claim's `enforcement` to `retired` and saves it. The claim file stays i
   "id": "clm_…", "alreadyRetired": false, "next": "hibi check" }
 ```
 
-In `check`, a retired claim is counted in `summary.retired` and in none of `gating`, `warning`, or `clean`.
+In `check`, a retired claim is not resolved: its verdict reads `doc: "retired"` (and `evidence: "retired"` when it has an evidence side) and carries one reason, `retired claim: never gates or warns`. It is counted in `summary.retired` and in none of `gating`, `warning`, or `clean`.
 
 ## Document lifecycle
 
@@ -100,6 +100,7 @@ hibi reanchor <claim-id> [--doc <path>] [--doc-quote <text> | --doc-range L1:L3]
                          [--code-file <path> (--code-quote <text> | --code-range L1:L9)]...
                          [--ref-file <path> (--ref-quote <text> | --ref-range L1:L3)]
                          [--suggest] [--dry-run]
+hibi reanchor --moved [--doc <path>] [--dry-run]
 ```
 
 `reanchor` re-resolves every span of the claim against the working tree and stores the relocated sides as the new baseline. It refreshes the claim's `sentence` from the doc span when the doc side is relocated.
@@ -112,6 +113,8 @@ hibi reanchor <claim-id> [--doc <path>] [--doc-quote <text> | --doc-range L1:L3]
 - `--doc <path>` with `--doc-quote` or `--doc-range` moves the claim to another document.
 - `--code-file` is repeatable: each one opens a span that takes the `--code-quote` or `--code-range` after it, and the spans given replace all of a `code` claim's spans, in order; `--ref-file` with `--ref-quote` or `--ref-range` replaces a `reference` claim's span. The wrong kind is an error, for example `claim <id> is a code claim; --ref-file, --ref-quote, and --ref-range are for reference claims.`
 - An evidence side in a sibling repo that is not checked out is kept as stored, with a warning such as `evidence side api:src/limits.ts kept unchanged: sibling repo "api" is not checked out at ../api`. The other sides are re-resolved.
+- An explicit `--code-file` span in a sibling repo that is not checked out keeps the stored span for that file. The result's `kept` lists it with `state: "unavailable"` and the reason `evidence: repository api not checked out; kept as stored`, and the command exits 0 when another side was relocated.
+- `--moved` takes no claim id. It applies the plain rule to every live claim in the store, or with `--doc <path>` to the live claims of that document: `moved` sides are relocated, and `changed`, `ambiguous`, and `orphaned` sides are kept and listed. It prints one line per claim with a side relocated or kept, and exits 0. The JSON is `{ "action": "reanchor", "moved": true, "relocated": <sides relocated>, "claims": [{ "id", "relocated": [{ "side", "file" }], "kept": [{ "side", "file", "state", "reason" }] }], "next" }`. `--dry-run` writes nothing.
 - `--suggest` is read-only. It ranks candidate locations for the stored doc and evidence quotes. It cannot be combined with span flags or `--dry-run`.
 - `--dry-run` computes the result and writes nothing.
 

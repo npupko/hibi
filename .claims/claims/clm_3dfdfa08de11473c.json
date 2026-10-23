@@ -14,25 +14,25 @@
       },
       {
         "kind": "text-position",
-        "start": 56493,
-        "end": 56558
+        "start": 58262,
+        "end": 58327
       }
     ]
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "const extra = RECORD_ITEM_FLAGS.filter((f) => values[f] !== undefined);",
-          "prefix": "[];\n      if (fromFile !== undefined) {\n        ",
-          "suffix": "\n        if (extra.length > 0) {\n          retur"
+          "prefix": " unknown[];\n  if (fromFile !== undefined) {\n    ",
+          "suffix": "\n    if (extra.length > 0) {\n      return fail(\n"
         },
         {
           "kind": "text-position",
-          "start": 16483,
-          "end": 16554
+          "start": 3968,
+          "end": 4039
         },
         {
           "kind": "ast-node",
@@ -50,18 +50,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "`--from-file takes every field from the JSON; drop ${extra.map((f) => `--${f}`).join(\", \")}`,",
-          "prefix": "ength > 0) {\n          return fail(\n            ",
-          "suffix": "\n            mode,\n          );\n        }\n      "
+          "prefix": "(extra.length > 0) {\n      return fail(\n        ",
+          "suffix": "\n        mode,\n      );\n    }\n    let parsed: un"
         },
         {
           "kind": "text-position",
-          "start": 16622,
-          "end": 16715
+          "start": 4095,
+          "end": 4188
         },
         {
           "kind": "ast-node",
@@ -90,5 +90,5 @@
     }
   ],
   "createdAt": "2026-10-23T13:54:07.390Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

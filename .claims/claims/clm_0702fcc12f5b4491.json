@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 26455,
-        "end": 26637
+        "start": 27158,
+        "end": 27340
       }
     ]
   },
@@ -48,27 +48,27 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "if (below.length === 0) {\n      return {\n        outcome: \"conflict\",",
-          "prefix": "threshold ${f2(threshold)}`,\n      );\n    }\n    ",
-          "suffix": "\n        probability: pContra,\n        reason: `"
+          "exact": "      outcome: \"conflict\",\n      probability: pContra,",
+          "prefix": "NTRADICTS_FLOOR)}`,\n      };\n    }\n    return {\n",
+          "suffix": "\n      reason: `contradictory (p=${f2(pContra)},"
         },
         {
           "kind": "text-position",
-          "start": 6434,
-          "end": 6503
+          "start": 7051,
+          "end": 7105
         },
         {
           "kind": "ast-node",
           "language": "typescript",
-          "nodeType": "if_statement",
-          "structuralHash": "e78edf0ddc5d525d",
-          "semanticHash": "63331355d0933fac"
+          "nodeType": "object",
+          "structuralHash": "0a00e17a878b184a",
+          "semanticHash": "69f0f28579f615c5"
         },
         {
           "kind": "value",
           "language": "typescript",
-          "nodeKind": "number",
-          "value": "0"
+          "nodeKind": "string",
+          "value": "\"conflict\""
         }
       ]
     },
@@ -83,8 +83,8 @@
         },
         {
           "kind": "text-position",
-          "start": 5784,
-          "end": 5853
+          "start": 6080,
+          "end": 6149
         },
         {
           "kind": "ast-node",
@@ -113,5 +113,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:48.674Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

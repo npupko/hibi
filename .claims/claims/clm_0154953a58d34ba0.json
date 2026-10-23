@@ -10,12 +10,12 @@
         "kind": "text-quote",
         "exact": "The verdict also carries `claimId`, `documentId`, `kind`, a `remediation` menu (recommended action id and actions with ready-to-run commands), and a `detail` block (located regions, similarity, changes).",
         "prefix": ": …` label when the claim is in the worklist |\n\n",
-        "suffix": " A claim whose `enforcement` is `retired` gets n"
+        "suffix": " A claim whose `enforcement` is `retired` is not"
       },
       {
         "kind": "text-position",
-        "start": 22450,
-        "end": 22653
+        "start": 22647,
+        "end": 22850
       }
     ]
   },
@@ -129,8 +129,8 @@
         },
         {
           "kind": "text-position",
-          "start": 15407,
-          "end": 15495
+          "start": 15980,
+          "end": 16068
         },
         {
           "kind": "ast-node",
@@ -159,5 +159,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:28.493Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

@@ -14,25 +14,25 @@
       },
       {
         "kind": "text-position",
-        "start": 21989,
-        "end": 22063
+        "start": 22297,
+        "end": 22371
       }
     ]
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/init.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "const r = await appendInstructionLine(",
-          "prefix": "nsFile !== undefined) {\n        try {\n          ",
-          "suffix": "\n            absPath(anchorRoot, instructionsFil"
+          "prefix": "structionsFile !== undefined) {\n    try {\n      ",
+          "suffix": "\n        absPath(anchorRoot, instructionsFile),\n"
         },
         {
           "kind": "text-position",
-          "start": 15576,
-          "end": 15614
+          "start": 1707,
+          "end": 1745
         },
         {
           "kind": "ast-node",
@@ -55,5 +55,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:24:12.538Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

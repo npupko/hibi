@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 21832,
-        "end": 21942
+        "start": 22029,
+        "end": 22139
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 14323,
-          "end": 14446
+          "start": 14896,
+          "end": 15019
         },
         {
           "kind": "ast-node",
@@ -54,8 +54,8 @@
         },
         {
           "kind": "text-position",
-          "start": 13154,
-          "end": 13212
+          "start": 13583,
+          "end": 13641
         },
         {
           "kind": "ast-node",
@@ -77,21 +77,21 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "conflicts: live && pass !== undefined ? conflictsFor(pass, c.id) : [],",
+          "exact": "conflicts: pass !== undefined ? conflictsFor(pass, c.id) : [],",
           "prefix": "Findings = {\n      judge: outcome?.state,\n      ",
           "suffix": "\n      warnings,\n      reasons: [\n        ...(ou"
         },
         {
           "kind": "text-position",
-          "start": 17359,
-          "end": 17429
+          "start": 17414,
+          "end": 17476
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "pair",
-          "structuralHash": "8f994536793a1c39",
-          "semanticHash": "793bde7436a13ab8"
+          "structuralHash": "9f8bed328159c3c3",
+          "semanticHash": "b6c4643fc02ad573"
         },
         {
           "kind": "value",
@@ -113,5 +113,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:28.343Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

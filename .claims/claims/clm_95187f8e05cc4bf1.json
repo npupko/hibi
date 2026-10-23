@@ -26,13 +26,13 @@
         {
           "kind": "text-quote",
           "exact": "No evidence could settle it",
-          "prefix": "     },\n        \"nothing\": {\n          \"what\": \"",
-          "suffix": ": a prediction, an intention, or a statement abo"
+          "prefix": ",\n        \"nothing\": {\n          \"definition\": \"",
+          "suffix": ": a prediction, an intention, or a vague stateme"
         },
         {
           "kind": "text-position",
-          "start": 4041,
-          "end": 4068
+          "start": 6528,
+          "end": 6555
         }
       ]
     },
@@ -42,13 +42,13 @@
         {
           "kind": "text-quote",
           "exact": "\"This design will scale for years.\",",
-          "prefix": "y someone\",\n          \"examples\": [\n            ",
-          "suffix": "\n            \"Users will love the new flow.\"\n   "
+          "prefix": " by someone (external)\",\n          \"examples\": [",
+          "suffix": " \"It is fast.\"]\n        }\n      }\n    }\n  }\n}\n"
         },
         {
           "kind": "text-position",
-          "start": 4272,
-          "end": 4308
+          "start": 6833,
+          "end": 6869
         }
       ]
     }
@@ -64,5 +64,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:26.023Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

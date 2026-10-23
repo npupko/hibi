@@ -320,7 +320,7 @@ describe("submitEvidence outcomes", () => {
       values: [{ kind: "money", normalized: "29", unit: "USD" }],
     });
     expect(
-      (entry?.request as { state: Record<string, unknown> }).state,
+      (entry?.request as { state: Record<string, unknown> } | undefined)?.state,
     ).toEqual({
       claim: PRICE,
       claim_context: `context of ${ID_PRICE}`,

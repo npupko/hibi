@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 32768,
-        "end": 33192
+        "start": 33825,
+        "end": 34249
       }
     ]
   },
@@ -158,21 +158,21 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "if (code) delete filled[`evidenceKind_${i}`];",
-          "prefix": "ageFile.placeholder,\n    i,\n  ) as Questions;\n  ",
+          "exact": "if (isCodeByConstruction(region)) delete filled[`evidenceKind_${i}`];",
+          "prefix": ".idPlaceholder, region.id),\n  ) as Questions;\n  ",
           "suffix": "\n  return filled;\n}\n\nfunction stateRegion(r: Reg"
         },
         {
           "kind": "text-position",
-          "start": 7708,
-          "end": 7753
+          "start": 7881,
+          "end": 7950
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "if_statement",
-          "structuralHash": "db90584dc86371e0",
-          "semanticHash": "65f52ca7f2521676"
+          "structuralHash": "4587d7ef645d9837",
+          "semanticHash": "6a4ee12a45ee4487"
         }
       ]
     },
@@ -187,8 +187,8 @@
         },
         {
           "kind": "text-position",
-          "start": 12783,
-          "end": 12835
+          "start": 12936,
+          "end": 12988
         },
         {
           "kind": "ast-node",
@@ -211,5 +211,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:51.578Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

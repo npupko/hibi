@@ -60,8 +60,8 @@
         },
         {
           "kind": "text-position",
-          "start": 19074,
-          "end": 19172
+          "start": 19954,
+          "end": 20052
         },
         {
           "kind": "ast-node",
@@ -79,18 +79,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/evidence.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": ": no \"by\"; pass --by <actor> or a \"by\" key: human:<id>, agent:<name>, or process:<name>`,",
           "prefix": "laimId === \"string\" ? ` (${item.claimId})` : \"\"}",
-          "suffix": "\n              ]\n            : [],\n        );\n  "
+          "suffix": "\n          ]\n        : [],\n    );\n    if (missin"
         },
         {
           "kind": "text-position",
-          "start": 29406,
-          "end": 29495
+          "start": 1386,
+          "end": 1475
         },
         {
           "kind": "ast-node",
@@ -113,5 +113,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:26:11.673Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

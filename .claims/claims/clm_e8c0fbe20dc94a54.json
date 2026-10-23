@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 1471,
-        "end": 1618
+        "start": 1533,
+        "end": 1680
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 3118,
-          "end": 3198
+          "start": 3691,
+          "end": 3771
         },
         {
           "kind": "ast-node",
@@ -55,13 +55,13 @@
         {
           "kind": "text-quote",
           "exact": "if (c.kind === \"reference\") {",
-          "prefix": "];\n    if (c.enforcement !== \"retired\") {\n      ",
-          "suffix": "\n        const judgeable = referenceTexts(c, sid"
+          "prefix": "d;\n    const findingReasons: string[] = [];\n    ",
+          "suffix": "\n      const judgeable = referenceTexts(c, sides"
         },
         {
           "kind": "text-position",
-          "start": 15964,
-          "end": 15993
+          "start": 16138,
+          "end": 16167
         },
         {
           "kind": "ast-node",
@@ -84,13 +84,13 @@
         {
           "kind": "text-quote",
           "exact": "outcome = cachedSupportsOutcome(newest, threshold, c);",
-          "prefix": ";\n        if (newest !== undefined) {\n          ",
-          "suffix": "\n        }\n      }\n    }\n\n    const ack =\n      "
+          "prefix": "ies);\n      if (newest !== undefined) {\n        ",
+          "suffix": "\n      }\n    }\n\n    const ack =\n      outcome?.s"
         },
         {
           "kind": "text-position",
-          "start": 16539,
-          "end": 16593
+          "start": 16677,
+          "end": 16731
         },
         {
           "kind": "ast-node",
@@ -113,5 +113,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:28:11.155Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

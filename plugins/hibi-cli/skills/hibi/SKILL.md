@@ -95,8 +95,9 @@ Exit 0 clean or warnings, 2 gating (any warning under `--fail-on warn`), 1 error
 
 | flag | do |
 |---|---|
-| `changed` | fix the sentence if wrong, then `hibi reanchor <id>` |
+| `changed` | fix the sentence if wrong, then run the remediation `reanchor` command (it names the new span) |
 | `orphaned` | `hibi reanchor <id> --suggest`, reanchor with a span, or retire |
+| `moved` | `hibi reanchor <id>`; every moved claim at once: `hibi reanchor --moved [--doc <path>]` |
 | `refuted` | fix sentence or evidence; never reanchor |
 | conflict | rewrite the wrong sentence, or ack |
 | `expired` | submit evidence (attested), or ask the owner |

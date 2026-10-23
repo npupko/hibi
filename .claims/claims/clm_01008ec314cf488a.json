@@ -21,18 +21,18 @@
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/init.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "instructions = { file: instructionsFile, appended: r.appended };",
-          "prefix": "Root, instructionsFile),\n          );\n          ",
-          "suffix": "\n        } catch (e) {\n          return fail((e "
+          "prefix": "h(anchorRoot, instructionsFile),\n      );\n      ",
+          "suffix": "\n    } catch (e) {\n      return fail((e as Error"
         },
         {
           "kind": "text-position",
-          "start": 15689,
-          "end": 15753
+          "start": 1808,
+          "end": 1872
         },
         {
           "kind": "ast-node",
@@ -55,5 +55,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:25:22.847Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

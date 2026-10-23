@@ -1,0 +1,59 @@
+{
+  "id": "clm_0403d2ab7446425e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`--code-file` is repeatable, as on `record`: each one opens a span that takes the `--code-quote` or `--code-range` after it.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--code-file` is repeatable, as on `record`: each one opens a span that takes the `--code-quote` or `--code-range` after it.",
+        "prefix": "lag> given twice; reanchor takes one --<flag>`. ",
+        "suffix": " A value that starts with `-` is read as a flag;"
+      },
+      {
+        "kind": "text-position",
+        "start": 70299,
+        "end": 70423
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Repeat for several spans; each takes the --code-quote or --code-range that follows it.",
+          "prefix": "ence describes (alias:path for a sibling repo). ",
+          "suffix": "\"\n        : \"The code file the sentence describe"
+        },
+        {
+          "kind": "text-position",
+          "start": 3639,
+          "end": 3725
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "5c86bca760bc289d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:51.672Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:51.672Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

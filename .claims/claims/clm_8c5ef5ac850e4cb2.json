@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "| conflict pair the judge could not answer | warn | warn |",
-        "prefix": ": `contradictory` below its bar | warn | warn |\n",
+        "prefix": "bject` below threshold is clean | warn | warn |\n",
         "suffix": "\n| `suggested` or `retired` claim | never | neve"
       },
       {
         "kind": "text-position",
-        "start": 25785,
-        "end": 25843
+        "start": 26488,
+        "end": 26546
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 17204,
-          "end": 17278
+          "start": 17259,
+          "end": 17333
         },
         {
           "kind": "ast-node",
@@ -95,5 +95,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:48.233Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

@@ -535,6 +535,31 @@ export function assembleVerdict(
   };
 }
 
+/** The single reason label of a retired claim's verdict. */
+export const RETIRED_REASON = "retired claim: never gates or warns";
+
+/**
+ * The verdict of a retired claim: its spans are not resolved, so `doc` (and
+ * `evidence`, when the claim has an evidence side) read `retired`, and the
+ * only reason is `RETIRED_REASON`. It never gates or warns.
+ */
+export function retiredVerdict(claim: Claim): ClaimVerdict {
+  return {
+    claimId: claim.id,
+    documentId: claim.documentId,
+    kind: claim.kind,
+    doc: "retired",
+    ...(claim.evidence.length > 0 ? { evidence: "retired" as const } : {}),
+    expired: false,
+    conflicts: [],
+    gates: false,
+    warns: false,
+    remediation: null,
+    detail: { evidenceRegions: [], changes: [] },
+    reasons: [RETIRED_REASON],
+  };
+}
+
 /**
  * Resolve a single claim against the current working tree: anchors, expiry
  * (SPEC 5 counting rule), and gating with whatever judge and conflict

@@ -14,25 +14,25 @@
       },
       {
         "kind": "text-position",
-        "start": 4252,
-        "end": 4538
+        "start": 4427,
+        "end": 4713
       }
     ]
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/archive.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "archivedTo: result.archivedTo,",
-          "prefix": "       doc: result.document.path,\n              ",
-          "suffix": "\n              successor: result.successor ?? nu"
+          "prefix": "\n          doc: result.document.path,\n          ",
+          "suffix": "\n          successor: result.successor ?? null,\n"
         },
         {
           "kind": "text-position",
-          "start": 28030,
-          "end": 28060
+          "start": 939,
+          "end": 969
         },
         {
           "kind": "ast-node",
@@ -44,18 +44,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/archive.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "successor: result.successor ?? null,",
-          "prefix": "   archivedTo: result.archivedTo,\n              ",
-          "suffix": "\n              lifecycle: result.document.lifecy"
+          "prefix": "       archivedTo: result.archivedTo,\n          ",
+          "suffix": "\n          lifecycle: result.document.lifecycle,"
         },
         {
           "kind": "text-position",
-          "start": 28075,
-          "end": 28111
+          "start": 980,
+          "end": 1016
         },
         {
           "kind": "ast-node",
@@ -73,18 +73,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/archive.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "lifecycle: result.document.lifecycle,",
-          "prefix": "cessor: result.successor ?? null,\n              ",
-          "suffix": "\n              strandedClaims: result.strandedCl"
+          "prefix": " successor: result.successor ?? null,\n          ",
+          "suffix": "\n          strandedClaims: result.strandedClaims"
         },
         {
           "kind": "text-position",
-          "start": 28126,
-          "end": 28163
+          "start": 1027,
+          "end": 1064
         },
         {
           "kind": "ast-node",
@@ -96,18 +96,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/archive.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "? \"reanchor or retire each stranded claim, then hibi check\"",
-          "prefix": " : result.strandedClaims.length > 0\n            ",
-          "suffix": "\n            : \"hibi check\";\n        await emit("
+          "prefix": "     : result.strandedClaims.length > 0\n        ",
+          "suffix": "\n        : \"hibi check\";\n    await emit(\n      m"
         },
         {
           "kind": "text-position",
-          "start": 27794,
-          "end": 27853
+          "start": 735,
+          "end": 794
         },
         {
           "kind": "ast-node",
@@ -136,5 +136,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:19:28.988Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

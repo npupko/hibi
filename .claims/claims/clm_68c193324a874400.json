@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 23497,
-        "end": 23532
+        "start": 24045,
+        "end": 24080
       }
     ]
   },
@@ -25,14 +25,14 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "} else if (c.kind === \"attested\") {\n        const newest = newestSupports(entries);",
-          "prefix": "\n            now,\n          });\n        }\n      ",
-          "suffix": "\n        if (newest !== undefined) {\n          o"
+          "exact": "} else if (c.kind === \"attested\") {\n      const newest = newestSupports(entries);\n ",
+          "prefix": "reshold,\n          now,\n        });\n      }\n    ",
+          "suffix": "     if (newest !== undefined) {\n        outcome"
         },
         {
           "kind": "text-position",
-          "start": 16409,
-          "end": 16492
+          "start": 16553,
+          "end": 16636
         },
         {
           "kind": "ast-node",
@@ -61,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:41.907Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

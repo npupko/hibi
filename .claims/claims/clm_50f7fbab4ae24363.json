@@ -1,0 +1,88 @@
+{
+  "id": "clm_50f7fbab4ae24363",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "The result's `kept` lists it with `state: \"unavailable\"` and the reason `evidence: repository api not checked out; kept as stored`, and the command exits 0 when another side was relocated.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The result's `kept` lists it with `state: \"unavailable\"` and the reason `evidence: repository api not checked out; kept as stored`, and the command exits 0 when another side was relocated.",
+        "prefix": "hecked out keeps the stored span for that file. ",
+        "suffix": "\n- `--moved` takes no claim id. It applies the p"
+      },
+      {
+        "kind": "text-position",
+        "start": 7322,
+        "end": 7510
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `evidence: repository ${alias} not checked out; kept as stored`,",
+          "prefix": "ile: target.file,\n    state: \"unavailable\",\n    ",
+          "suffix": "\n  });\n  return stored;\n}\n\n/** Rebuild one evide"
+        },
+        {
+          "kind": "text-position",
+          "start": 8570,
+          "end": 8642
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "787e166f87e46da5",
+          "semanticHash": "d78980f6fdae5290"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "state: \"unavailable\",",
+          "prefix": "   side: \"evidence\",\n    file: target.file,\n    ",
+          "suffix": "\n    reason: `evidence: repository ${alias} not "
+        },
+        {
+          "kind": "text-position",
+          "start": 8544,
+          "end": 8565
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "b8e43ff973584644"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unavailable\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:45.917Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:45.917Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

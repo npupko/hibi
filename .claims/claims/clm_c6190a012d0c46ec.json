@@ -21,18 +21,18 @@
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/shared.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "if (fromFile === \"-\") return Bun.stdin.text();",
-          "prefix": " string, fromFile: string): Promise<string> {\n  ",
+          "prefix": "ing,\n  fromFile: string,\n): Promise<string> {\n  ",
           "suffix": "\n  try {\n    return await readFile(absPath(root,"
         },
         {
           "kind": "text-position",
-          "start": 5587,
-          "end": 5633
+          "start": 3946,
+          "end": 3992
         },
         {
           "kind": "ast-node",
@@ -50,18 +50,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "\"record --from-file expects a JSON array of claim items\",",
-          "prefix": "y(parsed)) {\n          return fail(\n            ",
-          "suffix": "\n            mode,\n          );\n        }\n      "
+          "prefix": "y.isArray(parsed)) {\n      return fail(\n        ",
+          "suffix": "\n        mode,\n      );\n    }\n    items = parsed"
         },
         {
           "kind": "text-position",
-          "start": 17206,
-          "end": 17263
+          "start": 4611,
+          "end": 4668
         },
         {
           "kind": "ast-node",
@@ -89,8 +89,8 @@
         },
         {
           "kind": "text-position",
-          "start": 15711,
-          "end": 15952
+          "start": 15846,
+          "end": 16087
         },
         {
           "kind": "ast-node",
@@ -148,5 +148,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:26:23.405Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

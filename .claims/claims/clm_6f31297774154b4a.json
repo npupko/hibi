@@ -2,20 +2,20 @@
   "id": "clm_6f31297774154b4a",
   "documentId": "doc_02e774903d42ecc3",
   "kind": "code",
-  "sentence": "`retired` counts retired claims, which are none of gating, warning, or clean.",
+  "sentence": "`retired` counts retired claims, which are none of gating, warning, or clean;",
   "doc": {
     "file": "design/SPEC.md",
     "selectors": [
       {
         "kind": "text-quote",
-        "exact": "`retired` counts retired claims, which are none of gating, warning, or clean.",
+        "exact": "`retired` counts retired claims, which are none of gating, warning, or clean;",
         "prefix": "ints`. `detail` appears only under `--explain`. ",
-        "suffix": " A retired claim is not counted in `expired` or "
+        "suffix": " it equals the number of verdicts with `doc: ret"
       },
       {
         "kind": "text-position",
-        "start": 61379,
-        "end": 61456
+        "start": 63148,
+        "end": 63225
       }
     ]
   },
@@ -26,13 +26,13 @@
         {
           "kind": "text-quote",
           "exact": "retiredCount += 1;\n      continue;",
-          "prefix": "ed\";\n    if (enforcement === \"retired\") {\n      ",
+          "prefix": "erdicts) {\n    if (v.doc === \"retired\") {\n      ",
           "suffix": "\n    }\n    docHist[v.doc] += 1;\n    if (v.eviden"
         },
         {
           "kind": "text-position",
-          "start": 19425,
-          "end": 19459
+          "start": 19395,
+          "end": 19429
         },
         {
           "kind": "ast-node",
@@ -89,5 +89,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:17:35.599Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

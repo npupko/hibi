@@ -1,5 +1,5 @@
 import { afterEach, beforeAll, describe, expect, test } from "bun:test";
-import { writeFile } from "node:fs/promises";
+import { rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { textSimilarity } from "../src/algo/normalize.ts";
 import { SAME_TEXT_SIMILARITY } from "../src/algo/params.ts";
@@ -1272,8 +1272,9 @@ describe("B.9 retired claims in the summary", () => {
     expect(out.verdicts.map((v) => v.claimId).sort()).toEqual(
       [live.claim.id, gone.claim.id].sort(),
     );
+    // A retired claim is not resolved: expiry is not computed for it.
     expect(out.verdicts.find((v) => v.claimId === gone.claim.id)?.expired).toBe(
-      true,
+      false,
     );
     expect(out.summary.retired).toBe(1);
     expect(out.summary.expired).toBe(0);
@@ -1281,6 +1282,41 @@ describe("B.9 retired claims in the summary", () => {
     expect(out.summary.evidence.unchanged).toBe(1);
     expect(out.summary.clean).toBe(1);
     expect(out.summary.total).toBe(2);
+  });
+});
+
+describe("retired claims skip resolution", () => {
+  test("a retired claim with a moved and a missing span gets only the retired reason", async () => {
+    const r = await repo();
+    await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+    const gone = await record(r, {
+      doc: "README.md",
+      text: "Retries are capped at 5.",
+      file: "src/retry.ts",
+      quote: "MAX_ATTEMPTS = 5",
+    });
+    await retire(r.store, gone.claim.id);
+    // The doc span moves; the evidence file disappears.
+    await r.write(
+      "README.md",
+      "# Title\n\nIntro.\n\nRetries are capped at 5.\n",
+    );
+    await rm(join(r.root, "src/retry.ts"));
+    const out = await runCheck(r.store, { ast: analyzer });
+    const v = out.verdicts.find((x) => x.claimId === gone.claim.id);
+    expect(v?.reasons).toEqual(["retired claim: never gates or warns"]);
+    expect(v?.doc).toBe("retired");
+    expect(v?.evidence).toBe("retired");
+    expect(v?.gates).toBe(false);
+    expect(v?.warns).toBe(false);
+    expect(v?.remediation).toBeNull();
+    expect(out.summary.retired).toBe(
+      out.verdicts.filter((x) => x.doc === "retired").length,
+    );
+    expect(out.summary.retired).toBe(1);
+    expect(out.summary.evidence.moved).toBe(0);
+    expect(out.summary.evidence.orphaned).toBe(0);
+    expect(out.exitCode).toBe(0);
   });
 });
 

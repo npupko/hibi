@@ -27,7 +27,7 @@
           "kind": "text-quote",
           "exact": "const FIXTURES = join(import.meta.dir, \"fixtures\", \"judge\");",
           "prefix": "SupportsInput,\n} from \"../src/judge/types.ts\";\n\n",
-          "suffix": "\nconst MODEL = \"jev-1.13.0\";\nconst KEY_ENV = { T"
+          "suffix": "\nconst MODEL = \"jev-1.13.0\";\n/** The triage fixt"
         },
         {
           "kind": "text-position",
@@ -60,15 +60,15 @@
         },
         {
           "kind": "text-position",
-          "start": 3040,
-          "end": 3093
+          "start": 3149,
+          "end": 3202
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "call_expression",
-          "structuralHash": "c4a3755c05bf46cc",
-          "semanticHash": "038e0e5c8fb58841"
+          "structuralHash": "49bd192fa744af55",
+          "semanticHash": "067766496eca2acf"
         },
         {
           "kind": "value",
@@ -90,5 +90,5 @@
     }
   ],
   "createdAt": "2026-10-23T13:54:23.970Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

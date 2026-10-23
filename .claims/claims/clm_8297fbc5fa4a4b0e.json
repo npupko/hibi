@@ -10,12 +10,12 @@
         "kind": "text-quote",
         "exact": "`hibi reanchor <id>` while the sibling is not checked out keeps that evidence side as stored and says so in `warnings[]` (`evidence side api:src/limits.ts kept unchanged: sibling repo \"api\" is not checked out at ../api`); the doc side is still re-resolved.",
         "prefix": "lable` with `evidence: path escapes its root`.\n\n",
-        "suffix": "\n\n`hibi list --path api:src/limits.ts` finds the"
+        "suffix": " A remediation command that names `--code-file a"
       },
       {
         "kind": "text-position",
-        "start": 19812,
-        "end": 20068
+        "start": 19900,
+        "end": 20156
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 8044,
-          "end": 8118
+          "start": 10106,
+          "end": 10180
         },
         {
           "kind": "ast-node",
@@ -61,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:24:11.776Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

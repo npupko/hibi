@@ -48,6 +48,9 @@ import { type EvidenceReport, submitEvidence } from "./engine/evidence.ts";
 import { languageForFile } from "./engine/lang.ts";
 import { type ListResult, type ListState, toListRows } from "./engine/list.ts";
 import {
+  type BulkReanchorClaim,
+  type BulkReanchorResult,
+  keptSide,
   type ReanchorCandidate,
   type ReanchorInput,
   type ReanchorResult,
@@ -134,6 +137,9 @@ export {
   type RowState,
 } from "./engine/list.ts";
 export {
+  type BulkReanchorClaim,
+  type BulkReanchorResult,
+  type KeptSide,
   type ReanchorCandidate,
   type ReanchorInput,
   type ReanchorResult,
@@ -639,7 +645,14 @@ export class Engine {
       if (target.file in evidenceContents) continue;
       assertAliasKnown(config, target.file);
       const r = resolveFile(config, target.file, this.store.anchorRoot);
-      if ("unavailable" in r) throw recordRefusal(target.file, r);
+      if ("unavailable" in r) {
+        // A sibling repo that is not checked out: the stored span for that
+        // file is kept as stored (see `reanchor`).
+        if (r.escapes) throw recordRefusal(target.file, r);
+        unavailable.set(target.file, r.reason);
+        evidenceContents[target.file] = null;
+        continue;
+      }
       evidenceContents[target.file] = await this.readAnchored(r.path);
     }
     const analyzer = await this.analyzerFor(Object.keys(evidenceContents));
@@ -661,6 +674,52 @@ export class Engine {
       dryRun: opts.dryRun,
     };
     return reanchor(this.store, contents, input);
+  }
+
+  /**
+   * `reanchor --moved`: plain `reanchor` on every live claim, or on the live
+   * claims of one document (`doc`). Only sides that read `moved` are rebuilt;
+   * `changed`, `ambiguous` and `orphaned` sides are kept as stored and listed.
+   * A claim whose document file is missing keeps its doc side (`orphaned`).
+   * Claims with nothing rebuilt or kept are not listed.
+   */
+  async reanchorMoved(
+    opts: { doc?: string; ref?: string; dryRun?: boolean } = {},
+  ): Promise<BulkReanchorResult> {
+    let claims = (await this.store.allClaims()).filter(
+      (c) => c.enforcement !== "retired",
+    );
+    if (opts.doc !== undefined) {
+      const doc = this.norm(opts.doc);
+      const documentId = documentIdForPath(doc);
+      claims = claims.filter((c) => c.documentId === documentId);
+      if (claims.length === 0) {
+        throw new Error(
+          `no claims are registered for ${doc}; run hibi audit --doc ${doc}`,
+        );
+      }
+    }
+    claims.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const out: BulkReanchorClaim[] = [];
+    let relocated = 0;
+    for (const c of claims) {
+      if ((await this.readAnchored(c.doc.file)) === null) {
+        out.push({
+          id: c.id,
+          relocated: [],
+          kept: [keptSide("doc", c.doc.file, "orphaned", c.kind)],
+        });
+        continue;
+      }
+      const r = await this.reanchor(c.id, {
+        ref: opts.ref,
+        dryRun: opts.dryRun,
+      });
+      if (r.relocated === 0 && r.kept.length === 0) continue;
+      relocated += r.relocated;
+      out.push({ id: c.id, relocated: r.relocatedSides, kept: r.kept });
+    }
+    return { relocated, claims: out };
   }
 
   /**

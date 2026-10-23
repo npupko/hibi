@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 56233,
-        "end": 56351
+        "start": 58002,
+        "end": 58120
       }
     ]
   },
@@ -50,18 +50,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "const defaultBy = str(values.by);",
-          "prefix": "const ref = await currentRef(anchorRoot);\n      ",
-          "suffix": "\n      const fromFile = str(values[\"from-file\"])"
+          "prefix": ";\n  const ref = await currentRef(anchorRoot);\n  ",
+          "suffix": "\n  const fromFile = str(values[\"from-file\"]);\n\n "
         },
         {
           "kind": "text-position",
-          "start": 16327,
-          "end": 16360
+          "start": 3828,
+          "end": 3861
         },
         {
           "kind": "ast-node",
@@ -84,5 +84,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:19:33.532Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

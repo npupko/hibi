@@ -21,18 +21,18 @@
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "count: summaries.length,",
-          "prefix": "     {\n              batch: true,\n              ",
-          "suffix": "\n              updated: results.filter((r) => r."
+          "prefix": "rd\",\n        {\n          batch: true,\n          ",
+          "suffix": "\n          updated: results.filter((r) => r.upda"
         },
         {
           "kind": "text-position",
-          "start": 18757,
-          "end": 18781
+          "start": 5953,
+          "end": 5977
         },
         {
           "kind": "ast-node",
@@ -44,7 +44,7 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
@@ -54,8 +54,8 @@
         },
         {
           "kind": "text-position",
-          "start": 11252,
-          "end": 11296
+          "start": 3345,
+          "end": 3389
         },
         {
           "kind": "ast-node",
@@ -89,5 +89,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:24:07.720Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

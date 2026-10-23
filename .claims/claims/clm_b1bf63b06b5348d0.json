@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "For a `reference` claim, the judge is asked whether the referenced text still supports the sentence only when both sides were located as `unchanged` or `moved`.",
-        "prefix": "ged, with a warning.\n\n## Anchors and the judge\n\n",
+        "prefix": "ut; kept as stored`.\n\n## Anchors and the judge\n\n",
         "suffix": " Otherwise the verdict carries a label such as `"
       },
       {
         "kind": "text-position",
-        "start": 7090,
-        "end": 7250
+        "start": 7256,
+        "end": 7416
       }
     ]
   },
@@ -61,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:19:27.044Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

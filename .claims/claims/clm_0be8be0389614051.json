@@ -9,30 +9,30 @@
       {
         "kind": "text-quote",
         "exact": "- `--suggest` is read-only. It ranks candidate locations for the stored doc and evidence quotes. It cannot be combined with span flags or `--dry-run`.",
-        "prefix": "ut at ../api`. The other sides are re-resolved.\n",
+        "prefix": "\" }] }], \"next\" }`. `--dry-run` writes nothing.\n",
         "suffix": "\n- `--dry-run` computes the result and writes no"
       },
       {
         "kind": "text-position",
-        "start": 6986,
-        "end": 7136
+        "start": 8063,
+        "end": 8213
       }
     ]
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/reanchor.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "\"--suggest is read-only and cannot be combined with span or write flags.\",",
-          "prefix": "(mutation) {\n          return fail(\n            ",
-          "suffix": "\n            mode,\n          );\n        }\n      "
+          "prefix": "\n    if (mutation) {\n      return fail(\n        ",
+          "suffix": "\n        mode,\n      );\n    }\n    try {\n      co"
         },
         {
           "kind": "text-position",
-          "start": 23001,
-          "end": 23075
+          "start": 4754,
+          "end": 4828
         },
         {
           "kind": "ast-node",
@@ -50,18 +50,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/reanchor.ts",
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "values[\"dry-run\"],\n      ].some((f) => f !== undefined && f !== false);",
-          "prefix": "f-quote\"],\n        values[\"ref-range\"],\n        ",
-          "suffix": "\n      if (values.suggest) {\n        if (mutatio"
+          "exact": "values[\"dry-run\"],\n  ].some((f) => f !== undefined && f !== false);",
+          "prefix": "lues[\"ref-quote\"],\n    values[\"ref-range\"],\n    ",
+          "suffix": "\n  if (values.suggest) {\n    if (mutation) {\n   "
         },
         {
           "kind": "text-position",
-          "start": 22842,
-          "end": 22913
+          "start": 4615,
+          "end": 4682
         },
         {
           "kind": "ast-node",
@@ -89,8 +89,8 @@
         },
         {
           "kind": "text-position",
-          "start": 4430,
-          "end": 4463
+          "start": 5461,
+          "end": 5494
         },
         {
           "kind": "ast-node",
@@ -113,5 +113,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:19:29.446Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

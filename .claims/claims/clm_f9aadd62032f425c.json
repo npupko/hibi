@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "`reanchor` re-resolves every span of the claim against the working tree and stores the relocated sides as the new baseline.",
-        "prefix": "                   [--suggest] [--dry-run]\n```\n\n",
+        "prefix": "eanchor --moved [--doc <path>] [--dry-run]\n```\n\n",
         "suffix": " It refreshes the claim's `sentence` from the do"
       },
       {
         "kind": "text-position",
-        "start": 5170,
-        "end": 5293
+        "start": 5394,
+        "end": 5517
       }
     ]
   },
@@ -26,13 +26,13 @@
         {
           "kind": "text-quote",
           "exact": "const before = resolveClaimSides(claim, files, { ast: input.analyzer });",
-          "prefix": "relocated = 0;\n\n  // Resolve every span once.\n  ",
+          "prefix": "edSide[] = [];\n\n  // Resolve every span once.\n  ",
           "suffix": "\n\n  // Doc side.\n  const docFile = input.docPath"
         },
         {
           "kind": "text-position",
-          "start": 9879,
-          "end": 9951
+          "start": 11966,
+          "end": 12038
         },
         {
           "kind": "ast-node",
@@ -54,8 +54,8 @@
         },
         {
           "kind": "text-position",
-          "start": 13151,
-          "end": 13215
+          "start": 15583,
+          "end": 15647
         },
         {
           "kind": "ast-node",
@@ -84,5 +84,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:19:29.164Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 60565,
-        "end": 61233
+        "start": 62334,
+        "end": 63002
       }
     ]
   },
@@ -31,15 +31,15 @@
         },
         {
           "kind": "text-position",
-          "start": 6807,
-          "end": 7791
+          "start": 6818,
+          "end": 7802
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "program",
-          "structuralHash": "551b2dce8b8f3172",
-          "semanticHash": "5409f3409cd1a05c"
+          "structuralHash": "00b2365d4d07aadc",
+          "semanticHash": "8cd6ab4a54f31563"
         },
         {
           "kind": "value",
@@ -54,27 +54,21 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "export const Verdict = z\n  .strictObject({\n    claimId: z.string(),\n    documentId: z.string(),\n    kind: ClaimKind,\n    doc: AnchorState,\n    /** Worst state over the evidence spans; absent when the claim has none. */\n    evidence: EvidenceState.optional(),\n    /** Absent when no judgment applies. */\n    judge: JudgeState.optional(),\n    expired: z.boolean(),\n    conflicts: z.array(ConflictFinding).default([]),\n    gates: z.boolean(),\n    /** True when the verdict warns and does not gate (SPEC 7.4); never both. */\n    warns: z.boolean(),\n    remediation: Remediation.nullable().default(null),\n    detail: VerdictDetail,\n    /** Every reason label: anchors, expiry, judge, conflicts, and gating rules. */\n    reasons: z.array(z.string()).default([]),\n  })\n  .meta({ id: \"Verdict\" });",
-          "prefix": "`check`. Decision fields first, detail last. */\n",
-          "suffix": "\nexport type Verdict = z.infer<typeof Verdict>;\n"
+          "exact": "/** Worst state over the evidence spans, or `retired`; absent when the claim has none. */",
+          "prefix": " not resolved. */\n    doc: VerdictDocState,\n    ",
+          "suffix": "\n    evidence: VerdictEvidenceState.optional(),\n"
         },
         {
           "kind": "text-position",
-          "start": 15641,
-          "end": 16430
+          "start": 16433,
+          "end": 16522
         },
         {
           "kind": "ast-node",
           "language": "typescript",
-          "nodeType": "export_statement",
-          "structuralHash": "0b9f800e74b94741",
-          "semanticHash": "00ca70ac56c99ebd"
-        },
-        {
-          "kind": "value",
-          "language": "typescript",
-          "nodeKind": "array",
-          "value": "[]"
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "dd4a059addcdc735"
         }
       ]
     },
@@ -113,5 +107,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:17:35.548Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

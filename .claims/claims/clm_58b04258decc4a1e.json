@@ -10,12 +10,12 @@
         "kind": "text-quote",
         "exact": "| `audit` | `--doc <path>` (required), `--fail-uncovered` | section 10 |",
         "prefix": "ath <path>`, `--ids-only` | one row per claim |\n",
-        "suffix": "\n| `reanchor <claim-id>` | `--doc <path>` with `"
+        "suffix": "\n| `reanchor <claim-id>`, `reanchor --moved` | `"
       },
       {
         "kind": "text-position",
-        "start": 53836,
-        "end": 53908
+        "start": 55448,
+        "end": 55520
       }
     ]
   },
@@ -90,5 +90,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:18:56.616Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

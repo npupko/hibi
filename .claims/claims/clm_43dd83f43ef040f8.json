@@ -14,25 +14,25 @@
       },
       {
         "kind": "text-position",
-        "start": 7769,
-        "end": 7880
+        "start": 8846,
+        "end": 8957
       }
     ]
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/reanchor.ts",
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "          doc: str(values.doc),\n          docQuote: docSpec?.quote,",
+          "exact": "      doc: str(values.doc),\n      docQuote: docSpec?.quote,",
           "prefix": "const result = await engine.reanchor(claimId, {\n",
-          "suffix": "\n          docRange: docSpec?.quote === undefine"
+          "suffix": "\n      docRange: docSpec?.quote === undefined ? "
         },
         {
           "kind": "text-position",
-          "start": 24052,
-          "end": 24119
+          "start": 5644,
+          "end": 5703
         },
         {
           "kind": "ast-node",
@@ -55,5 +55,5 @@
     }
   ],
   "createdAt": "2026-10-23T14:07:46.677Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

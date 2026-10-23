@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 69672,
-        "end": 69757
+        "start": 72981,
+        "end": 73066
       }
     ]
   },
@@ -49,13 +49,13 @@
         {
           "kind": "text-quote",
           "exact": "const documentId = input.docPath",
-          "prefix": "ocated++;\n      return r.bundle;\n    });\n  }\n\n  ",
+          "prefix": "}\n\n  const relocated = relocatedSides.length;\n  ",
           "suffix": "\n    ? documentIdForPath(input.docPath)\n    : cl"
         },
         {
           "kind": "text-position",
-          "start": 12782,
-          "end": 12814
+          "start": 15214,
+          "end": 15246
         },
         {
           "kind": "ast-node",
@@ -77,8 +77,8 @@
         },
         {
           "kind": "text-position",
-          "start": 10586,
-          "end": 10674
+          "start": 12673,
+          "end": 12761
         },
         {
           "kind": "ast-node",
@@ -101,5 +101,5 @@
     }
   ],
   "createdAt": "2026-10-23T13:55:02.751Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

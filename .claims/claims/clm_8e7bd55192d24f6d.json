@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 5510,
-        "end": 5605
+        "start": 5758,
+        "end": 5853
       }
     ]
   },
@@ -27,12 +27,12 @@
           "kind": "text-quote",
           "exact": "const pContra = r.probabilities.contradictory;",
           "prefix": "ability: 1, reason: values.label };\n    }\n  }\n  ",
-          "suffix": "\n  if (r.relation === \"contradictory\") {\n    con"
+          "suffix": "\n  if (r.relation === \"contradictory\") {\n    // "
         },
         {
           "kind": "text-position",
-          "start": 5866,
-          "end": 5912
+          "start": 6162,
+          "end": 6208
         },
         {
           "kind": "ast-node",
@@ -54,8 +54,8 @@
         },
         {
           "kind": "text-position",
-          "start": 5784,
-          "end": 5853
+          "start": 6080,
+          "end": 6149
         },
         {
           "kind": "ast-node",
@@ -84,5 +84,5 @@
     }
   ],
   "createdAt": "2026-10-23T09:36:14.389Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

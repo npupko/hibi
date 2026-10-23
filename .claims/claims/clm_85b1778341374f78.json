@@ -25,14 +25,14 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "The three `*.response.json` files were recorded from live System One calls on 2026-10-23 (model `jev-1.13.0`), by POSTing the `*.request.json` files in this directory unchanged.",
+          "exact": "The `supports` and `conflict` responses were recorded from live System One calls on 2026-10-23 (model `jev-1.13.0`), and the `triage` response on 2026-10-23 (model `jev-1.14.0`), after the triage questions were rewritten. Each was recorded by POSTing the matching `*.request.json` file in this directory unchanged.",
           "prefix": "# Judge fixtures\n\n",
           "suffix": "\n\nTo re-record, POST each request file to `https"
         },
         {
           "kind": "text-position",
           "start": 18,
-          "end": 195
+          "end": 332
         }
       ]
     }
@@ -48,5 +48,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:31:40.818Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

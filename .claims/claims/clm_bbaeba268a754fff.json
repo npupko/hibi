@@ -10,12 +10,12 @@
         "kind": "text-quote",
         "exact": "CI without the secret still gates on anchors, cached verdicts, and cached conflicts, and on expiry under `check --doc`.",
         "prefix": " |\n\nCached verdicts keep working without a key. ",
-        "suffix": "\n\n## Cost and latency\n\n<Warning>\n  These figures"
+        "suffix": "\n\n## Cost and latency\n\n<Warning>\n  The research "
       },
       {
         "kind": "text-position",
-        "start": 14519,
-        "end": 14638
+        "start": 14669,
+        "end": 14788
       }
     ]
   },
@@ -142,5 +142,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:26:42.153Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

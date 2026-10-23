@@ -14,25 +14,25 @@
       },
       {
         "kind": "text-position",
-        "start": 24670,
-        "end": 24767
+        "start": 24978,
+        "end": 25075
       }
     ]
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/reanchor.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "after: result.after,",
-          "prefix": "{}),\n          before: result.before,\n          ",
-          "suffix": "\n          ...(result.kept.length > 0 ? { kept: "
+          "prefix": "nce } : {}),\n      before: result.before,\n      ",
+          "suffix": "\n      ...(result.kept.length > 0 ? { kept: resu"
         },
         {
           "kind": "text-position",
-          "start": 24873,
-          "end": 24893
+          "start": 6353,
+          "end": 6373
         },
         {
           "kind": "ast-node",
@@ -55,5 +55,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:24:12.959Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

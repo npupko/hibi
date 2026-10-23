@@ -1,209 +1,198 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "claimId": {
-      "type": "string"
-    },
-    "documentId": {
-      "type": "string"
-    },
-    "kind": {
-      "type": "string",
-      "enum": [
-        "code",
-        "reference",
-        "attested"
-      ]
-    },
-    "doc": {
-      "$ref": "#/$defs/AnchorState"
-    },
-    "evidence": {
-      "$ref": "#/$defs/EvidenceState"
-    },
-    "judge": {
-      "type": "string",
-      "enum": [
-        "supported",
-        "refuted",
-        "review",
-        "pending"
-      ]
-    },
-    "expired": {
-      "type": "boolean"
-    },
-    "conflicts": {
-      "default": [],
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "claimId": {
-            "type": "string"
-          },
-          "probability": {
-            "type": "number"
-          },
-          "reason": {
-            "type": "string"
+  "$ref": "#/$defs/Verdict",
+  "$defs": {
+    "Verdict": {
+      "type": "object",
+      "properties": {
+        "claimId": {
+          "type": "string"
+        },
+        "documentId": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "code",
+            "reference",
+            "attested"
+          ]
+        },
+        "doc": {
+          "$ref": "#/$defs/VerdictDocState"
+        },
+        "evidence": {
+          "$ref": "#/$defs/VerdictEvidenceState"
+        },
+        "judge": {
+          "type": "string",
+          "enum": [
+            "supported",
+            "refuted",
+            "review",
+            "pending"
+          ]
+        },
+        "expired": {
+          "type": "boolean"
+        },
+        "conflicts": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "claimId": {
+                "type": "string"
+              },
+              "probability": {
+                "type": "number"
+              },
+              "reason": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "claimId",
+              "probability",
+              "reason"
+            ],
+            "additionalProperties": false
           }
         },
-        "required": [
-          "claimId",
-          "probability",
-          "reason"
-        ],
-        "additionalProperties": false
-      }
-    },
-    "gates": {
-      "type": "boolean"
-    },
-    "warns": {
-      "type": "boolean"
-    },
-    "remediation": {
-      "default": null,
-      "anyOf": [
-        {
+        "gates": {
+          "type": "boolean"
+        },
+        "warns": {
+          "type": "boolean"
+        },
+        "remediation": {
+          "default": null,
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "recommended": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "actions": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "rationale": {
+                        "type": "string"
+                      },
+                      "command": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "title",
+                      "rationale"
+                    ],
+                    "additionalProperties": false
+                  }
+                }
+              },
+              "required": [
+                "recommended",
+                "actions"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "detail": {
           "type": "object",
           "properties": {
-            "recommended": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+            "docRegion": {
+              "$ref": "#/$defs/Region"
             },
-            "actions": {
+            "evidenceRegions": {
+              "default": [],
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/Region"
+              }
+            },
+            "similarity": {
+              "type": "number"
+            },
+            "changes": {
               "default": [],
               "type": "array",
               "items": {
                 "type": "object",
                 "properties": {
-                  "id": {
+                  "path": {
                     "type": "string"
                   },
-                  "title": {
-                    "type": "string"
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "text",
+                      "ast",
+                      "value"
+                    ]
                   },
-                  "rationale": {
-                    "type": "string"
-                  },
-                  "command": {
+                  "detail": {
                     "type": "string"
                   }
                 },
                 "required": [
-                  "id",
-                  "title",
-                  "rationale"
+                  "path",
+                  "kind"
                 ],
                 "additionalProperties": false
               }
             }
           },
           "required": [
-            "recommended",
-            "actions"
+            "evidenceRegions",
+            "changes"
           ],
           "additionalProperties": false
         },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "detail": {
-      "type": "object",
-      "properties": {
-        "docRegion": {
-          "$ref": "#/$defs/Region"
-        },
-        "evidenceRegions": {
+        "reasons": {
           "default": [],
           "type": "array",
           "items": {
-            "$ref": "#/$defs/Region"
-          }
-        },
-        "similarity": {
-          "type": "number"
-        },
-        "changes": {
-          "default": [],
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "path": {
-                "type": "string"
-              },
-              "kind": {
-                "type": "string",
-                "enum": [
-                  "text",
-                  "ast",
-                  "value"
-                ]
-              },
-              "detail": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "path",
-              "kind"
-            ],
-            "additionalProperties": false
+            "type": "string"
           }
         }
       },
       "required": [
-        "evidenceRegions",
-        "changes"
+        "claimId",
+        "documentId",
+        "kind",
+        "doc",
+        "expired",
+        "conflicts",
+        "gates",
+        "warns",
+        "remediation",
+        "detail",
+        "reasons"
       ],
       "additionalProperties": false
     },
-    "reasons": {
-      "default": [],
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    }
-  },
-  "required": [
-    "claimId",
-    "documentId",
-    "kind",
-    "doc",
-    "expired",
-    "conflicts",
-    "gates",
-    "warns",
-    "remediation",
-    "detail",
-    "reasons"
-  ],
-  "additionalProperties": false,
-  "$defs": {
-    "AnchorState": {
-      "type": "string",
-      "enum": [
-        "unchanged",
-        "moved",
-        "changed",
-        "ambiguous",
-        "orphaned"
-      ]
-    },
-    "EvidenceState": {
+    "VerdictDocState": {
       "type": "string",
       "enum": [
         "unchanged",
@@ -211,7 +200,19 @@
         "changed",
         "ambiguous",
         "orphaned",
-        "unavailable"
+        "retired"
+      ]
+    },
+    "VerdictEvidenceState": {
+      "type": "string",
+      "enum": [
+        "unchanged",
+        "moved",
+        "changed",
+        "ambiguous",
+        "orphaned",
+        "unavailable",
+        "retired"
       ]
     },
     "Region": {

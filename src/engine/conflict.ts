@@ -10,7 +10,8 @@
  * | `unrelated` | the judge's `same_subject` floor forced `unrelated`                   | `not the same subject (same_subject=0.12)` |
  * | `conflict`  | `same_subject` >= threshold, `contradicts` >= 0.5, and the values differ | `numbers differ: 29 vs 39` |
  * | `conflict`  | `contradictory`, confidence and `same_subject` >= threshold, `contradicts` >= 0.5 | `contradictory (p=0.93, same_subject=0.95)` |
- * | `review`    | `contradictory` with any of those below its bar                      | `review: contradictory, confidence=0.55 below threshold 0.80` |
+ * | `clean`     | `contradictory` with `same_subject` < threshold                       | `contradictory, same_subject=0.40 below threshold 0.80` |
+ * | `review`    | `contradictory`, `same_subject` >= threshold, confidence < threshold or `contradicts` < 0.5 | `review: contradictory, confidence=0.55 below threshold 0.80`, `review: contradictory, contradicts=0.48 below 0.50` (confidence named when both) |
  * | `duplicate` | `consistent` with `same_subject` >= threshold                         | `consistent and same subject (same_subject=0.95)` |
  * | `clean`     | anything else                                                        | `unrelated (confidence=0.80, same_subject=0.40)` |
  * | `acked`     | a `conflict` or `review` that an `ack` on either claim covers         | `acknowledged: numbers differ: 29 vs 39` |
@@ -38,8 +39,8 @@ import { compareValues, extractValues } from "./values.ts";
 export const MAX_IN_FLIGHT = 8;
 
 /**
- * `contradicts` below this, with a `contradictory` relation, is a review case
- * (SPEC 8.3); below it the value rule does not fire either (SPEC 8.5).
+ * `contradicts` below this, with a `contradictory` relation and `same_subject`
+ * at or above threshold, is a review case (SPEC 9.3); below it the value rule does not fire either (SPEC 8.5).
  */
 export const CONTRADICTS_FLOOR = 0.5;
 
@@ -149,33 +150,32 @@ export function decidePair(
   }
   const pContra = r.probabilities.contradictory;
   if (r.relation === "contradictory") {
-    const below: string[] = [];
-    if (r.contradicts < CONTRADICTS_FLOOR) {
-      below.push(
-        `contradicts=${f2(r.contradicts)} below ${f2(CONTRADICTS_FLOOR)}`,
-      );
+    // A pair that is not about the same subject cannot contradict: clean,
+    // never review. Each label names one condition.
+    if (r.sameSubject < threshold) {
+      return {
+        outcome: "clean",
+        reason: `contradictory, same_subject=${f2(r.sameSubject)} below threshold ${f2(threshold)}`,
+      };
     }
     if (r.confidence < threshold) {
-      below.push(
-        `confidence=${f2(r.confidence)} below threshold ${f2(threshold)}`,
-      );
-    }
-    if (r.sameSubject < threshold) {
-      below.push(
-        `same_subject=${f2(r.sameSubject)} below threshold ${f2(threshold)}`,
-      );
-    }
-    if (below.length === 0) {
       return {
-        outcome: "conflict",
+        outcome: "review",
         probability: pContra,
-        reason: `contradictory (p=${f2(pContra)}, same_subject=${f2(r.sameSubject)})`,
+        reason: `review: contradictory, confidence=${f2(r.confidence)} below threshold ${f2(threshold)}`,
+      };
+    }
+    if (r.contradicts < CONTRADICTS_FLOOR) {
+      return {
+        outcome: "review",
+        probability: pContra,
+        reason: `review: contradictory, contradicts=${f2(r.contradicts)} below ${f2(CONTRADICTS_FLOOR)}`,
       };
     }
     return {
-      outcome: "review",
+      outcome: "conflict",
       probability: pContra,
-      reason: `review: contradictory, ${below.join(", ")}`,
+      reason: `contradictory (p=${f2(pContra)}, same_subject=${f2(r.sameSubject)})`,
     };
   }
   if (r.relation === "consistent" && r.sameSubject >= threshold) {

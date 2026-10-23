@@ -26,13 +26,13 @@
         {
           "kind": "text-quote",
           "exact": "outcome = await judgeReference({",
-          "prefix": "judgeable.reason}`);\n        } else {\n          ",
-          "suffix": "\n            claim: c,\n            ...judgeable."
+          "prefix": ": ${judgeable.reason}`);\n      } else {\n        ",
+          "suffix": "\n          claim: c,\n          ...judgeable.text"
         },
         {
           "kind": "text-position",
-          "start": 16180,
-          "end": 16212
+          "start": 16344,
+          "end": 16376
         },
         {
           "kind": "ast-node",
@@ -101,5 +101,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:26:34.874Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

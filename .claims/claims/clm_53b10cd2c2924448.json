@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "| `orphaned` | `hibi reanchor <id> --suggest`, reanchor with a span, or retire |",
-        "prefix": " sentence if wrong, then `hibi reanchor <id>` |\n",
-        "suffix": "\n| `refuted` | fix sentence or evidence; never r"
+        "prefix": "on `reanchor` command (it names the new span) |\n",
+        "suffix": "\n| `moved` | `hibi reanchor <id>`; every moved c"
       },
       {
         "kind": "text-position",
-        "start": 6091,
-        "end": 6171
+        "start": 6133,
+        "end": 6213
       }
     ]
   },
@@ -61,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:21:33.716Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

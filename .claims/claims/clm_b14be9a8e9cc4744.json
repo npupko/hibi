@@ -14,25 +14,25 @@
       },
       {
         "kind": "text-position",
-        "start": 3329,
-        "end": 3461
+        "start": 3504,
+        "end": 3636
       }
     ]
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/supersede.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "? \"reanchor or retire each orphaned claim, then hibi check\"",
-          "prefix": "d.some((r) => r.doc === \"orphaned\")\n            ",
-          "suffix": "\n            : result.misses.length > 0\n        "
+          "prefix": "cated.some((r) => r.doc === \"orphaned\")\n        ",
+          "suffix": "\n        : result.misses.length > 0\n          ? "
         },
         {
           "kind": "text-position",
-          "start": 26670,
-          "end": 26729
+          "start": 780,
+          "end": 839
         },
         {
           "kind": "ast-node",
@@ -89,8 +89,8 @@
         },
         {
           "kind": "text-position",
-          "start": 9970,
-          "end": 10018
+          "start": 12057,
+          "end": 12105
         },
         {
           "kind": "ast-node",
@@ -118,5 +118,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:19:28.799Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

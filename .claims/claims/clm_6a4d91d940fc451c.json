@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 12509,
-        "end": 12798
+        "start": 12840,
+        "end": 13129
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 20621,
-          "end": 20666
+          "start": 20625,
+          "end": 20670
         },
         {
           "kind": "ast-node",
@@ -54,8 +54,8 @@
         },
         {
           "kind": "text-position",
-          "start": 20733,
-          "end": 20804
+          "start": 20737,
+          "end": 20808
         },
         {
           "kind": "ast-node",
@@ -77,21 +77,27 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "const REPORTABLE_STATE: ReadonlySet<EvidenceState> = new Set<EvidenceState>([",
+          "exact": "const REPORTABLE_STATE: ReadonlySet<string> = new Set<EvidenceState>([\n  \"orphaned\",\n  \"ambiguous\",\n  \"changed\",\n  \"moved\",\n  \"unavailable\",\n]);",
           "prefix": "unavailable\",\n  \"superseded\",\n  \"archived\",\n];\n\n",
-          "suffix": "\n  \"orphaned\",\n  \"ambiguous\",\n  \"changed\",\n  \"mo"
+          "suffix": "\n\nconst REPORTABLE_JUDGE: ReadonlySet<JudgeState"
         },
         {
           "kind": "text-position",
-          "start": 5633,
-          "end": 5710
+          "start": 5651,
+          "end": 5795
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "lexical_declaration",
-          "structuralHash": "7741c20c0801d1c6",
-          "semanticHash": "c237c25821dea49e"
+          "structuralHash": "2a6d5dc95c93fb3c",
+          "semanticHash": "dbe447898a1a571f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"orphaned\",\"ambiguous\",\"changed\",\"moved\",\"unavailable\",]"
         }
       ]
     }
@@ -107,5 +113,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:28:17.113Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

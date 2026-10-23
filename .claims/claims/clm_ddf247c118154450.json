@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 23351,
-        "end": 23496
+        "start": 23899,
+        "end": 24044
       }
     ]
   },
@@ -78,13 +78,13 @@
         {
           "kind": "text-quote",
           "exact": "findingReasons.push(`judge: ${judgeable.reason}`);",
-          "prefix": "\n        if (\"reason\" in judgeable) {\n          ",
-          "suffix": "\n        } else {\n          outcome = await judg"
+          "prefix": "xt);\n      if (\"reason\" in judgeable) {\n        ",
+          "suffix": "\n      } else {\n        outcome = await judgeRef"
         },
         {
           "kind": "text-position",
-          "start": 16102,
-          "end": 16152
+          "start": 16270,
+          "end": 16320
         },
         {
           "kind": "ast-node",
@@ -107,5 +107,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:41.867Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

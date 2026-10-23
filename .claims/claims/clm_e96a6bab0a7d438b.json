@@ -2,20 +2,20 @@
   "id": "clm_e96a6bab0a7d438b",
   "documentId": "doc_02e774903d42ecc3",
   "kind": "code",
-  "sentence": "| `doc` | `unchanged / moved / changed / ambiguous / orphaned` |",
+  "sentence": "| `doc` | `unchanged / moved / changed / ambiguous / orphaned`, or `retired` for a retired claim |",
   "doc": {
     "file": "design/SPEC.md",
     "selectors": [
       {
         "kind": "text-quote",
-        "exact": "| `doc` | `unchanged / moved / changed / ambiguous / orphaned` |",
+        "exact": "| `doc` | `unchanged / moved / changed / ambiguous / orphaned`, or `retired` for a retired claim |",
         "prefix": "oduces a verdict:\n\n| field | values |\n|---|---|\n",
         "suffix": "\n| `evidence` | same five, plus `unavailable`; t"
       },
       {
         "kind": "text-position",
-        "start": 21491,
-        "end": 21555
+        "start": 21623,
+        "end": 21721
       }
     ]
   },
@@ -25,14 +25,14 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "    \"unchanged\", // found, same text, same place\n    \"moved\", // found, same text, new place\n    \"changed\", // found, text or structure differs\n    \"ambiguous\", // matches in several places equally well\n    \"orphaned\", // not found",
-          "prefix": "7.1). */\nexport const AnchorState = z\n  .enum([\n",
-          "suffix": "\n  ])\n  .meta({ id: \"AnchorState\" });\nexport typ"
+          "exact": "\"unchanged\", // found, same text, same place",
+          "prefix": ". */\nexport const AnchorState = z\n  .enum([\n    ",
+          "suffix": "\n    \"moved\", // found, same text, new place\n   "
         },
         {
           "kind": "text-position",
-          "start": 2471,
-          "end": 2702
+          "start": 2475,
+          "end": 2519
         },
         {
           "kind": "ast-node",
@@ -50,25 +50,31 @@
       ]
     },
     {
-      "file": "src/core/model.ts",
+      "file": "src/algo/resolve.ts",
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "    doc: AnchorState,\n    /** Worst state over the evidence spans; absent when the claim has none. */",
-          "prefix": "   documentId: z.string(),\n    kind: ClaimKind,\n",
-          "suffix": "\n    evidence: EvidenceState.optional(),\n    /**"
+          "exact": "    doc: \"retired\",\n    ...(claim.evidence.length > 0 ? { evidence: \"retired\" as const } : {}),",
+          "prefix": "mentId: claim.documentId,\n    kind: claim.kind,\n",
+          "suffix": "\n    expired: false,\n    conflicts: [],\n    gate"
         },
         {
           "kind": "text-position",
-          "start": 15758,
-          "end": 15859
+          "start": 16623,
+          "end": 16718
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "object",
-          "structuralHash": "8ae717a489f1b920",
-          "semanticHash": "0335d51a879290ad"
+          "structuralHash": "712470056945b50d",
+          "semanticHash": "3cbaadd6173075f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired\""
         }
       ]
     }
@@ -84,5 +90,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:01.054Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 68704,
-        "end": 68792
+        "start": 70636,
+        "end": 70724
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 10922,
-          "end": 10977
+          "start": 13009,
+          "end": 13064
         },
         {
           "kind": "ast-node",
@@ -49,13 +49,13 @@
         {
           "kind": "text-quote",
           "exact": "? documentIdForPath(input.docPath)",
-          "prefix": "});\n  }\n\n  const documentId = input.docPath\n    ",
+          "prefix": ".length;\n  const documentId = input.docPath\n    ",
           "suffix": "\n    : claim.documentId;\n\n  const next: Claim = "
         },
         {
           "kind": "text-position",
-          "start": 12819,
-          "end": 12853
+          "start": 15251,
+          "end": 15285
         },
         {
           "kind": "ast-node",
@@ -78,5 +78,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:18:20.429Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

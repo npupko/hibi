@@ -2,20 +2,20 @@
   "id": "clm_79778c83c8dc418e",
   "documentId": "doc_02e774903d42ecc3",
   "kind": "code",
-  "sentence": "A claim whose `enforcement` is `retired` gets no judge state and no conflict findings.",
+  "sentence": "A claim whose `enforcement` is `retired` is not resolved: its spans are not located, the judge and the contradiction pass skip it, and expiry is not computed.",
   "doc": {
     "file": "design/SPEC.md",
     "selectors": [
       {
         "kind": "text-quote",
-        "exact": "A claim whose `enforcement` is `retired` gets no judge state and no conflict findings.",
+        "exact": "A claim whose `enforcement` is `retired` is not resolved: its spans are not located, the judge and the contradiction pass skip it, and expiry is not computed.",
         "prefix": "` block (located regions, similarity, changes). ",
-        "suffix": "\n\n### 7.3 When the judge is consulted\n\nEvery jud"
+        "suffix": " Its verdict has `doc: retired`, `evidence: reti"
       },
       {
         "kind": "text-position",
-        "start": 22654,
-        "end": 22740
+        "start": 22851,
+        "end": 23009
       }
     ]
   },
@@ -25,21 +25,21 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "    if (c.enforcement !== \"retired\") {\n      if (c.kind === \"reference\") {",
-          "prefix": "fined;\n    const findingReasons: string[] = [];\n",
-          "suffix": "\n        const judgeable = referenceTexts(c, sid"
+          "exact": "    if (c.enforcement === \"retired\") {\n      verdicts.push(retiredVerdict(c));",
+          "prefix": " is not resolved, judged, or listed (SPEC 7.2).\n",
+          "suffix": "\n      statusTags.set(c.id, []);\n      continue;"
         },
         {
           "kind": "text-position",
-          "start": 15919,
-          "end": 15993
+          "start": 15350,
+          "end": 15428
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "if_statement",
-          "structuralHash": "e96fafbc82ef8ab2",
-          "semanticHash": "f8ba46f6e4d7238d"
+          "structuralHash": "e0088e9e7c34a314",
+          "semanticHash": "49134033309ec2bc"
         },
         {
           "kind": "value",
@@ -54,56 +54,27 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "const live = c.enforcement !== \"retired\";",
-          "prefix": " : \"\"}; it no longer warns`,\n      );\n    }\n    ",
-          "suffix": "\n    const reviews =\n      live && pass !== unde"
+          "exact": "if (enforcement === \"retired\") return false;",
+          "prefix": "mentById.get(v.claimId) ?? \"suggested\";\n        ",
+          "suffix": "\n        return v.gates || v.warns || docHasLife"
         },
         {
           "kind": "text-position",
-          "start": 16893,
-          "end": 16934
+          "start": 20572,
+          "end": 20616
         },
         {
           "kind": "ast-node",
           "language": "typescript",
-          "nodeType": "lexical_declaration",
-          "structuralHash": "534d390e34567a9e",
-          "semanticHash": "5da4ed5821b1d80b"
+          "nodeType": "if_statement",
+          "structuralHash": "7477fb43ff78511c",
+          "semanticHash": "b18cabe812faa35f"
         },
         {
           "kind": "value",
           "language": "typescript",
           "nodeKind": "string",
           "value": "\"retired\""
-        }
-      ]
-    },
-    {
-      "file": "src/engine/check.ts",
-      "selectors": [
-        {
-          "kind": "text-quote",
-          "exact": "conflicts: live && pass !== undefined ? conflictsFor(pass, c.id) : [],",
-          "prefix": "Findings = {\n      judge: outcome?.state,\n      ",
-          "suffix": "\n      warnings,\n      reasons: [\n        ...(ou"
-        },
-        {
-          "kind": "text-position",
-          "start": 17359,
-          "end": 17429
-        },
-        {
-          "kind": "ast-node",
-          "language": "typescript",
-          "nodeType": "pair",
-          "structuralHash": "8f994536793a1c39",
-          "semanticHash": "793bde7436a13ab8"
-        },
-        {
-          "kind": "value",
-          "language": "typescript",
-          "nodeKind": "undefined",
-          "value": "undefined"
         }
       ]
     }
@@ -119,5 +90,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:28.540Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

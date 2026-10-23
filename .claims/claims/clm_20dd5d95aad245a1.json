@@ -21,7 +21,7 @@
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/init.ts",
       "selectors": [
         {
           "kind": "text-quote",
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 10678,
-          "end": 10746
+          "start": 826,
+          "end": 894
         },
         {
           "kind": "ast-node",
@@ -61,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:25:22.717Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

@@ -362,20 +362,24 @@ export const COMMANDS: CommandSpec[] = [
   {
     name: "reanchor",
     summary:
-      "Re-resolve a claim's spans and store the new baseline; or list candidate locations with --suggest.",
+      "Re-resolve a claim's spans and store the new baseline; relocate every moved side with --moved; or list candidate locations with --suggest.",
     description:
-      "Without span flags only a side that reads moved is relocated; a side that reads changed, ambiguous, or orphaned is kept as stored and the result names the flag to pass (doc: changed; pass --doc-quote to re-anchor). Exit 1 when a side needed relocating and none was relocated. An evidence side in a sibling repo that is not checked out is kept as stored, with a warning. The doc and ref flags may each be given once; a value starting with - takes the --flag=<value> form. --doc moves the claim to a different document (requires a doc span). --code-file is repeatable: each one opens a span that takes the --code-quote or --code-range after it, and the spans given replace all of a code claim's spans, in order. --ref-* flags replace a reference claim's span. The claim's sentence is refreshed from the new doc span.",
+      "Without span flags only a side that reads moved is relocated; a side that reads changed, ambiguous, or orphaned is kept as stored and the result names the flag to pass (doc: changed; pass --doc-quote to re-anchor). Exit 1 when a side needed relocating and none was relocated. An evidence side in a sibling repo that is not checked out is kept as stored, with a warning; an explicit --code-file in such a repo keeps the stored span for that file (evidence: repository <alias> not checked out; kept as stored). --moved takes no claim id: it applies the same rule to every live claim in the store, or only to the claims of the document given with --doc, lists each claim with a side relocated or kept, and exits 0. The doc and ref flags may each be given once; a value starting with - takes the --flag=<value> form. --doc moves the claim to a different document (requires a doc span). --code-file is repeatable: each one opens a span that takes the --code-quote or --code-range after it, and the spans given replace all of a code claim's spans, in order. --ref-* flags replace a reference claim's span. The claim's sentence is refreshed from the new doc span.",
+    usage: [
+      "hibi reanchor <claim-id> [span flags] [--dry-run]",
+      "hibi reanchor <claim-id> --suggest",
+      "hibi reanchor --moved [--doc <path>] [--dry-run]",
+    ],
     positional: {
       name: "claim-id",
-      help: "The claim to reanchor.",
-      required: true,
+      help: "The claim to reanchor. Omitted with --moved.",
     },
     options: [
       {
         name: "doc",
         type: "string",
         placeholder: "<path>",
-        help: "Move the doc anchor to this document (with --doc-quote or --doc-range).",
+        help: "Move the doc anchor to this document (with --doc-quote or --doc-range). With --moved: only the claims of this document.",
       },
       ...DOC_SPAN,
       ...codeSpan(true),
@@ -385,11 +389,18 @@ export const COMMANDS: CommandSpec[] = [
         type: "boolean",
         help: "Read-only: rank candidate locations for the stored doc and evidence quotes.",
       },
+      {
+        name: "moved",
+        type: "boolean",
+        help: "Relocate every live claim side that reads moved (no claim id); --doc restricts it to one document.",
+      },
       DRY_RUN,
     ],
     examples: [
       "hibi reanchor clm_1a2b3c4d5e6f7a8b",
       "hibi reanchor clm_1a2b3c4d5e6f7a8b --suggest",
+      "hibi reanchor --moved",
+      "hibi reanchor --moved --doc README.md --dry-run",
       'hibi reanchor clm_1a2b3c4d5e6f7a8b --doc docs/retry.md --doc-quote "Retries are capped at 5 attempts"',
     ],
   },

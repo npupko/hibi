@@ -1,0 +1,59 @@
+{
+  "id": "clm_8c2aa49683eb4532",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A span in a sibling repo that is not checked out is kept as stored when the command runs (see **reanchor**).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A span in a sibling repo that is not checked out is kept as stored when the command runs (see **reanchor**).",
+        "prefix": "for the others, so running it keeps every span. ",
+        "suffix": " An `orphaned` side gets `hibi reanchor <id> --s"
+      },
+      {
+        "kind": "text-position",
+        "start": 65231,
+        "end": 65339
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "        return keepUnavailableTarget(claim, i, t, reason, kept);",
+          "prefix": ".get(t.file);\n      if (reason !== undefined) {\n",
+          "suffix": "\n      }\n      relocatedSides.push({ side: \"evid"
+        },
+        {
+          "kind": "text-position",
+          "start": 14559,
+          "end": 14623
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "a548de58aa643023",
+          "semanticHash": "05d719742b2e400e"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:50.886Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:50.886Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

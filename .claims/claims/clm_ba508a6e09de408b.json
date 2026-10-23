@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "| `summary.conflictPass` | `{ pairs, requests, pending, scope }`: pairs judged, judge requests answered in this run, pairs still pending, and `store` (every pair) or `doc` (only pairs with a claim in the `--doc` document) |",
-        "prefix": "s are in none of `gating`, `warning`, `clean` |\n",
+        "prefix": " the number of verdicts with `doc: \"retired\"` |\n",
         "suffix": "\n| `documents[].suspect[]` | per claim that gate"
       },
       {
         "kind": "text-position",
-        "start": 12285,
-        "end": 12508
+        "start": 12616,
+        "end": 12839
       }
     ]
   },
@@ -148,5 +148,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:28:17.025Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

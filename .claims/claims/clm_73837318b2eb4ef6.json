@@ -1,0 +1,108 @@
+{
+  "id": "clm_73837318b2eb4ef6",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 63 | a `contradictory` pair with `same_subject` below threshold is `clean`, never `review`; a conflict reason label names one condition, and a `review` label names confidence when both confidence and `contradicts` are below their bars; decoding is at read time, so request keys and cached verdicts do not change |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 63 | a `contradictory` pair with `same_subject` below threshold is `clean`, never `review`; a conflict reason label names one condition, and a `review` label names confidence when both confidence and `contradicts` are below their bars; decoding is at read time, so request keys and cached verdicts do not change |",
+        "prefix": "writer after the batch wrote it is left alone |\n",
+        "suffix": "\n| 64 | a `retired` claim is not resolved, judge"
+      },
+      {
+        "kind": "text-position",
+        "start": 88737,
+        "end": 89052
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `contradictory, same_subject=${f2(r.sameSubject)} below threshold ${f2(threshold)}`,",
+          "prefix": "     return {\n        outcome: \"clean\",\n        ",
+          "suffix": "\n      };\n    }\n    if (r.confidence < threshold"
+        },
+        {
+          "kind": "text-position",
+          "start": 6463,
+          "end": 6555
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "453c24b1bf22b001",
+          "semanticHash": "92546be632cdb7e7"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `review: contradictory, confidence=${f2(r.confidence)} below threshold ${f2(threshold)}`,",
+          "prefix": "\"review\",\n        probability: pContra,\n        ",
+          "suffix": "\n      };\n    }\n    if (r.contradicts < CONTRADI"
+        },
+        {
+          "kind": "text-position",
+          "start": 6687,
+          "end": 6784
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "453c24b1bf22b001",
+          "semanticHash": "ebdbdb1b96fa876a"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:54.851Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:21:45.893Z",
+      "basis": "ack",
+      "note": "value rule read the decision row number 63 as a value; the row and the sentence state compatible thresholds (0.3 forced-unrelated floor vs same_subject threshold)",
+      "ack": {
+        "pairId": "clm_5b5dcfa9191f4be8:clm_73837318b2eb4ef6",
+        "sentenceHashes": [
+          "df700f3ad3d55e34b325c956622a06ef015987e5f09fbe1f5aa38acd75d57186",
+          "ea92d9b0ec77d652a7ec1d2b4749054ee121aa2a2f5f6f982e2e5b904b036d55"
+        ]
+      }
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:21:45.949Z",
+      "basis": "ack",
+      "note": "value rule read the decision row number 63 as a value; both say contradicts below 0.5 is review, not a finding",
+      "ack": {
+        "pairId": "clm_73837318b2eb4ef6:clm_d64e32c4e9f54d45",
+        "sentenceHashes": [
+          "ea92d9b0ec77d652a7ec1d2b4749054ee121aa2a2f5f6f982e2e5b904b036d55",
+          "f3dd4d044660908769fed6809fcb9f966fa636c75db3989becfb0c75e08dd30d"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:54.851Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

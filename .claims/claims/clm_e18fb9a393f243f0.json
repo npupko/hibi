@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "Exit codes: `0` clean or warnings only; `2` gating: a `changed`, `orphaned`, or `ambiguous` side, `refuted`, a conflict, or `expired` under `--doc`; `1` operational error, including `check --doc` on a path with no registered claims.",
-        "prefix": "y `<enforcement> claim: never gates or warns`.\n\n",
+        "prefix": "ed claim: never gates or warns` (section 7.2).\n\n",
         "suffix": " A judge that is unreachable or whose answer can"
       },
       {
         "kind": "text-position",
-        "start": 26886,
-        "end": 27118
+        "start": 27703,
+        "end": 27935
       }
     ]
   },
@@ -60,8 +60,8 @@
         },
         {
           "kind": "text-position",
-          "start": 12797,
-          "end": 12864
+          "start": 12932,
+          "end": 12999
         },
         {
           "kind": "ast-node",
@@ -168,8 +168,21 @@
       "by": "agent:claude-dogfood",
       "at": "2026-10-23T08:20:48.843Z",
       "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:21:46.005Z",
+      "basis": "ack",
+      "note": "different commands: the SPEC line lists check's exit codes; the cookbook sentence is about reanchor exiting 1 when every side needing relocation was left as stored",
+      "ack": {
+        "pairId": "clm_8fece7a65c9544fa:clm_e18fb9a393f243f0",
+        "sentenceHashes": [
+          "2af2130c9cb94b9cbb9eee239165a14a0924f92322df17d68f70fda7009af347",
+          "31e807ad5de15a9677853fc328dec1111047f580d16b11d79d8def208a7646c9"
+        ]
+      }
     }
   ],
   "createdAt": "2026-10-23T08:20:48.843Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

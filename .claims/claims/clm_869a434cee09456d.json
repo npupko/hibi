@@ -2,20 +2,20 @@
   "id": "clm_869a434cee09456d",
   "documentId": "doc_02e774903d42ecc3",
   "kind": "reference",
-  "sentence": "The judge fixtures in `test/fixtures/judge/` were recorded from live System One calls on 2026-10-23 against `jev-1.13.0` (see `test/fixtures/judge/README.md`).",
+  "sentence": "The judge fixtures in `test/fixtures/judge/` were recorded from live System One calls on 2026-10-23: `supports` and `conflict` against `jev-1.13.0`, `triage` against `jev-1.14.0` (see `test/fixtures/judge/README.md`).",
   "doc": {
     "file": "design/SPEC.md",
     "selectors": [
       {
         "kind": "text-quote",
-        "exact": "The judge fixtures in `test/fixtures/judge/` were recorded from live System One calls on 2026-10-23 against `jev-1.13.0` (see `test/fixtures/judge/README.md`).",
+        "exact": "The judge fixtures in `test/fixtures/judge/` were recorded from live System One calls on 2026-10-23: `supports` and `conflict` against `jev-1.13.0`, `triage` against `jev-1.14.0` (see `test/fixtures/judge/README.md`).",
         "prefix": "ntil fixtures exist for the failures observed.\n\n",
         "suffix": " The requests are the exact bodies the adapter s"
       },
       {
         "kind": "text-position",
-        "start": 75102,
-        "end": 75261
+        "start": 78504,
+        "end": 78721
       }
     ]
   },
@@ -25,14 +25,14 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "recorded from live System One calls on 2026-10-23 (model `jev-1.13.0`)",
-          "prefix": "ixtures\n\nThe three `*.response.json` files were ",
-          "suffix": ", by POSTing the `*.request.json` files in this "
+          "exact": "The `supports` and `conflict` responses were recorded from live System One calls on 2026-10-23 (model `jev-1.13.0`), and the `triage` response on 2026-10-23 (model `jev-1.14.0`), after the triage questions were rewritten. Each was recorded by POSTing the matching `*.request.json` file in this directory unchanged.",
+          "prefix": "# Judge fixtures\n\n",
+          "suffix": "\n\nTo re-record, POST each request file to `https"
         },
         {
           "kind": "text-position",
-          "start": 57,
-          "end": 127
+          "start": 18,
+          "end": 332
         }
       ]
     }
@@ -48,5 +48,5 @@
     }
   ],
   "createdAt": "2026-10-23T13:55:03.484Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

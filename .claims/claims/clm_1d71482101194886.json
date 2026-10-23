@@ -14,25 +14,25 @@
       },
       {
         "kind": "text-position",
-        "start": 55233,
-        "end": 55315
+        "start": 57002,
+        "end": 57084
       }
     ]
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/schema.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "z.toJSONSchema(schema, { target: \"draft-2020-12\", reused: \"inline\" }),",
-          "prefix": "      );\n        }\n        await out(\n          ",
-          "suffix": "\n          pretty,\n        );\n      } else {\n   "
+          "prefix": "      mode,\n      );\n    }\n    await out(\n      ",
+          "suffix": "\n      pretty,\n    );\n  } else {\n    await out(e"
         },
         {
           "kind": "text-position",
-          "start": 31443,
-          "end": 31513
+          "start": 906,
+          "end": 976
         },
         {
           "kind": "ast-node",
@@ -61,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-23T13:54:07.147Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

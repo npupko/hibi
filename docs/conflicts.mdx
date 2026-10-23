@@ -58,9 +58,9 @@ Every pair ends with one outcome and one reason label. `threshold` is `judge.thr
 | `unrelated` | `same_subject` below 0.3 forced the relation to `unrelated` | `not the same subject (same_subject=0.12)` |
 | `conflict` | `same_subject` at or above the threshold, `contradicts` at or above 0.5, and the two sentences hold different values of the same kind and unit | `numbers differ: 29 vs 39` |
 | `conflict` | `contradictory`, with confidence and `same_subject` at or above the threshold and `contradicts` at or above 0.5 | `contradictory (p=0.93, same_subject=0.95)` |
-| `review` | `contradictory`, with any of those three below its bar | `review: contradictory, confidence=0.55 below threshold 0.80` |
+| `review` | `contradictory`, with `same_subject` at or above the threshold and confidence below the threshold or `contradicts` below 0.5 | `review: contradictory, confidence=0.55 below threshold 0.80`, `review: contradictory, contradicts=0.48 below 0.50` |
 | `duplicate` | `consistent`, with `same_subject` at or above the threshold | `consistent and same subject (same_subject=0.95)` |
-| `clean` | anything else | `unrelated (confidence=0.80, same_subject=0.40)` |
+| `clean` | anything else, including `contradictory` with `same_subject` below the threshold | `contradictory, same_subject=0.40 below threshold 0.80`, `unrelated (confidence=0.80, same_subject=0.40)` |
 | `acked` | a `conflict` or `review` that an ack on either claim covers | `acknowledged: numbers differ: 29 vs 39` |
 | `pending` | the judge was unavailable, or its answer could not be used | `judge unavailable: TYPESAFE_API_KEY is not set; the judge cannot answer.`, `judge error: TypeSafe returned HTTP 400: …` |
 

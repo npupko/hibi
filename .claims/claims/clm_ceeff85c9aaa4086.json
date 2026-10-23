@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 58141,
-        "end": 58277
+        "start": 59910,
+        "end": 60046
       }
     ]
   },
@@ -79,25 +79,25 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "fromFile !== undefined,",
-          "prefix": " items,\n          { ref, defaultBy },\n          ",
-          "suffix": "\n        );\n      } catch (e) {\n        if (e in"
+          "exact": "calls = parseRecordItems(items, { ref, defaultBy }, fromFile !== undefined);",
+          "prefix": "m];\n  }\n\n  let calls: RecordCall[];\n  try {\n    ",
+          "suffix": "\n  } catch (e) {\n    if (e instanceof RecordVali"
         },
         {
           "kind": "text-position",
-          "start": 17735,
-          "end": 17758
+          "start": 4997,
+          "end": 5073
         },
         {
           "kind": "ast-node",
           "language": "typescript",
-          "nodeType": "binary_expression",
-          "structuralHash": "6c2abe5e7de66966",
-          "semanticHash": "fe2fd7c6dad969b2"
+          "nodeType": "assignment_expression",
+          "structuralHash": "772fe60f13ca397a",
+          "semanticHash": "999b53f1db5165b7"
         },
         {
           "kind": "value",
@@ -119,5 +119,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:19:34.212Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

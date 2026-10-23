@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "A single region that does not fit is an error.",
-        "prefix": "nd `regions[i]` paths index within the request. ",
+        "prefix": "regions and answers about a neighboring region. ",
         "suffix": "\n- Sentences and evidence are always passed as n"
       },
       {
         "kind": "text-position",
-        "start": 32245,
-        "end": 32291
+        "start": 33302,
+        "end": 33348
       }
     ]
   },
@@ -55,5 +55,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:51.366Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

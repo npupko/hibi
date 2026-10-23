@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 5294,
-        "end": 5379
+        "start": 5518,
+        "end": 5603
       }
     ]
   },
@@ -25,21 +25,27 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "      sentence = regionText(contents.docContent, docRegion);\n      relocated++;",
+          "exact": "      sentence = regionText(contents.docContent, docRegion);\n      relocatedSides.push({ side: \"doc\", file: docFile });",
           "prefix": "undle(docFile, contents.docContent, docRegion);\n",
           "suffix": "\n    } else {\n      docBundle = claim.doc;\n     "
         },
         {
           "kind": "text-position",
-          "start": 11611,
-          "end": 11690
+          "start": 13698,
+          "end": 13817
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "statement_block",
-          "structuralHash": "829cafae5b6552ad",
-          "semanticHash": "f1e2b1c2036768ce"
+          "structuralHash": "6dd09ac9957a8542",
+          "semanticHash": "a68a1754ff193f7e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"doc\""
         }
       ]
     }
@@ -55,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:19:29.201Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

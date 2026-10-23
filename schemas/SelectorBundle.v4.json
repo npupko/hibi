@@ -1,24 +1,27 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "file": {
-      "type": "string"
-    },
-    "selectors": {
-      "minItems": 1,
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/Selector"
-      }
-    }
-  },
-  "required": [
-    "file",
-    "selectors"
-  ],
-  "additionalProperties": false,
+  "$ref": "#/$defs/SelectorBundle",
   "$defs": {
+    "SelectorBundle": {
+      "type": "object",
+      "properties": {
+        "file": {
+          "type": "string"
+        },
+        "selectors": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Selector"
+          }
+        }
+      },
+      "required": [
+        "file",
+        "selectors"
+      ],
+      "additionalProperties": false
+    },
     "Selector": {
       "oneOf": [
         {

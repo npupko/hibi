@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 62027,
-        "end": 62051
+        "start": 63850,
+        "end": 63874
       }
     ]
   },
@@ -25,21 +25,21 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "const REPORTABLE_STATE: ReadonlySet<EvidenceState> = new Set<EvidenceState>([\n  \"orphaned\",\n  \"ambiguous\",\n  \"changed\",\n  \"moved\",\n  \"unavailable\",\n]);",
+          "exact": "const REPORTABLE_STATE: ReadonlySet<string> = new Set<EvidenceState>([\n  \"orphaned\",\n  \"ambiguous\",\n  \"changed\",\n  \"moved\",\n  \"unavailable\",\n]);",
           "prefix": "unavailable\",\n  \"superseded\",\n  \"archived\",\n];\n\n",
           "suffix": "\n\nconst REPORTABLE_JUDGE: ReadonlySet<JudgeState"
         },
         {
           "kind": "text-position",
-          "start": 5633,
-          "end": 5784
+          "start": 5651,
+          "end": 5795
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "lexical_declaration",
-          "structuralHash": "7741c20c0801d1c6",
-          "semanticHash": "c237c25821dea49e"
+          "structuralHash": "2a6d5dc95c93fb3c",
+          "semanticHash": "dbe447898a1a571f"
         },
         {
           "kind": "value",
@@ -61,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:17:35.629Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

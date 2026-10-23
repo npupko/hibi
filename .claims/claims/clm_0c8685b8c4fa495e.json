@@ -25,27 +25,27 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "\"Re-resolve a claim's spans and store the new baseline; or list candidate locations with --suggest.\",",
+          "exact": "\"Re-resolve a claim's spans and store the new baseline; relocate every moved side with --moved; or list candidate locations with --suggest.\",",
           "prefix": "},\n  {\n    name: \"reanchor\",\n    summary:\n      ",
-          "suffix": "\n    description:\n      \"Without span flags each"
+          "suffix": "\n    description:\n      \"Without span flags only"
         },
         {
           "kind": "text-position",
           "start": 13271,
-          "end": 13372
+          "end": 13412
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "string",
           "structuralHash": "19cf82e6c268509f",
-          "semanticHash": "34d2d5798b7ab513"
+          "semanticHash": "bc089d9bf11692e4"
         },
         {
           "kind": "value",
           "language": "typescript",
           "nodeKind": "string",
-          "value": "\"Re-resolve a claim's spans and store the new baseline; or list candidate locations with --suggest.\""
+          "value": "\"Re-resolve a claim's spans and store the new baseline; relocate every moved side with --moved; or list candidate locations with --suggest.\""
         }
       ]
     },
@@ -60,8 +60,8 @@
         },
         {
           "kind": "text-position",
-          "start": 6735,
-          "end": 6766
+          "start": 6746,
+          "end": 6777
         },
         {
           "kind": "ast-node",
@@ -84,5 +84,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:23:52.587Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

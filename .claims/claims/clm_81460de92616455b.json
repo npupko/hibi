@@ -10,12 +10,12 @@
         "kind": "text-quote",
         "exact": "A `suggested` claim that would gate or warn gets the label `suggested claim: never gates or warns`.",
         "prefix": "uggested` or `retired` claim | never | never |\n\n",
-        "suffix": "\n\n## Exit codes\n\n| code | meaning |\n|---|---|\n| "
+        "suffix": " A `retired` claim is not resolved: its verdict "
       },
       {
         "kind": "text-position",
-        "start": 3667,
-        "end": 3766
+        "start": 3729,
+        "end": 3828
       }
     ]
   },
@@ -55,5 +55,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:28:12.549Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

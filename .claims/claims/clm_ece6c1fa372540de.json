@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 17475,
-        "end": 17522
+        "start": 17563,
+        "end": 17610
       }
     ]
   },
@@ -50,18 +50,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/attest.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "await emit(mode, envelope(\"attest\", { ...result }, \"hibi check\"), () =>",
-          "prefix": "fined : parseAck(ackValue),\n        });\n        ",
-          "suffix": "\n          renderAttest(result, style, mode),\n  "
+          "prefix": "d ? undefined : parseAck(ackValue),\n    });\n    ",
+          "suffix": "\n      renderAttest(result, style, mode),\n    );"
         },
         {
           "kind": "text-position",
-          "start": 30615,
-          "end": 30686
+          "start": 773,
+          "end": 844
         },
         {
           "kind": "ast-node",
@@ -90,5 +90,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:24:10.617Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

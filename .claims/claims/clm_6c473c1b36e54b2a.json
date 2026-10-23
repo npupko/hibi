@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "| `judge` | `supported / refuted / review / pending`; absent when no judgment applies |",
-        "prefix": " sides; absent when there is no evidence side |\n",
+        "prefix": " claim; absent when there is no evidence side |\n",
         "suffix": "\n| `expired` | boolean, from the counting rule i"
       },
       {
         "kind": "text-position",
-        "start": 21683,
-        "end": 21770
+        "start": 21880,
+        "end": 21967
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 3118,
-          "end": 3198
+          "start": 3691,
+          "end": 3771
         },
         {
           "kind": "ast-node",
@@ -90,5 +90,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:28.262Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

@@ -21,18 +21,18 @@
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/evidence.ts",
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "renderEvidence(report, style, mode),\n        );\n        return 0;",
-          "prefix": "vidence\", { ...report }, next), () =>\n          ",
-          "suffix": "\n      } catch (e) {\n        if (e instanceof Ev"
+          "exact": "renderEvidence(report, style, mode),\n    );\n    return 0;",
+          "prefix": "e(\"evidence\", { ...report }, next), () =>\n      ",
+          "suffix": "\n  } catch (e) {\n    if (e instanceof EvidenceVa"
         },
         {
           "kind": "text-position",
-          "start": 30013,
-          "end": 30078
+          "start": 1929,
+          "end": 1986
         },
         {
           "kind": "ast-node",
@@ -61,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:21:33.293Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

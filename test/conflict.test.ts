@@ -206,16 +206,63 @@ describe("decisions", () => {
     ]);
   });
 
-  test("contradictory with same_subject between the floor and the threshold is a review finding", () => {
+  test("contradictory with same_subject below the threshold is clean, with no finding", async () => {
     const r = conflictAnswer(
       { consistent: 0.02, contradictory: 0.96, unrelated: 0.02 },
       0.6,
       0.9,
     );
     expect(decidePair(A, B, r, THRESHOLD)).toEqual({
+      outcome: "clean",
+      reason: "contradictory, same_subject=0.60 below threshold 0.80",
+    });
+    const result = await run(judgeFor({ [pairKey(A, B)]: r }), [
+      claim(ID_A, A),
+      claim(ID_B, B),
+    ]);
+    expect(result.findings).toEqual([]);
+    expect(conflictReviewsFor(result, ID_A)).toEqual([]);
+    expect(result.pairs[0]).toMatchObject({
+      outcome: "clean",
+      reason: "contradictory, same_subject=0.60 below threshold 0.80",
+    });
+  });
+
+  test("contradictory with same_subject below the threshold and low confidence and contradicts is still clean", () => {
+    const r = conflictAnswer(
+      { consistent: 0.2, contradictory: 0.55, unrelated: 0.25 },
+      0.4,
+      0.2,
+    );
+    expect(decidePair(A, B, r, THRESHOLD)).toEqual({
+      outcome: "clean",
+      reason: "contradictory, same_subject=0.40 below threshold 0.80",
+    });
+  });
+
+  test("contradictory with same_subject above and low confidence is review with the confidence label", () => {
+    const r = conflictAnswer(
+      { consistent: 0.2, contradictory: 0.6, unrelated: 0.2 },
+      0.9,
+      0.8,
+    );
+    expect(decidePair(A, B, r, THRESHOLD)).toEqual({
+      outcome: "review",
+      probability: 0.6,
+      reason: "review: contradictory, confidence=0.40 below threshold 0.80",
+    });
+  });
+
+  test("contradictory with same_subject above and contradicts 0.48 is review with the contradicts label", () => {
+    const r = conflictAnswer(
+      { consistent: 0.02, contradictory: 0.96, unrelated: 0.02 },
+      0.9,
+      0.48,
+    );
+    expect(decidePair(A, B, r, THRESHOLD)).toEqual({
       outcome: "review",
       probability: 0.96,
-      reason: "review: contradictory, same_subject=0.60 below threshold 0.80",
+      reason: "review: contradictory, contradicts=0.48 below 0.50",
     });
   });
 
@@ -267,8 +314,7 @@ describe("decisions", () => {
     expect(decidePair(a, b, leansContradictory, THRESHOLD)).toEqual({
       outcome: "review",
       probability: 0.74,
-      reason:
-        "review: contradictory, contradicts=0.34 below 0.50, confidence=0.61 below threshold 0.80",
+      reason: "review: contradictory, confidence=0.61 below threshold 0.80",
     });
 
     const unrelated = conflictAnswer(

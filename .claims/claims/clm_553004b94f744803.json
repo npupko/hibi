@@ -21,18 +21,18 @@
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/shared.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "const EXIT_OPERATIONAL_ERROR = 1;",
-          "prefix": "import { makeStyle } from \"./render/style.ts\";\n\n",
-          "suffix": "\n\ntype Values = Record<string, string | boolean "
+          "prefix": " type Style } from \"./render/style.ts\";\n\nexport ",
+          "suffix": "\n\nexport type Values = Record<string, string | b"
         },
         {
           "kind": "text-position",
-          "start": 2019,
-          "end": 2052
+          "start": 451,
+          "end": 484
         },
         {
           "kind": "ast-node",
@@ -50,7 +50,7 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/shared.ts",
       "selectors": [
         {
           "kind": "text-quote",
@@ -60,8 +60,8 @@
         },
         {
           "kind": "text-position",
-          "start": 4202,
-          "end": 4263
+          "start": 3401,
+          "end": 3462
         },
         {
           "kind": "ast-node",
@@ -103,5 +103,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:23:37.418Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

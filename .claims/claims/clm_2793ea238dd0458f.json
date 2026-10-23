@@ -1,0 +1,111 @@
+{
+  "id": "clm_2793ea238dd0458f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It applies the plain `reanchor` rule to every live claim in the store, or, with `--doc <path>`, to the live claims of that document (a path with no live claims is the error `no claims are registered for <path>; run hibi audit --doc <path>`): sides that read `moved` are relocated, and `changed`, `ambiguous`, and `orphaned` sides are kept as stored and listed.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It applies the plain `reanchor` rule to every live claim in the store, or, with `--doc <path>`, to the live claims of that document (a path with no live claims is the error `no claims are registered for <path>; run hibi audit --doc <path>`): sides that read `moved` are relocated, and `changed`, `ambiguous`, and `orphaned` sides are kept as stored and listed.",
+        "prefix": " error, and so are span flags and `--suggest`). ",
+        "suffix": " A claim whose document file is missing keeps it"
+      },
+      {
+        "kind": "text-position",
+        "start": 71862,
+        "end": 72222
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "      const r = await this.reanchor(c.id, {\n        ref: opts.ref,\n        dryRun: opts.dryRun,\n      });",
+          "prefix": "c.kind)],\n        });\n        continue;\n      }\n",
+          "suffix": "\n      if (r.relocated === 0 && r.kept.length =="
+        },
+        {
+          "kind": "text-position",
+          "start": 23850,
+          "end": 23955
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "89f86e961cf33e4c",
+          "semanticHash": "a398006bd203ba43"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "      claims = claims.filter((c) => c.documentId === documentId);",
+          "prefix": "     const documentId = documentIdForPath(doc);\n",
+          "suffix": "\n      if (claims.length === 0) {\n        throw "
+        },
+        {
+          "kind": "text-position",
+          "start": 23231,
+          "end": 23296
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "e5d1d6c12064d6da",
+          "semanticHash": "fad404e4c86425b2"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(c) => c.enforcement !== \"retired\",",
+          "prefix": " = (await this.store.allClaims()).filter(\n      ",
+          "suffix": "\n    );\n    if (opts.doc !== undefined) {\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 23066,
+          "end": 23101
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "arrow_function",
+          "structuralHash": "a7df8bd86607b914",
+          "semanticHash": "d16e74b5ae93b2b6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:52.738Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:52.738Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

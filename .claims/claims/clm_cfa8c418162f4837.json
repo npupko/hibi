@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 7537,
-        "end": 7568
+        "start": 7703,
+        "end": 7734
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 14101,
-          "end": 14175
+          "start": 14236,
+          "end": 14310
         },
         {
           "kind": "ast-node",
@@ -54,21 +54,21 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "if (\"unavailable\" in r) throw recordRefusal(target.file, r);",
-          "prefix": "fig, target.file, this.store.anchorRoot);\n      ",
-          "suffix": "\n      evidenceContents[target.file] = await thi"
+          "exact": "      assertAliasKnown(config, target.file);\n      const r = resolveFile(config, target.file, this.store.anchorRoot);\n      if (\"unavailable\" in r) {",
+          "prefix": " if (target.file in evidenceContents) continue;\n",
+          "suffix": "\n        // A sibling repo that is not checked o"
         },
         {
           "kind": "text-position",
-          "start": 21420,
-          "end": 21480
+          "start": 21431,
+          "end": 21580
         },
         {
           "kind": "ast-node",
           "language": "typescript",
-          "nodeType": "if_statement",
-          "structuralHash": "8a90e38518edf8fe",
-          "semanticHash": "84aeca6dc807ab01"
+          "nodeType": "statement_block",
+          "structuralHash": "4e5725f37ef951b8",
+          "semanticHash": "826d56b5b9d2ae5e"
         },
         {
           "kind": "value",
@@ -89,8 +89,8 @@
         },
         {
           "kind": "text-position",
-          "start": 11460,
-          "end": 11521
+          "start": 13547,
+          "end": 13608
         },
         {
           "kind": "ast-node",
@@ -113,5 +113,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:23:41.559Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

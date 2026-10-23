@@ -14,25 +14,25 @@
       },
       {
         "kind": "text-position",
-        "start": 56382,
-        "end": 56492
+        "start": 58151,
+        "end": 58261
       }
     ]
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "const { item, errors } = recordItemFromFlags(values, tokens);",
-          "prefix": "\n        items = parsed;\n      } else {\n        ",
-          "suffix": "\n        if (errors.length > 0) {\n          cons"
+          "prefix": "    );\n    }\n    items = parsed;\n  } else {\n    ",
+          "suffix": "\n    if (errors.length > 0) {\n      const err = "
         },
         {
           "kind": "text-position",
-          "start": 17352,
-          "end": 17413
+          "start": 4733,
+          "end": 4794
         },
         {
           "kind": "ast-node",
@@ -44,18 +44,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "items = [item];",
-          "prefix": "r.message, mode, err.errors);\n        }\n        ",
-          "suffix": "\n      }\n\n      let calls: RecordCall[];\n      t"
+          "prefix": " fail(err.message, mode, err.errors);\n    }\n    ",
+          "suffix": "\n  }\n\n  let calls: RecordCall[];\n  try {\n    cal"
         },
         {
           "kind": "text-position",
-          "start": 17576,
-          "end": 17591
+          "start": 4937,
+          "end": 4952
         },
         {
           "kind": "ast-node",
@@ -73,25 +73,25 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "calls = parseRecordItems(",
-          "prefix": "   let calls: RecordCall[];\n      try {\n        ",
-          "suffix": "\n          items,\n          { ref, defaultBy },\n"
+          "prefix": "m];\n  }\n\n  let calls: RecordCall[];\n  try {\n    ",
+          "suffix": "items, { ref, defaultBy }, fromFile !== undefine"
         },
         {
           "kind": "text-position",
-          "start": 17652,
-          "end": 17677
+          "start": 4997,
+          "end": 5022
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "assignment_expression",
-          "structuralHash": "f553d5a29812e09c",
-          "semanticHash": "83ee9b9166dea055"
+          "structuralHash": "772fe60f13ca397a",
+          "semanticHash": "999b53f1db5165b7"
         }
       ]
     }
@@ -107,5 +107,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:19:33.611Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

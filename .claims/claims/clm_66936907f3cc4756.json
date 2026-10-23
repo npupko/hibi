@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 32740,
-        "end": 32767
+        "start": 33797,
+        "end": 33824
       }
     ]
   },
@@ -26,13 +26,13 @@
         {
           "kind": "text-quote",
           "exact": "\"kind_{{i}}\": {",
-          "prefix": "\n  \"placeholder\": \"{{i}}\",\n  \"questions\": {\n    ",
+          "prefix": "\"idPlaceholder\": \"{{id}}\",\n  \"questions\": {\n    ",
           "suffix": "\n      \"type\": \"choice\",\n      \"instructions\": {"
         },
         {
           "kind": "text-position",
-          "start": 379,
-          "end": 394
+          "start": 408,
+          "end": 423
         }
       ]
     },
@@ -42,13 +42,13 @@
         {
           "kind": "text-quote",
           "exact": "\"evidenceKind_{{i}}\": {",
-          "prefix": "mple.\"\n          ]\n        }\n      }\n    },\n    ",
+          "prefix": "dit).\"\n          ]\n        }\n      }\n    },\n    ",
           "suffix": "\n      \"type\": \"choice\",\n      \"instructions\": {"
         },
         {
           "kind": "text-position",
-          "start": 2438,
-          "end": 2461
+          "start": 3852,
+          "end": 3875
         }
       ]
     }
@@ -64,5 +64,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:51.547Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

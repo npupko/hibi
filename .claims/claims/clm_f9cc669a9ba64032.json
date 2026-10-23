@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 13679,
-        "end": 13942
+        "start": 13767,
+        "end": 14030
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 5396,
-          "end": 5467
+          "start": 5692,
+          "end": 5763
         },
         {
           "kind": "ast-node",
@@ -49,13 +49,13 @@
         {
           "kind": "text-quote",
           "exact": "reason: `contradictory (p=${f2(pContra)}, same_subject=${f2(r.sameSubject)})`,",
-          "prefix": "onflict\",\n        probability: pContra,\n        ",
-          "suffix": "\n      };\n    }\n    return {\n      outcome: \"rev"
+          "prefix": ": \"conflict\",\n      probability: pContra,\n      ",
+          "suffix": "\n    };\n  }\n  if (r.relation === \"consistent\" &&"
         },
         {
           "kind": "text-position",
-          "start": 6542,
-          "end": 6620
+          "start": 7112,
+          "end": 7190
         },
         {
           "kind": "ast-node",
@@ -78,5 +78,5 @@
     }
   ],
   "createdAt": "2026-10-23T09:36:15.785Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

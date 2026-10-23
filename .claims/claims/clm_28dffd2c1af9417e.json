@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 23763,
-        "end": 23804
+        "start": 24311,
+        "end": 24352
       }
     ]
   },
@@ -25,14 +25,14 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "if (newest !== undefined) {\n          outcome = cachedSupportsOutcome(newest, threshold, c);",
-          "prefix": "const newest = newestSupports(entries);\n        ",
-          "suffix": "\n        }\n      }\n    }\n\n    const ack =\n      "
+          "exact": "if (newest !== undefined) {\n        outcome = cachedSupportsOutcome(newest, threshold, c);\n ",
+          "prefix": "  const newest = newestSupports(entries);\n      ",
+          "suffix": "     }\n    }\n\n    const ack =\n      outcome?.sta"
         },
         {
           "kind": "text-position",
-          "start": 16501,
-          "end": 16593
+          "start": 16641,
+          "end": 16733
         },
         {
           "kind": "ast-node",
@@ -61,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:41.982Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

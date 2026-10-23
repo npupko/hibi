@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 2620,
-        "end": 2671
+        "start": 2682,
+        "end": 2733
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 16061,
-          "end": 16080
+          "start": 16731,
+          "end": 16750
         },
         {
           "kind": "ast-node",
@@ -54,8 +54,8 @@
         },
         {
           "kind": "text-position",
-          "start": 16166,
-          "end": 16185
+          "start": 16836,
+          "end": 16855
         },
         {
           "kind": "ast-node",
@@ -77,15 +77,15 @@
         },
         {
           "kind": "text-position",
-          "start": 16356,
-          "end": 16430
+          "start": 17026,
+          "end": 17100
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "call_expression",
-          "structuralHash": "9b91a070425a5f3f",
-          "semanticHash": "cd4777b5dc829e87"
+          "structuralHash": "5399574175d1cd97",
+          "semanticHash": "efa57a69116b998d"
         },
         {
           "kind": "value",
@@ -107,5 +107,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:28:11.701Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

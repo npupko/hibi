@@ -14,14 +14,14 @@
       },
       {
         "kind": "text-position",
-        "start": 13310,
-        "end": 13452
+        "start": 13641,
+        "end": 13783
       }
     ]
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/shared.ts",
       "selectors": [
         {
           "kind": "text-quote",
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 4202,
-          "end": 4263
+          "start": 3401,
+          "end": 3462
         },
         {
           "kind": "ast-node",
@@ -50,18 +50,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/shared.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "process.exit(EXIT_OPERATIONAL_ERROR);\n}",
           "prefix": "      mode.kind === \"json-pretty\",\n    );\n  }\n  ",
-          "suffix": "\n\nfunction absPath(root: string, p: string): str"
+          "suffix": "\n\nexport function absPath(root: string, p: strin"
         },
         {
           "kind": "text-position",
-          "start": 4312,
-          "end": 4351
+          "start": 3511,
+          "end": 3550
         },
         {
           "kind": "ast-node",
@@ -84,5 +84,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:28:17.668Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

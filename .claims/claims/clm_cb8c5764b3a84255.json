@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 2671,
-        "end": 2779
+        "start": 2846,
+        "end": 2954
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 24543,
-          "end": 24606
+          "start": 26626,
+          "end": 26689
         },
         {
           "kind": "ast-node",
@@ -60,15 +60,15 @@
         },
         {
           "kind": "text-position",
-          "start": 10682,
-          "end": 10723
+          "start": 12769,
+          "end": 12810
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "if_statement",
-          "structuralHash": "d4827a4f61728a7d",
-          "semanticHash": "38d6281638d64b18"
+          "structuralHash": "61a02e709166c439",
+          "semanticHash": "622ec5a858f26789"
         }
       ]
     },
@@ -83,8 +83,8 @@
         },
         {
           "kind": "text-position",
-          "start": 9386,
-          "end": 9437
+          "start": 11448,
+          "end": 11499
         },
         {
           "kind": "ast-node",
@@ -106,15 +106,15 @@
         },
         {
           "kind": "text-position",
-          "start": 11831,
-          "end": 11884
+          "start": 13958,
+          "end": 14011
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "if_statement",
-          "structuralHash": "ff8cae4b0c7adeee",
-          "semanticHash": "6f154d2f9b8fa530"
+          "structuralHash": "44799af40c3d83c4",
+          "semanticHash": "154e092b5aa51a37"
         }
       ]
     },
@@ -129,8 +129,8 @@
         },
         {
           "kind": "text-position",
-          "start": 12996,
-          "end": 13068
+          "start": 15428,
+          "end": 15500
         },
         {
           "kind": "ast-node",
@@ -169,5 +169,5 @@
     }
   ],
   "createdAt": "2026-10-23T09:47:04.958Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

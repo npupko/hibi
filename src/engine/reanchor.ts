@@ -14,7 +14,10 @@
  *
  * Safety: an empty span is never stored; nothing is written when no side
  * was rebuilt. An evidence side in a sibling repo
- * that is not checked out keeps its stored bundle unchanged, with a warning. The result carries the before and
+ * that is not checked out keeps its stored bundle unchanged, with a warning;
+ * an explicit span (`--code-file`) in such a repo keeps the stored bundle for
+ * that file and is listed in `kept` with the reason `evidence: repository
+ * <alias> not checked out; kept as stored`. The result carries the before and
  * after quotes per side so the caller can see what moved.
  */
 
@@ -47,6 +50,7 @@ import {
   resolveRegion,
   validateDocQuote,
 } from "./record.ts";
+import { splitAlias } from "./repos.ts";
 
 export interface ReanchorInput {
   claimId: string;
@@ -75,11 +79,18 @@ export interface SideQuote {
   quote: string;
 }
 
-/** A side plain `reanchor` left as stored, and why. */
+/** A side `reanchor` rebuilt. */
+export interface RelocatedSide {
+  side: "doc" | "evidence";
+  file: string;
+}
+
+/** A side `reanchor` left as stored, and why. */
 export interface KeptSide {
   side: "doc" | "evidence";
   file: string;
-  state: AnchorState;
+  /** `unavailable` for an explicit span in a sibling repo that is not checked out. */
+  state: EvidenceState;
   /** e.g. `doc: changed; pass --doc-quote to re-anchor`. */
   reason: string;
 }
@@ -88,6 +99,8 @@ export interface ReanchorResult {
   claim: Claim;
   /** Number of sides rebuilt (explicit spans and `moved` sides). */
   relocated: number;
+  /** The sides rebuilt, in order: the doc side first, then evidence sides. */
+  relocatedSides: RelocatedSide[];
   /** Sides that needed relocating but were left as stored. */
   kept: KeptSide[];
   doc: AnchorState;
@@ -96,6 +109,23 @@ export interface ReanchorResult {
   before: { doc: SideQuote; evidence: SideQuote[] };
   after: { doc: SideQuote; evidence: SideQuote[] };
   warnings: string[];
+}
+
+/** One claim in a bulk `reanchor --moved` result. */
+export interface BulkReanchorClaim {
+  id: string;
+  relocated: RelocatedSide[];
+  kept: KeptSide[];
+}
+
+/**
+ * `reanchor --moved`: plain `reanchor` over every live claim (optionally one
+ * document's). `relocated` counts the sides rebuilt across all claims;
+ * `claims` lists each claim with a side rebuilt or kept, in id order.
+ */
+export interface BulkReanchorResult {
+  relocated: number;
+  claims: BulkReanchorClaim[];
 }
 
 /** One candidate location for `reanchor --suggest`. */
@@ -183,7 +213,7 @@ function toResolveFiles(contents: RecordContents): ResolveFiles {
   };
 }
 
-function keptSide(
+export function keptSide(
   side: "doc" | "evidence",
   file: string,
   state: AnchorState,
@@ -210,6 +240,39 @@ function evidenceLanguage(
   override?: string,
 ): string | undefined {
   return kind === "code" ? (override ?? languageForFile(file)) : undefined;
+}
+
+/**
+ * An explicit evidence target in a sibling repo that is not checked out: the
+ * stored bundle for the same file is kept as stored (the one at the same
+ * index when it names that file, else the first that does). Throws when the
+ * claim has no stored span in that file.
+ */
+function keepUnavailableTarget(
+  claim: Claim,
+  index: number,
+  target: EvidenceTarget,
+  reason: string,
+  kept: KeptSide[],
+): SelectorBundle {
+  const atIndex = claim.evidence[index];
+  const stored =
+    atIndex?.file === target.file
+      ? atIndex
+      : claim.evidence.find((b) => b.file === target.file);
+  if (stored === undefined) {
+    throw new Error(
+      `${reason}; ${target.file} is not a stored span of claim ${claim.id}, so check out the sibling repo first.`,
+    );
+  }
+  const alias = splitAlias(target.file)?.alias ?? target.file;
+  kept.push({
+    side: "evidence",
+    file: target.file,
+    state: "unavailable",
+    reason: `evidence: repository ${alias} not checked out; kept as stored`,
+  });
+  return stored;
 }
 
 /** Rebuild one evidence bundle from an explicit replacement target. */
@@ -308,7 +371,7 @@ export async function reanchor(
   const files = toResolveFiles(contents);
   const warnings: string[] = [];
   const kept: KeptSide[] = [];
-  let relocated = 0;
+  const relocatedSides: RelocatedSide[] = [];
 
   // Resolve every span once.
   const before = resolveClaimSides(claim, files, { ast: input.analyzer });
@@ -355,7 +418,7 @@ export async function reanchor(
       );
       docBundle = buildSelectorBundle(docFile, contents.docContent, docRegion);
       sentence = regionText(contents.docContent, docRegion);
-      relocated++;
+      relocatedSides.push({ side: "doc", file: docFile });
     } else {
       docBundle = claim.doc;
       sentence = claim.sentence;
@@ -377,10 +440,14 @@ export async function reanchor(
         `claim ${claim.id} is a reference claim and needs exactly one evidence span.`,
       );
     }
-    evidence = input.evidence.map((t) =>
-      bundleFromTarget(claim.kind, t, contents, input.analyzer),
-    );
-    relocated += evidence.length;
+    evidence = input.evidence.map((t, i) => {
+      const reason = contents.unavailable?.get(t.file);
+      if (reason !== undefined) {
+        return keepUnavailableTarget(claim, i, t, reason, kept);
+      }
+      relocatedSides.push({ side: "evidence", file: t.file });
+      return bundleFromTarget(claim.kind, t, contents, input.analyzer);
+    });
   } else {
     evidence = claim.evidence.map((bundle, i) => {
       const r = relocateEvidenceBundle(
@@ -392,11 +459,13 @@ export async function reanchor(
         warnings,
         kept,
       );
-      if (r.relocated) relocated++;
+      if (r.relocated)
+        relocatedSides.push({ side: "evidence", file: bundle.file });
       return r.bundle;
     });
   }
 
+  const relocated = relocatedSides.length;
   const documentId = input.docPath
     ? documentIdForPath(input.docPath)
     : claim.documentId;
@@ -429,6 +498,7 @@ export async function reanchor(
   return {
     claim: next,
     relocated,
+    relocatedSides,
     kept,
     doc: after.doc.state,
     ...(after.evidence.length > 0

@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 10963,
-          "end": 11030
+          "start": 11098,
+          "end": 11165
         },
         {
           "kind": "ast-node",
@@ -54,8 +54,8 @@
         },
         {
           "kind": "text-position",
-          "start": 12921,
-          "end": 12953
+          "start": 13056,
+          "end": 13088
         },
         {
           "kind": "ast-node",
@@ -77,8 +77,8 @@
         },
         {
           "kind": "text-position",
-          "start": 16640,
-          "end": 16705
+          "start": 16775,
+          "end": 16840
         },
         {
           "kind": "ast-node",
@@ -101,5 +101,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:23:25.467Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

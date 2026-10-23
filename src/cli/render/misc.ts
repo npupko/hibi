@@ -6,6 +6,7 @@
 
 import type {
   ArchiveResult,
+  BulkReanchorResult,
   ListResult,
   ReanchorResult,
   ReanchorSuggestResult,
@@ -124,6 +125,33 @@ export function renderReanchor(
     lines.push(`  ${warn(style, mode)} ${k.file} left as stored: ${k.reason}`);
   }
   return `${lines.join("\n")}\n${warningLines(result.warnings, style, mode)}`;
+}
+
+/** `reanchor --moved`: one line per claim with a side relocated or kept. */
+export function renderReanchorMoved(
+  result: BulkReanchorResult,
+  style: Style,
+  mode: OutputMode,
+  dryRun = false,
+): string {
+  const verb = dryRun ? "would relocate" : "relocated";
+  const n = result.relocated;
+  const lines = [
+    `${ok(style, mode)} reanchor --moved  ${verb} ${n} side${n === 1 ? "" : "s"} on ${result.claims.filter((c) => c.relocated.length > 0).length} claim(s)${dryTag(style, dryRun)}`,
+  ];
+  for (const c of result.claims) {
+    const moved = c.relocated.map((r) => `${r.side} ${r.file}`).join(", ");
+    const kept = c.kept.map((k) => k.reason).join("; ");
+    const parts = [
+      ...(moved ? [`${verb} ${moved}`] : []),
+      ...(kept ? [`kept ${kept}`] : []),
+    ];
+    const mark = c.kept.length > 0 ? warn(style, mode) : ok(style, mode);
+    lines.push(
+      `  ${mark} ${style.cyan(c.id)}  ${parts.join(style.dim(" | "))}`,
+    );
+  }
+  return `${lines.join("\n")}\n`;
 }
 
 export function renderReanchorSuggest(

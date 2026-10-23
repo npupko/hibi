@@ -1,5 +1,5 @@
 {
-  "model": "jev-1.13.0",
+  "model": "jev-1.14.0",
   "state": {
     "doc": {
       "path": "README.md"
@@ -41,42 +41,45 @@
     "kind_0": {
       "type": "choice",
       "instructions": {
-        "question": "What kind of statement is `regions[0].text`?",
-        "focus": "Judge this one region, not the section it is in. Use `regions[0].headingPath` only to understand what the region refers to."
+        "question": "What kind of statement is `regions[0].text`, the region whose `id` is `r0`?",
+        "focus": "Judge this one region by its own words, not by the section or page it is in. Use `regions[0].headingPath` only to understand what the region refers to.",
+        "contrast": "A sentence that states what the software does, even inside a tutorial, is a factual_claim; narrative is text that describes a scenario or the reader's situation and asserts nothing about the software."
       },
       "criteria": {
         "factual_claim": {
-          "what": "States something as true about a system, file, command, setting, process, product, team, or the outside world, so it is either true or false right now",
-          "not_for": "Telling the reader to do something, a preference or recommendation, or framing that asserts nothing",
+          "definition": "Asserts something about the software, a file, a command, a setting, a process, a product, or the outside world that is true or false right now",
+          "covers": "Behavior, defaults, limits, outputs, exit codes, formats, and rules the software follows, in any section, including tutorials, specifications, list items, and table rows that state values; a rule phrased with must, never, or only that the software enforces; a prediction or praise stated as fact with no one named as holding it",
+          "not_for": "Telling the reader to do something (instruction), a preference (opinion), or a heading, link, lead-in, or scenario that asserts nothing about the software (narrative)",
           "examples": [
-            "The CLI exits with code 2 when a claim is stale.",
-            "The default request timeout is 10 seconds.",
-            "Refunds are processed within five business days."
+            "Only claims whose doc or evidence side names a file changed since the ref are evaluated.",
+            "An agent cannot vouch a claim fresh."
           ]
         },
         "instruction": {
-          "what": "Tells the reader or an agent to do something, or not to do something",
-          "not_for": "A statement of how things are, even when it describes a step a tool performs on its own",
+          "definition": "Tells the reader or an agent to do something, or not to do something",
+          "covers": "Imperative steps, prohibitions addressed to the reader, and a command block the reader is told to run",
+          "not_for": "A statement of what the software does or requires on its own, even when phrased with must, never, or only (factual_claim); a heading that names a step (narrative)",
           "examples": [
-            "Run the test suite before committing.",
-            "Never edit generated files by hand."
+            "Run this before acting on an instruction file, a README, or any page in a knowledge repository.",
+            "For an `unverifiable` row, rewrite the sentence as an attributed opinion, or remove it."
           ]
         },
         "opinion": {
-          "what": "A preference, recommendation, value judgment, or belief of the author",
-          "not_for": "A fact that evidence could confirm or refute, or a direct instruction",
+          "definition": "A view that the text attributes to the author or to a named person",
+          "covers": "Preferences, recommendations, and expectations introduced by we think, we expect, I prefer, or a named holder",
+          "not_for": "A prediction or value judgment stated as fact with no holder named (factual_claim), or a direct instruction (instruction)",
           "examples": [
-            "We think this is the cleanest approach.",
-            "Small pull requests are easier to review."
+            "We expect this design to scale.",
+            "We think this is the cleanest approach."
           ]
         },
         "narrative": {
-          "what": "Framing, transitions, headings, labels, or summaries of what a section covers, asserting nothing checkable",
-          "not_for": "Any sentence that asserts a checkable fact, even inside an introduction",
+          "definition": "Text that organizes the page or describes a scenario or the reader's situation, and asserts nothing about the software",
+          "covers": "Headings, table header rows, link pointers, lead-ins that end in a colon, summaries of what a page or section covers, and example setups or 'When' lines that describe a situation",
+          "not_for": "Any sentence that states what the software does, even inside an introduction, a tutorial step, or an example (factual_claim)",
           "examples": [
-            "In this section we cover caching.",
-            "Installation",
-            "The rest of this page walks through an example."
+            "### 1. Before trusting a document",
+            "See [Audit](/audit)."
           ]
         }
       }
@@ -84,83 +87,88 @@
     "evidenceKind_0": {
       "type": "choice",
       "instructions": {
-        "question": "If `regions[0].text` is a factual claim, where would an agent look first for evidence that settles whether it is true?",
-        "focus": "Answer as if the region is a factual claim, even when it is not. Pick the single place an agent would check first."
+        "question": "If `regions[0].text`, the region whose `id` is `r0`, is a factual claim, where would an agent look first for evidence that settles whether it is true?",
+        "focus": "Answer as if the region is a factual claim, even when it is not. Pick the single place an agent would check first.",
+        "contrast": "A sentence that describes this repository's own software (its commands, flags, outputs, exit codes, file formats, fields, states, defaults, limits, or rules) is settled by its code, even when the sentence sits in a specification, design document, guide, or README; other_doc is for facts that a document decides and no code implements, such as a business policy or a plan."
       },
       "criteria": {
         "code": {
-          "what": "Source code, configuration, scripts, or tests in this repository",
-          "not_for": "Facts written down only in prose documents, or kept outside the repository",
+          "definition": "Source code, configuration, scripts, or tests in this repository",
+          "covers": "Commands, flags, outputs, exit codes, file formats, fields and required keys, states, labels, defaults, limits, and rules that this repository's software implements, wherever the sentence is written",
+          "not_for": "Facts written down only in prose documents (other_doc), or kept outside the repository (external)",
           "examples": [
-            "The CLI exits with code 2 when a claim is stale.",
-            "The default request timeout is 10 seconds."
+            "Only claims whose doc or evidence side names a file changed since the ref are evaluated.",
+            "An agent cannot vouch a claim fresh."
           ]
         },
         "other_doc": {
-          "what": "Another document in this repository, such as a policy, decision record, specification, or guide",
-          "not_for": "Facts the code itself shows, or facts kept outside the repository",
+          "definition": "Another document in this repository, such as a policy, decision record, specification, or guide",
+          "covers": "Policies, decisions, and plans that a document states and no code implements, and pointers to where a document holds information",
+          "not_for": "A specification or guide sentence about what this repository's software does (code), or facts kept outside the repository (external)",
           "examples": [
-            "Support replies to every ticket within one business day.",
-            "The team chose PostgreSQL over MySQL for its JSON support."
+            "Refunds are issued within two weeks of a request.",
+            "Annual billing details are in the billing policy."
           ]
         },
         "external": {
-          "what": "Something outside the repository: a dependency's documentation, a web page, a package registry, a dashboard, a person, or a third-party service",
-          "not_for": "Anything recorded in this repository",
+          "definition": "Something outside the repository: a dependency's documentation, a web page, a package registry, a dashboard, a person, or a third-party service",
+          "covers": "Prices, plans, third-party behavior, schedules, and facts about the world",
+          "not_for": "Anything recorded in this repository (code or other_doc)",
           "examples": [
-            "Bun supports Node's fs module.",
-            "The Pro plan costs $20 per month."
+            "The Pro plan costs $29 per month.",
+            "The official JS SDK fails under Bun as of 0.7.0."
           ]
         },
         "nothing": {
-          "what": "No evidence could settle it: a prediction, an intention, or a statement about something no one can observe",
-          "not_for": "Claims that are hard to check but could be checked by someone",
-          "examples": [
-            "This design will scale for years.",
-            "Users will love the new flow."
-          ]
+          "definition": "No evidence could settle it: a prediction, an intention, or a vague statement no one can observe",
+          "covers": "Forecasts, vague praise, and claims with no measurable content",
+          "not_for": "Claims that are hard to check but could be checked by someone (external)",
+          "examples": ["This design will scale for years.", "It is fast."]
         }
       }
     },
     "kind_1": {
       "type": "choice",
       "instructions": {
-        "question": "What kind of statement is `regions[1].text`?",
-        "focus": "Judge this one region, not the section it is in. Use `regions[1].headingPath` only to understand what the region refers to."
+        "question": "What kind of statement is `regions[1].text`, the region whose `id` is `r1`?",
+        "focus": "Judge this one region by its own words, not by the section or page it is in. Use `regions[1].headingPath` only to understand what the region refers to.",
+        "contrast": "A sentence that states what the software does, even inside a tutorial, is a factual_claim; narrative is text that describes a scenario or the reader's situation and asserts nothing about the software."
       },
       "criteria": {
         "factual_claim": {
-          "what": "States something as true about a system, file, command, setting, process, product, team, or the outside world, so it is either true or false right now",
-          "not_for": "Telling the reader to do something, a preference or recommendation, or framing that asserts nothing",
+          "definition": "Asserts something about the software, a file, a command, a setting, a process, a product, or the outside world that is true or false right now",
+          "covers": "Behavior, defaults, limits, outputs, exit codes, formats, and rules the software follows, in any section, including tutorials, specifications, list items, and table rows that state values; a rule phrased with must, never, or only that the software enforces; a prediction or praise stated as fact with no one named as holding it",
+          "not_for": "Telling the reader to do something (instruction), a preference (opinion), or a heading, link, lead-in, or scenario that asserts nothing about the software (narrative)",
           "examples": [
-            "The CLI exits with code 2 when a claim is stale.",
-            "The default request timeout is 10 seconds.",
-            "Refunds are processed within five business days."
+            "Only claims whose doc or evidence side names a file changed since the ref are evaluated.",
+            "An agent cannot vouch a claim fresh."
           ]
         },
         "instruction": {
-          "what": "Tells the reader or an agent to do something, or not to do something",
-          "not_for": "A statement of how things are, even when it describes a step a tool performs on its own",
+          "definition": "Tells the reader or an agent to do something, or not to do something",
+          "covers": "Imperative steps, prohibitions addressed to the reader, and a command block the reader is told to run",
+          "not_for": "A statement of what the software does or requires on its own, even when phrased with must, never, or only (factual_claim); a heading that names a step (narrative)",
           "examples": [
-            "Run the test suite before committing.",
-            "Never edit generated files by hand."
+            "Run this before acting on an instruction file, a README, or any page in a knowledge repository.",
+            "For an `unverifiable` row, rewrite the sentence as an attributed opinion, or remove it."
           ]
         },
         "opinion": {
-          "what": "A preference, recommendation, value judgment, or belief of the author",
-          "not_for": "A fact that evidence could confirm or refute, or a direct instruction",
+          "definition": "A view that the text attributes to the author or to a named person",
+          "covers": "Preferences, recommendations, and expectations introduced by we think, we expect, I prefer, or a named holder",
+          "not_for": "A prediction or value judgment stated as fact with no holder named (factual_claim), or a direct instruction (instruction)",
           "examples": [
-            "We think this is the cleanest approach.",
-            "Small pull requests are easier to review."
+            "We expect this design to scale.",
+            "We think this is the cleanest approach."
           ]
         },
         "narrative": {
-          "what": "Framing, transitions, headings, labels, or summaries of what a section covers, asserting nothing checkable",
-          "not_for": "Any sentence that asserts a checkable fact, even inside an introduction",
+          "definition": "Text that organizes the page or describes a scenario or the reader's situation, and asserts nothing about the software",
+          "covers": "Headings, table header rows, link pointers, lead-ins that end in a colon, summaries of what a page or section covers, and example setups or 'When' lines that describe a situation",
+          "not_for": "Any sentence that states what the software does, even inside an introduction, a tutorial step, or an example (factual_claim)",
           "examples": [
-            "In this section we cover caching.",
-            "Installation",
-            "The rest of this page walks through an example."
+            "### 1. Before trusting a document",
+            "See [Audit](/audit)."
           ]
         }
       }
@@ -168,42 +176,45 @@
     "kind_2": {
       "type": "choice",
       "instructions": {
-        "question": "What kind of statement is `regions[2].text`?",
-        "focus": "Judge this one region, not the section it is in. Use `regions[2].headingPath` only to understand what the region refers to."
+        "question": "What kind of statement is `regions[2].text`, the region whose `id` is `r2`?",
+        "focus": "Judge this one region by its own words, not by the section or page it is in. Use `regions[2].headingPath` only to understand what the region refers to.",
+        "contrast": "A sentence that states what the software does, even inside a tutorial, is a factual_claim; narrative is text that describes a scenario or the reader's situation and asserts nothing about the software."
       },
       "criteria": {
         "factual_claim": {
-          "what": "States something as true about a system, file, command, setting, process, product, team, or the outside world, so it is either true or false right now",
-          "not_for": "Telling the reader to do something, a preference or recommendation, or framing that asserts nothing",
+          "definition": "Asserts something about the software, a file, a command, a setting, a process, a product, or the outside world that is true or false right now",
+          "covers": "Behavior, defaults, limits, outputs, exit codes, formats, and rules the software follows, in any section, including tutorials, specifications, list items, and table rows that state values; a rule phrased with must, never, or only that the software enforces; a prediction or praise stated as fact with no one named as holding it",
+          "not_for": "Telling the reader to do something (instruction), a preference (opinion), or a heading, link, lead-in, or scenario that asserts nothing about the software (narrative)",
           "examples": [
-            "The CLI exits with code 2 when a claim is stale.",
-            "The default request timeout is 10 seconds.",
-            "Refunds are processed within five business days."
+            "Only claims whose doc or evidence side names a file changed since the ref are evaluated.",
+            "An agent cannot vouch a claim fresh."
           ]
         },
         "instruction": {
-          "what": "Tells the reader or an agent to do something, or not to do something",
-          "not_for": "A statement of how things are, even when it describes a step a tool performs on its own",
+          "definition": "Tells the reader or an agent to do something, or not to do something",
+          "covers": "Imperative steps, prohibitions addressed to the reader, and a command block the reader is told to run",
+          "not_for": "A statement of what the software does or requires on its own, even when phrased with must, never, or only (factual_claim); a heading that names a step (narrative)",
           "examples": [
-            "Run the test suite before committing.",
-            "Never edit generated files by hand."
+            "Run this before acting on an instruction file, a README, or any page in a knowledge repository.",
+            "For an `unverifiable` row, rewrite the sentence as an attributed opinion, or remove it."
           ]
         },
         "opinion": {
-          "what": "A preference, recommendation, value judgment, or belief of the author",
-          "not_for": "A fact that evidence could confirm or refute, or a direct instruction",
+          "definition": "A view that the text attributes to the author or to a named person",
+          "covers": "Preferences, recommendations, and expectations introduced by we think, we expect, I prefer, or a named holder",
+          "not_for": "A prediction or value judgment stated as fact with no holder named (factual_claim), or a direct instruction (instruction)",
           "examples": [
-            "We think this is the cleanest approach.",
-            "Small pull requests are easier to review."
+            "We expect this design to scale.",
+            "We think this is the cleanest approach."
           ]
         },
         "narrative": {
-          "what": "Framing, transitions, headings, labels, or summaries of what a section covers, asserting nothing checkable",
-          "not_for": "Any sentence that asserts a checkable fact, even inside an introduction",
+          "definition": "Text that organizes the page or describes a scenario or the reader's situation, and asserts nothing about the software",
+          "covers": "Headings, table header rows, link pointers, lead-ins that end in a colon, summaries of what a page or section covers, and example setups or 'When' lines that describe a situation",
+          "not_for": "Any sentence that states what the software does, even inside an introduction, a tutorial step, or an example (factual_claim)",
           "examples": [
-            "In this section we cover caching.",
-            "Installation",
-            "The rest of this page walks through an example."
+            "### 1. Before trusting a document",
+            "See [Audit](/audit)."
           ]
         }
       }
@@ -211,83 +222,88 @@
     "evidenceKind_2": {
       "type": "choice",
       "instructions": {
-        "question": "If `regions[2].text` is a factual claim, where would an agent look first for evidence that settles whether it is true?",
-        "focus": "Answer as if the region is a factual claim, even when it is not. Pick the single place an agent would check first."
+        "question": "If `regions[2].text`, the region whose `id` is `r2`, is a factual claim, where would an agent look first for evidence that settles whether it is true?",
+        "focus": "Answer as if the region is a factual claim, even when it is not. Pick the single place an agent would check first.",
+        "contrast": "A sentence that describes this repository's own software (its commands, flags, outputs, exit codes, file formats, fields, states, defaults, limits, or rules) is settled by its code, even when the sentence sits in a specification, design document, guide, or README; other_doc is for facts that a document decides and no code implements, such as a business policy or a plan."
       },
       "criteria": {
         "code": {
-          "what": "Source code, configuration, scripts, or tests in this repository",
-          "not_for": "Facts written down only in prose documents, or kept outside the repository",
+          "definition": "Source code, configuration, scripts, or tests in this repository",
+          "covers": "Commands, flags, outputs, exit codes, file formats, fields and required keys, states, labels, defaults, limits, and rules that this repository's software implements, wherever the sentence is written",
+          "not_for": "Facts written down only in prose documents (other_doc), or kept outside the repository (external)",
           "examples": [
-            "The CLI exits with code 2 when a claim is stale.",
-            "The default request timeout is 10 seconds."
+            "Only claims whose doc or evidence side names a file changed since the ref are evaluated.",
+            "An agent cannot vouch a claim fresh."
           ]
         },
         "other_doc": {
-          "what": "Another document in this repository, such as a policy, decision record, specification, or guide",
-          "not_for": "Facts the code itself shows, or facts kept outside the repository",
+          "definition": "Another document in this repository, such as a policy, decision record, specification, or guide",
+          "covers": "Policies, decisions, and plans that a document states and no code implements, and pointers to where a document holds information",
+          "not_for": "A specification or guide sentence about what this repository's software does (code), or facts kept outside the repository (external)",
           "examples": [
-            "Support replies to every ticket within one business day.",
-            "The team chose PostgreSQL over MySQL for its JSON support."
+            "Refunds are issued within two weeks of a request.",
+            "Annual billing details are in the billing policy."
           ]
         },
         "external": {
-          "what": "Something outside the repository: a dependency's documentation, a web page, a package registry, a dashboard, a person, or a third-party service",
-          "not_for": "Anything recorded in this repository",
+          "definition": "Something outside the repository: a dependency's documentation, a web page, a package registry, a dashboard, a person, or a third-party service",
+          "covers": "Prices, plans, third-party behavior, schedules, and facts about the world",
+          "not_for": "Anything recorded in this repository (code or other_doc)",
           "examples": [
-            "Bun supports Node's fs module.",
-            "The Pro plan costs $20 per month."
+            "The Pro plan costs $29 per month.",
+            "The official JS SDK fails under Bun as of 0.7.0."
           ]
         },
         "nothing": {
-          "what": "No evidence could settle it: a prediction, an intention, or a statement about something no one can observe",
-          "not_for": "Claims that are hard to check but could be checked by someone",
-          "examples": [
-            "This design will scale for years.",
-            "Users will love the new flow."
-          ]
+          "definition": "No evidence could settle it: a prediction, an intention, or a vague statement no one can observe",
+          "covers": "Forecasts, vague praise, and claims with no measurable content",
+          "not_for": "Claims that are hard to check but could be checked by someone (external)",
+          "examples": ["This design will scale for years.", "It is fast."]
         }
       }
     },
     "kind_3": {
       "type": "choice",
       "instructions": {
-        "question": "What kind of statement is `regions[3].text`?",
-        "focus": "Judge this one region, not the section it is in. Use `regions[3].headingPath` only to understand what the region refers to."
+        "question": "What kind of statement is `regions[3].text`, the region whose `id` is `r3`?",
+        "focus": "Judge this one region by its own words, not by the section or page it is in. Use `regions[3].headingPath` only to understand what the region refers to.",
+        "contrast": "A sentence that states what the software does, even inside a tutorial, is a factual_claim; narrative is text that describes a scenario or the reader's situation and asserts nothing about the software."
       },
       "criteria": {
         "factual_claim": {
-          "what": "States something as true about a system, file, command, setting, process, product, team, or the outside world, so it is either true or false right now",
-          "not_for": "Telling the reader to do something, a preference or recommendation, or framing that asserts nothing",
+          "definition": "Asserts something about the software, a file, a command, a setting, a process, a product, or the outside world that is true or false right now",
+          "covers": "Behavior, defaults, limits, outputs, exit codes, formats, and rules the software follows, in any section, including tutorials, specifications, list items, and table rows that state values; a rule phrased with must, never, or only that the software enforces; a prediction or praise stated as fact with no one named as holding it",
+          "not_for": "Telling the reader to do something (instruction), a preference (opinion), or a heading, link, lead-in, or scenario that asserts nothing about the software (narrative)",
           "examples": [
-            "The CLI exits with code 2 when a claim is stale.",
-            "The default request timeout is 10 seconds.",
-            "Refunds are processed within five business days."
+            "Only claims whose doc or evidence side names a file changed since the ref are evaluated.",
+            "An agent cannot vouch a claim fresh."
           ]
         },
         "instruction": {
-          "what": "Tells the reader or an agent to do something, or not to do something",
-          "not_for": "A statement of how things are, even when it describes a step a tool performs on its own",
+          "definition": "Tells the reader or an agent to do something, or not to do something",
+          "covers": "Imperative steps, prohibitions addressed to the reader, and a command block the reader is told to run",
+          "not_for": "A statement of what the software does or requires on its own, even when phrased with must, never, or only (factual_claim); a heading that names a step (narrative)",
           "examples": [
-            "Run the test suite before committing.",
-            "Never edit generated files by hand."
+            "Run this before acting on an instruction file, a README, or any page in a knowledge repository.",
+            "For an `unverifiable` row, rewrite the sentence as an attributed opinion, or remove it."
           ]
         },
         "opinion": {
-          "what": "A preference, recommendation, value judgment, or belief of the author",
-          "not_for": "A fact that evidence could confirm or refute, or a direct instruction",
+          "definition": "A view that the text attributes to the author or to a named person",
+          "covers": "Preferences, recommendations, and expectations introduced by we think, we expect, I prefer, or a named holder",
+          "not_for": "A prediction or value judgment stated as fact with no holder named (factual_claim), or a direct instruction (instruction)",
           "examples": [
-            "We think this is the cleanest approach.",
-            "Small pull requests are easier to review."
+            "We expect this design to scale.",
+            "We think this is the cleanest approach."
           ]
         },
         "narrative": {
-          "what": "Framing, transitions, headings, labels, or summaries of what a section covers, asserting nothing checkable",
-          "not_for": "Any sentence that asserts a checkable fact, even inside an introduction",
+          "definition": "Text that organizes the page or describes a scenario or the reader's situation, and asserts nothing about the software",
+          "covers": "Headings, table header rows, link pointers, lead-ins that end in a colon, summaries of what a page or section covers, and example setups or 'When' lines that describe a situation",
+          "not_for": "Any sentence that states what the software does, even inside an introduction, a tutorial step, or an example (factual_claim)",
           "examples": [
-            "In this section we cover caching.",
-            "Installation",
-            "The rest of this page walks through an example."
+            "### 1. Before trusting a document",
+            "See [Audit](/audit)."
           ]
         }
       }
@@ -295,42 +311,45 @@
     "kind_4": {
       "type": "choice",
       "instructions": {
-        "question": "What kind of statement is `regions[4].text`?",
-        "focus": "Judge this one region, not the section it is in. Use `regions[4].headingPath` only to understand what the region refers to."
+        "question": "What kind of statement is `regions[4].text`, the region whose `id` is `r4`?",
+        "focus": "Judge this one region by its own words, not by the section or page it is in. Use `regions[4].headingPath` only to understand what the region refers to.",
+        "contrast": "A sentence that states what the software does, even inside a tutorial, is a factual_claim; narrative is text that describes a scenario or the reader's situation and asserts nothing about the software."
       },
       "criteria": {
         "factual_claim": {
-          "what": "States something as true about a system, file, command, setting, process, product, team, or the outside world, so it is either true or false right now",
-          "not_for": "Telling the reader to do something, a preference or recommendation, or framing that asserts nothing",
+          "definition": "Asserts something about the software, a file, a command, a setting, a process, a product, or the outside world that is true or false right now",
+          "covers": "Behavior, defaults, limits, outputs, exit codes, formats, and rules the software follows, in any section, including tutorials, specifications, list items, and table rows that state values; a rule phrased with must, never, or only that the software enforces; a prediction or praise stated as fact with no one named as holding it",
+          "not_for": "Telling the reader to do something (instruction), a preference (opinion), or a heading, link, lead-in, or scenario that asserts nothing about the software (narrative)",
           "examples": [
-            "The CLI exits with code 2 when a claim is stale.",
-            "The default request timeout is 10 seconds.",
-            "Refunds are processed within five business days."
+            "Only claims whose doc or evidence side names a file changed since the ref are evaluated.",
+            "An agent cannot vouch a claim fresh."
           ]
         },
         "instruction": {
-          "what": "Tells the reader or an agent to do something, or not to do something",
-          "not_for": "A statement of how things are, even when it describes a step a tool performs on its own",
+          "definition": "Tells the reader or an agent to do something, or not to do something",
+          "covers": "Imperative steps, prohibitions addressed to the reader, and a command block the reader is told to run",
+          "not_for": "A statement of what the software does or requires on its own, even when phrased with must, never, or only (factual_claim); a heading that names a step (narrative)",
           "examples": [
-            "Run the test suite before committing.",
-            "Never edit generated files by hand."
+            "Run this before acting on an instruction file, a README, or any page in a knowledge repository.",
+            "For an `unverifiable` row, rewrite the sentence as an attributed opinion, or remove it."
           ]
         },
         "opinion": {
-          "what": "A preference, recommendation, value judgment, or belief of the author",
-          "not_for": "A fact that evidence could confirm or refute, or a direct instruction",
+          "definition": "A view that the text attributes to the author or to a named person",
+          "covers": "Preferences, recommendations, and expectations introduced by we think, we expect, I prefer, or a named holder",
+          "not_for": "A prediction or value judgment stated as fact with no holder named (factual_claim), or a direct instruction (instruction)",
           "examples": [
-            "We think this is the cleanest approach.",
-            "Small pull requests are easier to review."
+            "We expect this design to scale.",
+            "We think this is the cleanest approach."
           ]
         },
         "narrative": {
-          "what": "Framing, transitions, headings, labels, or summaries of what a section covers, asserting nothing checkable",
-          "not_for": "Any sentence that asserts a checkable fact, even inside an introduction",
+          "definition": "Text that organizes the page or describes a scenario or the reader's situation, and asserts nothing about the software",
+          "covers": "Headings, table header rows, link pointers, lead-ins that end in a colon, summaries of what a page or section covers, and example setups or 'When' lines that describe a situation",
+          "not_for": "Any sentence that states what the software does, even inside an introduction, a tutorial step, or an example (factual_claim)",
           "examples": [
-            "In this section we cover caching.",
-            "Installation",
-            "The rest of this page walks through an example."
+            "### 1. Before trusting a document",
+            "See [Audit](/audit)."
           ]
         }
       }
@@ -338,41 +357,43 @@
     "evidenceKind_4": {
       "type": "choice",
       "instructions": {
-        "question": "If `regions[4].text` is a factual claim, where would an agent look first for evidence that settles whether it is true?",
-        "focus": "Answer as if the region is a factual claim, even when it is not. Pick the single place an agent would check first."
+        "question": "If `regions[4].text`, the region whose `id` is `r4`, is a factual claim, where would an agent look first for evidence that settles whether it is true?",
+        "focus": "Answer as if the region is a factual claim, even when it is not. Pick the single place an agent would check first.",
+        "contrast": "A sentence that describes this repository's own software (its commands, flags, outputs, exit codes, file formats, fields, states, defaults, limits, or rules) is settled by its code, even when the sentence sits in a specification, design document, guide, or README; other_doc is for facts that a document decides and no code implements, such as a business policy or a plan."
       },
       "criteria": {
         "code": {
-          "what": "Source code, configuration, scripts, or tests in this repository",
-          "not_for": "Facts written down only in prose documents, or kept outside the repository",
+          "definition": "Source code, configuration, scripts, or tests in this repository",
+          "covers": "Commands, flags, outputs, exit codes, file formats, fields and required keys, states, labels, defaults, limits, and rules that this repository's software implements, wherever the sentence is written",
+          "not_for": "Facts written down only in prose documents (other_doc), or kept outside the repository (external)",
           "examples": [
-            "The CLI exits with code 2 when a claim is stale.",
-            "The default request timeout is 10 seconds."
+            "Only claims whose doc or evidence side names a file changed since the ref are evaluated.",
+            "An agent cannot vouch a claim fresh."
           ]
         },
         "other_doc": {
-          "what": "Another document in this repository, such as a policy, decision record, specification, or guide",
-          "not_for": "Facts the code itself shows, or facts kept outside the repository",
+          "definition": "Another document in this repository, such as a policy, decision record, specification, or guide",
+          "covers": "Policies, decisions, and plans that a document states and no code implements, and pointers to where a document holds information",
+          "not_for": "A specification or guide sentence about what this repository's software does (code), or facts kept outside the repository (external)",
           "examples": [
-            "Support replies to every ticket within one business day.",
-            "The team chose PostgreSQL over MySQL for its JSON support."
+            "Refunds are issued within two weeks of a request.",
+            "Annual billing details are in the billing policy."
           ]
         },
         "external": {
-          "what": "Something outside the repository: a dependency's documentation, a web page, a package registry, a dashboard, a person, or a third-party service",
-          "not_for": "Anything recorded in this repository",
+          "definition": "Something outside the repository: a dependency's documentation, a web page, a package registry, a dashboard, a person, or a third-party service",
+          "covers": "Prices, plans, third-party behavior, schedules, and facts about the world",
+          "not_for": "Anything recorded in this repository (code or other_doc)",
           "examples": [
-            "Bun supports Node's fs module.",
-            "The Pro plan costs $20 per month."
+            "The Pro plan costs $29 per month.",
+            "The official JS SDK fails under Bun as of 0.7.0."
           ]
         },
         "nothing": {
-          "what": "No evidence could settle it: a prediction, an intention, or a statement about something no one can observe",
-          "not_for": "Claims that are hard to check but could be checked by someone",
-          "examples": [
-            "This design will scale for years.",
-            "Users will love the new flow."
-          ]
+          "definition": "No evidence could settle it: a prediction, an intention, or a vague statement no one can observe",
+          "covers": "Forecasts, vague praise, and claims with no measurable content",
+          "not_for": "Claims that are hard to check but could be checked by someone (external)",
+          "examples": ["This design will scale for years.", "It is fast."]
         }
       }
     }

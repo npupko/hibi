@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 22083,
-        "end": 22448
+        "start": 22280,
+        "end": 22645
       }
     ]
   },
@@ -83,8 +83,8 @@
         },
         {
           "kind": "text-position",
-          "start": 17471,
-          "end": 17552
+          "start": 17518,
+          "end": 17599
         },
         {
           "kind": "ast-node",
@@ -108,12 +108,12 @@
           "kind": "text-quote",
           "exact": "`review acknowledged by ${ack.by} at ${ack.at}${ack.note ? `: ${ack.note}` : \"\"}; it no longer warns`,",
           "prefix": "undefined) {\n      findingReasons.push(\n        ",
-          "suffix": "\n      );\n    }\n    const live = c.enforcement !"
+          "suffix": "\n      );\n    }\n    const reviews = pass !== und"
         },
         {
           "kind": "text-position",
-          "start": 16771,
-          "end": 16873
+          "start": 16899,
+          "end": 17001
         },
         {
           "kind": "ast-node",
@@ -141,8 +141,8 @@
         },
         {
           "kind": "text-position",
-          "start": 18210,
-          "end": 18262
+          "start": 18257,
+          "end": 18309
         },
         {
           "kind": "ast-node",
@@ -165,5 +165,5 @@
     }
   ],
   "createdAt": "2026-10-23T14:12:19.061Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

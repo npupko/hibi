@@ -26,13 +26,13 @@
         {
           "kind": "text-quote",
           "exact": "const before = resolveClaimSides(claim, files, { ast: input.analyzer });",
-          "prefix": "relocated = 0;\n\n  // Resolve every span once.\n  ",
+          "prefix": "edSide[] = [];\n\n  // Resolve every span once.\n  ",
           "suffix": "\n\n  // Doc side.\n  const docFile = input.docPath"
         },
         {
           "kind": "text-position",
-          "start": 9879,
-          "end": 9951
+          "start": 11966,
+          "end": 12038
         },
         {
           "kind": "ast-node",
@@ -54,8 +54,8 @@
         },
         {
           "kind": "text-position",
-          "start": 11537,
-          "end": 11610
+          "start": 13624,
+          "end": 13697
         },
         {
           "kind": "ast-node",
@@ -83,5 +83,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:26:13.574Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

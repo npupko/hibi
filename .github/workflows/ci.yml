@@ -50,11 +50,17 @@ jobs:
           path: .claims/judge
           key: hibi-judge-${{ hashFiles('.claims/claims/**') }}
           restore-keys: hibi-judge-
-      # Dogfood: hibi checks its own docs against its own code. There is no
-      # TYPESAFE_API_KEY in CI, so judge passes are pending, which warns and
-      # never gates; changed, orphaned, or ambiguous anchors gate, and under
-      # --doc an expired claim gates too.
+      # Dogfood: hibi checks its own docs against its own code. With the
+      # TYPESAFE_API_KEY secret set, judgments missing from the cache are
+      # asked and gate as the spec says (refuted, and a conflict at or above
+      # the threshold, gate). Without it they are pending, which warns and
+      # never gates. Changed, orphaned, or ambiguous anchors gate either way,
+      # and under --doc an expired claim gates too.
       - name: Claims in .claims/ hold (whole store)
+        env:
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
         run: bun run src/cli/index.ts check --fail-on gating --json
       - name: README.md claims hold (doc gate; README has only code and reference claims)
+        env:
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
         run: bun run src/cli/index.ts check --doc README.md --fail-on gating --json

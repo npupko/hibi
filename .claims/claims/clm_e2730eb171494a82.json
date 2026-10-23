@@ -2,20 +2,20 @@
   "id": "clm_e2730eb171494a82",
   "documentId": "doc_02e774903d42ecc3",
   "kind": "code",
-  "sentence": "A `suggested` or `retired` claim never gates or warns, and when a rule would have fired its reasons say `<enforcement> claim: never gates or warns`.",
+  "sentence": "When a rule would have fired on a `suggested` claim its reasons say `suggested claim: never gates or warns`; a `retired` claim always has that one reason, `retired claim: never gates or warns` (section 7.2).",
   "doc": {
     "file": "design/SPEC.md",
     "selectors": [
       {
         "kind": "text-quote",
-        "exact": "A `suggested` or `retired` claim never gates or warns, and when a rule would have fired its reasons say `<enforcement> claim: never gates or warns`.",
-        "prefix": "s. It is the default whenever `--doc` is given. ",
+        "exact": "When a rule would have fired on a `suggested` claim its reasons say `suggested claim: never gates or warns`; a `retired` claim always has that one reason, `retired claim: never gates or warns` (section 7.2).",
+        "prefix": "ested` or `retired` claim never gates or warns. ",
         "suffix": "\n\nExit codes: `0` clean or warnings only; `2` ga"
       },
       {
         "kind": "text-position",
-        "start": 26736,
-        "end": 26884
+        "start": 27494,
+        "end": 27701
       }
     ]
   },
@@ -44,31 +44,31 @@
       ]
     },
     {
-      "file": "src/core/gating.ts",
+      "file": "src/algo/resolve.ts",
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "return { gates: false, warns: false, reasons };",
-          "prefix": "ement} claim: never gates or warns`);\n    }\n    ",
-          "suffix": "\n  }\n  return { gates, warns: warns && !gates, r"
+          "exact": "export const RETIRED_REASON = \"retired claim: never gates or warns\";",
+          "prefix": "e reason label of a retired claim's verdict. */\n",
+          "suffix": "\n\n/**\n * The verdict of a retired claim: its spa"
         },
         {
           "kind": "text-position",
-          "start": 4208,
-          "end": 4255
+          "start": 16180,
+          "end": 16248
         },
         {
           "kind": "ast-node",
           "language": "typescript",
-          "nodeType": "return_statement",
-          "structuralHash": "b870f9715494ad25",
-          "semanticHash": "d90f8b5fcf5af18e"
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "b09532aa4f8b21b8"
         },
         {
           "kind": "value",
           "language": "typescript",
-          "nodeKind": "false",
-          "value": "false"
+          "nodeKind": "string",
+          "value": "\"retired claim: never gates or warns\""
         }
       ]
     }
@@ -84,5 +84,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:48.807Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

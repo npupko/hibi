@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 60027,
-        "end": 60142
+        "start": 61796,
+        "end": 61911
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 15096,
-          "end": 15132
+          "start": 15107,
+          "end": 15143
         },
         {
           "kind": "ast-node",
@@ -54,8 +54,8 @@
         },
         {
           "kind": "text-position",
-          "start": 14903,
-          "end": 14979
+          "start": 14914,
+          "end": 14990
         },
         {
           "kind": "ast-node",
@@ -67,18 +67,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/check.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "files = await changedFiles(since, anchorRoot);",
-          "prefix": "(since !== undefined) {\n        try {\n          ",
-          "suffix": "\n        } catch (e) {\n          return fail((e "
+          "prefix": "d;\n  if (since !== undefined) {\n    try {\n      ",
+          "suffix": "\n    } catch (e) {\n      return fail((e as Error"
         },
         {
           "kind": "text-position",
-          "start": 19751,
-          "end": 19797
+          "start": 1550,
+          "end": 1596
         },
         {
           "kind": "ast-node",
@@ -101,5 +101,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:19:34.664Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

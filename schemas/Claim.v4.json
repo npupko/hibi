@@ -1,103 +1,106 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "id": {
-      "type": "string",
-      "pattern": "^clm_[0-9a-f]{16}$"
-    },
-    "documentId": {
-      "type": "string",
-      "pattern": "^doc_[0-9a-f]{16}$"
-    },
-    "kind": {
-      "type": "string",
-      "enum": [
-        "code",
-        "reference",
-        "attested"
-      ]
-    },
-    "sentence": {
-      "type": "string",
-      "minLength": 1
-    },
-    "doc": {
-      "$ref": "#/$defs/SelectorBundle"
-    },
-    "evidence": {
-      "default": [],
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/SelectorBundle"
-      }
-    },
-    "sources": {
-      "default": [],
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/Source"
-      }
-    },
-    "procedure": {
-      "default": null,
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Procedure"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "owner": {
-      "$ref": "#/$defs/Actor"
-    },
-    "ttl": {
-      "type": "string",
-      "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+S)?)?$"
-    },
-    "enforcement": {
-      "default": "enforced",
-      "type": "string",
-      "enum": [
-        "enforced",
-        "suggested",
-        "retired"
-      ]
-    },
-    "attestations": {
-      "default": [],
-      "type": "array",
-      "items": {
-        "$ref": "#/$defs/Attestation"
-      }
-    },
-    "createdAt": {
-      "type": "string",
-      "format": "date-time",
-      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-    },
-    "ref": {
-      "type": "string"
-    }
-  },
-  "required": [
-    "id",
-    "documentId",
-    "kind",
-    "sentence",
-    "doc",
-    "evidence",
-    "sources",
-    "procedure",
-    "enforcement",
-    "attestations",
-    "createdAt",
-    "ref"
-  ],
-  "additionalProperties": false,
+  "$ref": "#/$defs/Claim",
   "$defs": {
+    "Claim": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^clm_[0-9a-f]{16}$"
+        },
+        "documentId": {
+          "type": "string",
+          "pattern": "^doc_[0-9a-f]{16}$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "code",
+            "reference",
+            "attested"
+          ]
+        },
+        "sentence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "doc": {
+          "$ref": "#/$defs/SelectorBundle"
+        },
+        "evidence": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SelectorBundle"
+          }
+        },
+        "sources": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Source"
+          }
+        },
+        "procedure": {
+          "default": null,
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Procedure"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "owner": {
+          "$ref": "#/$defs/Actor"
+        },
+        "ttl": {
+          "type": "string",
+          "pattern": "^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+S)?)?$"
+        },
+        "enforcement": {
+          "default": "enforced",
+          "type": "string",
+          "enum": [
+            "enforced",
+            "suggested",
+            "retired"
+          ]
+        },
+        "attestations": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Attestation"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "ref": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "documentId",
+        "kind",
+        "sentence",
+        "doc",
+        "evidence",
+        "sources",
+        "procedure",
+        "enforcement",
+        "attestations",
+        "createdAt",
+        "ref"
+      ],
+      "additionalProperties": false
+    },
     "SelectorBundle": {
       "type": "object",
       "properties": {
@@ -297,7 +300,7 @@
         "at": {
           "type": "string",
           "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
         },
         "basis": {
           "type": "string",
@@ -334,6 +337,7 @@
                       "minLength": 1
                     }
                   ],
+                  "items": false,
                   "minItems": 2,
                   "maxItems": 2
                 }

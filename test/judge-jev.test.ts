@@ -33,6 +33,8 @@ import {
 
 const FIXTURES = join(import.meta.dir, "fixtures", "judge");
 const MODEL = "jev-1.13.0";
+/** The triage fixtures were recorded later, against the pinned model. */
+const TRIAGE_MODEL = "jev-1.14.0";
 const KEY_ENV = { TYPESAFE_API_KEY: "test-key" };
 
 interface Inputs {
@@ -123,7 +125,7 @@ describe("request shapes match the fixtures", () => {
     const expected = await fixture<SystemOneRequest>("triage.request.json");
     const response = await fixture<SystemOneResponse>("triage.response.json");
     const { http, calls } = httpWith([json(response)]);
-    const judge = new JevJudge({ model: MODEL, http });
+    const judge = new JevJudge({ model: TRIAGE_MODEL, http });
 
     const out = await judge.triage(inputs.triage.doc, inputs.triage.regions);
 
@@ -134,7 +136,7 @@ describe("request shapes match the fixtures", () => {
     expect(headers.authorization).toBe("Bearer test-key");
     expect(out.request).toEqual([expected]);
     expect(out.answers).toEqual([response.answers]);
-    expect(out.model).toBe("jev-1.13.0");
+    expect(out.model).toBe(TRIAGE_MODEL);
 
     const byId = Object.fromEntries(out.result.map((r) => [r.regionId, r]));
     expect(byId.r0?.kind).toBe("narrative");
@@ -149,7 +151,7 @@ describe("request shapes match the fixtures", () => {
       nothing: 0,
     });
     expect(byId.r2?.evidenceKind).toBe("other_doc");
-    expect(byId.r2?.evidenceProbabilities?.external).toBe(0.25);
+    expect(byId.r2?.evidenceProbabilities?.external).toBe(0.24);
     expect(byId.r3?.kind).toBe("instruction");
     expect(byId.r3?.evidenceKind).toBeUndefined();
     expect(byId.r4?.kind).toBe("opinion");
@@ -291,7 +293,11 @@ describe("pure builders and mappers", () => {
   test("builders return the fixture bodies without a network call", async () => {
     const inputs = await fixture<Inputs>("inputs.json");
     expect(
-      buildTriageRequests(MODEL, inputs.triage.doc, inputs.triage.regions),
+      buildTriageRequests(
+        TRIAGE_MODEL,
+        inputs.triage.doc,
+        inputs.triage.regions,
+      ),
     ).toEqual([await fixture<SystemOneRequest>("triage.request.json")]);
     expect(buildSupportsRequest(MODEL, inputs.supports)).toEqual(
       await fixture<SystemOneRequest>("supports.request.json"),
@@ -300,6 +306,19 @@ describe("pure builders and mappers", () => {
       buildConflictRequest(MODEL, inputs.conflict.a, inputs.conflict.b),
     ).toEqual(await fixture<SystemOneRequest>("conflict.request.json"));
     expect(buildTriageRequests(MODEL, { path: "empty.md" }, [])).toEqual([]);
+  });
+
+  test("triage questions name the region by chunk index and by id", () => {
+    const [request] = buildTriageRequests(MODEL, { path: "doc.md" }, [
+      region("r7", "The default port is 8080."),
+      region("r9", "Run the tests."),
+    ]);
+    const kind = request?.questions.kind_1 as {
+      instructions: { question: string };
+    };
+    expect(kind.instructions.question).toContain("`regions[1].text`");
+    expect(kind.instructions.question).toContain("`r9`");
+    expect(JSON.stringify(request?.questions)).not.toContain("{{");
   });
 
   test("mappers turn cached answers into the same results the judge returns", async () => {
@@ -602,6 +621,28 @@ describe("http client", () => {
 });
 
 describe("live", () => {
+  test.skipIf(!process.env.TYPESAFE_API_KEY?.trim())(
+    "triage on the fixture regions",
+    async () => {
+      const inputs = await fixture<Inputs>("inputs.json");
+      const judge = new JevJudge({
+        model: TRIAGE_MODEL,
+        http: new TypeSafeHttp(),
+      });
+      const out = await judge.triage(inputs.triage.doc, inputs.triage.regions);
+      const kinds = Object.fromEntries(
+        out.result.map((r) => [r.regionId, r.kind]),
+      );
+      expect(kinds).toEqual({
+        r0: "narrative",
+        r1: "factual_claim",
+        r2: "factual_claim",
+        r3: "instruction",
+        r4: "opinion",
+      });
+    },
+    30_000,
+  );
   test.skipIf(!process.env.TYPESAFE_API_KEY?.trim())(
     "supports on an obvious pair",
     async () => {

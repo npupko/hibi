@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 13582,
-        "end": 13640
+        "start": 13913,
+        "end": 13971
       }
     ]
   },
@@ -50,18 +50,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/check.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "if (values.overview) {",
-          "prefix": "  await emit(mode, value, async () => {\n        ",
-          "suffix": "\n          const [claims, config] = await Promis"
+          "prefix": "a);\n  await emit(mode, value, async () => {\n    ",
+          "suffix": "\n      const [claims, config] = await Promise.al"
         },
         {
           "kind": "text-position",
-          "start": 20619,
-          "end": 20641
+          "start": 2317,
+          "end": 2339
         },
         {
           "kind": "ast-node",
@@ -84,5 +84,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:28:17.907Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

@@ -1,38 +1,43 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "type": "object",
-  "properties": {
-    "instructions": {
-      "type": "string",
-      "minLength": 1
-    },
-    "steps": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "minLength": 1
-          },
-          "command": {
-            "type": "string",
-            "minLength": 1
-          },
-          "stdin": {
-            "type": "string"
-          }
+  "$ref": "#/$defs/Procedure",
+  "$defs": {
+    "Procedure": {
+      "type": "object",
+      "properties": {
+        "instructions": {
+          "type": "string",
+          "minLength": 1
         },
-        "required": [
-          "id",
-          "command"
-        ],
-        "additionalProperties": false
-      }
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "command": {
+                "type": "string",
+                "minLength": 1
+              },
+              "stdin": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "command"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "instructions"
+      ],
+      "additionalProperties": false
     }
-  },
-  "required": [
-    "instructions"
-  ],
-  "additionalProperties": false
+  }
 }

@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "The requests are the exact bodies the adapter sends.",
-        "prefix": "-1.13.0` (see `test/fixtures/judge/README.md`). ",
+        "prefix": "-1.14.0` (see `test/fixtures/judge/README.md`). ",
         "suffix": "\n\n## 14. Decisions log\n\n| # | decision |\n|---|--"
       },
       {
         "kind": "text-position",
-        "start": 75262,
-        "end": 75314
+        "start": 78722,
+        "end": 78774
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 5166,
-          "end": 5240
+          "start": 5282,
+          "end": 5356
         },
         {
           "kind": "ast-node",
@@ -60,8 +60,8 @@
         },
         {
           "kind": "text-position",
-          "start": 3186,
-          "end": 3258
+          "start": 3295,
+          "end": 3367
         },
         {
           "kind": "ast-node",
@@ -89,8 +89,8 @@
         },
         {
           "kind": "text-position",
-          "start": 5987,
-          "end": 6061
+          "start": 6103,
+          "end": 6177
         },
         {
           "kind": "ast-node",
@@ -119,5 +119,5 @@
     }
   ],
   "createdAt": "2026-10-23T13:55:03.570Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

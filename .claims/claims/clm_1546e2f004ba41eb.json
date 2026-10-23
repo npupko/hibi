@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 14881,
-        "end": 15035
+        "start": 14969,
+        "end": 15123
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 10792,
-          "end": 10855
+          "start": 10927,
+          "end": 10990
         },
         {
           "kind": "ast-node",
@@ -55,13 +55,13 @@
         {
           "kind": "text-quote",
           "exact": "retiredCount += 1;",
-          "prefix": "ed\";\n    if (enforcement === \"retired\") {\n      ",
+          "prefix": "erdicts) {\n    if (v.doc === \"retired\") {\n      ",
           "suffix": "\n      continue;\n    }\n    docHist[v.doc] += 1;\n"
         },
         {
           "kind": "text-position",
-          "start": 19425,
-          "end": 19443
+          "start": 19395,
+          "end": 19413
         },
         {
           "kind": "ast-node",
@@ -95,5 +95,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:24:10.337Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

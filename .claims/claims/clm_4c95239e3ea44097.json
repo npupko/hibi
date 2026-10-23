@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "| 36 | a review acknowledgement leaves the judge state `review`; it stops the warning and the worklist entry, not the verdict |",
-        "prefix": "check pending`; neither gates (amended by 51) |\n",
+        "prefix": " neither gates (amended by 51, amended by 63) |\n",
         "suffix": "\n| 37 | a judge answer hibi cannot use (`JudgeEr"
       },
       {
         "kind": "text-position",
-        "start": 79126,
-        "end": 79253
+        "start": 82601,
+        "end": 82728
       }
     ]
   },
@@ -89,8 +89,8 @@
         },
         {
           "kind": "text-position",
-          "start": 12761,
-          "end": 12820
+          "start": 12772,
+          "end": 12831
         },
         {
           "kind": "ast-node",
@@ -119,5 +119,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:22:24.146Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

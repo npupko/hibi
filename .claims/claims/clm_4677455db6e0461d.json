@@ -2,20 +2,20 @@
   "id": "clm_4677455db6e0461d",
   "documentId": "doc_25887c67cd18d901",
   "kind": "code",
-  "sentence": "| `evidence` | the same five, plus `unavailable` | when the claim has evidence sides; the worst state over them |",
+  "sentence": "| `evidence` | the same five, plus `unavailable`; `retired` for a retired claim | when the claim has evidence sides; the worst state over them |",
   "doc": {
     "file": "docs/verdicts.mdx",
     "selectors": [
       {
         "kind": "text-quote",
-        "exact": "| `evidence` | the same five, plus `unavailable` | when the claim has evidence sides; the worst state over them |",
-        "prefix": ", `changed`, `ambiguous`, `orphaned` | always |\n",
+        "exact": "| `evidence` | the same five, plus `unavailable`; `retired` for a retired claim | when the claim has evidence sides; the worst state over them |",
+        "prefix": "aned`; `retired` for a retired claim | always |\n",
         "suffix": "\n| `judge` | `supported`, `refuted`, `review`, `"
       },
       {
         "kind": "text-position",
-        "start": 1357,
-        "end": 1470
+        "start": 1388,
+        "end": 1532
       }
     ]
   },
@@ -77,6 +77,35 @@
           "value": "0"
         }
       ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    doc: \"retired\",\n    ...(claim.evidence.length > 0 ? { evidence: \"retired\" as const } : {}),",
+          "prefix": "mentId: claim.documentId,\n    kind: claim.kind,\n",
+          "suffix": "\n    expired: false,\n    conflicts: [],\n    gate"
+        },
+        {
+          "kind": "text-position",
+          "start": 16623,
+          "end": 16718
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "712470056945b50d",
+          "semanticHash": "3cbaadd6173075f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired\""
+        }
+      ]
     }
   ],
   "sources": [],
@@ -90,5 +119,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:28:11.089Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

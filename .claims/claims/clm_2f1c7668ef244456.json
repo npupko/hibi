@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "**supersede.** `--from` must be a registered document; otherwise the command fails with `document <path> is not registered`, and no document is created for it.",
-        "prefix": "e new doc span when the doc side is relocated.\n\n",
+        "prefix": "It exits 0 unless an operational error occurs.\n\n",
         "suffix": " `--to` is registered when it is not yet. `super"
       },
       {
         "kind": "text-position",
-        "start": 69428,
-        "end": 69587
+        "start": 72737,
+        "end": 72896
       }
     ]
   },
@@ -84,5 +84,5 @@
     }
   ],
   "createdAt": "2026-10-23T13:54:07.891Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

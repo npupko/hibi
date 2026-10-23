@@ -110,7 +110,7 @@ EOF
 
 A batch with any invalid item records nothing and lists every problem, one line each. After the batch is recorded, `hibi audit --doc docs/pricing.md` shows the three rows with their `claimId`.
 
-If you edit the document after recording and a claim reports `doc: "moved"`, run `hibi reanchor <id>` to store the new position.
+If you edit the document after recording and a claim reports `doc: "moved"`, run `hibi reanchor <id>` to store the new position, or `hibi reanchor --moved --doc docs/pricing.md` for every moved claim of the document.
 
 ---
 
@@ -322,7 +322,7 @@ At check time:
 
 An evidence file must stay inside its root: a plain path inside the knowledge repo, an aliased path inside the alias directory. Record refuses `../api/src/limits.ts` (`path escapes its root; an evidence file must be inside the anchor root.`) and `api:../handbook/AGENTS.md`; use `api:src/limits.ts`. If a stored side escapes its root, `check` reports it `unavailable` with `evidence: path escapes its root`.
 
-`hibi reanchor <id>` while the sibling is not checked out keeps that evidence side as stored and says so in `warnings[]` (`evidence side api:src/limits.ts kept unchanged: sibling repo "api" is not checked out at ../api`); the doc side is still re-resolved.
+`hibi reanchor <id>` while the sibling is not checked out keeps that evidence side as stored and says so in `warnings[]` (`evidence side api:src/limits.ts kept unchanged: sibling repo "api" is not checked out at ../api`); the doc side is still re-resolved. A remediation command that names `--code-file api:src/limits.ts` keeps that span as stored and lists it in `kept` (`evidence: repository api not checked out; kept as stored`); it exits 0 when another side was relocated.
 
 `hibi list --path api:src/limits.ts` finds the claims anchored there. `check --since <ref>` diffs only the knowledge repo, so it does not select claims whose evidence changed in a sibling repo; run a full `hibi check` when the sibling moved. In CI, check out the sibling at the aliased path (recipe 7), or its claims stay `unavailable`.
 

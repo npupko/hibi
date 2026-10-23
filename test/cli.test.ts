@@ -1410,8 +1410,17 @@ describe("CLI end-to-end", () => {
     const d = await repo();
     const res = await run(d, ["schema", "--name", "Claim"]);
     expect(res.code).toBe(0);
-    expect(res.json.type).toBe("object");
-    expect(res.json.properties?.attestations).toBeDefined();
+    // zod 4.5 emits a registered root schema as a `$ref` into `$defs`.
+    const raw = res.json as CliJson & {
+      $ref?: string;
+      $defs?: Record<string, CliJson>;
+    };
+    const root =
+      raw.$ref !== undefined
+        ? raw.$defs?.[raw.$ref.split("/").at(-1) ?? ""]
+        : raw;
+    expect(root?.type).toBe("object");
+    expect(root?.properties?.attestations).toBeDefined();
     const list = await run(d, ["schema"]);
     expect(list.stdout).toContain("JudgeCacheEntry");
     expect(list.stdout).not.toContain("ResolveParams");
@@ -1742,5 +1751,254 @@ describe("B.12 action.yml", () => {
       "Under the default fail-on: gating, a moved span only warns.",
     );
     expect(yml).toMatch(/fail-on:[\s\S]*?default: "gating"/);
+  });
+});
+
+interface BulkJson {
+  ok?: boolean;
+  error?: string;
+  action?: string;
+  moved?: boolean;
+  relocated?: number;
+  dryRun?: boolean;
+  next?: string;
+  claims?: {
+    id?: string;
+    relocated?: { side?: string; file?: string }[];
+    kept?: { side?: string; file?: string; state?: string; reason?: string }[];
+  }[];
+}
+
+describe("reanchor --moved", () => {
+  async function recordCode(
+    d: string,
+    doc: string,
+    sentence: string,
+    file: string,
+    quote: string,
+  ): Promise<string> {
+    const rec = await run(d, [
+      "record",
+      "--kind",
+      "code",
+      "--doc",
+      doc,
+      "--doc-quote",
+      sentence,
+      "--code-file",
+      file,
+      "--code-quote",
+      quote,
+    ]);
+    expect(rec.code).toBe(0);
+    return rec.json.id ?? "";
+  }
+
+  async function twoDocs() {
+    const d = await repo();
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+    await write(d, "src/b.ts", "export const BACKOFF_MS = 200;\n");
+    await write(d, "src/c.ts", "export const TIMEOUT_S = 30;\n");
+    await write(
+      d,
+      "README.md",
+      "# Doc\n\nRetries are capped at 5 attempts.\n\nThe timeout is 30 seconds.\n",
+    );
+    await write(d, "docs/b.md", "# B\n\nBackoff starts at 200 ms.\n");
+    await run(d, ["init"]);
+    const a = await recordCode(
+      d,
+      "README.md",
+      "Retries are capped at 5 attempts",
+      "src/retry.ts",
+      "MAX_ATTEMPTS = 5",
+    );
+    const b = await recordCode(
+      d,
+      "docs/b.md",
+      "Backoff starts at 200 ms",
+      "src/b.ts",
+      "BACKOFF_MS = 200",
+    );
+    const c = await recordCode(
+      d,
+      "README.md",
+      "The timeout is 30 seconds",
+      "src/c.ts",
+      "TIMEOUT_S = 30",
+    );
+    // a and b move; c changes and stays as stored.
+    await write(
+      d,
+      "src/retry.ts",
+      "// header\n\nexport const MAX_ATTEMPTS = 5;\n",
+    );
+    await write(d, "src/b.ts", "// header\n\nexport const BACKOFF_MS = 200;\n");
+    await write(d, "src/c.ts", "export const TIMEOUT_S = 60;\n");
+    return { d, a, b, c };
+  }
+
+  async function bulk(d: string, args: string[]) {
+    const r = await run(d, ["reanchor", "--moved", ...args]);
+    return { code: r.code, json: r.json as BulkJson, stdout: r.stdout };
+  }
+
+  test("relocates moved claims across two docs and lists kept sides", async () => {
+    const { d, a, b, c } = await twoDocs();
+    const r = await bulk(d, []);
+    expect(r.code).toBe(0);
+    expect(r.json.action).toBe("reanchor");
+    expect(r.json.moved).toBe(true);
+    expect(r.json.relocated).toBe(2);
+    expect(r.json.next).toBe("hibi check");
+    const byId = new Map((r.json.claims ?? []).map((x) => [x.id, x]));
+    expect(byId.get(a)?.relocated).toEqual([
+      { side: "evidence", file: "src/retry.ts" },
+    ]);
+    expect(byId.get(b)?.relocated).toEqual([
+      { side: "evidence", file: "src/b.ts" },
+    ]);
+    expect(byId.get(c)?.relocated).toEqual([]);
+    expect(byId.get(c)?.kept?.[0]?.reason).toBe(
+      "evidence: changed; pass --code-quote to re-anchor",
+    );
+    const check = await run(d, ["check"]);
+    const state = new Map(
+      (check.json.verdicts ?? []).map((v) => [v.claimId, v.evidence]),
+    );
+    expect(state.get(a)).toBe("unchanged");
+    expect(state.get(b)).toBe("unchanged");
+    expect(state.get(c)).toBe("changed");
+    // Human output: a header, then one line per listed claim.
+    const human = await run(d, ["reanchor", "--moved", "--format", "compact"]);
+    expect(human.code).toBe(0);
+    expect(human.stdout.trim().split("\n")).toHaveLength(2);
+  });
+
+  test("--doc restricts it to one document", async () => {
+    const { d, a, b } = await twoDocs();
+    const r = await bulk(d, ["--doc", "docs/b.md"]);
+    expect(r.code).toBe(0);
+    expect(r.json.relocated).toBe(1);
+    expect(r.json.claims?.map((x) => x.id)).toEqual([b]);
+    const check = await run(d, ["check"]);
+    const state = new Map(
+      (check.json.verdicts ?? []).map((v) => [v.claimId, v.evidence]),
+    );
+    expect(state.get(a)).toBe("moved");
+    expect(state.get(b)).toBe("unchanged");
+    const none = await bulk(d, ["--doc", "docs/none.md"]);
+    expect(none.code).toBe(1);
+    expect(none.json.error).toContain(
+      "no claims are registered for docs/none.md",
+    );
+  });
+
+  test("--dry-run writes nothing", async () => {
+    const { d } = await twoDocs();
+    const before = await snapshotStore(d);
+    const r = await bulk(d, ["--dry-run"]);
+    expect(r.code).toBe(0);
+    expect(r.json.dryRun).toBe(true);
+    expect(r.json.relocated).toBe(2);
+    expect(r.json.next).toBe("re-run without --dry-run to apply");
+    expect(sameStore(before, await snapshotStore(d))).toBe(true);
+  });
+
+  test("--moved with a claim id, span flags, or without --moved and an id is an error", async () => {
+    const { d, a } = await twoDocs();
+    const withId = await run(d, ["reanchor", a, "--moved"]);
+    expect(withId.code).toBe(1);
+    expect(withId.json.error).toContain("takes no claim id");
+    const withSpan = await run(d, [
+      "reanchor",
+      "--moved",
+      "--doc-quote",
+      "Retries",
+    ]);
+    expect(withSpan.code).toBe(1);
+    const bare = await run(d, ["reanchor"]);
+    expect(bare.code).toBe(1);
+    expect(bare.json.error).toBe(
+      "reanchor requires a <claim-id> argument, or --moved",
+    );
+  });
+});
+
+describe("reanchor with an explicit span in a sibling repo that is not checked out", () => {
+  test("keeps that side as stored and exits 0 when another side relocated", async () => {
+    const d = await repo();
+    const sibling = await mkdtemp(join(tmpdir(), "ce-sibling-"));
+    dirs.push(sibling);
+    await write(sibling, "src/limits.ts", "export const LIMIT = 100;\n");
+    await write(d, "src/local.ts", "export const LOCAL = 1;\n");
+    await write(d, "doc.md", "# Doc\n\nLimits are 100 requests.\n");
+    await run(d, ["init"]);
+    const configPath = join(d, ".claims", "config.json");
+    const config = JSON.parse(await readFile(configPath, "utf8"));
+    await writeFile(
+      configPath,
+      JSON.stringify({ ...config, repos: { api: sibling } }),
+    );
+    const rec = await run(d, [
+      "record",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "Limits are 100 requests.",
+      "--kind",
+      "code",
+      "--code-file",
+      "api:src/limits.ts",
+      "--code-quote",
+      "LIMIT = 100",
+      "--code-file",
+      "src/local.ts",
+      "--code-quote",
+      "LOCAL = 1",
+    ]);
+    expect(rec.code).toBe(0);
+    const id = rec.json.id ?? "";
+    // The sibling repo goes away; the local span changes.
+    await rm(sibling, { recursive: true, force: true });
+    await write(d, "src/local.ts", "export const LOCAL = 2;\n");
+    const re = await run(d, [
+      "reanchor",
+      id,
+      "--code-file",
+      "api:src/limits.ts",
+      "--code-quote",
+      "LIMIT = 100",
+      "--code-file",
+      "src/local.ts",
+      "--code-quote",
+      "LOCAL = 2",
+    ]);
+    expect(re.code).toBe(0);
+    expect(re.json.kept).toEqual([
+      {
+        side: "evidence",
+        file: "api:src/limits.ts",
+        state: "unavailable",
+        reason: "evidence: repository api not checked out; kept as stored",
+      },
+    ]);
+    expect(re.json.after?.evidence?.map((e) => e.quote)).toEqual([
+      "LIMIT = 100",
+      "LOCAL = 2",
+    ]);
+    // Only the unavailable side given: nothing relocated, exit 1.
+    const only = await run(d, [
+      "reanchor",
+      id,
+      "--code-file",
+      "api:src/limits.ts",
+      "--code-quote",
+      "LIMIT = 100",
+    ]);
+    expect(only.code).toBe(1);
+    expect(only.json.errors).toEqual([
+      "evidence: repository api not checked out; kept as stored",
+    ]);
   });
 });

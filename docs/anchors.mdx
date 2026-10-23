@@ -116,7 +116,7 @@ An evidence side's file may then be `api:src/limits.ts`. At check time:
 | the alias was removed from config | `unavailable` | `repo alias "api" is not defined in .claims/config.json repos` |
 | the path resolves outside the alias directory or the anchor root | `unavailable` | `path escapes its root` |
 
-`unavailable` warns and never gates. Without aliases nothing changes. `hibi reanchor` keeps a side whose sibling repo is not checked out unchanged, with a warning.
+`unavailable` warns and never gates. Without aliases nothing changes. `hibi reanchor` keeps a side whose sibling repo is not checked out unchanged, with a warning. An explicit `--code-file` span in that repo keeps the stored span and is listed in `kept` with the reason `evidence: repository api not checked out; kept as stored`.
 
 ## Anchors and the judge
 

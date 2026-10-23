@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 76699,
-        "end": 76780
+        "start": 80159,
+        "end": 80240
       }
     ]
   },
@@ -83,27 +83,21 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "reason: `review: contradictory, ${below.join(\", \")}`,",
-          "prefix": "me: \"review\",\n      probability: pContra,\n      ",
-          "suffix": "\n    };\n  }\n  if (r.relation === \"consistent\" &&"
+          "exact": "reason: `review: contradictory, confidence=${f2(r.confidence)} below threshold ${f2(threshold)}`,",
+          "prefix": "\"review\",\n        probability: pContra,\n        ",
+          "suffix": "\n      };\n    }\n    if (r.contradicts < CONTRADI"
         },
         {
           "kind": "text-position",
-          "start": 6708,
-          "end": 6761
+          "start": 6687,
+          "end": 6784
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "pair",
-          "structuralHash": "6908d4a7dad25f2e",
-          "semanticHash": "055921eea214b7a2"
-        },
-        {
-          "kind": "value",
-          "language": "typescript",
-          "nodeKind": "string",
-          "value": "\", \""
+          "structuralHash": "453c24b1bf22b001",
+          "semanticHash": "ebdbdb1b96fa876a"
         }
       ]
     }
@@ -119,5 +113,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:22:23.221Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 5606,
-        "end": 5703
+        "start": 5854,
+        "end": 5951
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 5656,
-          "end": 5721
+          "start": 5952,
+          "end": 6017
         },
         {
           "kind": "ast-node",
@@ -78,5 +78,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:23:26.536Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

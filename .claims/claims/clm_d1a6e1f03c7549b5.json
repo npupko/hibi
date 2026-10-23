@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 27230,
-        "end": 27366
+        "start": 28047,
+        "end": 28183
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 22198,
-          "end": 22322
+          "start": 22202,
+          "end": 22326
         },
         {
           "kind": "ast-node",
@@ -50,18 +50,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/check.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "failOn: (str(values[\"fail-on\"]) ?? \"gating\") as FailOn,",
-          "prefix": "     onlyFiles: files,\n          doc,\n          ",
-          "suffix": "\n          ref: await currentRef(anchorRoot),\n  "
+          "prefix": "heck({\n      onlyFiles: files,\n      doc,\n      ",
+          "suffix": "\n      ref: await currentRef(anchorRoot),\n    })"
         },
         {
           "kind": "text-position",
-          "start": 20045,
-          "end": 20100
+          "start": 1807,
+          "end": 1862
         },
         {
           "kind": "ast-node",
@@ -89,8 +89,8 @@
         },
         {
           "kind": "text-position",
-          "start": 5901,
-          "end": 5961
+          "start": 5912,
+          "end": 5972
         },
         {
           "kind": "ast-node",
@@ -119,5 +119,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:48.923Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

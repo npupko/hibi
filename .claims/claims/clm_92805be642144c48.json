@@ -1,0 +1,123 @@
+{
+  "id": "clm_92805be642144c48",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "On a `changed` side `<text>` is that extended text, double-quoted with `\"`, `$`, `` ` `` and `\\` escaped and written `--doc-quote=\"<text>\"` when it starts with `-`; without located text, and on an `ambiguous` side, it is the placeholder `<new sentence>` or `<quote>`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "On a `changed` side `<text>` is that extended text, double-quoted with `\"`, `$`, `` ` `` and `\\` escaped and written `--doc-quote=\"<text>\"` when it starts with `-`; without located text, and on an `ambiguous` side, it is the placeholder `<new sentence>` or `<quote>`.",
+        "prefix": "word or a number is never suggested as a quote. ",
+        "suffix": " The command names every evidence span in stored"
+      },
+      {
+        "kind": "text-position",
+        "start": 64709,
+        "end": 64976
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return `\"${text.replace(/[\"$`\\\\]/g, \"\\\\$&\")}\"`;",
+          "prefix": "/\nfunction shellQuote(text: string): string {\n  ",
+          "suffix": "\n}\n\n/** A path as a shell word: bare when it has"
+        },
+        {
+          "kind": "text-position",
+          "start": 2422,
+          "end": 2469
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "3eb2e22b1343aab1",
+          "semanticHash": "1839b6fefc2a9ed9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\\\\$&\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return `--${flag}${text.startsWith(\"-\") ? \"=\" : \" \"}${shellQuote(text)}`;",
+          "prefix": "lueFlag(flag: string, text: string): string {\n  ",
+          "suffix": "\n}\n\nconst reanchorCmd = (id: string, flags = \"\")"
+        },
+        {
+          "kind": "text-position",
+          "start": 3870,
+          "end": 3943
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "950c7e42321897cb",
+          "semanticHash": "d7e805fe1693139c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"-\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "v.doc === \"changed\" && v.docText ? v.docText : \"<new sentence>\";",
+          "prefix": "v.doc === \"ambiguous\") {\n    const text =\n      ",
+          "suffix": "\n    parts.push(valueFlag(\"doc-quote\", text));\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 3103,
+          "end": 3167
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "3a9b8ee75a16935d",
+          "semanticHash": "2746548039f5b7bc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"changed\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:50.355Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:50.355Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

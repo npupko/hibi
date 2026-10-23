@@ -143,8 +143,8 @@
         },
         {
           "kind": "text-position",
-          "start": 11567,
-          "end": 11595
+          "start": 11655,
+          "end": 11683
         }
       ]
     },
@@ -159,8 +159,8 @@
         },
         {
           "kind": "text-position",
-          "start": 15132,
-          "end": 15170
+          "start": 15220,
+          "end": 15258
         }
       ]
     },
@@ -169,14 +169,14 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "| `changed` | fix the sentence if wrong, then `hibi reanchor <id>` |",
+          "exact": "| `changed` | fix the sentence if wrong, then run the remediation `reanchor` command (it names the new span) |",
           "prefix": "ts `<…>` placeholders.\n\n| flag | do |\n|---|---|\n",
           "suffix": "\n| `orphaned` | `hibi reanchor <id> --suggest`, "
         },
         {
           "kind": "text-position",
           "start": 6022,
-          "end": 6090
+          "end": 6132
         }
       ]
     },
@@ -191,8 +191,8 @@
         },
         {
           "kind": "text-position",
-          "start": 6385,
-          "end": 6440
+          "start": 6529,
+          "end": 6584
         }
       ]
     },
@@ -207,8 +207,8 @@
         },
         {
           "kind": "text-position",
-          "start": 6477,
-          "end": 6502
+          "start": 6621,
+          "end": 6646
         }
       ]
     }
@@ -224,5 +224,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:29:30.128Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

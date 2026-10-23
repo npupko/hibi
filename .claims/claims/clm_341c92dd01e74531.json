@@ -10,12 +10,12 @@
         "kind": "text-quote",
         "exact": "`strandedClaims` lists the live claims still on the old document after the pass,",
         "prefix": " failed with an error, so it is normally empty. ",
-        "suffix": " and is normally empty too. A claim sits on a su"
+        "suffix": " and is normally empty too. A claim stays on a s"
       },
       {
         "kind": "text-position",
-        "start": 3634,
-        "end": 3714
+        "start": 3809,
+        "end": 3889
       }
     ]
   },
@@ -55,5 +55,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:19:28.774Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

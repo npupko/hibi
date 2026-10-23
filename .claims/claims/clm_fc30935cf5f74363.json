@@ -31,15 +31,15 @@
         },
         {
           "kind": "text-position",
-          "start": 10560,
-          "end": 10612
+          "start": 10735,
+          "end": 10787
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "return_statement",
-          "structuralHash": "b3647cdb91fb5062",
-          "semanticHash": "fa5a87d736a35ba4"
+          "structuralHash": "a378dd9884fd6569",
+          "semanticHash": "8808deb32774bf8f"
         }
       ]
     },
@@ -54,8 +54,8 @@
         },
         {
           "kind": "text-position",
-          "start": 10705,
-          "end": 10763
+          "start": 10880,
+          "end": 10938
         },
         {
           "kind": "ast-node",
@@ -78,5 +78,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:26:35.920Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

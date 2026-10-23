@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "Every judgment is looked up in the judge cache first.",
-        "prefix": "findings.\n\n### 7.3 When the judge is consulted\n\n",
+        "prefix": "uld read.\n\n### 7.3 When the judge is consulted\n\n",
         "suffix": " The judge is asked only on a miss.\n\n- `referenc"
       },
       {
         "kind": "text-position",
-        "start": 22779,
-        "end": 22832
+        "start": 23327,
+        "end": 23380
       }
     ]
   },
@@ -77,8 +77,8 @@
         },
         {
           "kind": "text-position",
-          "start": 10245,
-          "end": 10278
+          "start": 10674,
+          "end": 10707
         },
         {
           "kind": "ast-node",
@@ -124,5 +124,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:41.674Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

@@ -1,0 +1,65 @@
+{
+  "id": "clm_472c8a7e5692405f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Human output prints one line per listed claim.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Human output prints one line per listed claim.",
+        "prefix": "th a side relocated or kept, in claim-id order. ",
+        "suffix": " It exits 0 unless an operational error occurs.\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 72642,
+        "end": 72688
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/misc.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  for (const c of result.claims) {\n    const moved = c.relocated.map((r) => `${r.side} ${r.file}`).join(\", \");",
+          "prefix": "length} claim(s)${dryTag(style, dryRun)}`,\n  ];\n",
+          "suffix": "\n    const kept = c.kept.map((k) => k.reason).jo"
+        },
+        {
+          "kind": "text-position",
+          "start": 4582,
+          "end": 4692
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "f7cac73d3e2a71bb",
+          "semanticHash": "890473583ee3e32e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\", \""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:53.803Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:53.803Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

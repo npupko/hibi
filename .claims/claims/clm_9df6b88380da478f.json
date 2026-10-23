@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 9137,
-          "end": 9200
+          "start": 9710,
+          "end": 9773
         },
         {
           "kind": "ast-node",
@@ -44,25 +44,25 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "const ref = await currentRef(anchorRoot);\n      const defaultBy",
-          "prefix": "rd\": {\n      const engine = await open();\n      ",
-          "suffix": " = str(values.by);\n      const fromFile = str(va"
+          "exact": "const ref = await currentRef(anchorRoot);\n  const defaultBy",
+          "prefix": "kens } = args;\n  const engine = await open();\n  ",
+          "suffix": " = str(values.by);\n  const fromFile = str(values"
         },
         {
           "kind": "text-position",
-          "start": 16279,
-          "end": 16342
+          "start": 3784,
+          "end": 3843
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "statement_block",
-          "structuralHash": "6afb28e26caa7502",
-          "semanticHash": "35c22744768794c1"
+          "structuralHash": "974ad89548d91341",
+          "semanticHash": "64364197aa759ae6"
         }
       ]
     }
@@ -78,5 +78,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:22:05.112Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

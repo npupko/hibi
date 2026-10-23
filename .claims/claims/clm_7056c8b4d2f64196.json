@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 30064,
-        "end": 30186
+        "start": 30881,
+        "end": 31003
       }
     ]
   },
@@ -38,8 +38,8 @@
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "program",
-          "structuralHash": "930934abff85f58d",
-          "semanticHash": "16a5b2e50e214d01"
+          "structuralHash": "687f40d60b2b0b1a",
+          "semanticHash": "18cd71f84240aebe"
         },
         {
           "kind": "value",
@@ -61,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:50.074Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

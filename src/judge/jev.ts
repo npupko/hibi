@@ -202,29 +202,35 @@ export function isCodeByConstruction(region: Region): boolean {
 type Questions = Record<string, unknown>;
 type Answers = Record<string, Answer>;
 
-function fillIndex(value: unknown, placeholder: string, i: number): unknown {
-  if (typeof value === "string") return value.replaceAll(placeholder, `${i}`);
-  if (Array.isArray(value))
-    return value.map((v) => fillIndex(v, placeholder, i));
+function fillPlaceholders(
+  value: unknown,
+  fill: (s: string) => string,
+): unknown {
+  if (typeof value === "string") return fill(value);
+  if (Array.isArray(value)) return value.map((v) => fillPlaceholders(v, fill));
   if (value !== null && typeof value === "object") {
     return Object.fromEntries(
       Object.entries(value).map(([k, v]) => [
-        k.replaceAll(placeholder, `${i}`),
-        fillIndex(v, placeholder, i),
+        fill(k),
+        fillPlaceholders(v, fill),
       ]),
     );
   }
   return value;
 }
 
-/** Questions for the region at index `i` of a request's `state.regions`. */
-function triageQuestionsFor(i: number, code: boolean): Questions {
-  const filled = fillIndex(
-    triageFile.questions,
-    triageFile.placeholder,
-    i,
+/**
+ * Questions for the region at index `i` of a request's `state.regions`.
+ * The region's id is filled in too: the model locates `regions[i]` reliably
+ * only when the question also names the id it carries.
+ */
+function triageQuestionsFor(i: number, region: Region): Questions {
+  const filled = fillPlaceholders(triageFile.questions, (s) =>
+    s
+      .replaceAll(triageFile.placeholder, `${i}`)
+      .replaceAll(triageFile.idPlaceholder, region.id),
   ) as Questions;
-  if (code) delete filled[`evidenceKind_${i}`];
+  if (isCodeByConstruction(region)) delete filled[`evidenceKind_${i}`];
   return filled;
 }
 
@@ -302,9 +308,9 @@ export function buildTriageRequests(
     // Costed at the region's index in the whole document, which is never
     // shorter than its index inside a chunk. Each part is measured with its
     // key and enclosing brackets so the parts add up to at least the whole.
-    const questions = Object.entries(
-      triageQuestionsFor(i, isCodeByConstruction(r)),
-    ).map(([id, question]) => estimateTokens({ [id]: question }));
+    const questions = Object.entries(triageQuestionsFor(i, r)).map(
+      ([id, question]) => estimateTokens({ [id]: question }),
+    );
     return {
       state: estimateTokens([stateRegion(r)]),
       questions: questions.reduce((sum, t) => sum + t, 0),
@@ -318,7 +324,7 @@ export function buildTriageRequests(
       state: { doc: docState, regions: chunk.map(stateRegion) },
       questions: Object.assign(
         {},
-        ...chunk.map((r, i) => triageQuestionsFor(i, isCodeByConstruction(r))),
+        ...chunk.map((r, i) => triageQuestionsFor(i, r)),
       ),
     };
   });

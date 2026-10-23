@@ -2,20 +2,20 @@
   "id": "clm_c0adf4c8c0234702",
   "documentId": "doc_02e774903d42ecc3",
   "kind": "code",
-  "sentence": "| `evidence` | same five, plus `unavailable`; the worst state over the evidence sides; absent when there is no evidence side |",
+  "sentence": "| `evidence` | same five, plus `unavailable`; the worst state over the evidence sides; `retired` for a retired claim; absent when there is no evidence side |",
   "doc": {
     "file": "design/SPEC.md",
     "selectors": [
       {
         "kind": "text-quote",
-        "exact": "| `evidence` | same five, plus `unavailable`; the worst state over the evidence sides; absent when there is no evidence side |",
-        "prefix": "ged / moved / changed / ambiguous / orphaned` |\n",
+        "exact": "| `evidence` | same five, plus `unavailable`; the worst state over the evidence sides; `retired` for a retired claim; absent when there is no evidence side |",
+        "prefix": "/ orphaned`, or `retired` for a retired claim |\n",
         "suffix": "\n| `judge` | `supported / refuted / review / pen"
       },
       {
         "kind": "text-position",
-        "start": 21556,
-        "end": 21682
+        "start": 21722,
+        "end": 21879
       }
     ]
   },
@@ -83,21 +83,21 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "/** Worst state over the evidence spans; absent when the claim has none. */",
-          "prefix": "\n    kind: ClaimKind,\n    doc: AnchorState,\n    ",
-          "suffix": "\n    evidence: EvidenceState.optional(),\n    /**"
+          "exact": "/** Worst state over the evidence spans, or `retired`; absent when the claim has none. */",
+          "prefix": " not resolved. */\n    doc: VerdictDocState,\n    ",
+          "suffix": "\n    evidence: VerdictEvidenceState.optional(),\n"
         },
         {
           "kind": "text-position",
-          "start": 15784,
-          "end": 15859
+          "start": 16433,
+          "end": 16522
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "comment",
           "structuralHash": "aab2824d98c50668",
-          "semanticHash": "242f33465c96de53"
+          "semanticHash": "dd4a059addcdc735"
         }
       ]
     }
@@ -113,5 +113,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:28.197Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

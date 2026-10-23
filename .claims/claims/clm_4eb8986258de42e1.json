@@ -10,12 +10,12 @@
         "kind": "text-quote",
         "exact": "Each request's state holds `doc` plus only that chunk's regions, and question ids and `regions[i]` paths index within the request.",
         "prefix": "a chunk before either budget would be exceeded. ",
-        "suffix": " A single region that does not fit is an error.\n"
+        "suffix": " Each triage question names its region twice: by"
       },
       {
         "kind": "text-position",
-        "start": 32114,
-        "end": 32244
+        "start": 32931,
+        "end": 33061
       }
     ]
   },
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 10705,
-          "end": 10763
+          "start": 10880,
+          "end": 10938
         },
         {
           "kind": "ast-node",
@@ -48,21 +48,21 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "...chunk.map((r, i) => triageQuestionsFor(i, isCodeByConstruction(r))),",
+          "exact": "...chunk.map((r, i) => triageQuestionsFor(i, r)),",
           "prefix": "  questions: Object.assign(\n        {},\n        ",
           "suffix": "\n      ),\n    };\n  });\n}\n\nexport function buildS"
         },
         {
           "kind": "text-position",
-          "start": 10816,
-          "end": 10887
+          "start": 10991,
+          "end": 11040
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "spread_element",
-          "structuralHash": "d4ff1295ee6488c4",
-          "semanticHash": "e26b15e7c17e89dc"
+          "structuralHash": "f145c084bda44ecb",
+          "semanticHash": "48922eacf892e075"
         }
       ]
     }
@@ -78,5 +78,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:20:51.326Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

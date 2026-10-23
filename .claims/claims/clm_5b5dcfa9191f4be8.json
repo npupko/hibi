@@ -58,6 +58,19 @@
       "by": "agent:claude-dogfood",
       "at": "2026-10-22T19:12:57.929Z",
       "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:21:45.893Z",
+      "basis": "ack",
+      "note": "value rule read the decision row number 63 as a value; the row and the sentence state compatible thresholds (0.3 forced-unrelated floor vs same_subject threshold)",
+      "ack": {
+        "pairId": "clm_5b5dcfa9191f4be8:clm_73837318b2eb4ef6",
+        "sentenceHashes": [
+          "df700f3ad3d55e34b325c956622a06ef015987e5f09fbe1f5aa38acd75d57186",
+          "ea92d9b0ec77d652a7ec1d2b4749054ee121aa2a2f5f6f982e2e5b904b036d55"
+        ]
+      }
     }
   ],
   "createdAt": "2026-10-22T19:12:57.929Z",

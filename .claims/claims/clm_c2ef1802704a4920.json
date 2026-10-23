@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "A retired claim is not counted in `expired` or in the per-document summary counts.",
-        "prefix": "s, which are none of gating, warning, or clean. ",
+        "prefix": "als the number of verdicts with `doc: retired`. ",
         "suffix": " A claim that is not retired is a `suspect` of i"
       },
       {
         "kind": "text-position",
-        "start": 61457,
-        "end": 61539
+        "start": 63280,
+        "end": 63362
       }
     ]
   },
@@ -27,12 +27,12 @@
           "kind": "text-quote",
           "exact": "// A retired claim counts only in `retired`, never in the axis histograms or `expired`.",
           "prefix": "et warningCount = 0;\n  let retiredCount = 0;\n\n  ",
-          "suffix": "\n  for (const v of verdicts) {\n    const enforce"
+          "suffix": "\n  for (const v of verdicts) {\n    if (v.doc ==="
         },
         {
           "kind": "text-position",
-          "start": 19193,
-          "end": 19280
+          "start": 19240,
+          "end": 19327
         },
         {
           "kind": "ast-node",
@@ -49,13 +49,13 @@
         {
           "kind": "text-quote",
           "exact": "      retiredCount += 1;\n      continue;",
-          "prefix": "uggested\";\n    if (enforcement === \"retired\") {\n",
+          "prefix": "v of verdicts) {\n    if (v.doc === \"retired\") {\n",
           "suffix": "\n    }\n    docHist[v.doc] += 1;\n    if (v.eviden"
         },
         {
           "kind": "text-position",
-          "start": 19419,
-          "end": 19459
+          "start": 19389,
+          "end": 19429
         },
         {
           "kind": "ast-node",
@@ -84,5 +84,5 @@
     }
   ],
   "createdAt": "2026-10-23T13:54:07.729Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

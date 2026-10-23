@@ -144,7 +144,7 @@ There is one threshold, `judge.threshold`, default `0.8`. It applies to every ju
 | judgment | gates | review (warns) | clean |
 |---|---|---|---|
 | `supports` | `refutes` at or above the threshold, or the value rule fires | `supports` or `refutes` below the threshold, or `does_not_address` | `supports` at or above the threshold |
-| `conflict` | `contradictory` with confidence, `same_subject`, and `contradicts` all at their bars; or the value rule fires | `contradictory` with any of those below its bar | everything else |
+| `conflict` | `contradictory` with confidence, `same_subject`, and `contradicts` all at their bars; or the value rule fires | `contradictory` with `same_subject` at or above the threshold and confidence below the threshold or `contradicts` below 0.5 | everything else, including a `contradictory` lean with `same_subject` below the threshold |
 | `triage` | never | never | n/a: a row below the threshold is `unsure` |
 
 On a verdict, `supports` outcomes appear as the `judge` axis: `supported`, `refuted`, `review`, or `pending`. Every outcome carries a reason label, prefixed `judge: ` on the verdict:
@@ -227,7 +227,7 @@ Cached verdicts keep working without a key. CI without the secret still gates on
 |---|---|
 | price | $0.042 per million input tokens; output tokens are free |
 | typical latency | about 100 ms per request |
-| `triage` of 500 regions | about 10 to 20 requests, 250k to 400k tokens, $0.01 to $0.02, a few seconds |
+| `triage` of 500 regions | about 14 requests and 650k tokens at 4 characters per token (measured on 500 regions of the specification), about $0.03, a few seconds; the count rose because each criterion carries a definition and examples |
 | `supports` for 500 claims | 500 requests, 0.15M to 0.75M tokens, $0.006 to $0.03, about 10 s at 8 in flight |
 
 Rate limits are set per organization in the TypeSafe console; the docs do not state default values. Because answers are cached, a repeated `check` on an unchanged tree makes no requests.

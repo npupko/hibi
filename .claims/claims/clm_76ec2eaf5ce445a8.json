@@ -14,25 +14,25 @@
       },
       {
         "kind": "text-position",
-        "start": 55470,
-        "end": 55594
+        "start": 57239,
+        "end": 57363
       }
     ]
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/shared.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "async function fail(\n  message: string,\n  mode: OutputMode,\n  errors?: string[],\n): Promise<never> {",
-          "prefix": "rs` (one line each) also goes into the JSON. */\n",
+          "prefix": "e line each) also goes into the JSON. */\nexport ",
           "suffix": "\n  if (isHuman(mode)) {\n    await printErr(`${ma"
         },
         {
           "kind": "text-position",
-          "start": 3971,
-          "end": 4071
+          "start": 3170,
+          "end": 3270
         },
         {
           "kind": "ast-node",
@@ -44,18 +44,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "return fail(`record --from-file: ${(e as Error).message}`, mode);",
-          "prefix": "`);\n          }\n        } catch (e) {\n          ",
-          "suffix": "\n        }\n        if (!Array.isArray(parsed)) {"
+          "prefix": "r).message})`);\n      }\n    } catch (e) {\n      ",
+          "suffix": "\n    }\n    if (!Array.isArray(parsed)) {\n      r"
         },
         {
           "kind": "text-position",
-          "start": 17057,
-          "end": 17122
+          "start": 4478,
+          "end": 4543
         },
         {
           "kind": "ast-node",
@@ -67,18 +67,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/evidence.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "return fail(`evidence --from-file: ${(e as Error).message}`, mode);",
-          "prefix": "sage})`);\n        }\n      } catch (e) {\n        ",
-          "suffix": "\n      }\n      const isItem = (item: unknown): i"
+          "prefix": "s Error).message})`);\n    }\n  } catch (e) {\n    ",
+          "suffix": "\n  }\n  const isItem = (item: unknown): item is R"
         },
         {
           "kind": "text-position",
-          "start": 28893,
-          "end": 28960
+          "start": 909,
+          "end": 976
         },
         {
           "kind": "ast-node",
@@ -90,18 +90,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/shared.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "throw new Error(`--from-file ${fromFile}: no such file`);",
           "prefix": "tring }).code;\n    if (code === \"ENOENT\")\n      ",
-          "suffix": "\n    throw e;\n  }\n}\n\n/** The replacement referen"
+          "suffix": "\n    throw e;\n  }\n}\n"
         },
         {
           "kind": "text-position",
-          "start": 5799,
-          "end": 5856
+          "start": 4158,
+          "end": 4215
         },
         {
           "kind": "ast-node",
@@ -124,5 +124,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:18:57.095Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

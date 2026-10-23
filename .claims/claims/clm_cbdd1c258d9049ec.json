@@ -14,14 +14,14 @@
       },
       {
         "kind": "text-position",
-        "start": 59358,
-        "end": 59588
+        "start": 61127,
+        "end": 61357
       }
     ]
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
@@ -31,8 +31,8 @@
         },
         {
           "kind": "text-position",
-          "start": 11252,
-          "end": 11296
+          "start": 3345,
+          "end": 3389
         },
         {
           "kind": "ast-node",
@@ -50,7 +50,7 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
@@ -60,8 +60,8 @@
         },
         {
           "kind": "text-position",
-          "start": 11339,
-          "end": 11358
+          "start": 3432,
+          "end": 3451
         },
         {
           "kind": "ast-node",
@@ -73,7 +73,7 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
@@ -83,8 +83,8 @@
         },
         {
           "kind": "text-position",
-          "start": 11363,
-          "end": 11396
+          "start": 3456,
+          "end": 3489
         },
         {
           "kind": "ast-node",
@@ -96,18 +96,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "...(r.warnings.length > 0 ? { warnings: r.warnings } : {}),",
           "prefix": "ated,\n    existingClaims: r.existingClaims,\n    ",
-          "suffix": "\n  };\n}\n\n/** Pre-scan the output flags so a pars"
+          "suffix": "\n  };\n}\n\nexport async function runRecord(\n  ctx:"
         },
         {
           "kind": "text-position",
-          "start": 11401,
-          "end": 11460
+          "start": 3494,
+          "end": 3553
         },
         {
           "kind": "ast-node",
@@ -125,18 +125,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "batch: true,",
-          "prefix": "          \"record\",\n            {\n              ",
-          "suffix": "\n              count: summaries.length,\n        "
+          "prefix": "envelope(\n        \"record\",\n        {\n          ",
+          "suffix": "\n          count: summaries.length,\n          up"
         },
         {
           "kind": "text-position",
-          "start": 18730,
-          "end": 18742
+          "start": 5930,
+          "end": 5942
         },
         {
           "kind": "ast-node",
@@ -154,18 +154,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/record.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "updated: results.filter((r) => r.updated).length,",
-          "prefix": "         count: summaries.length,\n              ",
-          "suffix": "\n              results: summaries,\n            }"
+          "prefix": "e,\n          count: summaries.length,\n          ",
+          "suffix": "\n          results: summaries,\n        },\n      "
         },
         {
           "kind": "text-position",
-          "start": 18796,
-          "end": 18845
+          "start": 5988,
+          "end": 6037
         },
         {
           "kind": "ast-node",
@@ -193,5 +193,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:19:34.590Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

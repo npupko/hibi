@@ -21,18 +21,18 @@
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/check.ts",
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "extra.since = since;\n        extra.changedFiles = files;",
-          "prefix": " = {};\n      if (since !== undefined) {\n        ",
-          "suffix": "\n      }\n      if (doc !== undefined) {\n        "
+          "exact": "extra.since = since;\n    extra.changedFiles = files;",
+          "prefix": "unknown> = {};\n  if (since !== undefined) {\n    ",
+          "suffix": "\n  }\n  if (doc !== undefined) {\n    extra.doc = "
         },
         {
           "kind": "text-position",
-          "start": 20325,
-          "end": 20381
+          "start": 2055,
+          "end": 2107
         },
         {
           "kind": "ast-node",
@@ -55,5 +55,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:23:37.825Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

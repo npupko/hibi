@@ -1,0 +1,65 @@
+{
+  "id": "clm_bbf33aa9ace5445c",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The hash is over the claim's stored `sentence`, not the current document text.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The hash is over the claim's stored `sentence`, not the current document text.",
+        "prefix": "o the values in the ack (sections 9.3 and 9.4). ",
+        "suffix": " The stored sentence changes only when the claim"
+      },
+      {
+        "kind": "text-position",
+        "start": 9657,
+        "end": 9735
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hashes = [sentenceHash(pair.a.sentence), sentenceHash(pair.b.sentence)];",
+          "prefix": "xport function isAcked(pair: Pair): boolean {\n  ",
+          "suffix": "\n  for (const claim of [pair.a, pair.b]) {\n    f"
+        },
+        {
+          "kind": "text-position",
+          "start": 8184,
+          "end": 8262
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "32c2a1cba34c8a82",
+          "semanticHash": "6a8942dd18e90160"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[sentenceHash(pair.a.sentence),sentenceHash(pair.b.sentence)]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:47.764Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:47.764Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

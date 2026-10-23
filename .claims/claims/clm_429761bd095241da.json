@@ -2,20 +2,20 @@
   "id": "clm_429761bd095241da",
   "documentId": "doc_02e774903d42ecc3",
   "kind": "code",
-  "sentence": "| `reanchor <claim-id>` | `--doc <path>` with `--doc-quote` or `--doc-range`, `--code-file`, `--code-quote`, `--code-range`, `--ref-file`, `--ref-quote`, `--ref-range`, `--suggest`, `--dry-run` | re-resolve the spans and store the new baseline; `--suggest` is read-only |",
+  "sentence": "| `reanchor <claim-id>`, `reanchor --moved` | `--doc <path>` with `--doc-quote` or `--doc-range`, `--code-file`, `--code-quote`, `--code-range`, `--ref-file`, `--ref-quote`, `--ref-range`, `--suggest`, `--dry-run`; `--moved` with `--doc <path>` and `--dry-run` | re-resolve the spans and store the new baseline; `--suggest` is read-only; `--moved` relocates every live claim side that reads `moved`, optionally on one document |",
   "doc": {
     "file": "design/SPEC.md",
     "selectors": [
       {
         "kind": "text-quote",
-        "exact": "| `reanchor <claim-id>` | `--doc <path>` with `--doc-quote` or `--doc-range`, `--code-file`, `--code-quote`, `--code-range`, `--ref-file`, `--ref-quote`, `--ref-range`, `--suggest`, `--dry-run` | re-resolve the spans and store the new baseline; `--suggest` is read-only |",
+        "exact": "| `reanchor <claim-id>`, `reanchor --moved` | `--doc <path>` with `--doc-quote` or `--doc-range`, `--code-file`, `--code-quote`, `--code-range`, `--ref-file`, `--ref-quote`, `--ref-range`, `--suggest`, `--dry-run`; `--moved` with `--doc <path>` and `--dry-run` | re-resolve the spans and store the new baseline; `--suggest` is read-only; `--moved` relocates every live claim side that reads `moved`, optionally on one document |",
         "prefix": "` (required), `--fail-uncovered` | section 10 |\n",
         "suffix": "\n| `retire <claim-id>` | `--dry-run` | withdraw;"
       },
       {
         "kind": "text-position",
-        "start": 53909,
-        "end": 54180
+        "start": 55521,
+        "end": 55949
       }
     ]
   },
@@ -26,20 +26,20 @@
         {
           "kind": "text-quote",
           "exact": "      ...DOC_SPAN,\n      ...codeSpan(true),\n      ...REF_SPAN,\n      {\n        name: \"suggest\",",
-          "prefix": "t (with --doc-quote or --doc-range).\",\n      },\n",
+          "prefix": "d: only the claims of this document.\",\n      },\n",
           "suffix": "\n        type: \"boolean\",\n        help: \"Read-on"
         },
         {
           "kind": "text-position",
-          "start": 14520,
-          "end": 14615
+          "start": 15131,
+          "end": 15226
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "array",
-          "structuralHash": "6f99fa30bbd5c852",
-          "semanticHash": "4087c7a8e8c1c931"
+          "structuralHash": "e027ae8206e60ac5",
+          "semanticHash": "73dbc09106283b4b"
         },
         {
           "kind": "value",
@@ -56,12 +56,12 @@
           "kind": "text-quote",
           "exact": "help: \"Read-only: rank candidate locations for the stored doc and evidence quotes.\",",
           "prefix": "me: \"suggest\",\n        type: \"boolean\",\n        ",
-          "suffix": "\n      },\n      DRY_RUN,\n    ],\n    examples: [\n"
+          "suffix": "\n      },\n      {\n        name: \"moved\",\n       "
         },
         {
           "kind": "text-position",
-          "start": 14649,
-          "end": 14733
+          "start": 15260,
+          "end": 15344
         },
         {
           "kind": "ast-node",
@@ -83,27 +83,27 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "\"Re-resolve a claim's spans and store the new baseline; or list candidate locations with --suggest.\"",
+          "exact": "\"Re-resolve a claim's spans and store the new baseline; relocate every moved side with --moved; or list candidate locations with --suggest.\",",
           "prefix": "},\n  {\n    name: \"reanchor\",\n    summary:\n      ",
-          "suffix": ",\n    description:\n      \"Without span flags onl"
+          "suffix": "\n    description:\n      \"Without span flags only"
         },
         {
           "kind": "text-position",
           "start": 13271,
-          "end": 13371
+          "end": 13412
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "string",
           "structuralHash": "19cf82e6c268509f",
-          "semanticHash": "34d2d5798b7ab513"
+          "semanticHash": "bc089d9bf11692e4"
         },
         {
           "kind": "value",
           "language": "typescript",
           "nodeKind": "string",
-          "value": "\"Re-resolve a claim's spans and store the new baseline; or list candidate locations with --suggest.\""
+          "value": "\"Re-resolve a claim's spans and store the new baseline; relocate every moved side with --moved; or list candidate locations with --suggest.\""
         }
       ]
     }
@@ -119,5 +119,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:18:56.636Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

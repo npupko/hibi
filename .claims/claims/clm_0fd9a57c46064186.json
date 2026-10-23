@@ -2,20 +2,20 @@
   "id": "clm_0fd9a57c46064186",
   "documentId": "doc_25887c67cd18d901",
   "kind": "code",
-  "sentence": "| `summary` | counts; `retired` claims are in none of `gating`, `warning`, `clean` |",
+  "sentence": "| `summary` | counts; `retired` claims are in none of `gating`, `warning`, `clean`, a",
   "doc": {
     "file": "docs/verdicts.mdx",
     "selectors": [
       {
         "kind": "text-quote",
-        "exact": "| `summary` | counts; `retired` claims are in none of `gating`, `warning`, `clean` |",
+        "exact": "| `summary` | counts; `retired` claims are in none of `gating`, `warning`, `clean`, a",
         "prefix": "h `--doc` only: the document path, normalized |\n",
-        "suffix": "\n| `summary.conflictPass` | `{ pairs, requests, "
+        "suffix": "nd `summary.retired` equals the number of verdic"
       },
       {
         "kind": "text-position",
-        "start": 12200,
-        "end": 12284
+        "start": 12456,
+        "end": 12541
       }
     ]
   },
@@ -49,13 +49,13 @@
         {
           "kind": "text-quote",
           "exact": "retiredCount += 1;\n      continue;",
-          "prefix": "ed\";\n    if (enforcement === \"retired\") {\n      ",
+          "prefix": "erdicts) {\n    if (v.doc === \"retired\") {\n      ",
           "suffix": "\n    }\n    docHist[v.doc] += 1;\n    if (v.eviden"
         },
         {
           "kind": "text-position",
-          "start": 19425,
-          "end": 19459
+          "start": 19395,
+          "end": 19429
         },
         {
           "kind": "ast-node",
@@ -89,5 +89,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:28:16.935Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

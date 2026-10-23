@@ -79,18 +79,18 @@
       ]
     },
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/init.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "await appendFile(file, `${sep}${INSTRUCTIONS_LINE}\\n`);",
           "prefix": "xt === \"\" || text.endsWith(\"\\n\") ? \"\" : \"\\n\";\n  ",
-          "suffix": "\n  return { file, appended: true };\n}\n\n/** The l"
+          "suffix": "\n  return { file, appended: true };\n}\n\nexport as"
         },
         {
           "kind": "text-position",
-          "start": 10931,
-          "end": 10986
+          "start": 1079,
+          "end": 1134
         },
         {
           "kind": "ast-node",
@@ -113,5 +113,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:27:53.353Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }

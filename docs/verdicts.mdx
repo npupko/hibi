@@ -19,8 +19,8 @@ hibi check --since origin/main  # the claims touching a file changed since the r
 
 | axis | values | present |
 |---|---|---|
-| `doc` | `unchanged`, `moved`, `changed`, `ambiguous`, `orphaned` | always |
-| `evidence` | the same five, plus `unavailable` | when the claim has evidence sides; the worst state over them |
+| `doc` | `unchanged`, `moved`, `changed`, `ambiguous`, `orphaned`; `retired` for a retired claim | always |
+| `evidence` | the same five, plus `unavailable`; `retired` for a retired claim | when the claim has evidence sides; the worst state over them |
 | `judge` | `supported`, `refuted`, `review`, `pending` | when a judgment applies: `reference` claims, and `attested` claims with judged evidence |
 | `expired` | boolean | always; see [Attestations](/attestations) |
 | `conflicts` | `[{ claimId, probability, reason }]` | always; empty when there are none |
@@ -55,7 +55,7 @@ Every rule hibi applies shows up as a label. A label you do not understand is a 
 | a conflict in review, or a conflict check pending | warn | warn |
 | `suggested` or `retired` claim | never | never |
 
-A `suggested` claim that would gate or warn gets the label `suggested claim: never gates or warns`.
+A `suggested` claim that would gate or warn gets the label `suggested claim: never gates or warns`. A `retired` claim is not resolved: its verdict reads `doc: "retired"`, `evidence: "retired"` when it has an evidence side, and carries exactly one reason, `retired claim: never gates or warns`.
 
 ## Exit codes
 
@@ -227,7 +227,7 @@ After `MAX_ATTEMPTS = 5` becomes `50` in `src/retry.ts`, the code claim gates an
 | `ref` | the git HEAD, or `WORKTREE` when there is no commit |
 | `since`, `changedFiles` | with `--since` only |
 | `doc` | with `--doc` only: the document path, normalized |
-| `summary` | counts; `retired` claims are in none of `gating`, `warning`, `clean` |
+| `summary` | counts; `retired` claims are in none of `gating`, `warning`, `clean`, and `summary.retired` equals the number of verdicts with `doc: "retired"` |
 | `summary.conflictPass` | `{ pairs, requests, pending, scope }`: pairs judged, judge requests answered in this run, pairs still pending, and `store` (every pair) or `doc` (only pairs with a claim in the `--doc` document) |
 | `documents[].suspect[]` | per claim that gates or warns, and per unretired claim on a superseded or archived document, its most severe status tag, such as `evidence:changed`, `judge:pending`, `conflict`, `conflict:review`, `conflict:pending`, `expired`, `superseded`; never `unchanged` |
 

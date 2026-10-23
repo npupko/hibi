@@ -389,7 +389,9 @@ export function topAction(rem: Remediation | null): RemediationAction | null {
   );
 }
 
+/** A retired claim's verdict (`doc: retired`) has no remediation. */
 export function remediationForVerdict(verdict: Verdict): Remediation | null {
+  if (verdict.doc === "retired" || verdict.evidence === "retired") return null;
   return remediationFor({
     claimId: verdict.claimId,
     kind: verdict.kind,

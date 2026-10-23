@@ -14,25 +14,25 @@
       },
       {
         "kind": "text-position",
-        "start": 65113,
-        "end": 65213
+        "start": 67045,
+        "end": 67145
       }
     ]
   },
   "evidence": [
     {
-      "file": "src/cli/index.ts",
+      "file": "src/cli/commands/evidence.ts",
       "selectors": [
         {
           "kind": "text-quote",
           "exact": "const raws = Array.isArray(parsed) ? parsed : [parsed];",
-          "prefix": "&& item !== null && !Array.isArray(item);\n      ",
-          "suffix": "\n      if (by === undefined) {\n        const mis"
+          "prefix": "ct\" && item !== null && !Array.isArray(item);\n  ",
+          "suffix": "\n  if (by === undefined) {\n    const missing = r"
         },
         {
           "kind": "text-position",
-          "start": 29123,
-          "end": 29178
+          "start": 1123,
+          "end": 1178
         },
         {
           "kind": "ast-node",
@@ -61,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-23T08:18:19.729Z",
-  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
 }
