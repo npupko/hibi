@@ -1,0 +1,94 @@
+{
+  "id": "clm_d18669225a02454a",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "| `text-quote` | all | the exact text, plus up to 48 characters of prefix and suffix context |",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `text-quote` | all | the exact text, plus up to 48 characters of prefix and suffix context |",
+        "prefix": "lector | sides | what it stores |\n|---|---|---|\n",
+        "suffix": "\n| `text-position` | all | the character offsets"
+      },
+      {
+        "kind": "text-position",
+        "start": 1069,
+        "end": 1163
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/anchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ kind: \"text-quote\", exact, prefix, suffix },",
+          "prefix": "T),\n  );\n\n  const selectors: Selector[] = [\n    ",
+          "suffix": "\n    { kind: \"text-position\", start, end },\n  ];"
+        },
+        {
+          "kind": "text-position",
+          "start": 1962,
+          "end": 2008
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "e139858fccd3a68d",
+          "semanticHash": "2f77820015696811"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"text-quote\""
+        }
+      ]
+    },
+    {
+      "file": "src/algo/params.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "TEXT_QUOTE_CONTEXT = 48",
+          "prefix": "and suffix a text-quote stores. */\nexport const ",
+          "suffix": ";\n\n/**\n * Normalized text similarity at or above"
+        },
+        {
+          "kind": "text-position",
+          "start": 1152,
+          "end": 1175
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "3e47faab960c1c6f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "48"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:25.816Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:25.816Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

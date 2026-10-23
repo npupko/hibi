@@ -1,0 +1,82 @@
+{
+  "id": "clm_e821b954bf614bea",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The result's `relocated[]` holds `{ claimId, doc, evidence? }` per moved claim, in claim-id order.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The result's `relocated[]` holds `{ claimId, doc, evidence? }` per moved claim, in claim-id order.",
+        "prefix": " still shows `doc: changed` on the next check.\n\n",
+        "suffix": " `doc` and `evidence` are the anchor states afte"
+      },
+      {
+        "kind": "text-position",
+        "start": 70136,
+        "end": 70234
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "relocated.push({",
+          "prefix": " doc: input.to,\n        dryRun,\n      });\n      ",
+          "suffix": "\n        claimId: claim.id,\n        doc: result."
+        },
+        {
+          "kind": "text-position",
+          "start": 3813,
+          "end": 3829
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "7454fa1fa474e0e2",
+          "semanticHash": "42343cbfb19f9bea"
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const f of files.sort()) {",
+          "prefix": "ndsWith(\".json\"));\n    const out: T[] = [];\n    ",
+          "suffix": "\n      out.push(\n        this.parseRecord(\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 9214,
+          "end": 9245
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "515a5f8f2f7104c8",
+          "semanticHash": "28b3d0f3fe629f76"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:03.086Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:03.086Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

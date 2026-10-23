@@ -275,9 +275,7 @@ describe("renderCheck: v4 tags, reasons, and worklist", () => {
       conflicts: [],
       gates: false,
       warns: true,
-      reasons: [
-        "conflict check pending with clm_0123456789abcdef: judge unavailable",
-      ],
+      reasons: ["conflict checks pending: 1"],
     };
     expect(statusTags(pendingOnly)).toBe("conflict:pending");
     const reviewOnly = {

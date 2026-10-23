@@ -1,0 +1,65 @@
+{
+  "id": "clm_68b9cc855c934658",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "| `resource` | yes | an opaque pointer: a URL, a dashboard name, a person, a file in another system |",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `resource` | yes | an opaque pointer: a URL, a dashboard name, a person, a file in another system |",
+        "prefix": "`\n\n| field | required | meaning |\n|---|---|---|\n",
+        "suffix": "\n| `id` | no | a short name evidence can refer t"
+      },
+      {
+        "kind": "text-position",
+        "start": 2365,
+        "end": 2466
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "resource: z.string().min(1),\n    title",
+          "prefix": "rictObject({\n    id: z.string().optional(),\n    ",
+          "suffix": ": z.string().optional(),\n  })\n  .meta({ id: \"Sou"
+        },
+        {
+          "kind": "text-position",
+          "start": 7321,
+          "end": 7359
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "80fa26a381f07b84",
+          "semanticHash": "45ae82f01bcae5e9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:02.226Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:02.226Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

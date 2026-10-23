@@ -1,0 +1,65 @@
+{
+  "id": "clm_cc412442606c498d",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Triage chunks must all be answered by the same model.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Triage chunks must all be answered by the same model.",
+        "prefix": "s. `response.model` is stored with the verdict. ",
+        "suffix": "\n- Budgets, at an estimate of 4 characters per t"
+      },
+      {
+        "kind": "text-position",
+        "start": 31738,
+        "end": 31791
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`Triage chunks were answered by different models: ${[...models].join(\", \")}.`",
+          "prefix": "s.size !== 1) {\n    throw new JudgeError(\n      ",
+          "suffix": ",\n    );\n  }\n  return responses[0]?.model ?? \"\";"
+        },
+        {
+          "kind": "text-position",
+          "start": 16909,
+          "end": 16986
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "dd27ab89e6cb5343",
+          "semanticHash": "802212149807218e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[...models]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:50.915Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:50.915Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

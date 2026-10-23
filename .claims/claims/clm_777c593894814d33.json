@@ -1,0 +1,59 @@
+{
+  "id": "clm_777c593894814d33",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "A **claim** is one sentence in one document that asserts something checkable.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A **claim** is one sentence in one document that asserts something checkable.",
+        "prefix": " list of attestations.\"\nicon: \"quote-left\"\n---\n\n",
+        "suffix": " Hibi stores where the sentence is, what kind of"
+      },
+      {
+        "kind": "text-position",
+        "start": 286,
+        "end": 363
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Claim: one sentence in one document with its kind, its evidence spans, and",
+          "prefix": "pe Document = z.infer<typeof Document>;\n\n/**\n * ",
+          "suffix": "\n * its attestations. `evidence` holds code span"
+        },
+        {
+          "kind": "text-position",
+          "start": 8407,
+          "end": 8481
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "f29b886488377299"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:41.875Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:41.875Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

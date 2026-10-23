@@ -1,0 +1,94 @@
+{
+  "id": "clm_fb8918610c2343ab",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "| `supported` | an `evidence` attestation is appended; ttl restarts; the claim leaves the worklist |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `supported` | an `evidence` attestation is appended; ttl restarts; the claim leaves the worklist |",
+        "prefix": "bi check\" }\n```\n\n| `judge` | effect |\n|---|---|\n",
+        "suffix": "\n| `refuted` | nothing is attested; the next `ch"
+      },
+      {
+        "kind": "text-position",
+        "start": 10410,
+        "end": 10510
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "basis: \"evidence\",",
+          "prefix": "        by: p.item.by,\n        at: now,\n        ",
+          "suffix": "\n        note: p.item.summary,\n        evidenceH"
+        },
+        {
+          "kind": "text-position",
+          "start": 13068,
+          "end": 13086
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "08b147463c5716c1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (a.basis === \"evidence\") return true;",
+          "prefix": "rt function counts(a: Attestation): boolean {\n  ",
+          "suffix": "\n  return a.basis === \"vouch\" && a.by.startsWith"
+        },
+        {
+          "kind": "text-position",
+          "start": 606,
+          "end": 646
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "2b86e5c896c53ef4",
+          "semanticHash": "64443608661256fc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:09.235Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:09.235Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

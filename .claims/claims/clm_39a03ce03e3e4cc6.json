@@ -1,0 +1,65 @@
+{
+  "id": "clm_39a03ce03e3e4cc6",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "With `--from-file`, pass the full objects.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "With `--from-file`, pass the full objects.",
+        "prefix": "d line: `--source <id>=<resource>`, repeatable. ",
+        "suffix": "\n\n## Procedure\n\nAn `attested` claim may carry a "
+      },
+      {
+        "kind": "text-position",
+        "start": 2864,
+        "end": 2906
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const SOURCE_KEYS = [\"id\", \"resource\", \"title\"];",
+          "prefix": "\n\nconst SPAN_KEYS = [\"file\", \"quote\", \"range\"];\n",
+          "suffix": "\nconst PROCEDURE_KEYS = [\"instructions\", \"steps\""
+        },
+        {
+          "kind": "text-position",
+          "start": 1887,
+          "end": 1935
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f2c56dc607c5780d",
+          "semanticHash": "5dfefb6353fc8036"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"id\",\"resource\",\"title\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:02.594Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:02.594Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

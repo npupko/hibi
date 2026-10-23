@@ -1,0 +1,111 @@
+{
+  "id": "clm_795e974647ce4dec",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 27 | audit reports `unsure` rows, with the Choice that fell short, when either the kind or the evidence-kind confidence is below the threshold; `evidenceHint` is dropped |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 27 | audit reports `unsure` rows, with the Choice that fell short, when either the kind or the evidence-kind confidence is below the threshold; `evidenceHint` is dropped |",
+        "prefix": "and a referenced span over 32,000 characters) |\n",
+        "suffix": "\n| 28 | pairing has a second rule: both sentence"
+      },
+      {
+        "kind": "text-position",
+        "start": 77644,
+        "end": 77817
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "result.kindConfidence < threshold",
+          "prefix": "old: number,\n): AuditRow {\n  const unsure =\n    ",
+          "suffix": "\n      ? \"kind\"\n      : result.evidenceProbabili"
+        },
+        {
+          "kind": "text-position",
+          "start": 6381,
+          "end": 6414
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "7c60d5f38eb1fbfb",
+          "semanticHash": "c378ac6275a92f8a"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "choiceConfidence(result.evidenceProbabilities) < threshold",
+          "prefix": "videnceProbabilities !== undefined &&\n          ",
+          "suffix": "\n        ? \"evidenceKind\"\n        : null;\n  if ("
+        },
+        {
+          "kind": "text-position",
+          "start": 6494,
+          "end": 6552
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "c15aef9a3928b87e",
+          "semanticHash": "be12d21a63ba25e9"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "unsure?: \"kind\" | \"evidenceKind\";",
+          "prefix": "e confidence fell below `judge.threshold`. */\n  ",
+          "suffix": "\n  /** On a `pending` row: `judge unavailable: <"
+        },
+        {
+          "kind": "text-position",
+          "start": 4130,
+          "end": 4163
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "property_signature",
+          "structuralHash": "206fc8350fab0651",
+          "semanticHash": "8b65c4e0a38c2904"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"kind\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:23.693Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:23.693Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

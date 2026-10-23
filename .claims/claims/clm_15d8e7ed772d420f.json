@@ -1,0 +1,52 @@
+{
+  "id": "clm_15d8e7ed772d420f",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "reference",
+  "sentence": "The skill's description tells Claude to use it before trusting CLAUDE.md, AGENTS.md, or any doc, after a feature, when docs go stale or contradict each other, and for anything about claims or `.claims/`.",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The skill's description tells Claude to use it before trusting CLAUDE.md, AGENTS.md, or any doc, after a feature, when docs go stale or contradict each other, and for anything about claims or `.claims/`.",
+        "prefix": " npupko/hibi\n/plugin install hibi-cli@hibi\n```\n\n",
+        "suffix": " You can also invoke it as `/hibi-cli:hibi`. To "
+      },
+      {
+        "kind": "text-position",
+        "start": 666,
+        "end": 869
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "description: >-\n  Operate hibi, the CLI that tracks checkable sentences (claims) in documents\n  and reports which are stale, refuted, expired, or contradicted. Use before\n  trusting CLAUDE.md, AGENTS.md, or any doc; after a feature; when docs or a\n  knowledge repo go stale; for process, marketing, or decision docs that drift; for\n  contradictions between docs; for anything about claims or .claims/.",
+          "prefix": "---\nname: hibi\n",
+          "suffix": "\nallowed-tools: >-\n  Bash(hibi check:*), Bash(hi"
+        },
+        {
+          "kind": "text-position",
+          "start": 15,
+          "end": 416
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:25:22.458Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:25:22.458Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

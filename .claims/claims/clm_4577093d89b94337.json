@@ -1,0 +1,93 @@
+{
+  "id": "clm_4577093d89b94337",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "| `pending` | one reason label per claim, `conflict checks pending: <n>`, where `<n>` is the number of that claim's pairs the judge did not answer | warns |",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `pending` | one reason label per claim, `conflict checks pending: <n>`, where `<n>` is the number of that claim's pairs the judge did not answer | warns |",
+        "prefix": " with <id>: review: contradictory, …` | warns |\n",
+        "suffix": "\n| `duplicate` | nothing on the verdict; see bel"
+      },
+      {
+        "kind": "text-position",
+        "start": 5293,
+        "end": 5449
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pendingCount.set(id, (pendingCount.get(id) ?? 0) + 1);",
+          "prefix": "or (const id of pair.pairId.split(\":\")) {\n      ",
+          "suffix": "\n    }\n  }\n  const documents = await store.allDo"
+        },
+        {
+          "kind": "text-position",
+          "start": 13884,
+          "end": 13938
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "dd872658bfce59e8",
+          "semanticHash": "92708b2483985586"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`conflict checks pending: ${pendingPairs}`",
+          "prefix": "}: ${f.reason}`),\n      ...(pendingPairs > 0 ? [",
+          "suffix": "] : []),\n    ];\n    const findings: ClaimFinding"
+        },
+        {
+          "kind": "text-position",
+          "start": 17228,
+          "end": 17270
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "68f1f1bb13edeef0",
+          "semanticHash": "e1f3d85fb6fe6e9a"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:26.366Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:45:26.535Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:26.366Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

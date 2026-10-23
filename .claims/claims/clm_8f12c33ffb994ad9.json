@@ -1,0 +1,65 @@
+{
+  "id": "clm_8f12c33ffb994ad9",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Whether a pair was unavailable or an error is stated only in that pair's reason in `pairs[]` (section 9.3).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Whether a pair was unavailable or an error is stated only in that pair's reason in `pairs[]` (section 9.3).",
+        "prefix": " pending pairs, instead of one reason per pair. ",
+        "suffix": " `summary.conflictPass.pending` keeps the total "
+      },
+      {
+        "kind": "text-position",
+        "start": 26276,
+        "end": 26383
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "outcome: \"pending\",\n          reason: label,",
+          "prefix": "pair.pairId,\n          why: pair.why,\n          ",
+          "suffix": "\n        };\n        return;\n      }\n      reques"
+        },
+        {
+          "kind": "text-position",
+          "start": 10754,
+          "end": 10798
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "b5b0769beb280252",
+          "semanticHash": "a75a27212cf8a858"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:58.061Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:47:58.061Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

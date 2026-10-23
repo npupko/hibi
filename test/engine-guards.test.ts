@@ -2,7 +2,7 @@
  * Engine guards exercised through the Engine facade:
  *   - record-time doc-quote guard (length floor, undisambiguable repeat) and
  *     the warning on a disambiguated repeat;
- *   - reanchor refuses an orphaned side and never stores an empty span;
+ *   - reanchor leaves an orphaned side as stored and never stores an empty span;
  *   - reanchor resolves once per side and reports before/after quotes;
  *   - audit sentence-level regions and the missing-doc error;
  *   - supersede relocation.
@@ -106,10 +106,14 @@ describe("reanchor safety", () => {
     return { d, engine, id: rec.claim.id };
   }
 
-  test("refuses when the code side is orphaned and no replacement span is given", async () => {
+  test("leaves an orphaned code side as stored when no replacement span is given", async () => {
     const { d, engine, id } = await seed();
     await write(d, "src/a.ts", "export const A = 1;\n");
-    await expect(engine.reanchor(id)).rejects.toThrow(/orphaned/);
+    const res = await engine.reanchor(id);
+    expect(res.relocated).toBe(0);
+    expect(res.kept.map((k) => k.reason)).toEqual([
+      "evidence: orphaned; pass --code-quote to re-anchor",
+    ]);
     const stored = await engine.store.getClaim(id);
     const tq = stored?.evidence[0]?.selectors.find(
       (s) => s.kind === "text-quote",
@@ -119,10 +123,14 @@ describe("reanchor safety", () => {
     );
   });
 
-  test("refuses when the doc side is orphaned and no doc span is given", async () => {
+  test("leaves an orphaned doc side as stored when no doc span is given", async () => {
     const { d, engine, id } = await seed();
     await write(d, "doc.md", "# D\n\nSomething else entirely.\n");
-    await expect(engine.reanchor(id)).rejects.toThrow(/doc span/);
+    const res = await engine.reanchor(id);
+    expect(res.kept.map((k) => k.reason)).toEqual([
+      "doc: orphaned; pass --doc-quote to re-anchor",
+    ]);
+    expect(res.claim.sentence).toBe("The A constant is one.");
   });
 
   test("never stores an empty span", async () => {
@@ -210,7 +218,7 @@ describe("audit regions", () => {
 });
 
 describe("supersede relocation", () => {
-  test("moves verbatim sentences, reports misses, and lists what is stranded", async () => {
+  test("moves every live claim; a sentence missing from the new doc reads orphaned", async () => {
     const d = await repo();
     await write(d, "src/a.ts", "export const A = 1;\nexport const B = 2;\n");
     await write(d, "v1.md", "# V1\n\nA is one.\nB is two.\n");
@@ -231,9 +239,15 @@ describe("supersede relocation", () => {
     });
     await write(d, "v2.md", "# V2\n\nA is one.\n");
     const res = await engine.supersede({ from: "v1.md", to: "v2.md" });
-    expect(res.relocated.map((r) => r.claimId)).toEqual([a.claim.id]);
-    expect(res.misses.map((m) => m.claimId)).toEqual([b.claim.id]);
-    expect(res.strandedClaims).toEqual([b.claim.id]);
+    // relocated[] is in claim-id order.
+    expect(res.relocated).toEqual(
+      [
+        { claimId: a.claim.id, doc: "unchanged", evidence: "unchanged" },
+        { claimId: b.claim.id, doc: "orphaned", evidence: "unchanged" },
+      ].sort((x, y) => (x.claimId < y.claimId ? -1 : 1)),
+    );
+    expect(res.misses).toEqual([]);
+    expect(res.strandedClaims).toEqual([]);
     expect(res.oldDoc.lifecycle).toBe("superseded");
     expect(res.oldDoc.supersededBy).toBe(res.newDoc.id);
     const moved = await engine.store.getClaim(a.claim.id);
@@ -241,6 +255,9 @@ describe("supersede relocation", () => {
     const report = await engine.check();
     expect(report.verdicts.find((v) => v.claimId === a.claim.id)?.doc).toBe(
       "unchanged",
+    );
+    expect(report.verdicts.find((v) => v.claimId === b.claim.id)?.doc).toBe(
+      "orphaned",
     );
   });
 });

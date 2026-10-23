@@ -45,7 +45,7 @@ export async function archiveDocument(
   const doc: Document | undefined = await store.getDocument(id);
   if (doc === undefined) {
     throw new Error(
-      `${docPath} is not a registered document; nothing to archive (a document is registered when a claim is recorded on it).`,
+      `${docPath} is not a registered document; nothing to archive (a document is registered when a claim is recorded on it, or by supersede or reanchor --doc).`,
     );
   }
   const dryRun = opts.dryRun ?? false;

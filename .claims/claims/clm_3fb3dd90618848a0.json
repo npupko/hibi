@@ -1,0 +1,94 @@
+{
+  "id": "clm_3fb3dd90618848a0",
+  "documentId": "doc_c5adefb4274c6931",
+  "kind": "code",
+  "sentence": "\"evidence\": null,\n  \"enforcement\": \"enforced\",",
+  "doc": {
+    "file": "docs/quickstart.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "\"evidence\": null,\n  \"enforcement\": \"enforced\",",
+        "prefix": "ind\": \"attested\",\n  \"doc\": \"docs/pricing.md\",\n  ",
+        "suffix": "\n  \"next\": \"hibi check\"\n}\n```\n\n`--by` is require"
+      },
+      {
+        "kind": "text-position",
+        "start": 3560,
+        "end": 3606
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence: r.claim.evidence[0]?.file ?? null,\n    enforcement: r.claim.enforcement,",
+          "prefix": "nd: r.claim.kind,\n    doc: r.document.path,\n    ",
+          "suffix": "\n    updated: r.updated,\n    existingClaims: r.e"
+        },
+        {
+          "kind": "text-position",
+          "start": 11252,
+          "end": 11334
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "3cb2cbf9a735e33a",
+          "semanticHash": "f7a8c94ac6999636"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "enforcement: raw.suggest === true ? \"suggested\" : \"enforced\",",
+          "prefix": "tl === \"string\" ? { ttl: raw.ttl } : {}),\n      ",
+          "suffix": "\n    },\n  };\n}\n\n/**\n * Validate a batch. Throws "
+        },
+        {
+          "kind": "text-position",
+          "start": 11490,
+          "end": 11551
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "84801268d0e61020",
+          "semanticHash": "31604a3105375d6e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:29.430Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:29.430Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

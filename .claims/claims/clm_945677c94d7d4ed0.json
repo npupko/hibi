@@ -1,0 +1,59 @@
+{
+  "id": "clm_945677c94d7d4ed0",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `ack` on a conflict | `hibi attest <id> --by <actor> --ack conflict:<other-id> --note \"<why>\"` |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `ack` on a conflict | `hibi attest <id> --by <actor> --ack conflict:<other-id> --note \"<why>\"` |",
+        "prefix": "id> --by <actor> --ack review --note \"<why>\"` |\n",
+        "suffix": "\n| `evidence` | `echo '[{\"claimId\":\"<id>\",\"evide"
+      },
+      {
+        "kind": "text-position",
+        "start": 5990,
+        "end": 6088
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "command: `hibi attest ${id} --by <actor> --ack conflict:${other} --note \"<why>\"`,",
+          "prefix": "n to both claims and never resets the ttl\",\n    ",
+          "suffix": "\n  };\n}\n\nfunction reconcileConflict(others: stri"
+        },
+        {
+          "kind": "text-position",
+          "start": 8452,
+          "end": 8533
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "26545f0f45cdbf2d",
+          "semanticHash": "94e0898eb5433d58"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:14.832Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:14.832Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

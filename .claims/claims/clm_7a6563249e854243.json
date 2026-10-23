@@ -1,0 +1,105 @@
+{
+  "id": "clm_7a6563249e854243",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Hibi stores the first three in the [cache](#the-cache).",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi stores the first three in the [cache](#the-cache).",
+        "prefix": "exact request, the raw answers, and the result. ",
+        "suffix": "\n\nWho calls which judgment:\n\n| judgment | called"
+      },
+      {
+        "kind": "text-position",
+        "start": 1449,
+        "end": 1504
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "request: z.unknown(),",
+          "prefix": " /** The exact state and questions sent. */\n    ",
+          "suffix": "\n    /** The exact probabilities returned. */\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 13341,
+          "end": 13362
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1510bc52887893f3",
+          "semanticHash": "145d1487cbe2b2a5"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "answers: z.unknown(),",
+          "prefix": "   /** The exact probabilities returned. */\n    ",
+          "suffix": "\n    evidence: CachedEvidence.optional(),\n    at"
+        },
+        {
+          "kind": "text-position",
+          "start": 13412,
+          "end": 13433
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1510bc52887893f3",
+          "semanticHash": "f473c9da11128267"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "answers: response.answers,",
+          "prefix": "pairId: pair.pairId },\n        request,\n        ",
+          "suffix": "\n        at: new Date().toISOString(),\n      };\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 11032,
+          "end": 11058
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "083b903e7d45ceb0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:34.729Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:34.729Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

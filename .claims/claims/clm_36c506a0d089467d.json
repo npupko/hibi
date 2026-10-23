@@ -1,0 +1,82 @@
+{
+  "id": "clm_36c506a0d089467d",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The result is cached by the request key.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The result is cached by the request key.",
+        "prefix": "ence, document path, and context (section 8.3). ",
+        "suffix": " At most 8 pair requests are in flight. A pair t"
+      },
+      {
+        "kind": "text-position",
+        "start": 44311,
+        "end": 44351
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { a, b, request, key: cacheKey(model, request) };",
+          "prefix": " request = buildConflictRequest(model, a, b);\n  ",
+          "suffix": "\n}\n\nasync function pool<T>(\n  items: T[],\n  limi"
+        },
+        {
+          "kind": "text-position",
+          "start": 8838,
+          "end": 8894
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "d893f71c4841ec4e",
+          "semanticHash": "9a58df4babd50798"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hit = await cache.get(key);",
+          "prefix": "ext,\n    );\n    let result: ConflictResult;\n    ",
+          "suffix": "\n    if (hit !== undefined) {\n      result = map"
+        },
+        {
+          "kind": "text-position",
+          "start": 10245,
+          "end": 10278
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "da6c759bb2291049",
+          "semanticHash": "832019563cd84a64"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:54.188Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:54.188Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

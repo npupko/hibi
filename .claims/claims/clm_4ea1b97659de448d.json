@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 7255,
-        "end": 7372
+        "start": 7301,
+        "end": 7418
       }
     ]
   },
@@ -25,14 +25,14 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "**Same tree, same verdicts.** Deterministic passes are deterministic. Model verdicts are cached and never re-asked for the same input, so a second run cannot flip them.",
+          "exact": "**Same tree, same verdicts.** Deterministic passes are deterministic. Model verdicts are cached and never re-asked for the same input, so a second run with the judge ca",
           "prefix": ". An agent collects evidence and submits it.\n2. ",
-          "suffix": "\n3. **A flag means re-verify.** Hibi reports tha"
+          "suffix": "che present cannot flip them. The cache is local"
         },
         {
           "kind": "text-position",
-          "start": 1395,
-          "end": 1563
+          "start": 1825,
+          "end": 1993
         }
       ]
     }
@@ -48,5 +48,5 @@
     }
   ],
   "createdAt": "2026-10-22T19:12:57.820Z",
-  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
 }

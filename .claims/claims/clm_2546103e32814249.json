@@ -1,0 +1,117 @@
+{
+  "id": "clm_2546103e32814249",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "hibi reanchor <claim-id> [--doc <path>] [--doc-quote <text> | --doc-range L1:L3]\n                         [--code-file <path> (--code-quote <text> | --code-range L1:L9)]...\n                         [--ref-file <path> (--ref-quote <text> | --ref-range L1:L3)]\n                         [--suggest] [--dry-run]",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "hibi reanchor <claim-id> [--doc <path>] [--doc-quote <text> | --doc-range L1:L3]\n                         [--code-file <path> (--code-quote <text> | --code-range L1:L9)]...\n                         [--ref-file <path> (--ref-quote <text> | --ref-range L1:L3)]\n                         [--suggest] [--dry-run]",
+        "prefix": "t `--successor`.\n\n## Reanchoring a claim\n\n```sh\n",
+        "suffix": "\n```\n\n`reanchor` re-resolves every span of the c"
+      },
+      {
+        "kind": "text-position",
+        "start": 4857,
+        "end": 5164
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Move the doc anchor to this document (with --doc-quote or --doc-range).\",",
+          "prefix": "string\",\n        placeholder: \"<path>\",\n        ",
+          "suffix": "\n      },\n      ...DOC_SPAN,\n      ...codeSpan(t"
+        },
+        {
+          "kind": "text-position",
+          "start": 14430,
+          "end": 14510
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "4b37a9eeabcb8849"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Move the doc anchor to this document (with --doc-quote or --doc-range).\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "      ...DOC_SPAN,\n      ...codeSpan(true),\n      ...REF_SPAN,\n      {\n        name: \"suggest\",",
+          "prefix": "t (with --doc-quote or --doc-range).\",\n      },\n",
+          "suffix": "\n        type: \"boolean\",\n        help: \"Read-on"
+        },
+        {
+          "kind": "text-position",
+          "start": 14520,
+          "end": 14615
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "6f99fa30bbd5c852",
+          "semanticHash": "4087c7a8e8c1c931"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Repeat for several spans; each takes the --code-quote or --code-range that follows it.",
+          "prefix": "ence describes (alias:path for a sibling repo). ",
+          "suffix": "\"\n        : \"The code file the sentence describe"
+        },
+        {
+          "kind": "text-position",
+          "start": 3639,
+          "end": 3725
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "5c86bca760bc289d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.128Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.128Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

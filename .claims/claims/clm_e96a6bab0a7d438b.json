@@ -1,0 +1,88 @@
+{
+  "id": "clm_e96a6bab0a7d438b",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `doc` | `unchanged / moved / changed / ambiguous / orphaned` |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `doc` | `unchanged / moved / changed / ambiguous / orphaned` |",
+        "prefix": "oduces a verdict:\n\n| field | values |\n|---|---|\n",
+        "suffix": "\n| `evidence` | same five, plus `unavailable`; t"
+      },
+      {
+        "kind": "text-position",
+        "start": 21491,
+        "end": 21555
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    \"unchanged\", // found, same text, same place\n    \"moved\", // found, same text, new place\n    \"changed\", // found, text or structure differs\n    \"ambiguous\", // matches in several places equally well\n    \"orphaned\", // not found",
+          "prefix": "7.1). */\nexport const AnchorState = z\n  .enum([\n",
+          "suffix": "\n  ])\n  .meta({ id: \"AnchorState\" });\nexport typ"
+        },
+        {
+          "kind": "text-position",
+          "start": 2471,
+          "end": 2702
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "c60db945f7b10227",
+          "semanticHash": "d4363f35552a4758"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unchanged\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    doc: AnchorState,\n    /** Worst state over the evidence spans; absent when the claim has none. */",
+          "prefix": "   documentId: z.string(),\n    kind: ClaimKind,\n",
+          "suffix": "\n    evidence: EvidenceState.optional(),\n    /**"
+        },
+        {
+          "kind": "text-position",
+          "start": 15758,
+          "end": 15859
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "8ae717a489f1b920",
+          "semanticHash": "0335d51a879290ad"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:01.054Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:01.054Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

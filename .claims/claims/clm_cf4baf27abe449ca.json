@@ -1,0 +1,88 @@
+{
+  "id": "clm_cf4baf27abe449ca",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "| `unrelated` | `same_subject` below 0.3 forced the relation to `unrelated` | `not the same subject (same_subject=0.12)` |",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `unrelated` | `same_subject` below 0.3 forced the relation to `unrelated` | `not the same subject (same_subject=0.12)` |",
+        "prefix": " outcome | rule | example label |\n|---|---|---|\n",
+        "suffix": "\n| `conflict` | `same_subject` at or above the t"
+      },
+      {
+        "kind": "text-position",
+        "start": 3304,
+        "end": 3426
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.forced === \"same_subject\") {",
+          "prefix": "ictResult,\n  threshold: number,\n): Decision {\n  ",
+          "suffix": "\n    return {\n      outcome: \"unrelated\",\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 5233,
+          "end": 5267
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "f4f4bff94484ae70",
+          "semanticHash": "2adac563100fe73c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"same_subject\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `not the same subject (same_subject=${f2(r.sameSubject)})`,",
+          "prefix": "\n    return {\n      outcome: \"unrelated\",\n      ",
+          "suffix": "\n    };\n  }\n  if (r.sameSubject >= threshold && "
+        },
+        {
+          "kind": "text-position",
+          "start": 5315,
+          "end": 5382
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "3674e1d46bb7f92b",
+          "semanticHash": "3b5666d4c24d9271"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:25.710Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:25.710Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

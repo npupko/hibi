@@ -1,0 +1,82 @@
+{
+  "id": "clm_251436d9fa574869",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 41 | `record --by` is required, as a flag or an item key; there is no default from git |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 41 | `record --by` is required, as a flag or an item key; there is no default from git |",
+        "prefix": "inside the anchor root or its alias directory |\n",
+        "suffix": "\n| 42 | on `supports` the value rule excludes th"
+      },
+      {
+        "kind": "text-position",
+        "start": 80013,
+        "end": 80103
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"by is required: pass --by <actor> or a by key",
+          "prefix": " if (by === undefined) {\n    errors.push(\n      ",
+          "suffix": ", as human:<id>, agent:<name>, or process:<name>"
+        },
+        {
+          "kind": "text-position",
+          "start": 10743,
+          "end": 10789
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "b715e7808aca7ce0"
+        }
+      ]
+    },
+    {
+      "file": "src/git/git.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "never to pick an actor and never to compute a verdict.",
+          "prefix": "check --since` and to fill\n * the recorded ref; ",
+          "suffix": "\n */\nimport { execFile } from \"node:child_proces"
+        },
+        {
+          "kind": "text-position",
+          "start": 103,
+          "end": 157
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "aef3e288f71e1288"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:24.487Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:24.487Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

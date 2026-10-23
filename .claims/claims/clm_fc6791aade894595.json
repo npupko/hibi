@@ -1,0 +1,65 @@
+{
+  "id": "clm_fc6791aade894595",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "A claim has one of three kinds:",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A claim has one of three kinds:",
+        "prefix": "PI; an agent collects evidence and submits it.\n\n",
+        "suffix": "\n\n| kind | where its truth is observed | what ma"
+      },
+      {
+        "kind": "text-position",
+        "start": 1623,
+        "end": 1654
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ClaimKind = z.enum([\"code\", \"reference\", \"attested\"]);",
+          "prefix": "* The three recordable claim kinds (SPEC 4). */\n",
+          "suffix": "\nexport type ClaimKind = z.infer<typeof ClaimKin"
+        },
+        {
+          "kind": "text-position",
+          "start": 2080,
+          "end": 2147
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "245292834183a927",
+          "semanticHash": "f94df24c41b11e73"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"code\",\"reference\",\"attested\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:22.751Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:22.751Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

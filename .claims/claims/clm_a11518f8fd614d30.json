@@ -1,0 +1,94 @@
+{
+  "id": "clm_a11518f8fd614d30",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "\"code\":[{\"file\":\"api:src/limits.ts\",\"quote\":\"RATE_LIMIT_PER_MIN = 100\"}],\"by\":\"agent:claude\"},",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "\"code\":[{\"file\":\"api:src/limits.ts\",\"quote\":\"RATE_LIMIT_PER_MIN = 100\"}],\"by\":\"agent:claude\"},",
+        "prefix": "100 API requests per minute.\",\"kind\":\"code\",\n   ",
+        "suffix": "\n  {\"doc\":\"docs/pricing.md\",\"docQuote\":\"Annual b"
+      },
+      {
+        "kind": "text-position",
+        "start": 4691,
+        "end": 4785
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"kind code needs code: [{ file, quote | range }] with at least one span\",",
+          "prefix": "code.length === 0) {\n      errors.push(\n        ",
+          "suffix": "\n      );\n    } else {\n      raw.code.forEach((c"
+        },
+        {
+          "kind": "text-position",
+          "start": 9363,
+          "end": 9436
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "2db7d4d5199bbae6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"kind code needs code: [{ file, quote | range }] with at least one span\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(\"kind reference needs ref: { file, quote | range }\");",
+          "prefix": "ence\") {\n    if (raw.ref === undefined) {\n      ",
+          "suffix": "\n    } else {\n      const t = span(raw.ref, \"ref"
+        },
+        {
+          "kind": "text-position",
+          "start": 9662,
+          "end": 9727
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "ab93fd8725166832",
+          "semanticHash": "e7ee02968b65cea3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"kind reference needs ref: { file, quote | range }\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:07.654Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:07.654Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

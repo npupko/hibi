@@ -1,0 +1,52 @@
+{
+  "id": "clm_797459c82aac4eb0",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "code",
+  "sentence": "When adding a page, create the `.mdx` file under `docs/` and add its slug to a group in `docs/docs.json` under `navigation.groups`.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "When adding a page, create the `.mdx` file under `docs/` and add its slug to a group in `docs/docs.json` under `navigation.groups`.",
+        "prefix": "ashboard's content directory is set to `docs`.\n\n",
+        "suffix": " Do not name a navigation entry `api`; Mintlify "
+      },
+      {
+        "kind": "text-position",
+        "start": 2887,
+        "end": 3018
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "docs/docs.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"groups\": [",
+          "prefix": "t\", \"claude\", \"mcp\"]\n  },\n  \"navigation\": {\n    ",
+          "suffix": "\n      {\n        \"group\": \"Get Started\",\n       "
+        },
+        {
+          "kind": "text-position",
+          "start": 611,
+          "end": 622
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:35.021Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:35.021Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

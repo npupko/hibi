@@ -1,0 +1,65 @@
+{
+  "id": "clm_c02d21a3961240d2",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `gating` | a verdict gates (the default) |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `gating` | a verdict gates (the default) |",
+        "prefix": "shold:\n\n| `--fail-on` | exit 2 when |\n|---|---|\n",
+        "suffix": "\n| `warn` | a verdict gates or warns |\n| `never`"
+      },
+      {
+        "kind": "text-position",
+        "start": 4382,
+        "end": 4426
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const failOn = options.failOn ?? \"gating\";",
+          "prefix": "e: doc.lifecycle,\n      suspect,\n    });\n  }\n\n  ",
+          "suffix": "\n  const exitCode = computeExitCode(\n    { gatin"
+        },
+        {
+          "kind": "text-position",
+          "start": 21039,
+          "end": 21081
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "e1a5bc0beb4e18b9",
+          "semanticHash": "a3052d6727acd33a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"gating\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:13.055Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:13.055Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_432f5ae8618d449d",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "When `strandedClaims` is empty, the old file can be deleted or archived without leaving claims behind.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "When `strandedClaims` is empty, the old file can be deleted or archived without leaving claims behind.",
+        "prefix": "e \"…\"`, or withdraw it with `hibi retire <id>`. ",
+        "suffix": "\n\n### `archive`\n\n```sh\nhibi archive --doc <path>"
+      },
+      {
+        "kind": "text-position",
+        "start": 3351,
+        "end": 3453
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function isLiveClaimOn(a: Claim, docId: string): boolean {",
+          "prefix": "n it names that document and is not retired. */\n",
+          "suffix": "\n  return a.documentId === docId && a.enforcemen"
+        },
+        {
+          "kind": "text-position",
+          "start": 1170,
+          "end": 1235
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "f5e6fa2d3b8ab631",
+          "semanticHash": "c220286ffc9fe771"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "retired",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.831Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.831Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

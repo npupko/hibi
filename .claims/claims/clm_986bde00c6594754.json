@@ -1,0 +1,94 @@
+{
+  "id": "clm_986bde00c6594754",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The ack covers the pair while the hashes of both claims' stored sentences equal the ones in the ack, in `pairId` order.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The ack covers the pair while the hashes of both claims' stored sentences equal the ones in the ack, in `pairId` order.",
+        "prefix": "covers becomes `acked` and produces no finding. ",
+        "suffix": " The hash is over the stored claim sentence, not"
+      },
+      {
+        "kind": "text-position",
+        "start": 47034,
+        "end": 47153
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hashes = [sentenceHash(pair.a.sentence), sentenceHash(pair.b.sentence)];",
+          "prefix": "xport function isAcked(pair: Pair): boolean {\n  ",
+          "suffix": "\n  for (const claim of [pair.a, pair.b]) {\n    f"
+        },
+        {
+          "kind": "text-position",
+          "start": 7755,
+          "end": 7833
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "32c2a1cba34c8a82",
+          "semanticHash": "6a8942dd18e90160"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[sentenceHash(pair.a.sentence),sentenceHash(pair.b.sentence)]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ack.sentenceHashes[0] === hashes[0] &&",
+          "prefix": "&\n        ack.pairId === pair.pairId &&\n        ",
+          "suffix": "\n        ack.sentenceHashes[1] === hashes[1]\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 8053,
+          "end": 8091
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "cd7c4eb66c1b6ed9",
+          "semanticHash": "2d3b8e1d4389ba2f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:15.357Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:15.357Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

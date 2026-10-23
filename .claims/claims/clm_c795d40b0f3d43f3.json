@@ -1,0 +1,152 @@
+{
+  "id": "clm_c795d40b0f3d43f3",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "When several apply, the first of `expired`, `review`, `pending`, `never-checked` is the reason, and the claim is listed once:",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "When several apply, the first of `expired`, `review`, `pending`, `never-checked` is the reason, and the claim is listed once:",
+        "prefix": " is `active`, and one of these reasons applies. ",
+        "suffix": "\n\n1. `expired`: any claim with a `ttl` that ran "
+      },
+      {
+        "kind": "text-position",
+        "start": 27528,
+        "end": 27653
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.expired) return \"expired\";",
+          "prefix": ".enforcement === \"retired\") return undefined;\n  ",
+          "suffix": "\n  if (claim.kind === \"code\") return undefined;\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 12679,
+          "end": 12711
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "c6e2ae1864093512",
+          "semanticHash": "8f947346d730a3d5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"expired\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"review\" && !acknowledged) return \"review\";",
+          "prefix": " if (claim.kind === \"code\") return undefined;\n  ",
+          "suffix": "\n  if (v.judge === \"pending\") return \"pending\";\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 12761,
+          "end": 12820
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "2f9319063bdbbff5",
+          "semanticHash": "4a9c6289d1a83460"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"review\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"pending\") return \"pending\";",
+          "prefix": "= \"review\" && !acknowledged) return \"review\";\n  ",
+          "suffix": "\n  const checkable = claim.procedure !== null ||"
+        },
+        {
+          "kind": "text-position",
+          "start": 12823,
+          "end": 12867
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "ccc54664337229f7",
+          "semanticHash": "9584d1ccbcf8b14d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return \"never-checked\";",
+          "prefix": "== \"attested\" && checkable && !hasSupports)\n    ",
+          "suffix": "\n  return undefined;\n}\n\nexport async function ru"
+        },
+        {
+          "kind": "text-position",
+          "start": 13008,
+          "end": 13031
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "3df4bb0705c3a2fa",
+          "semanticHash": "c555d9196811c0d9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"never-checked\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:49.045Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:49.045Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

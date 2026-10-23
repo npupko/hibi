@@ -1,0 +1,59 @@
+{
+  "id": "clm_5a683c8406044bf8",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "The model id must be a pinned version of the form `jev-X.Y.Z`.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The model id must be a pinned version of the form `jev-X.Y.Z`.",
+        "prefix": " `{ \"model\": \"jev-1.14.0\", \"threshold\": 0.8 }`. ",
+        "suffix": " An alias such as `jev-latest` is refused when t"
+      },
+      {
+        "kind": "text-position",
+        "start": 2648,
+        "end": 2710
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const JUDGE_MODEL_PATTERN = /^jev-\\d+\\.\\d+\\.\\d+$/;",
+          "prefix": " such as `jev-1.14.0`; aliases are rejected. */\n",
+          "suffix": "\n\nexport const JudgeConfig = z.strictObject({\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 10344,
+          "end": 10401
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b879b2ad137802b7",
+          "semanticHash": "d09e7304a36ec3b1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:35.542Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:35.542Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

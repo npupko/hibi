@@ -1,0 +1,65 @@
+{
+  "id": "clm_31011d14c9c74048",
+  "documentId": "doc_c5adefb4274c6931",
+  "kind": "code",
+  "sentence": "never-checked clm_418fde0aee55433e   docs/pricing.md",
+  "doc": {
+    "file": "docs/quickstart.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "never-checked clm_418fde0aee55433e   docs/pricing.md",
+        "prefix": "docs/pricing.md   1 claim clean\n\nWorklist (2)\n  ",
+        "suffix": "\n     \"The Pro plan costs $29 per month.\"\n     k"
+      },
+      {
+        "kind": "text-position",
+        "start": 4417,
+        "end": 4469
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const head = `  ${style.yellow(item.reason.padEnd(13))} ${style.cyan(item.claimId)}   ${style.dim(item.document)}`;",
+          "prefix": "t): string[] {\n  const { style, mode } = ctx;\n  ",
+          "suffix": "\n  if (mode.kind === \"compact\") {\n    return [`$"
+        },
+        {
+          "kind": "text-position",
+          "start": 7958,
+          "end": 8073
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "5177b3114424be7a",
+          "semanticHash": "cb3f6493488431f1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "13"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:29.697Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:29.697Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

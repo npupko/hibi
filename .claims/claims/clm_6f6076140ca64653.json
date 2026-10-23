@@ -1,0 +1,152 @@
+{
+  "id": "clm_6f6076140ca64653",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 30 | the worklist excludes retired claims, `code` claims that are not expired (amended by 44), claims on superseded or archived documents, and acknowledged reviews;\n each claim is listed once with the first of `expired, review, pending, never-checked` |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 30 | the worklist excludes retired claims, `code` claims that are not expired (amended by 44), claims on superseded or archived documents, and acknowledged reviews;\n each claim is listed once with the first of `expired, review, pending, never-checked` |",
+        "prefix": "sentence changes; `{ judgeKey }` for a review |\n",
+        "suffix": "\n| 31 | the fake judge emits System One-shaped a"
+      },
+      {
+        "kind": "text-position",
+        "start": 78128,
+        "end": 78383
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (claim.enforcement === \"retired\") return undefined;",
+          "prefix": "rts: boolean,\n): WorklistReason | undefined {\n  ",
+          "suffix": "\n  if (v.expired) return \"expired\";\n  if (claim."
+        },
+        {
+          "kind": "text-position",
+          "start": 12622,
+          "end": 12676
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "02b693156b190a82",
+          "semanticHash": "8976b9e89f7bfd10"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (claim.kind === \"code\") return undefined;",
+          "prefix": "undefined;\n  if (v.expired) return \"expired\";\n  ",
+          "suffix": "\n  if (v.judge === \"review\" && !acknowledged) re"
+        },
+        {
+          "kind": "text-position",
+          "start": 12714,
+          "end": 12758
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "02b693156b190a82",
+          "semanticHash": "90b4c04fa24c36f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"code\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"review\" && !acknowledged) return \"review\";",
+          "prefix": " if (claim.kind === \"code\") return undefined;\n  ",
+          "suffix": "\n  if (v.judge === \"pending\") return \"pending\";\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 12761,
+          "end": 12820
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "2f9319063bdbbff5",
+          "semanticHash": "4a9c6289d1a83460"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"review\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "? worklistReason(c, v, ack !== undefined, entries.length > 0)",
+          "prefix": ") === \"active\";\n    const reason = active\n      ",
+          "suffix": "\n      : undefined;\n    if (reason !== undefined"
+        },
+        {
+          "kind": "text-position",
+          "start": 18091,
+          "end": 18152
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "746a8811615e546d",
+          "semanticHash": "0020749d9368897b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:23.857Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:23.857Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

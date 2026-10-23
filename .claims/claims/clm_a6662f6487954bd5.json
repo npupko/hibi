@@ -1,0 +1,88 @@
+{
+  "id": "clm_a6662f6487954bd5",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "| `steps[]` | no | hints in the shape of Lobster workflow steps: `id`, `command`, optional `stdin` |",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `steps[]` | no | hints in the shape of Lobster workflow steps: `id`, `command`, optional `stdin` |",
+        "prefix": "he contract: what to check and what to report |\n",
+        "suffix": "\n\nHibi never runs `instructions` or `steps`. An "
+      },
+      {
+        "kind": "text-position",
+        "start": 3356,
+        "end": 3456
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "steps: z.array(ProcedureStep).optional(),",
+          "prefix": "ject({\n    instructions: z.string().min(1),\n    ",
+          "suffix": "\n  })\n  .meta({ id: \"Procedure\" });\nexport type "
+        },
+        {
+          "kind": "text-position",
+          "start": 7902,
+          "end": 7943
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "eb868092b40bebea",
+          "semanticHash": "3df190edf5209548"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "id: z.string().min(1),\n  command: z.string().min(1),\n  stdin: z.string().optional(),",
+          "prefix": "export const ProcedureStep = z.strictObject({\n  ",
+          "suffix": "\n});\nexport type ProcedureStep = z.infer<typeof "
+        },
+        {
+          "kind": "text-position",
+          "start": 7584,
+          "end": 7668
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "fe6d6fdcb1d147ce",
+          "semanticHash": "9c677977813be941"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:02.740Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:02.740Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

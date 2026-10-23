@@ -1,0 +1,117 @@
+{
+  "id": "clm_0702fcc12f5b4491",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A `conflicts[]` entry whose probability is below the threshold also warns, with a label beginning `possible conflict with <id>`; the pass produces gating entries only at or above it.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `conflicts[]` entry whose probability is below the threshold also warns, with a label beginning `possible conflict with <id>`; the pass produces gating entries only at or above it.",
+        "prefix": "ending` keeps the total count of pending pairs. ",
+        "suffix": "\n\n`check --doc` is the mode in which `expired` g"
+      },
+      {
+        "kind": "text-position",
+        "start": 26455,
+        "end": 26637
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`possible conflict with ${c.claimId} (p=${fmt(c.probability)} below threshold ${threshold}): ${c.reason}`,",
+          "prefix": "      warns = true;\n      reasons.push(\n        ",
+          "suffix": "\n      );\n    }\n  }\n\n  for (const w of v.warning"
+        },
+        {
+          "kind": "text-position",
+          "start": 3592,
+          "end": 3698
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "b6bb87c2aad051fa",
+          "semanticHash": "899b7eac732e65c6"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (below.length === 0) {\n      return {\n        outcome: \"conflict\",",
+          "prefix": "threshold ${f2(threshold)}`,\n      );\n    }\n    ",
+          "suffix": "\n        probability: pContra,\n        reason: `"
+        },
+        {
+          "kind": "text-position",
+          "start": 6434,
+          "end": 6503
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "e78edf0ddc5d525d",
+          "semanticHash": "63331355d0933fac"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { outcome: \"conflict\", probability: 1, reason: values.label };",
+          "prefix": ".differs && values.label !== undefined) {\n      ",
+          "suffix": "\n    }\n  }\n  const pContra = r.probabilities.con"
+        },
+        {
+          "kind": "text-position",
+          "start": 5784,
+          "end": 5853
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "a4e20b200fce563b",
+          "semanticHash": "7d930ffade48333b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"conflict\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:48.674Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:48.674Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

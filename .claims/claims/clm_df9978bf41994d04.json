@@ -1,0 +1,59 @@
+{
+  "id": "clm_df9978bf41994d04",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "| the directory does not exist | `unavailable` | `sibling repo \"api\" is not checked out at ../api` |",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| the directory does not exist | `unavailable` | `sibling repo \"api\" is not checked out at ../api` |",
+        "prefix": "ctory exists | resolved like any other side | |\n",
+        "suffix": "\n| the alias was removed from config | `unavaila"
+      },
+      {
+        "kind": "text-position",
+        "start": 6567,
+        "end": 6667
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `sibling repo \"${split.alias}\" is not checked out at ${dir}`,",
+          "prefix": "vailable: true,\n      alias: split.alias,\n      ",
+          "suffix": "\n    };\n  }\n  return { path: posix.join(dir, spl"
+        },
+        {
+          "kind": "text-position",
+          "start": 3929,
+          "end": 3998
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "814784ed387c58ab",
+          "semanticHash": "92c7f17901c036df"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.928Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.928Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,442 @@
+{
+  "id": "clm_78f8832c20e84fb5",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "Commands: `init`, `record`, `check`, `list`, `audit`, `reanchor`, `retire`, `supersede`, `archive`, `evidence`, `attest`, `schema`, `completions`, `version`.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Commands: `init`, `record`, `check`, `list`, `audit`, `reanchor`, `retire`, `supersede`, `archive`, `evidence`, `attest`, `schema`, `completions`, `version`.",
+        "prefix": "DME.md` and `README.md` are the same document.\n\n",
+        "suffix": " `hibi <cmd> --help` prints that command's optio"
+      },
+      {
+        "kind": "text-position",
+        "start": 4829,
+        "end": 4986
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"init\",",
+          "prefix": "xport const COMMANDS: CommandSpec[] = [\n  {\n    ",
+          "suffix": "\n    summary: \"Create the claim store (.claims/)"
+        },
+        {
+          "kind": "text-position",
+          "start": 5549,
+          "end": 5562
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "209ca25409d42580"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"init\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"record\",",
+          "prefix": "i init --instructions AGENTS.md\"],\n  },\n  {\n    ",
+          "suffix": "\n    summary:\n      \"Record a claim: a document "
+        },
+        {
+          "kind": "text-position",
+          "start": 6174,
+          "end": 6189
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "68e2605a07ddd4f0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"record\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"check\",",
+          "prefix": "om-file - --by agent:opus',\n    ],\n  },\n  {\n    ",
+          "suffix": "\n    summary:\n      \"Verify every claim against "
+        },
+        {
+          "kind": "text-position",
+          "start": 10142,
+          "end": 10156
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "369f57988da7f730"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"check\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"list\",",
+          "prefix": "hibi check --fail-on warn\",\n    ],\n  },\n  {\n    ",
+          "suffix": "\n    summary:\n      \"One lean row per claim, fil"
+        },
+        {
+          "kind": "text-position",
+          "start": 11153,
+          "end": 11166
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "444c476bfdd5e1e3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"list\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"audit\",",
+          "prefix": "-state pending --ids-only\",\n    ],\n  },\n  {\n    ",
+          "suffix": "\n    summary:\n      \"One row per region of a doc"
+        },
+        {
+          "kind": "text-position",
+          "start": 12147,
+          "end": 12161
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "f651221393899995"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"audit\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"reanchor\",",
+          "prefix": "icing.md --fail-uncovered\",\n    ],\n  },\n  {\n    ",
+          "suffix": "\n    summary:\n      \"Re-resolve a claim's spans "
+        },
+        {
+          "kind": "text-position",
+          "start": 13234,
+          "end": 13251
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "f12b1b7d3c22120f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"reanchor\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"retire\",",
+          "prefix": "are capped at 5 attempts\"',\n    ],\n  },\n  {\n    ",
+          "suffix": "\n    summary: \"Withdraw a claim so it no longer "
+        },
+        {
+          "kind": "text-position",
+          "start": 15010,
+          "end": 15025
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "f0c0236a2c1b4336"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retire\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"supersede\",",
+          "prefix": "ibi retire clm_1a2b3c4d5e6f7a8b\"],\n  },\n  {\n    ",
+          "suffix": "\n    summary:\n      \"Mark a document superseded "
+        },
+        {
+          "kind": "text-position",
+          "start": 15290,
+          "end": 15308
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "81663c29ddd143f2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"supersede\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"archive\",",
+          "prefix": " design-v1.md --to design-v2.md\"],\n  },\n  {\n    ",
+          "suffix": "\n    summary:\n      \"Move an obsolete document t"
+        },
+        {
+          "kind": "text-position",
+          "start": 16067,
+          "end": 16083
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "aff3b9f1383c4431"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"archive\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"evidence\",",
+          "prefix": "--doc old.md --successor new.md\"],\n  },\n  {\n    ",
+          "suffix": "\n    summary:\n      \"Submit evidence an agent co"
+        },
+        {
+          "kind": "text-position",
+          "start": 16606,
+          "end": 16623
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "6d4632e024600b82"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"attest\",",
+          "prefix": "om-file - --by agent:opus',\n    ],\n  },\n  {\n    ",
+          "suffix": "\n    summary:\n      \"Vouch for a claim, or ackno"
+        },
+        {
+          "kind": "text-position",
+          "start": 18265,
+          "end": 18280
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "36dc8855774c3c4c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"attest\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"schema\",",
+          "prefix": " the same in other words\"',\n    ],\n  },\n  {\n    ",
+          "suffix": "\n    summary: \"Print the JSON Schema of a model "
+        },
+        {
+          "kind": "text-position",
+          "start": 19956,
+          "end": 19971
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "d3ffc39ec62c422a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"schema\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"completions\",",
+          "prefix": "a\", \"hibi schema --name Verdict\"],\n  },\n  {\n    ",
+          "suffix": "\n    summary: \"Print a shell completion script.\""
+        },
+        {
+          "kind": "text-position",
+          "start": 20300,
+          "end": 20320
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "55c3a01c8ad8a1ed"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"completions\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"version\",",
+          "prefix": "ompletions zsh > ~/.zfunc/_hibi\"],\n  },\n  {\n    ",
+          "suffix": "\n    summary: \"Print the hibi version and schema"
+        },
+        {
+          "kind": "text-position",
+          "start": 20599,
+          "end": 20615
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "a9632a3cf6452f43"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"version\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:23.497Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:23.497Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

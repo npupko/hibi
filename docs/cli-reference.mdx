@@ -155,7 +155,7 @@ hibi audit --doc docs/pricing.md --fail-uncovered
 
 Re-resolve a claim's spans and store the new baseline; or list candidate locations with --suggest.
 
-Without span flags each side re-localizes through its stored selectors. A side that is not found is refused unless an explicit new span is given for it; an evidence side in a sibling repo that is not checked out is kept as stored, with a warning. --doc moves the claim to a different document (requires a doc span). --code-* flags replace a code claim's spans, --ref-* flags a reference claim's span. The claim's sentence is refreshed from the new doc span.
+Without span flags only a side that reads moved is relocated; a side that reads changed, ambiguous, or orphaned is kept as stored and the result names the flag to pass (doc: changed; pass --doc-quote to re-anchor). Exit 1 when a side needed relocating and none was relocated. An evidence side in a sibling repo that is not checked out is kept as stored, with a warning. The doc and ref flags may each be given once; a value starting with - takes the --flag=<value> form. --doc moves the claim to a different document (requires a doc span). --code-file is repeatable: each one opens a span that takes the --code-quote or --code-range after it, and the spans given replace all of a code claim's spans, in order. --ref-* flags replace a reference claim's span. The claim's sentence is refreshed from the new doc span.
 
 ```sh
 hibi reanchor <claim-id> [options]
@@ -168,9 +168,9 @@ hibi reanchor <claim-id> [options]
 | `--doc <path>` | Move the doc anchor to this document (with --doc-quote or --doc-range). |
 | `--doc-quote <text>` | The documented sentence, verbatim. Must occur in --doc. |
 | `--doc-range L1:L3` | Inclusive 1-based line range of the documented sentence (or char offsets as 100:130). |
-| `--code-file <path>` | The code file the sentence describes (alias:path for a sibling repo). |
-| `--code-quote <text>` | The code span, verbatim. Quote the load-bearing token, e.g. the value. |
-| `--code-range L1:L9` | Inclusive 1-based line range of the code span (or char offsets). |
+| `--code-file <path>` | A code file the sentence describes (alias:path for a sibling repo). Repeat for several spans; each takes the --code-quote or --code-range that follows it. Repeatable. |
+| `--code-quote <text>` | The code span, verbatim. Quote the load-bearing token, e.g. the value. Repeatable. |
+| `--code-range L1:L9` | Inclusive 1-based line range of the code span (or char offsets). Repeatable. |
 | `--ref-file <path>` | The document a reference claim points to (alias:path for a sibling repo). |
 | `--ref-quote <text>` | The referenced span, verbatim. |
 | `--ref-range L1:L3` | Inclusive 1-based line range of the referenced span (or char offsets). |

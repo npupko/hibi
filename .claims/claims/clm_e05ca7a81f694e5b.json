@@ -1,0 +1,59 @@
+{
+  "id": "clm_e05ca7a81f694e5b",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Unknown keys are rejected.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Unknown keys are rejected.",
+        "prefix": "s` is `ack` and is invalid for any other basis. ",
+        "suffix": "\n\n- `by` uses OKF actor form: `human:<id>`, `age"
+      },
+      {
+        "kind": "text-position",
+        "start": 7977,
+        "end": 8003
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const Attestation = z\n  .strictObject({",
+          "prefix": "`ack` is set exactly when `basis` is `ack`.\n */\n",
+          "suffix": "\n    by: Actor,\n    at: Instant,\n    basis: Atte"
+        },
+        {
+          "kind": "text-position",
+          "start": 6378,
+          "end": 6424
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "4db91be175eb2cc9",
+          "semanticHash": "2988bf12cd832ac4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:23.475Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:23.475Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

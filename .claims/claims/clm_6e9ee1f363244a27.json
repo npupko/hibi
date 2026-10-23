@@ -1,0 +1,59 @@
+{
+  "id": "clm_6e9ee1f363244a27",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "For a `reference` claim the request is stored as sent, because the referenced text is committed repository text.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "For a `reference` claim the request is stored as sent, because the referenced text is committed repository text.",
+        "prefix": "sh, source, summary, actor, time, and `values`. ",
+        "suffix": " When the same request is submitted again, the e"
+      },
+      {
+        "kind": "text-position",
+        "start": 18972,
+        "end": 19084
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    subject: { claimId: input.claim.id },\n    request,",
+          "prefix": "odel: response.model,\n    judgment: \"supports\",\n",
+          "suffix": "\n    answers: response.answers,\n    at: (input.n"
+        },
+        {
+          "kind": "text-position",
+          "start": 11757,
+          "end": 11811
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "0cde8b6465af90cb",
+          "semanticHash": "be715642b99b238d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:58.403Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:58.403Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

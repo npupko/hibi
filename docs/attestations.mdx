@@ -30,7 +30,7 @@ Actors use the OKF form `<type>:<id>`:
 | `agent:<name>` | `agent:opus` | a coding agent |
 | `process:<name>` | `process:nightly-cron` | a script, a CI job, a workflow runner |
 
-`--by` is required on `record` and `attest`; there is no default. On `record --from-file`, each item may carry its own `by`, and `--by` is the default for items without one. On `evidence`, `--by` may be omitted when every item has `by`.
+An actor is required on `record`, `attest`, and `evidence`; there is no default. On `record --from-file`, each item may carry its own `by`, and `--by` is the default for items without one. On `evidence`, `--by` may be omitted when every item has `by`.
 
 ## Bases
 
@@ -40,7 +40,7 @@ Actors use the OKF form `<type>:<id>`:
 | `evidence` | `evidence` | the judge returned `supported` for evidence an actor submitted |
 | `ack` | `attest --ack review` or `attest --ack conflict:<id>` | the actor acknowledges a `review` finding or a contradiction, with a note |
 
-An `evidence` attestation is written only when the judge's verdict is `supported` (`supports` at or above `judge.threshold`). A `refuted`, `review`, or `pending` result writes no attestation.
+An `evidence` attestation is written only when the judge's verdict is `supported` (`supports` at or above `judge.threshold`, and the value rule does not fire). A `refuted`, `review`, or `pending` result writes no attestation.
 
 ## The counting rule
 

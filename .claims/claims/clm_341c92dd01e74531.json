@@ -1,0 +1,59 @@
+{
+  "id": "clm_341c92dd01e74531",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "`strandedClaims` lists the live claims still on the old document after the pass,",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`strandedClaims` lists the live claims still on the old document after the pass,",
+        "prefix": " failed with an error, so it is normally empty. ",
+        "suffix": " and is normally empty too. A claim sits on a su"
+      },
+      {
+        "kind": "text-position",
+        "start": 3634,
+        "end": 3714
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ": (await liveClaimsOn(store, oldDoc.id)).map((a) => a.id);",
+          "prefix": "= dryRun\n    ? misses.map((m) => m.claimId)\n    ",
+          "suffix": "\n  return { newDoc, oldDoc, relocated, misses, s"
+        },
+        {
+          "kind": "text-position",
+          "start": 4311,
+          "end": 4369
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "901e5768d9a8538b",
+          "semanticHash": "285975c0ea59b753"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.774Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.774Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

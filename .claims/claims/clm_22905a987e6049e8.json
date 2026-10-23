@@ -1,0 +1,140 @@
+{
+  "id": "clm_22905a987e6049e8",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "```json\n{ \"ok\": true, \"action\": \"archive\", \"schemaVersion\": \"v4\",\n  \"doc\": \"old.md\", \"archivedTo\": \"archive/old.md\", \"successor\": \"new.md\",\n  \"lifecycle\": \"archived\", \"strandedClaims\": [\"clm_…\"], \"dryRun\": false,\n  \"next\": \"reanchor or retire each stranded claim, then hibi check\" }\n```",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```json\n{ \"ok\": true, \"action\": \"archive\", \"schemaVersion\": \"v4\",\n  \"doc\": \"old.md\", \"archivedTo\": \"archive/old.md\", \"successor\": \"new.md\",\n  \"lifecycle\": \"archived\", \"strandedClaims\": [\"clm_…\"], \"dryRun\": false,\n  \"next\": \"reanchor or retire each stranded claim, then hibi check\" }\n```",
+        "prefix": " links to the successor. Claims are not moved.\n\n",
+        "suffix": "\n\n`archivedTo` is null when the document is regi"
+      },
+      {
+        "kind": "text-position",
+        "start": 4252,
+        "end": 4538
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "archivedTo: result.archivedTo,",
+          "prefix": "       doc: result.document.path,\n              ",
+          "suffix": "\n              successor: result.successor ?? nu"
+        },
+        {
+          "kind": "text-position",
+          "start": 28030,
+          "end": 28060
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "2fefd432d9bf393d"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "successor: result.successor ?? null,",
+          "prefix": "   archivedTo: result.archivedTo,\n              ",
+          "suffix": "\n              lifecycle: result.document.lifecy"
+        },
+        {
+          "kind": "text-position",
+          "start": 28075,
+          "end": 28111
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "c3736af1d5e3eece",
+          "semanticHash": "4322042030df1ce9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "lifecycle: result.document.lifecycle,",
+          "prefix": "cessor: result.successor ?? null,\n              ",
+          "suffix": "\n              strandedClaims: result.strandedCl"
+        },
+        {
+          "kind": "text-position",
+          "start": 28126,
+          "end": 28163
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "5ee06eb33a910fa7",
+          "semanticHash": "04f52000c7113545"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "? \"reanchor or retire each stranded claim, then hibi check\"",
+          "prefix": " : result.strandedClaims.length > 0\n            ",
+          "suffix": "\n            : \"hibi check\";\n        await emit("
+        },
+        {
+          "kind": "text-position",
+          "start": 27794,
+          "end": 27853
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "4a572b80736fb167",
+          "semanticHash": "a99f0e7bebf19564"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"reanchor or retire each stranded claim, then hibi check\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.988Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.988Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

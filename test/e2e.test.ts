@@ -566,7 +566,7 @@ describe("the whole loop through the CLI", () => {
     const offline = await hibi(["check"]);
     expect(offline.code).toBe(0);
     expect(verdictOf(offline, ids.attested).reasons).toContain(
-      `conflict check pending with ${ids.faq}: judge unavailable`,
+      "conflict checks pending: 1",
     );
     expect(offline.json.summary).toMatchObject({
       conflictPass: { pairs: 1, requests: 0, pending: 1 },

@@ -1,0 +1,88 @@
+{
+  "id": "clm_b83c98f142244500",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**record.** `by` is required: the item's `by` key, or `--by`, which is the default for items without `by` (section 5).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**record.** `by` is required: the item's `by` key, or `--by`, which is the default for items without `by` (section 5).",
+        "prefix": "lt reports `instructions: { file, appended }`.\n\n",
+        "suffix": " There is no default from git. One item schema s"
+      },
+      {
+        "kind": "text-position",
+        "start": 56233,
+        "end": 56351
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const by = typeof raw.by === \"string\" ? raw.by : context.defaultBy;",
+          "prefix": "ot ${JSON.stringify(v)})`,\n      );\n    }\n  }\n  ",
+          "suffix": "\n  if (by === undefined) {\n    errors.push(\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 10626,
+          "end": 10693
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "0d9d1b676b99279b",
+          "semanticHash": "ccbbf218d0e3af3e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"string\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const defaultBy = str(values.by);",
+          "prefix": "const ref = await currentRef(anchorRoot);\n      ",
+          "suffix": "\n      const fromFile = str(values[\"from-file\"])"
+        },
+        {
+          "kind": "text-position",
+          "start": 16327,
+          "end": 16360
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "be8806d2a162254b",
+          "semanticHash": "d82c001ca991d2d3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:33.532Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:33.532Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

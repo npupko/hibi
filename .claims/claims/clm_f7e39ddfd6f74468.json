@@ -1,0 +1,59 @@
+{
+  "id": "clm_f7e39ddfd6f74468",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "The contradiction pass under `--doc` judges only the pairs with a claim in that document, so the check stays fast in a large store.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The contradiction pass under `--doc` judges only the pairs with a claim in that document, so the check stays fast in a large store.",
+        "prefix": "le being clean. Run `audit` on it (section 3).\n\n",
+        "suffix": " A pair's other claim may be on any document.\n\n#"
+      },
+      {
+        "kind": "text-position",
+        "start": 1280,
+        "end": 1411
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "new Set(\n            claims.filter((c) => c.documentId === documentId).map((c) => c.id),\n          );",
+          "prefix": "tId === undefined\n        ? undefined\n        : ",
+          "suffix": "\n    return runConflictPass({\n      store: this."
+        },
+        {
+          "kind": "text-position",
+          "start": 10942,
+          "end": 11043
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "new_expression",
+          "structuralHash": "77f2ebc7461b2327",
+          "semanticHash": "c2c536c0d6361aaa"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:37.649Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:37.649Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "clm_3874f46e5eb043fa",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- **Containment.** An evidence file must be inside its root: the anchor root for a plain path, the alias directory for an aliased one.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **Containment.** An evidence file must be inside its root: the anchor root for a plain path, the alias directory for an aliased one.",
+        "prefix": " `https://…` and `C:\\…` are not aliased files.\n\n",
+        "suffix": " A path that resolves outside it (`../other/x.ts"
+      },
+      {
+        "kind": "text-position",
+        "start": 4983,
+        "end": 5117
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (!isInside(root, resolve(root, file))) {",
+          "prefix": "itAlias(file);\n  if (split === undefined) {\n    ",
+          "suffix": "\n      return { unavailable: true, reason: ESCAP"
+        },
+        {
+          "kind": "text-position",
+          "start": 3213,
+          "end": 3256
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "f8d95b0d10ac874a",
+          "semanticHash": "f27b07d2923fe693"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (!isInside(abs, resolve(abs, split.relative))) {",
+          "prefix": "bs = isAbsolute(dir) ? dir : join(root, dir);\n  ",
+          "suffix": "\n    return {\n      unavailable: true,\n      ali"
+        },
+        {
+          "kind": "text-position",
+          "start": 3656,
+          "end": 3707
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "02e41b2d448d5206",
+          "semanticHash": "d93942e7e9347763"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:59.939Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:59.939Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

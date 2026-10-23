@@ -29,7 +29,7 @@ Each claim has a **doc side**: the sentence, located in its document by selector
 - A `reference` claim has exactly one span in another document. It stores text selectors only.
 - An `attested` claim has an empty `evidence[]`. Its truth lives outside the repository.
 
-At check time every side is located again and graded `unchanged`, `moved`, `changed`, `ambiguous`, or `orphaned`. See [Anchors](/anchors).
+At check time every side is located again and graded `unchanged`, `moved`, `changed`, `ambiguous`, or `orphaned`; an evidence side whose repo alias is undefined or not checked out, or whose path escapes its root, is `unavailable` instead. See [Anchors](/anchors).
 
 ## Sources
 
@@ -86,7 +86,7 @@ How `ttl` is counted is on the [Attestations](/attestations) page.
 |---|---|
 | `enforced` | the default; the claim may gate |
 | `suggested` | recorded with `--suggest`; never gates or warns |
-| `retired` | withdrawn with `hibi retire`; kept for history, ignored by every verdict |
+| `retired` | withdrawn with `hibi retire`; kept for history; never gates or warns |
 
 See [Lifecycle](/lifecycle).
 
@@ -152,21 +152,24 @@ EOF
 | `by` | the actor recorded as vouching; required here or as `--by`, with no default |
 | `suggest` | `true` records a claim that never gates |
 
+Each result item carries `id`, `updated`, and `existingClaims`. A batch returns `{ batch: true, count, updated, results }`, where the top-level `updated` is the number of items updated in place. `updated` is true when a claim on the same sentence in the same document already existed and was updated in place. `existingClaims` lists the claims on other documents with the same normalized sentence.
+
 Each new claim gets one `vouch` attestation by `by`. A `human:` vouch counts toward the ttl; an `agent:` or `process:` vouch does not. So an `attested` claim recorded with `"by": "agent:<name>"` has no counting attestation and is `expired` until evidence or a human vouch arrives.
 
 ## Store layout
 
-`.claims/` sits at the repository root and is committed.
+`.claims/` sits at the repository root and is committed, except `.claims/judge/`, which `.claims/.gitignore` excludes.
 
 ```
 .claims/
+  .gitignore                 # written by hibi init; contains judge/
   config.json
   documents/<doc_id>.json
   claims/<claim_id>.json
-  judge/<sha256>.json        # cached judge verdicts
+  judge/<sha256>.json        # cached judge verdicts, local, not committed
 ```
 
-Ids are `doc_` or `clm_` followed by 16 hex characters. The store version is `v4`. A store of any other version is not upgraded: every command, `init` included, exits 1 with ``this claim store is version <v>; hibi v4 has no upgrade path from it. Remove <dir>, run `hibi init`, and re-record.``
+Ids are `doc_` or `clm_` followed by 16 hex characters. The store version is `v4`. A store of any other version is not upgraded: every command that opens the store, `init` included, exits 1 with ``this claim store is version <v>; hibi v4 has no upgrade path from it. Remove <dir>, run `hibi init`, and re-record.``
 
 `config.json` as `hibi init` writes it:
 

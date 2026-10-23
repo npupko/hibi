@@ -1,0 +1,52 @@
+{
+  "id": "clm_445b4ac630b44ffe",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "code",
+  "sentence": "Pages are `.mdx`; [`docs/docs.json`](docs/docs.json) holds the navigation.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Pages are `.mdx`; [`docs/docs.json`](docs/docs.json) holds the navigation.",
+        "prefix": "is built with [Mintlify](https://mintlify.com). ",
+        "suffix": "\n\nPreview locally from inside `docs/`:\n\n```sh\nnp"
+      },
+      {
+        "kind": "text-position",
+        "start": 2370,
+        "end": 2444
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "docs/docs.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"navigation\": {",
+          "prefix": "py\", \"view\", \"chatgpt\", \"claude\", \"mcp\"]\n  },\n  ",
+          "suffix": "\n    \"groups\": [\n      {\n        \"group\": \"Get S"
+        },
+        {
+          "kind": "text-position",
+          "start": 591,
+          "end": 606
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:34.281Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:34.281Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "clm_51d6a080bf104638",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "Every pair ends with one outcome and one reason label.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Every pair ends with one outcome and one reason label.",
+        "prefix": "-since` scopes only the verdicts.\n\n## Outcomes\n\n",
+        "suffix": " `threshold` is `judge.threshold` (default 0.8)."
+      },
+      {
+        "kind": "text-position",
+        "start": 3151,
+        "end": 3205
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "outcomes[index] = { pairId: pair.pairId, why: pair.why, outcome, reason };",
+          "prefix": " decision.reason,\n        });\n      }\n    }\n    ",
+          "suffix": "\n  });\n\n  return {\n    findings: findings.sort(b"
+        },
+        {
+          "kind": "text-position",
+          "start": 12493,
+          "end": 12567
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "aaea520d0c36bffd",
+          "semanticHash": "fb6d12dfc346bd34"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export interface PairOutcome {",
+          "prefix": " with the label of the rule that decided it. */\n",
+          "suffix": "\n  pairId: string;\n  /** Why the pair was formed"
+        },
+        {
+          "kind": "text-position",
+          "start": 3396,
+          "end": 3426
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "314f86f9972e9bbd",
+          "semanticHash": "8b07e63035f4f2ce"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:29:28.200Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:29:28.200Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

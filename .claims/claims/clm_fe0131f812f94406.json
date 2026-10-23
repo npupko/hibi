@@ -1,0 +1,65 @@
+{
+  "id": "clm_fe0131f812f94406",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "It never resets the ttl.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It never resets the ttl.",
+        "prefix": " ack stops that finding from warning or gating. ",
+        "suffix": " A conflict ack is recorded on both claims and l"
+      },
+      {
+        "kind": "text-position",
+        "start": 8324,
+        "end": 8348
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return a.basis === \"vouch\" && a.by.startsWith(\"human:\");",
+          "prefix": " {\n  if (a.basis === \"evidence\") return true;\n  ",
+          "suffix": "\n}\n\n/**\n * The newest counting attestation, or u"
+        },
+        {
+          "kind": "text-position",
+          "start": 649,
+          "end": 705
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "f5a90e37e56fc368",
+          "semanticHash": "e13e9b92ec8f5bcc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"vouch\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:39.780Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:39.780Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

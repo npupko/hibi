@@ -1,0 +1,59 @@
+{
+  "id": "clm_ce896a045ef349af",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Neither aborts a run; both map to `pending` (section 7.3).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Neither aborts a run; both map to `pending` (section 7.3).",
+        "prefix": "answered by different models) are `JudgeError`. ",
+        "suffix": "\n- `model` is the pinned versioned id from confi"
+      },
+      {
+        "kind": "text-position",
+        "start": 31568,
+        "end": 31626
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeUnavailable) return `judge unavailable: ${e.message}`;\n  if (e instanceof JudgeError) return `judge error: ${e.message}`;",
+          "prefix": "ailureLabel(e: unknown): string | undefined {\n  ",
+          "suffix": "\n  return undefined;\n}\n\n/**\n * The longest text "
+        },
+        {
+          "kind": "text-position",
+          "start": 3661,
+          "end": 3804
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "7c946e4124e18f0c",
+          "semanticHash": "a3cb9bbf54755dbb"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:50.808Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:50.808Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

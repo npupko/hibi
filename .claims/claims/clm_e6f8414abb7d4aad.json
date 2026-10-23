@@ -1,0 +1,82 @@
+{
+  "id": "clm_e6f8414abb7d4aad",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Hibi turns probabilities into a confidence with the formulas from the TypeSafe docs:",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi turns probabilities into a confidence with the formulas from the TypeSafe docs:",
+        "prefix": "(/conflicts).\n\n## Confidence and the threshold\n\n",
+        "suffix": "\n\n| answer type | confidence |\n|---|---|\n| Choic"
+      },
+      {
+        "kind": "text-position",
+        "start": 8345,
+        "end": 8429
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "/** Choice confidence per the TypeSafe docs: (p_max - 1/n) / (1 - 1/n). */",
+          "prefix": "\n */\nexport const MAX_EVIDENCE_CHARS = 32_000;\n\n",
+          "suffix": "\nexport function choiceConfidence(\n  probabiliti"
+        },
+        {
+          "kind": "text-position",
+          "start": 4215,
+          "end": 4289
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "b53da3de312ee005"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "/** Noul confidence per the TypeSafe docs: |2p - 1|. */",
+          "prefix": "ues);\n  return (pMax - 1 / n) / (1 - 1 / n);\n}\n\n",
+          "suffix": "\nexport function noulConfidence(p: number): numb"
+        },
+        {
+          "kind": "text-position",
+          "start": 4552,
+          "end": 4607
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "6d73af206529a1ae"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:38.215Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:38.215Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

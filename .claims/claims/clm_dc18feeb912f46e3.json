@@ -1,0 +1,65 @@
+{
+  "id": "clm_dc18feeb912f46e3",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "`hibi list --state pending` returns the same claims as one row each.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi list --state pending` returns the same claims as one row each.",
+        "prefix": "ure vouch) is never listed as `never-checked`.\n\n",
+        "suffix": " `lastEvidence` on an item shows the summary, so"
+      },
+      {
+        "kind": "text-position",
+        "start": 4938,
+        "end": 5006
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "case \"pending\":\n          return worklist.has(claim.id);",
+          "prefix": "n\":\n          return outcome === state;\n        ",
+          "suffix": "\n        case \"expired\":\n          return live &"
+        },
+        {
+          "kind": "text-position",
+          "start": 5541,
+          "end": 5597
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "switch_case",
+          "structuralHash": "5a4edd5011fe568c",
+          "semanticHash": "044aa9d897ed5aea"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:38.794Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:38.794Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

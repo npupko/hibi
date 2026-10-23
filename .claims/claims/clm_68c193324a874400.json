@@ -1,0 +1,65 @@
+{
+  "id": "clm_68c193324a874400",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- `attested`: `check` does not ask.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `attested`: `check` does not ask.",
+        "prefix": " the doc side is <state>` (or `evidence side`).\n",
+        "suffix": " It reads the claim's newest cached `supports` e"
+      },
+      {
+        "kind": "text-position",
+        "start": 23497,
+        "end": 23532
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "} else if (c.kind === \"attested\") {\n        const newest = newestSupports(entries);",
+          "prefix": "\n            now,\n          });\n        }\n      ",
+          "suffix": "\n        if (newest !== undefined) {\n          o"
+        },
+        {
+          "kind": "text-position",
+          "start": 16409,
+          "end": 16492
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "7444c9e4b957f1c4",
+          "semanticHash": "dfc6709a90419a7e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"attested\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:41.907Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:41.907Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

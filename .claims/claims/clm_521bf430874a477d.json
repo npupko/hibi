@@ -1,0 +1,82 @@
+{
+  "id": "clm_521bf430874a477d",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Recording is never automatic.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Recording is never automatic.",
+        "prefix": "mapping lives in one function and in the docs.\n\n",
+        "suffix": " The agent decides anchors and sources and calls"
+      },
+      {
+        "kind": "text-position",
+        "start": 52119,
+        "end": 52148
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await cache.put({",
+          "prefix": "eturn [];\n        }\n        answered++;\n        ",
+          "suffix": "\n          key,\n          model: response.model,"
+        },
+        {
+          "kind": "text-position",
+          "start": 8987,
+          "end": 9004
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "67b8821cfbd10493",
+          "semanticHash": "e3c3775611c60b22"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "The contradiction pass judges only pairs with a claim in this document. Recording is never automatic.",
+          "prefix": "ing (judge unavailable or its answer unusable). ",
+          "suffix": "\",\n    options: [\n      {\n        name: \"doc\",\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 12663,
+          "end": 12764
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "f484cfe735fab88d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.679Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.679Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

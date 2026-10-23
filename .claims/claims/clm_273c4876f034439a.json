@@ -1,0 +1,65 @@
+{
+  "id": "clm_273c4876f034439a",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "| `scope` | `store` when every pair was judged; `doc` when only the pairs with a claim in one document were |",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `scope` | `store` when every pair was judged; `doc` when only the pairs with a claim in one document were |",
+        "prefix": " `pending` | pairs the judge could not answer |\n",
+        "suffix": "\n\nPairing always sees every live claim. Which pa"
+      },
+      {
+        "kind": "text-position",
+        "start": 2544,
+        "end": 2653
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "scope: scope === undefined ? \"store\" : \"doc\",",
+          "prefix": "duplicateOf)),\n    pending: pending.sort(),\n    ",
+          "suffix": "\n    requests,\n    pairs: outcomes,\n  };\n}\n\n/**\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 12740,
+          "end": 12785
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1ffc0abe52dc31be",
+          "semanticHash": "416a388726ec1f48"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:25.293Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:25.293Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

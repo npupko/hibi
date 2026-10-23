@@ -1,0 +1,88 @@
+{
+  "id": "clm_f9aadd62032f425c",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "`reanchor` re-resolves every span of the claim against the working tree and stores the relocated sides as the new baseline.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`reanchor` re-resolves every span of the claim against the working tree and stores the relocated sides as the new baseline.",
+        "prefix": "                   [--suggest] [--dry-run]\n```\n\n",
+        "suffix": " It refreshes the claim's `sentence` from the do"
+      },
+      {
+        "kind": "text-position",
+        "start": 5170,
+        "end": 5293
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const before = resolveClaimSides(claim, files, { ast: input.analyzer });",
+          "prefix": "relocated = 0;\n\n  // Resolve every span once.\n  ",
+          "suffix": "\n\n  // Doc side.\n  const docFile = input.docPath"
+        },
+        {
+          "kind": "text-position",
+          "start": 9879,
+          "end": 9951
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "5a6b0a6825b161e4",
+          "semanticHash": "7647fd08457b7043"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const write = !input.dryRun && (input.docOnly || relocated > 0);",
+          "prefix": "ways writes: the claim moves to the new file.\n  ",
+          "suffix": "\n  if (write) await store.putClaim(next);\n\n  if "
+        },
+        {
+          "kind": "text-position",
+          "start": 13151,
+          "end": 13215
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "d208202d750c9ce1",
+          "semanticHash": "868f8ae03eb7b9ab"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.164Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.164Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

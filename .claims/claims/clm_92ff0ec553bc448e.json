@@ -1,0 +1,52 @@
+{
+  "id": "clm_92ff0ec553bc448e",
+  "documentId": "doc_d068824e08521674",
+  "kind": "reference",
+  "sentence": "It never rewrites prose; only `archive` (the tombstone) and `init --instructions` (one appended line) write to a document.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It never rewrites prose; only `archive` (the tombstone) and `init --instructions` (one appended line) write to a document.",
+        "prefix": "ence moved, expired, was refuted, or conflicts. ",
+        "suffix": "\n- **Nothing clears without evidence or a human."
+      },
+      {
+        "kind": "text-position",
+        "start": 7519,
+        "end": 7641
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "It writes nothing into documents except the tombstone `archive` leaves at an archived document's path, and the instruction line `init --instructions` appends to the named file.",
+          "prefix": "is the judge API. Its only subprocess is `git`. ",
+          "suffix": " Apart from those two writes and the store under"
+        },
+        {
+          "kind": "text-position",
+          "start": 1422,
+          "end": 1598
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:04.870Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:47:04.870Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

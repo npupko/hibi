@@ -120,6 +120,9 @@ export function renderReanchor(
     const b = result.before.evidence[i] ?? a;
     side("evidence", b, a);
   });
+  for (const k of result.kept) {
+    lines.push(`  ${warn(style, mode)} ${k.file} left as stored: ${k.reason}`);
+  }
   return `${lines.join("\n")}\n${warningLines(result.warnings, style, mode)}`;
 }
 

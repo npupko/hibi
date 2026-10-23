@@ -1,0 +1,52 @@
+{
+  "id": "clm_e8b74e561afc42fe",
+  "documentId": "doc_d068824e08521674",
+  "kind": "reference",
+  "sentence": "- **A flag means re-verify.** Hibi reports that evidence moved, expired, was refuted, or conflicts.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **A flag means re-verify.** Hibi reports that evidence moved, expired, was refuted, or conflicts.",
+        "prefix": "d judge verdicts are cached and never re-asked.\n",
+        "suffix": " It never rewrites prose; only `archive` (the to"
+      },
+      {
+        "kind": "text-position",
+        "start": 7419,
+        "end": 7518
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**A flag means re-verify.** Hibi reports that evidence moved, expired, was refuted, or conflicts.",
+          "prefix": "t flip them. The cache is local (section 6).\n3. ",
+          "suffix": " It does not rewrite prose (principle 1 lists th"
+        },
+        {
+          "kind": "text-position",
+          "start": 2058,
+          "end": 2155
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:04.794Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:47:04.794Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_eb23b28efb55461b",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| evidence `changed` | `update-claim` (rewrite the sentence if it is now wrong, then reanchor), `reanchor`, `retire` |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| evidence `changed` | `update-claim` (rewrite the sentence if it is now wrong, then reanchor), `reanchor`, `retire` |",
+        "prefix": "`changed` | `reconcile`, `reanchor`, `retire` |\n",
+        "suffix": "\n| doc `changed` | `reverify-doc`, `reanchor`, `"
+      },
+      {
+        "kind": "text-position",
+        "start": 4991,
+        "end": 5109
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "        updateThenReanchor(id, flags),\n        reanchorAsIs(id, flags),\n        retire(id),",
+          "prefix": "  recommended: \"update-claim\",\n      actions: [\n",
+          "suffix": "\n      ],\n    };\n  }\n  if (docChanged) {\n    ret"
+        },
+        {
+          "kind": "text-position",
+          "start": 9639,
+          "end": 9730
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "f15ea74b52f36882",
+          "semanticHash": "1ba810074c6a0dc6"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:13.694Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:13.694Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

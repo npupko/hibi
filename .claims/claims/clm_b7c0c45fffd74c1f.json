@@ -1,0 +1,59 @@
+{
+  "id": "clm_b7c0c45fffd74c1f",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "`--ack` accepts any actor.",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--ack` accepts any actor.",
+        "prefix": " is recorded and `countsTowardTtl` is `false`.\n\n",
+        "suffix": " Only use it when the finding is not a problem, "
+      },
+      {
+        "kind": "text-position",
+        "start": 5313,
+        "end": 5339
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (!ACTOR_PATTERN.test(by)) {",
+          "prefix": "at = (input.now ?? new Date()).toISOString();\n  ",
+          "suffix": "\n    throw new Error(\n      `--by must be human:"
+        },
+        {
+          "kind": "text-position",
+          "start": 5291,
+          "end": 5321
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "baa955dcc79d220d",
+          "semanticHash": "9b420d16d196da38"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:13.707Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:13.707Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

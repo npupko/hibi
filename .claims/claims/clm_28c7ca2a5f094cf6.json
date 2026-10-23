@@ -1,0 +1,94 @@
+{
+  "id": "clm_28c7ca2a5f094cf6",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "There is no default from git.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "There is no default from git.",
+        "prefix": "the default for items without `by` (section 5). ",
+        "suffix": " One item schema serves `--from-file` (a JSON ar"
+      },
+      {
+        "kind": "text-position",
+        "start": 56352,
+        "end": 56381
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const by = typeof raw.by === \"string\" ? raw.by : context.defaultBy;",
+          "prefix": "ot ${JSON.stringify(v)})`,\n      );\n    }\n  }\n  ",
+          "suffix": "\n  if (by === undefined) {\n    errors.push(\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 10626,
+          "end": 10693
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "0d9d1b676b99279b",
+          "semanticHash": "ccbbf218d0e3af3e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"string\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"by is required: pass --by <actor> or a by key, as human:<id>, agent:<name>, or process:<name>\",",
+          "prefix": " if (by === undefined) {\n    errors.push(\n      ",
+          "suffix": "\n    );\n  }\n  if (raw.suggest !== undefined && t"
+        },
+        {
+          "kind": "text-position",
+          "start": 10743,
+          "end": 10839
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "b715e7808aca7ce0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"by is required: pass --by <actor> or a by key, as human:<id>, agent:<name>, or process:<name>\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:33.582Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:33.582Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

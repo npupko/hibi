@@ -1,0 +1,94 @@
+{
+  "id": "clm_6c473c1b36e54b2a",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `judge` | `supported / refuted / review / pending`; absent when no judgment applies |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `judge` | `supported / refuted / review / pending`; absent when no judgment applies |",
+        "prefix": " sides; absent when there is no evidence side |\n",
+        "suffix": "\n| `expired` | boolean, from the counting rule i"
+      },
+      {
+        "kind": "text-position",
+        "start": 21683,
+        "end": 21770
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const JudgeState = z.enum([\"supported\", \"refuted\", \"review\", \"pending\"]);",
+          "prefix": "\n/** The judge axis of a verdict (SPEC 7.2). */\n",
+          "suffix": "\nexport type JudgeState = z.infer<typeof JudgeSt"
+        },
+        {
+          "kind": "text-position",
+          "start": 3118,
+          "end": 3198
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "c512d014b389f925",
+          "semanticHash": "3bb5e3144f937c77"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"supported\",\"refuted\",\"review\",\"pending\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...(opts.judge !== undefined ? { judge: opts.judge } : {}),",
+          "prefix": "vidence !== undefined ? { evidence } : {}),\n    ",
+          "suffix": "\n    expired,\n    conflicts,\n    gates: gate.gat"
+        },
+        {
+          "kind": "text-position",
+          "start": 15433,
+          "end": 15492
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "983ffe3d5ed69ae7",
+          "semanticHash": "fc6f65e1ebd586ce"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:28.262Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:28.262Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

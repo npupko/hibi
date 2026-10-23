@@ -10,12 +10,12 @@
         "kind": "text-quote",
         "exact": "The official tree-sitter grammars for these languages are embedded in the hibi binary; nothing is downloaded.",
         "prefix": "PTS = 5`), not the whole line.\n\n## Tree-sitter\n\n",
-        "suffix": " Hibi loads them per language, only for the file"
+        "suffix": " Hibi loads them per language, only for language"
       },
       {
         "kind": "text-position",
-        "start": 1752,
-        "end": 1861
+        "start": 1771,
+        "end": 1880
       }
     ]
   },
@@ -206,5 +206,5 @@
     }
   ],
   "createdAt": "2026-10-22T19:12:57.972Z",
-  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
 }

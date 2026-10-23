@@ -1,0 +1,65 @@
+{
+  "id": "clm_0d7204bf61f94240",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The label changes no state.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The label changes no state.",
+        "prefix": "ce matches declared source \"<id or resource>\"`. ",
+        "suffix": "\n\n## 5. Attestations and ttl\n\nEach claim has an "
+      },
+      {
+        "kind": "text-position",
+        "start": 7433,
+        "end": 7460
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (source !== undefined) outcome.reasons.push(source);",
+          "prefix": "eclaredSourceLabel(p.claim, p.item.source);\n    ",
+          "suffix": "\n    summary[outcome.state] += 1;\n    let attest"
+        },
+        {
+          "kind": "text-position",
+          "start": 12823,
+          "end": 12878
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "90810c592281622b",
+          "semanticHash": "d9b8aeb2a5683aa7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:23.079Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:23.079Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

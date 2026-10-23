@@ -1,0 +1,65 @@
+{
+  "id": "clm_9adf39fbea864d14",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`check --doc` is the mode in which `expired` gates.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`check --doc` is the mode in which `expired` gates.",
+        "prefix": "s produces gating entries only at or above it.\n\n",
+        "suffix": " It is the default whenever `--doc` is given. A "
+      },
+      {
+        "kind": "text-position",
+        "start": 26639,
+        "end": 26690
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (mode === \"doc\") {\n      gates = true;",
+          "prefix": "   reasons.push(w);\n  }\n\n  if (v.expired) {\n    ",
+          "suffix": "\n      reasons.push(\"expired gates under check -"
+        },
+        {
+          "kind": "text-position",
+          "start": 3824,
+          "end": 3865
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "8565fc486d5285ba",
+          "semanticHash": "b5f3e690e9e527a8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"doc\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:48.729Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:48.729Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_f7b28ce620fa4726",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "code",
+  "sentence": "Hibi never records on its own.",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi never records on its own.",
+        "prefix": "d, the anchors, the sources, and the procedure. ",
+        "suffix": "\n- **After a change**, run `hibi check --since <"
+      },
+      {
+        "kind": "text-position",
+        "start": 2177,
+        "end": 2207
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Recording is never automatic.",
+          "prefix": "udges only pairs with a claim in this document. ",
+          "suffix": "\",\n    options: [\n      {\n        name: \"doc\",\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 12735,
+          "end": 12764
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "f484cfe735fab88d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:25:23.071Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:25:23.071Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

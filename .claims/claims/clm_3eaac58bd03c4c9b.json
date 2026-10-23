@@ -1,0 +1,88 @@
+{
+  "id": "clm_3eaac58bd03c4c9b",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "Each piece except a fenced block or a heading splits after `.`, `!`, or `?` (optionally followed by a closing quote, parenthesis, or bracket) when whitespace follows.",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each piece except a fenced block or a heading splits after `.`, `!`, or `?` (optionally followed by a closing quote, parenthesis, or bracket) when whitespace follows.",
+        "prefix": "tor row such as `|---|---|` is not a region.\n8. ",
+        "suffix": "\n9. A split never falls inside an inline code sp"
+      },
+      {
+        "kind": "text-position",
+        "start": 1984,
+        "end": 2150
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const SENTENCE_END = /[.!?][\"')\\]]?(?=\\s)/g;",
+          "prefix": "tional closing quote/paren, then whitespace. */\n",
+          "suffix": "\n\n/**\n * Segment `text` into blocks on blank-lin"
+        },
+        {
+          "kind": "text-position",
+          "start": 3187,
+          "end": 3231
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "eeee81a79ad72e63",
+          "semanticHash": "72aee686484d3b06"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (piece.kind === \"fenced\" || piece.kind === \"heading\") {",
+          "prefix": "ntences(text: string, piece: Piece): Span[] {\n  ",
+          "suffix": "\n    const whole = tight(text, piece.start, piec"
+        },
+        {
+          "kind": "text-position",
+          "start": 8023,
+          "end": 8081
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "8d41dfc61c6996b9",
+          "semanticHash": "2cdf2a5b11c048aa"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"fenced\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:04:49.318Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:04:49.318Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

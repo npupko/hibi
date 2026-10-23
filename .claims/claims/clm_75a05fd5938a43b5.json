@@ -1,0 +1,82 @@
+{
+  "id": "clm_75a05fd5938a43b5",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "| `code` | code only: `[{file, quote or range}]` |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `code` | code only: `[{file, quote or range}]` |",
+        "prefix": "` | exactly one; `L3:L3` or offsets `100:130` |\n",
+        "suffix": "\n| `ref` | reference only: `{file, quote or rang"
+      },
+      {
+        "kind": "text-position",
+        "start": 3713,
+        "end": 3763
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(`code is only for kind code (kind is ${k})`);",
+          "prefix": "fined && k !== undefined && k !== \"code\") {\n    ",
+          "suffix": "\n  }\n  if (raw.ref !== undefined && k !== undefi"
+        },
+        {
+          "kind": "text-position",
+          "start": 9050,
+          "end": 9107
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "418e165936bd8a56",
+          "semanticHash": "b68e05c3d8504bd4"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(`${where} needs exactly one of quote or range`);",
+          "prefix": "| undefined;\n  if (hasQuote === hasRange) {\n    ",
+          "suffix": "\n  } else if (hasQuote) {\n    if (!nonEmptyStrin"
+        },
+        {
+          "kind": "text-position",
+          "start": 4504,
+          "end": 4564
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "0d4c05c5526a9656",
+          "semanticHash": "1d98e3ebd432ed20"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:32.766Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:32.766Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

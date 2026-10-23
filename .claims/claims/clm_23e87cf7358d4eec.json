@@ -1,0 +1,117 @@
+{
+  "id": "clm_23e87cf7358d4eec",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `percent` | number | `5%`, `12.5 %` | the number | `%` |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `percent` | number | `5%`, `12.5 %` | the number | `%` |",
+        "prefix": "e` | money | `USD 29` | the number | the code |\n",
+        "suffix": "\n| `duration-word` | number | `5 days`, `30 seco"
+      },
+      {
+        "kind": "text-position",
+        "start": 39765,
+        "end": 39823
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"percent\",",
+          "prefix": "p(m, 1),\n    }),\n  },\n  {\n    // 5%, 12.5 %\n    ",
+          "suffix": "\n    kind: \"number\",\n    pattern: re(String.raw`"
+        },
+        {
+          "kind": "text-position",
+          "start": 8886,
+          "end": 8902
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "38aea39d8b26d879"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"percent\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(${NUM})\\s?%",
+          "prefix": "d: \"number\",\n    pattern: re(String.raw`${START}",
+          "suffix": "`),\n    read: (m) => ({\n      raw: m[0],\n      n"
+        },
+        {
+          "kind": "text-position",
+          "start": 8958,
+          "end": 8970
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "9b4437e5ff5466ef",
+          "semanticHash": "9e10acdd9e99eb51"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "unit: \"%\",",
+          "prefix": "normalized: normalizeNumber(group(m, 1)),\n      ",
+          "suffix": "\n    }),\n  },\n  {\n    // 5 days, 1 hour, 30 seco"
+        },
+        {
+          "kind": "text-position",
+          "start": 9065,
+          "end": 9075
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "beb20dc62e4a95e7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"%\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:04.273Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:04.273Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

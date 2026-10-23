@@ -1,0 +1,123 @@
+{
+  "id": "clm_4d32710c41c04ae9",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `conflict` | `contradictory` with confidence, `same_subject`, and `contradicts` all at their bars; or the value rule fires | `contradictory` with any of those below its bar | everything else |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `conflict` | `contradictory` with confidence, `same_subject`, and `contradicts` all at their bars; or the value rule fires | `contradictory` with any of those below its bar | everything else |",
+        "prefix": "dress` | `supports` at or above the threshold |\n",
+        "suffix": "\n| `triage` | never | never | n/a: a row below t"
+      },
+      {
+        "kind": "text-position",
+        "start": 9049,
+        "end": 9243
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (below.length === 0) {",
+          "prefix": "threshold ${f2(threshold)}`,\n      );\n    }\n    ",
+          "suffix": "\n      return {\n        outcome: \"conflict\",\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 6434,
+          "end": 6459
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "e78edf0ddc5d525d",
+          "semanticHash": "63331355d0933fac"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `review: contradictory, ${below.join(\", \")}`,",
+          "prefix": "me: \"review\",\n      probability: pContra,\n      ",
+          "suffix": "\n    };\n  }\n  if (r.relation === \"consistent\" &&"
+        },
+        {
+          "kind": "text-position",
+          "start": 6708,
+          "end": 6761
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "6908d4a7dad25f2e",
+          "semanticHash": "055921eea214b7a2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\", \""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { outcome: \"conflict\", probability: 1, reason: values.label };",
+          "prefix": ".differs && values.label !== undefined) {\n      ",
+          "suffix": "\n    }\n  }\n  const pContra = r.probabilities.con"
+        },
+        {
+          "kind": "text-position",
+          "start": 5784,
+          "end": 5853
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "a4e20b200fce563b",
+          "semanticHash": "7d930ffade48333b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"conflict\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:38.525Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:38.525Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

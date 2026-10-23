@@ -1,0 +1,59 @@
+{
+  "id": "clm_c132ce3e94e545bc",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The batch's `updated` counts the items updated in place.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The batch's `updated` counts the items updated in place.",
+        "prefix": "er documents with the same normalized sentence. ",
+        "suffix": "\n\n**check.** JSON fields: `ref`, `exitCode`, `su"
+      },
+      {
+        "kind": "text-position",
+        "start": 59782,
+        "end": 59838
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "updated: results.filter((r) => r.updated).length,",
+          "prefix": "         count: summaries.length,\n              ",
+          "suffix": "\n              results: summaries,\n            }"
+        },
+        {
+          "kind": "text-position",
+          "start": 18796,
+          "end": 18845
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "54b5d2d68458af47",
+          "semanticHash": "f419f1758c9d279f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:07.653Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:07.653Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

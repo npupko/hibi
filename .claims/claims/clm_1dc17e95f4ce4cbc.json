@@ -1,0 +1,94 @@
+{
+  "id": "clm_1dc17e95f4ce4cbc",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "The batch is validated first and is all or nothing; every problem is reported on its own line.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The batch is validated first and is all or nothing; every problem is reported on its own line.",
+        "prefix": "nt:opus\n```\n\nAgents send a JSON array on stdin. ",
+        "suffix": " `--by` is the actor for items without their own"
+      },
+      {
+        "kind": "text-position",
+        "start": 6262,
+        "end": 6356
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const [index, call] of calls.entries()) {\n      try {\n        await this.record(call, { dryRun: true });\n      } catch (e) {\n        failures.push({ index, message: (e as Error).message });\n      }\n    }\n    if (failures.length > 0) return { results: [], failures };",
+          "prefix": "ilures: RecordBatchResult[\"failures\"] = [];\n    ",
+          "suffix": "\n    const results: RecordResult[] = [];\n    try"
+        },
+        {
+          "kind": "text-position",
+          "start": 15498,
+          "end": 15769
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "425b31e9a2cb5a5b",
+          "semanticHash": "a0768ac83a2af1e7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "${errors.map((e) => `  ${e}`).join(\"\\n\")}",
+          "prefix": "ength === 1 ? \"\" : \"s\"}; nothing was recorded.\\n",
+          "suffix": "`,\n    );\n    this.name = \"RecordValidationError"
+        },
+        {
+          "kind": "text-position",
+          "start": 2302,
+          "end": 2343
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_substitution",
+          "structuralHash": "707f48f0c068a562",
+          "semanticHash": "e1a1a82f98c7fa67"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\\n\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:03.902Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:03.902Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

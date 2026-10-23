@@ -1,0 +1,59 @@
+{
+  "id": "clm_4162a3b4eb3147b7",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A quote is located at its first occurrence.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A quote is located at its first occurrence.",
+        "prefix": ". A quote shorter than 8 characters is refused. ",
+        "suffix": " When the quote occurs more than once, the store"
+      },
+      {
+        "kind": "text-position",
+        "start": 58757,
+        "end": 58800
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const idx = content.indexOf(spec.quote);",
+          "prefix": " Region {\n  if (spec.quote !== undefined) {\n    ",
+          "suffix": "\n    if (idx === -1)\n      throw new Error(\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 10874,
+          "end": 10914
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "776f454e1c48774f",
+          "semanticHash": "557606bf60515d3c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:34.464Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:34.464Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

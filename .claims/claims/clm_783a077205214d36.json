@@ -1,0 +1,82 @@
+{
+  "id": "clm_783a077205214d36",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- `model` is the pinned versioned id from config, never an alias.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `model` is the pinned versioned id from config, never an alias.",
+        "prefix": "rts a run; both map to `pending` (section 7.3).\n",
+        "suffix": " `response.model` is stored with the verdict. Tr"
+      },
+      {
+        "kind": "text-position",
+        "start": 31627,
+        "end": 31692
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const JUDGE_MODEL_PATTERN = /^jev-\\d+\\.\\d+\\.\\d+$/;",
+          "prefix": " such as `jev-1.14.0`; aliases are rejected. */\n",
+          "suffix": "\n\nexport const JudgeConfig = z.strictObject({\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 10344,
+          "end": 10401
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b879b2ad137802b7",
+          "semanticHash": "d09e7304a36ec3b1"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "new JevJudge({ model: config.judge.model, http: new TypeSafeHttp() })",
+          "prefix": "\n    return (\n      this.options.judge ??\n      ",
+          "suffix": "\n    );\n  }\n\n  /** The analyzer with the grammar"
+        },
+        {
+          "kind": "text-position",
+          "start": 8666,
+          "end": 8735
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "new_expression",
+          "structuralHash": "f4417c67a3382f17",
+          "semanticHash": "3e5c4fe2cd1bdd4f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:50.842Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:50.842Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

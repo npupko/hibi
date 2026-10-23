@@ -1,0 +1,81 @@
+{
+  "id": "clm_54a4f15c9077461b",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The mapping lives in one function and in the docs.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The mapping lives in one function and in the docs.",
+        "prefix": "pending: judge error\", from the row's `reason`. ",
+        "suffix": "\n\nRecording is never automatic. The agent decide"
+      },
+      {
+        "kind": "text-position",
+        "start": 52067,
+        "end": 52117
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function adviceFor(row: AuditRow): string | null {",
+          "prefix": "`judge unavailable: …` or `judge error: …`)\n */\n",
+          "suffix": "\n  if (row.claimId !== null) return null;\n  swit"
+        },
+        {
+          "kind": "text-position",
+          "start": 983,
+          "end": 1040
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "956b10b0d57e2b66",
+          "semanticHash": "734272788a42168b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    },
+    {
+      "file": "docs/audit.mdx",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(`adviceFor` in `src/cli/render/audit.ts`)",
+          "prefix": "t prints one to-do per row from a fixed mapping ",
+          "suffix": ":\n\n| row | to-do |\n|---|---|\n| covered | none |\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 7268,
+          "end": 7310
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.660Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.660Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

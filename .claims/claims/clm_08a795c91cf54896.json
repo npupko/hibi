@@ -1,0 +1,88 @@
+{
+  "id": "clm_08a795c91cf54896",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "For a list item, the context also holds the list's lead-in: the paragraph directly above the list, even across a blank line.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "For a list item, the context also holds the list's lead-in: the paragraph directly above the list, even across a blank line.",
+        "prefix": "ains it, at most 600 characters, built in code. ",
+        "suffix": " For a `reference` claim, `evidence` is the curr"
+      },
+      {
+        "kind": "text-position",
+        "start": 7392,
+        "end": 7516
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const before = lead ? `${lead}\\n\\n${listBefore}` : listBefore;",
+          "prefix": "ocText.slice(pStart, at).replace(/^\\s+/, \"\");\n  ",
+          "suffix": "\n  const after = docText\n    .slice(at + sentenc"
+        },
+        {
+          "kind": "text-position",
+          "start": 8173,
+          "end": 8235
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "32f0c05edd2b790b",
+          "semanticHash": "7298afe34d748754"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (k < 0 || k === a - 1) return \"\";",
+          "prefix": "ine).text.trim() === \"\"\n  ) {\n    k -= 1;\n  }\n  ",
+          "suffix": "\n  const above = lines[k] as Line;\n  if (isBreak"
+        },
+        {
+          "kind": "text-position",
+          "start": 5970,
+          "end": 6006
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "489afafeca22e577",
+          "semanticHash": "3856fb848ffbb09e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:42.058Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:42.058Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

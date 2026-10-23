@@ -1,0 +1,59 @@
+{
+  "id": "clm_fece86fba3fd4670",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Hibi extracts values from text with a fixed table of regular expressions in `src/engine/values.ts`:",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi extracts values from text with a fixed table of regular expressions in `src/engine/values.ts`:",
+        "prefix": "cts` criterion also covers incompatible values. ",
+        "suffix": "\n\n| kind | examples | normalized |\n|---|---|---|"
+      },
+      {
+        "kind": "text-position",
+        "start": 10503,
+        "end": 10602
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const VALUE_RULES: readonly ValueRule[] = [",
+          "prefix": "Each row has a test in test/values.test.ts.\n */\n",
+          "suffix": "\n  {\n    // 2026-10-22, also the date part of 20"
+        },
+        {
+          "kind": "text-position",
+          "start": 5939,
+          "end": 5989
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "d8ec5ac7c65d11df",
+          "semanticHash": "f5d4949c99593aa1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:39.487Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:39.487Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

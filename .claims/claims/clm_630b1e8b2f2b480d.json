@@ -1,0 +1,94 @@
+{
+  "id": "clm_630b1e8b2f2b480d",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "A claim is one document region (sentence, list item, table row) that asserts something checkable.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A claim is one document region (sentence, list item, table row) that asserts something checkable.",
+        "prefix": "\n  Bash(bunx @npupko/hibi audit:*)\n---\n\n# hibi\n\n",
+        "suffix": " hibi never rewrites a sentence, fetches a sourc"
+      },
+      {
+        "kind": "text-position",
+        "start": 610,
+        "end": 707
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "| \"list-item\"",
+          "prefix": "ype RegionKind =\n  | \"sentence\"\n  | \"heading\"\n  ",
+          "suffix": "\n  | \"table-row\"\n  | \"fenced\";\n\nexport interface"
+        },
+        {
+          "kind": "text-position",
+          "start": 159,
+          "end": 172
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "union_type",
+          "structuralHash": "bcf54b67cc92e32f",
+          "semanticHash": "e1f999b7ed4e8cab"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"list-item\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "| \"table-row\"",
+          "prefix": "\n  | \"sentence\"\n  | \"heading\"\n  | \"list-item\"\n  ",
+          "suffix": "\n  | \"fenced\";\n\nexport interface Region {\n  id: "
+        },
+        {
+          "kind": "text-position",
+          "start": 175,
+          "end": 188
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "union_type",
+          "structuralHash": "49c3a966d175afb3",
+          "semanticHash": "5ee3ebdf5da6f8f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"table-row\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:31.939Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:31.939Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

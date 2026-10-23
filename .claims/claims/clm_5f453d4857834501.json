@@ -1,0 +1,88 @@
+{
+  "id": "clm_5f453d4857834501",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "| value changed (`100` to `120`) | `evidence: \"changed\"`, `changed: \"api:src/limits.ts value: value changed (was \\`100\\`)\"` | gates; `recommended: \"update-claim\"` |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| value changed (`100` to `120`) | `evidence: \"changed\"`, `changed: \"api:src/limits.ts value: value changed (was \\`100\\`)\"` | gates; `recommended: \"update-claim\"` |",
+        "prefix": "t checked out at ../api` | warns, never gates |\n",
+        "suffix": "\n\nAn evidence file must stay inside its root: a "
+      },
+      {
+        "kind": "text-position",
+        "start": 19237,
+        "end": 19401
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "valueLabel = `value changed (was \\`${valSel.value}\\`)`;",
+          "prefix": " collapseWhitespace(valSel.value)\n    ) {\n      ",
+          "suffix": "\n    }\n  }\n\n  // Prose, or code without structur"
+        },
+        {
+          "kind": "text-position",
+          "start": 7532,
+          "end": 7587
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "fc6076fa09966cc9",
+          "semanticHash": "afe61e5030abd1f6"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "recommended: \"update-claim\",",
+          "prefix": "  }\n  if (evidenceChanged) {\n    return {\n      ",
+          "suffix": "\n      actions: [\n        updateThenReanchor(id,"
+        },
+        {
+          "kind": "text-position",
+          "start": 9593,
+          "end": 9621
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "742c990fa18770c5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"update-claim\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:11.520Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:11.520Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

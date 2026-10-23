@@ -1,0 +1,59 @@
+{
+  "id": "clm_d440dcb754564f79",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "Hibi never runs `instructions` or `steps`.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi never runs `instructions` or `steps`.",
+        "prefix": "low steps: `id`, `command`, optional `stdin` |\n\n",
+        "suffix": " An agent, a cron job, or a Lobster workflow run"
+      },
+      {
+        "kind": "text-position",
+        "start": 3458,
+        "end": 3500
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "One Lobster-compatible step: a hint, never run by hibi",
+          "prefix": "port type Source = z.infer<typeof Source>;\n\n/** ",
+          "suffix": " (SPEC 4.2). */\nexport const ProcedureStep = z.s"
+        },
+        {
+          "kind": "text-position",
+          "start": 7466,
+          "end": 7520
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "4bde29d13db28ed3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:02.796Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:02.796Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

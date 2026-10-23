@@ -29,7 +29,7 @@ Value kinds and units come from the extraction table described on [Judge](/judge
 
 ## The judge call
 
-Each pair is sent to the `conflict` judgment once. The request holds both sentences, their document paths, and their context (heading path and paragraph), in claim-id order. The answer is cached under the hash of the model and the request. A pair whose sentences and context have not changed is not asked again. At most 8 pairs are asked at a time.
+Each pair is sent to the `conflict` judgment once. The request holds both sentences, their document paths, and their context (heading path and paragraph), in claim-id order. A list item's context also includes the list's lead-in paragraph. The answer is cached under the hash of the model and the request. A pair whose sentences and context have not changed is not asked again. At most 8 pairs are asked at a time.
 
 `check` reports the work in `summary.conflictPass`:
 
@@ -56,7 +56,7 @@ Every pair ends with one outcome and one reason label. `threshold` is `judge.thr
 | outcome | rule | example label |
 |---|---|---|
 | `unrelated` | `same_subject` below 0.3 forced the relation to `unrelated` | `not the same subject (same_subject=0.12)` |
-| `conflict` | `same_subject` at or above the threshold, and the two sentences hold different values of the same kind and unit | `numbers differ: 29 vs 39` |
+| `conflict` | `same_subject` at or above the threshold, `contradicts` at or above 0.5, and the two sentences hold different values of the same kind and unit | `numbers differ: 29 vs 39` |
 | `conflict` | `contradictory`, with confidence and `same_subject` at or above the threshold and `contradicts` at or above 0.5 | `contradictory (p=0.93, same_subject=0.95)` |
 | `review` | `contradictory`, with any of those three below its bar | `review: contradictory, confidence=0.55 below threshold 0.80` |
 | `duplicate` | `consistent`, with `same_subject` at or above the threshold | `consistent and same subject (same_subject=0.95)` |
@@ -64,7 +64,7 @@ Every pair ends with one outcome and one reason label. `threshold` is `judge.thr
 | `acked` | a `conflict` or `review` that an ack on either claim covers | `acknowledged: numbers differ: 29 vs 39` |
 | `pending` | the judge was unavailable, or its answer could not be used | `judge unavailable: TYPESAFE_API_KEY is not set; the judge cannot answer.`, `judge error: TypeSafe returned HTTP 400: …` |
 
-The value comparison runs in code, not in the model. It runs only after the judge says both sentences are about the same subject, so `$29` and `$39` in unrelated sentences are not a conflict.
+The value comparison runs in code, not in the model. It runs only after the judge says both sentences are about the same subject and rates `contradicts` at or above 0.5, so `$29` and `$39` in unrelated sentences are not a conflict. Two sentences about the same subject can hold different values for different situations, such as the exit codes of two commands, so when `contradicts` is below 0.5 the value rule does not fire and the other rows decide the outcome.
 
 ## How outcomes appear on verdicts
 
@@ -72,10 +72,10 @@ The value comparison runs in code, not in the model. It runs only after the judg
 |---|---|---|
 | `conflict` | an entry in `conflicts[]`: `{ claimId, probability, reason }` naming the other claim; the reason label `conflicts with <id> (p=… at or above threshold …): …` | gates |
 | `review` | the reason label `possible conflict with <id>: review: contradictory, …` | warns |
-| `pending` | the reason label `conflict check pending with <id>: judge unavailable`, or `conflict check pending with <id>: judge error` when the judge's answer could not be used | warns |
+| `pending` | one reason label per claim, `conflict checks pending: <n>`, where `<n>` is the number of that claim's pairs the judge did not answer | warns |
 | `duplicate` | nothing on the verdict; see below | none |
 
-`probability` is the judge's probability for `contradictory`, or `1` when the values differ. Unlike `supports`, the conflict value rule compares every value group, unitless numbers included. A gating conflict adds a `reconcile` action to the claim's [remediation menu](/verdicts), naming the other claims, and one `ack` action per other claim with the command `hibi attest <id> --by <actor> --ack conflict:<other-id> --note "<why>"`.
+`probability` is the judge's probability for `contradictory`, or `1` when the value rule fires. Unlike `supports`, the conflict value rule compares every value group, unitless numbers included. A gating conflict adds a `reconcile` action to the claim's [remediation menu](/verdicts), naming the other claims, and one `ack` action per other claim with the command `hibi attest <id> --by <actor> --ack conflict:<other-id> --note "<why>"`.
 
 In `documents[].suspect[]`, a claim whose most severe finding is a conflict in review has the status `conflict:review`, and one whose conflict check is pending has `conflict:pending`.
 

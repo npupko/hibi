@@ -1,0 +1,117 @@
+{
+  "id": "clm_42887a3f159a44d8",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `duration-short` | number | `90d`, `500ms`, `12h` (unit touches the number) | the number | unit word |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `duration-short` | number | `90d`, `500ms`, `12h` (unit touches the number) | the number | unit word |",
+        "prefix": "`, `1 hour` | the number | singular unit word |\n",
+        "suffix": "\n| `number` | number | `29`, `1,000`, `0.75` | t"
+      },
+      {
+        "kind": "text-position",
+        "start": 39922,
+        "end": 40026
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"duration-short\",",
+          "prefix": " 12h: the unit letter must touch the number\n    ",
+          "suffix": "\n    kind: \"number\",\n    pattern: re(String.raw`"
+        },
+        {
+          "kind": "text-position",
+          "start": 9517,
+          "end": 9540
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "c8180974b7f261a8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"duration-short\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(${NUM})(ms|s|m|h|d|w|y)(?![\\p{L}\\p{N}_])",
+          "prefix": "d: \"number\",\n    pattern: re(String.raw`${START}",
+          "suffix": "`),\n    read: (m) => ({\n      raw: m[0],\n      n"
+        },
+        {
+          "kind": "text-position",
+          "start": 9596,
+          "end": 9637
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "1ad0ee6383439dca",
+          "semanticHash": "9fe601d6c3cf9ba9"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "unit: DURATION_SHORT[group(m, 2)],",
+          "prefix": "normalized: normalizeNumber(group(m, 1)),\n      ",
+          "suffix": "\n    }),\n  },\n  {\n    // 29, 1,000, 0.75\n    nam"
+        },
+        {
+          "kind": "text-position",
+          "start": 9732,
+          "end": 9766
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "cdf6bbffd9f95618",
+          "semanticHash": "7ab6b75712070317"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:04.400Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:04.400Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

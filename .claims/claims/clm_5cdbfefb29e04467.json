@@ -1,0 +1,88 @@
+{
+  "id": "clm_5cdbfefb29e04467",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A document id is derived from the document's repository-relative path: the xxHash64 of the path's UTF-8 bytes with seed 0, as 16 hex digits zero-padded on the left, so the same path always maps to the same document.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A document id is derived from the document's repository-relative path: the xxHash64 of the path's UTF-8 bytes with seed 0, as 16 hex digits zero-padded on the left, so the same path always maps to the same document.",
+        "prefix": "lowercase hex characters. A claim id is random. ",
+        "suffix": " There are no propositions. The claim holds its "
+      },
+      {
+        "kind": "text-position",
+        "start": 13381,
+        "end": 13596
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/ids.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return `doc_${Bun.hash.xxHash64(path).toString(16).padStart(16, \"0\")}`;",
+          "prefix": "ion documentIdForPath(path: string): string {\n  ",
+          "suffix": "\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 676,
+          "end": 747
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "950e0060cc9af669",
+          "semanticHash": "8010b54f1ab6cf24"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "16"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const docId = documentIdForPath(input.docPath);",
+          "prefix": "alyzer,\n  );\n\n  // Document (upsert by path).\n  ",
+          "suffix": "\n  let document = await store.getDocument(docId)"
+        },
+        {
+          "kind": "text-position",
+          "start": 6529,
+          "end": 6576
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "be8806d2a162254b",
+          "semanticHash": "d2668f9fa1ca7a77"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:36.313Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:36.313Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

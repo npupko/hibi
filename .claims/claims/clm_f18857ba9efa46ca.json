@@ -1,0 +1,82 @@
+{
+  "id": "clm_f18857ba9efa46ca",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "`summary.requests` counts triage requests the judge answered in this run; cache hits are not counted.",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`summary.requests` counts triage requests the judge answered in this run; cache hits are not counted.",
+        "prefix": "nd` counts covered and uncovered rows together. ",
+        "suffix": "\n\n## The to-do line\n\nThe JSON carries `kind` and"
+      },
+      {
+        "kind": "text-position",
+        "start": 7044,
+        "end": 7145
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "requests: answered,",
+          "prefix": "ws.length - coveredBy.size,\n      byKind,\n      ",
+          "suffix": "\n    },\n    rows,\n  };\n}\n\n/** Kinds that should "
+        },
+        {
+          "kind": "text-position",
+          "start": 11747,
+          "end": 11766
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "032aa2864040c879",
+          "semanticHash": "0ae0876fc027aa4b"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "answered++;",
+          "prefix": " label);\n          return [];\n        }\n        ",
+          "suffix": "\n        await cache.put({\n          key,\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 8967,
+          "end": 8978
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "update_expression",
+          "structuralHash": "189ef08b678c3437",
+          "semanticHash": "f12f5f1b81146ccf"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:25.710Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:25.710Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

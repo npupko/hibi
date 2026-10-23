@@ -1,0 +1,82 @@
+{
+  "id": "clm_0234516286a045e3",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "- every judge verdict already in `.claims/judge/` (the cache is read, never re-asked);",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- every judge verdict already in `.claims/judge/` (the cache is read, never re-asked);",
+        "prefix": "dence span;\n- expiry from attestations and ttl;\n",
+        "suffix": "\n- the comparison of numbers, money, versions, a"
+      },
+      {
+        "kind": "text-position",
+        "start": 2634,
+        "end": 2720
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hit = await input.cache.get(key);",
+          "prefix": "input.model,\n    input.claim,\n    texts,\n  );\n  ",
+          "suffix": "\n  const values = {\n    sentence: storedValues(t"
+        },
+        {
+          "kind": "text-position",
+          "start": 10628,
+          "end": 10667
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "0a01a23beaaed80b",
+          "semanticHash": "f2dfadff43b98632"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "outcome = cachedSupportsOutcome(newest, threshold, c);",
+          "prefix": ";\n        if (newest !== undefined) {\n          ",
+          "suffix": "\n        }\n      }\n    }\n\n    const ack =\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 16539,
+          "end": 16593
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "c49da9b2b50d0969",
+          "semanticHash": "c654c055c110a81b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:42.784Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:42.784Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

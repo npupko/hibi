@@ -1,0 +1,59 @@
+{
+  "id": "clm_e7d5abe7639d41a3",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| supported | `evidence supports the sentence (confidence 0.92 >= threshold 0.8)` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| supported | `evidence supports the sentence (confidence 0.92 >= threshold 0.8)` |",
+        "prefix": " on the verdict:\n\n| outcome | label |\n|---|---|\n",
+        "suffix": "\n| refuted | `evidence refutes the sentence (con"
+      },
+      {
+        "kind": "text-position",
+        "start": 9533,
+        "end": 9616
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`evidence ${verb} the sentence (confidence ${c} >= threshold ${t})`,",
+          "prefix": "upported\" : \"refuted\",\n      reasons: [\n        ",
+          "suffix": "\n      ],\n    };\n  }\n  return {\n    state: \"revi"
+        },
+        {
+          "kind": "text-position",
+          "start": 4347,
+          "end": 4415
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "40dcf61d1a3f4cf6",
+          "semanticHash": "d41d829ecd59b76e"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:38.773Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:38.773Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

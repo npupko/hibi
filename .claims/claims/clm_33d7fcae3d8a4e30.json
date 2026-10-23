@@ -1,0 +1,65 @@
+{
+  "id": "clm_33d7fcae3d8a4e30",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**evidence.** Input is a JSON array, or one object, of `{ claimId, evidence, source, summary, by }`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**evidence.** Input is a JSON array, or one object, of `{ claimId, evidence, source, summary, by }`.",
+        "prefix": "old document afterwards or whose move failed |\n\n",
+        "suffix": " An item without `by` takes `--by`; `--by` is re"
+      },
+      {
+        "kind": "text-position",
+        "start": 65113,
+        "end": 65213
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const raws = Array.isArray(parsed) ? parsed : [parsed];",
+          "prefix": "&& item !== null && !Array.isArray(item);\n      ",
+          "suffix": "\n      if (by === undefined) {\n        const mis"
+        },
+        {
+          "kind": "text-position",
+          "start": 29123,
+          "end": 29178
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f24c5bf859768dd6",
+          "semanticHash": "405399b2dcfb4a0b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[parsed]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.729Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.729Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

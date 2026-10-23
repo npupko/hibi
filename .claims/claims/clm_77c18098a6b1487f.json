@@ -1,0 +1,88 @@
+{
+  "id": "clm_77c18098a6b1487f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "An item without `by` takes `--by`; `--by` is required only when some item has no `by`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An item without `by` takes `--by`; `--by` is required only when some item has no `by`.",
+        "prefix": "f `{ claimId, evidence, source, summary, by }`. ",
+        "suffix": " Evidence applies to `attested` claims only. An "
+      },
+      {
+        "kind": "text-position",
+        "start": 65214,
+        "end": 65300
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "isItem(item) && !(\"by\" in item) ? { ...item, by } : item,",
+          "prefix": "\n      const items = raws.map((item) =>\n        ",
+          "suffix": "\n      );\n      try {\n        const report = awa"
+        },
+        {
+          "kind": "text-position",
+          "start": 29754,
+          "end": 29811
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "16d381518f365e91",
+          "semanticHash": "bec0ce7639e250db"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"by\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "no \"by\"; pass --by <actor> or a \"by\" key",
+          "prefix": "imId === \"string\" ? ` (${item.claimId})` : \"\"}: ",
+          "suffix": ": human:<id>, agent:<name>, or process:<name>`,\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 29408,
+          "end": 29448
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "b73823fae5ae2787"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.761Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.761Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_fe701c693da44a15",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "Value kinds and units come from the extraction table described on [Judge](/judge#what-stays-in-code).",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Value kinds and units come from the extraction table described on [Judge](/judge#what-stays-in-code).",
+        "prefix": "tent token | 3 letters | `MIN_TOKEN_LETTERS` |\n\n",
+        "suffix": "\n\n## The judge call\n\nEach pair is sent to the `c"
+      },
+      {
+        "kind": "text-position",
+        "start": 1745,
+        "end": 1846
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "import { extractValues, valueGroup } from \"./values.ts\";",
+          "prefix": "\nimport type { Claim } from \"../core/model.ts\";\n",
+          "suffix": "\n\n/** A token is rare when it appears in fewer t"
+        },
+        {
+          "kind": "text-position",
+          "start": 1049,
+          "end": 1105
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "import_statement",
+          "structuralHash": "99ae1211f182c14e",
+          "semanticHash": "c0f1f45d945573e2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"./values.ts\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:24.725Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:24.725Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

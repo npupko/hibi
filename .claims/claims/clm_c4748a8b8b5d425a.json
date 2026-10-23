@@ -1,0 +1,105 @@
+{
+  "id": "clm_c4748a8b8b5d425a",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Hibi sends these questions to a model, the **judge**, and decides the outcome in code from the probabilities it returns.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi sends these questions to a model, the **judge**, and decides the outcome in code from the probabilities it returns.",
+        "prefix": "h other? Is this region a factual claim at all? ",
+        "suffix": "\n\nThe judge is an interface with three methods. "
+      },
+      {
+        "kind": "text-position",
+        "start": 468,
+        "end": 588
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function decidePair(",
+          "prefix": " the result is the judge's answer for them.\n */\n",
+          "suffix": "\n  a: string,\n  b: string,\n  r: ConflictResult,\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 5121,
+          "end": 5148
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "5957f75fe30c8aa5",
+          "semanticHash": "ecc8ba27d360bdf2"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function supportsOutcome(",
+          "prefix": " sentence and evidence values are\n * given.\n */\n",
+          "suffix": "\n  result: SupportsResult,\n  threshold: number,\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 3190,
+          "end": 3222
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "577ea4fb815ac77d",
+          "semanticHash": "5b961925e1b8ad6b"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function auditKindOf(result: TriageResult): AuditKind {",
+          "prefix": " a confident triage answer to an audit kind. */\n",
+          "suffix": "\n  if (result.kind !== \"factual_claim\") return \""
+        },
+        {
+          "kind": "text-position",
+          "start": 5499,
+          "end": 5561
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "08b77c113c46a5bb",
+          "semanticHash": "ae138a66b078c91c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:34.101Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:34.101Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

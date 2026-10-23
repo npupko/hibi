@@ -1,0 +1,117 @@
+{
+  "id": "clm_d2febd78af1b4c75",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `archive` | `--doc <path>` (required), `--successor <path>`, `--dry-run` | as v3; a path that is not a registered document is an error |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `archive` | `--doc <path>` (required), `--successor <path>`, `--dry-run` | as v3; a path that is not a registered document is an error |",
+        "prefix": "n it to `--to`; never reads the `--from` file |\n",
+        "suffix": "\n| `evidence` | `--from-file <path\\|->` (require"
+      },
+      {
+        "kind": "text-position",
+        "start": 54430,
+        "end": 54568
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"The document to archive.\",\n        required: true,",
+          "prefix": "string\",\n        placeholder: \"<path>\",\n        ",
+          "suffix": "\n      },\n      {\n        name: \"successor\",\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 16286,
+          "end": 16343
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "15154156d14c03d8",
+          "semanticHash": "af2cf5f35d8219f3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"The document to archive.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"The document the tombstone points to.\",",
+          "prefix": "string\",\n        placeholder: \"<path>\",\n        ",
+          "suffix": "\n      },\n      DRY_RUN,\n    ],\n    examples: [\""
+        },
+        {
+          "kind": "text-position",
+          "start": 16451,
+          "end": 16497
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "cf318a2a503ea1bf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"The document the tombstone points to.\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "is not a registered document; nothing to archive",
+          "prefix": "fined) {\n    throw new Error(\n      `${docPath} ",
+          "suffix": " (a document is registered when a claim is recor"
+        },
+        {
+          "kind": "text-position",
+          "start": 1593,
+          "end": 1641
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "731990e61b1ab574"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:56.811Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:56.811Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,94 @@
+{
+  "id": "clm_d593c87ca6d641a5",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "README.md\n  L1  not-a-claim   0.94  \"# Demo\"\n  L3  code            —   clm_b87be1a1752b4a49  \"Retries are capped at 5 attempts.\"\n  L5  reference       —   clm_ed3e7d37f89b41b8  \"Refunds are issued within two weeks of a request.\"\n  L7  unsure          —   unsure: read it yourself  \"It is fast.\"\n4 regions, 2 covered, 2 uncovered; code 1, reference 1, not-a-claim 1, unsure 1; 0 judge requests",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "README.md\n  L1  not-a-claim   0.94  \"# Demo\"\n  L3  code            —   clm_b87be1a1752b4a49  \"Retries are capped at 5 attempts.\"\n  L5  reference       —   clm_ed3e7d37f89b41b8  \"Refunds are issued within two weeks of a request.\"\n  L7  unsure          —   unsure: read it yourself  \"It is fast.\"\n4 regions, 2 covered, 2 uncovered; code 1, reference 1, not-a-claim 1, unsure 1; 0 judge requests",
+        "prefix": " could not use (from the row's `reason`) |\n\n```\n",
+        "suffix": "\n```\n\nAn `unverifiable` sentence states a fact t"
+      },
+      {
+        "kind": "text-position",
+        "start": 7097,
+        "end": 7489
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const KIND_WIDTH = \"unverifiable\".length;",
+          "prefix": "\n        : \"pending: judge unavailable\";\n  }\n}\n\n",
+          "suffix": "\n\nfunction rowLine(row: AuditRow, style: Style, "
+        },
+        {
+          "kind": "text-position",
+          "start": 1600,
+          "end": 1641
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "643e234fc39a5a8d",
+          "semanticHash": "0af2a4e713c5c0c7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unverifiable\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const p = row.probability === undefined ? \"  — \" : row.probability.toFixed(2);",
+          "prefix": ";\n  const kind = row.kind.padEnd(KIND_WIDTH);\n  ",
+          "suffix": "\n  const advice = adviceFor(row);\n  const parts "
+        },
+        {
+          "kind": "text-position",
+          "start": 1835,
+          "end": 1913
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "c33ecd8c948d6ce7",
+          "semanticHash": "c5f4cedace5624a6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "retired",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:25.991Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:25.991Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

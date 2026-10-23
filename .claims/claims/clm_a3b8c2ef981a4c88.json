@@ -1,0 +1,65 @@
+{
+  "id": "clm_a3b8c2ef981a4c88",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It reports two further row kinds, `unsure` and `pending`, when triage cannot decide (section 10).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It reports two further row kinds, `unsure` and `pending`, when triage cannot decide (section 10).",
+        "prefix": "im` (instruction, opinion, narrative, heading). ",
+        "suffix": "\n\nKind is explicit at record time. It is not inf"
+      },
+      {
+        "kind": "text-position",
+        "start": 4332,
+        "end": 4429
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  | \"unsure\"\n  | \"pending\";",
+          "prefix": " ClaimKind\n  | \"unverifiable\"\n  | \"not-a-claim\"\n",
+          "suffix": "\n\nexport const AUDIT_KINDS: readonly AuditKind[]"
+        },
+        {
+          "kind": "text-position",
+          "start": 3527,
+          "end": 3554
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "union_type",
+          "structuralHash": "522f5bfc8ca35523",
+          "semanticHash": "56cf3758baec8337"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unsure\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:59.814Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:59.814Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

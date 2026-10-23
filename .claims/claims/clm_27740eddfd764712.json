@@ -1,0 +1,59 @@
+{
+  "id": "clm_27740eddfd764712",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "| `changed` | fix the sentence if wrong, then `hibi reanchor <id>` |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `changed` | fix the sentence if wrong, then `hibi reanchor <id>` |",
+        "prefix": "ts `<…>` placeholders.\n\n| flag | do |\n|---|---|\n",
+        "suffix": "\n| `orphaned` | `hibi reanchor <id> --suggest`, "
+      },
+      {
+        "kind": "text-position",
+        "start": 6022,
+        "end": 6090
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "the evidence changed; if the sentence is now wrong, rewrite it, then run the command",
+          "prefix": "sentence, then reanchor\",\n    rationale:\n      \"",
+          "suffix": "\",\n    command: reanchorCmd(id, flags),\n  };\n}\n\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 4282,
+          "end": 4366
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "4d4ff0a3071449b4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:33.678Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:33.678Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

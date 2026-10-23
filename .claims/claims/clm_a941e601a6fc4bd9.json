@@ -1,0 +1,103 @@
+{
+  "id": "clm_a941e601a6fc4bd9",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "The comparison of quantities is done in code, though the judge's `contradicts` criterion also covers incompatible values.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The comparison of quantities is done in code, though the judge's `contradicts` criterion also covers incompatible values.",
+        "prefix": "`. It changes no state.\n\n## What stays in code\n\n",
+        "suffix": " Hibi extracts values from text with a fixed tab"
+      },
+      {
+        "kind": "text-position",
+        "start": 10381,
+        "end": 10502
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const values = compareValues(extractValues(a), extractValues(b));",
+          "prefix": "ften\n    // describes different situations.\n    ",
+          "suffix": "\n    if (values.differs && values.label !== unde"
+        },
+        {
+          "kind": "text-position",
+          "start": 5656,
+          "end": 5721
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "56cb08a4d0c4db1d",
+          "semanticHash": "80c594a6af113811"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const cmp = compareValues(",
+          "prefix": "ng numbers, versions, and dates can refute.\n    ",
+          "suffix": "\n      values.sentence.map((v) => ({ ...v, raw: "
+        },
+        {
+          "kind": "text-position",
+          "start": 3831,
+          "end": 3857
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "44e354aff6161769",
+          "semanticHash": "f50412c11c84d13f"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/questions/conflict.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"true\": \"Incompatible values, locations, behaviors, or conditions for the same thing\"",
+          "prefix": "`a.text` is true?\",\n      \"criteria\": {\n        ",
+          "suffix": ",\n        \"false\": \"Compatible, or about differe"
+        },
+        {
+          "kind": "text-position",
+          "start": 1954,
+          "end": 2039
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:39.419Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:45:26.988Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:39.419Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

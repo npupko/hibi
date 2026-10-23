@@ -1,0 +1,88 @@
+{
+  "id": "clm_79b2d08dcce94bec",
+  "documentId": "doc_d11450458251d04c",
+  "kind": "code",
+  "sentence": "| `reference` | one span in another document | the span changed, or the judge finds it no longer supports the sentence |",
+  "doc": {
+    "file": "docs/index.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `reference` | one span in another document | the span changed, or the judge finds it no longer supports the sentence |",
+        "prefix": "anged, disappeared, or matches several places |\n",
+        "suffix": "\n| `attested` | outside the repository: a dashbo"
+      },
+      {
+        "kind": "text-position",
+        "start": 1128,
+        "end": 1248
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "a reference claim needs exactly one span in another document",
+          "prefix": "ets.length !== 1) {\n    throw new Error(\n      `",
+          "suffix": " (got ${targets.length}).`,\n    );\n  }\n  if (kin"
+        },
+        {
+          "kind": "text-position",
+          "start": 3987,
+          "end": 4047
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "f30d6b062f562fcd"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"refuted\") gates = true;",
+          "prefix": "c) || isWarnAnchor(v.evidence)) warns = true;\n  ",
+          "suffix": "\n  if (v.judge !== undefined && WARN_JUDGE.has(v"
+        },
+        {
+          "kind": "text-position",
+          "start": 3180,
+          "end": 3220
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "045e3f715206f391",
+          "semanticHash": "c5efdf039031fded"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"refuted\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:33.833Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:33.833Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

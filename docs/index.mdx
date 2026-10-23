@@ -7,7 +7,7 @@ icon: "house"
 
 Hibi (日々, "day after day") tracks **claims**: sentences in documents that assert something checkable. The documents can be anything: a README, `CLAUDE.md`, an ADR, a pricing page, a process note in a knowledge repository. Hibi reports which claims are stale, which documents cannot be trusted right now, which sentences contradict each other, and which sentences nothing could verify.
 
-Hibi runs nothing and fetches nothing. An agent collects evidence and submits it. The primary user is a coding agent; JSON is the contract.
+Hibi runs no verifiers and no resolvers. Its only network call is the judge API, and its only subprocess is `git`. An agent collects evidence and submits it. The primary user is a coding agent; JSON is the contract.
 
 ## Three kinds of claim
 
@@ -24,9 +24,9 @@ Before an agent relies on a document, it runs `hibi check --doc <file>`; exit 2 
 ## What hibi will and will not do
 
 - **Same tree, same verdicts.** Anchor resolution is deterministic. Judge verdicts are cached in `.claims/judge/` by model and exact request and never re-asked.
-- **A flag means re-verify.** Hibi never rewrites prose and never declares a sentence false on its own authority.
+- **A flag means re-verify.** Hibi never rewrites prose and never declares a sentence false on its own authority. Only `archive` (the tombstone) and `init --instructions` (one appended line) write to a document.
 - **Nothing clears without evidence or a human.** An agent vouch is recorded and does not reset a ttl.
-- **One knob.** `judge.threshold` (default 0.8) decides every judge outcome. Every rule that fires is a reason label in the output.
+- **One knob.** `judge.threshold` (default 0.8) is the one configurable confidence bar for every judgment. Every rule that fires is a reason label in the output.
 - **No key, no silent pass.** Without `TYPESAFE_API_KEY`, or when the judge fails, a judgment the cache cannot answer is `pending`, a warning.
 
 ## Start here

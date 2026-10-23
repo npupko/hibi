@@ -1,0 +1,56 @@
+{
+  "id": "clm_83e2d76317584af4",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "attested",
+  "sentence": "The dashboard's content directory is set to `docs`.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The dashboard's content directory is set to `docs`.",
+        "prefix": "ify GitHub App on a push to the default branch. ",
+        "suffix": "\n\nWhen adding a page, create the `.mdx` file und"
+      },
+      {
+        "kind": "text-position",
+        "start": 2837,
+        "end": 2888
+      }
+    ]
+  },
+  "evidence": [],
+  "sources": [
+    {
+      "id": "mintlify-git-settings",
+      "resource": "https://app.mintlify.com/settings/project/git-settings",
+      "title": "Mintlify dashboard: Git settings"
+    },
+    {
+      "id": "mintlify-monorepo",
+      "resource": "https://www.mintlify.com/docs/deploy/monorepo.md",
+      "title": "Mintlify docs: Monorepo setup"
+    }
+  ],
+  "procedure": {
+    "instructions": "Open the Mintlify dashboard Git settings for the hibi project and report the docs.json subdirectory path. Without dashboard access, report where docs.json lives in the repository and whether the latest 'Mintlify Deployment' check run on the default branch that deployed (not skipped) succeeded."
+  },
+  "ttl": "P90D",
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:32:34.484Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:32:49.268Z",
+      "basis": "evidence",
+      "note": "docs.json lives only at docs/docs.json and Mintlify deployments from main succeed, so the docs.json subdirectory is docs",
+      "evidenceHash": "87681a42cd5b0dc073c5c561c9415e101396c2f9537f412d670bb150b81b1df8"
+    }
+  ],
+  "createdAt": "2026-10-23T08:32:34.484Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

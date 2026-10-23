@@ -1,0 +1,81 @@
+{
+  "id": "clm_54251fe2612441e0",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `kind_<i>` | Choice over `factual_claim`, `instruction`, `opinion`, `narrative` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `kind_<i>` | Choice over `factual_claim`, `instruction`, `opinion`, `narrative` |",
+        "prefix": " `regions: [{ id, kind, text, headingPath }]` |\n",
+        "suffix": "\n| `evidenceKind_<i>` | Choice over `code`, `oth"
+      },
+      {
+        "kind": "text-position",
+        "start": 6252,
+        "end": 6335
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/questions/triage.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"kind_{{i}}\": {",
+          "prefix": "\n  \"placeholder\": \"{{i}}\",\n  \"questions\": {\n    ",
+          "suffix": "\n      \"type\": \"choice\",\n      \"instructions\": {"
+        },
+        {
+          "kind": "text-position",
+          "start": 379,
+          "end": 394
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export type TriageKind =\n  | \"factual_claim\"\n  | \"instruction\"\n  | \"opinion\"\n  | \"narrative\";",
+          "prefix": "nd;\n  text: string;\n  headingPath: string[];\n}\n\n",
+          "suffix": "\nexport type EvidenceKind = \"code\" | \"other_doc\""
+        },
+        {
+          "kind": "text-position",
+          "start": 308,
+          "end": 401
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b1be8194450320f6",
+          "semanticHash": "9be3c1a025b355e2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"factual_claim\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:37.321Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:37.321Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

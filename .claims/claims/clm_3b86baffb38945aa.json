@@ -1,0 +1,94 @@
+{
+  "id": "clm_3b86baffb38945aa",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "`hibi list --path <old-doc>` lists the claims that name the file on either side.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi list --path <old-doc>` lists the claims that name the file on either side.",
+        "prefix": " Move them in the same change as the prose:\n\n1. ",
+        "suffix": "\n2. `hibi supersede --from <old-doc> --to <new-d"
+      },
+      {
+        "kind": "text-position",
+        "start": 7446,
+        "end": 7526
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (c.doc.file === path) return \"doc\";",
+          "prefix": ": string,\n): \"doc\" | \"evidence\" | undefined {\n  ",
+          "suffix": "\n  if (c.evidence.some((b) => b.file === path)) "
+        },
+        {
+          "kind": "text-position",
+          "start": 3039,
+          "end": 3077
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "db61981790252dda",
+          "semanticHash": "b0188a64e9f993e3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"doc\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (c.evidence.some((b) => b.file === path)) return \"evidence\";",
+          "prefix": "ed {\n  if (c.doc.file === path) return \"doc\";\n  ",
+          "suffix": "\n  return undefined;\n}\n\nfunction rowState(v: Ver"
+        },
+        {
+          "kind": "text-position",
+          "start": 3080,
+          "end": 3143
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "c96451cfbf0aea08",
+          "semanticHash": "a1d46c1ede904701"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.528Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.528Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

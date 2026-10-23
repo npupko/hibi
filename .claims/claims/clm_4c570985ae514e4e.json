@@ -1,0 +1,93 @@
+{
+  "id": "clm_4c570985ae514e4e",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "`lastEvidence` on an item shows the summary, source, time, and actor of the newest judged evidence.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`lastEvidence` on an item shows the summary, source, time, and actor of the newest judged evidence.",
+        "prefix": "nding` returns the same claims as one row each. ",
+        "suffix": "\n\nCollect the evidence the procedure asks for, t"
+      },
+      {
+        "kind": "text-position",
+        "start": 5007,
+        "end": 5106
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const last = newestEntry(\n        entries,\n        (e) => e.evidence !== undefined,\n      )?.evidence;",
+          "prefix": "ush(worklistLabel(reason, c.kind, c.id));\n      ",
+          "suffix": "\n      worklist.push({\n        claimId: c.id,\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 18269,
+          "end": 18371
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "90013d863ff271ce",
+          "semanticHash": "f89863aa5123651c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "lastEvidence: {\n                summary: last.summary,",
+          "prefix": "(last !== undefined\n          ? {\n              ",
+          "suffix": "\n                source: last.source,\n          "
+        },
+        {
+          "kind": "text-position",
+          "start": 18650,
+          "end": 18704
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "6ff4f10861d3574d",
+          "semanticHash": "e68952420e28ff44"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:38.851Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:45:26.612Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:38.851Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

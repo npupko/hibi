@@ -384,8 +384,9 @@ function kindOf(key: string): ValueKind {
 /**
  * The numeric rule (SPEC 8.5). A deterministic rule that the contradiction
  * pass applies only after the judge has said two sentences are about the same
- * subject (`same_subject` at or above the threshold); on its own it says
- * nothing about whether the sentences are related.
+ * subject (`same_subject` at or above the threshold) and leans contradictory
+ * (`contradicts` at or above 0.5); on its own it says nothing about whether
+ * the sentences are related.
  *
  * Values are grouped by kind and unit. The rule fires when some group appears
  * on both sides and the two sides share no value in it (compared by

@@ -1,0 +1,94 @@
+{
+  "id": "clm_a2c65ceb8faf4511",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`--no-ast` skips them.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--no-ast` skips them.",
+        "prefix": "d in the binary as wasm; nothing is downloaded. ",
+        "suffix": " A code file in any other language gets the text"
+      },
+      {
+        "kind": "text-position",
+        "start": 20779,
+        "end": 20801
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (this.options.noAst) return undefined;",
+          "prefix": "ring>,\n  ): Promise<Analyzer | undefined> {\n    ",
+          "suffix": "\n    const analyzer = await loadAnalyzer();\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 8935,
+          "end": 8976
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "93908398f53bedcb",
+          "semanticHash": "52e161ce8b484d2c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const noAst = Boolean(values[\"no-ast\"]);",
+          "prefix": "nchorRoot = str(values.cwd) ?? process.cwd();\n  ",
+          "suffix": "\n  const storeDir = str(values[\"store-dir\"]);\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 14534,
+          "end": 14574
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "69c70993a43d639d",
+          "semanticHash": "6b75c680db56dea7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"no-ast\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:00.900Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:00.900Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

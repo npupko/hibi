@@ -1,0 +1,65 @@
+{
+  "id": "clm_8642d293664f417d",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`kind` is checked first.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`kind` is checked first.",
+        "prefix": "`, the `evidenceKind` Choice confidence is too. ",
+        "suffix": " A region that is `code` by construction passes "
+      },
+      {
+        "kind": "text-position",
+        "start": 50648,
+        "end": 50672
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "result.kindConfidence < threshold\n      ? \"kind\"",
+          "prefix": "old: number,\n): AuditRow {\n  const unsure =\n    ",
+          "suffix": "\n      : result.evidenceProbabilities !== undefi"
+        },
+        {
+          "kind": "text-position",
+          "start": 6381,
+          "end": 6429
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "2f3d2aa9ac84f99f",
+          "semanticHash": "6d753df5cef36085"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"kind\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.242Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.242Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

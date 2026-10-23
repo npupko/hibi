@@ -1,0 +1,94 @@
+{
+  "id": "clm_841bb00d11934c63",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| a 200 whose body is not JSON, or has no `answers` object and `model` string | error |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| a 200 whose body is not JSON, or has no `answers` object and `model` string | error |",
+        "prefix": "4xx other than 401, 403, 408, and 429 | error |\n",
+        "suffix": "\n| an answer that is missing, of the wrong type,"
+      },
+      {
+        "kind": "text-position",
+        "start": 4461,
+        "end": 4548
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`TypeSafe returned a body that is not JSON (${(e as Error).message}): ${text.slice(0, 200)}`,",
+          "prefix": "  } catch (e) {\n    throw new JudgeError(\n      ",
+          "suffix": "\n    );\n  }\n  const o = body as Record<string, u"
+        },
+        {
+          "kind": "text-position",
+          "start": 3192,
+          "end": 3285
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "3aa5028e59e3bede",
+          "semanticHash": "711efe439965a743"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`TypeSafe returned JSON without an \"answers\" object and a \"model\" string: ${text.slice(0, 200)}`,",
+          "prefix": ".answers)\n  ) {\n    throw new JudgeError(\n      ",
+          "suffix": "\n    );\n  }\n  return o as unknown as SystemOneRe"
+        },
+        {
+          "kind": "text-position",
+          "start": 3592,
+          "end": 3689
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "04432c91458ae4bd",
+          "semanticHash": "f58332e83936f93d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:36.311Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:36.311Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

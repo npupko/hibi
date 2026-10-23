@@ -1,0 +1,117 @@
+{
+  "id": "clm_66797960934840ba",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `duplicate` | live claims with a duplicate candidate or the same sentence as another live claim |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `duplicate` | live claims with a duplicate candidate or the same sentence as another live claim |",
+        "prefix": "live claims with a conflict or review finding |\n",
+        "suffix": "\n| `suggested` | claims recorded with `--suggest"
+      },
+      {
+        "kind": "text-position",
+        "start": 64802,
+        "end": 64901
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "        case \"duplicate\":\n          return live && duplicates.has(claim.id);",
+          "prefix": "       return live && inConflict.has(claim.id);\n",
+          "suffix": "\n        case \"suggested\":\n          return clai"
+        },
+        {
+          "kind": "text-position",
+          "start": 5746,
+          "end": 5822
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "switch_case",
+          "structuralHash": "b30b982a0923f6c6",
+          "semanticHash": "7634a231d4f0478d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"duplicate\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const d of pass.duplicates) {",
+          "prefix": ") list.push(ref);\n    out.set(id, list);\n  };\n  ",
+          "suffix": "\n    add(d.claimId, { claimId: d.duplicateOf, wh"
+        },
+        {
+          "kind": "text-position",
+          "start": 3801,
+          "end": 3835
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "396151fdc5911334",
+          "semanticHash": "a32b428a3ea60540"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (other !== id) add(id, { claimId: other, why: \"same sentence\" });",
+          "prefix": "ids) {\n      for (const other of ids) {\n        ",
+          "suffix": "\n      }\n    }\n  }\n  return out;\n}\n\nexport funct"
+        },
+        {
+          "kind": "text-position",
+          "start": 4256,
+          "end": 4324
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "337f07018ed126d0",
+          "semanticHash": "0d44bdad5bd6dbf4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"same sentence\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:36.304Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:36.304Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

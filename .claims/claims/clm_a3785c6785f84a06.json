@@ -1,0 +1,88 @@
+{
+  "id": "clm_a3785c6785f84a06",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "`--no-hints` (or `HIBI_ADVICE=0`) drops the menu.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--no-hints` (or `HIBI_ADVICE=0`) drops the menu.",
+        "prefix": "is `null` when hibi cannot know which is right. ",
+        "suffix": "\n\n| condition | actions, in order |\n|---|---|\n| "
+      },
+      {
+        "kind": "text-position",
+        "start": 4722,
+        "end": 4771
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/mode.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (env.HIBI_ADVICE === \"0\") return false;",
+          "prefix": " boolean {\n  if (flags.noHints) return false;\n  ",
+          "suffix": "\n  return true;\n}\n\nexport function resolveMode(f"
+        },
+        {
+          "kind": "text-position",
+          "start": 2212,
+          "end": 2254
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "4710c4b7bbf43707",
+          "semanticHash": "126852ba46439c72"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"0\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/json.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (opts.hints) out.remediation = v.remediation;",
+          "prefix": "{c.kind}${c.detail ? `: ${c.detail}` : \"\"}`;\n\n  ",
+          "suffix": "\n  out.reasons = v.reasons;\n\n  if (opts.explain)"
+        },
+        {
+          "kind": "text-position",
+          "start": 1711,
+          "end": 1759
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "b55bc6f78ae7eddc",
+          "semanticHash": "1f98a9c45c439fdd"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:13.459Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:13.459Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

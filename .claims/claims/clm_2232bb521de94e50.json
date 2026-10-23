@@ -1,0 +1,52 @@
+{
+  "id": "clm_2232bb521de94e50",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "reference",
+  "sentence": "Never delete a file under `.claims/`; run `hibi retire <id>` instead.",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Never delete a file under `.claims/`; run `hibi retire <id>` instead.",
+        "prefix": "- Never rewrite a sentence to silence a flag.\n- ",
+        "suffix": "\n\n## Session hooks\n\nYou can run the two read-onl"
+      },
+      {
+        "kind": "text-position",
+        "start": 3331,
+        "end": 3400
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Never delete a `.claims/` file; use `hibi retire <id>`.",
+          "prefix": " |\n\nNever rewrite a sentence to silence a flag. ",
+          "suffix": "\n\nRecipes: `references/cookbook.md`. CI: `assets"
+        },
+        {
+          "kind": "text-position",
+          "start": 6385,
+          "end": 6440
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:25:23.612Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:25:23.612Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

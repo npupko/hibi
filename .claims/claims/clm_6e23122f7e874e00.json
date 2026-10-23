@@ -1,0 +1,65 @@
+{
+  "id": "clm_6e23122f7e874e00",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `code` | one or more code spans | anchor resolution on either side |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `code` | one or more code spans | anchor resolution on either side |",
+        "prefix": "ence side | what makes it stale |\n|---|---|---|\n",
+        "suffix": "\n| `reference` | one span in another document | "
+      },
+      {
+        "kind": "text-position",
+        "start": 3688,
+        "end": 3758
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "message: \"a code claim needs at least one evidence span\",",
+          "prefix": ": \"custom\",\n        path: [\"evidence\"],\n        ",
+          "suffix": "\n      });\n    }\n    if (c.kind === \"reference\" "
+        },
+        {
+          "kind": "text-position",
+          "start": 9411,
+          "end": 9468
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "9ac225e2c5d8f521"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"a code claim needs at least one evidence span\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:59.659Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:59.659Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

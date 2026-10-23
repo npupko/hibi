@@ -5,7 +5,29 @@
  *   1. the heading path: the Markdown `#` headings above the sentence, outer
  *      to inner, joined with " > " (headings inside fenced blocks are skipped);
  *   2. a blank line, then the paragraph containing the sentence: the run of
- *      lines around it up to a blank line, a heading, or a fence line.
+ *      lines around it up to a blank line, a heading, a fence line, or a
+ *      thematic break (a line that is only `---`, `***` or `___`, three or
+ *      more characters, outside a fence).
+ *
+ * Frontmatter of a `.md` or `.mdx` file (a first line `---` through the next
+ * `---` line, see `frontmatterEnd`) is never context: its lines are not
+ * headings and a paragraph stops at them. The file is `claim.doc.file`.
+ *
+ * Lead-in rule (list items). When the paragraph's first line opens a list
+ * item (`-`, `*`, `+`, `1.` or `1)` and a space), the paragraph is a list and
+ * its lead-in joins the context ahead of it. The lead-in is found this way:
+ * from the line above the list, skip one or more blank lines; the line
+ * reached must not be a heading, a fence line, a fenced line, a frontmatter
+ * line, a thematic break, or a line that is only a JSX or HTML tag. The
+ * lead-in is that line's paragraph (the run of lines above it up to a blank
+ * line, a heading, a fence line, or a thematic break), and it counts only when its first line does not open a list
+ * item and does not start with `|`. Otherwise there is no lead-in. The
+ * lead-in text, trimmed, then a blank line, is placed directly before the
+ * list text that precedes the sentence; together they are the text before
+ * the sentence, and the 600-character bound trims them the same way (from
+ * the start, so the lead-in gives way before the list items nearest the
+ * sentence). A sentence whose paragraph does not open with a list item has
+ * no lead-in: its context is unchanged.
  *
  * The whole is at most `CONTEXT_MAX_CHARS` characters. The sentence is never
  * cut: the paragraph is trimmed around it first (cut ends marked with "…"),
@@ -14,32 +36,38 @@
  */
 
 import type { Claim } from "../core/model.ts";
+import { frontmatterEnd, TAG_LINE, THEMATIC_BREAK } from "./regions.ts";
 
 export const CONTEXT_MAX_CHARS = 600;
 
 const ELLIPSIS = "…";
 const HEADING = /^ {0,3}(#{1,6})[ \t]+(.*?)[ \t]*#*[ \t]*$/;
 const FENCE = /^ {0,3}(```|~~~)/;
+const LIST_ITEM = /^\s*(?:[-*+]|\d+[.)])\s/;
 
 interface Line {
   text: string;
   start: number;
   fenced: boolean;
+  /** Inside the frontmatter. */
+  front: boolean;
   heading?: { level: number; title: string };
 }
 
-function scanLines(doc: string): Line[] {
+function scanLines(doc: string, bodyStart: number): Line[] {
   const out: Line[] = [];
   let start = 0;
   let inFence = false;
   for (const text of doc.split("\n")) {
-    const fenceLine = FENCE.test(text);
+    const front = start < bodyStart;
+    const fenceLine = !front && FENCE.test(text);
     const fenced = inFence || fenceLine;
-    const h = !fenced ? HEADING.exec(text) : null;
+    const h = !fenced && !front ? HEADING.exec(text) : null;
     out.push({
       text,
       start,
       fenced,
+      front,
       ...(h
         ? { heading: { level: (h[1] as string).length, title: h[2] ?? "" } }
         : {}),
@@ -93,29 +121,53 @@ function headingPath(lines: Line[], upTo: number): string[] {
 }
 
 function isBreak(line: Line, fenced: boolean): boolean {
-  if (line.text.trim() === "") return true;
+  if (line.front || line.text.trim() === "") return true;
+  // A thematic break (`---`, `***`, `___`) outside a fence ends a paragraph.
+  if (!line.fenced && THEMATIC_BREAK.test(line.text.trim())) return true;
   if (line.heading) return true;
   // A paragraph does not cross a fence boundary in either direction.
   return line.fenced !== fenced || FENCE.test(line.text);
 }
 
-/** [start, end) offsets of the paragraph holding the sentence's first and last lines. */
-function paragraphBounds(
+/** [first, last] line indices of the paragraph holding lines `first` to `last`. */
+function paragraphLines(
   lines: Line[],
   first: number,
   last: number,
-  doc: string,
 ): [number, number] {
   const fenced = (lines[first] as Line).fenced;
   let a = first;
   while (a > 0 && !isBreak(lines[a - 1] as Line, fenced)) a -= 1;
   let b = last;
   while (b < lines.length - 1 && !isBreak(lines[b + 1] as Line, fenced)) b += 1;
-  const end = Math.min(
-    doc.length,
-    (lines[b] as Line).start + (lines[b] as Line).text.length,
-  );
-  return [(lines[a] as Line).start, end];
+  return [a, b];
+}
+
+/** End offset (exclusive) of line `i`'s text. */
+function lineEnd(lines: Line[], i: number, doc: string): number {
+  const line = lines[i] as Line;
+  return Math.min(doc.length, line.start + line.text.length);
+}
+
+/** The lead-in of a list whose first line is `a`, or "" (see the lead-in rule above). */
+function leadIn(lines: Line[], a: number, doc: string): string {
+  const head = lines[a] as Line;
+  if (head.fenced || !LIST_ITEM.test(head.text)) return "";
+  let k = a - 1;
+  while (
+    k >= 0 &&
+    !(lines[k] as Line).front &&
+    (lines[k] as Line).text.trim() === ""
+  ) {
+    k -= 1;
+  }
+  if (k < 0 || k === a - 1) return "";
+  const above = lines[k] as Line;
+  if (isBreak(above, false) || TAG_LINE.test(above.text.trim())) return "";
+  const [c] = paragraphLines(lines, k, k);
+  const top = (lines[c] as Line).text;
+  if (LIST_ITEM.test(top) || top.trimStart().startsWith("|")) return "";
+  return doc.slice((lines[c] as Line).start, lineEnd(lines, k, doc)).trim();
 }
 
 /** Trim `before` + sentence + `after` to `budget` chars, keeping the sentence whole. */
@@ -153,13 +205,17 @@ export function claimContext(
   const at = locate(docText, claim);
   if (at < 0) return sentence;
 
-  const lines = scanLines(docText);
+  const lines = scanLines(docText, frontmatterEnd(docText, claim.doc?.file));
   const first = lineIndexAt(lines, at);
   const last = lineIndexAt(lines, at + Math.max(0, sentence.length - 1));
   let path = headingPath(lines, first).join(" > ");
 
-  const [pStart, pEnd] = paragraphBounds(lines, first, last, docText);
-  const before = docText.slice(pStart, at).replace(/^\s+/, "");
+  const [a, b] = paragraphLines(lines, first, last);
+  const pStart = (lines[a] as Line).start;
+  const pEnd = lineEnd(lines, b, docText);
+  const lead = leadIn(lines, a, docText);
+  const listBefore = docText.slice(pStart, at).replace(/^\s+/, "");
+  const before = lead ? `${lead}\n\n${listBefore}` : listBefore;
   const after = docText
     .slice(at + sentence.length, Math.max(pEnd, at + sentence.length))
     .replace(/\s+$/, "");
@@ -173,8 +229,6 @@ export function claimContext(
         ? ELLIPSIS + path.slice(path.length - (maxPath - ELLIPSIS.length))
         : "";
   }
-  const lead = path ? path + sep : "";
-  return (
-    lead + window(before, sentence, after, CONTEXT_MAX_CHARS - lead.length)
-  );
+  const top = path ? path + sep : "";
+  return top + window(before, sentence, after, CONTEXT_MAX_CHARS - top.length);
 }

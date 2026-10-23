@@ -1,0 +1,82 @@
+{
+  "id": "clm_d4496566e37042ca",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "`worklist[]: {claimId, sentence, kind, document, procedure, sources, owner, lastEvidence?, reason}`",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`worklist[]: {claimId, sentence, kind, document, procedure, sources, owner, lastEvidence?, reason}`",
+        "prefix": "xpired.\n\n**e. Worklist:** `hibi check --json` → ",
+        "suffix": ". Follow `procedure.instructions` with your tool"
+      },
+      {
+        "kind": "text-position",
+        "start": 4308,
+        "end": 4407
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "lastEvidence?: { summary: string; source: string; at: string; by: string };",
+          "prefix": "\n  sources: Source[];\n  owner: string | null;\n  ",
+          "suffix": "\n  reason: WorklistReason;\n}\n\n/** A `check` verd"
+        },
+        {
+          "kind": "text-position",
+          "start": 8185,
+          "end": 8260
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "property_signature",
+          "structuralHash": "756ed511a08534ec",
+          "semanticHash": "a875108232aa3269"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: WorklistReason;",
+          "prefix": "ng; source: string; at: string; by: string };\n  ",
+          "suffix": "\n}\n\n/** A `check` verdict. */\nexport type CheckV"
+        },
+        {
+          "kind": "text-position",
+          "start": 8263,
+          "end": 8286
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "property_signature",
+          "structuralHash": "3644705a4bf84a12",
+          "semanticHash": "e9e165aded4bd7c7"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:33.027Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:33.027Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

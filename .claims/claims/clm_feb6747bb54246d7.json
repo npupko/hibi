@@ -1,0 +1,65 @@
+{
+  "id": "clm_feb6747bb54246d7",
+  "documentId": "doc_c5adefb4274c6931",
+  "kind": "code",
+  "sentence": "`--instructions` appends one line to the file, once:",
+  "doc": {
+    "file": "docs/quickstart.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--instructions` appends one line to the file, once:",
+        "prefix": "ge cache in `.claims/judge/` is not committed.\n\n",
+        "suffix": "\n\n> Before relying on a document, run `hibi chec"
+      },
+      {
+        "kind": "text-position",
+        "start": 1651,
+        "end": 1703
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (text.includes(INSTRUCTIONS_LINE)) return { file, appended: false };",
+          "prefix": "n`);\n    return { file, appended: true };\n  }\n  ",
+          "suffix": "\n  const sep = text === \"\" || text.endsWith(\"\\n\""
+        },
+        {
+          "kind": "text-position",
+          "start": 10795,
+          "end": 10866
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "3b36ebad72501982",
+          "semanticHash": "6bbd3590563aac0c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "false",
+          "value": "false"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:29.062Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:29.062Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

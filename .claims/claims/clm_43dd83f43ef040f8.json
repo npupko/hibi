@@ -1,0 +1,59 @@
+{
+  "id": "clm_43dd83f43ef040f8",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "4. For each entry in `misses`, run `hibi reanchor <id> --doc <new-doc> --doc-quote \"…\"`, or `hibi retire <id>`.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "4. For each entry in `misses`, run `hibi reanchor <id> --doc <new-doc> --doc-quote \"…\"`, or `hibi retire <id>`.",
+        "prefix": "r <id> --doc-quote \"…\"`, or `hibi retire <id>`.\n",
+        "suffix": "\n5. When `strandedClaims` is empty, delete or ar"
+      },
+      {
+        "kind": "text-position",
+        "start": 7769,
+        "end": 7880
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "          doc: str(values.doc),\n          docQuote: docSpec?.quote,",
+          "prefix": "const result = await engine.reanchor(claimId, {\n",
+          "suffix": "\n          docRange: docSpec?.quote === undefine"
+        },
+        {
+          "kind": "text-position",
+          "start": 24052,
+          "end": 24119
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "019b0f4c56c09af9",
+          "semanticHash": "7c2acbf85dea7d43"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:07:46.677Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:07:46.677Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

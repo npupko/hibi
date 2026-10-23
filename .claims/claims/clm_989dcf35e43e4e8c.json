@@ -1,0 +1,65 @@
+{
+  "id": "clm_989dcf35e43e4e8c",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "Attest:** `hibi attest <id> --by <actor> --note \"…\"`.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Attest:** `hibi attest <id> --by <actor> --note \"…\"`.",
+        "prefix": "nding` writes nothing. Exit 0 regardless.\n\n**f. ",
+        "suffix": " A `human:` vouch resets ttl; an agent vouch ret"
+      },
+      {
+        "kind": "text-position",
+        "start": 5081,
+        "end": 5134
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"The attesting actor: human:<id>, agent:<name>, or process:<name>.\",",
+          "prefix": "tring\",\n        placeholder: \"<actor>\",\n        ",
+          "suffix": "\n        required: true,\n      },\n      {\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 19074,
+          "end": 19148
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "d0e13c4531d85e08"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"The attesting actor: human:<id>, agent:<name>, or process:<name>.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:33.332Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:33.332Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

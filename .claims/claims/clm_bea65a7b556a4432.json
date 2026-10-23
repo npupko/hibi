@@ -1,0 +1,65 @@
+{
+  "id": "clm_bea65a7b556a4432",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "```\nBefore relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.\n```",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```\nBefore relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.\n```",
+        "prefix": "thing when the file already contains the line:\n\n",
+        "suffix": "\n\nThe result reports `instructions: { file, appe"
+      },
+      {
+        "kind": "text-position",
+        "start": 56067,
+        "end": 56175
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.\";",
+          "prefix": "ion file. */\nexport const INSTRUCTIONS_LINE =\n  ",
+          "suffix": "\n\nexport const FORMATS = [\"human\", \"compact\", \"j"
+        },
+        {
+          "kind": "text-position",
+          "start": 1415,
+          "end": 1518
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "4d8b5b38ea3dae8b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:57.183Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:57.183Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

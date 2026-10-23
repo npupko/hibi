@@ -1,0 +1,82 @@
+{
+  "id": "clm_a5b1ad5311344038",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- `evidence` verb: once per request key `(model, sentence, context, evidence, source)`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `evidence` verb: once per request key `(model, sentence, context, evidence, source)`.",
+        "prefix": "tion. A claim with no entry has no judge state.\n",
+        "suffix": "\n- contradiction pass: once per pair request key"
+      },
+      {
+        "kind": "text-position",
+        "start": 23805,
+        "end": 23892
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const key = cache.key(model, request);",
+          "prefix": "vidence,\n      source: item.source,\n    });\n    ",
+          "suffix": "\n    planned.push({\n      item,\n      claim,\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 10243,
+          "end": 10281
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "9e47f5f690b2f9a5",
+          "semanticHash": "30a5a123239ace23"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "claim: input.sentence,\n      claim_context: input.context,\n      evidence: input.evidence,\n      evidence_source: input.source,",
+          "prefix": "uest {\n  return {\n    model,\n    state: {\n      ",
+          "suffix": "\n    },\n    questions: supportsFile.questions,\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 11055,
+          "end": 11182
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "e1a61836897c279b",
+          "semanticHash": "d1b46316cc400607"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:42.025Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:42.025Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

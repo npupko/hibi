@@ -1,0 +1,94 @@
+{
+  "id": "clm_25bd29a6caae48a1",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Output rules: human on a TTY, JSON when piped, `--format`, `--json`, `--explain`, `--no-hints`, `--color`, `HIBI_ASCII`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Output rules: human on a TTY, JSON when piped, `--format`, `--json`, `--explain`, `--no-hints`, `--color`, `HIBI_ASCII`.",
+        "prefix": " selector, `resolvers.json`, `diff`, `status`.\n\n",
+        "suffix": " Option tables in `src/cli/options.ts` drive str"
+      },
+      {
+        "kind": "text-position",
+        "start": 71271,
+        "end": 71391
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/mode.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return isTTY ? \"rich\" : \"json\";",
+          "prefix": "ompact\";\n  }\n  if (flags.json) return \"json\";\n  ",
+          "suffix": "\n}\n\nfunction resolveColor(\n  flags: ModeFlags,\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 1317,
+          "end": 1348
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "58b98c77686e46eb",
+          "semanticHash": "71b6dda0f8fab814"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"rich\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/mode.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (env.HIBI_ASCII === \"1\") return false;",
+          "prefix": "ecord<string, string | undefined>): boolean {\n  ",
+          "suffix": "\n  const locale = env.LC_ALL || env.LC_CTYPE || "
+        },
+        {
+          "kind": "text-position",
+          "start": 1898,
+          "end": 1939
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "4710c4b7bbf43707",
+          "semanticHash": "c753d3f7fdcd4839"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"1\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:20.862Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:20.862Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

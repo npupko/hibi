@@ -1,0 +1,52 @@
+{
+  "id": "clm_7453461ecabc4af3",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "reference",
+  "sentence": "You can also invoke it as `/hibi-cli:hibi`.",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "You can also invoke it as `/hibi-cli:hibi`.",
+        "prefix": "r, and for anything about claims or `.claims/`. ",
+        "suffix": " To get a newer version, run `claude plugin upda"
+      },
+      {
+        "kind": "text-position",
+        "start": 870,
+        "end": 913
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/README.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "You can also invoke it as `/hibi-cli:hibi`.",
+          "prefix": "ther, or when you mention claims or `.claims/`. ",
+          "suffix": "\n\nThe skill pre-approves `hibi check`, `hibi lis"
+        },
+        {
+          "kind": "text-position",
+          "start": 1773,
+          "end": 1816
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:25:22.509Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:25:22.509Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,88 @@
+{
+  "id": "clm_14ea8a1dd07c4677",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A side whose file escapes its root resolves to `unavailable` with the label `path escapes its root` (in the verdict's reasons, `evidence: path escapes its root`).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A side whose file escapes its root resolves to `unavailable` with the label `path escapes its root` (in the verdict's reasons, `evidence: path escapes its root`).",
+        "prefix": "`sibling repo \"x\" is not checked out at <dir>`. ",
+        "suffix": " `unavailable` warns and never gates.\n- **At rec"
+      },
+      {
+        "kind": "text-position",
+        "start": 5562,
+        "end": 5724
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { unavailable: true, reason: ESCAPES_ROOT, escapes: true };",
+          "prefix": " (!isInside(root, resolve(root, file))) {\n      ",
+          "suffix": "\n    }\n    return { path: file };\n  }\n  const di"
+        },
+        {
+          "kind": "text-position",
+          "start": 3263,
+          "end": 3329
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "9721c688e5d23ac9",
+          "semanticHash": "1c5a394612746d2a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...sides.evidence.flatMap((s) => s.reasons.map((n) => `evidence: ${n}`)),",
+          "prefix": ".sides.doc.reasons.map((n) => `doc: ${n}`),\n    ",
+          "suffix": "\n    ...(expiry !== undefined ? [expiry] : []),\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 14966,
+          "end": 15039
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "1cf2d809bd6d783b",
+          "semanticHash": "5e4d3516412510e3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:00.084Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:00.084Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

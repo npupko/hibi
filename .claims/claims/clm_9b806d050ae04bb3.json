@@ -1,0 +1,65 @@
+{
+  "id": "clm_9b806d050ae04bb3",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A value's **group** is its kind plus its unit: `number`, `number %`, `number day`, `money USD`, `version`, `date`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A value's **group** is its kind plus its unit: `number`, `number %`, `number day`, `money USD`, `version`, `date`.",
+        "prefix": "values.test.ts`; a port must pass those tests.\n\n",
+        "suffix": " Two texts are compared only within groups prese"
+      },
+      {
+        "kind": "text-position",
+        "start": 40558,
+        "end": 40672
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return v.unit === undefined ? v.kind : `${v.kind} ${v.unit}`;",
+          "prefix": "xport function valueGroup(v: Value): string {\n  ",
+          "suffix": "\n}\n\n/**\n * The form two values are compared in. "
+        },
+        {
+          "kind": "text-position",
+          "start": 11269,
+          "end": 11330
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "dfab2e6805d65a88",
+          "semanticHash": "17c4a0aa9157cd90"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:04.487Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:04.487Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,123 @@
+{
+  "id": "clm_47d58c80be6c4039",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "An operational error exits `1`; in JSON output it prints `{ ok: false, error, errors? }`, where `errors` lists one problem per line for a rejected batch.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An operational error exits `1`; in JSON output it prints `{ ok: false, error, errors? }`, where `errors` lists one problem per line for a rejected batch.",
+        "prefix": "`, which prints the bare JSON Schema by design. ",
+        "suffix": " This holds for every command, including `check`"
+      },
+      {
+        "kind": "text-position",
+        "start": 55316,
+        "end": 55469
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const EXIT_OPERATIONAL_ERROR = 1;",
+          "prefix": "import { makeStyle } from \"./render/style.ts\";\n\n",
+          "suffix": "\n\ntype Values = Record<string, string | boolean "
+        },
+        {
+          "kind": "text-position",
+          "start": 2019,
+          "end": 2052
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "b020cf8744ffe46d",
+          "semanticHash": "10cafcc71b88d6bf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ ok: false, error: message, ...(errors ? { errors } : {}) },",
+          "prefix": "${message}\\n`);\n  } else {\n    await out(\n      ",
+          "suffix": "\n      mode.kind === \"json-pretty\",\n    );\n  }\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 4202,
+          "end": 4263
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "3d7862af04923004",
+          "semanticHash": "091f71a4be55e136"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "false",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`record: ${errors.length} problem${errors.length === 1 ? \"\" : \"s\"}; nothing was recorded.\\n${errors.map((e) => `  ${e}`).join(\"\\n\")}`,",
+          "prefix": "r(readonly errors: string[]) {\n    super(\n      ",
+          "suffix": "\n    );\n    this.name = \"RecordValidationError\";"
+        },
+        {
+          "kind": "text-position",
+          "start": 2211,
+          "end": 2345
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "46b10f676903d07b",
+          "semanticHash": "1db3cb6ee6b97218"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:57.046Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:57.046Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

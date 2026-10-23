@@ -51,6 +51,8 @@ hibi init --instructions AGENTS.md
 }
 ```
 
+`init` also writes `.claims/.gitignore` with the line `judge/`, so the judge cache in `.claims/judge/` is not committed.
+
 `--instructions` appends one line to the file, once:
 
 > Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.
@@ -63,9 +65,9 @@ hibi audit --doc README.md
 
 ```
 README.md
-  L1  not-a-claim  0.94  "# Demo"
-  L3  code         0.94  record  "Retries are capped at 5 attempts."
-  L5  reference    0.94  record  "Refunds are issued within two weeks of a request."
+  L1  not-a-claim   0.94  "# Demo"
+  L3  code          0.94  record  "Retries are capped at 5 attempts."
+  L5  reference     0.94  record  "Refunds are issued within two weeks of a request."
 3 regions, 0 covered, 3 uncovered; code 1, reference 1, not-a-claim 1; 1 judge request
 ```
 
@@ -175,7 +177,7 @@ echo '[{"claimId":"clm_418fde0aee55433e","evidence":"Pro plan: $29.00 per month"
 }
 ```
 
-`attested: true` means an `evidence` attestation was appended, and the 90-day ttl now counts from it. The raw evidence text is not stored; the cache keeps its sha256, the source, the summary, and the judge's probabilities.
+`attested: true` means an `evidence` attestation was appended, and the 90-day ttl now counts from it. The raw evidence text is not stored; the cache keeps its sha256, the numbers, money amounts, versions, and dates in it, the source, the summary, and the judge's probabilities.
 
 ## 7. Attest
 

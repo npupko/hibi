@@ -1,0 +1,123 @@
+{
+  "id": "clm_79778c83c8dc418e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A claim whose `enforcement` is `retired` gets no judge state and no conflict findings.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A claim whose `enforcement` is `retired` gets no judge state and no conflict findings.",
+        "prefix": "` block (located regions, similarity, changes). ",
+        "suffix": "\n\n### 7.3 When the judge is consulted\n\nEvery jud"
+      },
+      {
+        "kind": "text-position",
+        "start": 22654,
+        "end": 22740
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    if (c.enforcement !== \"retired\") {\n      if (c.kind === \"reference\") {",
+          "prefix": "fined;\n    const findingReasons: string[] = [];\n",
+          "suffix": "\n        const judgeable = referenceTexts(c, sid"
+        },
+        {
+          "kind": "text-position",
+          "start": 15919,
+          "end": 15993
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "e96fafbc82ef8ab2",
+          "semanticHash": "f8ba46f6e4d7238d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const live = c.enforcement !== \"retired\";",
+          "prefix": " : \"\"}; it no longer warns`,\n      );\n    }\n    ",
+          "suffix": "\n    const reviews =\n      live && pass !== unde"
+        },
+        {
+          "kind": "text-position",
+          "start": 16893,
+          "end": 16934
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "534d390e34567a9e",
+          "semanticHash": "5da4ed5821b1d80b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "conflicts: live && pass !== undefined ? conflictsFor(pass, c.id) : [],",
+          "prefix": "Findings = {\n      judge: outcome?.state,\n      ",
+          "suffix": "\n      warnings,\n      reasons: [\n        ...(ou"
+        },
+        {
+          "kind": "text-position",
+          "start": 17359,
+          "end": 17429
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "8f994536793a1c39",
+          "semanticHash": "793bde7436a13ab8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:28.540Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:28.540Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_73e57fb040a14f7b",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "A `doc` input naming a document with no registered claims is such an error, so the job fails until the document is audited and recorded.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `doc` input naming a document with no registered claims is such an error, so the job fails until the document is audited and recorded.",
+        "prefix": "ail-on: never`), and 1 on an operational error. ",
+        "suffix": "\n\nPass `TYPESAFE_API_KEY` as a repository secret"
+      },
+      {
+        "kind": "text-position",
+        "start": 21077,
+        "end": 21213
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`no claims are registered for ${doc}; run hibi audit --doc ${doc}`",
+          "prefix": "if (!live) {\n        throw new Error(\n          ",
+          "suffix": ",\n        );\n      }\n      onlyFiles = scope.fil"
+        },
+        {
+          "kind": "text-position",
+          "start": 12797,
+          "end": 12863
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "1249b007122c9694",
+          "semanticHash": "d6a9d9f48dc91234"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:12.306Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:12.306Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

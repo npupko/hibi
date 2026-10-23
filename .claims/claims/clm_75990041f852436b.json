@@ -1,0 +1,111 @@
+{
+  "id": "clm_75990041f852436b",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It carries `unsure: \"kind\" | \"evidenceKind\"`, naming the Choice that fell short, and `probabilities: { kind: {…}, evidenceKind?: {…} }` instead of `probability`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It carries `unsure: \"kind\" | \"evidenceKind\"`, naming the Choice that fell short, and `probabilities: { kind: {…}, evidenceKind?: {…} }` instead of `probability`.",
+        "prefix": "evidence kind.\n- Otherwise the row is `unsure`. ",
+        "suffix": " `evidenceKind` is present when the top kind is "
+      },
+      {
+        "kind": "text-position",
+        "start": 50897,
+        "end": 51058
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "unsure?: \"kind\" | \"evidenceKind\";",
+          "prefix": "e confidence fell below `judge.threshold`. */\n  ",
+          "suffix": "\n  /** On a `pending` row: `judge unavailable: <"
+        },
+        {
+          "kind": "text-position",
+          "start": 4130,
+          "end": 4163
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "property_signature",
+          "structuralHash": "206fc8350fab0651",
+          "semanticHash": "8b65c4e0a38c2904"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"kind\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const probabilities: AuditProbabilities = { kind: result.kindProbabilities };",
+          "prefix": "t.kindProbabilities[result.kind],\n    });\n  }\n  ",
+          "suffix": "\n  if (result.evidenceProbabilities !== undefine"
+        },
+        {
+          "kind": "text-position",
+          "start": 6747,
+          "end": 6824
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "8d9eaa01bd7ba66b",
+          "semanticHash": "766fb71c23a45039"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "probabilities.evidenceKind = result.evidenceProbabilities;",
+          "prefix": "sult.evidenceProbabilities !== undefined) {\n    ",
+          "suffix": "\n  }\n  return row(base, { kind: \"unsure\", unsure"
+        },
+        {
+          "kind": "text-position",
+          "start": 6881,
+          "end": 6939
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "56fd354f1bf6c5ad",
+          "semanticHash": "8410395c88aff4dd"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.403Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.403Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "clm_afac47a94a4d42e4",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| state | `claim`, `claim_context`, `evidence`, `evidence_source` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| state | `claim`, `claim_context`, `evidence`, `evidence_source` |",
+        "prefix": "t to a row kind.\n\n### supports\n\n| | |\n|---|---|\n",
+        "suffix": "\n| `relation` | Choice over `supports`, `contrad"
+      },
+      {
+        "kind": "text-position",
+        "start": 6929,
+        "end": 6996
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "claim_context: input.context,",
+          "prefix": "    state: {\n      claim: input.sentence,\n      ",
+          "suffix": "\n      evidence: input.evidence,\n      evidence_"
+        },
+        {
+          "kind": "text-position",
+          "start": 11084,
+          "end": 11113
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "b347d44a060407ae"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence_source: input.source,",
+          "prefix": ".context,\n      evidence: input.evidence,\n      ",
+          "suffix": "\n    },\n    questions: supportsFile.questions,\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 11152,
+          "end": 11182
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "1ca1297b90645ad6"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:37.735Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:37.735Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

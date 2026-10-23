@@ -1,0 +1,65 @@
+{
+  "id": "clm_7124412183194a2e",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "| `never-checked` | an `attested` claim with a `procedure` or `sources` has never had evidence judged | follow `procedure` and `sources`, then submit evidence |",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `never-checked` | an `attested` claim with a `procedure` or `sources` has never had evidence judged | follow `procedure` and `sources`, then submit evidence |",
+        "prefix": "e` claim, re-read it and ask a human to vouch |\n",
+        "suffix": "\n| `review` | the judge was not sure, or the evi"
+      },
+      {
+        "kind": "text-position",
+        "start": 4260,
+        "end": 4420
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const checkable = claim.procedure !== null || claim.sources.length > 0;\n  if (claim.kind === \"attested\" && checkable && !hasSupports)\n    return \"never-checked\";",
+          "prefix": " if (v.judge === \"pending\") return \"pending\";\n  ",
+          "suffix": "\n  return undefined;\n}\n\nexport async function ru"
+        },
+        {
+          "kind": "text-position",
+          "start": 12870,
+          "end": 13031
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "333195340aa32e76",
+          "semanticHash": "a535ac49cb224313"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:38.573Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:38.573Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

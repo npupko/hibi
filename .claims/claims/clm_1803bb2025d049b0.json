@@ -1,0 +1,100 @@
+{
+  "id": "clm_1803bb2025d049b0",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "The repository is a composite action. It installs Bun, then runs `hibi check` with the binary on `PATH`, or `bunx @npupko/hibi` when there is none.",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The repository is a composite action. It installs Bun, then runs `hibi check` with the binary on `PATH`, or `bunx @npupko/hibi` when there is none.",
+        "prefix": "ment `pending`, which warns.\n\n## GitHub Action\n\n",
+        "suffix": "\n\n```yaml\nname: hibi\non: [pull_request]\n\njobs:\n "
+      },
+      {
+        "kind": "text-position",
+        "start": 1010,
+        "end": 1157
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "action.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "using: \"composite\"",
+          "prefix": ".\"\n    required: false\n    default: \".\"\nruns:\n  ",
+          "suffix": "\n  steps:\n    - name: Install Bun\n      uses: ov"
+        },
+        {
+          "kind": "text-position",
+          "start": 833,
+          "end": 851
+        }
+      ]
+    },
+    {
+      "file": "action.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "uses: oven-sh/setup-bun@",
+          "prefix": "mposite\"\n  steps:\n    - name: Install Bun\n      ",
+          "suffix": "0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2."
+        },
+        {
+          "kind": "text-position",
+          "start": 891,
+          "end": 915
+        }
+      ]
+    },
+    {
+      "file": "action.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if command -v hibi >/dev/null 2>&1; then",
+          "prefix": "if present, else run via bunx from npm.\n        ",
+          "suffix": "\n          hibi \"${ARGS[@]}\"\n        else\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 1634,
+          "end": 1674
+        }
+      ]
+    },
+    {
+      "file": "action.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "bunx @npupko/hibi \"${ARGS[@]}\"",
+          "prefix": "       hibi \"${ARGS[@]}\"\n        else\n          ",
+          "suffix": "\n        fi\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 1726,
+          "end": 1756
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:42.390Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:42.390Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

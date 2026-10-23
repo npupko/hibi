@@ -1,0 +1,111 @@
+{
+  "id": "clm_1b17a18e9a6147fe",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A `conflict` finding becomes an entry in `conflicts[]` and gates; a `review` finding warns (section 7.4).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `conflict` finding becomes an entry in `conflicts[]` and gates; a `review` finding warns (section 7.4).",
+        "prefix": " `contradictory` (1 when the value rule fires). ",
+        "suffix": " `duplicate` becomes a duplicate candidate on bo"
+      },
+      {
+        "kind": "text-position",
+        "start": 46052,
+        "end": 46157
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".filter((f) => f.claimId === claimId && f.review !== true)",
+          "prefix": "ason: string }[] {\n  return result.findings\n    ",
+          "suffix": "\n    .map((f) => ({\n      claimId: f.otherClaimI"
+        },
+        {
+          "kind": "text-position",
+          "start": 13154,
+          "end": 13212
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "1c56978d49b7b748",
+          "semanticHash": "0eaf68b7ba08c5a3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (c.probability >= threshold) {",
+          "prefix": "ue;\n\n  for (const c of v.conflicts ?? []) {\n    ",
+          "suffix": "\n      gates = true;\n      reasons.push(\n       "
+        },
+        {
+          "kind": "text-position",
+          "start": 3335,
+          "end": 3368
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "228bf496610c4c91",
+          "semanticHash": "a636709b6f002d4f"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...reviews.map((f) => `possible conflict with ${f.claimId}: ${f.reason}`),",
+          "prefix": "t(c.id) ?? 0) : 0;\n    const warnings = [\n      ",
+          "suffix": "\n      ...(pendingPairs > 0 ? [`conflict checks "
+        },
+        {
+          "kind": "text-position",
+          "start": 17123,
+          "end": 17197
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "b6cbffe8d3a1e829",
+          "semanticHash": "0e4681b524e12224"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:15.078Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:15.078Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

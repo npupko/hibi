@@ -1,0 +1,59 @@
+{
+  "id": "clm_e8ef77eac1164982",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "`reason` is one of `expired`, `never-checked`, `review`, `pending`:",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`reason` is one of `expired`, `never-checked`, `review`, `pending`:",
+        "prefix": "[], \"owner\": null, \"reason\": \"pending\" }\n]\n```\n\n",
+        "suffix": "\n\n| reason | which claims |\n|---|---|\n| `expired"
+      },
+      {
+        "kind": "text-position",
+        "start": 7239,
+        "end": 7306
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const WORKLIST_REASONS = [",
+          "prefix": "ng: number;\n    scope: \"store\" | \"doc\";\n  };\n}\n\n",
+          "suffix": "\n  \"expired\",\n  \"review\",\n  \"pending\",\n  \"never-"
+        },
+        {
+          "kind": "text-position",
+          "start": 7793,
+          "end": 7826
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "6f5ffa48c8907260",
+          "semanticHash": "3f7093499c421730"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:08.175Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:08.175Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

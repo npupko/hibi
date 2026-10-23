@@ -1,0 +1,82 @@
+{
+  "id": "clm_d359b652d20441fd",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "For a `reference` claim, `judgeKey` is the key of the request built from the claim's sentence and referenced span as they read now, the same request `check` sends (section 7.3).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "For a `reference` claim, `judgeKey` is the key of the request built from the claim's sentence and referenced span as they read now, the same request `check` sends (section 7.3).",
+        "prefix": "n error when the claim has no `supports` entry. ",
+        "suffix": " It is an error when there is no current `suppor"
+      },
+      {
+        "kind": "text-position",
+        "start": 10085,
+        "end": 10262
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const { key } = referenceSupportsRequest(",
+          "prefix": " is ${reference.current.reason}.`,\n    );\n  }\n  ",
+          "suffix": "\n    reference.model,\n    claim,\n    reference.c"
+        },
+        {
+          "kind": "text-position",
+          "start": 4525,
+          "end": 4566
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "94c25519b001dac4",
+          "semanticHash": "555ab26d0a136eaa"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const { request, key } = referenceSupportsRequest(",
+          "prefix": "ending\", reasons: [REFERENCE_TOO_LONG] };\n  }\n  ",
+          "suffix": "\n    input.judge?.model ?? input.model,\n    inpu"
+        },
+        {
+          "kind": "text-position",
+          "start": 10503,
+          "end": 10553
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "0ae61e0d297258b8",
+          "semanticHash": "d8087e704ab175f7"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:35.444Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:35.444Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

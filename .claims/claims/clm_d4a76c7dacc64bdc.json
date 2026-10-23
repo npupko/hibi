@@ -1,0 +1,82 @@
+{
+  "id": "clm_d4a76c7dacc64bdc",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It writes nothing into documents except the tombstone `archive` leaves at an archived document's path, and the instruction line `init --instructions` appends to the named file.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It writes nothing into documents except the tombstone `archive` leaves at an archived document's path, and the instruction line `init --instructions` appends to the named file.",
+        "prefix": "is the judge API. Its only subprocess is `git`. ",
+        "suffix": " Apart from those two writes and the store under"
+      },
+      {
+        "kind": "text-position",
+        "start": 1422,
+        "end": 1598
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await writeFile(abs, tombstone(docPath, successorPath));",
+          "prefix": "\");\n      await writeFile(dest, content);\n      ",
+          "suffix": "\n    }\n    archivedTo = relDest;\n  }\n\n  doc.life"
+        },
+        {
+          "kind": "text-position",
+          "start": 2252,
+          "end": 2308
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "454d0d8fcb895a74",
+          "semanticHash": "0894b8c2d2026289"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await appendFile(file, `${sep}${INSTRUCTIONS_LINE}\\n`);",
+          "prefix": "xt === \"\" || text.endsWith(\"\\n\") ? \"\" : \"\\n\";\n  ",
+          "suffix": "\n  return { file, appended: true };\n}\n\n/** The l"
+        },
+        {
+          "kind": "text-position",
+          "start": 10931,
+          "end": 10986
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "aa98e1c6d91612bd",
+          "semanticHash": "0e09ec92bee2e53d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:23.805Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:23.805Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

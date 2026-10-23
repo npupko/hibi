@@ -1,0 +1,88 @@
+{
+  "id": "clm_7fecf21d129c411f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `month-day-year` | date | `October 22, 2026`, `Oct 22 2026` | `2026-10-22` | none |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `month-day-year` | date | `October 22, 2026`, `Oct 22 2026` | `2026-10-22` | none |",
+        "prefix": "he date part of a timestamp | the date | none |\n",
+        "suffix": "\n| `v-version` | version | `v1.2.3`, `v4`, `v2.0"
+      },
+      {
+        "kind": "text-position",
+        "start": 39067,
+        "end": 39152
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"month-day-year\",",
+          "prefix": ",\n  {\n    // October 22, 2026 / Oct 22 2026\n    ",
+          "suffix": "\n    kind: \"date\",\n    pattern: re(\n      String"
+        },
+        {
+          "kind": "text-position",
+          "start": 6499,
+          "end": 6522
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "8ef04d9f4fffab68"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"month-day-year\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\\b(${MONTH_NAME})\\.?\\s+(\\d{1,2}),?\\s+(\\d{4})(?!\\p{N})",
+          "prefix": "kind: \"date\",\n    pattern: re(\n      String.raw`",
+          "suffix": "`,\n      \"giu\",\n    ),\n    read: (m) => {\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 6575,
+          "end": 6628
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "f385aee9756db866",
+          "semanticHash": "13944e90bf5fa97f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:04.163Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:04.163Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

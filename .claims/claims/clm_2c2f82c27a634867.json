@@ -1,0 +1,123 @@
+{
+  "id": "clm_2c2f82c27a634867",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| evidence side | where the truth of the claim can be observed: a code span, a span in another document, or a pointer plus a procedure |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| evidence side | where the truth of the claim can be observed: a code span, a span in another document, or a pointer plus a procedure |",
+        "prefix": "zero or more evidence sides, and attestations |\n",
+        "suffix": "\n| anchor | the selectors that locate a span in "
+      },
+      {
+        "kind": "text-position",
+        "start": 3122,
+        "end": 3258
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence: z.array(SelectorBundle).default([]),",
+          "prefix": "z.string().min(1),\n    doc: SelectorBundle,\n    ",
+          "suffix": "\n    sources: z.array(Source).default([]),\n    p"
+        },
+        {
+          "kind": "text-position",
+          "start": 8804,
+          "end": 8850
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1393ec7729f6c1cb",
+          "semanticHash": "e679fe26d68f059a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sources: z.array(Source).default([]),",
+          "prefix": "dence: z.array(SelectorBundle).default([]),\n    ",
+          "suffix": "\n    procedure: Procedure.nullable().default(nul"
+        },
+        {
+          "kind": "text-position",
+          "start": 8855,
+          "end": 8892
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1393ec7729f6c1cb",
+          "semanticHash": "05a33b5d2aa68988"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "procedure: Procedure.nullable().default(null),",
+          "prefix": ",\n    sources: z.array(Source).default([]),\n    ",
+          "suffix": "\n    owner: Actor.optional(),\n    ttl: Duration."
+        },
+        {
+          "kind": "text-position",
+          "start": 8897,
+          "end": 8943
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "3b6ecdfe9cc5b916",
+          "semanticHash": "9087ab57d4af707f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:59.590Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:59.590Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

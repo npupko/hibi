@@ -1,0 +1,146 @@
+{
+  "id": "clm_9c33e5392b5e4dd5",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 7 | attestations are append-only with OKF actor ids; ttl counts from evidence or a human vouch only |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 7 | attestations are append-only with OKF actor ids; ttl counts from evidence or a human vouch only |",
+        "prefix": "ional Lobster-shaped steps; hibi runs neither |\n",
+        "suffix": "\n| 8 | OKF is a reference for shapes, not a pars"
+      },
+      {
+        "kind": "text-position",
+        "start": 76015,
+        "end": 76118
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ACTOR_PATTERN = /^(human|agent|process):.+$/;",
+          "prefix": ":<id>`, `agent:<name>`, or `process:<name>`. */\n",
+          "suffix": "\nexport const Actor = z.string().regex(ACTOR_PAT"
+        },
+        {
+          "kind": "text-position",
+          "start": 1052,
+          "end": 1110
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b879b2ad137802b7",
+          "semanticHash": "63e9cd8b98c3091c"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (a.basis === \"evidence\") return true;",
+          "prefix": "rt function counts(a: Attestation): boolean {\n  ",
+          "suffix": "\n  return a.basis === \"vouch\" && a.by.startsWith"
+        },
+        {
+          "kind": "text-position",
+          "start": 606,
+          "end": 646
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "2b86e5c896c53ef4",
+          "semanticHash": "64443608661256fc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return a.basis === \"vouch\" && a.by.startsWith(\"human:\");",
+          "prefix": " {\n  if (a.basis === \"evidence\") return true;\n  ",
+          "suffix": "\n}\n\n/**\n * The newest counting attestation, or u"
+        },
+        {
+          "kind": "text-position",
+          "start": 649,
+          "end": 705
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "f5a90e37e56fc368",
+          "semanticHash": "e13e9b92ec8f5bcc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"vouch\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "attestations: [...claim.attestations, attestation],",
+          "prefix": "d> {\n  await store.putClaim({\n    ...claim,\n    ",
+          "suffix": "\n  });\n}\n\nexport async function attestClaim(inpu"
+        },
+        {
+          "kind": "text-position",
+          "start": 5044,
+          "end": 5095
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "428e1da5423f8c15",
+          "semanticHash": "4244afb88293fc60"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[...claim.attestations,attestation]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:18.998Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:18.998Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

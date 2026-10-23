@@ -1,0 +1,197 @@
+{
+  "id": "clm_cbdd1c258d9049ec",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- Result: every result item, single or in a batch, is `{ id, kind, doc, evidence (first evidence file or null), enforcement, updated, existingClaims, warnings? }`; a batch returns `{ batch: true, count, updated, results: [...] }`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- Result: every result item, single or in a batch, is `{ id, kind, doc, evidence (first evidence file or null), enforcement, updated, existingClaims, warnings? }`; a batch returns `{ batch: true, count, updated, results: [...] }`.",
+        "prefix": "aims on other documents with the same sentence.\n",
+        "suffix": " In an item, `updated` is true when an existing "
+      },
+      {
+        "kind": "text-position",
+        "start": 59358,
+        "end": 59588
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence: r.claim.evidence[0]?.file ?? null,",
+          "prefix": "nd: r.claim.kind,\n    doc: r.document.path,\n    ",
+          "suffix": "\n    enforcement: r.claim.enforcement,\n    updat"
+        },
+        {
+          "kind": "text-position",
+          "start": 11252,
+          "end": 11296
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "2e97b9bd6534fa12",
+          "semanticHash": "131b7b4b167aa4e3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "updated: r.updated,",
+          "prefix": "null,\n    enforcement: r.claim.enforcement,\n    ",
+          "suffix": "\n    existingClaims: r.existingClaims,\n    ...(r"
+        },
+        {
+          "kind": "text-position",
+          "start": 11339,
+          "end": 11358
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "a8f552f42ac513db"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "existingClaims: r.existingClaims,",
+          "prefix": ".claim.enforcement,\n    updated: r.updated,\n    ",
+          "suffix": "\n    ...(r.warnings.length > 0 ? { warnings: r.w"
+        },
+        {
+          "kind": "text-position",
+          "start": 11363,
+          "end": 11396
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "08401242a57f5494"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...(r.warnings.length > 0 ? { warnings: r.warnings } : {}),",
+          "prefix": "ated,\n    existingClaims: r.existingClaims,\n    ",
+          "suffix": "\n  };\n}\n\n/** Pre-scan the output flags so a pars"
+        },
+        {
+          "kind": "text-position",
+          "start": 11401,
+          "end": 11460
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "3ead6a01523eb5ce",
+          "semanticHash": "345dbb3bd568f2a0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "batch: true,",
+          "prefix": "          \"record\",\n            {\n              ",
+          "suffix": "\n              count: summaries.length,\n        "
+        },
+        {
+          "kind": "text-position",
+          "start": 18730,
+          "end": 18742
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "8f35e555f490c434",
+          "semanticHash": "3c4d691e5a7a1385"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "updated: results.filter((r) => r.updated).length,",
+          "prefix": "         count: summaries.length,\n              ",
+          "suffix": "\n              results: summaries,\n            }"
+        },
+        {
+          "kind": "text-position",
+          "start": 18796,
+          "end": 18845
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "54b5d2d68458af47",
+          "semanticHash": "f419f1758c9d279f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:34.590Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:57.503Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:34.590Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

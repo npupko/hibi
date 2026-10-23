@@ -1,0 +1,133 @@
+{
+  "id": "clm_3dadc922857c485c",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The grammars for TypeScript (`.ts`, `.js`, `.mjs`, `.cjs`), TSX (`.tsx`, `.jsx`), Python, Rust, Go, and Java are embedded in the binary as wasm; nothing is downloaded.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The grammars for TypeScript (`.ts`, `.js`, `.mjs`, `.cjs`), TSX (`.tsx`, `.jsx`), Python, Rust, Go, and Java are embedded in the binary as wasm; nothing is downloaded.",
+        "prefix": "er is on and the file's language has a grammar. ",
+        "suffix": " `--no-ast` skips them. A code file in any other"
+      },
+      {
+        "kind": "text-position",
+        "start": 20611,
+        "end": 20778
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/lang.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  \".ts\": \"typescript\",\n  \".tsx\": \"tsx\",\n  \".js\": \"typescript\",\n  \".jsx\": \"tsx\",\n  \".mjs\": \"typescript\",\n  \".cjs\": \"typescript\",\n  \".py\": \"python\",\n  \".pyi\": \"python\",\n  \".rs\": \"rust\",\n  \".go\": \"go\",\n  \".java\": \"java\",",
+          "prefix": "ath\";\n\nconst BY_EXT: Record<string, string> = {\n",
+          "suffix": "\n};\n\nexport function languageForFile(path: strin"
+        },
+        {
+          "kind": "text-position",
+          "start": 213,
+          "end": 430
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "edd0c06b2164a615",
+          "semanticHash": "0596aa41bfebfdee"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".ts\""
+        }
+      ]
+    },
+    {
+      "file": "src/ast/analyzer.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const WASM: Record<string, string> = {\n  typescript: tsWasm,\n  tsx: tsxWasm,\n  python: pyWasm,\n  rust: rsWasm,\n  go: goWasm,\n  java: javaWasm,\n};",
+          "prefix": "erprintNode, snapNamedNode } from \"./hash.ts\";\n\n",
+          "suffix": "\n\nexport class TreeSitterAnalyzer implements Ast"
+        },
+        {
+          "kind": "text-position",
+          "start": 1338,
+          "end": 1483
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "01a78d6f986f2a9a",
+          "semanticHash": "45c42734a5956813"
+        }
+      ]
+    },
+    {
+      "file": "src/ast/analyzer.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "import goWasm from \"../../grammars/tree-sitter-go.wasm\" with { type: \"file\" };",
+          "prefix": "web-tree-sitter.wasm\" with {\n  type: \"file\",\n};\n",
+          "suffix": "\nimport javaWasm from \"../../grammars/tree-sitte"
+        },
+        {
+          "kind": "text-position",
+          "start": 518,
+          "end": 596
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "import_statement",
+          "structuralHash": "0ccfcff73242da89",
+          "semanticHash": "c111f36d0ff36b61"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"../../grammars/tree-sitter-go.wasm\""
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "bun build --compile src/cli/index.ts --outfile dist/hibi",
+          "prefix": "build:schemas && bun run build:cli-reference && ",
+          "suffix": "\",\n    \"test\": \"bun test\",\n    \"lint\": \"biome li"
+        },
+        {
+          "kind": "text-position",
+          "start": 1204,
+          "end": 1260
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:00.870Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:00.870Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

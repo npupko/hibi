@@ -1,0 +1,68 @@
+{
+  "id": "clm_66936907f3cc4756",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "There is no third question.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "There is no third question.",
+        "prefix": "ng` (read only when `kind` is `factual_claim`). ",
+        "suffix": " A region is `code` by construction, with `evide"
+      },
+      {
+        "kind": "text-position",
+        "start": 32740,
+        "end": 32767
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/questions/triage.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"kind_{{i}}\": {",
+          "prefix": "\n  \"placeholder\": \"{{i}}\",\n  \"questions\": {\n    ",
+          "suffix": "\n      \"type\": \"choice\",\n      \"instructions\": {"
+        },
+        {
+          "kind": "text-position",
+          "start": 379,
+          "end": 394
+        }
+      ]
+    },
+    {
+      "file": "src/judge/questions/triage.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"evidenceKind_{{i}}\": {",
+          "prefix": "mple.\"\n          ]\n        }\n      }\n    },\n    ",
+          "suffix": "\n      \"type\": \"choice\",\n      \"instructions\": {"
+        },
+        {
+          "kind": "text-position",
+          "start": 2438,
+          "end": 2461
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:51.547Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:51.547Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

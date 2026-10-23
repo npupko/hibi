@@ -1,0 +1,65 @@
+{
+  "id": "clm_175b515a3e51403e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`--ack review` acknowledges the claim's current `supports` verdict: for an `attested` claim the newest `supports` cache entry, for a `reference` claim the entry for the request built from its sentence and referenced span as they read now (section 5).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--ack review` acknowledges the claim's current `supports` verdict: for an `attested` claim the newest `supports` cache entry, for a `reference` claim the entry for the request built from its sentence and referenced span as they read now (section 5).",
+        "prefix": "ty when given. With `--ack` a note is required. ",
+        "suffix": " It is an error when there is no such verdict. `"
+      },
+      {
+        "kind": "text-position",
+        "start": 66710,
+        "end": 66960
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    const judgeKey =\n      claim.kind === \"reference\"\n        ? await currentReferenceKey(store, claim, input.reference)\n        : await newestSupportsKey(store, claim.id);",
+          "prefix": "e.\",\n    );\n  }\n\n  if (ack.kind === \"review\") {\n",
+          "suffix": "\n    const attestation = Attestation.parse({\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 6053,
+          "end": 6225
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "457e608c2f322b18",
+          "semanticHash": "1577f581d134f98f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"reference\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:20.249Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:20.249Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

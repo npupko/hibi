@@ -1,0 +1,123 @@
+{
+  "id": "clm_e937e9ed026743d6",
+  "documentId": "doc_d11450458251d04c",
+  "kind": "code",
+  "sentence": "| `attested` | outside the repository: a dashboard, a vendor page, a person | its `ttl` ran out since the last judged evidence or human vouch, or submitted evidence refutes it |",
+  "doc": {
+    "file": "docs/index.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `attested` | outside the repository: a dashboard, a vendor page, a person | its `ttl` ran out since the last judged evidence or human vouch, or submitted evidence refutes it |",
+        "prefix": "udge finds it no longer supports the sentence |\n",
+        "suffix": "\n\n## The agent loop\n\nBefore an agent relies on a"
+      },
+      {
+        "kind": "text-position",
+        "start": 1249,
+        "end": 1426
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"an attested claim has no evidence spans; use sources and a procedure to say where its truth lives.\"",
+          "prefix": "ts.length > 0) {\n      throw new Error(\n        ",
+          "suffix": ",\n      );\n    }\n    return [];\n  }\n  if (kind ="
+        },
+        {
+          "kind": "text-position",
+          "start": 3769,
+          "end": 3869
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "85e1229106145489"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"an attested claim has no evidence spans; use sources and a procedure to say where its truth lives.\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (a.basis === \"evidence\") return true;\n  return a.basis === \"vouch\" && a.by.startsWith(\"human:\");",
+          "prefix": "rt function counts(a: Attestation): boolean {\n  ",
+          "suffix": "\n}\n\n/**\n * The newest counting attestation, or u"
+        },
+        {
+          "kind": "text-position",
+          "start": 606,
+          "end": 705
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "cdfebd9fbed0fa60",
+          "semanticHash": "657d6ca11f9a5631"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"refuted\") gates = true;",
+          "prefix": "c) || isWarnAnchor(v.evidence)) warns = true;\n  ",
+          "suffix": "\n  if (v.judge !== undefined && WARN_JUDGE.has(v"
+        },
+        {
+          "kind": "text-position",
+          "start": 3180,
+          "end": 3220
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "045e3f715206f391",
+          "semanticHash": "c5efdf039031fded"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"refuted\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:33.867Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:33.867Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

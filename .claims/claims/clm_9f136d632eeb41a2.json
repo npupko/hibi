@@ -1,0 +1,153 @@
+{
+  "id": "clm_9f136d632eeb41a2",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "`judge: pending` has one of three causes, each with its own label: the judge was unavailable (no key, network down, 401 or 403), the judge answered with something hibi cannot use (`judge error: <message>`), or the referenced span is longer than 32,000 characters (`referenced span is longer than 32,000 characters`).",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`judge: pending` has one of three causes, each with its own label: the judge was unavailable (no key, network down, 401 or 403), the judge answered with something hibi cannot use (`judge error: <message>`), or the referenced span is longer than 32,000 characters (`referenced span is longer than 32,000 characters`).",
+        "prefix": "t for evidence submitted with `hibi evidence`.\n\n",
+        "suffix": " None of them fails the run.\n\n## gates, warns, r"
+      },
+      {
+        "kind": "text-position",
+        "start": 2248,
+        "end": 2564
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeUnavailable) return `judge unavailable: ${e.message}`;",
+          "prefix": "ailureLabel(e: unknown): string | undefined {\n  ",
+          "suffix": "\n  if (e instanceof JudgeError) return `judge er"
+        },
+        {
+          "kind": "text-position",
+          "start": 3661,
+          "end": 3737
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "e16196633fc6e5f4"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeError) return `judge error: ${e.message}`;",
+          "prefix": "le) return `judge unavailable: ${e.message}`;\n  ",
+          "suffix": "\n  return undefined;\n}\n\n/**\n * The longest text "
+        },
+        {
+          "kind": "text-position",
+          "start": 3740,
+          "end": 3804
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "d2206c1328e3b3de"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (status === 401 || status === 403) {",
+          "prefix": "ext);\n\n      const { status } = response;\n      ",
+          "suffix": "\n        throw new JudgeUnavailable(\n          `"
+        },
+        {
+          "kind": "text-position",
+          "start": 6039,
+          "end": 6078
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "5e035afb54ecc6d2",
+          "semanticHash": "458ce72adb3163ee"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "401"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"pending\", reasons: [REFERENCE_TOO_LONG] };",
+          "prefix": "ferencedText.length > MAX_EVIDENCE_CHARS) {\n    ",
+          "suffix": "\n  }\n  const { request, key } = referenceSupport"
+        },
+        {
+          "kind": "text-position",
+          "start": 10437,
+          "end": 10496
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "4e167621b94fec45",
+          "semanticHash": "70ac2501d85f9ef8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:11.568Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:42.531Z",
+      "basis": "ack",
+      "note": "reference-claim pending causes vs evidence-item pending reasons (the 32,000 limit is a validation error there); 7.3 is a section number",
+      "ack": {
+        "pairId": "clm_9f136d632eeb41a2:clm_d7e2f7b4576f482e",
+        "sentenceHashes": [
+          "68590b40d49f9903d884d9e79d80be95c46a6e7952804067143f8447b09d3563",
+          "6d5d824f5d6f80b8a308defe408d585f3d8780196237c7a4be299a481a7292f2"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:11.568Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

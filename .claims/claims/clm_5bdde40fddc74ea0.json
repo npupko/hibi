@@ -1,0 +1,82 @@
+{
+  "id": "clm_5bdde40fddc74ea0",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "| `owner` | the actor to contact when the claim expires: `human:<id>`, `agent:<name>`, or `process:<name>`; separate from who attested |",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `owner` | the actor to contact when the claim expires: `human:<id>`, `agent:<name>`, or `process:<name>`; separate from who attested |",
+        "prefix": "## Owner and ttl\n\n| field | meaning |\n|---|---|\n",
+        "suffix": "\n| `ttl` | an ISO 8601 duration such as `P90D` o"
+      },
+      {
+        "kind": "text-position",
+        "start": 3888,
+        "end": 4024
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "owner: Actor.optional(),",
+          "prefix": "cedure: Procedure.nullable().default(null),\n    ",
+          "suffix": "\n    ttl: Duration.optional(),\n    enforcement: "
+        },
+        {
+          "kind": "text-position",
+          "start": 8948,
+          "end": 8972
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1510bc52887893f3",
+          "semanticHash": "2fc66ecd0fcf3ee2"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ACTOR_PATTERN = /^(human|agent|process):.+$/;",
+          "prefix": ":<id>`, `agent:<name>`, or `process:<name>`. */\n",
+          "suffix": "\nexport const Actor = z.string().regex(ACTOR_PAT"
+        },
+        {
+          "kind": "text-position",
+          "start": 1052,
+          "end": 1110
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b879b2ad137802b7",
+          "semanticHash": "63e9cd8b98c3091c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:02.986Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:02.986Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_ec0986f90b3e4ba8",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "Every claim has exactly one kind.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Every claim has exactly one kind.",
+        "prefix": "d, and who stood behind it and when.\n\n## Kinds\n\n",
+        "suffix": " You choose it with `--kind` at record time. Hib"
+      },
+      {
+        "kind": "text-position",
+        "start": 503,
+        "end": 536
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "kind: ClaimKind,\n    sentence",
+          "prefix": "   id: ClaimId,\n    documentId: DocumentId,\n    ",
+          "suffix": ": z.string().min(1),\n    doc: SelectorBundle,\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 8725,
+          "end": 8754
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "c9d78f1987063c4a",
+          "semanticHash": "07fb3bfde49ccf46"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:01.392Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:01.392Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

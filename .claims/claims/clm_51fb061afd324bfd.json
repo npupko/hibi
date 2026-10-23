@@ -1,0 +1,117 @@
+{
+  "id": "clm_51fb061afd324bfd",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `conflicts` | list of `{ claimId, probability, reason }` from the contradiction pass; gating findings only |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `conflicts` | list of `{ claimId, probability, reason }` from the contradiction pass; gating findings only |",
+        "prefix": " boolean, from the counting rule in section 5 |\n",
+        "suffix": "\n| `gates` | boolean |\n| `warns` | boolean; true"
+      },
+      {
+        "kind": "text-position",
+        "start": 21832,
+        "end": 21942
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ConflictFinding = z.strictObject({\n  claimId: z.string(),\n  probability: z.number(),\n  reason: z.string(),\n});",
+          "prefix": "on finding against another claim (SPEC 7.2). */\n",
+          "suffix": "\nexport type ConflictFinding = z.infer<typeof Co"
+        },
+        {
+          "kind": "text-position",
+          "start": 14323,
+          "end": 14446
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "00c0b76d377feef6",
+          "semanticHash": "e8710e6d8da88216"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".filter((f) => f.claimId === claimId && f.review !== true)",
+          "prefix": "ason: string }[] {\n  return result.findings\n    ",
+          "suffix": "\n    .map((f) => ({\n      claimId: f.otherClaimI"
+        },
+        {
+          "kind": "text-position",
+          "start": 13154,
+          "end": 13212
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "1c56978d49b7b748",
+          "semanticHash": "0eaf68b7ba08c5a3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "conflicts: live && pass !== undefined ? conflictsFor(pass, c.id) : [],",
+          "prefix": "Findings = {\n      judge: outcome?.state,\n      ",
+          "suffix": "\n      warnings,\n      reasons: [\n        ...(ou"
+        },
+        {
+          "kind": "text-position",
+          "start": 17359,
+          "end": 17429
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "8f994536793a1c39",
+          "semanticHash": "793bde7436a13ab8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:28.343Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:28.343Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

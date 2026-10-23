@@ -1,0 +1,88 @@
+{
+  "id": "clm_f65c1035ffd54a0d",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "`archivedTo` is null when the document is registered but its file was not on disk.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`archivedTo` is null when the document is registered but its file was not on disk.",
+        "prefix": "re each stranded claim, then hibi check\" }\n```\n\n",
+        "suffix": " A path that is not a registered document (one w"
+      },
+      {
+        "kind": "text-position",
+        "start": 4540,
+        "end": 4622
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "let archivedTo: string | null = null;",
+          "prefix": "?? false;\n\n  const abs = join(root, docPath);\n  ",
+          "suffix": "\n  if (await exists(abs)) {\n    const relDest = "
+        },
+        {
+          "kind": "text-position",
+          "start": 1826,
+          "end": 1863
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "be9d0b6c4dbdcf82",
+          "semanticHash": "f177c4033aa01c3c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (await exists(abs)) {",
+          "prefix": "ath);\n  let archivedTo: string | null = null;\n  ",
+          "suffix": "\n    const relDest = join(\"archive\", docPath);\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 1866,
+          "end": 1890
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6c3cbccaf18fce7d",
+          "semanticHash": "59666c38bf224ff2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.040Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.040Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_f5de7ba7151a4ccb",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "Export `TYPESAFE_API_KEY` before the next steps; without it every judgment is `pending`.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Export `TYPESAFE_API_KEY` before the next steps; without it every judgment is `pending`.",
+        "prefix": "` is the one confidence bar for every judgment. ",
+        "suffix": " Commit `.claims/`, including `.claims/judge/`, "
+      },
+      {
+        "kind": "text-position",
+        "start": 1526,
+        "end": 1614
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`${API_KEY_ENV} is not set; the judge cannot answer.`,",
+          "prefix": "\"\") {\n      throw new JudgeUnavailable(\n        ",
+          "suffix": "\n      );\n    }\n    await acquire();\n    try {\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 4639,
+          "end": 4693
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "741052939c553a2d",
+          "semanticHash": "b4b501a53d3995ae"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:07.408Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:07.408Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

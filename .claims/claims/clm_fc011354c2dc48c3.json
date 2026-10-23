@@ -1,0 +1,117 @@
+{
+  "id": "clm_fc011354c2dc48c3",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `doc` | `unchanged`, `moved`, `changed`, `ambiguous`, `orphaned` | always |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `doc` | `unchanged`, `moved`, `changed`, `ambiguous`, `orphaned` | always |",
+        "prefix": "Axes\n\n| axis | values | present |\n|---|---|---|\n",
+        "suffix": "\n| `evidence` | the same five, plus `unavailable"
+      },
+      {
+        "kind": "text-position",
+        "start": 1279,
+        "end": 1356
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"unchanged\", // found, same text, same place",
+          "prefix": ". */\nexport const AnchorState = z\n  .enum([\n    ",
+          "suffix": "\n    \"moved\", // found, same text, new place\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 2475,
+          "end": 2519
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "c60db945f7b10227",
+          "semanticHash": "d4363f35552a4758"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unchanged\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"orphaned\", // not found",
+          "prefix": ", // matches in several places equally well\n    ",
+          "suffix": "\n  ])\n  .meta({ id: \"AnchorState\" });\nexport typ"
+        },
+        {
+          "kind": "text-position",
+          "start": 2678,
+          "end": 2702
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "c60db945f7b10227",
+          "semanticHash": "d4363f35552a4758"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"orphaned\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "doc: AnchorState,\n    /** Worst state over the evidence spans; absent when the claim has none. */",
+          "prefix": "ocumentId: z.string(),\n    kind: ClaimKind,\n    ",
+          "suffix": "\n    evidence: EvidenceState.optional(),\n    /**"
+        },
+        {
+          "kind": "text-position",
+          "start": 15762,
+          "end": 15859
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "8ae717a489f1b920",
+          "semanticHash": "0335d51a879290ad"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:11.009Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:11.009Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

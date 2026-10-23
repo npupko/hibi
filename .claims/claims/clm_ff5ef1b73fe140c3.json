@@ -1,0 +1,139 @@
+{
+  "id": "clm_ff5ef1b73fe140c3",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "code",
+  "sentence": "- **Numbers stay in code.** Numbers, money, versions, and dates are extracted and compared by code. On a conflict pair, that comparison applies only when the judge rates `contradicts` at 0.5 or above.",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **Numbers stay in code.** Numbers, money, versions, and dates are extracted and compared by code. On a conflict pair, that comparison applies only when the judge rates `contradicts` at 0.5 or above.",
+        "prefix": "ims/config.json` sets the line for all of them.\n",
+        "suffix": "\n- **Cached verdicts.** Each answer is stored in"
+      },
+      {
+        "kind": "text-position",
+        "start": 4036,
+        "end": 4236
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function extractValues(text: string): Value[] {",
+          "prefix": "Every value in `text`, in order of position. */\n",
+          "suffix": "\n  const taken: [number, number][] = [];\n  const"
+        },
+        {
+          "kind": "text-position",
+          "start": 10027,
+          "end": 10081
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "88c86c350d0cc940",
+          "semanticHash": "8e613f817fd02168"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function compareValues(",
+          "prefix": ", `dates differ: 2026-10-01 vs 2026-11-01`.\n */\n",
+          "suffix": "\n  a: Value[],\n  b: Value[],\n  opts: CompareOpti"
+        },
+        {
+          "kind": "text-position",
+          "start": 13689,
+          "end": 13719
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b0934bb6e494928f",
+          "semanticHash": "d231a6372ef27e23"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.sameSubject >= threshold && r.contradicts >= CONTRADICTS_FLOOR) {",
+          "prefix": "me_subject=${f2(r.sameSubject)})`,\n    };\n  }\n  ",
+          "suffix": "\n    // Numeric rule (SPEC 8.5): only after the "
+        },
+        {
+          "kind": "text-position",
+          "start": 5396,
+          "end": 5467
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "9f7b5a7ff61764e3",
+          "semanticHash": "40a2f24fa63ae4bf"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const CONTRADICTS_FLOOR = 0.5;",
+          "prefix": "value rule does not fire either (SPEC 8.5).\n */\n",
+          "suffix": "\n\n/** One side of a contradiction: a finding on "
+        },
+        {
+          "kind": "text-position",
+          "start": 2603,
+          "end": 2640
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "6d0a83cf6b919187"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.5"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:51.646Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:08.593Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:51.646Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

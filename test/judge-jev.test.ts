@@ -149,13 +149,13 @@ describe("request shapes match the fixtures", () => {
       nothing: 0,
     });
     expect(byId.r2?.evidenceKind).toBe("other_doc");
-    expect(byId.r2?.evidenceProbabilities?.external).toBe(0.3);
+    expect(byId.r2?.evidenceProbabilities?.external).toBe(0.25);
     expect(byId.r3?.kind).toBe("instruction");
     expect(byId.r3?.evidenceKind).toBeUndefined();
     expect(byId.r4?.kind).toBe("opinion");
     expect(byId.r4?.evidenceKind).toBeUndefined();
-    // (0.95 - 1/4) / (1 - 1/4)
-    expect(byId.r1?.kindConfidence).toBeCloseTo(0.9333, 4);
+    // (1 - 1/4) / (1 - 1/4)
+    expect(byId.r1?.kindConfidence).toBeCloseTo(1, 4);
     // Triage asks kind and evidenceKind only; checkable was dropped.
     expect(
       Object.keys(expected.questions).filter((k) => k.startsWith("checkable")),
@@ -178,8 +178,8 @@ describe("request shapes match the fixtures", () => {
     expect(out.model).toBe("jev-1.13.0");
     expect(out.result).toEqual({
       relation: "supports",
-      probabilities: { supports: 0.94, refutes: 0.02, does_not_address: 0.04 },
-      confidence: expect.closeTo(0.91, 4),
+      probabilities: { supports: 0.99, refutes: 0, does_not_address: 0.01 },
+      confidence: expect.closeTo(0.985, 4),
       addresses: 0.97,
     });
   });
@@ -198,10 +198,10 @@ describe("request shapes match the fixtures", () => {
     expect(out.answers).toEqual(response.answers);
     expect(out.result).toEqual({
       relation: "contradictory",
-      probabilities: { consistent: 0.04, contradictory: 0.93, unrelated: 0.03 },
-      confidence: expect.closeTo(0.895, 4),
-      sameSubject: 0.95,
-      contradicts: 0.92,
+      probabilities: { consistent: 0.05, contradictory: 0.95, unrelated: 0 },
+      confidence: expect.closeTo(0.925, 4),
+      sameSubject: 0.74,
+      contradicts: 0.65,
     });
   });
 });

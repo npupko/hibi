@@ -1,0 +1,173 @@
+{
+  "id": "clm_cb8c5764b3a84255",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "The claim's id, sentence, quote, hashes, evidence, sources, procedure, attestations, and `ref` never change.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The claim's id, sentence, quote, hashes, evidence, sources, procedure, attestations, and `ref` never change.",
+        "prefix": "ated; otherwise its anchors are left as stored. ",
+        "suffix": "\n3. Sets `--from` to `superseded` and records `s"
+      },
+      {
+        "kind": "text-position",
+        "start": 2671,
+        "end": 2779
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "moveDoc: (id, o) => this.reanchor(id, { ...o, docOnly: true }),",
+          "prefix": "adDoc: (rel) => this.readAnchored(rel),\n        ",
+          "suffix": "\n      },\n      { ...input, from: this.norm(inpu"
+        },
+        {
+          "kind": "text-position",
+          "start": 24543,
+          "end": 24606
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "7b73a256f9fdee4d",
+          "semanticHash": "8738d681857ff33f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    sentence = claim.sentence;\n  } else {",
+          "prefix": "aim.doc.selectors, contents.docContent),\n    };\n",
+          "suffix": "\n    if (\n      input.docPath !== undefined &&\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 10682,
+          "end": 10723
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "d4827a4f61728a7d",
+          "semanticHash": "38d6281638d64b18"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "? { ...s, start: at, end: at + quote.exact.length }",
+          "prefix": "map((s) =>\n    s.kind === \"text-position\"\n      ",
+          "suffix": "\n      : s,\n  );\n}\n\nexport async function reanch"
+        },
+        {
+          "kind": "text-position",
+          "start": 9386,
+          "end": 9437
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "c5c1a4931fc005ca",
+          "semanticHash": "b49aea056c4b3018"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  if (input.docOnly) {\n    evidence = claim.evidence;",
+          "prefix": "vidence side.\n  let evidence: SelectorBundle[];\n",
+          "suffix": "\n  } else if (input.evidence !== undefined) {\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 11831,
+          "end": 11884
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "ff8cae4b0c7adeee",
+          "semanticHash": "6f154d2f9b8fa530"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "input.docOnly || relocated === 0 ? claim.ref : (input.ref ?? claim.ref),",
+          "prefix": "   doc: docBundle,\n    evidence,\n    ref:\n      ",
+          "suffix": "\n  };\n  // `supersede` (docOnly) always writes: "
+        },
+        {
+          "kind": "text-position",
+          "start": 12996,
+          "end": 13068
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "9026e3963acc6d53",
+          "semanticHash": "cdeaa24621d2a227"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T09:47:04.958Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:08.150Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:22:55.672Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T09:47:04.958Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

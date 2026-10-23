@@ -1,0 +1,94 @@
+{
+  "id": "clm_0d66afd39da44ebb",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It does not reset ttl.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It does not reset ttl.",
+        "prefix": "klist with reason `review`, and is not cleared. ",
+        "suffix": " `pending` means the judge gave no usable answer"
+      },
+      {
+        "kind": "text-position",
+        "start": 38068,
+        "end": 38090
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (outcome.state === \"supported\") {",
+          "prefix": "come.state] += 1;\n    let attested = false;\n    ",
+          "suffix": "\n      const attestation: Attestation = {\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 12942,
+          "end": 12978
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "56dff5cf98b59951",
+          "semanticHash": "cf149a5e29b812c6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"supported\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (a.basis === \"evidence\") return true;",
+          "prefix": "rt function counts(a: Attestation): boolean {\n  ",
+          "suffix": "\n  return a.basis === \"vouch\" && a.by.startsWith"
+        },
+        {
+          "kind": "text-position",
+          "start": 606,
+          "end": 646
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "2b86e5c896c53ef4",
+          "semanticHash": "64443608661256fc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:31.983Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:31.983Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

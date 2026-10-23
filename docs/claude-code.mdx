@@ -5,7 +5,7 @@ description: "Install the hibi skill from the plugin marketplace, see what it te
 icon: "wand-magic-sparkles"
 ---
 
-Hibi ships a [Claude Code](https://claude.com/claude-code) skill: instructions the agent loads when it works with hibi. The primary user of hibi is a coding agent, and the skill teaches it the commands, the JSON shapes, and the rules for clearing a flag.
+Hibi ships a [Claude Code](https://claude.com/claude-code) skill: instructions the agent loads when it works with hibi. The primary user of hibi is a coding agent. The skill lists the fields of a `check` verdict and, for each flag, the command or rule that clears it.
 
 ## Install
 
@@ -16,7 +16,7 @@ The repository is also a plugin marketplace.
 /plugin install hibi-cli@hibi
 ```
 
-Claude loads the skill when you ask it to work with hibi. You can also invoke it as `/hibi-cli:hibi`. Run `/plugin marketplace update` to get a newer version.
+The skill's description tells Claude to use it before trusting CLAUDE.md, AGENTS.md, or any doc, after a feature, when docs go stale or contradict each other, and for anything about claims or `.claims/`. You can also invoke it as `/hibi-cli:hibi`. To get a newer version, run `claude plugin update hibi-cli@hibi` in your shell, or select **Update now** on the plugin in the **Installed** tab of `/plugin`.
 
 The skill does not include the `hibi` binary. Install hibi with the prebuilt binary or `bun add @npupko/hibi` (see [Quickstart](/quickstart)).
 
@@ -47,11 +47,11 @@ The skill covers the agent loop described in [Workflows](/workflows):
 - **For the worklist**, follow each `attested` item's `procedure` and `sources`, collect the evidence, and submit it with `hibi evidence --from-file - --by agent:<name>`. Evidence applies to `attested` claims only.
 - **For findings**, reconcile a contradiction by fixing the wrong sentence, or acknowledge a finding with `hibi attest <id> --by agent:<name> --ack review --note "<why>"` or `hibi attest <id> --by agent:<name> --ack conflict:<other-id> --note "<why>"`. Each `remediation` action's `command` runs as printed once its placeholders are filled in.
 
-The skill also states what an agent must not do:
+The skill also states three rules for an agent:
 
-- vouch as a human. An agent attests as `agent:<name>`. Its vouch is recorded and does not reset a ttl. Only judged evidence or a `human:` vouch does (see [Attestations](/attestations)).
-- reanchor a claim without re-reading the sentence against its evidence.
-- delete a file under `.claims/` instead of running `hibi retire <id>`.
+- Never vouch as a human. An agent attests as `agent:<name>`. Its vouch is recorded and does not reset a ttl. Only judged evidence or a `human:` vouch does (see [Attestations](/attestations)).
+- Never rewrite a sentence to silence a flag.
+- Never delete a file under `.claims/`; run `hibi retire <id>` instead.
 
 ## Session hooks
 

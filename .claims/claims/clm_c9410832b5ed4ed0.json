@@ -1,0 +1,194 @@
+{
+  "id": "clm_c9410832b5ed4ed0",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- `basis: evidence` means the judge returned `supports` at or above the threshold for evidence submitted with `hibi evidence`, which accepts `attested` claims only (section 11), and the value rule (section 8.5) did not fire.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `basis: evidence` means the judge returned `supports` at or above the threshold for evidence submitted with `hibi evidence`, which accepts `attested` claims only (section 11), and the value rule (section 8.5) did not fire.",
+        "prefix": "rd`). `attest` without `--ack` appends a vouch.\n",
+        "suffix": " The attestation carries the evidence hash and t"
+      },
+      {
+        "kind": "text-position",
+        "start": 8592,
+        "end": 8816
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "} else if (claim.kind !== \"attested\") {",
+          "prefix": "Id} is retired; evidence is not accepted`);\n    ",
+          "suffix": "\n      errors.push(\n        `claim ${claimId} is"
+        },
+        {
+          "kind": "text-position",
+          "start": 6823,
+          "end": 6862
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "665fc6fb60c0f6b5",
+          "semanticHash": "b6ab73a0c1ae0074"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"attested\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (outcome.state === \"supported\") {",
+          "prefix": "come.state] += 1;\n    let attested = false;\n    ",
+          "suffix": "\n      const attestation: Attestation = {\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 12942,
+          "end": 12978
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "56dff5cf98b59951",
+          "semanticHash": "cf149a5e29b812c6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"supported\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "basis: \"evidence\",",
+          "prefix": "        by: p.item.by,\n        at: now,\n        ",
+          "suffix": "\n        note: p.item.summary,\n        evidenceH"
+        },
+        {
+          "kind": "text-position",
+          "start": 13068,
+          "end": 13086
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "08b147463c5716c1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"refuted\", reasons: [`value differs: ${cmp.label}`] };",
+          "prefix": "cmp.differs && cmp.label !== undefined) {\n      ",
+          "suffix": "\n    }\n  }\n  const verb = result.relation;\n  if "
+        },
+        {
+          "kind": "text-position",
+          "start": 4096,
+          "end": 4166
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "f49ce7ee24e466fc",
+          "semanticHash": "c628178ea96bcff0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"refuted\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "state: verb === \"supports\" ? \"supported\" : \"refuted\",",
+          "prefix": "t.confidence >= threshold) {\n    return {\n      ",
+          "suffix": "\n      reasons: [\n        `evidence ${verb} the "
+        },
+        {
+          "kind": "text-position",
+          "start": 4268,
+          "end": 4321
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "68ed9cc192e0477c",
+          "semanticHash": "790f39a1c5996b10"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"supports\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:35.041Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:58:48.019Z",
+      "basis": "ack",
+      "note": "48 is a decision-row number and 11, 8.5 are section numbers; both say hibi evidence takes attested claims only",
+      "ack": {
+        "pairId": "clm_c77784cc34bd406e:clm_c9410832b5ed4ed0",
+        "sentenceHashes": [
+          "e15005f4fd58094a193497189166d20798d2830155b156a45ec83ffb80bf4356",
+          "7122c2ba64bb0308be327f0552e7682ad4bf918018a0a56cdd3db1a72f47cabf"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:35.041Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

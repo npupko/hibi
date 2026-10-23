@@ -1,0 +1,72 @@
+{
+  "id": "clm_295ac486f9154aa3",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "Exit 1 with `no claims are registered for <path>`: audit it.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Exit 1 with `no claims are registered for <path>`: audit it.",
+        "prefix": " it gates; do not rely on its gating sentences. ",
+        "suffix": "\n\n**b. After a change:** `hibi check --since ori"
+      },
+      {
+        "kind": "text-position",
+        "start": 2592,
+        "end": 2652
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`no claims are registered for ${doc}; run hibi audit --doc ${doc}`",
+          "prefix": "if (!live) {\n        throw new Error(\n          ",
+          "suffix": ",\n        );\n      }\n      onlyFiles = scope.fil"
+        },
+        {
+          "kind": "text-position",
+          "start": 12797,
+          "end": 12863
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "1249b007122c9694",
+          "semanticHash": "d6a9d9f48dc91234"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:32.415Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:42.066Z",
+      "basis": "ack",
+      "note": "both say a document with no registered claims is exit 1, an operational error",
+      "ack": {
+        "pairId": "clm_295ac486f9154aa3:clm_553004b94f744803",
+        "sentenceHashes": [
+          "ffe23d358ffb088237a745ae9a2efee5fae15f505712e8f0ff47baa431bf15d0",
+          "42c0e7974510cd795da6dec548a419156b6914bd51126aa41655b427bef07366"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:32.415Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

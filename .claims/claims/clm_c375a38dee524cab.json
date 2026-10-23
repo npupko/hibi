@@ -1,0 +1,59 @@
+{
+  "id": "clm_c375a38dee524cab",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**attest.** `--by` must be in actor form.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**attest.** `--by` must be in actor form.",
+        "prefix": "equests` the judge calls answered in this run.\n\n",
+        "suffix": " Without `--ack` it appends a vouch; `--note` is"
+      },
+      {
+        "kind": "text-position",
+        "start": 66544,
+        "end": 66585
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (!ACTOR_PATTERN.test(by)) {",
+          "prefix": "at = (input.now ?? new Date()).toISOString();\n  ",
+          "suffix": "\n    throw new Error(\n      `--by must be human:"
+        },
+        {
+          "kind": "text-position",
+          "start": 5291,
+          "end": 5321
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "baa955dcc79d220d",
+          "semanticHash": "9b420d16d196da38"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.906Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.906Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

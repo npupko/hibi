@@ -1,0 +1,94 @@
+{
+  "id": "clm_52b62fa334524cb8",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "```sh\nhibi retire <claim-id> [--dry-run]\n```",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```sh\nhibi retire <claim-id> [--dry-run]\n```",
+        "prefix": "dence` and `attest` refuse it. |\n\n### `retire`\n\n",
+        "suffix": "\n\nSets the claim's `enforcement` to `retired` an"
+      },
+      {
+        "kind": "text-position",
+        "start": 881,
+        "end": 925
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"The claim to retire.\",",
+          "prefix": "    positional: {\n      name: \"claim-id\",\n      ",
+          "suffix": "\n      required: true,\n    },\n    options: [DRY_"
+        },
+        {
+          "kind": "text-position",
+          "start": 15142,
+          "end": 15171
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "44a9d64bddd76e4d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"The claim to retire.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "options: [DRY_RUN],",
+          "prefix": "m to retire.\",\n      required: true,\n    },\n    ",
+          "suffix": "\n    examples: [\"hibi retire clm_1a2b3c4d5e6f7a8"
+        },
+        {
+          "kind": "text-position",
+          "start": 15205,
+          "end": 15224
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "cd4de9ccd783bf10",
+          "semanticHash": "ddec869c13d6312c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[DRY_RUN]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.129Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.129Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,52 @@
+{
+  "id": "clm_be0cfe14629a4197",
+  "documentId": "doc_d11450458251d04c",
+  "kind": "reference",
+  "sentence": "The documents can be anything: a README, `CLAUDE.md`, an ADR, a pricing page, a process note in a knowledge repository.",
+  "doc": {
+    "file": "docs/index.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The documents can be anything: a README, `CLAUDE.md`, an ADR, a pricing page, a process note in a knowledge repository.",
+        "prefix": "s in documents that assert something checkable. ",
+        "suffix": " Hibi reports which claims are stale, which docu"
+      },
+      {
+        "kind": "text-position",
+        "start": 424,
+        "end": 543
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Documents can be anything: a README, `CLAUDE.md`, an ADR, a marketing playbook, a process page.",
+          "prefix": "e verified and should be rewritten or removed.\n\n",
+          "suffix": " Evidence can be code, another document, or some"
+        },
+        {
+          "kind": "text-position",
+          "start": 865,
+          "end": 960
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:33.621Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:33.621Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

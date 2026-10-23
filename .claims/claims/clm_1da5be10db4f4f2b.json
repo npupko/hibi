@@ -1,0 +1,99 @@
+{
+  "id": "clm_1da5be10db4f4f2b",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "In `documents[].suspect[]`, a claim whose most severe finding is a conflict in review has the status `conflict:review`, and one whose conflict check is pending has `conflict:pending`.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "In `documents[].suspect[]`, a claim whose most severe finding is a conflict in review has the status `conflict:review`, and one whose conflict check is pending has `conflict:pending`.",
+        "prefix": "or> --ack conflict:<other-id> --note \"<why>\"`.\n\n",
+        "suffix": "\n\n`hibi list --state conflict` lists every live "
+      },
+      {
+        "kind": "text-position",
+        "start": 5948,
+        "end": 6131
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (reviews.length > 0) tags.push(\"conflict:review\");",
+          "prefix": "== undefined ? undefined : v.judge,\n    });\n    ",
+          "suffix": "\n    if (pendingPairs > 0) tags.push(\"conflict:p"
+        },
+        {
+          "kind": "text-position",
+          "start": 17836,
+          "end": 17889
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "d583f2d02405359e",
+          "semanticHash": "4e84843d010c0993"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (pendingPairs > 0) tags.push(\"conflict:pending\");",
+          "prefix": "s.length > 0) tags.push(\"conflict:review\");\n    ",
+          "suffix": "\n    statusTags.set(c.id, tags);\n\n    const acti"
+        },
+        {
+          "kind": "text-position",
+          "start": 17894,
+          "end": 17946
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "2b7077f6728e9851",
+          "semanticHash": "41b20e1acb4bb075"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:26.641Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:45:26.300Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:26.641Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

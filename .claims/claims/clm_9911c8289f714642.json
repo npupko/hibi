@@ -1,0 +1,59 @@
+{
+  "id": "clm_9911c8289f714642",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "To withdraw a document that has no successor, archive it without `--successor`.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "To withdraw a document that has no successor, archive it without `--successor`.",
+        "prefix": "cuments/`) is an error, and nothing is written. ",
+        "suffix": "\n\n## Reanchoring a claim\n\n```sh\nhibi reanchor <c"
+      },
+      {
+        "kind": "text-position",
+        "start": 4746,
+        "end": 4825
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const redirect = successorPath",
+          "prefix": "th: string, successorPath?: string): string {\n  ",
+          "suffix": "\n    ? `\\nSuperseded by [\\`${successorPath}\\`]($"
+        },
+        {
+          "kind": "text-position",
+          "start": 795,
+          "end": 825
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "1eb0185a538221e7",
+          "semanticHash": "fe72a509a201c11c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.103Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.103Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

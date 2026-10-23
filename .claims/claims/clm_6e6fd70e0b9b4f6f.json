@@ -1,0 +1,65 @@
+{
+  "id": "clm_6e6fd70e0b9b4f6f",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "An `attested` claim has an empty `evidence[]`.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An `attested` claim has an empty `evidence[]`.",
+        "prefix": "ther document. It stores text selectors only.\n- ",
+        "suffix": " Its truth lives outside the repository.\n\nAt che"
+      },
+      {
+        "kind": "text-position",
+        "start": 1748,
+        "end": 1794
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"an attested claim has no evidence spans\"",
+          "prefix": "         path: [\"evidence\"],\n          message: ",
+          "suffix": ",\n        });\n      }\n      if (c.ttl === undefi"
+        },
+        {
+          "kind": "text-position",
+          "start": 9852,
+          "end": 9893
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "3ffd80187493791f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"an attested claim has no evidence spans\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:02.058Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:02.058Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

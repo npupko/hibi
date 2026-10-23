@@ -1,0 +1,65 @@
+{
+  "id": "clm_d65552ed94194270",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- `basis: ack` acknowledges a finding and requires a note.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `basis: ack` acknowledges a finding and requires a note.",
+        "prefix": "ion the same way; the judge is not asked again.\n",
+        "suffix": "\n  - `ack: { pairId, sentenceHashes }` acknowled"
+      },
+      {
+        "kind": "text-position",
+        "start": 9068,
+        "end": 9126
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"an ack needs --note saying why the finding is acceptable.\",",
+          "prefix": "ote === undefined) {\n    throw new Error(\n      ",
+          "suffix": "\n    );\n  }\n\n  if (ack.kind === \"review\") {\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 5949,
+          "end": 6009
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "54306559a2d1f05a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"an ack needs --note saying why the finding is acceptable.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:35.092Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:35.092Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

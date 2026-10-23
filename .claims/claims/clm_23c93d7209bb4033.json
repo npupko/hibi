@@ -1,0 +1,59 @@
+{
+  "id": "clm_23c93d7209bb4033",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "An item naming a `code` or `reference` claim is a validation error: `claim <id> is a <kind> claim; evidence applies to attested claims, and reference claims are judged from the referenced document`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An item naming a `code` or `reference` claim is a validation error: `claim <id> is a <kind> claim; evidence applies to attested claims, and reference claims are judged from the referenced document`.",
+        "prefix": "y`. Evidence applies to `attested` claims only. ",
+        "suffix": " The whole batch is validated before the judge i"
+      },
+      {
+        "kind": "text-position",
+        "start": 65345,
+        "end": 65543
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`claim ${claimId} is a ${claim.kind} claim; evidence applies to attested claims, and reference claims are judged from the referenced document`,",
+          "prefix": "nd !== \"attested\") {\n      errors.push(\n        ",
+          "suffix": "\n      );\n    }\n  }\n  const evidence = str(\"evid"
+        },
+        {
+          "kind": "text-position",
+          "start": 6890,
+          "end": 7033
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "07c1e12fb500e712",
+          "semanticHash": "e8cd7fc7fade3638"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.804Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.804Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

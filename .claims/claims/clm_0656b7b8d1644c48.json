@@ -1,0 +1,68 @@
+{
+  "id": "clm_0656b7b8d1644c48",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "code",
+  "sentence": "The hook runs Biome on staged files plus a typecheck.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The hook runs Biome on staged files plus a typecheck.",
+        "prefix": "k install`, which installs the pre-commit hook. ",
+        "suffix": "\n\nThe analyzer imports the wasm files from `gram"
+      },
+      {
+        "kind": "text-position",
+        "start": 976,
+        "end": 1029
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "lefthook.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "run: bunx @biomejs/biome check --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}",
+          "prefix": "*.{js,ts,cjs,mjs,jsx,tsx,json,jsonc,css}\"\n      ",
+          "suffix": "\n      stage_fixed: true\n    typecheck:\n      gl"
+        },
+        {
+          "kind": "text-position",
+          "start": 113,
+          "end": 232
+        }
+      ]
+    },
+    {
+      "file": "lefthook.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "run: bunx tsc --noEmit",
+          "prefix": "e\n    typecheck:\n      glob: \"*.{ts,tsx}\"\n      ",
+          "suffix": "\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 303,
+          "end": 325
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:28.037Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:28.037Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

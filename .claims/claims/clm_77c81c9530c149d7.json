@@ -1,0 +1,82 @@
+{
+  "id": "clm_77c81c9530c149d7",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`Name.js` (Node.js, Next.js) is a product name, not a file.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`Name.js` (Node.js, Next.js) is a product name, not a file.",
+        "prefix": "nown source or config extension, or `.dotfile`. ",
+        "suffix": " The extension list and patterns are in `src/jud"
+      },
+      {
+        "kind": "text-position",
+        "start": 33328,
+        "end": 33387
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const PRODUCT_NAME = /^[A-Z][a-z]*\\.js$/;",
+          "prefix": "^\\.[a-z][\\w-]*$`, // .dotfile\n  ].join(\"|\"),\n);\n",
+          "suffix": "\nconst TOKEN_TRIM = /^[(\"'[{<]+|[)\"'\\]}>.,;:!?]+"
+        },
+        {
+          "kind": "text-position",
+          "start": 5640,
+          "end": 5681
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "b708438f7e7c6fc6",
+          "semanticHash": "73589a19dc767fc0"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return PATH_TOKEN.test(token) && !PRODUCT_NAME.test(token);",
+          "prefix": "\n  const token = raw.replace(TOKEN_TRIM, \"\");\n  ",
+          "suffix": "\n}\n\n/** Inside a code span, any slash-separated "
+        },
+        {
+          "kind": "text-position",
+          "start": 5827,
+          "end": 5886
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "81afcc53d6eac6d2",
+          "semanticHash": "f6b21b30c5a63939"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:51.936Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:51.936Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

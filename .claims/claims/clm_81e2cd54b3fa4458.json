@@ -1,0 +1,88 @@
+{
+  "id": "clm_81e2cd54b3fa4458",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "At most 8 requests are in flight in the process.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "At most 8 requests are in flight in the process.",
+        "prefix": "amped to 60 s. Each attempt has a 10 s timeout. ",
+        "suffix": "\n- Errors: a missing key, a 401 or 403, and exha"
+      },
+      {
+        "kind": "text-position",
+        "start": 31127,
+        "end": 31175
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const MAX_IN_FLIGHT = 8;",
+          "prefix": "_000;\nexport const ATTEMPT_TIMEOUT_MS = 10_000;\n",
+          "suffix": "\n\nexport interface SystemOneRequest {\n  model: s"
+        },
+        {
+          "kind": "text-position",
+          "start": 833,
+          "end": 864
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "e6d738d829fa0cda"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "8"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "// In-module semaphore: at most MAX_IN_FLIGHT requests across all clients.",
+          "prefix": ") => Promise<void>;\n  random?: () => number;\n}\n\n",
+          "suffix": "\nlet inFlight = 0;\nconst waiting: Array<() => vo"
+        },
+        {
+          "kind": "text-position",
+          "start": 1837,
+          "end": 1911
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "554fa7fc07e9dd47"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:50.695Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:50.695Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

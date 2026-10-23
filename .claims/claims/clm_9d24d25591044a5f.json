@@ -1,0 +1,59 @@
+{
+  "id": "clm_9d24d25591044a5f",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "- A value that starts with `-` takes the `=` form: `--doc-quote=\"- Retries are capped at 5 attempts\"`.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- A value that starts with `-` takes the `=` form: `--doc-quote=\"- Retries are capped at 5 attempts\"`.",
+        "prefix": "given twice; reanchor takes one span per side`.\n",
+        "suffix": "\n- `--doc <path>` with `--doc-quote` or `--doc-r"
+      },
+      {
+        "kind": "text-position",
+        "start": 6155,
+        "end": 6257
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return `${flag} needs a value; for a value starting with \"-\" use ${flag}=${ph}`;",
+          "prefix": "g);\n  const ph = o?.placeholder ?? \"<value>\";\n  ",
+          "suffix": "\n}\n\n/**\n * Validate enum-valued options and requ"
+        },
+        {
+          "kind": "text-position",
+          "start": 22882,
+          "end": 22962
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "4034f45179629ae8",
+          "semanticHash": "9625203102f58cae"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:28:03.600Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:28:03.600Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

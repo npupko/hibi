@@ -29,8 +29,50 @@ describe("remediationFor (the verdict-to-action menu)", () => {
       "reanchor",
       "retire",
     ]);
-    expect(rem?.actions[0]?.command).toBe("hibi reanchor clm_x");
+    expect(rem?.actions[0]?.command).toBe(
+      'hibi reanchor clm_x --code-file <file> --code-quote "<quote>"',
+    );
     expect(rem?.actions[2]?.command).toBe("hibi retire clm_x");
+  });
+
+  test("a changed side's reanchor command carries the located text, shell-quoted", () => {
+    const doc = remediationFor(
+      input({ doc: "changed", docText: 'Costs $29 "net"' }),
+    );
+    expect(doc?.actions.map((a) => a.command)).toEqual([
+      'hibi reanchor clm_x --doc-quote "Costs \\$29 \\"net\\""',
+      'hibi reanchor clm_x --doc-quote "Costs \\$29 \\"net\\""',
+      "hibi retire clm_x",
+    ]);
+    const ev = remediationFor(
+      input({
+        evidence: "changed",
+        evidenceSpans: [{ file: "src/a.ts", quote: "A = 50" }],
+      }),
+    );
+    expect(ev?.actions[0]?.command).toBe(
+      'hibi reanchor clm_x --code-file src/a.ts --code-quote "A = 50"',
+    );
+    const ref = remediationFor(
+      input({
+        kind: "reference",
+        evidence: "changed",
+        evidenceSpans: [{ file: "docs/b.md", quote: "- two weeks" }],
+      }),
+    );
+    expect(ref?.actions[0]?.command).toBe(
+      'hibi reanchor clm_x --ref-file docs/b.md --ref-quote="- two weeks"',
+    );
+    const both = remediationFor(input({ doc: "changed", evidence: "changed" }));
+    expect(both?.actions[0]?.command).toBe(
+      'hibi reanchor clm_x --doc-quote "<new sentence>" --code-file <file> --code-quote "<quote>"',
+    );
+    const amb = remediationFor(input({ doc: "ambiguous", docText: "x" }));
+    expect(amb?.actions[0]?.command).toBe(
+      'hibi reanchor clm_x --doc-quote "<new sentence>"',
+    );
+    const moved = remediationFor(input({ doc: "moved" }));
+    expect(moved?.actions[0]?.command).toBe("hibi reanchor clm_x");
   });
 
   test("doc changed recommends reverify-doc", () => {

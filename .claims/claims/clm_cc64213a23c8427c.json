@@ -1,0 +1,59 @@
+{
+  "id": "clm_cc64213a23c8427c",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "`hibi init --instructions CLAUDE.md` adds the instruction line (recipe 1).",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi init --instructions CLAUDE.md` adds the instruction line (recipe 1).",
+        "prefix": "lows `CLAUDE.md`, `AGENTS.md`, or any document. ",
+        "suffix": " Setup: `CLAUDE.md` says \"Auth tokens expire aft"
+      },
+      {
+        "kind": "text-position",
+        "start": 21989,
+        "end": 22063
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const r = await appendInstructionLine(",
+          "prefix": "nsFile !== undefined) {\n        try {\n          ",
+          "suffix": "\n            absPath(anchorRoot, instructionsFil"
+        },
+        {
+          "kind": "text-position",
+          "start": 15576,
+          "end": 15614
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "cea49a5ff6ca2c62",
+          "semanticHash": "8d7fc4d69883fcb8"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:12.538Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:12.538Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,111 @@
+{
+  "id": "clm_7d862184145b40f2",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "```json\n{ \"doc\": \"docs/pricing.md\",\n  \"summary\": { \"regions\": 12, \"covered\": 3, \"uncovered\": 9,\n               \"byKind\": { \"code\": 2, \"reference\": 0, \"attested\": 1, \"unverifiable\": 1,\n                           \"not-a-claim\": 3, \"unsure\": 1, \"pending\": 1 },\n               \"requests\": 1 },\n  \"rows\": [\n    { \"region\": { \"id\": \"r4\", \"line\": 42, \"kind\": \"sentence\", \"text\": \"Pro costs $29/month.\" },\n      \"claimId\": \"clm_…\" | null,\n      \"kind\": \"code | reference | attested | unverifiable | not-a-claim | unsure | pending\",\n      \"probability\": 0.91,\n      \"duplicateOf\": \"clm_…\" | null } ] }\n```",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```json\n{ \"doc\": \"docs/pricing.md\",\n  \"summary\": { \"regions\": 12, \"covered\": 3, \"uncovered\": 9,\n               \"byKind\": { \"code\": 2, \"reference\": 0, \"attested\": 1, \"unverifiable\": 1,\n                           \"not-a-claim\": 3, \"unsure\": 1, \"pending\": 1 },\n               \"requests\": 1 },\n  \"rows\": [\n    { \"region\": { \"id\": \"r4\", \"line\": 42, \"kind\": \"sentence\", \"text\": \"Pro costs $29/month.\" },\n      \"claimId\": \"clm_…\" | null,\n      \"kind\": \"code | reference | attested | unverifiable | not-a-claim | unsure | pending\",\n      \"probability\": 0.91,\n      \"duplicateOf\": \"clm_…\" | null } ] }\n```",
+        "prefix": "e is not asked about covered regions.\n\nOutput:\n\n",
+        "suffix": "\n\n- A covered row has the claim's `claimId` and "
+      },
+      {
+        "kind": "text-position",
+        "start": 49685,
+        "end": 50281
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "regions: number;\n  covered: number;\n  uncovered: number;\n  byKind: Record<AuditKind, number>;\n  requests: number;",
+          "prefix": "ng | null;\n}\n\nexport interface AuditSummary {\n  ",
+          "suffix": "\n}\n\nexport interface AuditReport {\n  doc: string"
+        },
+        {
+          "kind": "text-position",
+          "start": 4339,
+          "end": 4452
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "interface_body",
+          "structuralHash": "a5d8c7d96738e665",
+          "semanticHash": "7c335e93df4fc7a5"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "region: { id: string; line: number; kind: RegionKind; text: string };",
+          "prefix": "Kind, number>;\n}\n\nexport interface AuditRow {\n  ",
+          "suffix": "\n  claimId: string | null;\n  kind: AuditKind;\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 3864,
+          "end": 3933
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "property_signature",
+          "structuralHash": "924ae3fb556fd65d",
+          "semanticHash": "6e53f92722a4f61a"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "duplicateOf: string | null;\n}",
+          "prefix": "udge error: <message>`. */\n  reason?: string;\n  ",
+          "suffix": "\n\nexport interface AuditSummary {\n  regions: num"
+        },
+        {
+          "kind": "text-position",
+          "start": 4274,
+          "end": 4303
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "interface_body",
+          "structuralHash": "226af55c3aacf57e",
+          "semanticHash": "a59b979294d67731"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.179Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.179Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,88 @@
+{
+  "id": "clm_f83d9fba4b1b47d1",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| a side `orphaned` | `reanchor` (runs `hibi reanchor <id> --suggest` to find the span), `retire`, `supersede` |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| a side `orphaned` | `reanchor` (runs `hibi reanchor <id> --suggest` to find the span), `retire`, `supersede` |",
+        "prefix": "u.\n\n| condition | actions, in order |\n|---|---|\n",
+        "suffix": "\n| both sides `changed` | `reconcile`, `reanchor"
+      },
+      {
+        "kind": "text-position",
+        "start": 4817,
+        "end": 4929
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "actions: [reanchorSuggest(id), retire(id), supersede()],",
+          "prefix": "  return {\n      recommended: \"reanchor\",\n      ",
+          "suffix": "\n    };\n  }\n  if (docChanged && evidenceChanged)"
+        },
+        {
+          "kind": "text-position",
+          "start": 9310,
+          "end": 9366
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "319c3da9ccea1ec7",
+          "semanticHash": "22c62f3a4683079d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[reanchorSuggest(id),retire(id),supersede()]"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "command: `hibi reanchor ${id} --suggest`,",
+          "prefix": "ions, then reanchor with an explicit span\",\n    ",
+          "suffix": "\n  };\n}\n\nfunction retire(id: string): Remediatio"
+        },
+        {
+          "kind": "text-position",
+          "start": 6071,
+          "end": 6112
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "787e166f87e46da5",
+          "semanticHash": "3bafbfb7b735f257"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:13.541Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:13.541Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

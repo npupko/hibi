@@ -1,0 +1,82 @@
+{
+  "id": "clm_ff9e4abd93d74468",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "4. A thematic break line (only `---`, `***`, or `___`, outside a fence, not frontmatter) separates blocks and is not a region.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "4. A thematic break line (only `---`, `***`, or `___`, outside a fence, not frontmatter) separates blocks and is not a region.",
+        "prefix": " `<br/>`) separates blocks and is not a region.\n",
+        "suffix": "\n5. A fenced block is one block and one `fenced`"
+      },
+      {
+        "kind": "text-position",
+        "start": 48236,
+        "end": 48362
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const THEMATIC_BREAK = /^(?:-{3,}|\\*{3,}|_{3,})$/;",
+          "prefix": " only `---`, `***` or `___` (three or more). */\n",
+          "suffix": "\n/** A table separator row: cells of dashes with"
+        },
+        {
+          "kind": "text-position",
+          "start": 2900,
+          "end": 2957
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b879b2ad137802b7",
+          "semanticHash": "d4625dd76cf36f22"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "THEMATIC_BREAK.test(trimmed));",
+          "prefix": " 0 ||\n        TAG_LINE.test(trimmed) ||\n        ",
+          "suffix": "\n    if (boundary) {\n      if (start >= 0) {\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 4120,
+          "end": 4150
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "parenthesized_expression",
+          "structuralHash": "d9e8460f55ffcd27",
+          "semanticHash": "2eab80245e74a29e"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:06.832Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:06.832Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_8297fbc5fa4a4b0e",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "`hibi reanchor <id>` while the sibling is not checked out keeps that evidence side as stored and says so in `warnings[]` (`evidence side api:src/limits.ts kept unchanged: sibling repo \"api\" is not checked out at ../api`); the doc side is still re-resolved.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi reanchor <id>` while the sibling is not checked out keeps that evidence side as stored and says so in `warnings[]` (`evidence side api:src/limits.ts kept unchanged: sibling repo \"api\" is not checked out at ../api`); the doc side is still re-resolved.",
+        "prefix": "lable` with `evidence: path escapes its root`.\n\n",
+        "suffix": "\n\n`hibi list --path api:src/limits.ts` finds the"
+      },
+      {
+        "kind": "text-position",
+        "start": 19812,
+        "end": 20068
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`evidence side ${bundle.file} kept unchanged: ${side.reasons.join(\"; \")}`,",
+          "prefix": "e === \"unavailable\") {\n    warnings.push(\n      ",
+          "suffix": "\n    );\n    return { bundle, relocated: false };"
+        },
+        {
+          "kind": "text-position",
+          "start": 8044,
+          "end": 8118
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "15206616c1e3e21f",
+          "semanticHash": "335183d9904e91c0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"; \""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:11.776Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:11.776Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

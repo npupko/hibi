@@ -1,0 +1,82 @@
+{
+  "id": "clm_ed582bbc82c241dd",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "Then edit `.claims/config.json` when evidence lives in another repo or some documents should not be audited:",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Then edit `.claims/config.json` when evidence lives in another repo or some documents should not be audited:",
+        "prefix": "`; exit 2 means a sentence in it is stale.\n```\n\n",
+        "suffix": "\n\n```json\n{\n  \"version\": \"v4\",\n  \"repos\": { \"api"
+      },
+      {
+        "kind": "text-position",
+        "start": 1194,
+        "end": 1302
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Cross-repository aliases: alias to a path relative to the repository root.",
+          "prefix": "\n    version: z.literal(MODEL_VERSION),\n    /** ",
+          "suffix": " */\n    repos: z.record(z.string(), z.string())."
+        },
+        {
+          "kind": "text-position",
+          "start": 11181,
+          "end": 11255
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "26b8466f2586023b"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Globs of documents `audit` refuses; nothing else reads it.",
+          "prefix": ")).default({}),\n    judge: JudgeConfig,\n    /** ",
+          "suffix": " */\n    ignore: z.array(z.string()).default([]),"
+        },
+        {
+          "kind": "text-position",
+          "start": 11348,
+          "end": 11406
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "88a339bbfedf24cf"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:07.162Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:07.162Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

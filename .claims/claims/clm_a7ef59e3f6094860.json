@@ -1,0 +1,140 @@
+{
+  "id": "clm_a7ef59e3f6094860",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 59 | the splitter skips frontmatter (only with a closing `---`), treats tag-only lines and thematic breaks as block boundaries that are not regions, drops table separator rows, never splits a heading, and never splits inside inline code, a list marker, or before a table row's closing `|`; audit chunks whose regions change under these rules get a new request key and are asked again once |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 59 | the splitter skips frontmatter (only with a closing `---`), treats tag-only lines and thematic breaks as block boundaries that are not regions, drops table separator rows, never splits a heading, and never splits inside inline code, a list marker, or before a table row's closing `|`; audit chunks whose regions change under these rules get a new request key and are asked again once |",
+        "prefix": "xpired` or in the per-document summary counts |\n",
+        "suffix": "\n| 60 | a single-value flag given twice is an er"
+      },
+      {
+        "kind": "text-position",
+        "start": 83818,
+        "end": 84210
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (piece.kind === \"table-row\" && /^[\\s|]*$/.test(slice.slice(cut))) {",
+          "prefix": "ng pipe stays with the row's last sentence.\n    ",
+          "suffix": "\n      continue;\n    }\n    const r = tight(text,"
+        },
+        {
+          "kind": "text-position",
+          "start": 8788,
+          "end": 8858
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "dac576cb8a739af9",
+          "semanticHash": "3cabbe718fd5049f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"table-row\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (TABLE_SEPARATOR.test(first)) return;",
+          "prefix": "const first = text.slice(start, nl).trim();\n    ",
+          "suffix": "\n    out.push({ start, end, kind: pieceKind(firs"
+        },
+        {
+          "kind": "text-position",
+          "start": 6975,
+          "end": 7015
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "b2e9223915173af6",
+          "semanticHash": "bad71b08f9c4429f"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (piece.kind === \"fenced\" || piece.kind === \"heading\") {",
+          "prefix": "ntences(text: string, piece: Piece): Span[] {\n  ",
+          "suffix": "\n    const whole = tight(text, piece.start, piec"
+        },
+        {
+          "kind": "text-position",
+          "start": 8023,
+          "end": 8081
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "8d41dfc61c6996b9",
+          "semanticHash": "2cdf2a5b11c048aa"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"fenced\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "THEMATIC_BREAK.test(trimmed));",
+          "prefix": " 0 ||\n        TAG_LINE.test(trimmed) ||\n        ",
+          "suffix": "\n    if (boundary) {\n      if (start >= 0) {\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 4120,
+          "end": 4150
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "parenthesized_expression",
+          "structuralHash": "d9e8460f55ffcd27",
+          "semanticHash": "2eab80245e74a29e"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:04.908Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:04.908Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

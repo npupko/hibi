@@ -1,0 +1,65 @@
+{
+  "id": "clm_3e52f34cc90145d3",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "An evidence side in a sibling repo that is not checked out is kept unchanged, with a warning (section 4.1).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An evidence side in a sibling repo that is not checked out is kept unchanged, with a warning (section 4.1).",
+        "prefix": "ote, and --ref-range are for reference claims`. ",
+        "suffix": " The sentence is refreshed from the new doc span"
+      },
+      {
+        "kind": "text-position",
+        "start": 69239,
+        "end": 69346
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`evidence side ${bundle.file} kept unchanged: ${side.reasons.join(\"; \")}`,",
+          "prefix": "e === \"unavailable\") {\n    warnings.push(\n      ",
+          "suffix": "\n    );\n    return { bundle, relocated: false };"
+        },
+        {
+          "kind": "text-position",
+          "start": 8044,
+          "end": 8118
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "15206616c1e3e21f",
+          "semanticHash": "335183d9904e91c0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"; \""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:20.781Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:20.781Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_c8df0bb5d64049b1",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "| `basis` | `vouch`, `evidence`, or `ack` |",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `basis` | `vouch`, `evidence`, or `ack` |",
+        "prefix": "actor |\n| `at` | when, as an ISO 8601 instant |\n",
+        "suffix": "\n| `note` | free text; required on an `ack` |\n| "
+      },
+      {
+        "kind": "text-position",
+        "start": 649,
+        "end": 692
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const AttestationBasis = z.enum([\"vouch\", \"evidence\", \"ack\"]);",
+          "prefix": " attestation stands behind a claim (SPEC 5). */\n",
+          "suffix": "\nexport type AttestationBasis = z.infer<typeof A"
+        },
+        {
+          "kind": "text-position",
+          "start": 5288,
+          "end": 5357
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "245292834183a927",
+          "semanticHash": "bc16e51539d71031"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"vouch\",\"evidence\",\"ack\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:11.176Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:11.176Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

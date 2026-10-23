@@ -1,0 +1,88 @@
+{
+  "id": "clm_f816d990cb2b4ad1",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "| `expired` | submit evidence (attested), or ask the owner |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `expired` | submit evidence (attested), or ask the owner |",
+        "prefix": "conflict | rewrite the wrong sentence, or ack |\n",
+        "suffix": "\n\nNever rewrite a sentence to silence a flag. Ne"
+      },
+      {
+        "kind": "text-position",
+        "start": 6279,
+        "end": 6339
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "attest(id, evidenceApplies),",
+          "prefix": "    recommended: null,\n      actions: [\n        ",
+          "suffix": "\n        ...(evidenceApplies\n          ? [\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 11062,
+          "end": 11090
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "dc9cedac62ad0eed",
+          "semanticHash": "3d39fc854072946d"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"the ttl ran out; judged evidence that supports the sentence resets it\",",
+          "prefix": "itEvidence(\n                id,\n                ",
+          "suffix": "\n              ),\n            ]\n          : []),"
+        },
+        {
+          "kind": "text-position",
+          "start": 11199,
+          "end": 11271
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "c6b092c57e5eac04"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"the ttl ran out; judged evidence that supports the sentence resets it\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:33.820Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:33.820Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

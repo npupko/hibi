@@ -1,0 +1,82 @@
+{
+  "id": "clm_74ff8fa6e7ed4fe9",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It exists because the value rule compares the claim's sentence with the evidence, and `check` runs after the raw text is gone.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It exists because the value rule compares the claim's sentence with the evidence, and `check` runs after the raw text is gone.",
+        "prefix": " date found in the evidence text (section 8.5). ",
+        "suffix": " Storing the extracted values lets `check` apply"
+      },
+      {
+        "kind": "text-position",
+        "start": 19387,
+        "end": 19513
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "can apply the value rule (SPEC 8.5) without the raw text.",
+          "prefix": "and dates in the evidence text, so `check`\n   * ",
+          "suffix": "\n   */\n  values: z.array(ExtractedValue).optiona"
+        },
+        {
+          "kind": "text-position",
+          "start": 12800,
+          "end": 12857
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "49e59e39ceb61105"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    const outcome = supportsOutcome(a.result, threshold, {\n      sentence: storedValues(p.claim.sentence),\n      evidence: evidenceValues,\n    });",
+          "prefix": "dence: block,\n        at: now,\n      });\n    }\n\n",
+          "suffix": "\n    const source = declaredSourceLabel(p.claim,"
+        },
+        {
+          "kind": "text-position",
+          "start": 12608,
+          "end": 12754
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "eb179eb67aef9018",
+          "semanticHash": "e44cafbf118ba3e3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.433Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.433Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

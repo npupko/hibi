@@ -1,0 +1,82 @@
+{
+  "id": "clm_103d0d925e3345f7",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| state | `a: { text, doc, context }`, `b: { text, doc, context }` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| state | `a: { text, doc, context }`, `b: { text, doc, context }` |",
+        "prefix": "the Choice said.\n\n### conflict\n\n| | |\n|---|---|\n",
+        "suffix": "\n| `same_subject` | Noul: are both sentences abo"
+      },
+      {
+        "kind": "text-position",
+        "start": 7771,
+        "end": 7839
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "a: { text: a.text, doc: a.doc, context: a.context },",
+          "prefix": "uest {\n  return {\n    model,\n    state: {\n      ",
+          "suffix": "\n      b: { text: b.text, doc: b.doc, context: b"
+        },
+        {
+          "kind": "text-position",
+          "start": 11393,
+          "end": 11445
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "866b61e1aed5d90d",
+          "semanticHash": "84f924badcbc1332"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "b: { text: b.text, doc: b.doc, context: b.context },",
+          "prefix": "a.text, doc: a.doc, context: a.context },\n      ",
+          "suffix": "\n    },\n    questions: conflictFile.questions,\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 11452,
+          "end": 11504
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "866b61e1aed5d90d",
+          "semanticHash": "ea6221ac30a2d1b0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:37.980Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:37.980Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

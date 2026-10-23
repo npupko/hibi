@@ -1,0 +1,65 @@
+{
+  "id": "clm_dc42bdb6604146a2",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "An `agent:` or `process:` vouch is recorded and does not count. An `ack` never counts.",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An `agent:` or `process:` vouch is recorded and does not count. An `ack` never counts.",
+        "prefix": "\n- a `vouch` whose actor starts with `human:`.\n\n",
+        "suffix": " A claim with a `ttl` and no counting attestatio"
+      },
+      {
+        "kind": "text-position",
+        "start": 2230,
+        "end": 2316
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return a.basis === \"vouch\" && a.by.startsWith(\"human:\");",
+          "prefix": " {\n  if (a.basis === \"evidence\") return true;\n  ",
+          "suffix": "\n}\n\n/**\n * The newest counting attestation, or u"
+        },
+        {
+          "kind": "text-position",
+          "start": 649,
+          "end": 705
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "f5a90e37e56fc368",
+          "semanticHash": "e13e9b92ec8f5bcc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"vouch\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:12.269Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:12.269Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

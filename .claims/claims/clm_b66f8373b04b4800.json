@@ -1,0 +1,116 @@
+{
+  "id": "clm_b66f8373b04b4800",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `conflict` | the pair is pending; each claim warns with one reason, `conflict checks pending: <n>`, counting its pending pairs |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `conflict` | the pair is pending; each claim warns with one reason, `conflict checks pending: <n>`, counting its pending pairs |",
+        "prefix": "ten for it, and its `reasons` carry the label |\n",
+        "suffix": "\n| `triage` | the regions of that request are `p"
+      },
+      {
+        "kind": "text-position",
+        "start": 5397,
+        "end": 5527
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pending.push(pair.pairId);",
+          "prefix": "      if (label === undefined) throw e;\n        ",
+          "suffix": "\n        outcomes[index] = {\n          pairId: p"
+        },
+        {
+          "kind": "text-position",
+          "start": 10633,
+          "end": 10659
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "7426f1729a85649a",
+          "semanticHash": "c573501e918cfa02"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pendingCount.set(id, (pendingCount.get(id) ?? 0) + 1);",
+          "prefix": "or (const id of pair.pairId.split(\":\")) {\n      ",
+          "suffix": "\n    }\n  }\n  const documents = await store.allDo"
+        },
+        {
+          "kind": "text-position",
+          "start": 13884,
+          "end": 13938
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "dd872658bfce59e8",
+          "semanticHash": "92708b2483985586"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`conflict checks pending: ${pendingPairs}`",
+          "prefix": "}: ${f.reason}`),\n      ...(pendingPairs > 0 ? [",
+          "suffix": "] : []),\n    ];\n    const findings: ClaimFinding"
+        },
+        {
+          "kind": "text-position",
+          "start": 17228,
+          "end": 17270
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "68f1f1bb13edeef0",
+          "semanticHash": "e1f3d85fb6fe6e9a"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:36.748Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:45:27.064Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:36.748Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

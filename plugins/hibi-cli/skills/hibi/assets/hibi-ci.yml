@@ -7,10 +7,15 @@
 # (falling back to `bunx @npupko/hibi` when no binary is on PATH).
 #
 # The judge reads TYPESAFE_API_KEY from the step environment. Without it,
-# judgments not already cached in the committed .claims/judge/ are pending,
-# which warns and does not fail the build.
+# judgments not already in the .claims/judge/ cache are pending, which warns
+# and does not fail the build.
 #
-# Pin to a released tag or a commit SHA for supply-chain safety.
+# .claims/judge/ is a local cache and is not committed (`hibi init` writes
+# .claims/.gitignore with `judge/`). The actions/cache step below restores it
+# between runs, keyed on the claim files.
+#
+# Pin to a released tag or a commit SHA for supply-chain safety, and bump the
+# tag when you upgrade hibi.
 
 name: hibi
 
@@ -37,12 +42,19 @@ jobs:
       #     repository: your-org/api
       #     path: api
 
+      - name: Restore the judge cache
+        uses: actions/cache@v4
+        with:
+          path: .claims/judge # with working-directory, prefix this path and the hashFiles pattern with it
+          key: hibi-judge-${{ hashFiles('.claims/claims/**') }}
+          restore-keys: hibi-judge-
+
       - name: Check documentation claims
-        uses: npupko/hibi@v0
+        uses: npupko/hibi@v0.6.0
         env:
           TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
         with:
           fail-on: gating # gating | warn | never
-          # since: origin/${{ github.base_ref }}  # `check --since <ref>`: only claims touching changed files
+          # since: origin/${{ github.base_ref }}  # `check --since <ref>`: only claims touching changed files; pull_request only (base_ref is empty on push, and an unknown ref exits 1)
           # doc: CLAUDE.md                         # `check --doc <path>`: one document; expired claims gate
           # working-directory: "."                 # directory holding the .claims store (handbook with siblings)

@@ -1,0 +1,105 @@
+{
+  "id": "clm_499057ddbd88436e",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "code",
+  "sentence": "Without `TYPESAFE_API_KEY`, no test calls TypeSafe; with it set, one test in `test/judge-jev.test.ts` makes a live `supports` call.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Without `TYPESAFE_API_KEY`, no test calls TypeSafe; with it set, one test in `test/judge-jev.test.ts` makes a live `supports` call.",
+        "prefix": "must exist in the code.\n\n## The judge in tests\n\n",
+        "suffix": " Two layers stand in for TypeSafe:\n\n- `FakeJudge"
+      },
+      {
+        "kind": "text-position",
+        "start": 3524,
+        "end": 3655
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "test/judge-jev.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "test.skipIf(!process.env.TYPESAFE_API_KEY?.trim())(",
+          "prefix": "_FLIGHT);\n  });\n});\n\ndescribe(\"live\", () => {\n  ",
+          "suffix": "\n    \"supports on an obvious pair\",\n    async ()"
+        },
+        {
+          "kind": "text-position",
+          "start": 21410,
+          "end": 21461
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "0df7244e0f27a870",
+          "semanticHash": "3b2a83992dd24361"
+        }
+      ]
+    },
+    {
+      "file": "test/judge-jev.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const judge = new JevJudge({ model: MODEL, http: new TypeSafeHttp() });",
+          "prefix": "ts on an obvious pair\",\n    async () => {\n      ",
+          "suffix": "\n      const out = await judge.supports({\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 21521,
+          "end": 21592
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "3db9f9c0c930f0ed",
+          "semanticHash": "ce94567180a73251"
+        }
+      ]
+    },
+    {
+      "file": "test/judge-jev.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const out = await judge.supports({",
+          "prefix": "odel: MODEL, http: new TypeSafeHttp() });\n      ",
+          "suffix": "\n        sentence: \"The default port is 8080.\",\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 21599,
+          "end": 21633
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "c6de51d3a8a8a9dd",
+          "semanticHash": "006c3f559991e22d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:36.668Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:36.668Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_a574d7e3d9164e76",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "Its verdict also carries a `worklist: …` reason.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Its verdict also carries a `worklist: …` reason.",
+        "prefix": "h the first matching reason in the order above. ",
+        "suffix": " For an expired `code` or `reference` claim, tha"
+      },
+      {
+        "kind": "text-position",
+        "start": 7046,
+        "end": 7094
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "v.reasons.push(worklistLabel(reason, c.kind, c.id));",
+          "prefix": "ndefined;\n    if (reason !== undefined) {\n      ",
+          "suffix": "\n      const last = newestEntry(\n        entries"
+        },
+        {
+          "kind": "text-position",
+          "start": 18210,
+          "end": 18262
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "dd98e41dde59f88a",
+          "semanticHash": "653fcbd989ba5c96"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:15.704Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:15.704Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

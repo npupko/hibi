@@ -1,0 +1,59 @@
+{
+  "id": "clm_ba84e8efdab34804",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "`--by` is required unless every item has `by`.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--by` is required unless every item has `by`.",
+        "prefix": "s in it are stored. `summary`: one stored line. ",
+        "suffix": " Attested claims only. `results[].judge`: `suppo"
+      },
+      {
+        "kind": "text-position",
+        "start": 4827,
+        "end": 4873
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "no \"by\"; pass --by <actor> or a \"by\" key",
+          "prefix": "imId === \"string\" ? ` (${item.claimId})` : \"\"}: ",
+          "suffix": ": human:<id>, agent:<name>, or process:<name>`,\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 29408,
+          "end": 29448
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "b73823fae5ae2787"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:33.178Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:33.178Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

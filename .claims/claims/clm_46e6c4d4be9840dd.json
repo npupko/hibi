@@ -1,0 +1,94 @@
+{
+  "id": "clm_46e6c4d4be9840dd",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "One threshold, `judge.threshold`, default 0.8, applied to Choice confidence `(p_max - 1/n) / (1 - 1/n)`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "One threshold, `judge.threshold`, default 0.8, applied to Choice confidence `(p_max - 1/n) / (1 - 1/n)`.",
+        "prefix": " own context.\n\n### 8.4 Thresholds and outcomes\n\n",
+        "suffix": " Noul confidence is `|2p - 1|` when one is neede"
+      },
+      {
+        "kind": "text-position",
+        "start": 36461,
+        "end": 36565
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "DEFAULT_JUDGE_THRESHOLD = 0.8",
+          "prefix": " new store's config (SPEC 8.4). */\nexport const ",
+          "suffix": ";\n\n// ── Ids and actors ────────────────────────"
+        },
+        {
+          "kind": "text-position",
+          "start": 624,
+          "end": 653
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "a56b92b9befadadb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.8"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return (pMax - 1 / n) / (1 - 1 / n);",
+          "prefix": "return 1;\n  const pMax = Math.max(...values);\n  ",
+          "suffix": "\n}\n\n/** Noul confidence per the TypeSafe docs: |"
+        },
+        {
+          "kind": "text-position",
+          "start": 4512,
+          "end": 4548
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "ee938e3bf370f683",
+          "semanticHash": "f420da2f45361abd"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:16.928Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:16.928Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

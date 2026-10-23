@@ -1,0 +1,88 @@
+{
+  "id": "clm_96efd16c76194b35",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Only money, unit-bearing numbers (`%`, durations), versions, and dates count.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Only money, unit-bearing numbers (`%`, durations), versions, and dates count.",
+        "prefix": "n id, a line number) says too little to refute. ",
+        "suffix": " The rule fires when the relation is not `does_n"
+      },
+      {
+        "kind": "text-position",
+        "start": 41442,
+        "end": 41519
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const SUPPORTS_EXCLUDED_GROUPS: readonly string[] = [\"number\"];",
+          "prefix": ", a line number) says too little to refute.\n */\n",
+          "suffix": "\n\nfunction fmt(p: number): string {\n  return p.t"
+        },
+        {
+          "kind": "text-position",
+          "start": 2593,
+          "end": 2663
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b839a95afff47bf7",
+          "semanticHash": "f01dab213365856a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"number\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ exclude: SUPPORTS_EXCLUDED_GROUPS },",
+          "prefix": "ap((v) => ({ ...v, raw: v.normalized })),\n      ",
+          "suffix": "\n    );\n    if (cmp.differs && cmp.label !== und"
+        },
+        {
+          "kind": "text-position",
+          "start": 3994,
+          "end": 4032
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "7b2cfa555de4b353",
+          "semanticHash": "d40d282e00a1d885"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:18.384Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:18.384Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

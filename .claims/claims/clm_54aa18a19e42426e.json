@@ -1,0 +1,75 @@
+{
+  "id": "clm_54aa18a19e42426e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Choice `relation` uses the citation-check cookbook's option names `supports / contradicts / says_nothing`, which the adapter maps to `supports / refutes / does_not_address`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Choice `relation` uses the citation-check cookbook's option names `supports / contradicts / says_nothing`, which the adapter maps to `supports / refutes / does_not_address`.",
+        "prefix": "m, claim_context, evidence, evidence_source }`. ",
+        "suffix": " A Noul `addresses` accompanies it. Code rule: i"
+      },
+      {
+        "kind": "text-position",
+        "start": 33729,
+        "end": 33902
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/questions/supports.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"relationNames\": {\n    \"supports\": \"supports\",\n    \"contradicts\": \"refutes\",\n    \"says_nothing\": \"does_not_address\"\n  }",
+          "prefix": "t on what `claim` asserts\"\n      }\n    }\n  },\n  ",
+          "suffix": "\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 1413,
+          "end": 1532
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const names = supportsFile.relationNames as Record<string, SupportsRelation>;",
+          "prefix": "tsAnswers(answers: Answers): SupportsResult {\n  ",
+          "suffix": "\n  const raw = choice<string>(answers, \"relation"
+        },
+        {
+          "kind": "text-position",
+          "start": 13245,
+          "end": 13322
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "6cda85fcd8270a6b",
+          "semanticHash": "6acdb1eef861e914"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:52.102Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:52.102Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

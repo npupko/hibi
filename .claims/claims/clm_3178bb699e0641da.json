@@ -1,0 +1,94 @@
+{
+  "id": "clm_3178bb699e0641da",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It is empty for `attested`, which requires `ttl`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It is empty for `attested`, which requires `ttl`.",
+        "prefix": " and exactly one document span for `reference`. ",
+        "suffix": " Every selector bundle has at least one selector"
+      },
+      {
+        "kind": "text-position",
+        "start": 16409,
+        "end": 16458
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "message: \"an attested claim has no evidence spans\",",
+          "prefix": "ustom\",\n          path: [\"evidence\"],\n          ",
+          "suffix": "\n        });\n      }\n      if (c.ttl === undefin"
+        },
+        {
+          "kind": "text-position",
+          "start": 9843,
+          "end": 9894
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "51df189e37ddee69"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"an attested claim has no evidence spans\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "message: \"an attested claim requires a ttl\",",
+          "prefix": "e: \"custom\",\n          path: [\"ttl\"],\n          ",
+          "suffix": "\n        });\n      }\n    }\n  })\n  .meta({ id: \"C"
+        },
+        {
+          "kind": "text-position",
+          "start": 10032,
+          "end": 10076
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "8455d8587023ce38"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"an attested claim requires a ttl\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:58.853Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:58.853Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

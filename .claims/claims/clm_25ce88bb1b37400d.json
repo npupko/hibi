@@ -1,0 +1,94 @@
+{
+  "id": "clm_25ce88bb1b37400d",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "| `judge.threshold` | the one confidence threshold for every judgment, from 0 to 1 |",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `judge.threshold` | the one confidence threshold for every judgment, from 0 to 1 |",
+        "prefix": " id; an alias such as `jev-latest` is refused |\n",
+        "suffix": "\n| `ignore` | globs of documents `audit` refuses"
+      },
+      {
+        "kind": "text-position",
+        "start": 9568,
+        "end": 9652
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".min(0, { error: \"judge.threshold must be a number in [0, 1]\" })",
+          "prefix": "ge.threshold must be a number in [0, 1]\" })\n    ",
+          "suffix": "\n    .max(1, {\n      error: \"judge.threshold mus"
+        },
+        {
+          "kind": "text-position",
+          "start": 10886,
+          "end": 10950
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "726d8def3d254e53",
+          "semanticHash": "edb1244c22fb2dac"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".max(1, {",
+          "prefix": "ge.threshold must be a number in [0, 1]\" })\n    ",
+          "suffix": "\n      error: \"judge.threshold must be a number "
+        },
+        {
+          "kind": "text-position",
+          "start": 10955,
+          "end": 10964
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "895da41b10c8c83b",
+          "semanticHash": "6720cb1d2dac5924"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:04.913Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:04.913Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

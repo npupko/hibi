@@ -1,0 +1,94 @@
+{
+  "id": "clm_8c32f5fb8a914fa7",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "| `duplicate` | nothing on the verdict; see below | none |",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `duplicate` | nothing on the verdict; see below | none |",
+        "prefix": "laim's pairs the judge did not answer | warns |\n",
+        "suffix": "\n\n`probability` is the judge's probability for `"
+      },
+      {
+        "kind": "text-position",
+        "start": 5450,
+        "end": 5508
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "} else if (decision.outcome === \"duplicate\") {",
+          "prefix": "  findings.push(finding);\n        }\n      }\n    ",
+          "suffix": "\n      for (const [self, other] of [\n        [pa"
+        },
+        {
+          "kind": "text-position",
+          "start": 12110,
+          "end": 12156
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "fac515856d120abd",
+          "semanticHash": "025ec420aea4727d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"duplicate\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "conflicts: live && pass !== undefined ? conflictsFor(pass, c.id) : [],",
+          "prefix": "Findings = {\n      judge: outcome?.state,\n      ",
+          "suffix": "\n      warnings,\n      reasons: [\n        ...(ou"
+        },
+        {
+          "kind": "text-position",
+          "start": 17359,
+          "end": 17429
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "8f994536793a1c39",
+          "semanticHash": "793bde7436a13ab8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:26.417Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:26.417Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

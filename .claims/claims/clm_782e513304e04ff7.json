@@ -1,0 +1,94 @@
+{
+  "id": "clm_782e513304e04ff7",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "When either sentence changes, the ack no longer matches and the pair is judged again.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "When either sentence changes, the ack no longer matches and the pair is judged again.",
+        "prefix": "come is `acked` and it neither gates nor warns. ",
+        "suffix": " An ack never resets a ttl. Any actor may ack; s"
+      },
+      {
+        "kind": "text-position",
+        "start": 7559,
+        "end": 7644
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ack.sentenceHashes[0] === hashes[0] &&",
+          "prefix": "&\n        ack.pairId === pair.pairId &&\n        ",
+          "suffix": "\n        ack.sentenceHashes[1] === hashes[1]\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 8053,
+          "end": 8091
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "cd7c4eb66c1b6ed9",
+          "semanticHash": "2d3b8e1d4389ba2f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ack.sentenceHashes[1] === hashes[1]",
+          "prefix": " ack.sentenceHashes[0] === hashes[0] &&\n        ",
+          "suffix": "\n      ) {\n        return true;\n      }\n    }\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 8100,
+          "end": 8135
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "5860afbc714c43ea",
+          "semanticHash": "04bdc04a9a8c5f09"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:27.200Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:27.200Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

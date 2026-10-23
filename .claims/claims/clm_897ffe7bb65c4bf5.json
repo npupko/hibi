@@ -1,0 +1,88 @@
+{
+  "id": "clm_897ffe7bb65c4bf5",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "`--overview` renders a per-document table in human output.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--overview` renders a per-document table in human output.",
+        "prefix": "ompact|json|json-pretty` or `--json` overrides. ",
+        "suffix": "\n\n## Next\n\n<CardGroup cols={2}>\n  <Card title=\"A"
+      },
+      {
+        "kind": "text-position",
+        "start": 13582,
+        "end": 13640
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Render the per-document table instead of the per-claim report (human output).\",",
+          "prefix": "\n    name: \"overview\",\n    type: \"boolean\",\n    ",
+          "suffix": "\n  },\n  {\n    name: \"fail-on\",\n    type: \"string"
+        },
+        {
+          "kind": "text-position",
+          "start": 5206,
+          "end": 5292
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "49ae89aa8b36d697"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Render the per-document table instead of the per-claim report (human output).\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (values.overview) {",
+          "prefix": "  await emit(mode, value, async () => {\n        ",
+          "suffix": "\n          const [claims, config] = await Promis"
+        },
+        {
+          "kind": "text-position",
+          "start": 20619,
+          "end": 20641
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "56336c146fc595f0",
+          "semanticHash": "5f9a700fe5abc3a0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:17.907Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:17.907Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

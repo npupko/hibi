@@ -1,0 +1,82 @@
+{
+  "id": "clm_465271fe30684d0b",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 39 | `check --doc` on a path with no registered claims (retired claims do not count) exits 1 and points to `hibi audit --doc` |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 39 | `check --doc` on a path with no registered claims (retired claims do not count) exits 1 and points to `hibi audit --doc` |",
+        "prefix": " `evidence` action only for `attested` claims |\n",
+        "suffix": "\n| 40 | every user path is normalized to a POSIX"
+      },
+      {
+        "kind": "text-position",
+        "start": 79689,
+        "end": 79818
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`no claims are registered for ${doc}; run hibi audit --doc ${doc}`,",
+          "prefix": "if (!live) {\n        throw new Error(\n          ",
+          "suffix": "\n        );\n      }\n      onlyFiles = scope.file"
+        },
+        {
+          "kind": "text-position",
+          "start": 12797,
+          "end": 12864
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "1249b007122c9694",
+          "semanticHash": "d6a9d9f48dc91234"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "// Retired claims do not count: a document with only those is unregistered.",
+          "prefix": "e = await documentScope(this.store, doc);\n      ",
+          "suffix": "\n      const live = claims.some(\n        (c) => "
+        },
+        {
+          "kind": "text-position",
+          "start": 12545,
+          "end": 12620
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "2f5474541fb1219f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:24.382Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:24.382Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

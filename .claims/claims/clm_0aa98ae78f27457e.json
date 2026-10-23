@@ -1,0 +1,94 @@
+{
+  "id": "clm_0aa98ae78f27457e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 51 | a claim whose conflict pairs are pending (judge unavailable or judge error) gets one reason `conflict checks pending: <n>`, not one per pair; which of the two applies is stated only in `pairs[]`; `summary.conflictPass.pending` keeps the total |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 51 | a claim whose conflict pairs are pending (judge unavailable or judge error) gets one reason `conflict checks pending: <n>`, not one per pair; which of the two applies is stated only in `pairs[]`; `summary.conflictPass.pending` keeps the total |",
+        "prefix": "et a new request key and are asked again once |\n",
+        "suffix": "\n| 52 | `.claims/judge/` is a local cache and is"
+      },
+      {
+        "kind": "text-position",
+        "start": 82032,
+        "end": 82283
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...(pendingPairs > 0 ? [`conflict checks pending: ${pendingPairs}`] : []),",
+          "prefix": "onflict with ${f.claimId}: ${f.reason}`),\n      ",
+          "suffix": "\n    ];\n    const findings: ClaimFindings = {\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 17204,
+          "end": 17278
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "6c2108a1064853f1",
+          "semanticHash": "fb32884413c11222"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pending: pass?.pending.length ?? 0,",
+          "prefix": "? 0,\n      requests: pass?.requests ?? 0,\n      ",
+          "suffix": "\n      scope: pass?.scope ?? \"store\",\n    },\n  }"
+        },
+        {
+          "kind": "text-position",
+          "start": 21663,
+          "end": 21698
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "38726dc43bb0e132",
+          "semanticHash": "c883c519d51ce216"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:04.236Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:04.236Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

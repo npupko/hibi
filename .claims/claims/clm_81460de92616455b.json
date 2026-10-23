@@ -1,0 +1,59 @@
+{
+  "id": "clm_81460de92616455b",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "A `suggested` claim that would gate or warn gets the label `suggested claim: never gates or warns`.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `suggested` claim that would gate or warn gets the label `suggested claim: never gates or warns`.",
+        "prefix": "uggested` or `retired` claim | never | never |\n\n",
+        "suffix": "\n\n## Exit codes\n\n| code | meaning |\n|---|---|\n| "
+      },
+      {
+        "kind": "text-position",
+        "start": 3667,
+        "end": 3766
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons.push(`${enforcement} claim: never gates or warns`);",
+          "prefix": "= \"enforced\") {\n    if (gates || warns) {\n      ",
+          "suffix": "\n    }\n    return { gates: false, warns: false, "
+        },
+        {
+          "kind": "text-position",
+          "start": 4138,
+          "end": 4197
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "0d4c05c5526a9656",
+          "semanticHash": "a952933e63526c0c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:12.549Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:12.549Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

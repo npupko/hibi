@@ -1,0 +1,88 @@
+{
+  "id": "clm_19791b62bad24cb5",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "At check time hibi re-reads each file from the working tree and locates the span again.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "At check time hibi re-reads each file from the working tree and locates the span again.",
+        "prefix": "re holds the selectors, not a copy of the file. ",
+        "suffix": " `check` never reads file contents from git hist"
+      },
+      {
+        "kind": "text-position",
+        "start": 857,
+        "end": 944
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const text = (await exists(abs)) ? await readFile(abs, \"utf8\") : null;",
+          "prefix": " = isAbsolute(rel) ? rel : join(root, rel);\n    ",
+          "suffix": "\n    fileCache.set(rel, text);\n    return text;\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 14575,
+          "end": 14645
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "a4db8776c588e519",
+          "semanticHash": "d4335ba4d7d03a66"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"utf8\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const sides = resolveClaimSides(c, files, { ast: options.ast });",
+          "prefix": " = { doc: docText, evidence, unavailable };\n    ",
+          "suffix": "\n\n    const entries = supports.get(c.id) ?? [];\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 15723,
+          "end": 15787
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "5a6b0a6825b161e4",
+          "semanticHash": "175383615483a86b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:25.774Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:25.774Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

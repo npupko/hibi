@@ -1,0 +1,59 @@
+{
+  "id": "clm_7785f37be81a488f",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "| `by` | required (here or `--by`); use `agent:<name>` |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `by` | required (here or `--by`); use `agent:<name>` |",
+        "prefix": "sted |\n| `owner` | actor to contact on expiry |\n",
+        "suffix": "\n| `suggest` | `true`: never gates |\n\nQuote the "
+      },
+      {
+        "kind": "text-position",
+        "start": 4029,
+        "end": 4085
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "by is required: pass --by <actor> or a by key",
+          "prefix": "if (by === undefined) {\n    errors.push(\n      \"",
+          "suffix": ", as human:<id>, agent:<name>, or process:<name>"
+        },
+        {
+          "kind": "text-position",
+          "start": 10744,
+          "end": 10789
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "8d3e7524cbeb2db6"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:32.883Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:32.883Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

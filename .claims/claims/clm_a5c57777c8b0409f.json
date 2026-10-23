@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 14149,
-        "end": 14195
+        "start": 14997,
+        "end": 15043
       }
     ]
   },
@@ -43,8 +43,21 @@
       "by": "agent:claude-dogfood",
       "at": "2026-10-22T19:12:58.031Z",
       "basis": "vouch"
+    },
+    {
+      "by": "human:mikita@peechapp.co",
+      "at": "2026-10-23T07:36:22.010Z",
+      "basis": "vouch",
+      "note": "checked TypeSafe docs: most queries complete in about 100 ms"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:28:51.930Z",
+      "basis": "evidence",
+      "note": "TypeSafe how-to-build page: most queries complete in about 100 ms",
+      "evidenceHash": "c85b3e121bee97e9a5025dadf5ebf78fd5adea3dfefcbd456cb55a816c38482d"
     }
   ],
   "createdAt": "2026-10-22T19:12:58.031Z",
-  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
 }

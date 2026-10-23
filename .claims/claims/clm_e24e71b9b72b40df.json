@@ -1,0 +1,82 @@
+{
+  "id": "clm_e24e71b9b72b40df",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Model verdicts are cached and never re-asked for the same input, so a second run with the judge cache present cannot flip them.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Model verdicts are cached and never re-asked for the same input, so a second run with the judge cache present cannot flip them.",
+        "prefix": "icts.** Deterministic passes are deterministic. ",
+        "suffix": " The cache is local (section 6).\n3. **A flag mea"
+      },
+      {
+        "kind": "text-position",
+        "start": 1895,
+        "end": 2022
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/cache.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function cacheKey(model: string, request: unknown): string {",
+          "prefix": " hex of `<model>\\n<canonical request JSON>`. */\n",
+          "suffix": "\n  return createHash(\"sha256\")\n    .update(`${mo"
+        },
+        {
+          "kind": "text-position",
+          "start": 1824,
+          "end": 1891
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "231cbf4893c4ca5e",
+          "semanticHash": "d279cf401421e030"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hit = await input.cache.get(key);",
+          "prefix": "input.model,\n    input.claim,\n    texts,\n  );\n  ",
+          "suffix": "\n  const values = {\n    sentence: storedValues(t"
+        },
+        {
+          "kind": "text-position",
+          "start": 10628,
+          "end": 10667
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "0a01a23beaaed80b",
+          "semanticHash": "f2dfadff43b98632"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:55.859Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:55.859Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

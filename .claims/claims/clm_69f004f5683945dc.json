@@ -1,0 +1,65 @@
+{
+  "id": "clm_69f004f5683945dc",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "Human output on a terminal, JSON when piped.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Human output on a terminal, JSON when piped.",
+        "prefix": "whenever the output is JSON.\n\n## Output format\n\n",
+        "suffix": " `--format human|compact|json|json-pretty` or `-"
+      },
+      {
+        "kind": "text-position",
+        "start": 13472,
+        "end": 13516
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/mode.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return isTTY ? \"rich\" : \"json\";",
+          "prefix": "ompact\";\n  }\n  if (flags.json) return \"json\";\n  ",
+          "suffix": "\n}\n\nfunction resolveColor(\n  flags: ModeFlags,\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 1317,
+          "end": 1348
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "58b98c77686e46eb",
+          "semanticHash": "71b6dda0f8fab814"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"rich\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:17.757Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:17.757Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

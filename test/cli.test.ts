@@ -9,6 +9,8 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { parseArgs } from "node:util";
+import { COMMANDS, optionsFor, parseArgsOptions } from "../src/cli/options.ts";
 import { exists } from "../src/fs.ts";
 
 const CLI = join(import.meta.dir, "..", "src", "cli", "index.ts");
@@ -78,6 +80,7 @@ interface CliJson {
   claims?: ListRow[];
   candidates?: { side?: string; file?: string }[];
   relocated?: { claimId?: string }[];
+  kept?: { side?: string; file?: string; state?: string; reason?: string }[];
   misses?: { claimId?: string }[];
   strandedClaims?: string[];
   dryRun?: boolean;
@@ -105,10 +108,16 @@ async function run(
   cwd: string,
   args: string[],
   stdin?: string,
+  { shellPipe = false }: { shellPipe?: boolean } = {},
 ): Promise<RunResult> {
   const env: Record<string, string | undefined> = { ...process.env };
   delete env.TYPESAFE_API_KEY;
-  const proc = Bun.spawn(["bun", "run", CLI, ...withBy(args)], {
+  const cli = ["bun", "run", CLI, ...withBy(args)];
+  // `shellPipe` puts an OS pipe between the CLI and its reader, as in `hibi check | jq`.
+  const argv = shellPipe
+    ? ["bash", "-c", 'set -o pipefail; "$@" | cat', "bash", ...cli]
+    : cli;
+  const proc = Bun.spawn(argv, {
     cwd,
     env,
     stdout: "pipe",
@@ -166,6 +175,21 @@ afterEach(async () => {
   await Promise.all(dirs.map((d) => rm(d, { recursive: true, force: true })));
   dirs = [];
 });
+
+/** Run a remediation `command` through bash, with `hibi` pointing at this CLI. */
+async function runMenu(d: string, command: string): Promise<number> {
+  const env: Record<string, string | undefined> = { ...process.env };
+  delete env.TYPESAFE_API_KEY;
+  const line = command.replace(/^hibi /, `bun run ${CLI} `);
+  const proc = Bun.spawn(["bash", "-c", `${line} --json`], {
+    cwd: d,
+    env,
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  await new Response(proc.stdout).text();
+  return proc.exited;
+}
 
 /** A repo with one enforced claim on MAX_ATTEMPTS. */
 async function seeded(): Promise<{ d: string; id: string }> {
@@ -233,11 +257,13 @@ describe("CLI end-to-end", () => {
         "doc",
         "enforcement",
         "evidence",
+        "existingClaims",
         "id",
         "kind",
         "next",
         "ok",
         "schemaVersion",
+        "updated",
       ].sort(),
     );
     expect(rec.json.enforcement).toBe("enforced");
@@ -788,6 +814,20 @@ describe("CLI end-to-end", () => {
     expect((await run(d, ["list", "--state", "gating"])).json.count).toBe(0);
     await write(d, "new.md", "# New\n\nSomething else.\n");
     await run(d, ["supersede", "--from", "ok.md", "--to", "new.md"]);
+    // supersede moved the ok.md claim; one recorded on ok.md afterwards is stranded there.
+    await run(d, [
+      "record",
+      "--kind",
+      "code",
+      "--doc",
+      "ok.md",
+      "--doc-quote",
+      "A is one.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+    ]);
     const stranded = await run(d, ["list", "--state", "stranded"]);
     expect(stranded.json.count).toBe(1);
     expect(stranded.json.claims?.[0]?.state).toBe("clean");
@@ -828,9 +868,13 @@ describe("CLI end-to-end", () => {
   test("reanchor refuses an orphaned side, accepts an explicit new span, and reports before/after quotes", async () => {
     const { d, id } = await seeded();
     await rm(join(d, "src/retry.ts"));
+    const before = await snapshotStore(d);
     const refused = await run(d, ["reanchor", id]);
     expect(refused.code).toBe(1);
-    expect(refused.json.error).toContain("orphaned");
+    expect(refused.json.errors).toEqual([
+      "evidence: orphaned; pass --code-quote to re-anchor",
+    ]);
+    expect(sameStore(before, await snapshotStore(d))).toBe(true);
     await write(d, "src/limits.ts", "export const MAX_ATTEMPTS = 5;\n");
     const moved = await run(d, [
       "reanchor",
@@ -845,6 +889,114 @@ describe("CLI end-to-end", () => {
     expect(moved.json.before?.evidence?.[0]?.quote).toBe("MAX_ATTEMPTS = 5");
     expect(moved.json.after?.evidence?.[0]?.quote).toBe("MAX_ATTEMPTS = 5");
     expect((await run(d, ["check"])).code).toBe(0);
+  });
+
+  test("plain reanchor leaves a changed doc side as stored (exit 1) and relocates a moved side next to it (exit 0)", async () => {
+    const { d, id } = await seeded();
+    await write(
+      d,
+      "README.md",
+      "# Doc\n\nRetries are capped at five attempts.\n",
+    );
+    expect((await run(d, ["check"])).json.verdicts?.[0]?.doc).toBe("changed");
+    const before = await snapshotStore(d);
+    const changed = await run(d, ["reanchor", id]);
+    expect(changed.code).toBe(1);
+    expect(changed.json.errors).toEqual([
+      "doc: changed; pass --doc-quote to re-anchor",
+    ]);
+    expect(sameStore(before, await snapshotStore(d))).toBe(true);
+    // The evidence side moves too: it is relocated, the doc side is kept.
+    await write(
+      d,
+      "src/retry.ts",
+      `${"// p\n".repeat(4)}export const MAX_ATTEMPTS = 5;\n`,
+    );
+    const mixed = await run(d, ["reanchor", id]);
+    expect(mixed.code).toBe(0);
+    expect(mixed.json.kept).toEqual([
+      {
+        side: "doc",
+        file: "README.md",
+        state: "changed",
+        reason: "doc: changed; pass --doc-quote to re-anchor",
+      },
+    ]);
+    expect(mixed.json.after?.doc?.quote).toBe(
+      "Retries are capped at 5 attempts",
+    );
+    const v = (await run(d, ["check"])).json.verdicts?.[0];
+    expect(v?.doc).toBe("changed");
+    expect(v?.evidence).toBe("unchanged");
+  });
+
+  test("the remediation reanchor command for a two-span claim lists every span and keeps both", async () => {
+    const d = await repo();
+    await write(d, "src/a.ts", "export const A = 1;\n");
+    await write(d, "src/b.ts", "export const B = 2;\n");
+    await write(d, "doc.md", "# D\n\nA is one and B is two.\n");
+    await run(d, ["init"]);
+    const rec = await run(d, [
+      "record",
+      "--kind",
+      "code",
+      "--doc",
+      "doc.md",
+      "--doc-quote",
+      "A is one and B is two.",
+      "--code-file",
+      "src/a.ts",
+      "--code-quote",
+      "A = 1",
+      "--code-file",
+      "src/b.ts",
+      "--code-quote",
+      "B = 2",
+    ]);
+    const id = rec.json.id ?? "";
+    await write(d, "src/b.ts", "export const B = 20;\n");
+    const v = (await run(d, ["check"])).json.verdicts?.[0];
+    expect(v?.evidence).toBe("changed");
+    const cmd = v?.remediation?.actions?.[0]?.command ?? "";
+    expect(cmd).toBe(
+      `hibi reanchor ${id} --code-file src/a.ts --code-quote "A = 1" --code-file src/b.ts --code-quote "B = 20"`,
+    );
+    expect(await runMenu(d, cmd)).toBe(0);
+    const after = (await run(d, ["check"])).json.verdicts?.[0];
+    expect(after?.evidence).toBe("unchanged");
+    const listed = await run(d, ["reanchor", id, "--dry-run"]);
+    expect(listed.json.after?.evidence?.map((e) => e.quote)).toEqual([
+      "A = 1",
+      "B = 20",
+    ]);
+  });
+
+  test("the remediation reanchor command for a changed doc side and a changed evidence side runs as written", async () => {
+    const { d, id } = await seeded();
+    await write(
+      d,
+      "README.md",
+      '# Doc\n\nRetries are "capped" at $7 attempts.\n',
+    );
+    const docV = (await run(d, ["check"])).json.verdicts?.[0];
+    expect(docV?.doc).toBe("changed");
+    const docCmd = docV?.remediation?.actions?.[0]?.command ?? "";
+    expect(docCmd).toBe(
+      `hibi reanchor ${id} --doc-quote "Retries are \\"capped\\" at \\$7 attempts"`,
+    );
+    expect(await runMenu(d, docCmd)).toBe(0);
+    expect((await run(d, ["check"])).json.verdicts?.[0]?.doc).toBe("unchanged");
+    await write(d, "src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
+    const evV = (await run(d, ["check"])).json.verdicts?.[0];
+    expect(evV?.evidence).toBe("changed");
+    const evCmd = evV?.remediation?.actions?.[0]?.command ?? "";
+    expect(evCmd).toBe(
+      `hibi reanchor ${id} --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 50"`,
+    );
+    expect(await runMenu(d, evCmd)).toBe(0);
+    expect((await run(d, ["check"])).json.verdicts?.[0]?.evidence).toBe(
+      "unchanged",
+    );
   });
 
   test("reanchor re-localizes a moved claim and --dry-run writes nothing", async () => {
@@ -862,10 +1014,98 @@ describe("CLI end-to-end", () => {
     expect(dry.json.dryRun).toBe(true);
     expect(sameStore(before, await snapshotStore(d))).toBe(true);
     const re = await run(d, ["reanchor", id]);
+    expect(re.code).toBe(0);
+    expect(re.json.kept).toBeUndefined();
     expect(re.json.evidence).toBe("unchanged");
     expect((await run(d, ["check"])).json.verdicts?.[0]?.evidence).toBe(
       "unchanged",
     );
+  });
+
+  test("a single-value flag given twice is an error, not a dropped span", async () => {
+    const { d, id } = await seeded();
+    await write(d, "src/b.ts", "export const B = 2;\n");
+    const before = await snapshotStore(d);
+    const r = await run(d, [
+      "reanchor",
+      id,
+      "--doc-quote",
+      "Retries are capped",
+      "--doc-quote",
+      "Retries are capped at 5 attempts",
+    ]);
+    expect(r.code).toBe(1);
+    expect(r.json.error).toBe(
+      "--doc-quote given twice; reanchor takes one span per side",
+    );
+    expect(sameStore(before, await snapshotStore(d))).toBe(true);
+    // --code-file is repeatable: each one opens a span, and every span is stored.
+    const two = await run(d, [
+      "reanchor",
+      id,
+      "--code-file",
+      "src/retry.ts",
+      "--code-quote",
+      "MAX_ATTEMPTS = 5",
+      "--code-file",
+      "src/b.ts",
+      "--code-quote",
+      "B = 2",
+    ]);
+    expect(two.code).toBe(0);
+    expect(two.json.after?.evidence?.map((e) => e.quote)).toEqual([
+      "MAX_ATTEMPTS = 5",
+      "B = 2",
+    ]);
+    const orphanQuote = await run(d, ["reanchor", id, "--code-quote", "B = 2"]);
+    expect(orphanQuote.json.error).toBe(
+      "--code-quote needs a --code-file before it",
+    );
+    const fmt = await run(d, ["list", "--format", "json", "--format", "json"]);
+    expect(fmt.json.error).toBe(
+      "--format given twice; list takes one --format",
+    );
+  });
+
+  test("a value starting with - needs the --flag=<value> form, which every value flag accepts", async () => {
+    const { d, id } = await seeded();
+    const r = await run(d, ["reanchor", id, "--json", "--doc-quote", "-x"]);
+    expect(r.code).toBe(1);
+    expect(r.json.error).toBe(
+      '--doc-quote needs a value; for a value starting with "-" use --doc-quote=<text>',
+    );
+    const end = await run(d, ["reanchor", id, "--json", "--code-file"]);
+    expect(end.json.error).toBe(
+      '--code-file needs a value; for a value starting with "-" use --code-file=<path>',
+    );
+    await write(
+      d,
+      "README.md",
+      "# Doc\n\n- Retries are capped at 5 attempts.\n",
+    );
+    const eq = await run(d, [
+      "reanchor",
+      id,
+      "--doc-quote=- Retries are capped at 5 attempts",
+    ]);
+    expect(eq.code).toBe(0);
+    expect(eq.json.after?.doc?.quote).toBe(
+      "- Retries are capped at 5 attempts",
+    );
+    // The = form parses for every value flag of every command.
+    for (const cmd of COMMANDS) {
+      for (const o of optionsFor(cmd)) {
+        if (o.type !== "string") continue;
+        const parsed = parseArgs({
+          args: [`--${o.name}=-v`],
+          strict: true,
+          allowPositionals: true,
+          options: parseArgsOptions(cmd),
+        });
+        const v = parsed.values[o.name];
+        expect(o.multiple ? v : [v]).toEqual(["-v"]);
+      }
+    }
   });
 
   test("reanchor --suggest searches both sides, is read-only, and refuses span flags", async () => {
@@ -938,7 +1178,7 @@ describe("CLI end-to-end", () => {
     expect(byRange.json.doc).toBe("unchanged");
   });
 
-  test("supersede relocates verbatim sentences and reports misses; archive tombstones", async () => {
+  test("supersede moves every live claim; archive tombstones", async () => {
     const d = await repo();
     await write(d, "src/a.ts", "export const A = 1;\nexport const B = 2;\n");
     await write(d, "v1.md", "# V1\n\nA is one.\nB is two.\n");
@@ -982,11 +1222,19 @@ describe("CLI end-to-end", () => {
     expect((await run(d, ["list", "--state", "stranded"])).json.count).toBe(0);
     const sup = await run(d, ["supersede", "--from", "v1.md", "--to", "v2.md"]);
     expect(sup.code).toBe(0);
-    expect(sup.json.relocated?.map((r) => r.claimId)).toEqual([
-      a.json.id ?? "",
-    ]);
-    expect(sup.json.misses?.map((m) => m.claimId)).toEqual([b.json.id ?? ""]);
-    expect(sup.json.strandedClaims).toEqual([b.json.id ?? ""]);
+    const byId = (x: { claimId?: string }, y: { claimId?: string }) =>
+      (x.claimId ?? "").localeCompare(y.claimId ?? "");
+    expect([...(sup.json.relocated ?? [])].sort(byId)).toEqual(
+      [
+        { claimId: a.json.id ?? "", doc: "unchanged", evidence: "unchanged" },
+        { claimId: b.json.id ?? "", doc: "orphaned", evidence: "unchanged" },
+      ].sort(byId),
+    );
+    expect(sup.json.misses).toEqual([]);
+    expect(sup.json.strandedClaims).toEqual([]);
+    expect(sup.json.next).toBe(
+      "reanchor or retire each orphaned claim, then hibi check",
+    );
     expect(
       (await run(d, ["supersede", "--from", "v1.md", "--to", "v1.md"])).code,
     ).toBe(1);
@@ -1000,7 +1248,7 @@ describe("CLI end-to-end", () => {
     expect(arch.code).toBe(0);
     expect(await exists(join(d, "archive", "v1.md"))).toBe(true);
     expect(await readFile(join(d, "v1.md"), "utf8")).toContain("Archived");
-    expect(arch.json.strandedClaims).toEqual([b.json.id ?? ""]);
+    expect(arch.json.strandedClaims).toEqual([]);
   });
 
   test("--help prints the command's table and never runs it; unknown flags exit 1", async () => {
@@ -1069,6 +1317,61 @@ describe("CLI end-to-end", () => {
       "never",
     ]);
     expect(overview.stdout).toContain("Store v4");
+  });
+
+  test("piped JSON past the 64 KiB pipe buffer arrives whole on exit 0, 1, and 2", async () => {
+    const d = await repo();
+    // One counted pending reason per claim (B.8) keeps check output small; 80 claims still pass 64 KiB.
+    const n = 80;
+    const pad = "This limit applies to every request the client sends. ".repeat(
+      40,
+    );
+    const code = (shift: number) =>
+      Array.from(
+        { length: n },
+        (_, i) => `export const LIMIT_${i} = ${i + shift};\n`,
+      ).join("");
+    await write(d, "src/limits.ts", code(0));
+    await write(
+      d,
+      "doc.md",
+      `# Limits\n\n${Array.from({ length: n }, (_, i) => `Limit number ${i} is set to ${i}. ${pad}\n`).join("")}`,
+    );
+    await run(d, ["init"]);
+    const items = Array.from({ length: n }, (_, i) => ({
+      doc: "doc.md",
+      docRange: `L${i + 3}:L${i + 3}`,
+      kind: "code",
+      code: [{ file: "src/limits.ts", quote: `LIMIT_${i} = ${i}` }],
+    }));
+    expect(
+      (await run(d, ["record", "--from-file", "-"], JSON.stringify(items)))
+        .code,
+    ).toBe(0);
+    const whole = (r: RunResult) => {
+      expect(r.stdout.length).toBeGreaterThan(65536);
+      return JSON.parse(r.stdout);
+    };
+
+    const piped = { shellPipe: true };
+
+    const list = await run(d, ["list"], undefined, piped);
+    expect(list.code).toBe(0);
+    expect(whole(list).count).toBe(n);
+
+    await write(d, "src/limits.ts", code(1000));
+    const check = await run(d, ["check"], undefined, piped);
+    expect(check.code).toBe(2);
+    expect(whole(check).summary.gating).toBe(n);
+
+    const bad = await run(
+      d,
+      ["record", "--from-file", "-"],
+      JSON.stringify(Array.from({ length: 3000 }, () => ({ doc: "doc.md" }))),
+      piped,
+    );
+    expect(bad.code).toBe(1);
+    expect(whole(bad).errors.length).toBeGreaterThan(3000);
   });
 
   test("--store-dir decouples the store from the anchor root", async () => {
@@ -1358,5 +1661,86 @@ describe("CLI end-to-end", () => {
       (withBy.json.claim as { attestations?: { by?: string }[] })
         .attestations?.[0]?.by,
     ).toBe("agent:opus");
+  });
+});
+
+describe("fix pass B (CLI)", () => {
+  test("B.2: version --json is wrapped in the envelope", async () => {
+    const d = await repo();
+    const res = await run(d, ["version", "--json"]);
+    expect(res.code).toBe(0);
+    const pkg = JSON.parse(
+      await readFile(join(import.meta.dir, "..", "package.json"), "utf8"),
+    );
+    expect(res.json as Record<string, unknown>).toEqual({
+      ok: true,
+      action: "version",
+      schemaVersion: "v4",
+      name: "hibi",
+      version: pkg.version,
+    });
+  });
+
+  test("B.3: batch record results carry id, updated and existingClaims; the batch counts updates", async () => {
+    const { d, id } = await seeded();
+    await write(
+      d,
+      "docs/other.md",
+      "# Other\n\nRetries are capped at 5 attempts.\n",
+    );
+    const res = await run(
+      d,
+      ["record", "--from-file", "-"],
+      JSON.stringify([
+        {
+          doc: "README.md",
+          docQuote: "Retries are capped at 5 attempts",
+          kind: "code",
+          code: [{ file: "src/retry.ts", quote: "MAX_ATTEMPTS = 5" }],
+        },
+        {
+          doc: "docs/other.md",
+          docQuote: "Retries are capped at 5 attempts",
+          kind: "code",
+          code: [{ file: "src/retry.ts", quote: "MAX_ATTEMPTS = 5" }],
+        },
+      ]),
+    );
+    expect(res.code).toBe(0);
+    const json = res.json as CliJson & {
+      updated?: number;
+      results?: {
+        id?: string;
+        updated?: boolean;
+        existingClaims?: string[];
+      }[];
+    };
+    expect(json.count).toBe(2);
+    expect(json.updated).toBe(1);
+    expect(json.results?.[0]).toMatchObject({
+      id,
+      updated: true,
+      existingClaims: [],
+    });
+    expect(Object.keys(json.results?.[0] ?? {})).not.toContain("claimId");
+    const second = json.results?.[1];
+    expect(second?.id).not.toBe(id);
+    expect(second?.updated).toBe(false);
+    expect(second?.existingClaims).toEqual([id]);
+  });
+});
+
+describe("B.12 action.yml", () => {
+  test("B.12: the action description says a moved span only warns under the default fail-on", async () => {
+    const yml = await readFile(
+      join(import.meta.dir, "..", "action.yml"),
+      "utf8",
+    );
+    const description = yml.match(/^description: "(.*)"$/m)?.[1] ?? "";
+    expect(description).not.toMatch(/\bmoved or changed\b/);
+    expect(description).toContain(
+      "Under the default fail-on: gating, a moved span only warns.",
+    );
+    expect(yml).toMatch(/fail-on:[\s\S]*?default: "gating"/);
   });
 });

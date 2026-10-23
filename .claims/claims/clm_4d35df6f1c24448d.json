@@ -1,0 +1,94 @@
+{
+  "id": "clm_4d35df6f1c24448d",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "`record` and `reanchor` refuse a path that resolves outside it (`../outside.ts: path escapes its root; an evidence file must be inside the anchor root.`).",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`record` and `reanchor` refuse a path that resolves outside it (`../outside.ts: path escapes its root; an evidence file must be inside the anchor root.`).",
+        "prefix": "th, or the alias directory for an aliased path. ",
+        "suffix": " If a stored side escapes its root, `check` repo"
+      },
+      {
+        "kind": "text-position",
+        "start": 5256,
+        "end": 5410
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`${file}: ${resolved.reason}; an evidence file must be inside ${resolved.alias === undefined ? \"the anchor root\" : `the directory of repo alias \"${resolved.alias}\"`}.`,",
+          "prefix": "resolved.escapes) {\n    return new Error(\n      ",
+          "suffix": "\n    );\n  }\n  return new Error(\n    `${resolved."
+        },
+        {
+          "kind": "text-position",
+          "start": 7663,
+          "end": 7831
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "8f4f2bb90929d884",
+          "semanticHash": "af70c74ca32856d3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ESCAPES_ROOT = \"path escapes its root\";",
+          "prefix": "label for an evidence path outside its root. */\n",
+          "suffix": "\n\n/** True when `abs` is `root` or inside it. Bo"
+        },
+        {
+          "kind": "text-position",
+          "start": 1211,
+          "end": 1263
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "7b5c177b0ac8f0d6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"path escapes its root\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:03.576Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:03.576Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

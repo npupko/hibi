@@ -1,0 +1,65 @@
+{
+  "id": "clm_a98de8cc40b44df1",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "| `ref` | for `reference`: `{ file, quote \\| range }`, exactly one |",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `ref` | for `reference`: `{ file, quote \\| range }`, exactly one |",
+        "prefix": "e`: `[{ file, quote \\| range }]`, one or more |\n",
+        "suffix": "\n| `sources` | `[{ id?, resource, title? }]` |\n|"
+      },
+      {
+        "kind": "text-position",
+        "start": 7511,
+        "end": 7579
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(\"kind reference needs ref: { file, quote | range }\");",
+          "prefix": "ence\") {\n    if (raw.ref === undefined) {\n      ",
+          "suffix": "\n    } else {\n      const t = span(raw.ref, \"ref"
+        },
+        {
+          "kind": "text-position",
+          "start": 9662,
+          "end": 9727
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "ab93fd8725166832",
+          "semanticHash": "e7ee02968b65cea3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"kind reference needs ref: { file, quote | range }\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:04.119Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:04.119Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

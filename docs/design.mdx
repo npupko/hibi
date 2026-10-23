@@ -24,8 +24,8 @@ Only the first can be detected by reading the repository's code. Hibi covers all
 ## Principles
 
 <AccordionGroup>
-  <Accordion title="1. Hibi runs nothing and fetches nothing" icon="hand">
-    No command execution, no URL fetching, no network except the judge API. A claim can carry a procedure and sources, but an agent or an outer runner carries them out and submits the evidence with `hibi evidence`.
+  <Accordion title="1. Hibi runs no verifiers and no resolvers" icon="hand">
+    No command execution except read-only `git` calls, no URL fetching, no network except the judge API. A claim can carry a procedure and sources, but an agent or an outer runner carries them out and submits the evidence with `hibi evidence`.
   </Accordion>
 
   <Accordion title="2. Same tree, same verdicts" icon="equals">
@@ -33,11 +33,11 @@ Only the first can be detected by reading the repository's code. Hibi covers all
   </Accordion>
 
   <Accordion title="3. A flag means re-verify" icon="flag">
-    Hibi reports that evidence moved, expired, was refuted, or conflicts. It never rewrites prose and never declares a sentence false on its own authority.
+    Hibi reports that evidence moved, expired, was refuted, or conflicts. It never rewrites prose and never declares a sentence false on its own authority. Only `archive` (the tombstone) and `init --instructions` (one appended line) write to a document.
   </Accordion>
 
   <Accordion title="4. Nothing clears without evidence or a human" icon="user-check">
-    An agent cannot vouch a claim fresh. Evidence the judge found to support the sentence, or a `human:` attestation, can. See [Attestations](/attestations).
+    An agent cannot vouch a claim fresh. Evidence the judge found to support the sentence, or a `human:` vouch, can. See [Attestations](/attestations).
   </Accordion>
 
   <Accordion title="5. One knob per concept, no hidden rules" icon="sliders">
@@ -45,7 +45,7 @@ Only the first can be detected by reading the repository's code. Hibi covers all
   </Accordion>
 
   <Accordion title="6. Contracts are data" icon="file-code">
-    The store schema, the judge request and response shapes, and the judge questions are JSON. Tests use JSON fixtures. The implementation language can be replaced.
+    The store schemas, the judge request and response shapes, the judge question files, and the recorded judge fixtures are JSON. Tests are TypeScript against them. The implementation language can be replaced.
   </Accordion>
 </AccordionGroup>
 
@@ -55,13 +55,13 @@ Text anchoring can tell that a referenced span changed. It cannot tell whether "
 
 - **One small interface.** Three judgments: `triage` (what kind of region is this), `supports` (does this evidence support this sentence), and `conflict` (do these two sentences contradict). Jev, from TypeSafe, is the only shipped implementation. See [Judge](/judge).
 - **One threshold, three outcomes.** A judgment gates, goes to `review` (a warning), or is clean. `judge.threshold` in `.claims/config.json` sets the line for all of them.
-- **Numbers stay in code.** Numbers, money, versions, and dates are extracted and compared by code, not by the model.
-- **Cached verdicts.** Each answer is stored in `.claims/judge/` under the hash of the pinned model id and the canonical request. The same tree gives the same verdicts on every run and on every machine that has the committed cache.
+- **Numbers stay in code.** Numbers, money, versions, and dates are extracted and compared by code. On a conflict pair, that comparison applies only when the judge rates `contradicts` at 0.5 or above.
+- **Cached verdicts.** Each answer is stored in `.claims/judge/` under the hash of the pinned model id and the canonical request. The same tree gives the same verdicts on every run that has the cache present. The cache is local and is not committed; CI restores it with a cache step.
 - **No key means pending.** Without `TYPESAFE_API_KEY`, or with the network down, an unanswered judgment is `pending`, which warns. An answer hibi cannot use (a judge error) is `pending` too. It is never reported as a pass, and it never aborts a run.
 
 ## Why there are no banners
 
-Earlier versions wrote a status comment into each stale document. That was removed:
+Earlier versions wrote a status comment into documents with `check --write`. That was removed:
 
 - An HTML comment is invisible in rendered documentation; only readers of the raw file saw it.
 - It needed a write path into every document, a comment syntax per format, and it produced diff churn on every status change.
@@ -72,9 +72,9 @@ Earlier versions wrote a status comment into each stale document. That was remov
 | removed | reason |
 |---|---|
 | status comments written into documents | the trust call is `check --doc`; see above |
-| commands run by `check` | hibi executes nothing; agent-run procedures and `hibi evidence` replace them |
+| verifiers (commands `check` ran) | hibi runs no verifiers; the agent-run procedure loop replaces them |
 | the external extension protocol | the judge interface is the one extension point |
-| a separate layer of normalized statements | duplicates come from sentence text and the contradiction pass; `supersede` matches sentences verbatim |
+| a separate layer of normalized statements | duplicates come from sentence text and the contradiction pass; `supersede` moves every live claim by document and uses the stored quote only to fix its position |
 | topics | pairing for the contradiction pass is done in code and needs none |
 | a `verified` boolean | replaced by attestations with actors and bases |
 | store upgrade code | v3 stores are not upgraded; hibi asks you to remove the store, run `hibi init`, and re-record |

@@ -1,0 +1,88 @@
+{
+  "id": "clm_ec1e521eca574b35",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "`--instructions` appends this line to the file (created if missing, skipped if already there):",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--instructions` appends this line to the file (created if missing, skipped if already there):",
+        "prefix": "e },\n  \"next\": \"hibi audit --doc <file>\" }\n```\n\n",
+        "suffix": "\n\n```\nBefore relying on a document, run `hibi ch"
+      },
+      {
+        "kind": "text-position",
+        "start": 988,
+        "end": 1082
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (text.includes(INSTRUCTIONS_LINE)) return { file, appended: false };",
+          "prefix": "n`);\n    return { file, appended: true };\n  }\n  ",
+          "suffix": "\n  const sep = text === \"\" || text.endsWith(\"\\n\""
+        },
+        {
+          "kind": "text-position",
+          "start": 10795,
+          "end": 10866
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "3b36ebad72501982",
+          "semanticHash": "6bbd3590563aac0c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "false",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await writeFile(file, `${INSTRUCTIONS_LINE}\\n`);",
+          "prefix": "NOENT\") throw e;\n  }\n  if (text === null) {\n    ",
+          "suffix": "\n    return { file, appended: true };\n  }\n  if ("
+        },
+        {
+          "kind": "text-position",
+          "start": 10703,
+          "end": 10751
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "787bddf64f934692",
+          "semanticHash": "0aec9bc2f9a4e607"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:07.021Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:07.021Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

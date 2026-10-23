@@ -1,0 +1,82 @@
+{
+  "id": "clm_7c215e9184174d50",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`headingPath` is the Markdown headings above the region; a heading's own path holds its ancestors, not itself.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`headingPath` is the Markdown headings above the region; a heading's own path holds its ancestors, not itself.",
+        "prefix": "de units. Ids are `r<index>` in document order. ",
+        "suffix": "\n\n**Covered.** A region is covered when it overl"
+      },
+      {
+        "kind": "text-position",
+        "start": 49412,
+        "end": 49522
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const headingPath = stack.map((h) => h.text);",
+          "prefix": "tack.pop();\n          }\n        }\n      }\n      ",
+          "suffix": "\n      for (const span of splitSentences(text, p"
+        },
+        {
+          "kind": "text-position",
+          "start": 10555,
+          "end": 10600
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "ba39751fe3ddf738",
+          "semanticHash": "6692ec773e6e92f3"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (heading) stack.push(heading);",
+          "prefix": "       end: span.end,\n        });\n      }\n      ",
+          "suffix": "\n    }\n  }\n  return out;\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 10943,
+          "end": 10976
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "9a27efba3ea3af26",
+          "semanticHash": "1dab1ce53abfc717"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.100Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.100Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

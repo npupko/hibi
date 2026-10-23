@@ -1,0 +1,44 @@
+{
+  "id": "clm_b731d778f46142b7",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "attested",
+  "sentence": "| `Stop` | `hibi check --since origin/main` |",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `Stop` | `hibi check --since origin/main` |",
+        "prefix": "`SessionStart` | `hibi check --doc CLAUDE.md` |\n",
+        "suffix": "\n\nHibi ships no hook configuration. Both command"
+      },
+      {
+        "kind": "text-position",
+        "start": 3412,
+        "end": 3457
+      }
+    ]
+  },
+  "evidence": [],
+  "sources": [
+    {
+      "id": "claude-code-hooks",
+      "resource": "https://code.claude.com/docs/en/hooks",
+      "title": "Claude Code: Hooks reference"
+    }
+  ],
+  "procedure": {
+    "instructions": "Open the Claude Code hooks reference and report whether Stop is a hook event, when it fires, and whether a hook can run a shell command (type: command)."
+  },
+  "ttl": "P180D",
+  "enforcement": "retired",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:25:23.724Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:25:23.724Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

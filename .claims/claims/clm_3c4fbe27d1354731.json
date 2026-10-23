@@ -1,0 +1,111 @@
+{
+  "id": "clm_3c4fbe27d1354731",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Such a region is not asked the `evidenceKind` question; when its `kind` is `factual_claim`, its evidence kind is `code` with probability 1.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Such a region is not asked the `evidenceKind` question; when its `kind` is `factual_claim`, its evidence kind is `code` with probability 1.",
+        "prefix": "or a command, or contains a file path in prose. ",
+        "suffix": " URLs are not paths, and names such as `Node.js`"
+      },
+      {
+        "kind": "text-position",
+        "start": 6647,
+        "end": 6786
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (code) delete filled[`evidenceKind_${i}`];",
+          "prefix": "ageFile.placeholder,\n    i,\n  ) as Questions;\n  ",
+          "suffix": "\n  return filled;\n}\n\nfunction stateRegion(r: Reg"
+        },
+        {
+          "kind": "text-position",
+          "start": 7708,
+          "end": 7753
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "db90584dc86371e0",
+          "semanticHash": "65f52ca7f2521676"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "result.evidenceKind = \"code\";",
+          "prefix": "  if (isCodeByConstruction(region)) {\n          ",
+          "suffix": "\n          result.evidenceProbabilities = { ...C"
+        },
+        {
+          "kind": "text-position",
+          "start": 12743,
+          "end": 12772
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "e0cf5471d7fd0685",
+          "semanticHash": "33082fe44892e73c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"code\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "result.evidenceProbabilities = { ...CODE_EVIDENCE };",
+          "prefix": "        result.evidenceKind = \"code\";\n          ",
+          "suffix": "\n        } else {\n          const evidence = cho"
+        },
+        {
+          "kind": "text-position",
+          "start": 12783,
+          "end": 12835
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "f25740567b4bf27b",
+          "semanticHash": "87f5c17390847c71"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:37.542Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:37.542Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

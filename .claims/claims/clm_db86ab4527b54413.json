@@ -1,0 +1,65 @@
+{
+  "id": "clm_db86ab4527b54413",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "| `0` | clean, or warnings only |",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `0` | clean, or warnings only |",
+        "prefix": "t's session hook.\n\n| exit | meaning |\n|---|---|\n",
+        "suffix": "\n| `2` | gating: a `changed`, `orphaned`, or `am"
+      },
+      {
+        "kind": "text-position",
+        "start": 409,
+        "end": 442
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.warn && failOn === \"warn\") return 2;\n  return 0;",
+          "prefix": "ver\") return 0;\n  if (flags.gating) return 2;\n  ",
+          "suffix": "\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 22264,
+          "end": 22322
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "209eb8cb13351b96",
+          "semanticHash": "9b35ff63587956db"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"warn\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:42.146Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:42.146Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

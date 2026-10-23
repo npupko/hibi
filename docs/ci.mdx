@@ -13,7 +13,7 @@ icon: "robot"
 | `2` | gating: a `changed`, `orphaned`, or `ambiguous` side, a `refuted` judgment, or a contradiction at or above the threshold on an enforced claim; `expired` under `check --doc`; any warning under `--fail-on warn` |
 | `1` | operational error: no store, an unknown flag, an unknown `--since` ref, `check --doc` on a path with no registered claims |
 
-A judge failure is never an exit 1. An unreachable judge or an answer hibi cannot use (a 4xx other than 401 and 403, a body that is not JSON) makes the judgment `pending`, which warns.
+A judge failure is never an exit 1. An unreachable judge or an answer hibi cannot use (a 4xx other than 401, 403, 408, and 429, a body that is not JSON) makes the judgment `pending`, which warns.
 
 ## GitHub Action
 
@@ -32,11 +32,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0   # needed when `since` compares refs
-      - uses: npupko/hibi@v0
+      - uses: actions/cache@v4
+        with:
+          path: .claims/judge
+          key: hibi-judge-${{ hashFiles('.claims/claims/**') }}
+          restore-keys: hibi-judge-
+      - uses: npupko/hibi@v0.6.0
         with:
           fail-on: gating
           since: origin/${{ github.base_ref }}
 ```
+
+Pin the action to a release tag, as above, and bump the tag when you upgrade hibi.
 
 ### Inputs
 
@@ -62,7 +69,7 @@ Most of `check` needs no key:
 
 A judgment that is not in the cache comes back `pending`. The same holds when the key is set and the judge returns an error. `pending` is a warning, so it does not fail the build under the default `fail-on: gating`. Under `fail-on: warn` it does.
 
-Commit `.claims/judge/` with the rest of the store. When the cache already holds every verdict the tree needs, CI asks the judge nothing and gives the same verdicts with or without a key. See [Judge](/judge).
+`.claims/judge/` is a local cache and is not committed: `hibi init` writes `.claims/.gitignore` with the line `judge/`. The `actions/cache` step above restores the cache between runs, keyed on the claim files. When the restored cache already holds every verdict the tree needs, CI asks the judge nothing and gives the same verdicts with or without a key. See [Judge](/judge).
 
 ### Strictness
 
@@ -80,7 +87,7 @@ Commit `.claims/judge/` with the rest of the store. When the cache already holds
 hibi audit --doc plan.md --fail-uncovered
 ```
 
-Exits 2 while any uncovered region of the document is triaged as `code`, `reference`, or `attested` at or above the threshold, and 0 once each such region is covered by a claim. Without a key, uncovered regions are `pending` and do not fail this gate. See [Audit](/audit).
+Exits 2 while any uncovered region of the document is triaged as `code`, `reference`, or `attested` at or above the threshold, and 0 once each such region is covered by a claim. Without a key, uncovered regions whose triage is not in `.claims/judge/` are `pending` and do not fail this gate. See [Audit](/audit).
 
 ## git hooks
 

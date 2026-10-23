@@ -1,0 +1,65 @@
+{
+  "id": "clm_c16a23402b234822",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Review verdicts can be acknowledged (section 5).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Review verdicts can be acknowledged (section 5).",
+        "prefix": "a `check`, judge labels are prefixed `judge: `. ",
+        "suffix": "\n\n### 8.5 Numbers, dates, versions\n\nThe judge's "
+      },
+      {
+        "kind": "text-position",
+        "start": 38362,
+        "end": 38410
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (ack.kind === \"review\") {",
+          "prefix": " why the finding is acceptable.\",\n    );\n  }\n\n  ",
+          "suffix": "\n    const judgeKey =\n      claim.kind === \"refe"
+        },
+        {
+          "kind": "text-position",
+          "start": 6024,
+          "end": 6052
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "9d538f2919d1f6d3",
+          "semanticHash": "8859f2dea0575c4b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"review\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:31.997Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:31.997Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

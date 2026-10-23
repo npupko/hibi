@@ -1,0 +1,65 @@
+{
+  "id": "clm_629c95e9d0584168",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "There is no `coarse` selector.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "There is no `coarse` selector.",
+        "prefix": "ndle use `text-quote` and `text-position` only. ",
+        "suffix": "\n\n### 6.4 Judge cache entry\n\n```json\n{ \"key\": \"<"
+      },
+      {
+        "kind": "text-position",
+        "start": 17068,
+        "end": 17098
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  .discriminatedUnion(\"kind\", [\n    TextQuoteSelector,\n    TextPositionSelector,\n    AstNodeSelector,\n    ValueSelector,\n  ])",
+          "prefix": "lue: z.string(),\n});\n\nexport const Selector = z\n",
+          "suffix": "\n  .meta({ id: \"Selector\" });\nexport type Select"
+        },
+        {
+          "kind": "text-position",
+          "start": 4628,
+          "end": 4753
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "7c690b681e371da8",
+          "semanticHash": "296d9cb2e927f3ad"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"kind\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:34.603Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:34.603Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

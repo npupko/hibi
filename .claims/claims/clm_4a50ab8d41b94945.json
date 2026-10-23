@@ -1,0 +1,65 @@
+{
+  "id": "clm_4a50ab8d41b94945",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Every outcome carries a reason label, prefixed `judge: ` on the verdict:",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Every outcome carries a reason label, prefixed `judge: ` on the verdict:",
+        "prefix": "`supported`, `refuted`, `review`, or `pending`. ",
+        "suffix": "\n\n| outcome | label |\n|---|---|\n| supported | `e"
+      },
+      {
+        "kind": "text-position",
+        "start": 9429,
+        "end": 9501
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...(outcome?.reasons ?? []).map((r) => `judge: ${r}`),",
+          "prefix": " : [],\n      warnings,\n      reasons: [\n        ",
+          "suffix": "\n        ...findingReasons,\n      ],\n      revie"
+        },
+        {
+          "kind": "text-position",
+          "start": 17471,
+          "end": 17525
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "3ceb05cbcaabd3fe",
+          "semanticHash": "d45b76f26723b0b2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:38.711Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:38.711Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

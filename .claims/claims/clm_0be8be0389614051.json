@@ -1,0 +1,117 @@
+{
+  "id": "clm_0be8be0389614051",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "- `--suggest` is read-only. It ranks candidate locations for the stored doc and evidence quotes. It cannot be combined with span flags or `--dry-run`.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `--suggest` is read-only. It ranks candidate locations for the stored doc and evidence quotes. It cannot be combined with span flags or `--dry-run`.",
+        "prefix": "ut at ../api`. The other sides are re-resolved.\n",
+        "suffix": "\n- `--dry-run` computes the result and writes no"
+      },
+      {
+        "kind": "text-position",
+        "start": 6986,
+        "end": 7136
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"--suggest is read-only and cannot be combined with span or write flags.\",",
+          "prefix": "(mutation) {\n          return fail(\n            ",
+          "suffix": "\n            mode,\n          );\n        }\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 23001,
+          "end": 23075
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "60afcafebc323600"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"--suggest is read-only and cannot be combined with span or write flags.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "values[\"dry-run\"],\n      ].some((f) => f !== undefined && f !== false);",
+          "prefix": "f-quote\"],\n        values[\"ref-range\"],\n        ",
+          "suffix": "\n      if (values.suggest) {\n        if (mutatio"
+        },
+        {
+          "kind": "text-position",
+          "start": 22842,
+          "end": 22913
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "18827303b32f5c61",
+          "semanticHash": "5336592f676d7840"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"dry-run\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function suggestForBundle(",
+          "prefix": "sort by similarity, then path, then offset.\n */\n",
+          "suffix": "\n  side: \"doc\" | \"evidence\",\n  bundle: SelectorB"
+        },
+        {
+          "kind": "text-position",
+          "start": 4430,
+          "end": 4463
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "549c0ef94d32a6b9",
+          "semanticHash": "5ab94e9beddd83a2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.446Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.446Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

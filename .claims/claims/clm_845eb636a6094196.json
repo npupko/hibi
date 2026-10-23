@@ -1,0 +1,146 @@
+{
+  "id": "clm_845eb636a6094196",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `number` | `5%`, `5 days`, `90d`, `500ms`, `1,299.50` | `1299.5`, with a unit for `%` and durations |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `number` | `5%`, `5 days`, `90d`, `500ms`, `1,299.50` | `1299.5`, with a unit for `%` and durations |",
+        "prefix": "n` | `29` with unit `USD`; `$5m` is `5000000` |\n",
+        "suffix": "\n\nA suffix `k`, `m`, `b`, or `bn` after a curren"
+      },
+      {
+        "kind": "text-position",
+        "start": 10885,
+        "end": 10988
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"percent\",",
+          "prefix": "p(m, 1),\n    }),\n  },\n  {\n    // 5%, 12.5 %\n    ",
+          "suffix": "\n    kind: \"number\",\n    pattern: re(String.raw`"
+        },
+        {
+          "kind": "text-position",
+          "start": 8886,
+          "end": 8902
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "38aea39d8b26d879"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"percent\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"duration-word\",",
+          "prefix": "\n  },\n  {\n    // 5 days, 1 hour, 30 seconds\n    ",
+          "suffix": "\n    kind: \"number\",\n    pattern: re(\n      Stri"
+        },
+        {
+          "kind": "text-position",
+          "start": 9131,
+          "end": 9153
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "3ddb6794e128e4a1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"duration-word\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"duration-short\",",
+          "prefix": " 12h: the unit letter must touch the number\n    ",
+          "suffix": "\n    kind: \"number\",\n    pattern: re(String.raw`"
+        },
+        {
+          "kind": "text-position",
+          "start": 9517,
+          "end": 9540
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "c8180974b7f261a8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"duration-short\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function normalizeNumber(raw: string): string {",
+          "prefix": " to `1299.5`; `007` to `7`; `29.00` to `29`. */\n",
+          "suffix": "\n  const [int = \"\", frac] = raw.replaceAll(\",\", "
+        },
+        {
+          "kind": "text-position",
+          "start": 4649,
+          "end": 4703
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "bc149088b85143f2",
+          "semanticHash": "7f5d720b487838c0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:39.756Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:39.756Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

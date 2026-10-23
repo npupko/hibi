@@ -1,0 +1,59 @@
+{
+  "id": "clm_e595f5237a284fd2",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A single region that does not fit is an error.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A single region that does not fit is an error.",
+        "prefix": "nd `regions[i]` paths index within the request. ",
+        "suffix": "\n- Sentences and evidence are always passed as n"
+      },
+      {
+        "kind": "text-position",
+        "start": 32245,
+        "end": 32291
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "is too large for one request",
+          "prefix": "   throw new Error(\n        `Triage region ${i} ",
+          "suffix": " (${cost.state} state tokens, ${cost.questions} "
+        },
+        {
+          "kind": "text-position",
+          "start": 4164,
+          "end": 4192
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "ed4dfaf5c3991905"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:51.366Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:51.366Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

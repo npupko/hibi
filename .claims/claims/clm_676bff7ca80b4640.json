@@ -1,0 +1,59 @@
+{
+  "id": "clm_676bff7ca80b4640",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- The doc span's text is the claim's sentence.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- The doc span's text is the claim's sentence.",
+        "prefix": "d again after the batch wrote it is left alone.\n",
+        "suffix": " A quote shorter than 8 characters is refused. A"
+      },
+      {
+        "kind": "text-position",
+        "start": 58664,
+        "end": 58710
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const sentence = regionText(docContent, docRegion);",
+          "prefix": "n = resolveRegion(docContent, input.docSpec);\n  ",
+          "suffix": "\n  warnings.push(...validateDocQuote(docContent,"
+        },
+        {
+          "kind": "text-position",
+          "start": 6252,
+          "end": 6303
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "e561efbeab1d6031",
+          "semanticHash": "8768b909d462c02c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:34.389Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:34.389Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

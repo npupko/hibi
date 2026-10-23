@@ -1,0 +1,82 @@
+{
+  "id": "clm_ad692e6c599648c7",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`audit` reports the candidate with the highest probability, ties to the smaller claim id, as `duplicateOf`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`audit` reports the candidate with the highest probability, ties to the smaller claim id, as `duplicateOf`.",
+        "prefix": "h claims, with the probability of `consistent`. ",
+        "suffix": " `list --state duplicate` also includes claims w"
+      },
+      {
+        "kind": "text-position",
+        "start": 46254,
+        "end": 46361
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(d.probability === best.probability && d.duplicateOf < best.duplicateOf)",
+          "prefix": "      d.probability > best.probability ||\n      ",
+          "suffix": "\n    ) {\n      best = d;\n    }\n  }\n  return best"
+        },
+        {
+          "kind": "text-position",
+          "start": 14232,
+          "end": 14304
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "parenthesized_expression",
+          "structuralHash": "e2cf80b1483c42af",
+          "semanticHash": "114657610c69795f"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "duplicateOf: (id) => duplicateOf(pass, id),",
+          "prefix": "ait this.store.allClaims(),\n      config,\n      ",
+          "suffix": "\n    });\n  }\n\n  /**\n   * Submit evidence an agen"
+        },
+        {
+          "kind": "text-position",
+          "start": 16880,
+          "end": 16923
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "014d0d128efa3dbc",
+          "semanticHash": "ee0d90586267c5bd"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:15.241Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:15.241Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

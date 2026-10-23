@@ -1,0 +1,88 @@
+{
+  "id": "clm_04dbf338659e4dc8",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "| `archived` | Moved to `archive/`, with a tombstone at the old path. |",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `archived` | Moved to `archive/`, with a tombstone at the old path. |",
+        "prefix": "es `supersededBy` with the new document's id. |\n",
+        "suffix": "\n\nA live claim (not retired) on a `superseded` o"
+      },
+      {
+        "kind": "text-position",
+        "start": 1664,
+        "end": 1735
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const relDest = join(\"archive\", docPath);",
+          "prefix": "g | null = null;\n  if (await exists(abs)) {\n    ",
+          "suffix": "\n    const dest = join(root, relDest);\n    const"
+        },
+        {
+          "kind": "text-position",
+          "start": 1895,
+          "end": 1936
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "65e275756ff130a5",
+          "semanticHash": "ac4f96b99afa94e9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"archive\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await writeFile(abs, tombstone(docPath, successorPath));",
+          "prefix": "\");\n      await writeFile(dest, content);\n      ",
+          "suffix": "\n    }\n    archivedTo = relDest;\n  }\n\n  doc.life"
+        },
+        {
+          "kind": "text-position",
+          "start": 2252,
+          "end": 2308
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "454d0d8fcb895a74",
+          "semanticHash": "0894b8c2d2026289"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.412Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.412Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

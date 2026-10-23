@@ -1,0 +1,122 @@
+{
+  "id": "clm_9394103c792b481c",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `version` | none | print version and schema version |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `version` | none | print version and schema version |",
+        "prefix": "pletions <shell>` | none | zsh, bash, or fish |\n",
+        "suffix": "\n\nEvery payload is wrapped as `{ ok: true, actio"
+      },
+      {
+        "kind": "text-position",
+        "start": 54986,
+        "end": 55041
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "summary: \"Print the hibi version and schema version.\",",
+          "prefix": "func/_hibi\"],\n  },\n  {\n    name: \"version\",\n    ",
+          "suffix": "\n    options: [],\n  },\n];\n\nexport const COMMAND_"
+        },
+        {
+          "kind": "text-position",
+          "start": 20620,
+          "end": 20674
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "5e12a2dbd64a96bc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Print the hibi version and schema version.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "envelope(\"version\", { name: \"hibi\", version: pkg.version }),",
+          "prefix": "ion\": {\n      await emit(\n        mode,\n        ",
+          "suffix": "\n        () => misc.renderVersion(pkg.version, s"
+        },
+        {
+          "kind": "text-position",
+          "start": 31964,
+          "end": 32024
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "9f7ab5918d9bf40b",
+          "semanticHash": "e7db9fc75534074c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"version\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/json.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "schemaVersion: SCHEMA_VERSION,",
+          "prefix": "own> {\n  return {\n    ok: true,\n    action,\n    ",
+          "suffix": "\n    ...payload,\n    ...(next !== undefined ? { "
+        },
+        {
+          "kind": "text-position",
+          "start": 1040,
+          "end": 1070
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "032aa2864040c879",
+          "semanticHash": "8d23a52210d48d56"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:56.928Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:57.171Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:56.928Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

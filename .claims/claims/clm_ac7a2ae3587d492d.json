@@ -1,0 +1,65 @@
+{
+  "id": "clm_ac7a2ae3587d492d",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "A `human:` vouch counts toward the ttl; an `agent:` or `process:` vouch does not.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `human:` vouch counts toward the ttl; an `agent:` or `process:` vouch does not.",
+        "prefix": "new claim gets one `vouch` attestation by `by`. ",
+        "suffix": " So an `attested` claim recorded with `\"by\": \"ag"
+      },
+      {
+        "kind": "text-position",
+        "start": 8341,
+        "end": 8422
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return a.basis === \"vouch\" && a.by.startsWith(\"human:\");",
+          "prefix": " {\n  if (a.basis === \"evidence\") return true;\n  ",
+          "suffix": "\n}\n\n/**\n * The newest counting attestation, or u"
+        },
+        {
+          "kind": "text-position",
+          "start": 649,
+          "end": 705
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "f5a90e37e56fc368",
+          "semanticHash": "e13e9b92ec8f5bcc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"vouch\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:04.453Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:04.453Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

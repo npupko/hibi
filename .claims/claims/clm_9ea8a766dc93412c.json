@@ -1,0 +1,88 @@
+{
+  "id": "clm_9ea8a766dc93412c",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "Commit `.claims/` after the run: the claim file gained an attestation. `.claims/judge/` gained a cache entry, wh",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Commit `.claims/` after the run: the claim file gained an attestation. `.claims/judge/` gained a cache entry, wh",
+        "prefix": "submit |\n\n`evidence` exits 0 for every verdict. ",
+        "suffix": "ich stays local. The raw evidence text is not st"
+      },
+      {
+        "kind": "text-position",
+        "start": 11192,
+        "end": 11304
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "subject: { claimId: p.claim.id },",
+          "prefix": " a.model,\n        judgment: \"supports\",\n        ",
+          "suffix": "\n        request: storedSupportsRequest(p.reques"
+        },
+        {
+          "kind": "text-position",
+          "start": 12428,
+          "end": 12461
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "3026c516aba32c44",
+          "semanticHash": "daeabfe1ba9541a5"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "attestations: [...current.attestations, attestation],",
+          "prefix": "it store.putClaim({\n        ...current,\n        ",
+          "suffix": "\n      });\n      attested = true;\n    }\n    resu"
+        },
+        {
+          "kind": "text-position",
+          "start": 13362,
+          "end": 13415
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "428e1da5423f8c15",
+          "semanticHash": "e9047be6f30e6309"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[...current.attestations,attestation]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:09.617Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:09.617Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

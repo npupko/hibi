@@ -18,7 +18,7 @@
   -->
 </p>
 
-Hibi tracks **claims**: checkable sentences in documents such as a README, `CLAUDE.md`, an ADR, or a pricing page. It reports which claims are stale, which documents cannot be trusted right now, which sentences contradict each other, and which sentences nothing could verify. Hibi runs nothing and fetches nothing; an agent collects evidence and submits it.
+Hibi tracks **claims**: checkable sentences in documents such as a README, `CLAUDE.md`, an ADR, or a pricing page. It reports which claims are stale, which documents cannot be trusted right now, which sentences contradict each other, and which sentences nothing could verify. Hibi runs no verifiers and no resolvers, and its only network call is the judge API; an agent collects evidence and submits it.
 
 A claim has one of three kinds:
 
@@ -96,7 +96,7 @@ Attestations are append-only and name an actor (`human:`, `agent:`, `process:`).
 ## What you can rely on
 
 - **Same tree, same verdicts.** Anchor resolution is deterministic, and judge verdicts are cached and never re-asked.
-- **A flag means re-verify.** Hibi reports that evidence moved, expired, was refuted, or conflicts. It never rewrites prose.
+- **A flag means re-verify.** Hibi reports that evidence moved, expired, was refuted, or conflicts. It never rewrites prose; only `archive` (the tombstone) and `init --instructions` (one appended line) write to a document.
 - **Nothing clears without evidence or a human.** An agent cannot vouch a claim fresh.
 - **Any text format.** Markdown, plain text, AsciiDoc, and instruction files work without a per-format parser.
 

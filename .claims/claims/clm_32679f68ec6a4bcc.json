@@ -1,0 +1,111 @@
+{
+  "id": "clm_32679f68ec6a4bcc",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It has neither `probability` nor `probabilities`, and carries `reason`: `judge unavailable: <message>` or `judge error: <message>`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It has neither `probability` nor `probabilities`, and carries `reason`: `judge unavailable: <message>` or `judge error: <message>`.",
+        "prefix": " 7.3); every region of that chunk is `pending`. ",
+        "suffix": "\n\n- `summary.requests` is the number of triage r"
+      },
+      {
+        "kind": "text-position",
+        "start": 51284,
+        "end": 51415
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "kind: \"pending\",\n        reason: pending.get(region.id) ?? \"judge unavailable\",",
+          "prefix": "if (!result) {\n      return row(base, {\n        ",
+          "suffix": "\n      });\n    }\n    return triageRow(base, resu"
+        },
+        {
+          "kind": "text-position",
+          "start": 11258,
+          "end": 11337
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "71f951035a896587",
+          "semanticHash": "ff1011b715edfdca"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeUnavailable) return `judge unavailable: ${e.message}`;",
+          "prefix": "ailureLabel(e: unknown): string | undefined {\n  ",
+          "suffix": "\n  if (e instanceof JudgeError) return `judge er"
+        },
+        {
+          "kind": "text-position",
+          "start": 3661,
+          "end": 3737
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "e16196633fc6e5f4"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeError) return `judge error: ${e.message}`;",
+          "prefix": "le) return `judge unavailable: ${e.message}`;\n  ",
+          "suffix": "\n  return undefined;\n}\n\n/**\n * The longest text "
+        },
+        {
+          "kind": "text-position",
+          "start": 3740,
+          "end": 3804
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "d2206c1328e3b3de"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.457Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.457Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,88 @@
+{
+  "id": "clm_3f37ddf6a0e341f0",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "\"conflicts\": [{ \"claimId\": \"clm_517bbfaa1ac94263\", \"probability\": 1, \"reason\": \"numbers differ: 29 vs 39\" }],",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "\"conflicts\": [{ \"claimId\": \"clm_517bbfaa1ac94263\", \"probability\": 1, \"reason\": \"numbers differ: 29 vs 39\" }],",
+        "prefix": "ed\", \"doc\": \"unchanged\", \"expired\": true,\n      ",
+        "suffix": "\n      \"gates\": true, \"warns\": false,\n      \"rem"
+      },
+      {
+        "kind": "text-position",
+        "start": 12058,
+        "end": 12167
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { outcome: \"conflict\", probability: 1, reason: values.label };",
+          "prefix": ".differs && values.label !== undefined) {\n      ",
+          "suffix": "\n    }\n  }\n  const pContra = r.probabilities.con"
+        },
+        {
+          "kind": "text-position",
+          "start": 5784,
+          "end": 5853
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "a4e20b200fce563b",
+          "semanticHash": "7d930ffade48333b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"conflict\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`conflicts with ${c.claimId} (p=${fmt(c.probability)} at or above threshold ${threshold}): ${c.reason}`,",
+          "prefix": "      gates = true;\n      reasons.push(\n        ",
+          "suffix": "\n      );\n    } else {\n      warns = true;\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 3417,
+          "end": 3521
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "b6bb87c2aad051fa",
+          "semanticHash": "2c758c24632f9a41"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:09.795Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:09.795Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

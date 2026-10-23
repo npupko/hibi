@@ -1,0 +1,105 @@
+{
+  "id": "clm_9c21c2c0e4fb42a7",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `pending` | the judge was unavailable, or its answer could not be used | `judge unavailable: <message>`, `judge error: <message>` |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `pending` | the judge was unavailable, or its answer could not be used | `judge unavailable: <message>`, `judge error: <message>` |",
+        "prefix": " outcome | rule | example label |\n|---|---|---|\n",
+        "suffix": "\n| `unrelated` | the `same_subject` Noul forced "
+      },
+      {
+        "kind": "text-position",
+        "start": 44763,
+        "end": 44896
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeUnavailable) return `judge unavailable: ${e.message}`;",
+          "prefix": "ailureLabel(e: unknown): string | undefined {\n  ",
+          "suffix": "\n  if (e instanceof JudgeError) return `judge er"
+        },
+        {
+          "kind": "text-position",
+          "start": 3661,
+          "end": 3737
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "e16196633fc6e5f4"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeError) return `judge error: ${e.message}`;",
+          "prefix": "le) return `judge unavailable: ${e.message}`;\n  ",
+          "suffix": "\n  return undefined;\n}\n\n/**\n * The longest text "
+        },
+        {
+          "kind": "text-position",
+          "start": 3740,
+          "end": 3804
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "d2206c1328e3b3de"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pending.push(pair.pairId);",
+          "prefix": "      if (label === undefined) throw e;\n        ",
+          "suffix": "\n        outcomes[index] = {\n          pairId: p"
+        },
+        {
+          "kind": "text-position",
+          "start": 10633,
+          "end": 10659
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "7426f1729a85649a",
+          "semanticHash": "c573501e918cfa02"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:54.296Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:54.296Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "clm_e6f7aa648f39493f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The cache is local (section 6).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The cache is local (section 6).",
+        "prefix": " with the judge cache present cannot flip them. ",
+        "suffix": "\n3. **A flag means re-verify.** Hibi reports tha"
+      },
+      {
+        "kind": "text-position",
+        "start": 2023,
+        "end": 2054
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return new JudgeCache(join(this.dir, SUBDIRS.judge));",
+          "prefix": "e>/judge/`. */\n  judgeCache(): JudgeCache {\n    ",
+          "suffix": "\n  }\n\n  // ── Documents ──\n  async putDocument(d"
+        },
+        {
+          "kind": "text-position",
+          "start": 5672,
+          "end": 5725
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "d7ed50890a8cf290",
+          "semanticHash": "faec5ce4ee7190c2"
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await writeFile(gitignore, `${SUBDIRS.judge}/\\n`);",
+          "prefix": "\");\n    if (!(await exists(gitignore))) {\n      ",
+          "suffix": "\n    }\n    return s;\n  }\n\n  /**\n   * Open an exi"
+        },
+        {
+          "kind": "text-position",
+          "start": 3429,
+          "end": 3479
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "3173e9bc5ec04bb4",
+          "semanticHash": "df0de62e936b77fb"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:23.891Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:23.891Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

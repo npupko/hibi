@@ -364,7 +364,7 @@ export const COMMANDS: CommandSpec[] = [
     summary:
       "Re-resolve a claim's spans and store the new baseline; or list candidate locations with --suggest.",
     description:
-      "Without span flags each side re-localizes through its stored selectors. A side that is not found is refused unless an explicit new span is given for it; an evidence side in a sibling repo that is not checked out is kept as stored, with a warning. --doc moves the claim to a different document (requires a doc span). --code-* flags replace a code claim's spans, --ref-* flags a reference claim's span. The claim's sentence is refreshed from the new doc span.",
+      "Without span flags only a side that reads moved is relocated; a side that reads changed, ambiguous, or orphaned is kept as stored and the result names the flag to pass (doc: changed; pass --doc-quote to re-anchor). Exit 1 when a side needed relocating and none was relocated. An evidence side in a sibling repo that is not checked out is kept as stored, with a warning. The doc and ref flags may each be given once; a value starting with - takes the --flag=<value> form. --doc moves the claim to a different document (requires a doc span). --code-file is repeatable: each one opens a span that takes the --code-quote or --code-range after it, and the spans given replace all of a code claim's spans, in order. --ref-* flags replace a reference claim's span. The claim's sentence is refreshed from the new doc span.",
     positional: {
       name: "claim-id",
       help: "The claim to reanchor.",
@@ -378,7 +378,7 @@ export const COMMANDS: CommandSpec[] = [
         help: "Move the doc anchor to this document (with --doc-quote or --doc-range).",
       },
       ...DOC_SPAN,
-      ...codeSpan(false),
+      ...codeSpan(true),
       ...REF_SPAN,
       {
         name: "suggest",
@@ -569,6 +569,57 @@ export function parseArgsOptions(
     out[o.name] = { type: o.type, ...(o.multiple ? { multiple: true } : {}) };
   }
   return out;
+}
+
+/** The span flags: a command takes one span per side. */
+const SPAN_FLAGS = new Set([
+  "doc-quote",
+  "doc-range",
+  "code-file",
+  "code-quote",
+  "code-range",
+  "ref-file",
+  "ref-quote",
+  "ref-range",
+]);
+
+/**
+ * The error for a single-value string flag given more than once, or
+ * undefined. `parseArgs` keeps only the last value, so a repeat is refused
+ * instead of dropped.
+ */
+export function repeatedFlag(
+  cmd: CommandSpec,
+  tokens: ReadonlyArray<{ kind: string; name?: string }>,
+): string | undefined {
+  const single = new Set(
+    optionsFor(cmd)
+      .filter((o) => o.type === "string" && !o.multiple)
+      .map((o) => o.name),
+  );
+  const seen = new Set<string>();
+  for (const t of tokens) {
+    if (t.kind !== "option" || t.name === undefined || !single.has(t.name))
+      continue;
+    if (seen.has(t.name)) {
+      const takes = SPAN_FLAGS.has(t.name)
+        ? "one span per side"
+        : `one --${t.name}`;
+      return `--${t.name} given twice; ${cmd.name} takes ${takes}`;
+    }
+    seen.add(t.name);
+  }
+  return undefined;
+}
+
+/**
+ * The error for a value flag with no value. A value that starts with "-" is
+ * read as a flag, so the message names the `--flag=<value>` form.
+ */
+export function missingValue(cmd: CommandSpec, flag: string): string {
+  const o = optionsFor(cmd).find((x) => `--${x.name}` === flag);
+  const ph = o?.placeholder ?? "<value>";
+  return `${flag} needs a value; for a value starting with "-" use ${flag}=${ph}`;
 }
 
 /**

@@ -1,0 +1,65 @@
+{
+  "id": "clm_7524b6a8cdac4fe7",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "When that key is not in the cache, or its entry is not `supports`, the error is ``claim <id> has no supports verdict for its current text; run `hibi check` first.``",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "When that key is not in the cache, or its entry is not `supports`, the error is ``claim <id> has no supports verdict for its current text; run `hibi check` first.``",
+        "prefix": " `not consulted while the doc side is changed`. ",
+        "suffix": " While the claim's current judge verdict has tha"
+      },
+      {
+        "kind": "text-position",
+        "start": 10657,
+        "end": 10821
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  if (entry === undefined || entry.judgment !== \"supports\") {\n    throw new Error(\n      `claim ${claim.id} has no supports verdict for its current text; run \\`hibi check\\` first.`,",
+          "prefix": "onst entry = await store.judgeCache().get(key);\n",
+          "suffix": "\n    );\n  }\n  return key;\n}\n\nasync function appe"
+        },
+        {
+          "kind": "text-position",
+          "start": 4684,
+          "end": 4865
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "9d330811afa49ce4",
+          "semanticHash": "3b480c86db726624"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:06:19.448Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:06:19.448Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

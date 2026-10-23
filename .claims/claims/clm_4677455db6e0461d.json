@@ -1,0 +1,94 @@
+{
+  "id": "clm_4677455db6e0461d",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `evidence` | the same five, plus `unavailable` | when the claim has evidence sides; the worst state over them |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `evidence` | the same five, plus `unavailable` | when the claim has evidence sides; the worst state over them |",
+        "prefix": ", `changed`, `ambiguous`, `orphaned` | always |\n",
+        "suffix": "\n| `judge` | `supported`, `refuted`, `review`, `"
+      },
+      {
+        "kind": "text-position",
+        "start": 1357,
+        "end": 1470
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".enum([...AnchorState.options, \"unavailable\"])",
+          "prefix": "ecked out). */\nexport const EvidenceState = z\n  ",
+          "suffix": "\n  .meta({ id: \"EvidenceState\" });\nexport type E"
+        },
+        {
+          "kind": "text-position",
+          "start": 2930,
+          "end": 2976
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "0e416f2c12523a07",
+          "semanticHash": "a8a62e65c4406b82"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[...AnchorState.options,\"unavailable\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sides.evidence.length > 0 ? worstEvidenceState(sides.evidence) : undefined;",
+          "prefix": " = {},\n): ClaimVerdict {\n  const evidence =\n    ",
+          "suffix": "\n  // The reported similarity describes the loca"
+        },
+        {
+          "kind": "text-position",
+          "start": 13817,
+          "end": 13892
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "bead617442514085",
+          "semanticHash": "f1f456795d21ed51"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:11.089Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:11.089Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

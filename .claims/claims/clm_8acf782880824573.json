@@ -1,0 +1,59 @@
+{
+  "id": "clm_8acf782880824573",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `expired` | boolean | always; see [Attestations](/attestations) |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `expired` | boolean | always; see [Attestations](/attestations) |",
+        "prefix": "s, and `attested` claims with judged evidence |\n",
+        "suffix": "\n| `conflicts` | `[{ claimId, probability, reaso"
+      },
+      {
+        "kind": "text-position",
+        "start": 1619,
+        "end": 1686
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "expired: z.boolean(),",
+          "prefix": "plies. */\n    judge: JudgeState.optional(),\n    ",
+          "suffix": "\n    conflicts: z.array(ConflictFinding).default"
+        },
+        {
+          "kind": "text-position",
+          "start": 15982,
+          "end": 16003
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1510bc52887893f3",
+          "semanticHash": "c38c99e1b5a35b47"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:11.229Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:11.229Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

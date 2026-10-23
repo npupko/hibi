@@ -1,0 +1,65 @@
+{
+  "id": "clm_ba2dcc9494eb4eb4",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "On a verdict, `supports` outcomes appear as the `judge` axis: `supported`, `refuted`, `review`, or `pending`.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "On a verdict, `supports` outcomes appear as the `judge` axis: `supported`, `refuted`, `review`, or `pending`.",
+        "prefix": "| n/a: a row below the threshold is `unsure` |\n\n",
+        "suffix": " Every outcome carries a reason label, prefixed "
+      },
+      {
+        "kind": "text-position",
+        "start": 9319,
+        "end": 9428
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const JudgeState = z.enum([\"supported\", \"refuted\", \"review\", \"pending\"]);",
+          "prefix": "\n/** The judge axis of a verdict (SPEC 7.2). */\n",
+          "suffix": "\nexport type JudgeState = z.infer<typeof JudgeSt"
+        },
+        {
+          "kind": "text-position",
+          "start": 3118,
+          "end": 3198
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "c512d014b389f925",
+          "semanticHash": "3bb5e3144f937c77"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"supported\",\"refuted\",\"review\",\"pending\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:38.650Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:38.650Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

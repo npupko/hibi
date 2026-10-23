@@ -1,0 +1,105 @@
+{
+  "id": "clm_7d5ff38363564b02",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 31 | the fake judge emits System One-shaped answers and the Jev mappers decode them, so there is one decode path for live, cached, and fake answers |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 31 | the fake judge emits System One-shaped answers and the Jev mappers decode them, so there is one decode path for live, cached, and fake answers |",
+        "prefix": " of `expired, review, pending, never-checked` |\n",
+        "suffix": "\n| 32 | the value rule beats the Choice on `supp"
+      },
+      {
+        "kind": "text-position",
+        "start": 78384,
+        "end": 78535
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/fake.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "result: mapSupportsAnswers(answers),",
+          "prefix": "this.model,\n      request,\n      answers,\n      ",
+          "suffix": "\n    };\n  }\n\n  async conflict(\n    a: ConflictSi"
+        },
+        {
+          "kind": "text-position",
+          "start": 5000,
+          "end": 5036
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "b34135da11c76957",
+          "semanticHash": "2c455b9f74eb45a5"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/fake.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "result: mapConflictAnswers(answers),",
+          "prefix": "this.model,\n      request,\n      answers,\n      ",
+          "suffix": "\n    };\n  }\n}\n\n// ── Wire encoding: a result as "
+        },
+        {
+          "kind": "text-position",
+          "start": 5655,
+          "end": 5691
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "b34135da11c76957",
+          "semanticHash": "19fbf8dd34c71cec"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/fake.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "result: mapTriageAnswers(requests, answers),",
+          "prefix": ",\n      request: requests,\n      answers,\n      ",
+          "suffix": "\n    };\n  }\n\n  async supports(input: SupportsInp"
+        },
+        {
+          "kind": "text-position",
+          "start": 4413,
+          "end": 4457
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "bf46cd2213c139d7",
+          "semanticHash": "ebb8348048c8c988"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:23.912Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:23.912Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

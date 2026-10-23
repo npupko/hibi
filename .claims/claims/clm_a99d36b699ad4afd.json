@@ -1,0 +1,100 @@
+{
+  "id": "clm_a99d36b699ad4afd",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "9. CI dogfood: `.claims/` is re-initialized in this repository with `code` and `reference` claims on README, `docs/`, and the plugin skill, and `attested` claims for the TypeSafe figures in `docs/judge.mdx`. Done.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "9. CI dogfood: `.claims/` is re-initialized in this repository with `code` and `reference` claims on README, `docs/`, and the plugin skill, and `attested` claims for the TypeSafe figures in `docs/judge.mdx`. Done.",
+        "prefix": "ADME, and the plugin skill synced to it. Done.\n\n",
+        "suffix": "\n\n10. Second fix pass (2026-10-23): one definiti"
+      },
+      {
+        "kind": "text-position",
+        "start": 73889,
+        "end": 74102
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": ".claims/config.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"version\": \"v4\",",
+          "prefix": "{\n  ",
+          "suffix": "\n  \"repos\": {},\n  \"judge\": {\n    \"model\": \"jev-1"
+        },
+        {
+          "kind": "text-position",
+          "start": 4,
+          "end": 20
+        }
+      ]
+    },
+    {
+      "file": ".github/workflows/ci.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Dogfood: hibi checks its own docs against its own code.",
+          "prefix": " }}\n          restore-keys: hibi-judge-\n      # ",
+          "suffix": " There is no\n      # TYPESAFE_API_KEY in CI, so "
+        },
+        {
+          "kind": "text-position",
+          "start": 1882,
+          "end": 1937
+        }
+      ]
+    },
+    {
+      "file": ".claims/claims/clm_4235d3f33a2b4c00.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"kind\": \"attested\",",
+          "prefix": "c00\",\n  \"documentId\": \"doc_da671669435c5749\",\n  ",
+          "suffix": "\n  \"sentence\": \"| price | $0.042 per million inp"
+        },
+        {
+          "kind": "text-position",
+          "start": 76,
+          "end": 95
+        }
+      ]
+    },
+    {
+      "file": ".claims/claims/clm_4235d3f33a2b4c00.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"file\": \"docs/judge.mdx\",",
+          "prefix": "kens; output tokens are free |\",\n  \"doc\": {\n    ",
+          "suffix": "\n    \"selectors\": [\n      {\n        \"kind\": \"tex"
+        },
+        {
+          "kind": "text-position",
+          "start": 196,
+          "end": 221
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:18.475Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:18.475Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

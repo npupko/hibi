@@ -1,0 +1,123 @@
+{
+  "id": "clm_47a2838e098a41e5",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**A flag means re-verify.** Hibi reports that evidence moved, expired, was refuted, or conflicts.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**A flag means re-verify.** Hibi reports that evidence moved, expired, was refuted, or conflicts.",
+        "prefix": "t flip them. The cache is local (section 6).\n3. ",
+        "suffix": " It does not rewrite prose (principle 1 lists th"
+      },
+      {
+        "kind": "text-position",
+        "start": 2058,
+        "end": 2155
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"moved\", // found, same text, new place",
+          "prefix": "unchanged\", // found, same text, same place\n    ",
+          "suffix": "\n    \"changed\", // found, text or structure diff"
+        },
+        {
+          "kind": "text-position",
+          "start": 2524,
+          "end": 2563
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "c60db945f7b10227",
+          "semanticHash": "d4363f35552a4758"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"moved\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const JudgeState = z.enum([\"supported\", \"refuted\", \"review\", \"pending\"]);",
+          "prefix": "\n/** The judge axis of a verdict (SPEC 7.2). */\n",
+          "suffix": "\nexport type JudgeState = z.infer<typeof JudgeSt"
+        },
+        {
+          "kind": "text-position",
+          "start": 3118,
+          "end": 3198
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "c512d014b389f925",
+          "semanticHash": "3bb5e3144f937c77"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"supported\",\"refuted\",\"review\",\"pending\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "conflicts: z.array(ConflictFinding).default([]),",
+          "prefix": "State.optional(),\n    expired: z.boolean(),\n    ",
+          "suffix": "\n    gates: z.boolean(),\n    /** True when the v"
+        },
+        {
+          "kind": "text-position",
+          "start": 16008,
+          "end": 16056
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1393ec7729f6c1cb",
+          "semanticHash": "a6eb033e6189eead"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:55.869Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:55.869Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

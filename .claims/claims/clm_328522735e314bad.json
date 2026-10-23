@@ -1,0 +1,94 @@
+{
+  "id": "clm_328522735e314bad",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 22 | propositions removed |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 22 | propositions removed |",
+        "prefix": " as hash, source, summary; raw text discarded |\n",
+        "suffix": "\n| 23 | docs, README, skill, and design folder r"
+      },
+      {
+        "kind": "text-position",
+        "start": 77064,
+        "end": 77093
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const SUBDIRS = {\n  documents: \"documents\",\n  claims: \"claims\",\n  judge: \"judge\",\n} as const;",
+          "prefix": " === \"ENOENT\") return null;\n    throw e;\n  }\n}\n\n",
+          "suffix": "\n\n/**\n * Where a store lives and what its anchor"
+        },
+        {
+          "kind": "text-position",
+          "start": 1100,
+          "end": 1193
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "85516d8c0977c6f0",
+          "semanticHash": "0c7d68f9ca9628a4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"documents\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sentence: z.string().min(1),",
+          "prefix": "ocumentId: DocumentId,\n    kind: ClaimKind,\n    ",
+          "suffix": "\n    doc: SelectorBundle,\n    evidence: z.array("
+        },
+        {
+          "kind": "text-position",
+          "start": 8746,
+          "end": 8774
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "ce652e9ff7aaa29d",
+          "semanticHash": "adb92e6ef9077442"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:23.435Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:23.435Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

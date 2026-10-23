@@ -1,0 +1,88 @@
+{
+  "id": "clm_fe7905616d0d4fc2",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| a 400, a 422, or another 4xx other than 401, 403, 408, and 429 | error |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| a 400, a 422, or another 4xx other than 401, 403, 408, and 429 | error |",
+        "prefix": " no answer after the last retry | unavailable |\n",
+        "suffix": "\n| a 200 whose body is not JSON, or has no `answ"
+      },
+      {
+        "kind": "text-position",
+        "start": 4386,
+        "end": 4460
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return status === 408 || status === 429 || (status >= 500 && status <= 599);",
+          "prefix": " isRetryableStatus(status: number): boolean {\n  ",
+          "suffix": "\n}\n\n/**\n * Parses `retry-after` (seconds or HTTP"
+        },
+        {
+          "kind": "text-position",
+          "start": 2301,
+          "end": 2377
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "1a55bd3ff4928c36",
+          "semanticHash": "03adb57329923a5e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "408"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "throw new JudgeError(`TypeSafe returned HTTP ${status}: ${text}`);",
+          "prefix": " the request is wrong, not the service.\n        ",
+          "suffix": "\n      }\n      lastFailure = `HTTP ${status}: ${"
+        },
+        {
+          "kind": "text-position",
+          "start": 6347,
+          "end": 6413
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "throw_statement",
+          "structuralHash": "5e7091e61f388ec5",
+          "semanticHash": "e88771fe6458d624"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:36.247Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:36.247Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

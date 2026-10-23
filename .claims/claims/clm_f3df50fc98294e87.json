@@ -1,0 +1,82 @@
+{
+  "id": "clm_f3df50fc98294e87",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`list --state pending` returns the same set.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`list --state pending` returns the same set.",
+        "prefix": "re is one; newest is defined as in section 7.3. ",
+        "suffix": " A scoped check (`--doc`, `--since`) lists only "
+      },
+      {
+        "kind": "text-position",
+        "start": 29184,
+        "end": 29228
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const worklist = new Set(input.report.worklist.map((w) => w.claimId));",
+          "prefix": " new Map(input.claims.map((c) => [c.id, c]));\n  ",
+          "suffix": "\n  const inConflict = new Set(input.pass.finding"
+        },
+        {
+          "kind": "text-position",
+          "start": 4569,
+          "end": 4639
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "cdda4cf958565377",
+          "semanticHash": "ed97097a4807fe35"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return worklist.has(claim.id);",
+          "prefix": "me === state;\n        case \"pending\":\n          ",
+          "suffix": "\n        case \"expired\":\n          return live &"
+        },
+        {
+          "kind": "text-position",
+          "start": 5567,
+          "end": 5597
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "3f930d1ee8c383c5",
+          "semanticHash": "896b75c0d879f1ec"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:49.640Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:49.640Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

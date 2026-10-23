@@ -1,0 +1,111 @@
+{
+  "id": "clm_1d5f7b9c8b0d4e3a",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "Copies the file to `archive/<path>`, replaces the original with a short tombstone, and sets the document's lifecycle to `archived`.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Copies the file to `archive/<path>`, replaces the original with a short tombstone, and sets the document's lifecycle to `archived`.",
+        "prefix": "oc <path> [--successor <path>] [--dry-run]\n```\n\n",
+        "suffix": " The tombstone is a Markdown page headed `# Arch"
+      },
+      {
+        "kind": "text-position",
+        "start": 3971,
+        "end": 4102
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await writeFile(dest, content);",
+          "prefix": "st content = await readFile(abs, \"utf8\");\n      ",
+          "suffix": "\n      await writeFile(abs, tombstone(docPath, s"
+        },
+        {
+          "kind": "text-position",
+          "start": 2214,
+          "end": 2245
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "d208a84a1471e9c5",
+          "semanticHash": "a7eeb58e6d2caf0d"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await writeFile(abs, tombstone(docPath, successorPath));",
+          "prefix": "\");\n      await writeFile(dest, content);\n      ",
+          "suffix": "\n    }\n    archivedTo = relDest;\n  }\n\n  doc.life"
+        },
+        {
+          "kind": "text-position",
+          "start": 2252,
+          "end": 2308
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "454d0d8fcb895a74",
+          "semanticHash": "0894b8c2d2026289"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "doc.lifecycle = \"archived\";",
+          "prefix": "rPath));\n    }\n    archivedTo = relDest;\n  }\n\n  ",
+          "suffix": "\n  if (!dryRun) await store.putDocument(doc);\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 2348,
+          "end": 2375
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "e0cf5471d7fd0685",
+          "semanticHash": "9b16045ddf7a42af"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"archived\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.900Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.900Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

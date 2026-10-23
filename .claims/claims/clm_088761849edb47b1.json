@@ -1,0 +1,59 @@
+{
+  "id": "clm_088761849edb47b1",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "`recommended` names the action to start with, or is `null` when hibi cannot know which is right.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`recommended` names the action to start with, or is `null` when hibi cannot know which is right.",
+        "prefix": "ediation`: a menu, most severe condition first. ",
+        "suffix": " `--no-hints` (or `HIBI_ADVICE=0`) drops the men"
+      },
+      {
+        "kind": "text-position",
+        "start": 4625,
+        "end": 4721
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { recommended: first.recommended, actions };",
+          "prefix": "en.add(key);\n      actions.push(a);\n    }\n  }\n  ",
+          "suffix": "\n}\n\n/** The single action a one-line surface sho"
+        },
+        {
+          "kind": "text-position",
+          "start": 12206,
+          "end": 12257
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "040953c8ff48279d",
+          "semanticHash": "dd44c1584f4b49c3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:13.381Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:13.381Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_1f18da60df464cdb",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `ack` on a review | `hibi attest <id> --by <actor> --ack review --note \"<why>\"` |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `ack` on a review | `hibi attest <id> --by <actor> --ack review --note \"<why>\"` |",
+        "prefix": "--by human:<you> --note \"<what you checked>\"` |\n",
+        "suffix": "\n| `ack` on a conflict | `hibi attest <id> --by "
+      },
+      {
+        "kind": "text-position",
+        "start": 5906,
+        "end": 5989
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "command: `hibi attest ${id} --by <actor> --ack review --note \"<why>\"`,",
+          "prefix": ", record why; an ack never resets the ttl\",\n    ",
+          "suffix": "\n  };\n}\n\nfunction ackConflict(id: string, other:"
+        },
+        {
+          "kind": "text-position",
+          "start": 8092,
+          "end": 8162
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "787e166f87e46da5",
+          "semanticHash": "a59d723dfd06f3bd"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:14.759Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:14.759Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

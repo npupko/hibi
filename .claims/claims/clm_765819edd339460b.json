@@ -1,0 +1,181 @@
+{
+  "id": "clm_765819edd339460b",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `money` | `$29`, `€ 5`, `29 USD`, `USD 29`, `$5m`, `$2.5k`, `$1bn` | `29` with unit `USD`; `$5m` is `5000000` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `money` | `$29`, `€ 5`, `29 USD`, `USD 29`, `$5m`, `$2.5k`, `$1bn` | `29` with unit `USD`; `$5m` is `5000000` |",
+        "prefix": " | `v1.2.3`, `1.2.3`, `version 1.2` | `1.2.3` |\n",
+        "suffix": "\n| `number` | `5%`, `5 days`, `90d`, `500ms`, `1"
+      },
+      {
+        "kind": "text-position",
+        "start": 10771,
+        "end": 10884
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"currency-sign\",",
+          "prefix": "gnitude: $5m, $2.5k, $1bn (never 5 minutes)\n    ",
+          "suffix": "\n    kind: \"money\",\n    pattern: re(String.raw`("
+        },
+        {
+          "kind": "text-position",
+          "start": 7888,
+          "end": 7910
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "2a67b49c0bc104d7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"currency-sign\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"currency-code-after\",",
+          "prefix": "    };\n    },\n  },\n  {\n    // 29 USD, 5 EUR\n    ",
+          "suffix": "\n    kind: \"money\",\n    pattern: re(String.raw`$"
+        },
+        {
+          "kind": "text-position",
+          "start": 8335,
+          "end": 8363
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "f4d94b464e254589"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"currency-code-after\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"currency-code-before\",",
+          "prefix": "group(m, 2),\n    }),\n  },\n  {\n    // USD 29\n    ",
+          "suffix": "\n    kind: \"money\",\n    pattern: re(String.raw`\\"
+        },
+        {
+          "kind": "text-position",
+          "start": 8609,
+          "end": 8638
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "4f25f57432ae4782"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"currency-code-before\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "$: \"USD\",",
+          "prefix": "st CURRENCY_SIGNS: Record<string, string> = {\n  ",
+          "suffix": "\n  \"€\": \"EUR\",\n  \"£\": \"GBP\",\n};\nconst CURRENCY_C"
+        },
+        {
+          "kind": "text-position",
+          "start": 3359,
+          "end": 3368
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "3078232655f603e3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"USD\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const MAGNITUDE: Record<string, number> = { k: 3, m: 6, b: 9, bn: 9 };",
+          "prefix": "r a currency amount: `$5m`, `$2.5k`, `$1bn`. */\n",
+          "suffix": "\n\nfunction isoDate(y: number, m: number, d: numb"
+        },
+        {
+          "kind": "text-position",
+          "start": 5355,
+          "end": 5425
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "63927cd480b9dd6b",
+          "semanticHash": "b35cd90532fd56a3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:39.686Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:39.686Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

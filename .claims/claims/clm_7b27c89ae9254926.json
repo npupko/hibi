@@ -1,0 +1,84 @@
+{
+  "id": "clm_7b27c89ae9254926",
+  "documentId": "doc_5be5c5b2d98e3a89",
+  "kind": "code",
+  "sentence": "```\n/plugin marketplace add npupko/hibi\n/plugin install hibi-cli@hibi\n```",
+  "doc": {
+    "file": "plugins/hibi-cli/README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```\n/plugin marketplace add npupko/hibi\n/plugin install hibi-cli@hibi\n```",
+        "prefix": " and CI.\n\n## Install\n\nFrom inside Claude Code:\n\n",
+        "suffix": "\n\nTo pull the latest version after the repo chan"
+      },
+      {
+        "kind": "text-position",
+        "start": 850,
+        "end": 923
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": ".claude-plugin/marketplace.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"name\": \"hibi\",",
+          "prefix": "{\n  ",
+          "suffix": "\n  \"owner\": {\n    \"name\": \"Nick Pupko\",\n    \"ema"
+        },
+        {
+          "kind": "text-position",
+          "start": 4,
+          "end": 19
+        }
+      ]
+    },
+    {
+      "file": ".claude-plugin/marketplace.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"name\": \"hibi-cli\",",
+          "prefix": "ick7@gmail.com\"\n  },\n  \"plugins\": [\n    {\n      ",
+          "suffix": "\n      \"source\": \"./plugins/hibi-cli\",\n      \"de"
+        },
+        {
+          "kind": "text-position",
+          "start": 126,
+          "end": 145
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"url\": \"git+https://github.com/npupko/hibi.git\"",
+          "prefix": "com>\",\n  \"repository\": {\n    \"type\": \"git\",\n    ",
+          "suffix": "\n  },\n  \"homepage\": \"https://hibi.mintlify.app\","
+        },
+        {
+          "kind": "text-position",
+          "start": 296,
+          "end": 343
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:29:30.849Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:29:30.849Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,52 @@
+{
+  "id": "clm_1ff8d7a6030748a7",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "reference",
+  "sentence": "Every automatic rule that fires appears as a reason label in the report.",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Every automatic rule that fires appears as a reason label in the report.",
+        "prefix": "s\">\n    One judge threshold for every judgment. ",
+        "suffix": "\n  </Accordion>\n\n  <Accordion title=\"6. Contract"
+      },
+      {
+        "kind": "text-position",
+        "start": 2841,
+        "end": 2913
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**One knob per concept, no hidden rules.** Every automatic rule appears as a reason label in the report.",
+          "prefix": "d by the model, or a human attestation, can.\n5. ",
+          "suffix": "\n6. **Contracts are data.** Contracts are JSON: "
+        },
+        {
+          "kind": "text-position",
+          "start": 2454,
+          "end": 2558
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:51.452Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:51.452Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

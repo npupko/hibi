@@ -1,0 +1,59 @@
+{
+  "id": "clm_01024df580214905",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "Attested claims only.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Attested claims only.",
+        "prefix": " `--by` is required unless every item has `by`. ",
+        "suffix": " `results[].judge`: `supported` appends an evide"
+      },
+      {
+        "kind": "text-position",
+        "start": 4874,
+        "end": 4895
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence applies to attested claims, and reference claims are judged from the referenced document",
+          "prefix": "    `claim ${claimId} is a ${claim.kind} claim; ",
+          "suffix": "`,\n      );\n    }\n  }\n  const evidence = str(\"ev"
+        },
+        {
+          "kind": "text-position",
+          "start": 6934,
+          "end": 7031
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "887766a2fbcbc5a5"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:33.219Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:33.219Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

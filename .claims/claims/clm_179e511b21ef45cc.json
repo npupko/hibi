@@ -1,0 +1,65 @@
+{
+  "id": "clm_179e511b21ef45cc",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "An item with no `by` and no `--by` is refused with `by is required: pass --by <actor> or a by key, …`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An item with no `by` and no `--by` is refused with `by is required: pass --by <actor> or a by key, …`.",
+        "prefix": "ested`. `owner` and `by` must be in actor form. ",
+        "suffix": "\n- Paths are normalized (section 6), and an evid"
+      },
+      {
+        "kind": "text-position",
+        "start": 57640,
+        "end": 57742
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"by is required: pass --by <actor> or a by key, as human:<id>, agent:<name>, or process:<name>\",",
+          "prefix": " if (by === undefined) {\n    errors.push(\n      ",
+          "suffix": "\n    );\n  }\n  if (raw.suggest !== undefined && t"
+        },
+        {
+          "kind": "text-position",
+          "start": 10743,
+          "end": 10839
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "b715e7808aca7ce0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"by is required: pass --by <actor> or a by key, as human:<id>, agent:<name>, or process:<name>\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:34.051Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:34.051Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

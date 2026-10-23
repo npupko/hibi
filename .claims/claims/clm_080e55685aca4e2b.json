@@ -1,0 +1,110 @@
+{
+  "id": "clm_080e55685aca4e2b",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "`pending` is a warning, so it does not fail the build under the default `fail-on: gating`. Under `fail-on: warn` it does.",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`pending` is a warning, so it does not fail the build under the default `fail-on: gating`. Under `fail-on: warn` it does.",
+        "prefix": " the key is set and the judge returns an error. ",
+        "suffix": "\n\n`.claims/judge/` is a local cache and is not c"
+      },
+      {
+        "kind": "text-position",
+        "start": 2927,
+        "end": 3048
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge !== undefined && WARN_JUDGE.has(v.judge)) warns = true;",
+          "prefix": "e;\n  if (v.judge === \"refuted\") gates = true;\n  ",
+          "suffix": "\n\n  for (const c of v.conflicts ?? []) {\n    if "
+        },
+        {
+          "kind": "text-position",
+          "start": 3223,
+          "end": 3290
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6f8b74a4d58a3d1a",
+          "semanticHash": "2ee335600addd146"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.warn && failOn === \"warn\") return 2;",
+          "prefix": "ver\") return 0;\n  if (flags.gating) return 2;\n  ",
+          "suffix": "\n  return 0;\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 22264,
+          "end": 22310
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "bccaa0a62493fb72",
+          "semanticHash": "a278e5457df0d7f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"warn\""
+        }
+      ]
+    },
+    {
+      "file": "action.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "default: \"gating\"",
+          "prefix": "gating | warn | never.\"\n    required: false\n    ",
+          "suffix": "\n  since:\n    description: \"Base ref; report onl"
+        },
+        {
+          "kind": "text-position",
+          "start": 397,
+          "end": 414
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:42.964Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:42.964Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

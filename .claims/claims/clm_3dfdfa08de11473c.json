@@ -1,0 +1,94 @@
+{
+  "id": "clm_3dfdfa08de11473c",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "With `--from-file`, the only other record flag allowed is `--by`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "With `--from-file`, the only other record flag allowed is `--by`.",
+        "prefix": "in a file) and the flags, which build one item. ",
+        "suffix": " Item keys:\n\n```json\n{ \"doc\": \"docs/pricing.md\","
+      },
+      {
+        "kind": "text-position",
+        "start": 56493,
+        "end": 56558
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const extra = RECORD_ITEM_FLAGS.filter((f) => values[f] !== undefined);",
+          "prefix": "[];\n      if (fromFile !== undefined) {\n        ",
+          "suffix": "\n        if (extra.length > 0) {\n          retur"
+        },
+        {
+          "kind": "text-position",
+          "start": 16483,
+          "end": 16554
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "a1518774ae725733",
+          "semanticHash": "55b338693d525032"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`--from-file takes every field from the JSON; drop ${extra.map((f) => `--${f}`).join(\", \")}`,",
+          "prefix": "ength > 0) {\n          return fail(\n            ",
+          "suffix": "\n            mode,\n          );\n        }\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 16622,
+          "end": 16715
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "a7ab5cba1468fe76",
+          "semanticHash": "639d902b60a51a9c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\", \""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:07.390Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:07.390Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

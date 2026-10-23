@@ -1,0 +1,111 @@
+{
+  "id": "clm_9aee9ac282ad4d4b",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 9 | judge behind a small interface; Jev via direct HTTP; pinned model id |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 9 | judge behind a small interface; Jev via direct HTTP; pinned model id |",
+        "prefix": "s a reference for shapes, not a parsed format |\n",
+        "suffix": "\n| 10 | no backward compatibility; same repo and"
+      },
+      {
+        "kind": "text-position",
+        "start": 76178,
+        "end": 76254
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export interface Judge {",
+          "prefix": "t: unknown;\n  answers: unknown;\n  result: T;\n}\n\n",
+          "suffix": "\n  /** The pinned versioned model id this judge "
+        },
+        {
+          "kind": "text-position",
+          "start": 2376,
+          "end": 2400
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "8837aec548f1bb76",
+          "semanticHash": "3b4c093b8b160110"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "this.url = `${base.replace(/\\/+$/, \"\")}/v1/systemone`;",
+          "prefix": "URL_ENV] ?? \"\").trim() || DEFAULT_BASE_URL;\n    ",
+          "suffix": "\n    this.fetchImpl = options.fetch ?? fetch;\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 4234,
+          "end": 4288
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "e0ae5d70d6d7bef6",
+          "semanticHash": "a113c45322864651"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const JUDGE_MODEL_PATTERN = /^jev-\\d+\\.\\d+\\.\\d+$/;",
+          "prefix": " such as `jev-1.14.0`; aliases are rejected. */\n",
+          "suffix": "\n\nexport const JudgeConfig = z.strictObject({\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 10344,
+          "end": 10401
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b879b2ad137802b7",
+          "semanticHash": "d09e7304a36ec3b1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:19.044Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:19.044Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

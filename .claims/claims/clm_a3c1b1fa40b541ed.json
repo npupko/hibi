@@ -1,0 +1,94 @@
+{
+  "id": "clm_a3c1b1fa40b541ed",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `2` | at least one verdict gates; or, under `--fail-on warn`, at least one warns |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `2` | at least one verdict gates; or, under `--fail-on warn`, at least one warns |",
+        "prefix": "g |\n|---|---|\n| `0` | clean, or warnings only |\n",
+        "suffix": "\n| `1` | operational error: no store, an unknown"
+      },
+      {
+        "kind": "text-position",
+        "start": 3846,
+        "end": 3930
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.gating) return 2;",
+          "prefix": " number {\n  if (failOn === \"never\") return 0;\n  ",
+          "suffix": "\n  if (flags.warn && failOn === \"warn\") return 2"
+        },
+        {
+          "kind": "text-position",
+          "start": 22234,
+          "end": 22261
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "53162d0ab7dd4ae4",
+          "semanticHash": "a4b4953657e79651"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.warn && failOn === \"warn\") return 2;",
+          "prefix": "ver\") return 0;\n  if (flags.gating) return 2;\n  ",
+          "suffix": "\n  return 0;\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 22264,
+          "end": 22310
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "bccaa0a62493fb72",
+          "semanticHash": "a278e5457df0d7f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"warn\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:12.697Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:12.697Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

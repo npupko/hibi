@@ -1,0 +1,94 @@
+{
+  "id": "clm_d2323a83e0b049db",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `schema` | `--name <Name>` | print a JSON Schema, or the list of names |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `schema` | `--name <Name>` | print a JSON Schema, or the list of names |",
+        "prefix": "d>\\|review` | vouch, or acknowledge a finding |\n",
+        "suffix": "\n| `completions <shell>` | none | zsh, bash, or "
+      },
+      {
+        "kind": "text-position",
+        "start": 54857,
+        "end": 54931
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"A schema name, e.g. Claim, Verdict, Config.\",",
+          "prefix": "string\",\n        placeholder: \"<Name>\",\n        ",
+          "suffix": "\n      },\n    ],\n    examples: [\"hibi schema\", \""
+        },
+        {
+          "kind": "text-position",
+          "start": 20157,
+          "end": 20209
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "a74e6f58eb6182cb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"A schema name, e.g. Claim, Verdict, Config.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "summary: \"Print the JSON Schema of a model type, or the list of names.\",",
+          "prefix": "ords\"',\n    ],\n  },\n  {\n    name: \"schema\",\n    ",
+          "suffix": "\n    options: [\n      {\n        name: \"name\",\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 19976,
+          "end": 20048
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "8602303db79bd0ed"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Print the JSON Schema of a model type, or the list of names.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:56.886Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:56.886Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

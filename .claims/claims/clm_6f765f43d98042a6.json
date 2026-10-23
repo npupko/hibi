@@ -1,0 +1,117 @@
+{
+  "id": "clm_6f765f43d98042a6",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`review`: a `reference` or `attested` claim whose judge state is `review`, unless a `review` acknowledgement names the key of that verdict (section 5).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`review`: a `reference` or `attested` claim whose judge state is `review`, unless a `review` acknowledgement names the key of that verdict (section 5).",
+        "prefix": " `ttl` that ran out, `code` claims included.\n2. ",
+        "suffix": "\n3. `pending`: a `reference` or `attested` claim"
+      },
+      {
+        "kind": "text-position",
+        "start": 27733,
+        "end": 27884
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"review\" && !acknowledged) return \"review\";",
+          "prefix": " if (claim.kind === \"code\") return undefined;\n  ",
+          "suffix": "\n  if (v.judge === \"pending\") return \"pending\";\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 12761,
+          "end": 12820
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "2f9319063bdbbff5",
+          "semanticHash": "4a9c6289d1a83460"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"review\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "outcome?.state === \"review\" ? ackFor(c, outcome.key) : undefined;",
+          "prefix": "\n        }\n      }\n    }\n\n    const ack =\n      ",
+          "suffix": "\n    if (ack !== undefined) {\n      findingReaso"
+        },
+        {
+          "kind": "text-position",
+          "start": 16641,
+          "end": 16706
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "d529ed47a18dc3aa",
+          "semanticHash": "bbb175a544931abf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"review\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "a.ack.judgeKey === key,",
+          "prefix": "undefined &&\n      \"judgeKey\" in a.ack &&\n      ",
+          "suffix": "\n  );\n}\n\nfunction worklistReason(\n  claim: Claim"
+        },
+        {
+          "kind": "text-position",
+          "start": 12447,
+          "end": 12470
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "381ea86d05c3af19",
+          "semanticHash": "9680a63a76a0096e"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:49.393Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:49.393Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_9ad09d814e8c4426",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Mapping to audit output: `factual_claim` + `code` → `code`; + `other_doc` → `reference`; + `external` → `attested`; + `nothing` → `unverifiable`; any other `kind` → `not-a-claim`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Mapping to audit output: `factual_claim` + `code` → `code`; + `other_doc` → `reference`; + `external` → `attested`; + `nothing` → `unverifiable`; any other `kind` → `not-a-claim`.",
+        "prefix": "in `src/judge/jev.ts` (`isCodeByConstruction`). ",
+        "suffix": "\n\n**supports.** State: `{ claim, claim_context, "
+      },
+      {
+        "kind": "text-position",
+        "start": 33472,
+        "end": 33651
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (result.kind !== \"factual_claim\") return \"not-a-claim\";\n  switch (result.evidenceKind) {\n    case \"code\":\n      return \"code\";\n    case \"other_doc\":\n      return \"reference\";\n    case \"external\":\n      return \"attested\";\n    default:\n      return \"unverifiable\";",
+          "prefix": "uditKindOf(result: TriageResult): AuditKind {\n  ",
+          "suffix": "\n  }\n}\n\n/** A row with its keys in the documente"
+        },
+        {
+          "kind": "text-position",
+          "start": 5564,
+          "end": 5829
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "bde9703ebe15829b",
+          "semanticHash": "0869b63f70a1b95f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"factual_claim\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:52.021Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:52.021Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

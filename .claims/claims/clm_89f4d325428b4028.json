@@ -1,0 +1,94 @@
+{
+  "id": "clm_89f4d325428b4028",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`doc` and `evidence` are the anchor states after the move, resolved against the new file: `unchanged`, `moved`, `changed`, `ambiguous`, or `orphaned`, and for `evidence` also `unavailable` (section 4.1); `evidence` is omitted when the claim has no evidence span.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`doc` and `evidence` are the anchor states after the move, resolved against the new file: `unchanged`, `moved`, `changed`, `ambiguous`, or `orphaned`, and for `evidence` also `unavailable` (section 4.1); `evidence` is omitted when the claim has no evidence span.",
+        "prefix": "vidence? }` per moved claim, in claim-id order. ",
+        "suffix": " A sentence that is not in `--to` reads `orphane"
+      },
+      {
+        "kind": "text-position",
+        "start": 70235,
+        "end": 70497
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".enum([...AnchorState.options, \"unavailable\"])",
+          "prefix": "ecked out). */\nexport const EvidenceState = z\n  ",
+          "suffix": "\n  .meta({ id: \"EvidenceState\" });\nexport type E"
+        },
+        {
+          "kind": "text-position",
+          "start": 2930,
+          "end": 2976
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "0e416f2c12523a07",
+          "semanticHash": "a8a62e65c4406b82"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[...AnchorState.options,\"unavailable\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...(result.evidence !== undefined ? { evidence: result.evidence } : {}),",
+          "prefix": "mId: claim.id,\n        doc: result.doc,\n        ",
+          "suffix": "\n      });\n    } catch (e) {\n      misses.push({"
+        },
+        {
+          "kind": "text-position",
+          "start": 3890,
+          "end": 3962
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "983ffe3d5ed69ae7",
+          "semanticHash": "c0b14abc98e437b3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:06:44.168Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:06:44.168Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

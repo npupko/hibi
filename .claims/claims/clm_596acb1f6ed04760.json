@@ -1,0 +1,88 @@
+{
+  "id": "clm_596acb1f6ed04760",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "Two sentences about the same subject can hold different values for different situations, such as the exit codes of two commands, so when `contradicts` is below 0.5 the value rule does not fire and the other rows decide the outcome.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Two sentences about the same subject can hold different values for different situations, such as the exit codes of two commands, so when `contradicts` is below 0.5 the value rule does not fire and the other rows decide the outcome.",
+        "prefix": "$39` in unrelated sentences are not a conflict. ",
+        "suffix": "\n\n## How outcomes appear on verdicts\n\n| outcome "
+      },
+      {
+        "kind": "text-position",
+        "start": 4682,
+        "end": 4913
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.sameSubject >= threshold && r.contradicts >= CONTRADICTS_FLOOR) {",
+          "prefix": "me_subject=${f2(r.sameSubject)})`,\n    };\n  }\n  ",
+          "suffix": "\n    // Numeric rule (SPEC 8.5): only after the "
+        },
+        {
+          "kind": "text-position",
+          "start": 5396,
+          "end": 5467
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "9f7b5a7ff61764e3",
+          "semanticHash": "40a2f24fa63ae4bf"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.relation === \"contradictory\") {",
+          "prefix": "onst pContra = r.probabilities.contradictory;\n  ",
+          "suffix": "\n    const below: string[] = [];\n    if (r.contr"
+        },
+        {
+          "kind": "text-position",
+          "start": 5915,
+          "end": 5952
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "7b2d4e81a4c3382c",
+          "semanticHash": "d426bc86d5069493"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"contradictory\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T09:36:13.915Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T09:36:13.915Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

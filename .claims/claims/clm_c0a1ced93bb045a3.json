@@ -1,0 +1,66 @@
+{
+  "id": "clm_c0a1ced93bb045a3",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "reference",
+  "sentence": "Hibi never runs `procedure.steps` and never fetches a `sources[].resource`.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi never runs `procedure.steps` and never fetches a `sources[].resource`.",
+        "prefix": "flicts).\n\n### 5. Scheduled evidence collection\n\n",
+        "suffix": " An outer runner does: a Lobster workflow, a cro"
+      },
+      {
+        "kind": "text-position",
+        "start": 6165,
+        "end": 6240
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**Hibi runs no verifiers and no resolvers.** Its only network call is the judge API. Its only subprocess is `git`.",
+          "prefix": "ry. JSON is the contract.\n\n## 2. Principles\n\n1. ",
+          "suffix": " It writes nothing into documents except the tom"
+        },
+        {
+          "kind": "text-position",
+          "start": 1307,
+          "end": 1421
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:39.180Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:45:27.223Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:59:19.588Z",
+      "basis": "ack",
+      "note": "principle 1: no resolvers, only network call is the judge, only subprocess is git, so steps never run and sources are never fetched",
+      "ack": {
+        "judgeKey": "bf7e82ccc62ebd5668a80bb3a6aa57e6e316a1c444455af250a7eb824ca191fa"
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:39.180Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

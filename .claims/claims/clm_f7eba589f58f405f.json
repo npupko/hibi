@@ -1,0 +1,59 @@
+{
+  "id": "clm_f7eba589f58f405f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The `evidence` block keeps the hash, source, summary, actor, time, and `values`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The `evidence` block keeps the hash, source, summary, actor, time, and `values`.",
+        "prefix": "so the stored request cannot reproduce the key. ",
+        "suffix": " For a `reference` claim the request is stored a"
+      },
+      {
+        "kind": "text-position",
+        "start": 18891,
+        "end": 18971
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    const block = {\n      hash: p.hash,\n      source: p.item.source,\n      summary: p.item.summary,\n      by: p.item.by,\n      at: now,\n      values: evidenceValues,\n    };",
+          "prefix": "evidenceValues = storedValues(p.item.evidence);\n",
+          "suffix": "\n    if (a.kind === \"cached\") {\n      await cach"
+        },
+        {
+          "kind": "text-position",
+          "start": 12020,
+          "end": 12192
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "a9b5d3914738f7c5",
+          "semanticHash": "aedc239998b57e6b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:58.382Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:58.382Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

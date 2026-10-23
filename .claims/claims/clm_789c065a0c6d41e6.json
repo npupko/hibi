@@ -1,0 +1,52 @@
+{
+  "id": "clm_789c065a0c6d41e6",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "reference",
+  "sentence": "The store schemas, the judge request and response shapes, the judge question files, and the recorded judge fixtures are JSON. Tests are TypeScript against them. The implementation language can be replaced.",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The store schemas, the judge request and response shapes, the judge question files, and the recorded judge fixtures are JSON. Tests are TypeScript against them. The implementation language can be replaced.",
+        "prefix": "e=\"6. Contracts are data\" icon=\"file-code\">\n    ",
+        "suffix": "\n  </Accordion>\n</AccordionGroup>\n\n## Why a mode"
+      },
+      {
+        "kind": "text-position",
+        "start": 2995,
+        "end": 3200
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**Contracts are data.** Contracts are JSON: the store schemas, the judge request and response shapes, the judge question files, and the recorded judge fixtures. Tests are TypeScript against them. The implementation language is replaceable.",
+          "prefix": "ule appears as a reason label in the report.\n6. ",
+          "suffix": "\n\n## 3. Vocabulary\n\n| term | meaning |\n|---|---|"
+        },
+        {
+          "kind": "text-position",
+          "start": 2562,
+          "end": 2801
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:51.500Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:51.500Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

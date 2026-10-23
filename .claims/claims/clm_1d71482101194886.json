@@ -1,0 +1,65 @@
+{
+  "id": "clm_1d71482101194886",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The one exception is `schema --name`, which prints the bare JSON Schema by design.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The one exception is `schema --name`, which prints the bare JSON Schema by design.",
+        "prefix": "on: \"version\", schemaVersion, name, version }`. ",
+        "suffix": " An operational error exits `1`; in JSON output "
+      },
+      {
+        "kind": "text-position",
+        "start": 55233,
+        "end": 55315
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "z.toJSONSchema(schema, { target: \"draft-2020-12\", reused: \"inline\" }),",
+          "prefix": "      );\n        }\n        await out(\n          ",
+          "suffix": "\n          pretty,\n        );\n      } else {\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 31443,
+          "end": 31513
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "a2f2076131fe9884",
+          "semanticHash": "1a33fe0f02e46699"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"draft-2020-12\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:07.147Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:07.147Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

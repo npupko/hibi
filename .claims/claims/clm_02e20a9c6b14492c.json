@@ -1,0 +1,65 @@
+{
+  "id": "clm_02e20a9c6b14492c",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It yields a conflict finding with probability 1 and the label from the comparison, and it replaces the relation outcome, including a `consistent` duplicate outcome.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It yields a conflict finding with probability 1 and the label from the comparison, and it replaces the relation outcome, including a `consistent` duplicate outcome.",
+        "prefix": "nds, so a value difference alone is not enough. ",
+        "suffix": " When it does not fire, the pair gets the outcom"
+      },
+      {
+        "kind": "text-position",
+        "start": 42304,
+        "end": 42468
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { outcome: \"conflict\", probability: 1, reason: values.label };",
+          "prefix": ".differs && values.label !== undefined) {\n      ",
+          "suffix": "\n    }\n  }\n  const pContra = r.probabilities.con"
+        },
+        {
+          "kind": "text-position",
+          "start": 5784,
+          "end": 5853
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "a4e20b200fce563b",
+          "semanticHash": "7d930ffade48333b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"conflict\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:18.554Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:18.554Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

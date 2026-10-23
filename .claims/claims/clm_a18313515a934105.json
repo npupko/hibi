@@ -1,0 +1,174 @@
+{
+  "id": "clm_a18313515a934105",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `supersede` | `--from <path>`, `--to <path>` (both required), `--dry-run` | mark `--from` superseded by `--to` and move every live claim on it to `--to`; never reads the `--from` file |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `supersede` | `--from <path>`, `--to <path>` (both required), `--dry-run` | mark `--from` superseded by `--to` and move every live claim on it to `--to`; never reads the `--from` file |",
+        "prefix": "aim-id>` | `--dry-run` | withdraw; idempotent |\n",
+        "suffix": "\n| `archive` | `--doc <path>` (required), `--suc"
+      },
+      {
+        "kind": "text-position",
+        "start": 54242,
+        "end": 54429
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"The old document.\",\n        required: true,",
+          "prefix": "string\",\n        placeholder: \"<path>\",\n        ",
+          "suffix": "\n      },\n      {\n        name: \"to\",\n        ty"
+        },
+        {
+          "kind": "text-position",
+          "start": 15749,
+          "end": 15799
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "15154156d14c03d8",
+          "semanticHash": "98e0c7751893f5b9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"The old document.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"The new document.\",\n        required: true,",
+          "prefix": "string\",\n        placeholder: \"<path>\",\n        ",
+          "suffix": "\n      },\n      DRY_RUN,\n    ],\n    examples: [\""
+        },
+        {
+          "kind": "text-position",
+          "start": 15900,
+          "end": 15950
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "15154156d14c03d8",
+          "semanticHash": "c23bcea4ae5995a2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"The new document.\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "oldDoc.lifecycle = \"superseded\";",
+          "prefix": ", reason: (e as Error).message });\n    }\n  }\n\n  ",
+          "suffix": "\n  oldDoc.supersededBy = newDoc.id;\n  if (!dryRu"
+        },
+        {
+          "kind": "text-position",
+          "start": 4076,
+          "end": 4108
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "e0cf5471d7fd0685",
+          "semanticHash": "315dcd48800898d3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"superseded\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const live = await liveClaimsOn(store, oldDoc.id);",
+          "prefix": "move that fails is a miss and stays stranded.\n  ",
+          "suffix": "\n  const relocated: RelocatedClaim[] = [];\n  con"
+        },
+        {
+          "kind": "text-position",
+          "start": 3525,
+          "end": 3575
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "59508193a44d26ff",
+          "semanticHash": "a769cbe5b85678bb"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const toContent = await deps.readDoc(input.to);",
+          "prefix": "supersede --from and --to must differ.\");\n  }\n  ",
+          "suffix": "\n  if (toContent === null) {\n    throw new Error"
+        },
+        {
+          "kind": "text-position",
+          "start": 2809,
+          "end": 2856
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "84358a90aa501827",
+          "semanticHash": "547c9aa2622da299"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:56.771Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:57.250Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:56.771Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

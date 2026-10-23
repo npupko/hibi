@@ -11,7 +11,7 @@
  */
 
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import {
   Claim,
   Config,
@@ -24,6 +24,16 @@ import { exists } from "../fs.ts";
 import { JudgeCache } from "../judge/cache.ts";
 
 export const STORE_DIR = ".claims";
+
+/** A file's text, or null when it does not exist. */
+async function readOrNull(path: string): Promise<string | null> {
+  try {
+    return await readFile(path, "utf8");
+  } catch (e) {
+    if ((e as { code?: string }).code === "ENOENT") return null;
+    throw e;
+  }
+}
 
 const SUBDIRS = {
   documents: "documents",
@@ -94,6 +104,12 @@ export class ClaimStore {
         configPath,
         `${JSON.stringify(ClaimStore.defaultConfig(), null, 2)}\n`,
       );
+    }
+    // The judge cache is local (SPEC 6): `.claims/.gitignore` keeps it out of
+    // git. Written only when missing; an existing file is left as it is.
+    const gitignore = join(s.dir, ".gitignore");
+    if (!(await exists(gitignore))) {
+      await writeFile(gitignore, `${SUBDIRS.judge}/\n`);
     }
     return s;
   }
@@ -170,9 +186,6 @@ export class ClaimStore {
   async getDocument(id: string): Promise<Document | undefined> {
     return this.read(SUBDIRS.documents, id, Document);
   }
-  async deleteDocument(id: string): Promise<void> {
-    await rm(join(this.dir, SUBDIRS.documents, `${id}.json`), { force: true });
-  }
   async allDocuments(): Promise<Document[]> {
     return this.readAll(SUBDIRS.documents, Document);
   }
@@ -187,17 +200,57 @@ export class ClaimStore {
   async allClaims(): Promise<Claim[]> {
     return this.readAll(SUBDIRS.claims, Claim);
   }
-  async deleteClaim(id: string): Promise<void> {
-    await rm(join(this.dir, SUBDIRS.claims, `${id}.json`), { force: true });
+
+  // ── Rollback ──
+
+  /** Per record file written inside `withRollback`: its text before the first write (null: it did not exist) and after the last. */
+  private journal?: Map<string, { before: string | null; after: string }>;
+
+  /**
+   * Run `fn`; when it throws, undo the record writes it made through this
+   * store, then rethrow. A claim file it created is removed and a file it
+   * overwrote gets its previous text back. A document record it created is
+   * kept: documents are keyed by path and another writer may already
+   * reference its id. A file it did not write, such as
+   * a record another process wrote meanwhile, is not touched, and neither is
+   * a file that changed again after this store's last write to it.
+   */
+  async withRollback<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.journal) throw new Error("withRollback does not nest.");
+    const journal = new Map<string, { before: string | null; after: string }>();
+    this.journal = journal;
+    try {
+      return await fn();
+    } catch (e) {
+      const documentsDir = join(this.dir, SUBDIRS.documents);
+      for (const [path, { before, after }] of journal) {
+        if ((await readOrNull(path)) !== after) continue;
+        if (before === null) {
+          // A document record is keyed by its path and created once; another
+          // writer may already reference its id, so a created one is kept.
+          if (dirname(path) === documentsDir) continue;
+          await rm(path, { force: true });
+        } else await writeFile(path, before);
+      }
+      throw e;
+    } finally {
+      this.journal = undefined;
+    }
   }
 
   // ── private helpers ──
   private async write(sub: string, id: string, value: unknown): Promise<void> {
     await mkdir(join(this.dir, sub), { recursive: true });
-    await writeFile(
-      join(this.dir, sub, `${id}.json`),
-      `${JSON.stringify(value, null, 2)}\n`,
-    );
+    const path = join(this.dir, sub, `${id}.json`);
+    const text = `${JSON.stringify(value, null, 2)}\n`;
+    const noted = this.journal?.get(path);
+    const before = noted
+      ? noted.before
+      : this.journal
+        ? await readOrNull(path)
+        : null;
+    await writeFile(path, text);
+    this.journal?.set(path, { before, after: text });
   }
 
   private async read<T>(

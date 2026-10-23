@@ -1,0 +1,65 @@
+{
+  "id": "clm_a9124412208b4040",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "| `2` | at least one claim gates | do not act on the flagged sentences as written; read their `verdicts[]` entries |",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `2` | at least one claim gates | do not act on the flagged sentences as written; read their `verdicts[]` entries |",
+        "prefix": "he document; read any warnings in `reasons[]` |\n",
+        "suffix": "\n| `1` | operational error, including a document"
+      },
+      {
+        "kind": "text-position",
+        "start": 738,
+        "end": 854
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.gating) return 2;",
+          "prefix": " number {\n  if (failOn === \"never\") return 0;\n  ",
+          "suffix": "\n  if (flags.warn && failOn === \"warn\") return 2"
+        },
+        {
+          "kind": "text-position",
+          "start": 22234,
+          "end": 22261
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "53162d0ab7dd4ae4",
+          "semanticHash": "a4b4953657e79651"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:37.363Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:37.363Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

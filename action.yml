@@ -1,5 +1,5 @@
 name: "Hibi"
-description: "Fail the build when a document sentence is stale: its anchored text moved or changed, its evidence was refuted, or it contradicts another sentence."
+description: "Fail the build when a document sentence is stale: its anchored text changed or can no longer be found, its evidence was refuted, or it contradicts another sentence. Under the default fail-on: gating, a moved span only warns."
 branding:
   icon: "anchor"
   color: "purple"

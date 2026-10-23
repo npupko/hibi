@@ -1,0 +1,117 @@
+{
+  "id": "clm_06172d5d57744c3d",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "\"judge: judge unavailable: TYPESAFE_API_KEY is not set; the judge cannot answer.\",\n        \"worklist: the judge verdict is pending\"",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "\"judge: judge unavailable: TYPESAFE_API_KEY is not set; the judge cannot answer.\",\n        \"worklist: the judge verdict is pending\"",
+        "prefix": "\"remediation\": null,\n      \"reasons\": [\n        ",
+        "suffix": "\n      ]\n    }\n  ],\n  \"worklist\": [\n    {\n      "
+      },
+      {
+        "kind": "text-position",
+        "start": 9538,
+        "end": 9669
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`${API_KEY_ENV} is not set; the judge cannot answer.`,",
+          "prefix": "\"\") {\n      throw new JudgeUnavailable(\n        ",
+          "suffix": "\n      );\n    }\n    await acquire();\n    try {\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 4639,
+          "end": 4693
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "741052939c553a2d",
+          "semanticHash": "b4b501a53d3995ae"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pending: \"worklist: the judge verdict is pending\",",
+          "prefix": "iew: \"worklist: the judge verdict is review\",\n  ",
+          "suffix": "\n  \"never-checked\":\n    \"worklist: never checked"
+        },
+        {
+          "kind": "text-position",
+          "start": 8913,
+          "end": 8963
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "36f73e96211138cf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"worklist: the judge verdict is pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"worklist: never checked; no evidence has been judged for this claim\",",
+          "prefix": "dge verdict is pending\",\n  \"never-checked\":\n    ",
+          "suffix": "\n};\n\n/** An agent vouch does not reset ttl, so o"
+        },
+        {
+          "kind": "text-position",
+          "start": 8987,
+          "end": 9057
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "427926e1ad76a689"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"worklist: never checked; no evidence has been judged for this claim\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:16.505Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:16.505Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

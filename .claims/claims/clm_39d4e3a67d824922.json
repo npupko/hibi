@@ -1,0 +1,65 @@
+{
+  "id": "clm_39d4e3a67d824922",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "| `never` | never. The JSON still reports everything. |",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `never` | never. The JSON still reports everything. |",
+        "prefix": "-store check, a conflict below the threshold) |\n",
+        "suffix": "\n\n`suggested` and `retired` claims never gate or"
+      },
+      {
+        "kind": "text-position",
+        "start": 3712,
+        "end": 3767
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (failOn === \"never\") return 0;",
+          "prefix": "arn: boolean },\n  failOn: FailOn,\n): number {\n  ",
+          "suffix": "\n  if (flags.gating) return 2;\n  if (flags.warn "
+        },
+        {
+          "kind": "text-position",
+          "start": 22198,
+          "end": 22231
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "a99c4a1102d2b389",
+          "semanticHash": "8bfe4f8a60d046b3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"never\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:43.128Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:43.128Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

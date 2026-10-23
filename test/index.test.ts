@@ -199,7 +199,21 @@ describe("library facade", () => {
     expect((await e.check()).worklist.map((w) => w.claimId)).toEqual([
       rec.claim.id,
     ]);
+    // supersede moves every live claim off v1.md; a claim recorded on v1.md
+    // after that is left on the superseded document.
     await e.supersede({ from: "v1.md", to: "v2.md" });
+    await e.retire(rec.claim.id);
+    const left = await e.record({
+      kind: "attested",
+      by: "human:tester@example.com",
+      docPath: "v1.md",
+      docQuote: "Pro costs $29/month.",
+      ttl: "P90D",
+      sources: [{ id: "stripe", resource: "https://stripe.example/p" }],
+    });
+    expect((await e.store.getDocument(left.document.id))?.lifecycle).toBe(
+      "superseded",
+    );
     const after = await e.check();
     expect(after.worklist).toEqual([]);
     expect((await e.list({ state: "stranded" })).count).toBe(1);
@@ -348,7 +362,7 @@ describe("reanchor", () => {
     expect((await engine.check()).verdicts[0]?.evidence).toBe("unchanged");
   });
 
-  test("reanchor refuses an orphaned side without an explicit span", async () => {
+  test("reanchor leaves an orphaned side as stored without an explicit span", async () => {
     const anchorRoot = await tmp();
     await mkdir(join(anchorRoot, "src"), { recursive: true });
     await writeFile(join(anchorRoot, "src/a.ts"), "export const A = 1;\n");
@@ -368,7 +382,11 @@ describe("reanchor", () => {
     // Delete the code file: that side is orphaned.
     await rm(join(anchorRoot, "src/a.ts"));
     await writeFile(join(anchorRoot, "src/b.ts"), "export const B = 2;\n");
-    await expect(engine.reanchor(rec.claim.id)).rejects.toThrow(/orphaned/);
+    const left = await engine.reanchor(rec.claim.id);
+    expect(left.relocated).toBe(0);
+    expect(left.kept.map((k) => k.reason)).toEqual([
+      "evidence: orphaned; pass --code-quote to re-anchor",
+    ]);
     // An explicit replacement span on that side is accepted.
     const res = await engine.reanchor(rec.claim.id, {
       evidence: [{ file: "src/b.ts", region: { quote: "B = 2" } }],
@@ -550,6 +568,125 @@ describe("record: the same sentence in another document", () => {
     });
     expect(rec.warnings).toHaveLength(1);
     expect(rec.warnings[0]).toContain("occurs 2 times");
+  });
+});
+
+describe("recordBatch: all or nothing", () => {
+  /** A repo with four documented constants and one recorded claim on the first. */
+  async function batchRepo() {
+    const root = await tmp();
+    await mkdir(join(root, "src"), { recursive: true });
+    await writeFile(
+      join(root, "src/conf.ts"),
+      "export const A = 1;\nexport const B = 2;\nexport const C = 3;\nexport const D = 4;\n",
+    );
+    await writeFile(
+      join(root, "conf.md"),
+      "# Conf\n\nThe A constant is one.\nThe B constant is two.\nThe C constant is three.\nThe D constant is four.\n",
+    );
+    const engine = await Engine.init(root);
+    const call = (word: string, name: string, value: number) => ({
+      kind: "code" as const,
+      by: "agent:batch",
+      docPath: "conf.md",
+      docQuote: `The ${name} constant is ${word}.`,
+      evidence: [
+        { file: "src/conf.ts", region: { quote: `${name} = ${value}` } },
+      ],
+    });
+    const calls = {
+      a: call("one", "A", 1),
+      b: call("two", "B", 2),
+      c: call("three", "C", 3),
+      d: call("four", "D", 4),
+    };
+    const a = await engine.record(calls.a);
+    const claimFile = (id: string) =>
+      join(engine.store.dir, "claims", `${id}.json`);
+    return { root, engine, calls, a, claimFile };
+  }
+
+  test("a failure while applying rolls back this batch's writes and leaves another writer's records alone", async () => {
+    const { root, engine, calls, a, claimFile } = await batchRepo();
+    const aBefore = await readFile(claimFile(a.claim.id), "utf8");
+    const other = await Engine.open(root);
+    const theirs = new Map<string, string>();
+
+    // Item 2 fails after validation; just before it, another process records
+    // D and re-records A over the batch's update of A.
+    const original = engine.record.bind(engine);
+    let applied = 0;
+    engine.record = async (call, opts) => {
+      if (opts?.dryRun) return original(call, opts);
+      if (applied++ === 2) {
+        for (const c of [calls.d, calls.a]) {
+          const id = (await other.record(c)).claim.id;
+          theirs.set(id, await readFile(claimFile(id), "utf8"));
+        }
+        throw new Error("disk full");
+      }
+      return original(call, opts);
+    };
+    const res = await engine.recordBatch([calls.a, calls.b, calls.c]);
+    expect(res).toEqual({
+      results: [],
+      failures: [{ index: 2, message: "disk full" }],
+    });
+
+    // B, created by the batch, is gone. D and the other writer's A are
+    // byte-for-byte what that writer wrote.
+    const claims = await engine.store.allClaims();
+    expect(claims.map((c) => c.sentence).sort()).toEqual([
+      "The A constant is one.",
+      "The D constant is four.",
+    ]);
+    expect(claims.map((c) => c.id).sort()).toEqual([...theirs.keys()].sort());
+    for (const [id, text] of theirs) {
+      expect(await readFile(claimFile(id), "utf8")).toBe(text);
+    }
+    expect(theirs.get(a.claim.id)).not.toBe(aBefore);
+  });
+
+  test("a batch overwrite is restored to its previous text", async () => {
+    const { engine, calls, a, claimFile } = await batchRepo();
+    const aBefore = await readFile(claimFile(a.claim.id), "utf8");
+    const original = engine.record.bind(engine);
+    let applied = 0;
+    engine.record = async (call, opts) => {
+      if (!opts?.dryRun && applied++ === 1) throw new Error("disk full");
+      return original(call, opts);
+    };
+    const res = await engine.recordBatch([calls.a, calls.b]);
+    expect(res.failures).toEqual([{ index: 1, message: "disk full" }]);
+    expect(await readFile(claimFile(a.claim.id), "utf8")).toBe(aBefore);
+    expect((await engine.store.allClaims()).map((c) => c.id)).toEqual([
+      a.claim.id,
+    ]);
+  });
+
+  test("span failures are caught before anything is written", async () => {
+    const { engine, calls } = await batchRepo();
+    let writes = 0;
+    const putClaim = engine.store.putClaim.bind(engine.store);
+    engine.store.putClaim = async (c) => {
+      writes++;
+      return putClaim(c);
+    };
+    const res = await engine.recordBatch([
+      calls.b,
+      { ...calls.c, docQuote: "Not in the document at all." },
+      {
+        ...calls.d,
+        evidence: [{ file: "src/missing.ts", region: { quote: "D = 4" } }],
+      },
+      {
+        ...calls.d,
+        evidence: [{ file: "src/conf.ts", region: { quote: "D = 44" } }],
+      },
+    ]);
+    expect(res.failures.map((f) => f.index)).toEqual([1, 2, 3]);
+    expect(res.failures[1]?.message).toContain("src/missing.ts");
+    expect(writes).toBe(0);
   });
 });
 

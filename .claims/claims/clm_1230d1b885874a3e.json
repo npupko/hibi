@@ -1,0 +1,88 @@
+{
+  "id": "clm_1230d1b885874a3e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- An uncovered row takes its kind from triage (section 8.3).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- An uncovered row takes its kind from triage (section 8.3).",
+        "prefix": "rom the contradiction pass (it runs on demand).\n",
+        "suffix": " The decision is taken only when the `kind` Choi"
+      },
+      {
+        "kind": "text-position",
+        "start": 50420,
+        "end": 50480
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "kind: auditKindOf(result),",
+          "prefix": "unsure === null) {\n    return row(base, {\n      ",
+          "suffix": "\n      probability: result.kindProbabilities[res"
+        },
+        {
+          "kind": "text-position",
+          "start": 6648,
+          "end": 6674
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "b34135da11c76957",
+          "semanticHash": "fb1a154e2277b427"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (result.kind !== \"factual_claim\") return \"not-a-claim\";",
+          "prefix": "uditKindOf(result: TriageResult): AuditKind {\n  ",
+          "suffix": "\n  switch (result.evidenceKind) {\n    case \"code"
+        },
+        {
+          "kind": "text-position",
+          "start": 5564,
+          "end": 5622
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "1fa165765a34a063",
+          "semanticHash": "de7db4e52e3500e1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"factual_claim\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.211Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.211Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

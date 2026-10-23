@@ -1,0 +1,88 @@
+{
+  "id": "clm_f0d46408975d44ec",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "| `sentence` | prose, including blockquotes |",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `sentence` | prose, including blockquotes |",
+        "prefix": "-row` | a line starting with a pipe character |\n",
+        "suffix": "\n\nThe rules, in order:\n\n1. A `---` frontmatter b"
+      },
+      {
+        "kind": "text-position",
+        "start": 1260,
+        "end": 1305
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Blockquotes and prose are sentences.",
+          "prefix": "he region kind of a piece, from its first line. ",
+          "suffix": " */\nfunction pieceKind(firstLine: string): Regio"
+        },
+        {
+          "kind": "text-position",
+          "start": 5689,
+          "end": 5725
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "f8c6716f6f245406"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return \"sentence\";",
+          "prefix": "if (line.startsWith(\"|\")) return \"table-row\";\n  ",
+          "suffix": "\n}\n\n/** Split a prose block into pieces at lines"
+        },
+        {
+          "kind": "text-position",
+          "start": 5961,
+          "end": 5979
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "3df4bb0705c3a2fa",
+          "semanticHash": "02020854c9d24675"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"sentence\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:24.662Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:24.662Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

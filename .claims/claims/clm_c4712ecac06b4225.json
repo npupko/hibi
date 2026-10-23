@@ -1,0 +1,82 @@
+{
+  "id": "clm_c4712ecac06b4225",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "A quote found in `--to` reads `unchanged`.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A quote found in `--to` reads `unchanged`.",
+        "prefix": " with the claim's anchor states after the move. ",
+        "suffix": " A sentence that was edited reads `changed`. A s"
+      },
+      {
+        "kind": "text-position",
+        "start": 3242,
+        "end": 3284
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "? { ...s, start: at, end: at + quote.exact.length }",
+          "prefix": "map((s) =>\n    s.kind === \"text-position\"\n      ",
+          "suffix": "\n      : s,\n  );\n}\n\nexport async function reanch"
+        },
+        {
+          "kind": "text-position",
+          "start": 9386,
+          "end": 9437
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "c5c1a4931fc005ca",
+          "semanticHash": "b49aea056c4b3018"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "selectors: repositionDoc(claim.doc.selectors, contents.docContent),",
+          "prefix": "e.\n    docBundle = {\n      file: docFile,\n      ",
+          "suffix": "\n    };\n    sentence = claim.sentence;\n  } else "
+        },
+        {
+          "kind": "text-position",
+          "start": 10607,
+          "end": 10674
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "c682cce09da5bca4",
+          "semanticHash": "2a9753b96fe70c56"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:41.818Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:41.818Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_55143b61d7c94dac",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Currency codes are `USD EUR GBP JPY CAD AUD CHF`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Currency codes are `USD EUR GBP JPY CAD AUD CHF`.",
+        "prefix": " | `29`, `1,000`, `0.75` | the number | none |\n\n",
+        "suffix": " A magnitude suffix is read only on a currency-s"
+      },
+      {
+        "kind": "text-position",
+        "start": 40094,
+        "end": 40143
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const CURRENCY_CODES = [\"USD\", \"EUR\", \"GBP\", \"JPY\", \"CAD\", \"AUD\", \"CHF\"];",
+          "prefix": " = {\n  $: \"USD\",\n  \"€\": \"EUR\",\n  \"£\": \"GBP\",\n};\n",
+          "suffix": "\n\n/** Duration words, singular and plural, with "
+        },
+        {
+          "kind": "text-position",
+          "start": 3400,
+          "end": 3473
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "732f1124d964ef1d",
+          "semanticHash": "8b39e8365ef019be"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"USD\",\"EUR\",\"GBP\",\"JPY\",\"CAD\",\"AUD\",\"CHF\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:32.012Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:32.012Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

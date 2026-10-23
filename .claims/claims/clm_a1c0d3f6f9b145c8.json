@@ -1,0 +1,65 @@
+{
+  "id": "clm_a1c0d3f6f9b145c8",
+  "documentId": "doc_c5adefb4274c6931",
+  "kind": "code",
+  "sentence": "Agents usually send all three as a JSON array to `hibi record --from-file - --by agent:<name>`; see [Claims](/claims).",
+  "doc": {
+    "file": "docs/quickstart.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Agents usually send all three as a JSON array to `hibi record --from-file - --by agent:<name>`; see [Claims](/claims).",
+        "prefix": " file), so a change from `5` to `50` is caught. ",
+        "suffix": "\n\n## 5. Check\n\n```sh\nhibi check\n```\n\n```\nhibi ch"
+      },
+      {
+        "kind": "text-position",
+        "start": 4020,
+        "end": 4138
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"Record a JSON array of claim items (- reads stdin). All or nothing; no other record flags except --by.\"",
+          "prefix": "\n        placeholder: \"<path|->\",\n        help: ",
+          "suffix": ",\n      },\n    ],\n    examples: [\n      'hibi re"
+        },
+        {
+          "kind": "text-position",
+          "start": 9337,
+          "end": 9441
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "1cd4126fd2564353"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Record a JSON array of claim items (- reads stdin). All or nothing; no other record flags except --by.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:29.643Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:29.643Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

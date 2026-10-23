@@ -122,6 +122,9 @@ async function run(
 /** Two claims that pair on the rare token `stripe`. */
 const A = "Stripe charges the Pro plan monthly.";
 const B = "Stripe charges the Pro plan yearly.";
+/** Two claims with differing money values that pair on `stripe`. */
+const PRICE_A = "Stripe bills Pro at $29/month.";
+const PRICE_B = "Stripe bills Pro at $39/month.";
 
 describe("decisions", () => {
   test("contradictory with confidence and same_subject at threshold gates on both claims", async () => {
@@ -216,10 +219,15 @@ describe("decisions", () => {
     });
   });
 
-  test("after same_subject passes, differing values are a finding with probability 1 whatever the relation", async () => {
+  test("after same_subject and contradicts pass, differing values are a finding with probability 1 whatever the relation", async () => {
     const a = "Stripe bills Pro at $29/month.";
     const b = "Stripe bills Pro at $39/month.";
-    const result = await run(judgeFor({ [pairKey(a, b)]: CONSISTENT }), [
+    const leaning = conflictAnswer(
+      { consistent: 0.95, contradictory: 0.03, unrelated: 0.02 },
+      0.92,
+      0.6,
+    );
+    const result = await run(judgeFor({ [pairKey(a, b)]: leaning }), [
       claim(ID_A, a),
       claim(ID_B, b),
     ]);
@@ -237,11 +245,121 @@ describe("decisions", () => {
     expect(result.duplicates).toEqual([]);
   });
 
+  test("differing values with contradicts below 0.5 do not fire the value rule; the judge's outcome stands", async () => {
+    // Live shape (jev-1.14.0): two exit codes from different situations.
+    const a = "`check --doc` on a path with no registered claims exits 1.";
+    const b = "exit 2 means a sentence in it is stale.";
+    const consistent = conflictAnswer(
+      { consistent: 0.8, contradictory: 0.1, unrelated: 0.1 },
+      0.85,
+      0.34,
+    );
+    expect(decidePair(a, b, consistent, THRESHOLD)).toEqual({
+      outcome: "duplicate",
+      probability: 0.8,
+      reason: "consistent and same subject (same_subject=0.85)",
+    });
+    const leansContradictory = conflictAnswer(
+      { consistent: 0.13, contradictory: 0.74, unrelated: 0.13 },
+      0.93,
+      0.34,
+    );
+    expect(decidePair(a, b, leansContradictory, THRESHOLD)).toEqual({
+      outcome: "review",
+      probability: 0.74,
+      reason:
+        "review: contradictory, contradicts=0.34 below 0.50, confidence=0.61 below threshold 0.80",
+    });
+
+    const unrelated = conflictAnswer(
+      { consistent: 0.3, contradictory: 0.1, unrelated: 0.6 },
+      0.85,
+      0.34,
+    );
+    const result = await run(
+      judgeFor({ [pairKey(PRICE_A, PRICE_B)]: unrelated }),
+      [claim(ID_A, PRICE_A), claim(ID_B, PRICE_B)],
+    );
+    expect(result.findings).toEqual([]);
+    expect(result.pairs[0]).toMatchObject({
+      outcome: "clean",
+      reason: "unrelated (confidence=0.40, same_subject=0.85)",
+    });
+  });
+
+  test("differing values with contradicts at or above 0.5 are a conflict with probability 1", async () => {
+    // Live shape (jev-1.14.0): two retry limits for the same client.
+    const a = "Retries are capped at 3 attempts.";
+    const b = "The client retries a failed request up to 5 times.";
+    const r = conflictAnswer(
+      { consistent: 0.13, contradictory: 0.74, unrelated: 0.13 },
+      0.93,
+      0.86,
+    );
+    expect(decidePair(a, b, r, THRESHOLD)).toEqual({
+      outcome: "conflict",
+      probability: 1,
+      reason: "numbers differ: 3 vs 5",
+    });
+    const result = await run(judgeFor({ [pairKey(a, b)]: r }), [
+      claim(ID_A, a),
+      claim(ID_B, b),
+    ]);
+    expect(conflictsFor(result, ID_A)).toEqual([
+      { claimId: ID_B, probability: 1, reason: "numbers differ: 3 vs 5" },
+    ]);
+    expect(conflictsFor(result, ID_B)).toEqual([
+      { claimId: ID_A, probability: 1, reason: "numbers differ: 3 vs 5" },
+    ]);
+  });
+
+  test("the contradicts floor applies to every value group", () => {
+    const cases: [string, string, string][] = [
+      [
+        "Pro allows 10 seats.",
+        "Pro allows 20 seats.",
+        "numbers differ: 10 vs 20",
+      ],
+      [
+        "Stripe bills Pro at $29/month.",
+        "Stripe bills Pro at $39/month.",
+        "numbers differ: 29 vs 39",
+      ],
+      [
+        "The CLI requires Bun v1.2.",
+        "The CLI requires Bun v1.3.",
+        "versions differ: 1.2 vs 1.3",
+      ],
+      [
+        "The migration window closes on 2026-10-01.",
+        "The migration window closes on 2026-11-01.",
+        "dates differ: 2026-10-01 vs 2026-11-01",
+      ],
+    ];
+    const probabilities = {
+      consistent: 0.9,
+      contradictory: 0.05,
+      unrelated: 0.05,
+    };
+    for (const [a, b, label] of cases) {
+      expect(
+        decidePair(a, b, conflictAnswer(probabilities, 0.9, 0.49), THRESHOLD),
+      ).toEqual({
+        outcome: "duplicate",
+        probability: 0.9,
+        reason: "consistent and same subject (same_subject=0.90)",
+      });
+      expect(
+        decidePair(a, b, conflictAnswer(probabilities, 0.9, 0.5), THRESHOLD),
+      ).toEqual({ outcome: "conflict", probability: 1, reason: label });
+    }
+  });
+
   test("the value rule does not run when same_subject is below threshold", () => {
     const r = conflictAnswer(
       { consistent: 0.1, contradictory: 0.1, unrelated: 0.8 },
       0.5,
-      0.1,
+      0.9,
     );
     expect(
       decidePair("Pro costs $29.", "Team costs $39.", r, THRESHOLD),
@@ -389,6 +507,58 @@ describe("cache", () => {
         probability: 0.96,
         reason: "contradictory (p=0.96, same_subject=0.95)",
       },
+    ]);
+  });
+});
+
+describe("cached answers and the value rule", () => {
+  async function putRaw(claims: Claim[], contradicts: number): Promise<void> {
+    const [pair] = pairClaims(claims);
+    if (!pair) throw new Error("expected a pair");
+    const { request, key } = conflictRequestFor(MODEL, pair, context);
+    await store.judgeCache().put({
+      key,
+      model: MODEL,
+      judgment: "conflict",
+      subject: { pairId: PAIR },
+      request,
+      answers: {
+        same_subject: { noul: 0.93 },
+        relation: {
+          choice: "consistent",
+          confidence: 0.85,
+          probabilities: {
+            consistent: 0.9,
+            contradictory: 0.05,
+            unrelated: 0.05,
+          },
+        },
+        contradicts: { noul: contradicts },
+      },
+      at: "2026-10-22T00:00:00Z",
+    });
+  }
+
+  test("a cached verdict with contradicts below 0.5 gives no value finding and asks nothing", async () => {
+    const claims = [claim(ID_A, PRICE_A), claim(ID_B, PRICE_B)];
+    await putRaw(claims, 0.2);
+    const judge = judgeFor({});
+    const result = await run(judge, claims);
+    expect(judge.calls).toHaveLength(0);
+    expect(result.requests).toBe(0);
+    expect(result.findings).toEqual([]);
+    expect(result.pairs[0]?.outcome).toBe("duplicate");
+  });
+
+  test("a cached verdict with contradicts at or above 0.5 gives the value finding and asks nothing", async () => {
+    const claims = [claim(ID_A, PRICE_A), claim(ID_B, PRICE_B)];
+    await putRaw(claims, 0.7);
+    const judge = judgeFor({});
+    const result = await run(judge, claims);
+    expect(judge.calls).toHaveLength(0);
+    expect(result.requests).toBe(0);
+    expect(conflictsFor(result, ID_A)).toEqual([
+      { claimId: ID_B, probability: 1, reason: "numbers differ: 29 vs 39" },
     ]);
   });
 });

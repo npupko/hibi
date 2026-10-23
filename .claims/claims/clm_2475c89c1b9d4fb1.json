@@ -1,0 +1,186 @@
+{
+  "id": "clm_2475c89c1b9d4fb1",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "```\ntriage(doc, regions[])  -> per region: { regionId, kind, kindProbabilities, kindConfidence,\n                                         evidenceKind?, evidenceProbabilities? }\nsupports({ sentence, context, evidence, source })\n                        -> { relation: supports|refutes|does_not_address, probabilities, confidence,\n                             addresses, forced? }\nconflict(a, b)          -> { relation: consistent|contradictory|unrelated, probabilities, confidence,\n                             sameSubject, contradicts, forced? }\n```",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```\ntriage(doc, regions[])  -> per region: { regionId, kind, kindProbabilities, kindConfidence,\n                                         evidenceKind?, evidenceProbabilities? }\nsupports({ sentence, context, evidence, source })\n                        -> { relation: supports|refutes|does_not_address, probabilities, confidence,\n                             addresses, forced? }\nconflict(a, b)          -> { relation: consistent|contradictory|unrelated, probabilities, confidence,\n                             sameSubject, contradicts, forced? }\n```",
+        "prefix": "aims in scope.\n\n## 8. Judge\n\n### 8.1 Interface\n\n",
+        "suffix": "\n\n`a` and `b` are `{ text, doc, context }`. Ever"
+      },
+      {
+        "kind": "text-position",
+        "start": 29326,
+        "end": 29874
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "): Promise<JudgeResponse<TriageResult[]>>;",
+          "prefix": "doc: { path: string },\n    regions: Region[],\n  ",
+          "suffix": "\n  supports(input: SupportsInput): Promise<Judge"
+        },
+        {
+          "kind": "text-position",
+          "start": 2553,
+          "end": 2595
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "method_signature",
+          "structuralHash": "50abb05ff8dde8f8",
+          "semanticHash": "57f2eac1b200c995"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "supports(input: SupportsInput): Promise<JudgeResponse<SupportsResult>>;",
+          "prefix": "\n  ): Promise<JudgeResponse<TriageResult[]>>;\n  ",
+          "suffix": "\n  conflict(\n    a: ConflictSide,\n    b: Conflic"
+        },
+        {
+          "kind": "text-position",
+          "start": 2598,
+          "end": 2669
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "method_signature",
+          "structuralHash": "896e80aeb6d4b9b0",
+          "semanticHash": "04f10cec256867e5"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "): Promise<JudgeResponse<ConflictResult>>;",
+          "prefix": "ct(\n    a: ConflictSide,\n    b: ConflictSide,\n  ",
+          "suffix": "\n}\n\n/** Thrown when no judge can answer (no API "
+        },
+        {
+          "kind": "text-position",
+          "start": 2726,
+          "end": 2768
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "method_signature",
+          "structuralHash": "362590d82690d9d8",
+          "semanticHash": "88be42eba41d9dce"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidenceProbabilities?: Record<EvidenceKind, number>;",
+          "prefix": "uestion.\n   */\n  evidenceKind?: EvidenceKind;\n  ",
+          "suffix": "\n}\n\nexport interface SupportsInput {\n  sentence:"
+        },
+        {
+          "kind": "text-position",
+          "start": 872,
+          "end": 925
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "property_signature",
+          "structuralHash": "5f8aab26550082f4",
+          "semanticHash": "a58edbc4a9df484c"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "forced?: \"addresses\";",
+          "prefix": "   * stay the raw Choice probabilities.\n   */\n  ",
+          "suffix": "\n}\n\nexport interface ConflictSide {\n  text: stri"
+        },
+        {
+          "kind": "text-position",
+          "start": 1560,
+          "end": 1581
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "property_signature",
+          "structuralHash": "344fdd401a6d5753",
+          "semanticHash": "a0f50ecdf356fa1e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"addresses\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "forced?: \"same_subject\";",
+          "prefix": "ies` stay the raw Choice probabilities.\n   */\n  ",
+          "suffix": "\n}\n\n/** Every judge call returns the exact reque"
+        },
+        {
+          "kind": "text-position",
+          "start": 2138,
+          "end": 2162
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "property_signature",
+          "structuralHash": "344fdd401a6d5753",
+          "semanticHash": "de01a9a4b3b810ca"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"same_subject\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:49.711Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:49.711Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

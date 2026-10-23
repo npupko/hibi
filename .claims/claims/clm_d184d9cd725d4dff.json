@@ -1,0 +1,111 @@
+{
+  "id": "clm_d184d9cd725d4dff",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "A batch returns `{ batch: true, count, updated, results }`, where the top-level `updated` is the number of items updated in place.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A batch returns `{ batch: true, count, updated, results }`, where the top-level `updated` is the number of items updated in place.",
+        "prefix": " carries `id`, `updated`, and `existingClaims`. ",
+        "suffix": " `updated` is true when a claim on the same sent"
+      },
+      {
+        "kind": "text-position",
+        "start": 7953,
+        "end": 8083
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "batch: true,",
+          "prefix": "          \"record\",\n            {\n              ",
+          "suffix": "\n              count: summaries.length,\n        "
+        },
+        {
+          "kind": "text-position",
+          "start": 18730,
+          "end": 18742
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "8f35e555f490c434",
+          "semanticHash": "3c4d691e5a7a1385"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "count: summaries.length,",
+          "prefix": "     {\n              batch: true,\n              ",
+          "suffix": "\n              updated: results.filter((r) => r."
+        },
+        {
+          "kind": "text-position",
+          "start": 18757,
+          "end": 18781
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "d1dd0bbddf8a4998"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "updated: results.filter((r) => r.updated).length,",
+          "prefix": "         count: summaries.length,\n              ",
+          "suffix": "\n              results: summaries,\n            }"
+        },
+        {
+          "kind": "text-position",
+          "start": 18796,
+          "end": 18845
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "54b5d2d68458af47",
+          "semanticHash": "f419f1758c9d279f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:42.426Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:42.426Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "clm_2dc368f626f344cc",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "| `attested` | none; optional `sources`, `procedure`; `ttl` required | ttl elapsed, or evidence refutes it |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `attested` | none; optional `sources`, `procedure`; `ttl` required | ttl elapsed, or evidence refutes it |",
+        "prefix": " anchor change, or the judge finds no support |\n",
+        "suffix": "\n\nAnchor states: `unchanged`, `moved`, `changed`"
+      },
+      {
+        "kind": "text-position",
+        "start": 1066,
+        "end": 1174
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "an attested claim has no evidence spans",
+          "prefix": "        path: [\"evidence\"],\n          message: \"",
+          "suffix": "\",\n        });\n      }\n      if (c.ttl === undef"
+        },
+        {
+          "kind": "text-position",
+          "start": 9853,
+          "end": 9892
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "e9e782a149545cc8"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "an attested claim requires a ttl",
+          "prefix": "\",\n          path: [\"ttl\"],\n          message: \"",
+          "suffix": "\",\n        });\n      }\n    }\n  })\n  .meta({ id: "
+        },
+        {
+          "kind": "text-position",
+          "start": 10042,
+          "end": 10074
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "0878b3cee2e04fed"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:32.094Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:32.094Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

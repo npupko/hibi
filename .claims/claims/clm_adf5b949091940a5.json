@@ -1,0 +1,82 @@
+{
+  "id": "clm_adf5b949091940a5",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Ids are `doc_` and `clm_` followed by 16 lowercase hex characters.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Ids are `doc_` and `clm_` followed by 16 lowercase hex characters.",
+        "prefix": "ached judge verdicts; local, not committed\n```\n\n",
+        "suffix": " A claim id is random. A document id is derived "
+      },
+      {
+        "kind": "text-position",
+        "start": 13292,
+        "end": 13358
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const DocumentId = z.string().regex(/^doc_[0-9a-f]{16}$/);",
+          "prefix": "c_` followed by 16 lowercase hex characters. */\n",
+          "suffix": "\n/** `clm_` followed by 16 lowercase hex charact"
+        },
+        {
+          "kind": "text-position",
+          "start": 793,
+          "end": 858
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "01dd3b578dea81e2",
+          "semanticHash": "f1b551be1a3069e3"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ClaimId = z.string().regex(/^clm_[0-9a-f]{16}$/);",
+          "prefix": "m_` followed by 16 lowercase hex characters. */\n",
+          "suffix": "\n\n/** OKF actor form: `human:<id>`, `agent:<name"
+        },
+        {
+          "kind": "text-position",
+          "start": 914,
+          "end": 976
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "01dd3b578dea81e2",
+          "semanticHash": "268ee3f4740f66fc"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:36.281Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:36.281Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

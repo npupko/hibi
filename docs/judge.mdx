@@ -7,7 +7,7 @@ icon: "gavel"
 
 Some questions cannot be answered by comparing text. Does this passage of the billing guide still support the sentence in the README? Do these two sentences contradict each other? Is this region a factual claim at all? Hibi sends these questions to a model, the **judge**, and decides the outcome in code from the probabilities it returns.
 
-The judge is an interface with three methods. The shipped implementation is **Jev**, TypeSafe's System One model. Tests use a fake implementation that answers from fixtures.
+The judge is an interface with three methods. The shipped implementation is **Jev**, TypeSafe's System One model. Tests use a fake implementation that answers from a script.
 
 ## The interface
 
@@ -25,7 +25,7 @@ Who calls which judgment:
 |---|---|---|
 | `triage` | `hibi audit` | for the regions no claim covers |
 | `supports` | `hibi check`, `hibi list` | for a `reference` claim, when no cached verdict exists for the current sentence, context, and referenced text |
-| `supports` | `hibi evidence` | for each submitted item |
+| `supports` | `hibi evidence` | for each submitted item with no cached verdict |
 | `conflict` | `hibi check`, `hibi list`, `hibi audit` | once per pair from the [contradiction pass](/conflicts); `check --doc` and `audit` judge only the pairs with a claim in the document |
 
 ## Jev and TypeSafe
@@ -51,7 +51,7 @@ The official `@typesafe-ai/sdk` package is not used. Under Bun it reads the resp
 
 ### Retries and limits
 
-The numbers copy the SDK's documented defaults. They live in `src/judge/http.ts` and `src/judge/jev.ts`.
+The retry numbers copy the SDK's documented defaults. They live in `src/judge/http.ts` and `src/judge/jev.ts`.
 
 | rule | value |
 |---|---|
@@ -73,11 +73,11 @@ A judge failure never aborts a run and never exits 1. It makes the judgment `pen
 | failure | kind |
 |---|---|
 | no `TYPESAFE_API_KEY`, a 401 or 403, or no answer after the last retry | unavailable |
-| a 400, a 422, or another 4xx other than 401 and 403 | error |
+| a 400, a 422, or another 4xx other than 401, 403, 408, and 429 | error |
 | a 200 whose body is not JSON, or has no `answers` object and `model` string | error |
 | an answer that is missing, of the wrong type, or names an unknown option | error |
 
-An error carries the label `judge error: <message>`, for example `judge error: TypeSafe returned HTTP 400: …`. An unavailable judge carries `judge unavailable: <message>` on a `reference` claim, an evidence item, a conflict pair, and an audit row.
+An error carries the label `judge error: <message>`, for example `judge error: TypeSafe returned HTTP 400: …`. An unavailable judge carries `judge unavailable: <message>` on a `reference` claim, an evidence item, and an audit row. A conflict pair the judge could not answer, or whose answer could not be used, is pending: each of its two claims gets one reason, `conflict checks pending: <n>`, and `summary.conflictPass.pending` counts the pending pairs.
 
 Where the label appears:
 
@@ -85,7 +85,7 @@ Where the label appears:
 |---|---|
 | `supports` for a `reference` claim | the claim's `judge` is `pending`; its reasons carry the label |
 | `supports` for a submitted evidence item | the item's `judge` is `pending`, nothing is written for it, and its `reasons` carry the label |
-| `conflict` | the pair is pending; both claims warn with `conflict check pending with <id>: judge unavailable` or `conflict check pending with <id>: judge error` |
+| `conflict` | the pair is pending; each claim warns with one reason, `conflict checks pending: <n>`, counting its pending pairs |
 | `triage` | the regions of that request are `pending` rows; each row's `reason` carries the label |
 
 ## The three judgments
@@ -113,7 +113,7 @@ Code rule: a region is `code` by construction when it is a fenced block, contain
 | `relation` | Choice over `supports`, `contradicts`, `says_nothing` (the options of TypeSafe's citation-check cookbook), reported as `supports`, `refutes`, `does_not_address` |
 | `addresses` | Noul: does the evidence speak to what the claim asserts, either way |
 
-`claim_context` is the heading path above the sentence and the paragraph that contains it, at most 600 characters, built in code. For a `reference` claim, `evidence` is the current text of the referenced span and `evidence_source` is its file path.
+`claim_context` is the heading path above the sentence and the paragraph that contains it, at most 600 characters, built in code. For a list item, the context also holds the list's lead-in: the paragraph directly above the list, even across a blank line. For a `reference` claim, `evidence` is the current text of the referenced span and `evidence_source` is its file path.
 
 Code rule: when `addresses` is below 0.3, the relation is `does_not_address` whatever the Choice said.
 
@@ -164,7 +164,7 @@ When the evidence `source` equals one of the claim's `sources[].id` or `sources[
 
 ## What stays in code
 
-The model is not asked to compare quantities. Hibi extracts values from text with a fixed table of regular expressions in `src/engine/values.ts`:
+The comparison of quantities is done in code, though the judge's `contradicts` criterion also covers incompatible values. Hibi extracts values from text with a fixed table of regular expressions in `src/engine/values.ts`:
 
 | kind | examples | normalized |
 |---|---|---|
@@ -180,15 +180,15 @@ Values are compared only within the same kind and unit (a group). A group differ
 | where | groups compared | when the values differ | label |
 |---|---|---|---|
 | `supports` | money, numbers with a unit (`%`, durations), versions, dates; not unitless numbers | the relation is not `does_not_address` | `value differs: numbers differ: 29 vs 39` (state `refuted`) |
-| `conflict` | every group, unitless numbers included | `same_subject` is at or above the threshold | `numbers differ: 29 vs 39` (a conflict with probability 1) |
+| `conflict` | every group, unitless numbers included | `same_subject` is at or above the threshold and `contradicts` is at or above 0.5 | `numbers differ: 29 vs 39` (a conflict with probability 1) |
 
-On `supports`, a bare number in the evidence (a count, an id, a line number) says too little to refute the sentence, so unitless numbers are left out.
+On `supports`, a bare number in the evidence (a count, an id, a line number) says too little to refute the sentence, so unitless numbers are left out. On `conflict`, two sentences about the same subject can hold different values for different situations, such as the exit codes of two commands, so the rule also needs the judge's `contradicts` at or above 0.5.
 
 Versions and dates use `versions differ: …` and `dates differ: …`. For submitted evidence, the extracted values are stored in the cache entry, so `check` applies the rule without the raw text.
 
 ## The cache
 
-Every answer is written to `.claims/judge/<key>.json`. The key is the sha256 hex of the model id, a newline, and the canonical JSON of the request (object keys sorted, no whitespace). The cache is committed with the store.
+Every answer is written to `.claims/judge/<key>.json`. The key is the sha256 hex of the model id, a newline, and the canonical JSON of the request (object keys sorted, no whitespace). The cache is local and is not committed: `hibi init` writes `.claims/.gitignore` with the line `judge/`. CI restores it with its own cache step; see [CI](/ci).
 
 | field | content |
 |---|---|
@@ -211,16 +211,16 @@ There is no offline flag. Without `TYPESAFE_API_KEY`, or when the API cannot be 
 
 | command | effect |
 |---|---|
-| `check` | a `reference` claim with no cached verdict has `judge: pending` and warns; a new pair warns with `conflict check pending with <id>: judge unavailable`; both appear in the worklist or the summary. Exit code 0 unless `--fail-on warn`. |
+| `check` | a `reference` claim with no cached verdict has `judge: pending` and warns; a claim with new pairs warns with `conflict checks pending: <n>`; both appear in the worklist or the summary. Exit code 0 unless `--fail-on warn`. |
 | `evidence` | each item is `pending`; nothing is written for it; `next` says to set the key and re-submit |
 | `audit` | uncovered regions are `pending` |
 
-Cached verdicts keep working without a key. CI without the secret still gates on anchors, cached verdicts, cached conflicts, and expiry.
+Cached verdicts keep working without a key. CI without the secret still gates on anchors, cached verdicts, and cached conflicts, and on expiry under `check --doc`.
 
 ## Cost and latency
 
 <Warning>
-  These figures come from TypeSafe's documentation and the research note in `design/evidence/typesafe-research-2026-10-22.md`. Hibi has not measured them in live runs.
+  The research note `design/evidence/typesafe-research-2026-10-22.md` quotes the price and latency from TypeSafe's documentation and computes the 500-claim estimates from them. Hibi has not measured them in live runs.
 </Warning>
 
 | item | figure |

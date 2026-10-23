@@ -1,0 +1,140 @@
+{
+  "id": "clm_5c5d05fddea8428c",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "| `ttl` | an ISO 8601 duration such as `P90D` or `PT12H`; required on `attested`, optional on the other kinds; no store-wide default |",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `ttl` | an ISO 8601 duration such as `P90D` or `PT12H`; required on `attested`, optional on the other kinds; no store-wide default |",
+        "prefix": " `process:<name>`; separate from who attested |\n",
+        "suffix": "\n\nHow `ttl` is counted is on the [Attestations]("
+      },
+      {
+        "kind": "text-position",
+        "start": 4025,
+        "end": 4159
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ttl: Duration.optional(),",
+          "prefix": "default(null),\n    owner: Actor.optional(),\n    ",
+          "suffix": "\n    enforcement: Enforcement.default(\"enforced\""
+        },
+        {
+          "kind": "text-position",
+          "start": 8977,
+          "end": 9002
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1510bc52887893f3",
+          "semanticHash": "529364b7b5c88dcc"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "/^P(?!$)(\\d+Y)?(\\d+M)?(\\d+W)?(\\d+D)?(T(?=\\d)(\\d+H)?(\\d+M)?(\\d+S)?)?$/;",
+          "prefix": "fter `T`.\n */\nexport const DURATION_PATTERN =\n  ",
+          "suffix": "\nexport const Duration = z.string().regex(DURATI"
+        },
+        {
+          "kind": "text-position",
+          "start": 1405,
+          "end": 1475
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "regex",
+          "structuralHash": "cb62eb081a35c115",
+          "semanticHash": "87a02ab5c3e3bb0a"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (kind === \"attested\" && input.ttl === undefined) {",
+          "prefix": "t ${JSON.stringify(input.ttl)}).`,\n    );\n  }\n  ",
+          "suffix": "\n    throw new Error(\"an attested claim requires"
+        },
+        {
+          "kind": "text-position",
+          "start": 5819,
+          "end": 5872
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "c566230f44dca2eb",
+          "semanticHash": "b7525bb6a754f858"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"attested\""
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ignore: [],\n    };",
+          "prefix": "EL, threshold: DEFAULT_JUDGE_THRESHOLD },\n      ",
+          "suffix": "\n  }\n\n  /**\n   * Initialize a store; idempotent,"
+        },
+        {
+          "kind": "text-position",
+          "start": 2400,
+          "end": 2418
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "d0ec9057347b43e0",
+          "semanticHash": "54d9930a1b531ad9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:03.033Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:03.033Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

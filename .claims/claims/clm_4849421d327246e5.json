@@ -1,0 +1,94 @@
+{
+  "id": "clm_4849421d327246e5",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "Position is only a bias during locate and the tiebreaker between `unchanged` and `moved`.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Position is only a bias during locate and the tiebreaker between `unchanged` and `moved`.",
+        "prefix": "urther away, it is `moved`.\n  </Step>\n</Steps>\n\n",
+        "suffix": " It never decides `changed`.\n\nA claim with sever"
+      },
+      {
+        "kind": "text-position",
+        "start": 4324,
+        "end": 4413
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/localize.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const bias = tp ? tp.start : 0;",
+          "prefix": ": TextPosition | undefined,\n): LocateResult {\n  ",
+          "suffix": "\n  const hits = exactOccurrences(text, tq.exact)"
+        },
+        {
+          "kind": "text-position",
+          "start": 5648,
+          "end": 5679
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "46703e3600e8a3ba",
+          "semanticHash": "af027b0ff1d10a4f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const delta = tp ? Math.abs(region.start - tp.start) : 0;",
+          "prefix": "    };\n  }\n\n  // 2 and 3. Unchanged or moved.\n  ",
+          "suffix": "\n  if (delta > MOVE_AWARENESS_CHARS) {\n    reaso"
+        },
+        {
+          "kind": "text-position",
+          "start": 8894,
+          "end": 8951
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f38c6b7a469beb05",
+          "semanticHash": "48ad598e5a7e80b3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.336Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.336Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "clm_72aada9e652442fe",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Each span in `code` and `ref` has `file` and exactly one of `quote` and `range`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each span in `code` and `ref` has `file` and exactly one of `quote` and `range`.",
+        "prefix": "-based lines) or `<a>:<b>` (character offsets). ",
+        "suffix": "\n- `code` is required, with at least one span, f"
+      },
+      {
+        "kind": "text-position",
+        "start": 57288,
+        "end": 57368
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(`${where} needs exactly one of quote or range`);",
+          "prefix": "| undefined;\n  if (hasQuote === hasRange) {\n    ",
+          "suffix": "\n  } else if (hasQuote) {\n    if (!nonEmptyStrin"
+        },
+        {
+          "kind": "text-position",
+          "start": 4504,
+          "end": 4564
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "0d4c05c5526a9656",
+          "semanticHash": "1d98e3ebd432ed20"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(`${where}.file must be a non-empty string`);",
+          "prefix": "errors);\n  if (!nonEmptyString(raw.file)) {\n    ",
+          "suffix": "\n  }\n  const hasQuote = raw.quote !== undefined;"
+        },
+        {
+          "kind": "text-position",
+          "start": 4282,
+          "end": 4338
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "0d4c05c5526a9656",
+          "semanticHash": "37c18217507251fc"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:33.760Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:33.760Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

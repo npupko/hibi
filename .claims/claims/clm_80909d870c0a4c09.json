@@ -1,0 +1,88 @@
+{
+  "id": "clm_80909d870c0a4c09",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Cache hits are not counted, so a second run over the same text reports 0.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Cache hits are not counted, so a second run over the same text reports 0.",
+        "prefix": "triage requests the judge answered in this run. ",
+        "suffix": " `byKind` has a key for every row kind.\n\nNo advi"
+      },
+      {
+        "kind": "text-position",
+        "start": 51503,
+        "end": 51576
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (hit !== undefined) {",
+          "prefix": "     let answers: Record<string, Answer>;\n      ",
+          "suffix": "\n        answers = hit.answers as Record<string,"
+        },
+        {
+          "kind": "text-position",
+          "start": 8044,
+          "end": 8068
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "ae8fc4d39629209f",
+          "semanticHash": "0d07bff5d91c0471"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "answered++;",
+          "prefix": " label);\n          return [];\n        }\n        ",
+          "suffix": "\n        await cache.put({\n          key,\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 8967,
+          "end": 8978
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "update_expression",
+          "structuralHash": "189ef08b678c3437",
+          "semanticHash": "f12f5f1b81146ccf"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.485Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.485Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,151 @@
+{
+  "id": "clm_069b88a992c94ebd",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A path token is `./x`, `../x`, `~/x`, `/x`, `dir/`, `dir/file.ext`, `file.ext` with a known source or config extension, or `.dotfile`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A path token is `./x`, `../x`, `~/x`, `/x`, `dir/`, `dir/file.ext`, `file.ext` with a known source or config extension, or `.dotfile`.",
+        "prefix": "en outside code spans and URLs is a path token. ",
+        "suffix": " `Name.js` (Node.js, Next.js) is a product name,"
+      },
+      {
+        "kind": "text-position",
+        "start": 33193,
+        "end": 33327
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "String.raw`^(?:\\.{1,2}|~)?/[\\w.-]`, // ./x, ../x, ~/x, /x",
+          "prefix": "gradle\";\nconst PATH_TOKEN = new RegExp(\n  [\n    ",
+          "suffix": "\n    String.raw`^[\\w.-]+/(?:[\\w.-]+/)*$`, // dir"
+        },
+        {
+          "kind": "text-position",
+          "start": 5309,
+          "end": 5366
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "801600e535dac471",
+          "semanticHash": "385a29faa72ef52c"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "String.raw`^[\\w.-]+/(?:[\\w.-]+/)*$`, // dir/ or dir/sub/",
+          "prefix": ":\\.{1,2}|~)?/[\\w.-]`, // ./x, ../x, ~/x, /x\n    ",
+          "suffix": "\n    String.raw`^[\\w.-]*/(?:[\\w.-]+/)*[\\w-]*\\.(?"
+        },
+        {
+          "kind": "text-position",
+          "start": 5371,
+          "end": 5427
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "801600e535dac471",
+          "semanticHash": "385a29faa72ef52c"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "String.raw`^[\\w.-]*/(?:[\\w.-]+/)*[\\w-]*\\.(?:${FILE_EXTENSIONS})$`, // dir/file.ext",
+          "prefix": "\\w.-]+/(?:[\\w.-]+/)*$`, // dir/ or dir/sub/\n    ",
+          "suffix": "\n    String.raw`^[\\w-]+\\.(?:${FILE_EXTENSIONS})$"
+        },
+        {
+          "kind": "text-position",
+          "start": 5432,
+          "end": 5514
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "801600e535dac471",
+          "semanticHash": "385a29faa72ef52c"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "String.raw`^[\\w-]+\\.(?:${FILE_EXTENSIONS})$`, // file.ext",
+          "prefix": "\\.(?:${FILE_EXTENSIONS})$`, // dir/file.ext\n    ",
+          "suffix": "\n    String.raw`^\\.[a-z][\\w-]*$`, // .dotfile\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 5519,
+          "end": 5576
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "801600e535dac471",
+          "semanticHash": "385a29faa72ef52c"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "String.raw`^\\.[a-z][\\w-]*$`, // .dotfile",
+          "prefix": "w-]+\\.(?:${FILE_EXTENSIONS})$`, // file.ext\n    ",
+          "suffix": "\n  ].join(\"|\"),\n);\nconst PRODUCT_NAME = /^[A-Z]["
+        },
+        {
+          "kind": "text-position",
+          "start": 5581,
+          "end": 5621
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "801600e535dac471",
+          "semanticHash": "385a29faa72ef52c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:51.867Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:51.867Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

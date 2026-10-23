@@ -1,0 +1,107 @@
+{
+  "id": "clm_553004b94f744803",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "| `1` | operational error, including a document with no registered claims | read `error` |",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `1` | operational error, including a document with no registered claims | read `error` |",
+        "prefix": "s as written; read their `verdicts[]` entries |\n",
+        "suffix": "\n\nUnder `--doc`, an `expired` claim gates. In a "
+      },
+      {
+        "kind": "text-position",
+        "start": 855,
+        "end": 945
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const EXIT_OPERATIONAL_ERROR = 1;",
+          "prefix": "import { makeStyle } from \"./render/style.ts\";\n\n",
+          "suffix": "\n\ntype Values = Record<string, string | boolean "
+        },
+        {
+          "kind": "text-position",
+          "start": 2019,
+          "end": 2052
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "b020cf8744ffe46d",
+          "semanticHash": "10cafcc71b88d6bf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ ok: false, error: message, ...(errors ? { errors } : {}) },",
+          "prefix": "${message}\\n`);\n  } else {\n    await out(\n      ",
+          "suffix": "\n      mode.kind === \"json-pretty\",\n    );\n  }\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 4202,
+          "end": 4263
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "3d7862af04923004",
+          "semanticHash": "091f71a4be55e136"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "false",
+          "value": "false"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:37.418Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:42.066Z",
+      "basis": "ack",
+      "note": "both say a document with no registered claims is exit 1, an operational error",
+      "ack": {
+        "pairId": "clm_295ac486f9154aa3:clm_553004b94f744803",
+        "sentenceHashes": [
+          "ffe23d358ffb088237a745ae9a2efee5fae15f505712e8f0ff47baa431bf15d0",
+          "42c0e7974510cd795da6dec548a419156b6914bd51126aa41655b427bef07366"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:37.418Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

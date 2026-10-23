@@ -1,0 +1,94 @@
+{
+  "id": "clm_8cb0ddd9d326491a",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `currency-code-after` | money | `29 USD` | the number | the code |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `currency-code-after` | money | `29 USD` | the number | the code |",
+        "prefix": "ix (`$5m` is `5000000`) | `USD`, `EUR`, `GBP` |\n",
+        "suffix": "\n| `currency-code-before` | money | `USD 29` | t"
+      },
+      {
+        "kind": "text-position",
+        "start": 39626,
+        "end": 39694
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"currency-code-after\",",
+          "prefix": "    };\n    },\n  },\n  {\n    // 29 USD, 5 EUR\n    ",
+          "suffix": "\n    kind: \"money\",\n    pattern: re(String.raw`$"
+        },
+        {
+          "kind": "text-position",
+          "start": 8335,
+          "end": 8363
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "f4d94b464e254589"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"currency-code-after\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(${NUM})\\s?(${CURRENCY_CODES.join(\"|\")})\\b",
+          "prefix": "nd: \"money\",\n    pattern: re(String.raw`${START}",
+          "suffix": "`),\n    read: (m) => ({\n      raw: m[0],\n      n"
+        },
+        {
+          "kind": "text-position",
+          "start": 8418,
+          "end": 8460
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "f3a4bd9e0db05fd4",
+          "semanticHash": "338fd22ca1cc722b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"|\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:04.248Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:04.248Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

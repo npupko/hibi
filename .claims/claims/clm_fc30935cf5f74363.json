@@ -1,0 +1,82 @@
+{
+  "id": "clm_fc30935cf5f74363",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "`triage` splits a long document into several requests that each carry the document path and only their own regions.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`triage` splits a long document into several requests that each carry the document path and only their own regions.",
+        "prefix": "Tokens are estimated at 4 characters per token. ",
+        "suffix": " `hibi evidence` refuses an evidence text longer"
+      },
+      {
+        "kind": "text-position",
+        "start": 3783,
+        "end": 3898
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return chunkRegions(costs, fixed).map((indices) => {",
+          "prefix": "uestion: Math.max(...questions),\n    };\n  });\n  ",
+          "suffix": "\n    const chunk = indices.map((i) => regions[i]"
+        },
+        {
+          "kind": "text-position",
+          "start": 10560,
+          "end": 10612
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "b3647cdb91fb5062",
+          "semanticHash": "fa5a87d736a35ba4"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "state: { doc: docState, regions: chunk.map(stateRegion) },",
+          "prefix": "[i] as Region);\n    return {\n      model,\n      ",
+          "suffix": "\n      questions: Object.assign(\n        {},\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 10705,
+          "end": 10763
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "179d82d726e25659",
+          "semanticHash": "12d26b74152e3cd6"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:35.920Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:35.920Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

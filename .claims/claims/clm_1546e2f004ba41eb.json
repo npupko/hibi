@@ -1,0 +1,99 @@
+{
+  "id": "clm_1546e2f004ba41eb",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "After the FAQ sentence is removed and its claim retired, `check` returns `exitCode: 0`, `summary.retired: 1`, `summary.conflicts: 0` for this walkthrough.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "After the FAQ sentence is removed and its claim retired, `check` returns `exitCode: 0`, `summary.retired: 1`, `summary.conflicts: 0` for this walkthrough.",
+        "prefix": "laims and lapses when either sentence changes.\n\n",
+        "suffix": " Do not reword either sentence just to make the "
+      },
+      {
+        "kind": "text-position",
+        "start": 14881,
+        "end": 15035
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(c) => c.enforcement !== \"retired\" && active.has(c.documentId),",
+          "prefix": " = (await this.store.allClaims()).filter(\n      ",
+          "suffix": "\n    );\n    const scope =\n      documentId === u"
+        },
+        {
+          "kind": "text-position",
+          "start": 10792,
+          "end": 10855
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "arrow_function",
+          "structuralHash": "f265ac1f9f7a1ebc",
+          "semanticHash": "a5111958826dd96c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "retiredCount += 1;",
+          "prefix": "ed\";\n    if (enforcement === \"retired\") {\n      ",
+          "suffix": "\n      continue;\n    }\n    docHist[v.doc] += 1;\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 19425,
+          "end": 19443
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "augmented_assignment_expression",
+          "structuralHash": "e7009dd9996ed9e0",
+          "semanticHash": "aa837d9bd06cd573"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:10.337Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:04.072Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:10.337Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

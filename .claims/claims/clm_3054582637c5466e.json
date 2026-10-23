@@ -1,0 +1,82 @@
+{
+  "id": "clm_3054582637c5466e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- A covered row has the claim's `claimId` and kind, no `probability`, and `duplicateOf` from the contradiction pass (it runs on demand).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- A covered row has the claim's `claimId` and kind, no `probability`, and `duplicateOf` from the contradiction pass (it runs on demand).",
+        "prefix": "\n      \"duplicateOf\": \"clm_…\" | null } ] }\n```\n\n",
+        "suffix": "\n- An uncovered row takes its kind from triage ("
+      },
+      {
+        "kind": "text-position",
+        "start": 50283,
+        "end": 50419
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ ...base, claimId: claim.id, duplicateOf: duplicateOf(claim.id) },",
+          "prefix": "id);\n    if (claim) {\n      return row(\n        ",
+          "suffix": "\n        { kind: claim.kind },\n      );\n    }\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 11050,
+          "end": 11117
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "62bb9eac135657cb",
+          "semanticHash": "d0c25c389f08d26a"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ kind: claim.kind },",
+          "prefix": ", duplicateOf: duplicateOf(claim.id) },\n        ",
+          "suffix": "\n      );\n    }\n    const result = results.get(r"
+        },
+        {
+          "kind": "text-position",
+          "start": 11126,
+          "end": 11147
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "34a6da16fb18fda1",
+          "semanticHash": "12f47ef46163ae78"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.195Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.195Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

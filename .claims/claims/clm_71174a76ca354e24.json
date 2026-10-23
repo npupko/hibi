@@ -1,0 +1,65 @@
+{
+  "id": "clm_71174a76ca354e24",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The CLI's `--by` is required on `attest`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The CLI's `--by` is required on `attest`.",
+        "prefix": "`human:<id>`, `agent:<name>`, `process:<name>`. ",
+        "suffix": " On `record` and `evidence`, every item needs an"
+      },
+      {
+        "kind": "text-position",
+        "start": 8081,
+        "end": 8122
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"The attesting actor: human:<id>, agent:<name>, or process:<name>.\",\n        required: true,",
+          "prefix": "tring\",\n        placeholder: \"<actor>\",\n        ",
+          "suffix": "\n      },\n      {\n        name: \"note\",\n        "
+        },
+        {
+          "kind": "text-position",
+          "start": 19074,
+          "end": 19172
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "15154156d14c03d8",
+          "semanticHash": "6a51f0e9a23ba933"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"The attesting actor: human:<id>, agent:<name>, or process:<name>.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:23.508Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:23.508Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

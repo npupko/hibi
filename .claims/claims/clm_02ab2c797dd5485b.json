@@ -1,0 +1,84 @@
+{
+  "id": "clm_02ab2c797dd5485b",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "CI runs `check --fail-on gating --json` over the whole store and `check --doc README.md --fail-on gating --json` as a hard gate, both without `TYPESAFE_API_KEY`, so judge passes are `pending` and only warn.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "CI runs `check --fail-on gating --json` over the whole store and `check --doc README.md --fail-on gating --json` as a hard gate, both without `TYPESAFE_API_KEY`, so judge passes are `pending` and only warn.",
+        "prefix": "ode was right. Done.\n\nEverything above is done. ",
+        "suffix": " CI restores `.claims/judge/` with an `actions/c"
+      },
+      {
+        "kind": "text-position",
+        "start": 74721,
+        "end": 74927
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": ".github/workflows/ci.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "run: bun run src/cli/index.ts check --fail-on gating --json",
+          "prefix": ": Claims in .claims/ hold (whole store)\n        ",
+          "suffix": "\n      - name: README.md claims hold (doc gate; "
+        },
+        {
+          "kind": "text-position",
+          "start": 2206,
+          "end": 2265
+        }
+      ]
+    },
+    {
+      "file": ".github/workflows/ci.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "run: bun run src/cli/index.ts check --doc README.md --fail-on gating --json",
+          "prefix": "DME has only code and reference claims)\n        ",
+          "suffix": "\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 2364,
+          "end": 2439
+        }
+      ]
+    },
+    {
+      "file": ".github/workflows/ci.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "TYPESAFE_API_KEY in CI, so judge passes are pending, which warns and",
+          "prefix": " docs against its own code. There is no\n      # ",
+          "suffix": "\n      # never gates; changed, orphaned, or ambi"
+        },
+        {
+          "kind": "text-position",
+          "start": 1958,
+          "end": 2026
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:18.526Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:18.526Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

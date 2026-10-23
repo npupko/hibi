@@ -1,0 +1,88 @@
+{
+  "id": "clm_9871de6365b24b4e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "For each claim, when the stored `text-quote` `exact` occurs verbatim exactly once in `--to`, only the `text-position` `start` and `end` are rebuilt; otherwise every selector stays byte-identical.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "For each claim, when the stored `text-quote` `exact` occurs verbatim exactly once in `--to`, only the `text-position` `start` and `end` are rebuilt; otherwise every selector stays byte-identical.",
+        "prefix": "to `--to`, setting `documentId` and `doc.file`. ",
+        "suffix": " The sentence, the quote, the hashes, the eviden"
+      },
+      {
+        "kind": "text-position",
+        "start": 69758,
+        "end": 69953
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (at < 0 || content.indexOf(quote.exact, at + 1) >= 0) return selectors;",
+          "prefix": "s;\n  const at = content.indexOf(quote.exact);\n  ",
+          "suffix": "\n  return selectors.map((s) =>\n    s.kind === \"t"
+        },
+        {
+          "kind": "text-position",
+          "start": 9244,
+          "end": 9318
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "d9180d7e246ba38c",
+          "semanticHash": "a6c298089dafb812"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "? { ...s, start: at, end: at + quote.exact.length }",
+          "prefix": "map((s) =>\n    s.kind === \"text-position\"\n      ",
+          "suffix": "\n      : s,\n  );\n}\n\nexport async function reanch"
+        },
+        {
+          "kind": "text-position",
+          "start": 9386,
+          "end": 9437
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "c5c1a4931fc005ca",
+          "semanticHash": "b49aea056c4b3018"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:02.829Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:02.829Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

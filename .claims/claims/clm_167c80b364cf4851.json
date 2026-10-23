@@ -1,0 +1,68 @@
+{
+  "id": "clm_167c80b364cf4851",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "code",
+  "sentence": "- **[Bun](https://bun.sh) 1.2 or newer.** The test suite, build, and tooling run on it.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **[Bun](https://bun.sh) 1.2 or newer.** The test suite, build, and tooling run on it.",
+        "prefix": " out of date, open an issue.\n\n## Prerequisites\n\n",
+        "suffix": " Node.js is not needed.\n- No compiler. The tree-"
+      },
+      {
+        "kind": "text-position",
+        "start": 294,
+        "end": 381
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"bun\": \">=1.2.0\"",
+          "prefix": "  \".\": \"./src/index.ts\"\n  },\n  \"engines\": {\n    ",
+          "suffix": "\n  },\n  \"files\": [\n    \"src\",\n    \"grammars\",\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 759,
+          "end": 775
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"test\": \"bun test\",",
+          "prefix": "pile src/cli/index.ts --outfile dist/hibi\",\n    ",
+          "suffix": "\n    \"lint\": \"biome lint .\",\n    \"format\": \"biom"
+        },
+        {
+          "kind": "text-position",
+          "start": 1267,
+          "end": 1286
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:43.854Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:43.854Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

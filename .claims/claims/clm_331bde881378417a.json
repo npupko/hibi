@@ -1,0 +1,88 @@
+{
+  "id": "clm_331bde881378417a",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "- `--doc`, the doc span flags, and the ref span flags may each be given once. A repeat is an error such as `--doc-quote given twice; reanchor takes one span per side`.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `--doc`, the doc span flags, and the ref span flags may each be given once. A repeat is an error such as `--doc-quote given twice; reanchor takes one span per side`.",
+        "prefix": "de needed relocating and no side was relocated.\n",
+        "suffix": "\n- A value that starts with `-` takes the `=` fo"
+      },
+      {
+        "kind": "text-position",
+        "start": 5987,
+        "end": 6154
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".filter((o) => o.type === \"string\" && !o.multiple)",
+          "prefix": "nst single = new Set(\n    optionsFor(cmd)\n      ",
+          "suffix": "\n      .map((o) => o.name),\n  );\n  const seen = "
+        },
+        {
+          "kind": "text-position",
+          "start": 22060,
+          "end": 22110
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "a246fc1d880b5a22",
+          "semanticHash": "880d18dc63cd1043"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"string\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return `--${t.name} given twice; ${cmd.name} takes ${takes}`;",
+          "prefix": "an per side\"\n        : `one --${t.name}`;\n      ",
+          "suffix": "\n    }\n    seen.add(t.name);\n  }\n  return undefi"
+        },
+        {
+          "kind": "text-position",
+          "start": 22433,
+          "end": 22494
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "d097db0bd8498a22",
+          "semanticHash": "478e22cfa964c487"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:28:03.429Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:28:03.429Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

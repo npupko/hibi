@@ -1,0 +1,65 @@
+{
+  "id": "clm_88086812bf7943d3",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Each such claim gets one reason `conflict checks pending: <n>`, where `<n>` is the number of its pending pairs, instead of one reason per pair.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each such claim gets one reason `conflict checks pending: <n>`, where `<n>` is the number of its pending pairs, instead of one reason per pair.",
+        "prefix": "dgeError`) is pending and warns on both claims. ",
+        "suffix": " Whether a pair was unavailable or an error is s"
+      },
+      {
+        "kind": "text-position",
+        "start": 26132,
+        "end": 26275
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...(pendingPairs > 0 ? [`conflict checks pending: ${pendingPairs}`] : []),",
+          "prefix": "onflict with ${f.claimId}: ${f.reason}`),\n      ",
+          "suffix": "\n    ];\n    const findings: ClaimFindings = {\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 17204,
+          "end": 17278
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "6c2108a1064853f1",
+          "semanticHash": "fb32884413c11222"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:57.987Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:47:57.987Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

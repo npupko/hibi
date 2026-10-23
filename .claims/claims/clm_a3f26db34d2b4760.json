@@ -1,0 +1,65 @@
+{
+  "id": "clm_a3f26db34d2b4760",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "Agents send a JSON array on stdin.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Agents send a JSON array on stdin.",
+        "prefix": "e-quote \"MAX_ATTEMPTS = 5\" --by agent:opus\n```\n\n",
+        "suffix": " The batch is validated first and is all or noth"
+      },
+      {
+        "kind": "text-position",
+        "start": 6227,
+        "end": 6261
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"record --from-file expects a JSON array of claim items\",",
+          "prefix": "y(parsed)) {\n          return fail(\n            ",
+          "suffix": "\n            mode,\n          );\n        }\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 17206,
+          "end": 17263
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "3a45362ee7e59425"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"record --from-file expects a JSON array of claim items\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:03.853Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:03.853Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

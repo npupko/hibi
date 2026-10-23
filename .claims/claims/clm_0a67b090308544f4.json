@@ -1,0 +1,59 @@
+{
+  "id": "clm_0a67b090308544f4",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| banners and `--write` | the trust call is `check --doc`; an HTML comment is invisible in rendered docs and only reached raw-file readers; it required a write path, a nonce, a comment-syntax table, and caused diff churn |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| banners and `--write` | the trust call is `check --doc`; an HTML comment is invisible in rendered docs and only reached raw-file readers; it required a write path, a nonce, a comment-syntax table, and caused diff churn |",
+        "prefix": "ilities and why\n\n| removed | reason |\n|---|---|\n",
+        "suffix": "\n| verifiers | hibi runs no verifiers and its on"
+      },
+      {
+        "kind": "text-position",
+        "start": 71581,
+        "end": 71803
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.",
+          "prefix": "UCTIONS_LINE =\n  \"Before relying on a document, ",
+          "suffix": "\";\n\nexport const FORMATS = [\"human\", \"compact\", "
+        },
+        {
+          "kind": "text-position",
+          "start": 1446,
+          "end": 1516
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "416e2abd80dd75db"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:13.334Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:13.334Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

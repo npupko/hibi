@@ -1,0 +1,88 @@
+{
+  "id": "clm_7573aecf5d8e4e4c",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`repos` defaults to `{}` and `ignore` to `[]`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`repos` defaults to `{}` and `ignore` to `[]`.",
+        "prefix": "ected. `judge.threshold` is a number in [0, 1]. ",
+        "suffix": " `ignore` lists globs of documents hibi does not"
+      },
+      {
+        "kind": "text-position",
+        "start": 14894,
+        "end": 14940
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "repos: z.record(z.string(), z.string()).default({}),",
+          "prefix": " a path relative to the repository root. */\n    ",
+          "suffix": "\n    judge: JudgeConfig,\n    /** Globs of docume"
+        },
+        {
+          "kind": "text-position",
+          "start": 11263,
+          "end": 11315
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "8ff51f3b3d25cc20",
+          "semanticHash": "34424941f228a982"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ignore: z.array(z.string()).default([]),",
+          "prefix": " `audit` refuses; nothing else reads it. */\n    ",
+          "suffix": "\n  })\n  .meta({ id: \"Config\" });\nexport type Con"
+        },
+        {
+          "kind": "text-position",
+          "start": 11414,
+          "end": 11454
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "4e9da358970d851e",
+          "semanticHash": "60c6a07f44206969"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:36.786Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:36.786Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

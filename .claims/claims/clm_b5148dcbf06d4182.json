@@ -1,0 +1,88 @@
+{
+  "id": "clm_b5148dcbf06d4182",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`.claims/` at the repository root.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`.claims/` at the repository root.",
+        "prefix": "It is separate from who attested.\n\n## 6. Store\n\n",
+        "suffix": " `config.json`, `documents/`, and `claims/` are "
+      },
+      {
+        "kind": "text-position",
+        "start": 12321,
+        "end": 12355
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const STORE_DIR = \".claims\";",
+          "prefix": "mport { JudgeCache } from \"../judge/cache.ts\";\n\n",
+          "suffix": "\n\n/** A file's text, or null when it does not ex"
+        },
+        {
+          "kind": "text-position",
+          "start": 793,
+          "end": 828
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "c42438fd7dfca9a8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".claims\""
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { anchorRoot, dir: join(anchorRoot, STORE_DIR) };",
+          "prefix": "{\n    const anchorRoot = resolve(location);\n    ",
+          "suffix": "\n  }\n  const anchorRoot = resolve(location.ancho"
+        },
+        {
+          "kind": "text-position",
+          "start": 1684,
+          "end": 1740
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "b7f2195899f4bed9",
+          "semanticHash": "42e47687395a3aab"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:36.187Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:36.187Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

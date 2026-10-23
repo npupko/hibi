@@ -1,0 +1,65 @@
+{
+  "id": "clm_62842c4535374ddf",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "```sh\nhibi list --state stranded\n```",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```sh\nhibi list --state stranded\n```",
+        "prefix": "ved` document is **stranded**. List them with:\n\n",
+        "suffix": "\n\nA stranded claim still resolves, still gates, "
+      },
+      {
+        "kind": "text-position",
+        "start": 1839,
+        "end": 1875
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"stranded\",\n] as const;",
+          "prefix": ",\n  \"conflict\",\n  \"duplicate\",\n  \"suggested\",\n  ",
+          "suffix": "\nexport type ListState = (typeof LIST_STATES)[nu"
+        },
+        {
+          "kind": "text-position",
+          "start": 1749,
+          "end": 1772
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "as_expression",
+          "structuralHash": "ebda7430243f9417",
+          "semanticHash": "94662677a72b5be9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"stranded\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.461Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.461Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 14415,
-        "end": 14514
+        "start": 15263,
+        "end": 15362
       }
     ]
   },
@@ -43,8 +43,21 @@
       "by": "agent:claude-dogfood",
       "at": "2026-10-22T19:12:58.034Z",
       "basis": "vouch"
+    },
+    {
+      "by": "human:mikita@peechapp.co",
+      "at": "2026-10-23T07:36:40.985Z",
+      "basis": "vouch",
+      "note": "checked TypeSafe docs and console: limits are per organization, no default values published"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:28:51.930Z",
+      "basis": "evidence",
+      "note": "TypeSafe models page: rate limits are per organization, shown in the console; no default values published",
+      "evidenceHash": "0f9a9c66d98a7c30cf2b666475125305b6f9de292ec84f16fc68b6c722d9fa9d"
     }
   ],
   "createdAt": "2026-10-22T19:12:58.034Z",
-  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
 }

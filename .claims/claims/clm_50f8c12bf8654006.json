@@ -1,0 +1,65 @@
+{
+  "id": "clm_50f8c12bf8654006",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "There is no store-wide default.",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "There is no store-wide default.",
+        "prefix": " and optional on `code` and `reference` claims. ",
+        "suffix": "\n\n`hibi list` shows `ttl` and `expiresAt` per cl"
+      },
+      {
+        "kind": "text-position",
+        "start": 3137,
+        "end": 3168
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const Config = z\n  .strictObject({\n    version: z.literal(MODEL_VERSION),\n    /** Cross-repository aliases: alias to a path relative to the repository root. */\n    repos: z.record(z.string(), z.string()).default({}),\n    judge: JudgeConfig,\n    /** Globs of documents `audit` refuses; nothing else reads it. */\n    ignore: z.array(z.string()).default([]),\n  })",
+          "prefix": "ype JudgeConfig = z.infer<typeof JudgeConfig>;\n\n",
+          "suffix": "\n  .meta({ id: \"Config\" });\nexport type Config ="
+        },
+        {
+          "kind": "text-position",
+          "start": 11092,
+          "end": 11459
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "c46e93b6adbcda69",
+          "semanticHash": "0dcfa3226346ca71"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:12.812Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:12.812Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

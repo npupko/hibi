@@ -1,0 +1,162 @@
+{
+  "id": "clm_b927f7e0a0e7410f",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `reasons` | every reason label: anchor changes (prefixed `doc:` or `evidence:`), judge outcomes (prefixed `judge:`), conflict findings, expiry, worklist membership, and gating rules |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `reasons` | every reason label: anchor changes (prefixed `doc:` or `evidence:`), judge outcomes (prefixed `judge:`), conflict findings, expiry, worklist membership, and gating rules |",
+        "prefix": "the check; never `true` together with `gates` |\n",
+        "suffix": "\n\nEvery rule hibi applies shows up as a label. A"
+      },
+      {
+        "kind": "text-position",
+        "start": 2851,
+        "end": 3036
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...sides.doc.reasons.map((n) => `doc: ${n}`),",
+          "prefix": "UDGE_THRESHOLD },\n  );\n\n  const reasons = [\n    ",
+          "suffix": "\n    ...sides.evidence.flatMap((s) => s.reasons."
+        },
+        {
+          "kind": "text-position",
+          "start": 14916,
+          "end": 14961
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "a2920b1bdac32116",
+          "semanticHash": "8eed3c1f7b23fcf7"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...sides.evidence.flatMap((s) => s.reasons.map((n) => `evidence: ${n}`)),",
+          "prefix": ".sides.doc.reasons.map((n) => `doc: ${n}`),\n    ",
+          "suffix": "\n    ...(expiry !== undefined ? [expiry] : []),\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 14966,
+          "end": 15039
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "1cf2d809bd6d783b",
+          "semanticHash": "5e4d3516412510e3"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...(outcome?.reasons ?? []).map((r) => `judge: ${r}`),",
+          "prefix": " : [],\n      warnings,\n      reasons: [\n        ",
+          "suffix": "\n        ...findingReasons,\n      ],\n      revie"
+        },
+        {
+          "kind": "text-position",
+          "start": 17471,
+          "end": 17525
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "3ceb05cbcaabd3fe",
+          "semanticHash": "d45b76f26723b0b2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "v.reasons.push(worklistLabel(reason, c.kind, c.id));",
+          "prefix": "ndefined;\n    if (reason !== undefined) {\n      ",
+          "suffix": "\n      const last = newestEntry(\n        entries"
+        },
+        {
+          "kind": "text-position",
+          "start": 18210,
+          "end": 18262
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "dd98e41dde59f88a",
+          "semanticHash": "653fcbd989ba5c96"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...gate.reasons,",
+          "prefix": "expiry] : []),\n    ...(opts.reasons ?? []),\n    ",
+          "suffix": "\n  ];\n\n  const changes = [\n    ...sides.doc.chan"
+        },
+        {
+          "kind": "text-position",
+          "start": 15120,
+          "end": 15136
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "007de9d5eb76adb7",
+          "semanticHash": "ccc6db9acf21cf1f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:11.902Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:45:27.141Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:11.902Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

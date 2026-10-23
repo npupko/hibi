@@ -1,0 +1,65 @@
+{
+  "id": "clm_05a48a3e7d0b4ca3",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "`--by` is the actor for items without their own `by`.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--by` is the actor for items without their own `by`.",
+        "prefix": "ing; every problem is reported on its own line. ",
+        "suffix": "\n\n```sh\nhibi record --from-file - --by agent:opu"
+      },
+      {
+        "kind": "text-position",
+        "start": 6357,
+        "end": 6410
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const by = typeof raw.by === \"string\" ? raw.by : context.defaultBy;",
+          "prefix": "ot ${JSON.stringify(v)})`,\n      );\n    }\n  }\n  ",
+          "suffix": "\n  if (by === undefined) {\n    errors.push(\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 10626,
+          "end": 10693
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "0d9d1b676b99279b",
+          "semanticHash": "ccbbf218d0e3af3e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"string\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:03.951Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:03.951Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

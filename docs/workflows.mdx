@@ -33,7 +33,7 @@ The contradiction pass under `--doc` judges only the pairs with a claim in that 
 hibi check --since origin/main
 ```
 
-Only claims whose doc or evidence side names a file changed since the ref are evaluated. The JSON adds `since` and `changedFiles`. `documents[].suspect[]` names the sentences the change invalidated. Fix the prose in the same change, then follow each verdict's `remediation` (usually `hibi reanchor <id>` after you re-read the sentence). An unknown ref exits 1.
+Only claims whose doc or evidence side names a file changed since the ref are evaluated. The JSON adds `since` and `changedFiles`. `documents[].suspect[]` lists each claim that gates or warns, with its most severe status. Fix the prose in the same change, then follow each verdict's `remediation` (usually `hibi reanchor <id>` after you re-read the sentence). An unknown ref exits 1.
 
 Under `--since` the contradiction pass still runs over the whole store, so a scoped check still reports a conflict with a claim outside its scope.
 
@@ -59,7 +59,7 @@ echo '[
 ]' | hibi record --from-file - --by agent:opus
 ```
 
-`record` adds one `vouch` attestation by the item's `by`, or by `--by` when the item has none. `by` is required one way or the other; there is no default. An `attested` claim recorded with `"by": "agent:…"` has no counting attestation, so it is expired from the start: it warns in `check`, gates in `check --doc`, and appears in the worklist with reason `expired` until evidence is judged `supports`.
+`record` adds one `vouch` attestation by the item's `by`, or by `--by` when the item has none. `by` is required one way or the other; there is no default. An `attested` claim recorded with `"by": "agent:…"` has no counting attestation, so it is expired from the start: it warns in `check`, gates in `check --doc`, and appears in the worklist with reason `expired` until evidence is judged `supports` or a human vouches.
 
 For an `unverifiable` row, rewrite the sentence as an attributed opinion, or remove it. Run `audit` again to confirm.
 
@@ -80,7 +80,7 @@ Each worklist item has a `reason`:
 | `review` | the judge was not sure, or the evidence did not address the sentence | submit evidence that addresses the sentence directly (`attested` claims), or acknowledge |
 | `pending` | the judge could not answer (no key, network down, or an answer it could not use), or a referenced span is over 32,000 characters | set `TYPESAFE_API_KEY` and run `check` again; for `judge error: …`, read the message |
 
-An `attested` claim with no `procedure` and no `sources` (a pure vouch) is listed only when it is expired.
+An `attested` claim with no `procedure` and no `sources` (a pure vouch) is never listed as `never-checked`.
 
 `hibi list --state pending` returns the same claims as one row each. `lastEvidence` on an item shows the summary, source, time, and actor of the newest judged evidence.
 
@@ -144,7 +144,7 @@ The owner re-checks the fact and vouches:
 hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --note 'checked Stripe, still $29'
 ```
 
-Only a `human:` vouch or judged evidence resets the ttl. The result's `countsTowardTtl` says which applied.
+Only a `human:` vouch or judged evidence resets the ttl. The result's `countsTowardTtl` says whether the attestation resets it.
 
 To accept a finding instead of changing a sentence, acknowledge it with a note:
 

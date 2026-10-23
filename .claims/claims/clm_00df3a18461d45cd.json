@@ -1,0 +1,151 @@
+{
+  "id": "clm_00df3a18461d45cd",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `check` | a `reference` claim with no cached verdict has `judge: pending` and warns; a claim with new pairs warns with `conflict checks pending: <n>`; both appear in the worklist or the summary. Exit code 0 unless `--fail-on warn`. |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `check` | a `reference` claim with no cached verdict has `judge: pending` and warns; a claim with new pairs warns with `conflict checks pending: <n>`; both appear in the worklist or the summary. Exit code 0 unless `--fail-on warn`. |",
+        "prefix": "g else changes.\n\n| command | effect |\n|---|---|\n",
+        "suffix": "\n| `evidence` | each item is `pending`; nothing "
+      },
+      {
+        "kind": "text-position",
+        "start": 14083,
+        "end": 14318
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"pending\") return \"pending\";",
+          "prefix": "= \"review\" && !acknowledged) return \"review\";\n  ",
+          "suffix": "\n  const checkable = claim.procedure !== null ||"
+        },
+        {
+          "kind": "text-position",
+          "start": 12823,
+          "end": 12867
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "ccc54664337229f7",
+          "semanticHash": "9584d1ccbcf8b14d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`conflict checks pending: ${pendingPairs}`",
+          "prefix": "}: ${f.reason}`),\n      ...(pendingPairs > 0 ? [",
+          "suffix": "] : []),\n    ];\n    const findings: ClaimFinding"
+        },
+        {
+          "kind": "text-position",
+          "start": 17228,
+          "end": 17270
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "68f1f1bb13edeef0",
+          "semanticHash": "e1f3d85fb6fe6e9a"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pending: pass?.pending.length ?? 0,",
+          "prefix": "? 0,\n      requests: pass?.requests ?? 0,\n      ",
+          "suffix": "\n      scope: pass?.scope ?? \"store\",\n    },\n  }"
+        },
+        {
+          "kind": "text-position",
+          "start": 21663,
+          "end": 21698
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "38726dc43bb0e132",
+          "semanticHash": "c883c519d51ce216"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.warn && failOn === \"warn\") return 2;",
+          "prefix": "ver\") return 0;\n  if (flags.gating) return 2;\n  ",
+          "suffix": "\n  return 0;\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 22264,
+          "end": 22310
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "bccaa0a62493fb72",
+          "semanticHash": "a278e5457df0d7f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"warn\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:41.738Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:45:26.072Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:41.738Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

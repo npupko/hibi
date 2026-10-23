@@ -52,7 +52,7 @@
   ],
   "sources": [],
   "procedure": null,
-  "enforcement": "enforced",
+  "enforcement": "retired",
   "attestations": [
     {
       "by": "agent:claude-dogfood",

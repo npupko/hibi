@@ -1,0 +1,65 @@
+{
+  "id": "clm_af531fb6847c4a47",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "| `unverifiable` | `rewrite as an attributed opinion, or remove` |",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `unverifiable` | `rewrite as an attributed opinion, or remove` |",
+        "prefix": "ed `code`, `reference`, `attested` | `record` |\n",
+        "suffix": "\n| `not-a-claim` | none |\n| `unsure` on `kind` |"
+      },
+      {
+        "kind": "text-position",
+        "start": 7415,
+        "end": 7481
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return \"rewrite as an attributed opinion, or remove\";",
+          "prefix": "return \"record\";\n    case \"unverifiable\":\n      ",
+          "suffix": "\n    case \"not-a-claim\":\n      return null;\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 1218,
+          "end": 1271
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "3df4bb0705c3a2fa",
+          "semanticHash": "3f597543fe49feeb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"rewrite as an attributed opinion, or remove\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:25.850Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:25.850Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

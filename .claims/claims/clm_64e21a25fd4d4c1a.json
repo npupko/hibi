@@ -1,0 +1,59 @@
+{
+  "id": "clm_64e21a25fd4d4c1a",
+  "documentId": "doc_d11450458251d04c",
+  "kind": "code",
+  "sentence": "After a code change, `hibi check --since origin/main` names the sentences the change invalidated.",
+  "doc": {
+    "file": "docs/index.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "After a code change, `hibi check --since origin/main` names the sentences the change invalidated.",
+        "prefix": "which kind and records them with `hibi record`. ",
+        "suffix": " Periodically, `hibi check` lists a worklist of "
+      },
+      {
+        "kind": "text-position",
+        "start": 1764,
+        "end": 1861
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "options.onlyFiles.has(c.doc.file) ||\n        evidenceFiles.some((f) => options.onlyFiles?.has(f));",
+          "prefix": "ions.onlyFiles) {\n      const touches =\n        ",
+          "suffix": "\n      if (!touches) continue;\n    }\n    evaluat"
+        },
+        {
+          "kind": "text-position",
+          "start": 15096,
+          "end": 15194
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "1b62fdc289beba43",
+          "semanticHash": "17b84fb8bb5d25d4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:33.967Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:33.967Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

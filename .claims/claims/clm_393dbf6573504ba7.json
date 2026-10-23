@@ -1,0 +1,82 @@
+{
+  "id": "clm_393dbf6573504ba7",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "code",
+  "sentence": "One judge threshold for every judgment.",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "One judge threshold for every judgment.",
+        "prefix": "r concept, no hidden rules\" icon=\"sliders\">\n    ",
+        "suffix": " Every automatic rule that fires appears as a re"
+      },
+      {
+        "kind": "text-position",
+        "start": 2801,
+        "end": 2840
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "/** Choice-confidence threshold for gate and clean outcomes (SPEC 8.4). */",
+          "prefix": "-1.14.0, not an alias like jev-latest`,\n  }),\n  ",
+          "suffix": "\n  threshold: z\n    .number({ error: \"judge.thre"
+        },
+        {
+          "kind": "text-position",
+          "start": 10723,
+          "end": 10797
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "b1a067ede2322dcd"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const threshold = config.judge.threshold;",
+          "prefix": " const config: Config = await store.config();\n  ",
+          "suffix": "\n  // Cache keys use the judge's model; the conf"
+        },
+        {
+          "kind": "text-position",
+          "start": 13429,
+          "end": 13470
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "e163f29f0b06410c",
+          "semanticHash": "818a52178afbf025"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:51.399Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:51.399Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

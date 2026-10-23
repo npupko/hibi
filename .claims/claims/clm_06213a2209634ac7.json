@@ -1,0 +1,88 @@
+{
+  "id": "clm_06213a2209634ac7",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 25 | cache entries store `evidence.values[]` (kind, normalized, unit) so the value rule runs on a cached verdict after the raw evidence text is gone |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 25 | cache entries store `evidence.values[]` (kind, normalized, unit) so the value rule runs on a cached verdict after the raw evidence text is gone |",
+        "prefix": "hey were navigation only and nobody used them |\n",
+        "suffix": "\n| 26 | `does_not_address` is `review`, not `pen"
+      },
+      {
+        "kind": "text-position",
+        "start": 77283,
+        "end": 77435
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "values: z.array(ExtractedValue).optional(),",
+          "prefix": "e rule (SPEC 8.5) without the raw text.\n   */\n  ",
+          "suffix": "\n});\nexport type CachedEvidence = z.infer<typeof"
+        },
+        {
+          "kind": "text-position",
+          "start": 12866,
+          "end": 12909
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "eb868092b40bebea",
+          "semanticHash": "00652f3b67010ad0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence: entry.evidence.values ?? [],",
+          "prefix": "ntence: storedValues(claim.sentence),\n          ",
+          "suffix": "\n        }\n      : undefined,\n  );\n  const sourc"
+        },
+        {
+          "kind": "text-position",
+          "start": 6616,
+          "end": 6654
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "47b44ed38f568311",
+          "semanticHash": "2eddb68ae3abee9b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:23.516Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:23.516Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

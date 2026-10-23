@@ -1,0 +1,146 @@
+{
+  "id": "clm_96fe06ebeea148c4",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The first differing group, ordered money, number, version, date and then by group name, names the label: `numbers differ: 29 vs 39` (money uses `numbers`), `versions differ: 1.2.0 vs 1.3.0`, `dates differ: 2026-10-01 vs 2026-11-01`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The first differing group, ordered money, number, version, date and then by group name, names the label: `numbers differ: 29 vs 39` (money uses `numbers`), `versions differ: 1.2.0 vs 1.3.0`, `dates differ: 2026-10-01 vs 2026-11-01`.",
+        "prefix": " trailing `.0` parts, so `v1.2` equals `1.2.0`. ",
+        "suffix": " Several values in one group are listed comma-se"
+      },
+      {
+        "kind": "text-position",
+        "start": 41003,
+        "end": 41235
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const KIND_ORDER: ValueKind[] = [\"money\", \"number\", \"version\", \"date\"];",
+          "prefix": "((a, b) => a.at - b.at).map((f) => f.value);\n}\n\n",
+          "suffix": "\nconst KIND_LABEL: Record<ValueKind, string> = {"
+        },
+        {
+          "kind": "text-position",
+          "start": 10825,
+          "end": 10896
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "40fd04716b0ff381",
+          "semanticHash": "b32afd4fd59bdff7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"money\",\"number\",\"version\",\"date\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "money: \"numbers\",",
+          "prefix": "nst KIND_LABEL: Record<ValueKind, string> = {\n  ",
+          "suffix": "\n  number: \"numbers\",\n  version: \"versions\",\n  d"
+        },
+        {
+          "kind": "text-position",
+          "start": 10947,
+          "end": 10964
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "11b370a8ed3511d8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"numbers\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return kx !== ky ? kx - ky : x < y ? -1 : x > y ? 1 : 0;",
+          "prefix": "const ky = KIND_ORDER.indexOf(kindOf(y));\n      ",
+          "suffix": "\n    });\n  for (const key of shared) {\n    const"
+        },
+        {
+          "kind": "text-position",
+          "start": 14121,
+          "end": 14177
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "a99be046cd02f83f",
+          "semanticHash": "cd963f0fa22381c6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "label: `${KIND_LABEL[kindOf(key)]} differ: ${list(va)} vs ${list(vb)}`,",
+          "prefix": "(\", \");\n    return {\n      differs: true,\n      ",
+          "suffix": "\n    };\n  }\n  return { differs: false };\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 14472,
+          "end": 14543
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "c48b1453073e6ece",
+          "semanticHash": "ecd72cb0be1a7eb0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:04.550Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:04.550Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

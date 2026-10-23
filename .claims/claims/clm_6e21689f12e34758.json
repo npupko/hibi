@@ -1,0 +1,65 @@
+{
+  "id": "clm_6e21689f12e34758",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A claim id is random.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A claim id is random.",
+        "prefix": "`clm_` followed by 16 lowercase hex characters. ",
+        "suffix": " A document id is derived from the document's re"
+      },
+      {
+        "kind": "text-position",
+        "start": 13359,
+        "end": 13380
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/ids.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return randomUUID().replace(/-/g, \"\").slice(0, 16);",
+          "prefix": "om \"node:crypto\";\n\nfunction hex16(): string {\n  ",
+          "suffix": "\n}\n\n/** A fresh claim id: `clm_` plus 16 hex cha"
+        },
+        {
+          "kind": "text-position",
+          "start": 329,
+          "end": 380
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "c6ade18a0b7be9b2",
+          "semanticHash": "4d769f8a2f1eca1a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:36.299Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:36.299Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_2589f67490c5441a",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "Code decides the outcome from the cached answer.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Code decides the outcome from the cached answer.",
+        "prefix": "The [judge](/judge) answers each new pair once. ",
+        "suffix": "\n\n## Pairing\n\nThe pass considers live claims: no"
+      },
+      {
+        "kind": "text-position",
+        "start": 565,
+        "end": 613
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const decision = decidePair(",
+          "prefix": ".answers as Record<string, Answer>);\n    }\n\n    ",
+          "suffix": "\n      pair.a.sentence,\n      pair.b.sentence,\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 11226,
+          "end": 11254
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "69b4ea20a015ab77",
+          "semanticHash": "deef978242e278a9"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:24.218Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:24.218Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

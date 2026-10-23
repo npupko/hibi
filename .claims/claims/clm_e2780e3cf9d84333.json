@@ -1,0 +1,123 @@
+{
+  "id": "clm_e2780e3cf9d84333",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- A `reference` claim whose referenced span is longer than 32,000 characters is `pending` with the reason `referenced span is longer than 32,000 characters`; the judge is not asked.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- A `reference` claim whose referenced span is longer than 32,000 characters is `pending` with the reason `referenced span is longer than 32,000 characters`; the judge is not asked.",
+        "prefix": ": <n>`, section 7.4). Nothing is cached for it.\n",
+        "suffix": " Submitted evidence has the same limit, enforced"
+      },
+      {
+        "kind": "text-position",
+        "start": 25050,
+        "end": 25231
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (texts.referencedText.length > MAX_EVIDENCE_CHARS) {\n    return { state: \"pending\", reasons: [REFERENCE_TOO_LONG] };",
+          "prefix": "   referencedText: input.referencedText,\n  };\n  ",
+          "suffix": "\n  }\n  const { request, key } = referenceSupport"
+        },
+        {
+          "kind": "text-position",
+          "start": 10377,
+          "end": 10496
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "731bdfe70f238d4b",
+          "semanticHash": "6e86656060220ca6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const REFERENCE_TOO_LONG = `referenced span is longer than ${MAX_EVIDENCE_CHARS.toLocaleString(\"en-US\")} characters`;",
+          "prefix": "a referenced span over `MAX_EVIDENCE_CHARS`. */\n",
+          "suffix": "\n\n/**\n * The `supports` request and cache key fo"
+        },
+        {
+          "kind": "text-position",
+          "start": 8507,
+          "end": 8631
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "7df8d0ed0354676d",
+          "semanticHash": "a3a7110b74fe81d6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"en-US\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "MAX_EVIDENCE_CHARS = 32_000",
+          "prefix": "DGET`\n * in src/judge/jev.ts).\n */\nexport const ",
+          "suffix": ";\n\n/** Choice confidence per the TypeSafe docs: "
+        },
+        {
+          "kind": "text-position",
+          "start": 4185,
+          "end": 4212
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "93110d923bb52349"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "32_000"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:47.584Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:47.584Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

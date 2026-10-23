@@ -1,0 +1,88 @@
+{
+  "id": "clm_f7143daab43940e7",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "`pending` and `unavailable` add no actions; the reason label says what is missing.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`pending` and `unavailable` add no actions; the reason label says what is missing.",
+        "prefix": ", `rationale`, and a `command` when one exists. ",
+        "suffix": "\n\nEvery `command` runs as printed once the place"
+      },
+      {
+        "kind": "text-position",
+        "start": 5624,
+        "end": 5706
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`pending` and `unavailable` add nothing: the reason label says what to do.",
+          "prefix": "ns' actions in order, each (id, title) once.\n * ",
+          "suffix": "\n */\n\nimport type {\n  AnchorState,\n  ClaimKind,\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 1209,
+          "end": 1283
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "937e15ddce10eaec"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function remediationFor(v: RemediationInput): Remediation | null {",
+          "prefix": "dict, or `null` when there is nothing to do. */\n",
+          "suffix": "\n  const id = v.claimId;\n  const sections: Secti"
+        },
+        {
+          "kind": "text-position",
+          "start": 10113,
+          "end": 10186
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ecf7c409b4441e42",
+          "semanticHash": "8d3fae72859cf0c9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:14.488Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:14.488Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -14,7 +14,7 @@ allowed-tools: >-
 
 # hibi
 
-A claim is one document region (sentence, list item, table row) that asserts something checkable. hibi never edits prose, fetches, or runs commands.
+A claim is one document region (sentence, list item, table row) that asserts something checkable. hibi never edits a sentence, fetches a source, or runs a procedure step; `archive` replaces a whole document with a tombstone.
 
 ## Vocabulary
 
@@ -32,7 +32,7 @@ Attestations are append-only `{by, at, basis: vouch|evidence|ack, note}`; actors
 
 ## Invoking
 
-Use `hibi`, else `bunx @npupko/hibi`. JSON when piped; `--json` forces it. Every flag: `references/cli-reference.md`. The judge needs `TYPESAFE_API_KEY`; without it uncached judgments are `pending`, a warning, never a failure. Verdicts cache in `.claims/judge/`; commit `.claims/` whole. Paths are normalized relative to the repo root; evidence files must stay inside it or their alias directory.
+Use `hibi`, else `bunx @npupko/hibi`. JSON when piped; `--json` forces it. Every flag: `references/cli-reference.md`. The judge needs `TYPESAFE_API_KEY`; without it uncached judgments are `pending`, a warning, never a failure. Verdicts cache in `.claims/judge/`, which is local and gitignored; commit the rest of `.claims/`. Paths are normalized relative to the current directory (or `--cwd`); evidence files must stay inside it or their alias directory.
 
 ## The loop
 
@@ -40,7 +40,7 @@ Use `hibi`, else `bunx @npupko/hibi`. JSON when piped; `--json` forces it. Every
 
 **b. After a change:** `hibi check --since origin/main`. Fix prose in the same change.
 
-**c. Audit:** `hibi audit --doc <path>`, one row per region. `claimId` set: covered. Else `kind`: `code`/`reference`/`attested` → record; `unverifiable` → rewrite as attributed opinion or remove; `not-a-claim` → nothing; `unsure` → decide from `probabilities`; `pending` → no judge. Never record an `unverifiable` region.
+**c. Audit:** `hibi audit --doc <path>`, one row per region. `claimId` set: covered. Else `kind`: `code`/`reference`/`attested` → record; `unverifiable` → rewrite as attributed opinion or remove; `not-a-claim` → nothing; `unsure` → decide from `probabilities`; `pending` → no judge answer. Never record an `unverifiable` region.
 
 **d. Record** (stdin array, all or nothing):
 
@@ -77,7 +77,7 @@ hibi evidence --from-file - --by agent:claude <<'EOF'
 EOF
 ```
 
-`evidence`: observed text, at most 32,000 characters, never secrets; only its hash is stored. `summary`: one stored line. `--by` is required unless every item has `by`. Attested claims only. `results[].judge`: `supported` appends an evidence attestation and resets ttl; `refuted` gates; `review` needs more pointed evidence; `pending` writes nothing. Exit 0 regardless.
+`evidence`: observed text, at most 32,000 characters, never secrets; only its hash and the numbers, money, versions, and dates in it are stored. `summary`: one stored line. `--by` is required unless every item has `by`. Attested claims only. `results[].judge`: `supported` appends an evidence attestation and resets ttl; `refuted` gates; `review` needs more pointed evidence; `pending` writes nothing. Exit 0 regardless.
 
 **f. Attest:** `hibi attest <id> --by <actor> --note "…"`. A `human:` vouch resets ttl; an agent vouch returns `countsTowardTtl: false`. Never vouch as `human:`; ask the `owner`. `--ack conflict:<otherId>` or `--ack review` acknowledges a finding; it needs `--note` and never resets ttl. `--ack review` fails when there is no current supports verdict.
 

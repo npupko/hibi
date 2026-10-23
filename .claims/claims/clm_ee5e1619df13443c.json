@@ -1,0 +1,94 @@
+{
+  "id": "clm_ee5e1619df13443c",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "code",
+  "sentence": "| FEVER | the `supported` / `refuted` vocabulary, plus \"not enough info\" as `does_not_address` |",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| FEVER | the `supported` / `refuted` vocabulary, plus \"not enough info\" as `does_not_address` |",
+        "prefix": "t that records its successor (`supersededBy`) |\n",
+        "suffix": "\n| OKF (Open Knowledge Format) | actor ids (`hum"
+      },
+      {
+        "kind": "text-position",
+        "start": 6673,
+        "end": 6769
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const JudgeState = z.enum([\"supported\", \"refuted\", \"review\", \"pending\"]);",
+          "prefix": "\n/** The judge axis of a verdict (SPEC 7.2). */\n",
+          "suffix": "\nexport type JudgeState = z.infer<typeof JudgeSt"
+        },
+        {
+          "kind": "text-position",
+          "start": 3118,
+          "end": 3198
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "c512d014b389f925",
+          "semanticHash": "3bb5e3144f937c77"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"supported\",\"refuted\",\"review\",\"pending\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export type SupportsRelation = \"supports\" | \"refutes\" | \"does_not_address\";",
+          "prefix": "tring;\n  evidence: string;\n  source: string;\n}\n\n",
+          "suffix": "\n\nexport interface SupportsResult {\n  relation: "
+        },
+        {
+          "kind": "text-position",
+          "start": 1042,
+          "end": 1117
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "965011173c6d92bf",
+          "semanticHash": "ea53d980cf7756c5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"supports\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:52.701Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:52.701Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

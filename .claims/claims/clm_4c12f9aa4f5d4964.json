@@ -1,0 +1,117 @@
+{
+  "id": "clm_4c12f9aa4f5d4964",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `v-version` | version | `v1.2.3`, `v4`, `v2.0.0-beta.1` | without `v` | none |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `v-version` | version | `v1.2.3`, `v4`, `v2.0.0-beta.1` | without `v` | none |",
+        "prefix": "2, 2026`, `Oct 22 2026` | `2026-10-22` | none |\n",
+        "suffix": "\n| `dotted-version` | version | three or more do"
+      },
+      {
+        "kind": "text-position",
+        "start": 39153,
+        "end": 39233
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"v-version\",",
+          "prefix": ",\n  },\n  {\n    // v1.2.3, v4, v2.0.0-beta.1\n    ",
+          "suffix": "\n    kind: \"version\",\n    pattern: re(\n      Str"
+        },
+        {
+          "kind": "text-position",
+          "start": 6980,
+          "end": 6998
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "c55643b74683c3fa"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"v-version\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "v(\\d+(?:\\.\\d+)*(?:-[0-9A-Za-z]+(?:\\.[0-9A-Za-z]+)*)?)",
+          "prefix": "ion\",\n    pattern: re(\n      String.raw`${START}",
+          "suffix": "${END}`,\n    ),\n    read: (m) => ({ raw: m[0], n"
+        },
+        {
+          "kind": "text-position",
+          "start": 7062,
+          "end": 7115
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "636de2ed1e5bcc22",
+          "semanticHash": "e33a5d504afccf84"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "read: (m) => ({ raw: m[0], normalized: group(m, 1) }),",
+          "prefix": "Za-z]+(?:\\.[0-9A-Za-z]+)*)?)${END}`,\n    ),\n    ",
+          "suffix": "\n  },\n  {\n    // 1.2.3, 10.0.1.4, 1.2.3-rc.1\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 7135,
+          "end": 7189
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "6962299cd26aa6e2",
+          "semanticHash": "5ec454c7ceab0bbe"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:04.179Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:04.179Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

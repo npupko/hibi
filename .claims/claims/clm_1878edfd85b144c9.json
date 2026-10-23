@@ -1,0 +1,84 @@
+{
+  "id": "clm_1878edfd85b144c9",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `relation` | Choice over `supports`, `contradicts`, `says_nothing` (the options of TypeSafe's citation-check cookbook), reported as `supports`, `refutes`, `does_not_address` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `relation` | Choice over `supports`, `contradicts`, `says_nothing` (the options of TypeSafe's citation-check cookbook), reported as `supports`, `refutes`, `does_not_address` |",
+        "prefix": "claim_context`, `evidence`, `evidence_source` |\n",
+        "suffix": "\n| `addresses` | Noul: does the evidence speak t"
+      },
+      {
+        "kind": "text-position",
+        "start": 6997,
+        "end": 7174
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/questions/supports.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"says_nothing\": \"`evidence` does not address what the claim asserts, either way\"",
+          "prefix": "e of the claim or implies it is false\",\n        ",
+          "suffix": "\n      }\n    },\n    \"addresses\": {\n      \"type\":"
+        },
+        {
+          "kind": "text-position",
+          "start": 932,
+          "end": 1012
+        }
+      ]
+    },
+    {
+      "file": "src/judge/questions/supports.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"contradicts\": \"refutes\",",
+          "prefix": "lationNames\": {\n    \"supports\": \"supports\",\n    ",
+          "suffix": "\n    \"says_nothing\": \"does_not_address\"\n  }\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 1464,
+          "end": 1489
+        }
+      ]
+    },
+    {
+      "file": "src/judge/questions/supports.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"says_nothing\": \"does_not_address\"",
+          "prefix": ": \"supports\",\n    \"contradicts\": \"refutes\",\n    ",
+          "suffix": "\n  }\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 1494,
+          "end": 1528
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:37.799Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:37.799Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

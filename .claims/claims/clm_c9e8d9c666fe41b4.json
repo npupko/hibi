@@ -1,0 +1,88 @@
+{
+  "id": "clm_c9e8d9c666fe41b4",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "The ack is pinned to the hash of each normalized sentence.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The ack is pinned to the hash of each normalized sentence.",
+        "prefix": ":clm_b…\", \"sentenceHashes\": [\"…\", \"…\"] }\n}\n```\n\n",
+        "suffix": " While both sentences read the same, the pair's "
+      },
+      {
+        "kind": "text-position",
+        "start": 7402,
+        "end": 7460
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sentenceHash(first.sentence),",
+          "prefix": ":${second.id}`,\n      sentenceHashes: [\n        ",
+          "suffix": "\n        sentenceHash(second.sentence),\n      ],"
+        },
+        {
+          "kind": "text-position",
+          "start": 6976,
+          "end": 7005
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "2d46d21f9e7efc1c",
+          "semanticHash": "8fdbf3e1cd003a96"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/hash.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return text.normalize(\"NFC\").replace(/\\s+/g, \" \").trim();",
+          "prefix": "ion normalizeSentence(text: string): string {\n  ",
+          "suffix": "\n}\n\nexport function sentenceHash(text: string): "
+        },
+        {
+          "kind": "text-position",
+          "start": 517,
+          "end": 574
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "c206459d3ca7f6b5",
+          "semanticHash": "01490715bc3927c6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"NFC\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:27.103Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:27.103Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

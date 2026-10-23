@@ -1,0 +1,65 @@
+{
+  "id": "clm_3a76b6520af0467a",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "2. Blank lines separate blocks.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "2. Blank lines separate blocks.",
+        "prefix": "Without a closing line there is no frontmatter.\n",
+        "suffix": "\n3. A line that is only one JSX or HTML tag (`<C"
+      },
+      {
+        "kind": "text-position",
+        "start": 48090,
+        "end": 48121
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(trimmed.length === 0 ||",
+          "prefix": "onst boundary =\n      fenceChar === \"\" &&\n      ",
+          "suffix": "\n        TAG_LINE.test(trimmed) ||\n        THEMA"
+        },
+        {
+          "kind": "text-position",
+          "start": 4053,
+          "end": 4077
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "parenthesized_expression",
+          "structuralHash": "d9e8460f55ffcd27",
+          "semanticHash": "2eab80245e74a29e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:57.760Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:47:57.760Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

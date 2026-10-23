@@ -1,0 +1,239 @@
+{
+  "id": "clm_52e5f666d0a841ea",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The human renderer prints a to-do line per row from a fixed mapping: covered → nothing; uncovered `code / reference / attested` → \"record\"; `unverifiable` → \"rewrite as an attributed opinion, or remove\"; `not-a-claim` → nothing; `unsure` on `kind` → \"unsure: read it yourself\"; `unsure` on `evidenceKind` → \"unsure: evidence kind\"; `pending` → \"pending: judge unavailable\" or \"pending: judge error\", from the row's `reason`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The human renderer prints a to-do line per row from a fixed mapping: covered → nothing; uncovered `code / reference / attested` → \"record\"; `unverifiable` → \"rewrite as an attributed opinion, or remove\"; `not-a-claim` → nothing; `unsure` on `kind` → \"unsure: read it yourself\"; `unsure` on `evidenceKind` → \"unsure: evidence kind\"; `pending` → \"pending: judge unavailable\" or \"pending: judge error\", from the row's `reason`.",
+        "prefix": "y for every row kind.\n\nNo advice field in JSON. ",
+        "suffix": " The mapping lives in one function and in the do"
+      },
+      {
+        "kind": "text-position",
+        "start": 51642,
+        "end": 52066
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return \"record\";",
+          "prefix": "   case \"reference\":\n    case \"attested\":\n      ",
+          "suffix": "\n    case \"unverifiable\":\n      return \"rewrite "
+        },
+        {
+          "kind": "text-position",
+          "start": 1170,
+          "end": 1186
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "3df4bb0705c3a2fa",
+          "semanticHash": "a43f0cf307da4410"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"record\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return \"rewrite as an attributed opinion, or remove\";",
+          "prefix": "return \"record\";\n    case \"unverifiable\":\n      ",
+          "suffix": "\n    case \"not-a-claim\":\n      return null;\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 1218,
+          "end": 1271
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "3df4bb0705c3a2fa",
+          "semanticHash": "3f597543fe49feeb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"rewrite as an attributed opinion, or remove\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "? \"unsure: evidence kind\"",
+          "prefix": "   return row.unsure === \"evidenceKind\"\n        ",
+          "suffix": "\n        : \"unsure: read it yourself\";\n    case "
+        },
+        {
+          "kind": "text-position",
+          "start": 1385,
+          "end": 1410
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "8a6d1ef56ed890e2",
+          "semanticHash": "930cccc7a6a0b51b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unsure: evidence kind\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ": \"unsure: read it yourself\";",
+          "prefix": "Kind\"\n        ? \"unsure: evidence kind\"\n        ",
+          "suffix": "\n    case \"pending\":\n      return row.reason?.st"
+        },
+        {
+          "kind": "text-position",
+          "start": 1419,
+          "end": 1448
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "8a6d1ef56ed890e2",
+          "semanticHash": "930cccc7a6a0b51b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unsure: read it yourself\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "? \"pending: judge error\"",
+          "prefix": "n row.reason?.startsWith(\"judge error\")\n        ",
+          "suffix": "\n        : \"pending: judge unavailable\";\n  }\n}\n\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 1528,
+          "end": 1552
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "0a92ab006fc9ba2e",
+          "semanticHash": "91251aca3617283b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending: judge error\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ": \"pending: judge unavailable\";",
+          "prefix": "rror\")\n        ? \"pending: judge error\"\n        ",
+          "suffix": "\n  }\n}\n\nconst KIND_WIDTH = \"unverifiable\".length"
+        },
+        {
+          "kind": "text-position",
+          "start": 1561,
+          "end": 1592
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "0a92ab006fc9ba2e",
+          "semanticHash": "91251aca3617283b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending: judge unavailable\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (row.claimId !== null) return null;",
+          "prefix": "ion adviceFor(row: AuditRow): string | null {\n  ",
+          "suffix": "\n  switch (row.kind) {\n    case \"code\":\n    case"
+        },
+        {
+          "kind": "text-position",
+          "start": 1043,
+          "end": 1081
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "a79450ec20e56b20",
+          "semanticHash": "721001c290d3a0d0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.638Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.638Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

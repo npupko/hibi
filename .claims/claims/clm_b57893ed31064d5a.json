@@ -1,0 +1,52 @@
+{
+  "id": "clm_b57893ed31064d5a",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "reference",
+  "sentence": "**For findings**, reconcile a contradiction by fixing the wrong sentence, or acknowledge a finding with",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**For findings**, reconcile a contradiction by fixing the wrong sentence, or acknowledge a finding with",
+        "prefix": ". Evidence applies to `attested` claims only.\n- ",
+        "suffix": " `hibi attest <id> --by agent:<name> --ack revie"
+      },
+      {
+        "kind": "text-position",
+        "start": 2698,
+        "end": 2801
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`--ack conflict:<otherId>` or `--ack review` acknowledges a finding; it needs `--note` and never resets ttl.",
+          "prefix": "lse`. Never vouch as `human:`; ask the `owner`. ",
+          "suffix": " `--ack review` fails when there is no current s"
+        },
+        {
+          "kind": "text-position",
+          "start": 5255,
+          "end": 5363
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:25:23.346Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:25:23.346Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

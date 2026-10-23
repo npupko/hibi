@@ -35,7 +35,9 @@ import {
   commandHelp,
   commandSpec,
   INSTRUCTIONS_LINE,
+  missingValue,
   parseArgsOptions,
+  repeatedFlag,
   usage,
   validateValues,
 } from "./options.ts";
@@ -54,7 +56,6 @@ import {
   envelope,
   type ProjectionOptions,
   projectCheckReport,
-  SCHEMA_VERSION,
 } from "./render/json.ts";
 import * as misc from "./render/misc.ts";
 import { type OutputMode, resolveMode } from "./render/mode.ts";
@@ -65,16 +66,33 @@ const EXIT_OPERATIONAL_ERROR = 1;
 
 type Values = Record<string, string | boolean | string[] | undefined>;
 
-function out(value: unknown, pretty: boolean): void {
-  process.stdout.write(
-    `${JSON.stringify(value, jsonReplacer, pretty ? 2 : 0)}\n`,
-  );
+/**
+ * Write to stdout or stderr and resolve once the write's callback reports it
+ * written. Every CLI write goes through here and is awaited before
+ * `process.exit`: a write to a pipe is asynchronous, and exiting earlier
+ * drops whatever did not fit in the pipe buffer. A reader that closed early
+ * (EPIPE, e.g. `| head`) wants nothing more, so that error is ignored.
+ */
+function writeOut(stream: NodeJS.WriteStream, text: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (text.length === 0) return resolve();
+    stream.write(text, (e) => {
+      if (e && (e as { code?: string }).code !== "EPIPE") reject(e);
+      else resolve();
+    });
+  });
+}
+const print = (text: string) => writeOut(process.stdout, text);
+const printErr = (text: string) => writeOut(process.stderr, text);
+
+async function out(value: unknown, pretty: boolean): Promise<void> {
+  await print(`${JSON.stringify(value, jsonReplacer, pretty ? 2 : 0)}\n`);
 }
 function jsonReplacer(_k: string, v: unknown) {
   return typeof v === "bigint" ? v.toString() : v;
 }
 
-function emitIds(ids: string[]): void {
+async function emitIds(ids: string[]): Promise<void> {
   const seen = new Set<string>();
   const list: string[] = [];
   for (const id of ids) {
@@ -82,7 +100,7 @@ function emitIds(ids: string[]): void {
     seen.add(id);
     list.push(id);
   }
-  if (list.length > 0) process.stdout.write(`${list.join("\n")}\n`);
+  if (list.length > 0) await print(`${list.join("\n")}\n`);
 }
 
 function isHuman(mode: OutputMode): boolean {
@@ -95,16 +113,20 @@ async function emit(
   value: unknown,
   human: () => string | Promise<string>,
 ): Promise<void> {
-  if (isHuman(mode)) process.stdout.write(await human());
-  else out(value, mode.kind === "json-pretty");
+  if (isHuman(mode)) await print(await human());
+  else await out(value, mode.kind === "json-pretty");
 }
 
 /** Report an operational error and exit 1. `errors` (one line each) also goes into the JSON. */
-function fail(message: string, mode: OutputMode, errors?: string[]): never {
+async function fail(
+  message: string,
+  mode: OutputMode,
+  errors?: string[],
+): Promise<never> {
   if (isHuman(mode)) {
-    process.stderr.write(`${makeStyle(mode.color).red("error:")} ${message}\n`);
+    await printErr(`${makeStyle(mode.color).red("error:")} ${message}\n`);
   } else {
-    out(
+    await out(
       { ok: false, error: message, ...(errors ? { errors } : {}) },
       mode.kind === "json-pretty",
     );
@@ -178,22 +200,38 @@ function reanchorRefSide(values: Values): EvidenceTarget | undefined {
   return { file: refFile, region };
 }
 
-/** The replacement code span of `reanchor` (`--code-file` with `--code-quote` or `--code-range`). */
-function reanchorCodeSide(values: Values): EvidenceTarget[] {
-  const codeFile = str(values["code-file"]);
-  const region = spanSpec(values["code-quote"], values["code-range"]);
-  if (codeFile === undefined) {
-    if (region !== undefined) {
-      throw new Error("--code-quote/--code-range need --code-file");
+/**
+ * The replacement code spans of `reanchor`, in flag order: each `--code-file`
+ * opens a span that takes the `--code-quote` or `--code-range` after it.
+ */
+function reanchorCodeSide(tokens: Token[]): EvidenceTarget[] {
+  const spans: { file: string; region?: RegionSpec }[] = [];
+  for (const t of tokens) {
+    if (t.kind !== "option" || t.value === undefined) continue;
+    if (t.name === "code-file") {
+      spans.push({ file: t.value });
+    } else if (t.name === "code-quote" || t.name === "code-range") {
+      const last = spans.at(-1);
+      if (last === undefined) {
+        throw new Error(`--${t.name} needs a --code-file before it`);
+      }
+      if (last.region !== undefined) {
+        throw new Error(
+          `--code-file ${last.file} already has a span; pass one --code-quote or --code-range per --code-file`,
+        );
+      }
+      last.region =
+        t.name === "code-quote" ? { quote: t.value } : parseRange(t.value);
     }
-    return [];
   }
-  if (region === undefined) {
-    throw new Error(
-      `--code-file ${codeFile} needs --code-quote or --code-range`,
-    );
-  }
-  return [{ file: codeFile, region }];
+  return spans.map((s) => {
+    if (s.region === undefined) {
+      throw new Error(
+        `--code-file ${s.file} needs --code-quote or --code-range`,
+      );
+    }
+    return { file: s.file, region: s.region };
+  });
 }
 
 type Token = {
@@ -309,6 +347,8 @@ function recordSummary(r: RecordResult): Record<string, unknown> {
     doc: r.document.path,
     evidence: r.claim.evidence[0]?.file ?? null,
     enforcement: r.claim.enforcement,
+    updated: r.updated,
+    existingClaims: r.existingClaims,
     ...(r.warnings.length > 0 ? { warnings: r.warnings } : {}),
   };
 }
@@ -330,11 +370,11 @@ async function main(argv: string[]): Promise<number> {
   const rest = argv.slice(1);
 
   if (cmd === undefined || cmd === "help" || cmd === "--help" || cmd === "-h") {
-    process.stdout.write(usage());
+    await print(usage());
     return cmd === undefined ? EXIT_OPERATIONAL_ERROR : 0;
   }
   if (cmd === "--version" || cmd === "-v") {
-    process.stdout.write(`${pkg.version}\n`);
+    await print(`${pkg.version}\n`);
     return 0;
   }
   const spec = commandSpec(cmd);
@@ -345,7 +385,7 @@ async function main(argv: string[]): Promise<number> {
     );
   }
   if (rest.includes("--help") || rest.includes("-h")) {
-    process.stdout.write(commandHelp(spec));
+    await print(commandHelp(spec));
     return 0;
   }
 
@@ -365,13 +405,15 @@ async function main(argv: string[]): Promise<number> {
     tokens = parsed.tokens as Token[];
   } catch (e) {
     const err = e as { code?: string; message: string };
-    const m = /'(--?[^']+)'/.exec(err.message);
+    const m = /'(--?[^' ]+)/.exec(err.message);
     const flag = m?.[1];
     const msg =
       err.code === "ERR_PARSE_ARGS_UNKNOWN_OPTION"
         ? `unknown option ${flag ?? ""} for hibi ${cmd}; run \`hibi ${cmd} --help\``
         : err.code === "ERR_PARSE_ARGS_INVALID_OPTION_VALUE"
-          ? `${flag ?? "an option"} needs a value; run \`hibi ${cmd} --help\``
+          ? flag
+            ? missingValue(spec, flag)
+            : `an option needs a value; run \`hibi ${cmd} --help\``
           : err.message;
     return fail(msg, preMode(rest));
   }
@@ -388,7 +430,7 @@ async function main(argv: string[]): Promise<number> {
   );
   const style = makeStyle(mode.color);
 
-  const invalid = validateValues(spec, values);
+  const invalid = repeatedFlag(spec, tokens) ?? validateValues(spec, values);
   if (invalid) return fail(invalid, mode);
   if (spec.positional?.required && positionals.length === 0) {
     return fail(`${cmd} requires a <${spec.positional.name}> argument`, mode);
@@ -515,41 +557,16 @@ async function main(argv: string[]): Promise<number> {
         return fail((e as Error).message, mode);
       }
 
-      // All or nothing: every item is attempted so every problem is
-      // reported; if any fails, everything this batch wrote is rolled back.
-      // Records are snapshotted whole, not just by id, because re-recording
-      // an existing claim updates it in place.
-      const before = {
-        claims: new Map((await engine.store.allClaims()).map((x) => [x.id, x])),
-        documents: new Map(
-          (await engine.store.allDocuments()).map((x) => [x.id, x]),
-        ),
-      };
-      const rollback = async () => {
-        for (const x of await engine.store.allClaims()) {
-          const original = before.claims.get(x.id);
-          if (original === undefined) await engine.store.deleteClaim(x.id);
-          else await engine.store.putClaim(original);
-        }
-        for (const x of await engine.store.allDocuments()) {
-          const original = before.documents.get(x.id);
-          if (original === undefined) await engine.store.deleteDocument(x.id);
-          else await engine.store.putDocument(original);
-        }
-      };
-      const results: RecordResult[] = [];
-      const errors: string[] = [];
-      for (const [i, call] of calls.entries()) {
-        try {
-          results.push(await engine.record(call));
-        } catch (e) {
-          const where = fromFile !== undefined ? `item ${i}: ` : "";
-          errors.push(`${where}${(e as Error).message.split("\n").join(" ")}`);
-        }
-      }
-      if (errors.length > 0) {
-        await rollback();
-        const err = new RecordValidationError(errors);
+      // All or nothing: every item is validated before anything is written,
+      // and a failure while applying rolls back only what this batch wrote.
+      const { results, failures } = await engine.recordBatch(calls);
+      if (failures.length > 0) {
+        const err = new RecordValidationError(
+          failures.map(({ index, message }) => {
+            const where = fromFile !== undefined ? `item ${index}: ` : "";
+            return `${where}${message.split("\n").join(" ")}`;
+          }),
+        );
         return fail(err.message, mode, err.errors);
       }
 
@@ -559,7 +576,12 @@ async function main(argv: string[]): Promise<number> {
           mode,
           envelope(
             "record",
-            { batch: true, count: summaries.length, results: summaries },
+            {
+              batch: true,
+              count: summaries.length,
+              updated: results.filter((r) => r.updated).length,
+              results: summaries,
+            },
             "hibi check",
           ),
           () => results.map((r) => misc.renderRecord(r, style, mode)).join(""),
@@ -650,7 +672,7 @@ async function main(argv: string[]): Promise<number> {
         return fail((e as Error).message, mode);
       }
       if (values["ids-only"]) {
-        emitIds(result.claims.map((c) => c.claimId));
+        await emitIds(result.claims.map((c) => c.claimId));
         return 0;
       }
       await emit(mode, envelope("list", { ...result }), () =>
@@ -715,7 +737,7 @@ async function main(argv: string[]): Promise<number> {
       const dryRun = Boolean(values["dry-run"]);
       try {
         const docSpec = spanSpec(values["doc-quote"], values["doc-range"]);
-        const code = reanchorCodeSide(values);
+        const code = reanchorCodeSide(tokens);
         const refSpan = reanchorRefSide(values);
         if (code.length > 0 && refSpan !== undefined) {
           throw new Error(
@@ -731,6 +753,14 @@ async function main(argv: string[]): Promise<number> {
           ref: await currentRef(anchorRoot),
           dryRun,
         });
+        const reasons = result.kept.map((k) => k.reason);
+        if (result.relocated === 0 && reasons.length > 0) {
+          return fail(
+            `claim ${result.claim.id} was left as stored: ${reasons.join(" | ")}`,
+            mode,
+            reasons,
+          );
+        }
         const payload = {
           id: result.claim.id,
           doc: result.doc,
@@ -739,6 +769,7 @@ async function main(argv: string[]): Promise<number> {
             : {}),
           before: result.before,
           after: result.after,
+          ...(result.kept.length > 0 ? { kept: result.kept } : {}),
           ...(result.warnings.length > 0 ? { warnings: result.warnings } : {}),
           ...(dryRun ? { dryRun: true } : {}),
           ...(mode.explain ? { claim: result.claim } : {}),
@@ -789,14 +820,15 @@ async function main(argv: string[]): Promise<number> {
         const result = await engine.supersede({
           from: String(values.from),
           to: String(values.to),
-          ref: await currentRef(anchorRoot),
           dryRun: Boolean(values["dry-run"]),
         });
         const next = result.dryRun
           ? "re-run without --dry-run to apply"
-          : result.misses.length > 0
-            ? "reanchor or retire each missed claim, then hibi check"
-            : "hibi check";
+          : result.relocated.some((r) => r.doc === "orphaned")
+            ? "reanchor or retire each orphaned claim, then hibi check"
+            : result.misses.length > 0
+              ? "fix each failed move, then hibi check"
+              : "hibi check";
         await emit(
           mode,
           envelope(
@@ -936,12 +968,12 @@ async function main(argv: string[]): Promise<number> {
             mode,
           );
         }
-        out(
+        await out(
           z.toJSONSchema(schema, { target: "draft-2020-12", reused: "inline" }),
           pretty,
         );
       } else {
-        out(envelope("schema", { schemas: Object.keys(all) }), pretty);
+        await out(envelope("schema", { schemas: Object.keys(all) }), pretty);
       }
       return 0;
     }
@@ -951,14 +983,14 @@ async function main(argv: string[]): Promise<number> {
       if (!isShell(shell)) {
         return fail(`completions requires zsh | bash | fish`, mode);
       }
-      process.stdout.write(completionScript(shell));
+      await print(completionScript(shell));
       return 0;
     }
 
     case "version": {
       await emit(
         mode,
-        { name: "hibi", version: pkg.version, schemaVersion: SCHEMA_VERSION },
+        envelope("version", { name: "hibi", version: pkg.version }),
         () => misc.renderVersion(pkg.version, style),
       );
       return 0;
@@ -969,9 +1001,10 @@ async function main(argv: string[]): Promise<number> {
   }
 }
 
+// Every write is awaited inside `main`, so exiting here drops nothing.
 main(process.argv.slice(2))
   .then((code) => process.exit(code))
-  .catch((e) => {
-    process.stderr.write(`error: ${String(e?.message ?? e)}\n`);
+  .catch(async (e) => {
+    await printErr(`error: ${String(e?.message ?? e)}\n`);
     process.exit(EXIT_OPERATIONAL_ERROR);
   });

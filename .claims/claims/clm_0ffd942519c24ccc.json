@@ -1,0 +1,65 @@
+{
+  "id": "clm_0ffd942519c24ccc",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "| `review` | a `reference` or `attested` claim whose judge state is `review` and not acknowledged |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `review` | a `reference` or `attested` claim whose judge state is `review` and not acknowledged |",
+        "prefix": "station counts toward, `code` claims included |\n",
+        "suffix": "\n| `pending` | a `reference` or `attested` claim"
+      },
+      {
+        "kind": "text-position",
+        "start": 7457,
+        "end": 7556
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"review\" && !acknowledged) return \"review\";",
+          "prefix": " if (claim.kind === \"code\") return undefined;\n  ",
+          "suffix": "\n  if (v.judge === \"pending\") return \"pending\";\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 12761,
+          "end": 12820
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "2f9319063bdbbff5",
+          "semanticHash": "4a9c6289d1a83460"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"review\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:08.305Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:08.305Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

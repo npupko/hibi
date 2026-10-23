@@ -1,0 +1,65 @@
+{
+  "id": "clm_6870ffd3c88b44c9",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "Without it, judgments not already in the `.claims/judge/` cache are `pending`, which warns and does not fail the build under `fail-on: gating`.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Without it, judgments not already in the `.claims/judge/` cache are `pending`, which warns and does not fail the build under `fail-on: gating`.",
+        "prefix": "EY` as a repository secret in the step's `env`. ",
+        "suffix": " The `actions/cache` step in `assets/hibi-ci.yml"
+      },
+      {
+        "kind": "text-position",
+        "start": 21283,
+        "end": 21426
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge !== undefined && WARN_JUDGE.has(v.judge)) warns = true;",
+          "prefix": "e;\n  if (v.judge === \"refuted\") gates = true;\n  ",
+          "suffix": "\n\n  for (const c of v.conflicts ?? []) {\n    if "
+        },
+        {
+          "kind": "text-position",
+          "start": 3223,
+          "end": 3290
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6f8b74a4d58a3d1a",
+          "semanticHash": "2ee335600addd146"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:12.375Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:12.375Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

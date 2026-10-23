@@ -1,0 +1,111 @@
+{
+  "id": "clm_cbf819319b49427d",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "An `ack` on a conflict is written to both claims and pinned to both sentences; it lapses when either sentence changes.",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An `ack` on a conflict is written to both claims and pinned to both sentences; it lapses when either sentence changes.",
+        "prefix": "im, or submit evidence for an `attested` claim. ",
+        "suffix": " See [Conflicts](/conflicts).\n\n## Next\n\n<CardGro"
+      },
+      {
+        "kind": "text-position",
+        "start": 5927,
+        "end": 6045
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  await append(store, first, attestation);\n  await append(store, second, attestation);",
+          "prefix": "\n      ],\n    } satisfies AttestationAck,\n  });\n",
+          "suffix": "\n  return {\n    claimIds: [first.id, second.id],"
+        },
+        {
+          "kind": "text-position",
+          "start": 7092,
+          "end": 7178
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "714706c39246893a",
+          "semanticHash": "eda4e51fc9a03521"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sentenceHash(first.sentence),",
+          "prefix": ":${second.id}`,\n      sentenceHashes: [\n        ",
+          "suffix": "\n        sentenceHash(second.sentence),\n      ],"
+        },
+        {
+          "kind": "text-position",
+          "start": 6976,
+          "end": 7005
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "2d46d21f9e7efc1c",
+          "semanticHash": "8fdbf3e1cd003a96"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ack.sentenceHashes[0] === hashes[0] &&",
+          "prefix": "&\n        ack.pairId === pair.pairId &&\n        ",
+          "suffix": "\n        ack.sentenceHashes[1] === hashes[1]\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 8053,
+          "end": 8091
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "cd7c4eb66c1b6ed9",
+          "semanticHash": "2d3b8e1d4389ba2f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:14.049Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:14.049Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,88 @@
+{
+  "id": "clm_81ce59bdc1e74a53",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Its only network call is the judge API.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Its only network call is the judge API.",
+        "prefix": "1. **Hibi runs no verifiers and no resolvers.** ",
+        "suffix": " Its only subprocess is `git`. It writes nothing"
+      },
+      {
+        "kind": "text-position",
+        "start": 1352,
+        "end": 1391
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "response = await this.fetchImpl(this.url, {",
+          "prefix": "se;\n      let text: string;\n      try {\n        ",
+          "suffix": "\n          method: \"POST\",\n          headers: {\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 5223,
+          "end": 5266
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "28311beeb29db742",
+          "semanticHash": "ad578c471d14790f"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const DEFAULT_BASE_URL = \"https://api.typesafe.ai\";",
+          "prefix": "geError, JudgeUnavailable } from \"./types.ts\";\n\n",
+          "suffix": "\nexport const API_KEY_ENV = \"TYPESAFE_API_KEY\";\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 451,
+          "end": 509
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "89d08764a6f1f2bb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"https://api.typesafe.ai\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:23.648Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:23.648Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

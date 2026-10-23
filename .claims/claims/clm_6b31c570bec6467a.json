@@ -1,0 +1,88 @@
+{
+  "id": "clm_6b31c570bec6467a",
+  "documentId": "doc_d11450458251d04c",
+  "kind": "code",
+  "sentence": "Its only network call is the judge API, and its only subprocess is `git`.",
+  "doc": {
+    "file": "docs/index.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Its only network call is the judge API, and its only subprocess is `git`.",
+        "prefix": "rify.\n\nHibi runs no verifiers and no resolvers. ",
+        "suffix": " An agent collects evidence and submits it. The "
+      },
+      {
+        "kind": "text-position",
+        "start": 749,
+        "end": 822
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "response = await this.fetchImpl(this.url, {",
+          "prefix": "se;\n      let text: string;\n      try {\n        ",
+          "suffix": "\n          method: \"POST\",\n          headers: {\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 5223,
+          "end": 5266
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "28311beeb29db742",
+          "semanticHash": "ad578c471d14790f"
+        }
+      ]
+    },
+    {
+      "file": "src/git/git.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const { stdout } = await exec(\"git\", args, {",
+          "prefix": ": string): Promise<string | null> {\n  try {\n    ",
+          "suffix": "\n      cwd,\n      maxBuffer: 64 * 1024 * 1024,\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 370,
+          "end": 414
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "6c6a17c45e3dbab8",
+          "semanticHash": "e55fcac3f5547f9f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"git\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:42.802Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:42.802Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "clm_4a8f3999afd74e9f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A pair the judge cannot answer (`JudgeUnavailable`) or whose answer cannot be used (`JudgeError`) is `pending` and does not stop the pass.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A pair the judge cannot answer (`JudgeUnavailable`) or whose answer cannot be used (`JudgeError`) is `pending` and does not stop the pass.",
+        "prefix": "est key. At most 8 pair requests are in flight. ",
+        "suffix": "\n\n### 9.3 Outcomes and findings\n\nThe pass return"
+      },
+      {
+        "kind": "text-position",
+        "start": 44391,
+        "end": 44529
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const label = judgeFailureLabel(e);",
+          "prefix": "dge.conflict(a, b);\n      } catch (e) {\n        ",
+          "suffix": "\n        if (label === undefined) throw e;\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 10547,
+          "end": 10582
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "639659356565b76d",
+          "semanticHash": "9ee50ce7aa972656"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pending.push(pair.pairId);",
+          "prefix": "      if (label === undefined) throw e;\n        ",
+          "suffix": "\n        outcomes[index] = {\n          pairId: p"
+        },
+        {
+          "kind": "text-position",
+          "start": 10633,
+          "end": 10659
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "7426f1729a85649a",
+          "semanticHash": "c573501e918cfa02"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:54.234Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:54.234Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

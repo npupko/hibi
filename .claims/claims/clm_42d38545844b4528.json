@@ -1,0 +1,117 @@
+{
+  "id": "clm_42d38545844b4528",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`sources[].resource`, `procedure.instructions`, and `steps[].id` and `command` must be non-empty strings.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`sources[].resource`, `procedure.instructions`, and `steps[].id` and `command` must be non-empty strings.",
+        "prefix": " `sources[]`, in `procedure`, and in `steps[]`. ",
+        "suffix": "\n- Every item is validated before anything is wr"
+      },
+      {
+        "kind": "text-position",
+        "start": 58035,
+        "end": 58140
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(`${where}.resource must be a non-empty string`);",
+          "prefix": ");\n    if (!nonEmptyString(s.resource)) {\n      ",
+          "suffix": "\n    }\n    for (const k of [\"id\", \"title\"] as co"
+        },
+        {
+          "kind": "text-position",
+          "start": 5641,
+          "end": 5701
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "0d4c05c5526a9656",
+          "semanticHash": "a1ace7eb3ff55af4"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(\"procedure.instructions must be a non-empty string\");",
+          "prefix": "\n  if (!nonEmptyString(raw.instructions)) {\n    ",
+          "suffix": "\n  }\n  const out: Procedure = { instructions: St"
+        },
+        {
+          "kind": "text-position",
+          "start": 6419,
+          "end": 6484
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "ab93fd8725166832",
+          "semanticHash": "8d15261a9621db80"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"procedure.instructions must be a non-empty string\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const k of [\"id\", \"command\"] as const) {",
+          "prefix": "eys(st, STEP_KEYS, `${where}: `, errors);\n      ",
+          "suffix": "\n        if (!nonEmptyString(st[k])) {\n         "
+        },
+        {
+          "kind": "text-position",
+          "start": 7039,
+          "end": 7084
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "3cc45f06b08ac9ea",
+          "semanticHash": "7c294b9a619a1936"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"id\",\"command\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:34.177Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:34.177Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

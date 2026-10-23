@@ -1,0 +1,93 @@
+{
+  "id": "clm_759bbce58dbc47c3",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `lastEvidence` | `{ summary, source, at, by }` from the newest judged evidence, when there is any |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `lastEvidence` | `{ summary, source, at, by }` from the newest judged evidence, when there is any |",
+        "prefix": "|\n| `owner` | the actor to contact, or `null` |\n",
+        "suffix": "\n| `reason` | `expired`, `review`, `pending`, or"
+      },
+      {
+        "kind": "text-position",
+        "start": 7772,
+        "end": 7873
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "lastEvidence?: { summary: string; source: string; at: string; by: string };",
+          "prefix": "\n  sources: Source[];\n  owner: string | null;\n  ",
+          "suffix": "\n  reason: WorklistReason;\n}\n\n/** A `check` verd"
+        },
+        {
+          "kind": "text-position",
+          "start": 8185,
+          "end": 8260
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "property_signature",
+          "structuralHash": "756ed511a08534ec",
+          "semanticHash": "a875108232aa3269"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const last = newestEntry(\n        entries,\n        (e) => e.evidence !== undefined,\n      )?.evidence;",
+          "prefix": "ush(worklistLabel(reason, c.kind, c.id));\n      ",
+          "suffix": "\n      worklist.push({\n        claimId: c.id,\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 18269,
+          "end": 18371
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "90013d863ff271ce",
+          "semanticHash": "f89863aa5123651c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:16.341Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:45:26.834Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:16.341Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

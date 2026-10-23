@@ -48,7 +48,7 @@ Every rule hibi applies shows up as a label. A label you do not understand is a 
 | condition | `check` | `check --doc` |
 |---|---|---|
 | `changed`, `orphaned`, or `ambiguous` on either side | gate | gate |
-| `judge: refuted` (only produced at or above `judge.threshold`) | gate | gate |
+| `judge: refuted` (at or above `judge.threshold`, or from the value rule) | gate | gate |
 | a conflict at or above `judge.threshold` | gate | gate |
 | `expired` | warn | gate |
 | `moved`, `review`, `pending`, `unavailable` | warn | warn |
@@ -116,7 +116,7 @@ The `evidence` action is offered only for `attested` claims, because `hibi evide
 | `pending` | a `reference` or `attested` claim whose judge state is `pending` |
 | `never-checked` | an `attested` claim with a `procedure` or at least one `sources` entry, and no judged evidence yet |
 
-A claim is listed once, with the first matching reason in the order above. Its verdict also carries a `worklist: …` reason. A pure vouch claim (`attested`, with no `procedure` and no `sources`) is listed only when it is expired. `hibi list --state pending` returns the same claims.
+A claim is listed once, with the first matching reason in the order above. Its verdict also carries a `worklist: …` reason. For an expired `code` or `reference` claim, that reason is `worklist: expired: re-verify, then hibi attest <id> --by human:<name>`, because an agent vouch does not reset its ttl. A pure vouch claim (`attested`, with no `procedure` and no `sources`) is listed when it is expired or when its newest verdict is a `review` that is not acknowledged. `hibi list --state pending` returns the same claims.
 
 Each item:
 
@@ -209,10 +209,10 @@ After `MAX_ATTEMPTS = 5` becomes `50` in `src/retry.ts`, the code claim gates an
     "actions": [
       { "id": "update-claim", "title": "Update the sentence, then reanchor",
         "rationale": "the evidence changed; if the sentence is now wrong, rewrite it, then run the command",
-        "command": "hibi reanchor clm_b87be1a1752b4a49" },
+        "command": "hibi reanchor clm_b87be1a1752b4a49 --code-file src/retry.ts --code-quote \"MAX_ATTEMPTS = 50\"" },
       { "id": "reanchor", "title": "Reanchor as is",
         "rationale": "the sentence is still true; accept the new span",
-        "command": "hibi reanchor clm_b87be1a1752b4a49" },
+        "command": "hibi reanchor clm_b87be1a1752b4a49 --code-file src/retry.ts --code-quote \"MAX_ATTEMPTS = 50\"" },
       { "id": "retire", "title": "Retire the claim",
         "rationale": "the claim is obsolete; withdraw it so it no longer gates",
         "command": "hibi retire clm_b87be1a1752b4a49" }
@@ -229,7 +229,7 @@ After `MAX_ATTEMPTS = 5` becomes `50` in `src/retry.ts`, the code claim gates an
 | `doc` | with `--doc` only: the document path, normalized |
 | `summary` | counts; `retired` claims are in none of `gating`, `warning`, `clean` |
 | `summary.conflictPass` | `{ pairs, requests, pending, scope }`: pairs judged, judge requests answered in this run, pairs still pending, and `store` (every pair) or `doc` (only pairs with a claim in the `--doc` document) |
-| `documents[].suspect[]` | per claim that gates or warns, its most severe status tag, such as `evidence:changed`, `judge:pending`, `conflict`, `conflict:review`, `conflict:pending`, `expired`, `superseded`; never `unchanged` |
+| `documents[].suspect[]` | per claim that gates or warns, and per unretired claim on a superseded or archived document, its most severe status tag, such as `evidence:changed`, `judge:pending`, `conflict`, `conflict:review`, `conflict:pending`, `expired`, `superseded`; never `unchanged` |
 
 `--explain` adds `detail` to each verdict: `docRegion`, `evidenceRegions[]`, `similarity`, and `changes[]` (`{ path, kind: text | ast | value, detail }`). `hibi schema --name Verdict` prints the schema.
 

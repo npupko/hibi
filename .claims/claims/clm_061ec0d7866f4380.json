@@ -1,0 +1,111 @@
+{
+  "id": "clm_061ec0d7866f4380",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`--instructions <path>` appends this exact line to the file, creating the file if it is missing, and does nothing when the file already contains the line:",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--instructions <path>` appends this exact line to the file, creating the file if it is missing, and does nothing when the file already contains the line:",
+        "prefix": " never edits the repository's own `.gitignore`. ",
+        "suffix": "\n\n```\nBefore relying on a document, run `hibi ch"
+      },
+      {
+        "kind": "text-position",
+        "start": 55911,
+        "end": 56065
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (text.includes(INSTRUCTIONS_LINE)) return { file, appended: false };",
+          "prefix": "n`);\n    return { file, appended: true };\n  }\n  ",
+          "suffix": "\n  const sep = text === \"\" || text.endsWith(\"\\n\""
+        },
+        {
+          "kind": "text-position",
+          "start": 10795,
+          "end": 10866
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "3b36ebad72501982",
+          "semanticHash": "6bbd3590563aac0c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "false",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await writeFile(file, `${INSTRUCTIONS_LINE}\\n`);",
+          "prefix": "NOENT\") throw e;\n  }\n  if (text === null) {\n    ",
+          "suffix": "\n    return { file, appended: true };\n  }\n  if ("
+        },
+        {
+          "kind": "text-position",
+          "start": 10703,
+          "end": 10751
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "787bddf64f934692",
+          "semanticHash": "0aec9bc2f9a4e607"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await appendFile(file, `${sep}${INSTRUCTIONS_LINE}\\n`);",
+          "prefix": "xt === \"\" || text.endsWith(\"\\n\") ? \"\" : \"\\n\";\n  ",
+          "suffix": "\n  return { file, appended: true };\n}\n\n/** The l"
+        },
+        {
+          "kind": "text-position",
+          "start": 10931,
+          "end": 10986
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "aa98e1c6d91612bd",
+          "semanticHash": "0e09ec92bee2e53d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:57.151Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:57.151Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

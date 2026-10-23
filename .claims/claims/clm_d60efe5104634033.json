@@ -1,0 +1,94 @@
+{
+  "id": "clm_d60efe5104634033",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "A suffix `k`, `m`, `b`, or `bn` after a currency amount multiplies it by a thousand, a million, or a billion, so `$5m` is five million dollars, not five minutes.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A suffix `k`, `m`, `b`, or `bn` after a currency amount multiplies it by a thousand, a million, or a billion, so `$5m` is five million dollars, not five minutes.",
+        "prefix": " `1299.5`, with a unit for `%` and durations |\n\n",
+        "suffix": " Versions are compared after dropping a leading "
+      },
+      {
+        "kind": "text-position",
+        "start": 10990,
+        "end": 11151
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const MAGNITUDE: Record<string, number> = { k: 3, m: 6, b: 9, bn: 9 };",
+          "prefix": "r a currency amount: `$5m`, `$2.5k`, `$1bn`. */\n",
+          "suffix": "\n\nfunction isoDate(y: number, m: number, d: numb"
+        },
+        {
+          "kind": "text-position",
+          "start": 5355,
+          "end": 5425
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "63927cd480b9dd6b",
+          "semanticHash": "b35cd90532fd56a3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pattern: re(String.raw`([$€£])\\s?(${NUM})(bn|[kmb])?${END}`, \"giu\"),",
+          "prefix": "  name: \"currency-sign\",\n    kind: \"money\",\n    ",
+          "suffix": "\n    read: (m) => {\n      const n = normalizeNum"
+        },
+        {
+          "kind": "text-position",
+          "start": 7934,
+          "end": 8002
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "739dbab921f6bcde",
+          "semanticHash": "cf88d659953485bd"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"giu\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:39.826Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:39.826Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

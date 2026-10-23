@@ -1,0 +1,65 @@
+{
+  "id": "clm_b2826c5c75fa41e9",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "With three options, confidence 0.8 means the top probability is about 0.867.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "With three options, confidence 0.8 means the top probability is about 0.867.",
+        "prefix": "\n| Noul with probability `p` | `abs(2p - 1)` |\n\n",
+        "suffix": "\n\nThere is one threshold, `judge.threshold`, def"
+      },
+      {
+        "kind": "text-position",
+        "start": 8575,
+        "end": 8651
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return (pMax - 1 / n) / (1 - 1 / n);",
+          "prefix": "return 1;\n  const pMax = Math.max(...values);\n  ",
+          "suffix": "\n}\n\n/** Noul confidence per the TypeSafe docs: |"
+        },
+        {
+          "kind": "text-position",
+          "start": 4512,
+          "end": 4548
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "ee938e3bf370f683",
+          "semanticHash": "f420da2f45361abd"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:38.280Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:38.280Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

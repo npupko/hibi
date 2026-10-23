@@ -1,0 +1,94 @@
+{
+  "id": "clm_3b66c367113a4be4",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A pair the judge could not answer (`JudgeUnavailable`) or whose answer could not be used (`JudgeError`) is pending and warns on both claims.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A pair the judge could not answer (`JudgeUnavailable`) or whose answer could not be used (`JudgeError`) is pending and warns on both claims.",
+        "prefix": " label `possible conflict with <id>: <reason>`. ",
+        "suffix": " Each such claim gets one reason `conflict check"
+      },
+      {
+        "kind": "text-position",
+        "start": 25991,
+        "end": 26131
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pendingCount.set(id, (pendingCount.get(id) ?? 0) + 1);",
+          "prefix": "or (const id of pair.pairId.split(\":\")) {\n      ",
+          "suffix": "\n    }\n  }\n  const documents = await store.allDo"
+        },
+        {
+          "kind": "text-position",
+          "start": 13884,
+          "end": 13938
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "dd872658bfce59e8",
+          "semanticHash": "92708b2483985586"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const w of v.warnings ?? []) {\n    warns = true;",
+          "prefix": "hreshold}): ${c.reason}`,\n      );\n    }\n  }\n\n  ",
+          "suffix": "\n    reasons.push(w);\n  }\n\n  if (v.expired) {\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 3721,
+          "end": 3774
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "f80086e51ffd4fe0",
+          "semanticHash": "a2746bf9f281b6bc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:57.912Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:47:57.912Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

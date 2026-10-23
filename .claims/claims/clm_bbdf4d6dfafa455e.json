@@ -1,0 +1,128 @@
+{
+  "id": "clm_bbdf4d6dfafa455e",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "`hibi check` resolves every claim against the working tree, consults the judge cache, runs the [contradiction pass](/conflicts), and prints one **verdict** per claim.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi check` resolves every claim against the working tree, consults the judge cache, runs the [contradiction pass](/conflicts), and prints one **verdict** per claim.",
+        "prefix": "t should re-check.\"\nicon: \"scale-balanced\"\n---\n\n",
+        "suffix": " Verdicts are computed at check time and never s"
+      },
+      {
+        "kind": "text-position",
+        "start": 274,
+        "end": 440
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const sides = resolveClaimSides(c, files, { ast: options.ast });",
+          "prefix": " = { doc: docText, evidence, unavailable };\n    ",
+          "suffix": "\n\n    const entries = supports.get(c.id) ?? [];\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 15723,
+          "end": 15787
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "5a6b0a6825b161e4",
+          "semanticHash": "175383615483a86b"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "outcome = await judgeReference({",
+          "prefix": "judgeable.reason}`);\n        } else {\n          ",
+          "suffix": "\n            claim: c,\n            ...judgeable."
+        },
+        {
+          "kind": "text-position",
+          "start": 16180,
+          "end": 16212
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "4456183343bcac43",
+          "semanticHash": "2b94d5ee4907ef93"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const pass = await this.conflictPass(onlyDocument);",
+          "prefix": "     onlyDocument = scope.documentId;\n    }\n    ",
+          "suffix": "\n    const options: CheckOptions = {\n      ast: "
+        },
+        {
+          "kind": "text-position",
+          "start": 12964,
+          "end": 13015
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "d4d9a8eab0ba334e",
+          "semanticHash": "c663ae201949e4ad"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "verdicts.push(v);",
+          "prefix": "     : {}),\n        reason,\n      });\n    }\n    ",
+          "suffix": "\n  }\n\n  // Histograms and rollups.\n  const docHi"
+        },
+        {
+          "kind": "text-position",
+          "start": 18884,
+          "end": 18901
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "23e69a4128cf6a58",
+          "semanticHash": "018d01daf2630eda"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:10.467Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:10.467Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

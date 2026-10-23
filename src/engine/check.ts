@@ -51,9 +51,10 @@
  * (`conflictPass`): over every pair for a whole-store check, and over the
  * pairs with a claim in the document for `--doc`; its findings may name
  * claims outside the scope. On each claim: a gating finding is a
- * `conflicts[]` entry; a `review` finding warns with its label; a pair the
- * judge could not answer warns with `conflict check pending with <id>: judge
- * unavailable` (or `: judge error` when its answer could not be used).
+ * `conflicts[]` entry; a `review` finding warns with its label; pairs the
+ * judge could not answer (judge unavailable, or an answer it could not use)
+ * warn with one reason per claim, `conflict checks pending: <n>`. The
+ * per-pair reason stays on the pass's `pairs[]`.
  *
  * Judge outcome labels carry the prefix `judge: ` (see `reference.ts` for the
  * labels themselves).
@@ -104,6 +105,7 @@ import {
   cachedSupportsOutcome,
   type JudgeOutcome,
   judgeReference,
+  newestEntry,
   newestSupports,
   referenceTexts,
 } from "./reference.ts";
@@ -242,7 +244,7 @@ export interface CheckReport {
 
 /**
  * One label per worklist reason. `hibi evidence` takes `attested` claims only,
- * so an expired `code` or `reference` claim gets `EXPIRED_NO_EVIDENCE_LABEL`.
+ * so an expired `code` or `reference` claim gets `expiredNoEvidenceLabel`.
  */
 const WORKLIST_LABEL: Record<WorklistReason, string> = {
   expired:
@@ -253,12 +255,18 @@ const WORKLIST_LABEL: Record<WorklistReason, string> = {
     "worklist: never checked; no evidence has been judged for this claim",
 };
 
-const EXPIRED_NO_EVIDENCE_LABEL =
-  "worklist: expired; have a human attest, or re-record after re-verifying";
+/** An agent vouch does not reset ttl, so only a human vouch clears it (the remediation `attest` action). */
+function expiredNoEvidenceLabel(id: string): string {
+  return `worklist: expired: re-verify, then hibi attest ${id} --by human:<name>`;
+}
 
-function worklistLabel(reason: WorklistReason, kind: ClaimKind): string {
+function worklistLabel(
+  reason: WorklistReason,
+  kind: ClaimKind,
+  id: string,
+): string {
   return reason === "expired" && kind !== "attested"
-    ? EXPIRED_NO_EVIDENCE_LABEL
+    ? expiredNoEvidenceLabel(id)
     : WORKLIST_LABEL[reason];
 }
 
@@ -384,15 +392,12 @@ export async function runCheck(
   const model = options.judge?.model ?? config.judge.model;
   const cache = store.judgeCache();
   const pass = options.conflictPass;
-  const pendingWith = new Map<string, { other: string; why: string }[]>();
+  const pendingCount = new Map<string, number>();
   for (const pair of pass?.pairs ?? []) {
     if (pair.outcome !== "pending") continue;
-    const [a, b] = pair.pairId.split(":") as [string, string];
-    const why = pair.reason.startsWith("judge error")
-      ? "judge error"
-      : "judge unavailable";
-    pendingWith.set(a, [...(pendingWith.get(a) ?? []), { other: b, why }]);
-    pendingWith.set(b, [...(pendingWith.get(b) ?? []), { other: a, why }]);
+    for (const id of pair.pairId.split(":")) {
+      pendingCount.set(id, (pendingCount.get(id) ?? 0) + 1);
+    }
   }
   const documents = await store.allDocuments();
   const claims = await store.allClaims();
@@ -474,12 +479,10 @@ export async function runCheck(
     const live = c.enforcement !== "retired";
     const reviews =
       live && pass !== undefined ? conflictReviewsFor(pass, c.id) : [];
-    const pendingPairs = live ? (pendingWith.get(c.id) ?? []) : [];
+    const pendingPairs = live ? (pendingCount.get(c.id) ?? 0) : 0;
     const warnings = [
       ...reviews.map((f) => `possible conflict with ${f.claimId}: ${f.reason}`),
-      ...pendingPairs.map(
-        (p) => `conflict check pending with ${p.other}: ${p.why}`,
-      ),
+      ...(pendingPairs > 0 ? [`conflict checks pending: ${pendingPairs}`] : []),
     ];
     const findings: ClaimFindings = {
       judge: outcome?.state,
@@ -502,7 +505,7 @@ export async function runCheck(
       judge: ack !== undefined ? undefined : v.judge,
     });
     if (reviews.length > 0) tags.push("conflict:review");
-    if (pendingPairs.length > 0) tags.push("conflict:pending");
+    if (pendingPairs > 0) tags.push("conflict:pending");
     statusTags.set(c.id, tags);
 
     const active = (lifecycleById.get(c.documentId) ?? "active") === "active";
@@ -510,9 +513,11 @@ export async function runCheck(
       ? worklistReason(c, v, ack !== undefined, entries.length > 0)
       : undefined;
     if (reason !== undefined) {
-      v.reasons.push(worklistLabel(reason, c.kind));
-      const withEvidence = entries.filter((e) => e.evidence !== undefined);
-      const last = withEvidence.at(-1)?.evidence;
+      v.reasons.push(worklistLabel(reason, c.kind, c.id));
+      const last = newestEntry(
+        entries,
+        (e) => e.evidence !== undefined,
+      )?.evidence;
       worklist.push({
         claimId: c.id,
         sentence: c.sentence,
@@ -547,15 +552,19 @@ export async function runCheck(
   let warningCount = 0;
   let retiredCount = 0;
 
+  // A retired claim counts only in `retired`, never in the axis histograms or `expired`.
   for (const v of verdicts) {
+    const enforcement = enforcementById.get(v.claimId) ?? "suggested";
+    if (enforcement === "retired") {
+      retiredCount += 1;
+      continue;
+    }
     docHist[v.doc] += 1;
     if (v.evidence !== undefined) evidenceHist[v.evidence] += 1;
     if (v.judge !== undefined) judgeHist[v.judge] += 1;
     if (v.expired) expiredCount += 1;
     if (v.conflicts.length > 0) conflictCount += 1;
-    const enforcement = enforcementById.get(v.claimId) ?? "suggested";
-    if (enforcement === "retired") retiredCount += 1;
-    else if (v.gates) gatingCount += 1;
+    if (v.gates) gatingCount += 1;
     else if (v.warns) warningCount += 1;
   }
 

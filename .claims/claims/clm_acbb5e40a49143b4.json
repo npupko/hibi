@@ -1,0 +1,59 @@
+{
+  "id": "clm_acbb5e40a49143b4",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `since`, `changedFiles` | with `--since` only |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `since`, `changedFiles` | with `--since` only |",
+        "prefix": "t HEAD, or `WORKTREE` when there is no commit |\n",
+        "suffix": "\n| `doc` | with `--doc` only: the document path,"
+      },
+      {
+        "kind": "text-position",
+        "start": 12089,
+        "end": 12138
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "extra.changedFiles = files;",
+          "prefix": "defined) {\n        extra.since = since;\n        ",
+          "suffix": "\n      }\n      if (doc !== undefined) {\n        "
+        },
+        {
+          "kind": "text-position",
+          "start": 20354,
+          "end": 20381
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "ee625fb97c501e91",
+          "semanticHash": "8775f0d97c9d6ad5"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:16.768Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:16.768Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

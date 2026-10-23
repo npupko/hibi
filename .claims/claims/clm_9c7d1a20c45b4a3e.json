@@ -1,0 +1,65 @@
+{
+  "id": "clm_9c7d1a20c45b4a3e",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "`steps` uses the Lobster step shape (`id`, `command`, optional `stdin`), so a Lobster workflow can run the same steps.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`steps` uses the Lobster step shape (`id`, `command`, optional `stdin`), so a Lobster workflow can run the same steps.",
+        "prefix": "dence --from-file - --by process:cron\ndone\n```\n\n",
+        "suffix": " Evidence is limited to 32,000 characters per it"
+      },
+      {
+        "kind": "text-position",
+        "start": 7002,
+        "end": 7120
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ProcedureStep = z.strictObject({\n  id: z.string().min(1),\n  command: z.string().min(1),\n  stdin: z.string().optional(),\n});",
+          "prefix": " step: a hint, never run by hibi (SPEC 4.2). */\n",
+          "suffix": "\nexport type ProcedureStep = z.infer<typeof Proc"
+        },
+        {
+          "kind": "text-position",
+          "start": 7536,
+          "end": 7672
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "2c5039b7a821af95",
+          "semanticHash": "6ebfc51d66bf7782"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:39.230Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:39.230Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

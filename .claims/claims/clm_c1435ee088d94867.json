@@ -1,0 +1,88 @@
+{
+  "id": "clm_c1435ee088d94867",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The doc and ref span flags and `--doc` may each be given once: a repeated span flag is the error `--<flag> given twice; reanchor takes one span per side`, and another repeated flag `--<flag> given twice; reanchor takes one --<flag>`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The doc and ref span flags and `--doc` may each be given once: a repeated span flag is the error `--<flag> given twice; reanchor takes one span per side`, and another repeated flag `--<flag> given twice; reanchor takes one --<flag>`.",
+        "prefix": " Nothing is written when no side was relocated. ",
+        "suffix": " `--code-file` is repeatable, as on `record`: ea"
+      },
+      {
+        "kind": "text-position",
+        "start": 68133,
+        "end": 68366
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".filter((o) => o.type === \"string\" && !o.multiple)",
+          "prefix": "nst single = new Set(\n    optionsFor(cmd)\n      ",
+          "suffix": "\n      .map((o) => o.name),\n  );\n  const seen = "
+        },
+        {
+          "kind": "text-position",
+          "start": 22060,
+          "end": 22110
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "a246fc1d880b5a22",
+          "semanticHash": "880d18dc63cd1043"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"string\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return `--${t.name} given twice; ${cmd.name} takes ${takes}`;",
+          "prefix": "an per side\"\n        : `one --${t.name}`;\n      ",
+          "suffix": "\n    }\n    seen.add(t.name);\n  }\n  return undefi"
+        },
+        {
+          "kind": "text-position",
+          "start": 22433,
+          "end": 22494
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "d097db0bd8498a22",
+          "semanticHash": "478e22cfa964c487"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:28:04.144Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:28:04.144Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -88,6 +88,11 @@ export interface SideResult {
   changedEvidence: SpanChange[];
   /** The live text at the located region. */
   liveText: string | null;
+  /**
+   * On a `changed` side: the located text widened to whole words and whole
+   * numbers at its edges, the quote a remediation command passes to `reanchor`.
+   */
+  liveQuote?: string;
 }
 
 function bySelectorKind(selectors: Selector[]) {
@@ -118,6 +123,19 @@ function withWholeNumbers(text: string, region: Region): string {
     }
   }
   return text.slice(start, end);
+}
+
+/**
+ * The located text widened to whole words and whole numbers at its edges,
+ * so a fuzzy match that ends inside `attempts` reads `attempts`.
+ */
+function withWholeWords(text: string, region: Region): string {
+  const word = (i: number) => /\w/.test(text[i] ?? "");
+  let start = region.start;
+  let end = region.end;
+  if (word(start)) while (word(start - 1)) start--;
+  if (word(end - 1)) while (word(end)) end++;
+  return withWholeNumbers(text, { start, end });
 }
 
 /** Resolve one anchor side against its current file text. */
@@ -273,6 +291,7 @@ export function resolveSide(
       reasons,
       changedEvidence,
       liveText,
+      liveQuote: withWholeWords(currentText, region),
     };
   }
 
@@ -407,6 +426,30 @@ export interface ResolveClaimOptions extends ResolveOptions, ClaimFindings {
 /** The per-claim result of `check`. */
 export type ClaimVerdict = Verdict;
 
+/**
+ * The evidence spans a remediation command re-anchors, in stored order, when
+ * the worst side reads `changed` or `ambiguous`: a `changed` side's located
+ * whole-word text, null for an `ambiguous` side, the stored quote otherwise.
+ */
+function evidenceSpansFor(
+  claim: Claim,
+  sides: ClaimSides,
+  worst: EvidenceState | undefined,
+): { file: string; quote: string | null }[] | undefined {
+  if (worst !== "changed" && worst !== "ambiguous") return undefined;
+  return claim.evidence.map((bundle, i) => {
+    const side = sides.evidence[i];
+    if (side?.state === "changed")
+      return { file: bundle.file, quote: side.liveQuote ?? null };
+    if (side?.state === "ambiguous") return { file: bundle.file, quote: null };
+    const tq = bundle.selectors.find((s) => s.kind === "text-quote");
+    return {
+      file: bundle.file,
+      quote: tq?.kind === "text-quote" ? tq.exact : null,
+    };
+  });
+}
+
 /** Build the verdict for resolved sides plus the later passes' findings. */
 export function assembleVerdict(
   claim: Claim,
@@ -477,6 +520,8 @@ export function assembleVerdict(
       judge: gatingJudge,
       expired,
       conflicts,
+      docText: sides.doc.liveQuote,
+      evidenceSpans: evidenceSpansFor(claim, sides, evidence),
     }),
     detail: {
       docRegion: sides.doc.region ?? undefined,

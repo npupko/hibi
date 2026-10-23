@@ -1,0 +1,88 @@
+{
+  "id": "clm_d71f39ef99234683",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `expired` | boolean, from the counting rule in section 5 |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `expired` | boolean, from the counting rule in section 5 |",
+        "prefix": "w / pending`; absent when no judgment applies |\n",
+        "suffix": "\n| `conflicts` | list of `{ claimId, probability"
+      },
+      {
+        "kind": "text-position",
+        "start": 21771,
+        "end": 21831
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    expired: z.boolean(),",
+          "prefix": "t applies. */\n    judge: JudgeState.optional(),\n",
+          "suffix": "\n    conflicts: z.array(ConflictFinding).default"
+        },
+        {
+          "kind": "text-position",
+          "start": 15978,
+          "end": 16003
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1510bc52887893f3",
+          "semanticHash": "c38c99e1b5a35b47"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  const expiry = expiryLabel(claim, now);\n  const expired = expiry !== undefined;",
+          "prefix": "st,\n  );\n\n  const now = opts.now ?? new Date();\n",
+          "suffix": "\n  const conflicts = opts.conflicts ?? [];\n  con"
+        },
+        {
+          "kind": "text-position",
+          "start": 14383,
+          "end": 14464
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "28f9878cb1f49af2",
+          "semanticHash": "eff4ff2fc1477d71"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:28.307Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:28.307Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

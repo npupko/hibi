@@ -1,0 +1,111 @@
+{
+  "id": "clm_99560ab65aa246f3",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "An agent vouch does not reset ttl and `hibi evidence` takes `attested` claims only, so an expired `code` or `reference` claim carries the label `worklist: expired: re-verify, then hibi attest <id> --by human:<name>`; its remediation offers the same human vouch.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An agent vouch does not reset ttl and `hibi evidence` takes `attested` claims only, so an expired `code` or `reference` claim carries the label `worklist: expired: re-verify, then hibi attest <id> --by human:<name>`; its remediation offers the same human vouch.",
+        "prefix": "`code` claim is listed only when it is expired. ",
+        "suffix": "\n\n\nA claim on a superseded or archived document "
+      },
+      {
+        "kind": "text-position",
+        "start": 28476,
+        "end": 28737
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return `worklist: expired: re-verify, then hibi attest ${id} --by human:<name>`;",
+          "prefix": " expiredNoEvidenceLabel(id: string): string {\n  ",
+          "suffix": "\n}\n\nfunction worklistLabel(\n  reason: WorklistRe"
+        },
+        {
+          "kind": "text-position",
+          "start": 9227,
+          "end": 9307
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "b0665cb31c56a6df",
+          "semanticHash": "c402ee604000bd1e"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return reason === \"expired\" && kind !== \"attested\"",
+          "prefix": "\n  kind: ClaimKind,\n  id: string,\n): string {\n  ",
+          "suffix": "\n    ? expiredNoEvidenceLabel(id)\n    : WORKLIST"
+        },
+        {
+          "kind": "text-position",
+          "start": 9408,
+          "end": 9458
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "eb2f5ce7a7ff3af9",
+          "semanticHash": "f0e490713b516acb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"expired\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "command: `hibi attest ${id} --by human:<you> --note \"<what you checked>\"`,",
+          "prefix": "ts the ttl; an agent vouch does not count\",\n    ",
+          "suffix": "\n  };\n}\n\nfunction ackReview(id: string): Remedia"
+        },
+        {
+          "kind": "text-position",
+          "start": 7778,
+          "end": 7852
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "787e166f87e46da5",
+          "semanticHash": "3c7d722ef67f10b9"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:25.111Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:25.111Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

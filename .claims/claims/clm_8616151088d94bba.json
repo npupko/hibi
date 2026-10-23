@@ -1,0 +1,94 @@
+{
+  "id": "clm_8616151088d94bba",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "```sh\nhibi archive --doc <path> [--successor <path>] [--dry-run]\n```",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```sh\nhibi archive --doc <path> [--successor <path>] [--dry-run]\n```",
+        "prefix": "rded there after the supersede.\n\n### `archive`\n\n",
+        "suffix": "\n\nCopies the file to `archive/<path>`, replaces "
+      },
+      {
+        "kind": "text-position",
+        "start": 3901,
+        "end": 3969
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"The document to archive.\",",
+          "prefix": "string\",\n        placeholder: \"<path>\",\n        ",
+          "suffix": "\n        required: true,\n      },\n      {\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 16286,
+          "end": 16319
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "af1386494420849c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"The document to archive.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"The document the tombstone points to.\",",
+          "prefix": "string\",\n        placeholder: \"<path>\",\n        ",
+          "suffix": "\n      },\n      DRY_RUN,\n    ],\n    examples: [\""
+        },
+        {
+          "kind": "text-position",
+          "start": 16451,
+          "end": 16497
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "cf318a2a503ea1bf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"The document the tombstone points to.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.861Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.861Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

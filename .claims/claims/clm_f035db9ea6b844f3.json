@@ -1,0 +1,65 @@
+{
+  "id": "clm_f035db9ea6b844f3",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`hibi evidence` accepts any `attested` claim, a pure vouch claim (`attested`, no `procedure`, no `sources`) included.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi evidence` accepts any `attested` claim, a pure vouch claim (`attested`, no `procedure`, no `sources`) included.",
+        "prefix": " the claims an agent can collect evidence for.\n\n",
+        "suffix": " A pure vouch claim is listed when it is expired"
+      },
+      {
+        "kind": "text-position",
+        "start": 28145,
+        "end": 28262
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "} else if (claim.kind !== \"attested\") {",
+          "prefix": "Id} is retired; evidence is not accepted`);\n    ",
+          "suffix": "\n      errors.push(\n        `claim ${claimId} is"
+        },
+        {
+          "kind": "text-position",
+          "start": 6823,
+          "end": 6862
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "665fc6fb60c0f6b5",
+          "semanticHash": "b6ab73a0c1ae0074"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"attested\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:24.944Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:24.944Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

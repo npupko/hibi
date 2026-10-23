@@ -1,0 +1,105 @@
+{
+  "id": "clm_561b311d60594620",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The `doc` bundle and the `reference` evidence bundle use `text-quote` and `text-position` only.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The `doc` bundle and the `reference` evidence bundle use `text-quote` and `text-position` only.",
+        "prefix": " and the first literal inside the quoted span.\n\n",
+        "suffix": " There is no `coarse` selector.\n\n### 6.4 Judge c"
+      },
+      {
+        "kind": "text-position",
+        "start": 16972,
+        "end": 17067
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const doc = buildSelectorBundle(input.docPath, docContent, docRegion);",
+          "prefix": "yRun) await store.putDocument(document);\n  }\n\n  ",
+          "suffix": "\n  const vouch = {\n    by: input.by,\n    at: now"
+        },
+        {
+          "kind": "text-position",
+          "start": 6765,
+          "end": 6835
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "38f1dc0bee5d76a9",
+          "semanticHash": "5d620624aa0acb47"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "// A reference span is located like a doc span: text selectors only.",
+          "prefix": "on = resolveRegion(content, target.region);\n    ",
+          "suffix": "\n    return kind === \"code\"\n      ? buildSelecto"
+        },
+        {
+          "kind": "text-position",
+          "start": 4540,
+          "end": 4608
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "4a47142dea39e707"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "      : buildSelectorBundle(target.file, content, region);",
+          "prefix": "le(target.file),\n          analyzer,\n        })\n",
+          "suffix": "\n  });\n}\n\nexport async function recordClaim(\n  s"
+        },
+        {
+          "kind": "text-position",
+          "start": 4796,
+          "end": 4854
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "646bfb7bc66bad5f",
+          "semanticHash": "b38855a76ac11678"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:34.576Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:34.576Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

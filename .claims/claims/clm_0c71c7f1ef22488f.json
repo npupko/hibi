@@ -1,0 +1,59 @@
+{
+  "id": "clm_0c71c7f1ef22488f",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "The result's `after` shows the new doc quote and code quote, and `check --doc CLAUDE.md` exits 0.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The result's `after` shows the new doc quote and code quote, and `check --doc CLAUDE.md` exits 0.",
+        "prefix": "or <id>` would leave them as stored and exit 1. ",
+        "suffix": " Never rewrite the sentence without reading the "
+      },
+      {
+        "kind": "text-position",
+        "start": 24670,
+        "end": 24767
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "after: result.after,",
+          "prefix": "{}),\n          before: result.before,\n          ",
+          "suffix": "\n          ...(result.kept.length > 0 ? { kept: "
+        },
+        {
+          "kind": "text-position",
+          "start": 24873,
+          "end": 24893
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "8b5a8dddce83230d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:12.959Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:12.959Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

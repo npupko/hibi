@@ -1,0 +1,82 @@
+{
+  "id": "clm_ba8321efcbc54a92",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| state | `doc: { path }`, `regions: [{ id, kind, text, headingPath }]` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| state | `doc: { path }`, `regions: [{ id, kind, text, headingPath }]` |",
+        "prefix": " in a fixed order.\n\n### triage\n\n| | |\n|---|---|\n",
+        "suffix": "\n| `kind_<i>` | Choice over `factual_claim`, `in"
+      },
+      {
+        "kind": "text-position",
+        "start": 6178,
+        "end": 6251
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const docState = { path: doc.path };",
+          "prefix": "\n  regions: Region[],\n): SystemOneRequest[] {\n  ",
+          "suffix": "\n  const fixed = estimateTokens({\n    model,\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 9791,
+          "end": 9827
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "270318bb51afa9b8",
+          "semanticHash": "2a7dadfbb4083a78"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { id: r.id, kind: r.kind, text: r.text, headingPath: r.headingPath };",
+          "prefix": "\n}\n\nfunction stateRegion(r: Region): Region {\n  ",
+          "suffix": "\n}\n\nfunction answer(answers: Answers, id: string"
+        },
+        {
+          "kind": "text-position",
+          "start": 7818,
+          "end": 7894
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "95511bd31d7cf1d6",
+          "semanticHash": "84f07f89977751bc"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:37.238Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:37.238Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

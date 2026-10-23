@@ -1,0 +1,117 @@
+{
+  "id": "clm_1b257a9f3be249e0",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "| `attested` | none | its `ttl` ran out since the newest counting attestation, or submitted evidence was judged to refute it |",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `attested` | none | its `ttl` ran out since the newest counting attestation, or submitted evidence was judged to refute it |",
+        "prefix": "ferenced text no longer supports the sentence |\n",
+        "suffix": "\n\n`audit` also names two region classes that are"
+      },
+      {
+        "kind": "text-position",
+        "start": 930,
+        "end": 1056
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"an attested claim has no evidence spans\"",
+          "prefix": "         path: [\"evidence\"],\n          message: ",
+          "suffix": ",\n        });\n      }\n      if (c.ttl === undefi"
+        },
+        {
+          "kind": "text-position",
+          "start": 9852,
+          "end": 9893
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "3ffd80187493791f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"an attested claim has no evidence spans\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "A claim with a `ttl` expires `ttl` after its newest\n * counting attestation.",
+          "prefix": "/**\n * Expiry (SPEC 5). ",
+          "suffix": " Only two bases count: `evidence` (the judge ret"
+        },
+        {
+          "kind": "text-position",
+          "start": 24,
+          "end": 100
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "34711ef62bbda234"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"refuted\") gates = true;",
+          "prefix": "c) || isWarnAnchor(v.evidence)) warns = true;\n  ",
+          "suffix": "\n  if (v.judge !== undefined && WARN_JUDGE.has(v"
+        },
+        {
+          "kind": "text-position",
+          "start": 3180,
+          "end": 3220
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "045e3f715206f391",
+          "semanticHash": "c5efdf039031fded"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"refuted\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:01.619Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:01.619Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

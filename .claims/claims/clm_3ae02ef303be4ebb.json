@@ -1,0 +1,59 @@
+{
+  "id": "clm_3ae02ef303be4ebb",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The sentence is refreshed from the new doc span ",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The sentence is refreshed from the new doc span ",
+        "prefix": "s kept unchanged, with a warning (section 4.1). ",
+        "suffix": "when the doc side is relocated.\n\n**supersede.** "
+      },
+      {
+        "kind": "text-position",
+        "start": 69347,
+        "end": 69395
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sentence = regionText(contents.docContent, docRegion);",
+          "prefix": "docFile, contents.docContent, docRegion);\n      ",
+          "suffix": "\n      relocated++;\n    } else {\n      docBundle"
+        },
+        {
+          "kind": "text-position",
+          "start": 11617,
+          "end": 11671
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "5f7a3b12a3e5b043",
+          "semanticHash": "2fb482334fd18b34"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:20.798Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:20.798Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

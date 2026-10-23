@@ -1,0 +1,59 @@
+{
+  "id": "clm_141d97fb3b814433",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| store upgrade code | no compatibility with v3 |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| store upgrade code | no compatibility with v3 |",
+        "prefix": "eplaced by attestations with actors and bases |\n",
+        "suffix": "\n| exit code 3, tamper detection, `--fail-on tam"
+      },
+      {
+        "kind": "text-position",
+        "start": 72383,
+        "end": 72432
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "hibi ${MODEL_VERSION} has no upgrade path from it",
+          "prefix": "\n        `this claim store is version ${found}; ",
+          "suffix": ". Remove ${this.dir}, run \\`hibi init\\`, and re-"
+        },
+        {
+          "kind": "text-position",
+          "start": 4621,
+          "end": 4670
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "f13c15c4af6c3f60",
+          "semanticHash": "e7100302ce5005d3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:13.563Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:13.563Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

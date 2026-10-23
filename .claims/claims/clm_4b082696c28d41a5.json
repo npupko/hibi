@@ -1,0 +1,59 @@
+{
+  "id": "clm_4b082696c28d41a5",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "The value comparison runs in code, not in the model.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The value comparison runs in code, not in the model.",
+        "prefix": "`judge error: TypeSafe returned HTTP 400: …` |\n\n",
+        "suffix": " It runs only after the judge says both sentence"
+      },
+      {
+        "kind": "text-position",
+        "start": 4450,
+        "end": 4502
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const values = compareValues(extractValues(a), extractValues(b));",
+          "prefix": "ften\n    // describes different situations.\n    ",
+          "suffix": "\n    if (values.differs && values.label !== unde"
+        },
+        {
+          "kind": "text-position",
+          "start": 5656,
+          "end": 5721
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "56cb08a4d0c4db1d",
+          "semanticHash": "80c594a6af113811"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:26.151Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:26.151Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

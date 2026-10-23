@@ -1,0 +1,122 @@
+{
+  "id": "clm_9002f5bc4b0e4ff3",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 35 | a contradiction below its bar warns with `possible conflict with <id>` and a pair the judge could not answer warns with `conflict check pending`; neither gates (amended by 51) |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 35 | a contradiction below its bar warns with `possible conflict with <id>` and a pair the judge could not answer warns with `conflict check pending`; neither gates (amended by 51) |",
+        "prefix": "ibling that is not checked out at record time |\n",
+        "suffix": "\n| 36 | a review acknowledgement leaves the judg"
+      },
+      {
+        "kind": "text-position",
+        "start": 78941,
+        "end": 79125
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...reviews.map((f) => `possible conflict with ${f.claimId}: ${f.reason}`),",
+          "prefix": "t(c.id) ?? 0) : 0;\n    const warnings = [\n      ",
+          "suffix": "\n      ...(pendingPairs > 0 ? [`conflict checks "
+        },
+        {
+          "kind": "text-position",
+          "start": 17123,
+          "end": 17197
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "b6cbffe8d3a1e829",
+          "semanticHash": "0e4681b524e12224"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...(pendingPairs > 0 ? [`conflict checks pending: ${pendingPairs}`] : []),",
+          "prefix": "onflict with ${f.claimId}: ${f.reason}`),\n      ",
+          "suffix": "\n    ];\n    const findings: ClaimFindings = {\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 17204,
+          "end": 17278
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "6c2108a1064853f1",
+          "semanticHash": "fb32884413c11222"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const w of v.warnings ?? []) {\n    warns = true;",
+          "prefix": "hreshold}): ${c.reason}`,\n      );\n    }\n  }\n\n  ",
+          "suffix": "\n    reasons.push(w);\n  }\n\n  if (v.expired) {\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 3721,
+          "end": 3774
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "f80086e51ffd4fe0",
+          "semanticHash": "a2746bf9f281b6bc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:24.092Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:57.090Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:24.092Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

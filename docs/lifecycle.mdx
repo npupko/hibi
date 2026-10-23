@@ -58,21 +58,23 @@ hibi supersede --from <old> --to <new> [--dry-run]
 
 In one pass:
 
-1. Registers both documents in the store if needed.
-2. For every live claim on `--from`, reads the claim's current sentence. If that sentence appears verbatim in `--to`, the claim is reanchored there. It keeps its id, evidence spans, sources, procedure, and attestations; only its document changes.
+1. Registers `--to` in the store if needed. `--from` must already be registered; otherwise the command fails with `document <path> is not registered`.
+2. Moves every live claim on `--from` to `--to`, without reading the old file. When a claim's stored quote occurs verbatim exactly once in `--to`, its position is updated; otherwise its anchors are left as stored. The claim's id, sentence, quote, hashes, evidence, sources, procedure, attestations, and `ref` never change.
 3. Sets `--from` to `superseded` and records `supersededBy` on it.
 
 ```json
 { "ok": true, "action": "supersede", "schemaVersion": "v4",
   "from": "design-v1.md", "to": "design-v2.md",
-  "relocated": [{ "claimId": "clm_…", "doc": "design-v2.md", "evidence": "src/retry.ts" }],
-  "misses": [{ "claimId": "clm_…", "reason": "documented sentence not found in design-v2.md; reanchor with an explicit span or retire" }],
-  "strandedClaims": ["clm_…"],
+  "relocated": [{ "claimId": "clm_…", "doc": "unchanged", "evidence": "unchanged" }],
+  "misses": [],
+  "strandedClaims": [],
   "dryRun": false,
-  "next": "reanchor or retire each missed claim, then hibi check" }
+  "next": "hibi check" }
 ```
 
-`strandedClaims` lists the live claims still on the old document after the pass. For each miss, move the claim by hand with `hibi reanchor <id> --doc <new> --doc-quote "…"`, or withdraw it with `hibi retire <id>`. When `strandedClaims` is empty, the old file can be deleted or archived without leaving claims behind.
+Each `relocated` entry is `{ claimId, doc, evidence? }` with the claim's anchor states after the move. A quote found in `--to` reads `unchanged`. A sentence that was edited reads `changed`. A sentence that is not in `--to` reads `orphaned` and gates; fix it with `hibi reanchor <id> --doc-quote "…"` or `hibi retire <id>`. A quote found more than once is resolved by the normal resolver and may read `moved`.
+
+`misses` lists only claims whose move failed with an error, so it is normally empty. `strandedClaims` lists the live claims still on the old document after the pass, and is normally empty too. A claim stays on a superseded document only when its move failed (it is listed in `misses`) or when it was recorded there after the supersede.
 
 ### `archive`
 
@@ -89,23 +91,26 @@ Copies the file to `archive/<path>`, replaces the original with a short tombston
   "next": "reanchor or retire each stranded claim, then hibi check" }
 ```
 
-`archivedTo` is null when the document is registered but its file was not on disk. A path that is not a registered document (no claim was ever recorded on it) is an error, and nothing is written. To withdraw a document that has no successor, archive it without `--successor`.
+`archivedTo` is null when the document is registered but its file was not on disk. A path that is not a registered document (one with no record in `.claims/documents/`) is an error, and nothing is written. To withdraw a document that has no successor, archive it without `--successor`.
 
 ## Reanchoring a claim
 
 ```sh
 hibi reanchor <claim-id> [--doc <path>] [--doc-quote <text> | --doc-range L1:L3]
-                         [--code-file <path> (--code-quote <text> | --code-range L1:L9)]
+                         [--code-file <path> (--code-quote <text> | --code-range L1:L9)]...
                          [--ref-file <path> (--ref-quote <text> | --ref-range L1:L3)]
                          [--suggest] [--dry-run]
 ```
 
-`reanchor` re-resolves every span of the claim against the working tree and stores the result as the new baseline, so a `moved` or `changed` side returns to `unchanged`. It also refreshes the claim's `sentence` from the doc span.
+`reanchor` re-resolves every span of the claim against the working tree and stores the relocated sides as the new baseline. It refreshes the claim's `sentence` from the doc span when the doc side is relocated.
 
-- Without span flags, each side is located through its stored selectors.
-- A side that resolves `orphaned` is refused unless you pass a new span for it. Hibi does not guess where a lost span went.
+- Without span flags for a side, the side is relocated only when it reads `moved`. A side that reads `unchanged` is kept.
+- A side that reads `changed`, `ambiguous`, or `orphaned` is left as stored, and the result's `kept` gives the reason, for example `doc: changed; pass --doc-quote to re-anchor` or `evidence: orphaned; pass --code-quote to re-anchor`. Hibi does not guess where an edited or lost span went; pass the new span.
+- The command exits 0 when at least one side was relocated or no side needed relocating. It exits 1 and writes nothing when a side needed relocating and no side was relocated.
+- `--doc`, the doc span flags, and the ref span flags may each be given once. A repeat is an error such as `--doc-quote given twice; reanchor takes one span per side`.
+- A value that starts with `-` takes the `=` form: `--doc-quote="- Retries are capped at 5 attempts"`.
 - `--doc <path>` with `--doc-quote` or `--doc-range` moves the claim to another document.
-- `--code-file` with `--code-quote` or `--code-range` replaces a `code` claim's spans; `--ref-file` with `--ref-quote` or `--ref-range` replaces a `reference` claim's span. The wrong kind is an error, for example `claim <id> is a code claim; --ref-file, --ref-quote, and --ref-range are for reference claims.`
+- `--code-file` is repeatable: each one opens a span that takes the `--code-quote` or `--code-range` after it, and the spans given replace all of a `code` claim's spans, in order; `--ref-file` with `--ref-quote` or `--ref-range` replaces a `reference` claim's span. The wrong kind is an error, for example `claim <id> is a code claim; --ref-file, --ref-quote, and --ref-range are for reference claims.`
 - An evidence side in a sibling repo that is not checked out is kept as stored, with a warning such as `evidence side api:src/limits.ts kept unchanged: sibling repo "api" is not checked out at ../api`. The other sides are re-resolved.
 - `--suggest` is read-only. It ranks candidate locations for the stored doc and evidence quotes. It cannot be combined with span flags or `--dry-run`.
 - `--dry-run` computes the result and writes nothing.
@@ -118,14 +123,15 @@ Claims belong to the document they quote. Move them in the same change as the pr
 
 1. `hibi list --path <old-doc>` lists the claims that name the file on either side.
 2. `hibi supersede --from <old-doc> --to <new-doc>`.
-3. Resolve each entry in `misses` with `reanchor` or `retire`.
-4. When `strandedClaims` is empty, delete or archive the old file.
+3. For each `relocated` entry that reads `changed` or `orphaned`, fix the sentence in the new document if it is wrong, then run `hibi reanchor <id> --doc-quote "…"`, or `hibi retire <id>`.
+4. For each entry in `misses`, run `hibi reanchor <id> --doc <new-doc> --doc-quote "…"`, or `hibi retire <id>`.
+5. When `strandedClaims` is empty, delete or archive the old file.
 
-If you skip steps 2 and 3, the claims become `doc: orphaned` after the delete, and an orphaned enforced claim gates. Orphaned is not retired: it is a live record that points at a missing file.
+If you skip steps 2 to 4, the claims become `doc: orphaned` after the delete, and an orphaned enforced claim gates. Orphaned is not retired: it is a live record that points at a missing file.
 
 ## Who does what
 
-Hibi records lifecycle and enforcement and reports what is stranded or orphaned. A person or an agent rewrites the prose, decides what to reanchor and what to retire, and runs `hibi check` again. Hibi never edits prose; `archive` is the only verb that writes a document, and it writes only the tombstone.
+Hibi records lifecycle and enforcement and reports what is stranded or orphaned. A person or an agent rewrites the prose, decides what to reanchor and what to retire, and runs `hibi check` again. Hibi never edits prose. Two verbs write a document: `archive` copies it to `archive/` and writes the tombstone in its place, and `init --instructions` appends one line to an agent instruction file.
 
 ## Next
 

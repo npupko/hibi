@@ -1,0 +1,111 @@
+{
+  "id": "clm_77548ae3528b4503",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "| `probabilities` | `unsure` rows | the `kind` distribution, plus the `evidenceKind` distribution when the top kind is `factual_claim` |",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `probabilities` | `unsure` rows | the `kind` distribution, plus the `evidenceKind` distribution when the top kind is `factual_claim` |",
+        "prefix": "e` | `unsure` rows | `kind` or `evidenceKind` |\n",
+        "suffix": "\n| `reason` | `pending` rows | `judge unavailabl"
+      },
+      {
+        "kind": "text-position",
+        "start": 5031,
+        "end": 5167
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const probabilities: AuditProbabilities = { kind: result.kindProbabilities };",
+          "prefix": "t.kindProbabilities[result.kind],\n    });\n  }\n  ",
+          "suffix": "\n  if (result.evidenceProbabilities !== undefine"
+        },
+        {
+          "kind": "text-position",
+          "start": 6747,
+          "end": 6824
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "8d9eaa01bd7ba66b",
+          "semanticHash": "766fb71c23a45039"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "probabilities.evidenceKind = result.evidenceProbabilities;",
+          "prefix": "sult.evidenceProbabilities !== undefined) {\n    ",
+          "suffix": "\n  }\n  return row(base, { kind: \"unsure\", unsure"
+        },
+        {
+          "kind": "text-position",
+          "start": 6881,
+          "end": 6939
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "56fd354f1bf6c5ad",
+          "semanticHash": "8410395c88aff4dd"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (kind.choice === \"factual_claim\") {\n        if (isCodeByConstruction(region)) {",
+          "prefix": "eConfidence(kind.probabilities),\n      };\n      ",
+          "suffix": "\n          result.evidenceKind = \"code\";\n       "
+        },
+        {
+          "kind": "text-position",
+          "start": 12650,
+          "end": 12732
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "e19d3ca1b26d5a54",
+          "semanticHash": "cf808c783b49a6da"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"factual_claim\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:25.488Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:25.488Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_63b610f44b8940dc",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "Exit 0 regardless.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Exit 0 regardless.",
+        "prefix": "ore pointed evidence; `pending` writes nothing. ",
+        "suffix": "\n\n**f. Attest:** `hibi attest <id> --by <actor> "
+      },
+      {
+        "kind": "text-position",
+        "start": 5056,
+        "end": 5074
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "renderEvidence(report, style, mode),\n        );\n        return 0;",
+          "prefix": "vidence\", { ...report }, next), () =>\n          ",
+          "suffix": "\n      } catch (e) {\n        if (e instanceof Ev"
+        },
+        {
+          "kind": "text-position",
+          "start": 30013,
+          "end": 30078
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "ffc5f84a2b7431aa",
+          "semanticHash": "3e0a7aaffef215a7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:33.293Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:33.293Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

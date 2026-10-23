@@ -1,0 +1,59 @@
+{
+  "id": "clm_507e109d19cf4051",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `triage` | never | never | n/a; probabilities are reported |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `triage` | never | never | n/a; probabilities are reported |",
+        "prefix": " any of those three below its bar | otherwise |\n",
+        "suffix": "\n\n`supports` outcomes, first matching row, with "
+      },
+      {
+        "kind": "text-position",
+        "start": 37144,
+        "end": 37206
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "probability: result.kindProbabilities[result.kind],",
+          "prefix": "(base, {\n      kind: auditKindOf(result),\n      ",
+          "suffix": "\n    });\n  }\n  const probabilities: AuditProbabi"
+        },
+        {
+          "kind": "text-position",
+          "start": 6681,
+          "end": 6732
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "94b99ab87b27a0eb",
+          "semanticHash": "b5ab5422d69a647d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:17.001Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:17.001Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

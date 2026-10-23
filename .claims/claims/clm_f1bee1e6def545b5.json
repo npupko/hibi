@@ -1,0 +1,52 @@
+{
+  "id": "clm_f1bee1e6def545b5",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "code",
+  "sentence": "The repository is also a plugin marketplace.",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The repository is also a plugin marketplace.",
+        "prefix": "he command or rule that clears it.\n\n## Install\n\n",
+        "suffix": "\n\n```\n/plugin marketplace add npupko/hibi\n/plugi"
+      },
+      {
+        "kind": "text-position",
+        "start": 545,
+        "end": 589
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": ".claude-plugin/marketplace.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"source\": \"./plugins/hibi-cli\",",
+          "prefix": "ugins\": [\n    {\n      \"name\": \"hibi-cli\",\n      ",
+          "suffix": "\n      \"description\": \"Teaches agents to operate"
+        },
+        {
+          "kind": "text-position",
+          "start": 152,
+          "end": 183
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:25:22.339Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:25:22.339Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

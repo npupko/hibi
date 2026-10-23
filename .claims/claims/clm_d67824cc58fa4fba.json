@@ -1,0 +1,105 @@
+{
+  "id": "clm_d67824cc58fa4fba",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "code",
+  "sentence": "- No API key. The tests use a fake judge. `TYPESAFE_API_KEY` is only needed to try the real judge.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- No API key. The tests use a fake judge. `TYPESAFE_API_KEY` is only needed to try the real judge.",
+        "prefix": "n build:grammars` copies them into `grammars/`.\n",
+        "suffix": "\n\n## Getting started\n\n```sh\ngit clone https://gi"
+      },
+      {
+        "kind": "text-position",
+        "start": 545,
+        "end": 643
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/fake.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export class FakeJudge",
+          "prefix": "sOwn(script, key) ? script[key] : undefined;\n}\n\n",
+          "suffix": " implements Judge {\n  readonly model: string;\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 2324,
+          "end": 2346
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "f1adc19d309127cf",
+          "semanticHash": "2fe1183c6808d1a6"
+        }
+      ]
+    },
+    {
+      "file": "test/judge-jev.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "test.skipIf(!process.env.TYPESAFE_API_KEY?.trim())(",
+          "prefix": "_FLIGHT);\n  });\n});\n\ndescribe(\"live\", () => {\n  ",
+          "suffix": "\n    \"supports on an obvious pair\",\n    async ()"
+        },
+        {
+          "kind": "text-position",
+          "start": 21410,
+          "end": 21461
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "0df7244e0f27a870",
+          "semanticHash": "3b2a83992dd24361"
+        }
+      ]
+    },
+    {
+      "file": "test/e2e.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "delete env.TYPESAFE_API_KEY;",
+          "prefix": "ng, string | undefined> = { ...process.env };\n  ",
+          "suffix": "\n  delete env.TYPESAFE_BASE_URL;\n  if (opts.judg"
+        },
+        {
+          "kind": "text-position",
+          "start": 5249,
+          "end": 5277
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "unary_expression",
+          "structuralHash": "1c9593a25f120cd9",
+          "semanticHash": "f9195c19b2b343d2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:26.470Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:26.470Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,52 @@
+{
+  "id": "clm_c5596c874fdb4c32",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "reference",
+  "sentence": "Hibi ships a [Claude Code](https://claude.com/claude-code) skill: instructions the agent loads when it works with hibi.",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi ships a [Claude Code](https://claude.com/claude-code) skill: instructions the agent loads when it works with hibi.",
+        "prefix": "or AGENTS.md.\"\nicon: \"wand-magic-sparkles\"\n---\n\n",
+        "suffix": " The primary user of hibi is a coding agent, and"
+      },
+      {
+        "kind": "text-position",
+        "start": 264,
+        "end": 383
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/README.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "A Claude Code [Agent Skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) that teaches coding agents to use the [hibi](https://github.com/npupko/hibi) CLI ([docs](https://hibi.mintlify.app)).",
+          "prefix": "# hibi-cli: Claude Code plugin\n\n",
+          "suffix": " hibi tracks checkable sentences (claims) in any"
+        },
+        {
+          "kind": "text-position",
+          "start": 32,
+          "end": 249
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:25:22.204Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:25:22.204Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

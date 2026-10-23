@@ -1,0 +1,59 @@
+{
+  "id": "clm_743c3554cc15476f",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "In CI, check out the sibling at the aliased path (recipe 7), or its claims stay `unavailable`.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "In CI, check out the sibling at the aliased path (recipe 7), or its claims stay `unavailable`.",
+        "prefix": "run a full `hibi check` when the sibling moved. ",
+        "suffix": "\n\n---\n\n## 7. CI with the GitHub Action\n\n**When**"
+      },
+      {
+        "kind": "text-position",
+        "start": 20312,
+        "end": 20406
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (!isDirectory(abs)) {",
+          "prefix": "ESCAPES_ROOT,\n      escapes: true,\n    };\n  }\n  ",
+          "suffix": "\n    return {\n      unavailable: true,\n      ali"
+        },
+        {
+          "kind": "text-position",
+          "start": 3834,
+          "end": 3858
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "569f30054d8170b9",
+          "semanticHash": "2a0535e3b68fd436"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:11.969Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:11.969Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,146 @@
+{
+  "id": "clm_3e63bd4ebda54e39",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "| `reference` | one span in another document | the span changed, or the judge finds it no longer supports the sentence |",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `reference` | one span in another document | the span changed, or the judge finds it no longer supports the sentence |",
+        "prefix": "anged, disappeared, or matches several places |\n",
+        "suffix": "\n| `attested` | outside the repo (a dashboard, a"
+      },
+      {
+        "kind": "text-position",
+        "start": 1880,
+        "end": 2000
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (c.kind === \"reference\" && n !== 1) {",
+          "prefix": "t least one evidence span\",\n      });\n    }\n    ",
+          "suffix": "\n      ctx.addIssue({\n        code: \"custom\",\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 9489,
+          "end": 9529
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "d1a25a4b30448266",
+          "semanticHash": "0956ace1f257f1f1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"reference\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "outcome = await judgeReference({",
+          "prefix": "judgeable.reason}`);\n        } else {\n          ",
+          "suffix": "\n            claim: c,\n            ...judgeable."
+        },
+        {
+          "kind": "text-position",
+          "start": 16180,
+          "end": 16212
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "4456183343bcac43",
+          "semanticHash": "2b94d5ee4907ef93"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (result.relation === \"does_not_address\") {",
+          "prefix": "sult.confidence);\n  const t = `${threshold}`;\n  ",
+          "suffix": "\n    return {\n      state: \"review\",\n      reaso"
+        },
+        {
+          "kind": "text-position",
+          "start": 3425,
+          "end": 3470
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "4166b72ca797dfcd",
+          "semanticHash": "b4aaeda6e2feb9ce"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"does_not_address\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "state: verb === \"supports\" ? \"supported\" : \"refuted\",",
+          "prefix": "t.confidence >= threshold) {\n    return {\n      ",
+          "suffix": "\n      reasons: [\n        `evidence ${verb} the "
+        },
+        {
+          "kind": "text-position",
+          "start": 4268,
+          "end": 4321
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "68ed9cc192e0477c",
+          "semanticHash": "790f39a1c5996b10"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"supports\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:22.906Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:22.906Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,94 @@
+{
+  "id": "clm_bb1143c410c0413d",
+  "documentId": "doc_c5adefb4274c6931",
+  "kind": "code",
+  "sentence": "This run had no API key, so the reference claim is `pending` (a warning).",
+  "doc": {
+    "file": "docs/quickstart.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "This run had no API key, so the reference claim is `pending` (a warning).",
+        "prefix": " 2 in worklist across 2 documents.  exit 0\n```\n\n",
+        "suffix": " The attested claim is in the worklist with reas"
+      },
+      {
+        "kind": "text-position",
+        "start": 4857,
+        "end": 4930
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (this.apiKey === \"\") {\n      throw new JudgeUnavailable(",
+          "prefix": "emOneRequest): Promise<SystemOneResponse> {\n    ",
+          "suffix": "\n        `${API_KEY_ENV} is not set; the judge c"
+        },
+        {
+          "kind": "text-position",
+          "start": 4571,
+          "end": 4630
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "39962782a2c4e252",
+          "semanticHash": "f808db5ef220e6a1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const WARN_JUDGE: ReadonlySet<JudgeState> = new Set<JudgeState>([\n  \"review\",\n  \"pending\",\n]);",
+          "prefix": "idenceState>([\n  \"moved\",\n  \"unavailable\",\n]);\n\n",
+          "suffix": "\n\nfunction isGatingAnchor(state: EvidenceState |"
+        },
+        {
+          "kind": "text-position",
+          "start": 1612,
+          "end": 1706
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "a25feaf2555f5c2e",
+          "semanticHash": "a622cd3b1cc59123"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"review\",\"pending\",]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:29.802Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:29.802Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

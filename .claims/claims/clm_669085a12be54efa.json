@@ -1,0 +1,101 @@
+{
+  "id": "clm_669085a12be54efa",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `review` | `contradictory` with any of those below its bar | `review: contradictory, confidence=0.55 below threshold 0.80` |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `review` | `contradictory` with any of those below its bar | `review: contradictory, confidence=0.55 below threshold 0.80` |",
+        "prefix": "| `contradictory (p=0.93, same_subject=0.95)` |\n",
+        "suffix": "\n| `duplicate` | `consistent` with `same_subject"
+      },
+      {
+        "kind": "text-position",
+        "start": 45340,
+        "end": 45466
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `review: contradictory, ${below.join(\", \")}`,",
+          "prefix": "me: \"review\",\n      probability: pContra,\n      ",
+          "suffix": "\n    };\n  }\n  if (r.relation === \"consistent\" &&"
+        },
+        {
+          "kind": "text-position",
+          "start": 6708,
+          "end": 6761
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "6908d4a7dad25f2e",
+          "semanticHash": "055921eea214b7a2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\", \""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`confidence=${f2(r.confidence)} below threshold ${f2(threshold)}`,",
+          "prefix": "idence < threshold) {\n      below.push(\n        ",
+          "suffix": "\n      );\n    }\n    if (r.sameSubject < threshol"
+        },
+        {
+          "kind": "text-position",
+          "start": 6200,
+          "end": 6266
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "a5b5b4e43f98f11a",
+          "semanticHash": "7cb8a56745dc8039"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:14.951Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:42.472Z",
+      "basis": "ack",
+      "note": "0.55/0.80 is an example review label; probability 1 applies only when the value rule fires",
+      "ack": {
+        "pairId": "clm_669085a12be54efa:clm_cce25fadcda548de",
+        "sentenceHashes": [
+          "98d23a2a63166312c6df880d4bb6640ffc14b1514aafc8803d0c2f56718825d5",
+          "cccebe4683d825107bdab98963c33af3b39f5c5f7f5815f87a82bba6204c5070"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:14.951Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

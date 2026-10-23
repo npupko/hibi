@@ -1,0 +1,111 @@
+{
+  "id": "clm_5ec1b10e2318410b",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "One item schema serves `--from-file` (a JSON array on stdin or in a file) and the flags, which build one item.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "One item schema serves `--from-file` (a JSON array on stdin or in a file) and the flags, which build one item.",
+        "prefix": "`by` (section 5). There is no default from git. ",
+        "suffix": " With `--from-file`, the only other record flag "
+      },
+      {
+        "kind": "text-position",
+        "start": 56382,
+        "end": 56492
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const { item, errors } = recordItemFromFlags(values, tokens);",
+          "prefix": "\n        items = parsed;\n      } else {\n        ",
+          "suffix": "\n        if (errors.length > 0) {\n          cons"
+        },
+        {
+          "kind": "text-position",
+          "start": 17352,
+          "end": 17413
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "c91a3e51b21f945f",
+          "semanticHash": "52c7ead5fb3aa0c6"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "items = [item];",
+          "prefix": "r.message, mode, err.errors);\n        }\n        ",
+          "suffix": "\n      }\n\n      let calls: RecordCall[];\n      t"
+        },
+        {
+          "kind": "text-position",
+          "start": 17576,
+          "end": 17591
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "cb3c9e8c2802c367",
+          "semanticHash": "5be77c7e1153df8f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[item]"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "calls = parseRecordItems(",
+          "prefix": "   let calls: RecordCall[];\n      try {\n        ",
+          "suffix": "\n          items,\n          { ref, defaultBy },\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 17652,
+          "end": 17677
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "f553d5a29812e09c",
+          "semanticHash": "83ee9b9166dea055"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:33.611Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:33.611Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

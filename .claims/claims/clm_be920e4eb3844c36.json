@@ -1,0 +1,59 @@
+{
+  "id": "clm_be920e4eb3844c36",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "`config.repos` in `.claims/config.json` maps an alias to a directory relative to the repository root:",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`config.repos` in `.claims/config.json` maps an alias to a directory relative to the repository root:",
+        "prefix": " `ambiguous` |\n\n## Sides in another repository\n\n",
+        "suffix": "\n\n```json\n{ \"repos\": { \"api\": \"../api\" } }\n```\n\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 6236,
+        "end": 6337
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const abs = isAbsolute(dir) ? dir : join(root, dir);",
+          "prefix": "ned in .claims/config.json repos`,\n    };\n  }\n  ",
+          "suffix": "\n  if (!isInside(abs, resolve(abs, split.relativ"
+        },
+        {
+          "kind": "text-position",
+          "start": 3601,
+          "end": 3653
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "04033f44309be9a7",
+          "semanticHash": "ad68d6d7cbbe23a5"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.854Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.854Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

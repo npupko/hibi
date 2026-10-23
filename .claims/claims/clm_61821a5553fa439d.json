@@ -1,0 +1,81 @@
+{
+  "id": "clm_61821a5553fa439d",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 12 | TypeScript now, Rust later; contracts as JSON |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 12 | TypeScript now, Rust later; contracts as JSON |",
+        "prefix": "ifecycle verbs; tree-sitter optional (see 45) |\n",
+        "suffix": "\n| 13 | `coverage` folds into `audit`; `evidence"
+      },
+      {
+        "kind": "text-position",
+        "start": 76412,
+        "end": 76466
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"build:schemas\": \"bun run scripts/gen-schemas.ts\",",
+          "prefix": "mmars\": \"bun run scripts/copy-grammars.ts\",\n    ",
+          "suffix": "\n    \"build:cli-reference\": \"bun run scripts/gen"
+        },
+        {
+          "kind": "text-position",
+          "start": 990,
+          "end": 1040
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "import triageFile from \"./questions/triage.json\";",
+          "prefix": " supportsFile from \"./questions/supports.json\";\n",
+          "suffix": "\nimport {\n  type ConflictRelation,\n  type Confli"
+        },
+        {
+          "kind": "text-position",
+          "start": 460,
+          "end": 509
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "import_statement",
+          "structuralHash": "d1dea4402a611b5c",
+          "semanticHash": "de68da27e639bc05"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"./questions/triage.json\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:19.189Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:19.189Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

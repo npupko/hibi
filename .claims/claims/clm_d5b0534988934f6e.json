@@ -9,13 +9,13 @@
       {
         "kind": "text-quote",
         "exact": "| TypeScript and JavaScript | `.ts`, `.js`, `.mjs`, `.cjs` |",
-        "prefix": "g checked:\n\n| language | extensions |\n|---|---|\n",
+        "prefix": "files use:\n\n| language | extensions |\n|---|---|\n",
         "suffix": "\n| TSX and JSX | `.tsx`, `.jsx` |\n| Python | `.p"
       },
       {
         "kind": "text-position",
-        "start": 1963,
-        "end": 2023
+        "start": 1992,
+        "end": 2052
       }
     ]
   },
@@ -148,5 +148,5 @@
     }
   ],
   "createdAt": "2026-10-22T19:12:57.979Z",
-  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
 }

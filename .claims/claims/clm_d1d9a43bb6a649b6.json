@@ -1,0 +1,59 @@
+{
+  "id": "clm_d1d9a43bb6a649b6",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Ids are `r<index>` in document order.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Ids are `r<index>` in document order.",
+        "prefix": " are sentences). Offsets are UTF-16 code units. ",
+        "suffix": " `headingPath` is the Markdown headings above th"
+      },
+      {
+        "kind": "text-position",
+        "start": 49374,
+        "end": 49411
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "id: `r${out.length}`,",
+          "prefix": "es(text, piece)) {\n        out.push({\n          ",
+          "suffix": "\n          kind: piece.kind,\n          text: tex"
+        },
+        {
+          "kind": "text-position",
+          "start": 10686,
+          "end": 10707
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "c6711eaaf6c7c498",
+          "semanticHash": "0b3572ff6718efae"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:18.993Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:18.993Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

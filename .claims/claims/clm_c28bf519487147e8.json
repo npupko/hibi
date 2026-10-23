@@ -1,0 +1,94 @@
+{
+  "id": "clm_c28bf519487147e8",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "An `agent:` or `process:` vouch is recorded and does not count.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An `agent:` or `process:` vouch is recorded and does not count.",
+        "prefix": "r whose basis is `vouch` with a `human:` actor. ",
+        "suffix": " An `ack` never resets ttl. Newest is the latest"
+      },
+      {
+        "kind": "text-position",
+        "start": 11379,
+        "end": 11442
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return a.basis === \"vouch\" && a.by.startsWith(\"human:\");",
+          "prefix": " {\n  if (a.basis === \"evidence\") return true;\n  ",
+          "suffix": "\n}\n\n/**\n * The newest counting attestation, or u"
+        },
+        {
+          "kind": "text-position",
+          "start": 649,
+          "end": 705
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "f5a90e37e56fc368",
+          "semanticHash": "e13e9b92ec8f5bcc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"vouch\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "countsTowardTtl: by.startsWith(\"human:\"),",
+          "prefix": " claimIds: [claim.id],\n      attestation,\n      ",
+          "suffix": "\n    };\n  }\n\n  if (note === undefined) {\n    thr"
+        },
+        {
+          "kind": "text-position",
+          "start": 5840,
+          "end": 5881
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "6551225e2881068f",
+          "semanticHash": "072111ebfca3b905"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"human:\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:35.521Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:35.521Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

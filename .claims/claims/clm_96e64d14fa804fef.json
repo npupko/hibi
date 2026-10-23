@@ -1,0 +1,52 @@
+{
+  "id": "clm_96e64d14fa804fef",
+  "documentId": "doc_5be5c5b2d98e3a89",
+  "kind": "reference",
+  "sentence": "Claude loads the skill when you ask whether a document is still true, before it relies on `CLAUDE.md` or `AGENTS.md`, after a feature, when docs or a knowledge repo drift, when documents contradict each other, or when you mention claims or `.claims/`.",
+  "doc": {
+    "file": "plugins/hibi-cli/README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Claude loads the skill when you ask whether a document is still true, before it relies on `CLAUDE.md` or `AGENTS.md`, after a feature, when docs or a knowledge repo drift, when documents contradict each other, or when you mention claims or `.claims/`.",
+        "prefix": "         # drop-in GitHub Actions workflow\n```\n\n",
+        "suffix": " You can also invoke it as `/hibi-cli:hibi`.\n\nTh"
+      },
+      {
+        "kind": "text-position",
+        "start": 1521,
+        "end": 1772
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "description: >-\n  Operate hibi, the CLI that tracks checkable sentences (claims) in documents\n  and reports which are stale, refuted, expired, or contradicted. Use before\n  trusting CLAUDE.md, AGENTS.md, or any doc; after a feature; when docs or a\n  knowledge repo go stale; for process, marketing, or decision docs that drift; for\n  contradictions between docs; for anything about claims or .claims/.",
+          "prefix": "---\nname: hibi\n",
+          "suffix": "\nallowed-tools: >-\n  Bash(hibi check:*), Bash(hi"
+        },
+        {
+          "kind": "text-position",
+          "start": 15,
+          "end": 416
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:29:32.109Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:29:32.109Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

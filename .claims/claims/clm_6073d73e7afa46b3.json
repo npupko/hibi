@@ -1,0 +1,94 @@
+{
+  "id": "clm_6073d73e7afa46b3",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- `reference`: when the doc side and the evidence side are each `unchanged` or `moved` and both texts were located.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `reference`: when the doc side and the evidence side are each `unchanged` or `moved` and both texts were located.",
+        "prefix": "ache first. The judge is asked only on a miss.\n\n",
+        "suffix": " The request is `{ claim, claim_context, evidenc"
+      },
+      {
+        "kind": "text-position",
+        "start": 22869,
+        "end": 22984
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const JUDGEABLE: ReadonlySet<EvidenceState> = new Set<EvidenceState>([\n  \"unchanged\",\n  \"moved\",\n]);",
+          "prefix": " judge is consulted for a `reference` claim. */\n",
+          "suffix": "\n\n/** The texts a `reference` claim is judged on"
+        },
+        {
+          "kind": "text-position",
+          "start": 7023,
+          "end": 7123
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "a25feaf2555f5c2e",
+          "semanticHash": "e17536a254e6ddbf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"unchanged\",\"moved\",]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (docText === null || ev.liveText === null) {",
+          "prefix": "ide is ${ev?.state ?? \"missing\"}`,\n    };\n  }\n  ",
+          "suffix": "\n    return { reason: \"not consulted; the refere"
+        },
+        {
+          "kind": "text-position",
+          "start": 8165,
+          "end": 8212
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "863e52dadd4f3dac",
+          "semanticHash": "ae06ef5a30424359"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:41.779Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:41.779Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

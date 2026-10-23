@@ -1,0 +1,88 @@
+{
+  "id": "clm_bee2dc4c758f405c",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "Errors from `check` and `list` are printed as the JSON error envelope `{ \"ok\": false, \"error\": \"…\" }` with exit 1 whenever the output is JSON.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Errors from `check` and `list` are printed as the JSON error envelope `{ \"ok\": false, \"error\": \"…\" }` with exit 1 whenever the output is JSON.",
+        "prefix": "still sees a conflict with a claim outside it.\n\n",
+        "suffix": "\n\n## Output format\n\nHuman output on a terminal, "
+      },
+      {
+        "kind": "text-position",
+        "start": 13310,
+        "end": 13452
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ ok: false, error: message, ...(errors ? { errors } : {}) },",
+          "prefix": "${message}\\n`);\n  } else {\n    await out(\n      ",
+          "suffix": "\n      mode.kind === \"json-pretty\",\n    );\n  }\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 4202,
+          "end": 4263
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "3d7862af04923004",
+          "semanticHash": "091f71a4be55e136"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "false",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "process.exit(EXIT_OPERATIONAL_ERROR);\n}",
+          "prefix": "      mode.kind === \"json-pretty\",\n    );\n  }\n  ",
+          "suffix": "\n\nfunction absPath(root: string, p: string): str"
+        },
+        {
+          "kind": "text-position",
+          "start": 4312,
+          "end": 4351
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "6afb2d56b82ddde8",
+          "semanticHash": "2a287705bbe05bd6"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:17.668Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:17.668Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_f41e3bd838ce4378",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "An absolute path is compared after resolving symlinks in it and in the root.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An absolute path is compared after resolving symlinks in it and in the root.",
+        "prefix": ", and `<root>/docs/a.md` are the same document. ",
+        "suffix": " An aliased file keeps its `alias:` prefix and h"
+      },
+      {
+        "kind": "text-position",
+        "start": 13976,
+        "end": 14052
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/fs.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "? relative(realish(resolve(root)), realish(resolve(p)))",
+          "prefix": "s}:${rel}`;\n  }\n  const rel = isAbsolute(p)\n    ",
+          "suffix": "\n    : relative(resolve(root), resolve(root, p))"
+        },
+        {
+          "kind": "text-position",
+          "start": 1159,
+          "end": 1214
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "8e686436456c39c4",
+          "semanticHash": "5e738a705e59704e"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:36.629Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:36.629Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

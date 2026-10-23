@@ -1,0 +1,88 @@
+{
+  "id": "clm_85cbf271dcd34830",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `audit` | uncovered regions are `pending` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `audit` | uncovered regions are `pending` |",
+        "prefix": " it; `next` says to set the key and re-submit |\n",
+        "suffix": "\n\nCached verdicts keep working without a key. CI"
+      },
+      {
+        "kind": "text-position",
+        "start": 14428,
+        "end": 14473
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const region of chunk) pending.set(region.id, label);",
+          "prefix": "    if (label === undefined) throw e;\n          ",
+          "suffix": "\n          return [];\n        }\n        answered"
+        },
+        {
+          "kind": "text-position",
+          "start": 8869,
+          "end": 8927
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "0b360b80342f7dd3",
+          "semanticHash": "8a3b8339aa402de4"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "kind: \"pending\",",
+          "prefix": "if (!result) {\n      return row(base, {\n        ",
+          "suffix": "\n        reason: pending.get(region.id) ?? \"judg"
+        },
+        {
+          "kind": "text-position",
+          "start": 11258,
+          "end": 11274
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "130bb8e8a61a9a66"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:41.941Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:41.941Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,88 @@
+{
+  "id": "clm_3128361a76ec4a22",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "\"document\": \"docs/pricing.md\", \"procedure\": null, \"sources\": [], \"owner\": null, \"reason\": \"pending\" }",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "\"document\": \"docs/pricing.md\", \"procedure\": null, \"sources\": [], \"owner\": null, \"reason\": \"pending\" }",
+        "prefix": " the billing policy.\", \"kind\": \"reference\",\n    ",
+        "suffix": "\n]\n```\n\n`reason` is one of `expired`, `never-che"
+      },
+      {
+        "kind": "text-position",
+        "start": 7130,
+        "end": 7231
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "owner: c.owner ?? null,",
+          "prefix": ".procedure,\n        sources: c.sources,\n        ",
+          "suffix": "\n        ...(last !== undefined\n          ? {\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 18567,
+          "end": 18590
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "c3736af1d5e3eece",
+          "semanticHash": "ee1a23f132c43143"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "document: c.doc.file,",
+          "prefix": "ence: c.sentence,\n        kind: c.kind,\n        ",
+          "suffix": "\n        procedure: c.procedure,\n        sources"
+        },
+        {
+          "kind": "text-position",
+          "start": 18477,
+          "end": 18498
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "5ee06eb33a910fa7",
+          "semanticHash": "e700bb86b65df324"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:08.100Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:08.100Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

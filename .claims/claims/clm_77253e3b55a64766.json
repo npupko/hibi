@@ -1,0 +1,117 @@
+{
+  "id": "clm_77253e3b55a64766",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The rule fires when the relation is not `does_not_address` and the sentence and the evidence hold differing values in a shared group other than `number`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The rule fires when the relation is not `does_not_address` and the sentence and the evidence hold differing values in a shared group other than `number`.",
+        "prefix": "rs (`%`, durations), versions, and dates count. ",
+        "suffix": " It yields `refuted` with the label `value diffe"
+      },
+      {
+        "kind": "text-position",
+        "start": 41520,
+        "end": 41673
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (result.relation === \"does_not_address\") {",
+          "prefix": "sult.confidence);\n  const t = `${threshold}`;\n  ",
+          "suffix": "\n    return {\n      state: \"review\",\n      reaso"
+        },
+        {
+          "kind": "text-position",
+          "start": 3425,
+          "end": 3470
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "4166b72ca797dfcd",
+          "semanticHash": "b4aaeda6e2feb9ce"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"does_not_address\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ exclude: SUPPORTS_EXCLUDED_GROUPS },",
+          "prefix": "ap((v) => ({ ...v, raw: v.normalized })),\n      ",
+          "suffix": "\n    );\n    if (cmp.differs && cmp.label !== und"
+        },
+        {
+          "kind": "text-position",
+          "start": 3994,
+          "end": 4032
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "7b2cfa555de4b353",
+          "semanticHash": "d40d282e00a1d885"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (cmp.differs && cmp.label !== undefined) {",
+          "prefix": "exclude: SUPPORTS_EXCLUDED_GROUPS },\n    );\n    ",
+          "suffix": "\n      return { state: \"refuted\", reasons: [`val"
+        },
+        {
+          "kind": "text-position",
+          "start": 4044,
+          "end": 4089
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "76a6c44cb4e2a186",
+          "semanticHash": "8f3aa8ab17cae502"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:18.435Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:18.435Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

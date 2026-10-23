@@ -243,6 +243,12 @@ export interface RecordCall {
   enforcement?: Extract<Enforcement, "enforced" | "suggested">;
 }
 
+/** The outcome of `recordBatch`: every result, or the failures and nothing kept. */
+export interface RecordBatchResult {
+  results: RecordResult[];
+  failures: { index: number; message: string }[];
+}
+
 export interface CheckCall {
   failOn?: FailOn;
   onlyFiles?: Iterable<string>;
@@ -422,8 +428,14 @@ export class Engine {
     return { report: await runCheck(this.store, options), pass };
   }
 
-  /** Record a claim. The doc span's text is the claim's sentence. */
-  async record(call: RecordCall): Promise<RecordResult> {
+  /**
+   * Record a claim. The doc span's text is the claim's sentence. `dryRun`
+   * validates the call against the files on disk and writes nothing.
+   */
+  async record(
+    call: RecordCall,
+    opts: { dryRun?: boolean } = {},
+  ): Promise<RecordResult> {
     const config = await this.store.config();
     const evidence = (call.evidence ?? []).map((t) => ({
       ...t,
@@ -458,8 +470,41 @@ export class Engine {
       ttl: call.ttl,
       enforcement: call.enforcement,
       analyzer,
+      dryRun: opts.dryRun,
     };
     return recordClaim(this.store, contents, input);
+  }
+
+  /**
+   * Record a batch, all or nothing (SPEC 11, record). Every call is first
+   * validated against the files on disk, spans included, and any failure
+   * writes nothing. Then the calls are applied in order; if one fails, the
+   * writes this batch made are rolled back and records written by others
+   * are left alone. On failure `results` is empty and `failures` names each
+   * failing call by index.
+   */
+  async recordBatch(calls: RecordCall[]): Promise<RecordBatchResult> {
+    const failures: RecordBatchResult["failures"] = [];
+    for (const [index, call] of calls.entries()) {
+      try {
+        await this.record(call, { dryRun: true });
+      } catch (e) {
+        failures.push({ index, message: (e as Error).message });
+      }
+    }
+    if (failures.length > 0) return { results: [], failures };
+    const results: RecordResult[] = [];
+    try {
+      await this.store.withRollback(async () => {
+        for (const call of calls) results.push(await this.record(call));
+      });
+    } catch (e) {
+      return {
+        results: [],
+        failures: [{ index: results.length, message: (e as Error).message }],
+      };
+    }
+    return { results, failures: [] };
   }
 
   /**
@@ -546,6 +591,8 @@ export class Engine {
       docRange?: RegionSpec;
       evidence?: EvidenceTarget[];
       reference?: EvidenceTarget;
+      /** Move the doc side only; evidence spans, their baselines, and `ref` stay as stored. */
+      docOnly?: boolean;
       ref?: string;
       dryRun?: boolean;
     } = {},
@@ -608,6 +655,7 @@ export class Engine {
       docSpec:
         opts.docQuote !== undefined ? { quote: opts.docQuote } : opts.docRange,
       evidence: targets,
+      docOnly: opts.docOnly,
       ref: opts.ref,
       analyzer,
       dryRun: opts.dryRun,
@@ -676,7 +724,7 @@ export class Engine {
       this.store,
       {
         readDoc: (rel) => this.readAnchored(rel),
-        reanchor: (id, o) => this.reanchor(id, o),
+        moveDoc: (id, o) => this.reanchor(id, { ...o, docOnly: true }),
       },
       { ...input, from: this.norm(input.from), to: this.norm(input.to) },
     );

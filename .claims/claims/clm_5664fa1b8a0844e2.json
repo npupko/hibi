@@ -1,0 +1,82 @@
+{
+  "id": "clm_5664fa1b8a0844e2",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "An evidence file must stay inside its root: a plain path inside the knowledge repo, an aliased path inside the alias directory.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An evidence file must stay inside its root: a plain path inside the knowledge repo, an aliased path inside the alias directory.",
+        "prefix": "\\`)\"` | gates; `recommended: \"update-claim\"` |\n\n",
+        "suffix": " Record refuses `../api/src/limits.ts` (`path es"
+      },
+      {
+        "kind": "text-position",
+        "start": 19403,
+        "end": 19530
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (!isInside(root, resolve(root, file))) {",
+          "prefix": "itAlias(file);\n  if (split === undefined) {\n    ",
+          "suffix": "\n      return { unavailable: true, reason: ESCAP"
+        },
+        {
+          "kind": "text-position",
+          "start": 3213,
+          "end": 3256
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "f8d95b0d10ac874a",
+          "semanticHash": "f27b07d2923fe693"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (!isInside(abs, resolve(abs, split.relative))) {",
+          "prefix": "bs = isAbsolute(dir) ? dir : join(root, dir);\n  ",
+          "suffix": "\n    return {\n      unavailable: true,\n      ali"
+        },
+        {
+          "kind": "text-position",
+          "start": 3656,
+          "end": 3707
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "02e41b2d448d5206",
+          "semanticHash": "d93942e7e9347763"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:11.579Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:11.579Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

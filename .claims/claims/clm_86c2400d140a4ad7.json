@@ -1,0 +1,111 @@
+{
+  "id": "clm_86c2400d140a4ad7",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `supports(input)` | `sentence`, `context`, `evidence`, `source` | `relation` (`supports`, `refutes`, `does_not_address`), `probabilities`, `confidence`, `addresses` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `supports(input)` | `sentence`, `context`, `evidence`, `source` | `relation` (`supports`, `refutes`, `does_not_address`), `probabilities`, `confidence`, `addresses` |",
+        "prefix": "factual claims only), `evidenceProbabilities` |\n",
+        "suffix": "\n| `conflict(a, b)` | two sides, each `{ text, d"
+      },
+      {
+        "kind": "text-position",
+        "start": 1011,
+        "end": 1179
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export interface SupportsInput {",
+          "prefix": "robabilities?: Record<EvidenceKind, number>;\n}\n\n",
+          "suffix": "\n  sentence: string;\n  context: string;\n  eviden"
+        },
+        {
+          "kind": "text-position",
+          "start": 929,
+          "end": 961
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "dc96d187f9ac485d",
+          "semanticHash": "f4f154a51320e5b9"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export type SupportsRelation = \"supports\" | \"refutes\" | \"does_not_address\";",
+          "prefix": "tring;\n  evidence: string;\n  source: string;\n}\n\n",
+          "suffix": "\n\nexport interface SupportsResult {\n  relation: "
+        },
+        {
+          "kind": "text-position",
+          "start": 1042,
+          "end": 1117
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "965011173c6d92bf",
+          "semanticHash": "ea53d980cf7756c5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"supports\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "addresses: number;",
+          "prefix": "he evidence addresses the sentence at all. */\n  ",
+          "suffix": "\n  /**\n   * Set when the `addresses` Noul forced"
+        },
+        {
+          "kind": "text-position",
+          "start": 1333,
+          "end": 1351
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "property_signature",
+          "structuralHash": "d37388037761f624",
+          "semanticHash": "38df3b6c91a19ae4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:34.510Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:34.510Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

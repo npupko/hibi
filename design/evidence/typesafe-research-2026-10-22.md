@@ -97,7 +97,9 @@ Reading in code: use `kind.choice` only when `kind.confidence` clears a threshol
 
 ### 2b. `supports(sentence, evidence)`
 
-**Primitive:** one Choice with `supports` / `refutes` / `does_not_address`. This is exactly the citation-check cookbook's question (https://docs.typesafe.ai/cookbooks/citation_check.md), whose criteria are quoted here verbatim because they are tested wording:
+**Primitive:** one Choice. This is the citation-check cookbook's question (https://docs.typesafe.ai/cookbooks/citation_check.md).
+
+**Correction, 2026-10-23:** the live cookbook's options are `supports` / `contradicts` / `says_nothing`, not `supports` / `refutes` / `does_not_address` as first written here. hibi sends the cookbook's option names (`src/judge/questions/supports.json`) and maps them to `supports` / `refutes` / `does_not_address` in code. The block below keeps the 2026-10-22 sketch with the cookbook's option names:
 
 ```ts
 const state = {
@@ -112,9 +114,9 @@ const questions = {
     { question: "How does `evidence` relate to `claim`?",
       focus: "Judge only what `evidence` says. Do not use outside knowledge." },
     {
-      supports:    "The section states the claim or directly implies that it is true",
-      refutes:     "The section states the opposite of the claim or implies it is false",
-      does_not_address: "The section does not address what the claim asserts, either way",
+      supports:     "The section states the claim or directly implies that it is true",
+      contradicts:  "The section states the opposite of the claim or implies it is false",
+      says_nothing: "The section does not address what the claim asserts, either way",
     },
   ),
   // Speculative companions, same request, read only when useful:
@@ -223,7 +225,7 @@ const client = new TypeSafeClient({ defaultModel: "jev-1.13.0" }); // reads TYPE
 const { answers, model, usage } = await client.systemOne({
   state: { claim: "...", evidence: "..." },
   questions: {
-    relation: choice("How does `evidence` relate to `claim`?", { supports: "...", refutes: "...", does_not_address: "..." }),
+    relation: choice("How does `evidence` relate to `claim`?", { supports: "...", contradicts: "...", says_nothing: "..." }),
     addresses: noul("Does `evidence` address what `claim` asserts?"),
   },
 });

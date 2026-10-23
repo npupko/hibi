@@ -1,0 +1,105 @@
+{
+  "id": "clm_67d7eea23c6c489a",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The `review` label lists every bar missed, for example `contradicts=0.30 below 0.50, same_subject=0.60 below threshold 0.80`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The `review` label lists every bar missed, for example `contradicts=0.30 below 0.50, same_subject=0.60 below threshold 0.80`.",
+        "prefix": "m | `acknowledged: numbers differ: 29 vs 39` |\n\n",
+        "suffix": "\n\n`conflict` and `review` become findings on bot"
+      },
+      {
+        "kind": "text-position",
+        "start": 45798,
+        "end": 45923
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`contradicts=${f2(r.contradicts)} below ${f2(CONTRADICTS_FLOOR)}`,",
+          "prefix": " CONTRADICTS_FLOOR) {\n      below.push(\n        ",
+          "suffix": "\n      );\n    }\n    if (r.confidence < threshold"
+        },
+        {
+          "kind": "text-position",
+          "start": 6056,
+          "end": 6122
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "a5b5b4e43f98f11a",
+          "semanticHash": "05dc5fdc9d3fa0be"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`confidence=${f2(r.confidence)} below threshold ${f2(threshold)}`,",
+          "prefix": "idence < threshold) {\n      below.push(\n        ",
+          "suffix": "\n      );\n    }\n    if (r.sameSubject < threshol"
+        },
+        {
+          "kind": "text-position",
+          "start": 6200,
+          "end": 6266
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "a5b5b4e43f98f11a",
+          "semanticHash": "7cb8a56745dc8039"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`same_subject=${f2(r.sameSubject)} below threshold ${f2(threshold)}`,",
+          "prefix": "ubject < threshold) {\n      below.push(\n        ",
+          "suffix": "\n      );\n    }\n    if (below.length === 0) {\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 6345,
+          "end": 6414
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "a5b5b4e43f98f11a",
+          "semanticHash": "9aa8e50fb2c87dc9"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:15.034Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:15.034Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

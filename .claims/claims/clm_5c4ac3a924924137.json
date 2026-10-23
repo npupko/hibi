@@ -1,0 +1,88 @@
+{
+  "id": "clm_5c4ac3a924924137",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The batch is all or nothing for claims: if any item fails when it is applied, the claim files the batch created are removed and the files it overwrote get their previous text back.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The batch is all or nothing for claims: if any item fails when it is applied, the claim files the batch created are removed and the files it overwrote get their previous text back.",
+        "prefix": "e line, prefixed `item <i>:` for `--from-file`. ",
+        "suffix": " A document record the batch created is kept, be"
+      },
+      {
+        "kind": "text-position",
+        "start": 58278,
+        "end": 58458
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await this.store.withRollback(async () => {",
+          "prefix": "t results: RecordResult[] = [];\n    try {\n      ",
+          "suffix": "\n        for (const call of calls) results.push("
+        },
+        {
+          "kind": "text-position",
+          "start": 15826,
+          "end": 15869
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "0552e21bc0fde591",
+          "semanticHash": "8a939f73d156ce74"
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "          await rm(path, { force: true });\n        } else await writeFile(path, before);",
+          "prefix": "  if (dirname(path) === documentsDir) continue;\n",
+          "suffix": "\n      }\n      throw e;\n    } finally {\n      th"
+        },
+        {
+          "kind": "text-position",
+          "start": 7888,
+          "end": 7976
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "63046e9af0f87174",
+          "semanticHash": "d3cbcaf07b6ac97f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:05:26.854Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:05:26.854Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

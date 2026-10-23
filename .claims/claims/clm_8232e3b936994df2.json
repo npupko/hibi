@@ -1,0 +1,52 @@
+{
+  "id": "clm_8232e3b936994df2",
+  "documentId": "doc_d11450458251d04c",
+  "kind": "reference",
+  "sentence": "The primary user is a coding agent; JSON is the contract.",
+  "doc": {
+    "file": "docs/index.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The primary user is a coding agent; JSON is the contract.",
+        "prefix": "it`. An agent collects evidence and submits it. ",
+        "suffix": "\n\n## Three kinds of claim\n\n| kind | where its tr"
+      },
+      {
+        "kind": "text-position",
+        "start": 866,
+        "end": 923
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "The primary user is a coding agent with the hibi skill in context. Humans and CI are secondary. JSON is the contract.",
+          "prefix": "he exact limits are in section 2, principle 1.\n\n",
+          "suffix": "\n\n## 2. Principles\n\n1. **Hibi runs no verifiers "
+        },
+        {
+          "kind": "text-position",
+          "start": 1167,
+          "end": 1284
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:33.746Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:33.746Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_fc8ae17e548349dd",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`config.repos` maps an alias to a directory: `{ \"api\": \"../api\" }`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`config.repos` maps an alias to a directory: `{ \"api\": \"../api\" }`.",
+        "prefix": " the sides.\n\n### 4.1 Cross-repository evidence\n\n",
+        "suffix": " A relative directory is resolved against the re"
+      },
+      {
+        "kind": "text-position",
+        "start": 4548,
+        "end": 4615
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "repos: z.record(z.string(), z.string()).default({})",
+          "prefix": " a path relative to the repository root. */\n    ",
+          "suffix": ",\n    judge: JudgeConfig,\n    /** Globs of docum"
+        },
+        {
+          "kind": "text-position",
+          "start": 11263,
+          "end": 11314
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "8ff51f3b3d25cc20",
+          "semanticHash": "34424941f228a982"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:11:51.926Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:11:51.926Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

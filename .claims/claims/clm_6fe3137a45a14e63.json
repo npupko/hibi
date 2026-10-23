@@ -1,0 +1,94 @@
+{
+  "id": "clm_6fe3137a45a14e63",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A magnitude suffix is read only on a currency-sign amount, so `$5m` is five million dollars and never five minutes.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A magnitude suffix is read only on a currency-sign amount, so `$5m` is five million dollars and never five minutes.",
+        "prefix": "rrency codes are `USD EUR GBP JPY CAD AUD CHF`. ",
+        "suffix": " A number is normalized by removing thousands co"
+      },
+      {
+        "kind": "text-position",
+        "start": 40144,
+        "end": 40259
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const MAGNITUDE: Record<string, number> = { k: 3, m: 6, b: 9, bn: 9 };",
+          "prefix": "r a currency amount: `$5m`, `$2.5k`, `$1bn`. */\n",
+          "suffix": "\n\nfunction isoDate(y: number, m: number, d: numb"
+        },
+        {
+          "kind": "text-position",
+          "start": 5355,
+          "end": 5425
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "63927cd480b9dd6b",
+          "semanticHash": "b35cd90532fd56a3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const zeros = MAGNITUDE[group(m, 3).toLowerCase()] ?? 0;",
+          "prefix": "  const n = normalizeNumber(group(m, 2));\n      ",
+          "suffix": "\n      return {\n        raw: m[0],\n        norma"
+        },
+        {
+          "kind": "text-position",
+          "start": 8074,
+          "end": 8130
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "e27c5a2eda6ad898",
+          "semanticHash": "7865b5ddf4523af9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:32.018Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:32.018Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

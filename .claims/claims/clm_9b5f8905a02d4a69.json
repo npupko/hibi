@@ -1,0 +1,84 @@
+{
+  "id": "clm_9b5f8905a02d4a69",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup, commit conventions, and PR expectations.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "See [CONTRIBUTING.md](CONTRIBUTING.md) for the dev setup, commit conventions, and PR expectations.",
+        "prefix": "ributing\n\nIssues and pull requests are welcome. ",
+        "suffix": " Please follow our [Code of Conduct](CODE_OF_CON"
+      },
+      {
+        "kind": "text-position",
+        "start": 8601,
+        "end": 8699
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "CONTRIBUTING.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "## Getting started",
+          "prefix": "API_KEY` is only needed to try the real judge.\n\n",
+          "suffix": "\n\n```sh\ngit clone https://github.com/npupko/hibi"
+        },
+        {
+          "kind": "text-position",
+          "start": 645,
+          "end": 663
+        }
+      ]
+    },
+    {
+      "file": "CONTRIBUTING.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "## Commit conventions",
+          "prefix": "in `test/judge-jev.test.ts`; say so in the PR.\n\n",
+          "suffix": "\n\nHibi uses [Conventional Commits](https://www.c"
+        },
+        {
+          "kind": "text-position",
+          "start": 4885,
+          "end": 4906
+        }
+      ]
+    },
+    {
+      "file": "CONTRIBUTING.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "## Pull requests",
+          "prefix": "401\ndocs: clarify exit codes in the README\n```\n\n",
+          "suffix": "\n\nBefore opening a PR:\n\n- [ ] `bun test` passes\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 5378,
+          "end": 5394
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:25.307Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:25.307Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

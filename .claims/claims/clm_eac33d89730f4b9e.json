@@ -1,0 +1,82 @@
+{
+  "id": "clm_eac33d89730f4b9e",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `at` | when it was written |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `at` | when it was written |",
+        "prefix": "h`, `source`, `summary`, `by`, `at`, `values` |\n",
+        "suffix": "\n\nRaw evidence text is never stored. In the stor"
+      },
+      {
+        "kind": "text-position",
+        "start": 13296,
+        "end": 13326
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "at: new Date().toISOString(),",
+          "prefix": "est,\n        answers: response.answers,\n        ",
+          "suffix": "\n      };\n      await cache.put(entry);\n      re"
+        },
+        {
+          "kind": "text-position",
+          "start": 11067,
+          "end": 11096
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "806b1bfc0aeafa18",
+          "semanticHash": "6a12186fb1baa97e"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "at: now().toISOString(),",
+          "prefix": "          request,\n          answers,\n          ",
+          "suffix": "\n        });\n      }\n      return mapTriageAnswe"
+        },
+        {
+          "kind": "text-position",
+          "start": 9161,
+          "end": 9185
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "4aec6531368ccf2c",
+          "semanticHash": "248125825bb5b866"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:41.019Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:41.019Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

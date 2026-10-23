@@ -42,6 +42,14 @@ jobs:
         run: |
           bun run build:cli-reference
           git diff --exit-code docs/cli-reference.mdx plugins/hibi-cli/skills/hibi/references/cli-reference.md || (echo "generated CLI reference is stale — run bun run build:cli-reference" && exit 1)
+      # .claims/judge/ is a local cache and is not committed; restore it
+      # between runs, keyed on the claim files.
+      - name: Restore the judge cache
+        uses: actions/cache@v4
+        with:
+          path: .claims/judge
+          key: hibi-judge-${{ hashFiles('.claims/claims/**') }}
+          restore-keys: hibi-judge-
       # Dogfood: hibi checks its own docs against its own code. There is no
       # TYPESAFE_API_KEY in CI, so judge passes are pending, which warns and
       # never gates; changed, orphaned, or ambiguous anchors gate, and under

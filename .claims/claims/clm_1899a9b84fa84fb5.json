@@ -1,0 +1,65 @@
+{
+  "id": "clm_1899a9b84fa84fb5",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "Retired claims do not count, so a document whose claims are all retired gets the same error.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Retired claims do not count, so a document whose claims are all retired gets the same error.",
+        "prefix": "tered for <path>; run hibi audit --doc <path>`. ",
+        "suffix": "\n\n## Axes\n\n| axis | values | present |\n|---|---|"
+      },
+      {
+        "kind": "text-position",
+        "start": 1134,
+        "end": 1226
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(c) => c.documentId === scope.documentId && c.enforcement !== \"retired\",",
+          "prefix": "stered.\n      const live = claims.some(\n        ",
+          "suffix": "\n      );\n      if (!live) {\n        throw new E"
+        },
+        {
+          "kind": "text-position",
+          "start": 12661,
+          "end": 12733
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "arrow_function",
+          "structuralHash": "65142599994cabc5",
+          "semanticHash": "dcda1a1da4bb2ea9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:10.925Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:10.925Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

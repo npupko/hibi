@@ -1,0 +1,52 @@
+{
+  "id": "clm_13f74ebe04974272",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "reference",
+  "sentence": "Earlier versions wrote a status comment into documents with `check --write`. That was removed:",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Earlier versions wrote a status comment into documents with `check --write`. That was removed:",
+        "prefix": "ver aborts a run.\n\n## Why there are no banners\n\n",
+        "suffix": "\n\n- An HTML comment is invisible in rendered doc"
+      },
+      {
+        "kind": "text-position",
+        "start": 4802,
+        "end": 4896
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "## 12. Removed capabilities and why\n\n| removed | reason |\n|---|---|\n| banners and `--write` | the trust call is `check --doc`; an HTML comment is invisible in rendered docs and only reached raw-file readers; it required a write path, a nonce, a comment-syntax table, and caused diff churn |",
+          "prefix": "elp, the generated reference, and completions.\n\n",
+          "suffix": "\n| verifiers | hibi runs no verifiers and its on"
+        },
+        {
+          "kind": "text-position",
+          "start": 71513,
+          "end": 71803
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:51.799Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:51.799Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

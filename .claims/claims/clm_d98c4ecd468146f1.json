@@ -1,0 +1,59 @@
+{
+  "id": "clm_d98c4ecd468146f1",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Digits do not make tokens.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Digits do not make tokens.",
+        "prefix": "list (`STOP_WORDS` in `src/engine/pairing.ts`). ",
+        "suffix": "\n- **Rare-token rule.** The claims share a rare "
+      },
+      {
+        "kind": "text-position",
+        "start": 43341,
+        "end": 43367
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const TOKEN = /\\p{L}+/gu;",
+          "prefix": "MS`; for tests. */\n  rareMaxClaims?: number;\n}\n\n",
+          "suffix": "\n\n/** The content tokens of a sentence, deduplic"
+        },
+        {
+          "kind": "text-position",
+          "start": 3715,
+          "end": 3740
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "eeee81a79ad72e63",
+          "semanticHash": "e693d129ecd446d2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:40.295Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:40.295Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

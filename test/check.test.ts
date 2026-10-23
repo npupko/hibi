@@ -1,6 +1,8 @@
 import { afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { textSimilarity } from "../src/algo/normalize.ts";
+import { SAME_TEXT_SIMILARITY } from "../src/algo/params.ts";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
 import { projectCheckReport } from "../src/cli/render/json.ts";
 import { type GateMode, gateVerdict } from "../src/core/gating.ts";
@@ -14,6 +16,7 @@ import type {
 import { computeExitCode, runCheck } from "../src/engine/check.ts";
 import type { ConflictPassResult } from "../src/engine/conflict.ts";
 import { recordClaim } from "../src/engine/record.ts";
+import { retire } from "../src/engine/retire.ts";
 import { cacheKey } from "../src/judge/cache.ts";
 import { FakeJudge, supportsAnswer } from "../src/judge/fake.ts";
 import { JevJudge } from "../src/judge/jev.ts";
@@ -1026,7 +1029,7 @@ describe("worklist, suspects, and pending pairs", () => {
     ]);
     // `hibi evidence` takes attested claims only: nothing points a code claim at it.
     expect(store.verdicts[0]?.reasons).toContain(
-      "worklist: expired; have a human attest, or re-record after re-verifying",
+      `worklist: expired: re-verify, then hibi attest ${c.claim.id} --by human:<name>`,
     );
     const worklistLabels =
       store.verdicts[0]?.reasons.filter((l) => l.startsWith("worklist:")) ?? [];
@@ -1076,9 +1079,7 @@ describe("worklist, suspects, and pending pairs", () => {
     const rep = await runCheck(r.store, { now: NOW, conflictPass: pending });
     const va = rep.verdicts.find((v) => v.claimId === a.id);
     expect(va?.warns).toBe(true);
-    expect(va?.reasons).toContain(
-      `conflict check pending with ${b.id}: judge error`,
-    );
+    expect(va?.reasons).toContain("conflict checks pending: 1");
     const statuses = rep.documents.flatMap((d) => d.suspect);
     expect(statuses.map((s) => s.status)).toEqual([
       "conflict:pending",
@@ -1114,5 +1115,200 @@ describe("worklist, suspects, and pending pairs", () => {
       rev.documents.flatMap((d) => d.suspect).map((s) => s.status),
     ).toEqual(["conflict:review", "conflict:review"]);
     expect(rev.summary.conflictPass.scope).toBe("store");
+  });
+});
+
+describe("B.1 newest evidence", () => {
+  test("B.1: lastEvidence and the verdict use the same newest entry, by the later of entry at and evidence at", async () => {
+    const r = await repo();
+    const c = await recordKind(r, "attested", {
+      sentence: "Pro costs $29/month.",
+      ttl: "P90D",
+    });
+    const review = { supports: 0.4, contradicts: 0.3, says_nothing: 0.3 };
+    const a = await putEvidenceEntry(
+      r,
+      c.id,
+      review,
+      "2026-05-02T00:00:00.000Z",
+      "first submission",
+    );
+    await putEvidenceEntry(
+      r,
+      c.id,
+      review,
+      "2026-05-03T00:00:00.000Z",
+      "second submission",
+    );
+    // The first request is submitted again later: a cache hit rewrites its evidence block.
+    const entries = await r.store.judgeCache().list({ claimId: c.id });
+    const first = entries.find((e) => e.key === a);
+    if (!first?.evidence) throw new Error("entry missing");
+    await r.store.judgeCache().put({
+      ...first,
+      evidence: {
+        ...first.evidence,
+        summary: "resubmitted",
+        at: "2026-05-06T00:00:00.000Z",
+      },
+    });
+    const out = await runCheck(r.store, { now: NOW });
+    expect(out.worklist[0]?.lastEvidence).toEqual({
+      summary: "resubmitted",
+      source: "stripe",
+      at: "2026-05-06T00:00:00.000Z",
+      by: "agent:opus",
+    });
+  });
+});
+
+describe("B.6 expired code and reference claims", () => {
+  test("B.6: an expired reference claim's worklist label asks for a human vouch, as its remediation does", async () => {
+    const r = await repo();
+    await r.write(
+      "docs/billing.md",
+      "# Billing\n\nThe Pro plan is billed at $29 per month.\n",
+    );
+    const c = await recordKind(r, "reference", {
+      sentence: "Pro costs $29/month.",
+      ref: {
+        file: "docs/billing.md",
+        quote: "The Pro plan is billed at $29 per month.",
+      },
+      ttl: "P1D",
+    });
+    const out = await runCheck(r.store, { now: NOW });
+    const v = out.verdicts[0];
+    expect(v?.expired).toBe(true);
+    expect(out.worklist.map((w) => [w.claimId, w.reason])).toEqual([
+      [c.id, "expired"],
+    ]);
+    expect(v?.reasons).toContain(
+      `worklist: expired: re-verify, then hibi attest ${c.id} --by human:<name>`,
+    );
+    const actions = v?.remediation?.actions ?? [];
+    const attest = actions.find((a) => a.id === "attest");
+    expect(attest?.command).toStartWith(`hibi attest ${c.id} --by human:`);
+    expect(actions.map((a) => a.id)).not.toContain("evidence");
+  });
+});
+
+describe("B.8 pending conflict checks", () => {
+  test("B.8: a claim with several pending pairs gets one counted reason; the pairs keep their own", async () => {
+    const r = await repo();
+    const a = await recordKind(r, "attested", {
+      sentence: "Pro costs $29/month.",
+      ttl: "P90D",
+    });
+    const b = await recordKind(r, "attested", {
+      sentence: "Pro is billed monthly.",
+      ttl: "P90D",
+    });
+    const c = await recordKind(r, "attested", {
+      sentence: "Pro includes priority support.",
+      ttl: "P90D",
+    });
+    const ab = [a.id, b.id].sort().join(":");
+    const ac = [a.id, c.id].sort().join(":");
+    const pass: ConflictPassResult = {
+      findings: [],
+      duplicates: [],
+      pending: [ab, ac],
+      requests: 0,
+      pairs: [
+        {
+          pairId: ab,
+          why: "shared rare tokens: pro",
+          outcome: "pending",
+          reason: "judge unavailable: TYPESAFE_API_KEY is not set",
+        },
+        {
+          pairId: ac,
+          why: "shared rare tokens: pro",
+          outcome: "pending",
+          reason: "judge error: TypeSafe returned HTTP 400: bad",
+        },
+      ],
+      scope: "store",
+    };
+    const rep = await runCheck(r.store, { now: NOW, conflictPass: pass });
+    const reasons = (id: string) =>
+      rep.verdicts.find((v) => v.claimId === id)?.reasons ?? [];
+    expect(reasons(a.id).filter((l) => l.startsWith("conflict check"))).toEqual(
+      ["conflict checks pending: 2"],
+    );
+    expect(reasons(b.id)).toContain("conflict checks pending: 1");
+    expect(reasons(c.id)).toContain("conflict checks pending: 1");
+    expect(
+      rep.verdicts
+        .flatMap((v) => v.reasons)
+        .some((l) => l.startsWith("conflict check pending with")),
+    ).toBe(false);
+    expect(rep.summary.conflictPass?.pending).toBe(2);
+    expect(rep.verdicts.find((v) => v.claimId === a.id)?.warns).toBe(true);
+  });
+});
+
+describe("B.9 retired claims in the summary", () => {
+  test("B.9: a retired claim counts only in retired, not in expired or the axis counts", async () => {
+    const r = await repo();
+    await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+    const live = await record(r, {
+      doc: "README.md",
+      text: "Retries are capped at 5.",
+      file: "src/retry.ts",
+      quote: "MAX_ATTEMPTS = 5",
+    });
+    const gone = await record(r, {
+      doc: "README.md",
+      text: "The attempt cap is five.",
+      file: "src/retry.ts",
+      quote: "MAX_ATTEMPTS = 5",
+      ttl: "P1D",
+    });
+    await retire(r.store, gone.claim.id);
+    const later = new Date("2030-01-01T00:00:00Z");
+    const out = await runCheck(r.store, { ast: analyzer, now: later });
+    expect(out.verdicts.map((v) => v.claimId).sort()).toEqual(
+      [live.claim.id, gone.claim.id].sort(),
+    );
+    expect(out.verdicts.find((v) => v.claimId === gone.claim.id)?.expired).toBe(
+      true,
+    );
+    expect(out.summary.retired).toBe(1);
+    expect(out.summary.expired).toBe(0);
+    expect(out.summary.doc.unchanged).toBe(1);
+    expect(out.summary.evidence.unchanged).toBe(1);
+    expect(out.summary.clean).toBe(1);
+    expect(out.summary.total).toBe(2);
+  });
+});
+
+describe("B.11 ast-node semantic hash", () => {
+  test("B.11: a changed semantic hash alone makes the evidence span changed", async () => {
+    const r = await repo();
+    const before =
+      "export function retryPolicy() {\n  return { attempts: limitOfAttemptsForTheClient, backoff: exponentialBackoffStrategy };\n}\n";
+    await r.write("src/policy.ts", before);
+    await record(r, {
+      doc: "README.md",
+      text: "The retry policy uses exponential backoff.",
+      file: "src/policy.ts",
+      quote: before.trimEnd(),
+    });
+    // One identifier character differs: the text counts as the same text, the structure is the same.
+    const after = before.replace(
+      "limitOfAttemptsForTheClient",
+      "limitOfAttemptsForTheClients",
+    );
+    expect(
+      textSimilarity(before.trimEnd(), after.trimEnd()),
+    ).toBeGreaterThanOrEqual(SAME_TEXT_SIMILARITY);
+    await r.write("src/policy.ts", after);
+    const out = await check(r);
+    expect(out.verdicts[0]?.evidence).toBe("changed");
+    expect(out.verdicts[0]?.reasons).toContain(
+      "evidence: identifiers or literals renamed",
+    );
   });
 });

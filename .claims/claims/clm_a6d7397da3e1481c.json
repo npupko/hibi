@@ -1,0 +1,75 @@
+{
+  "id": "clm_a6d7397da3e1481c",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "| `since` | empty | when set, runs `check --since <ref>`: only claims touching files changed since the ref |",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `since` | empty | when set, runs `check --since <ref>`: only claims touching files changed since the ref |",
+        "prefix": "heck --fail-on`: `gating`, `warn`, or `never` |\n",
+        "suffix": "\n| `doc` | empty | when set, runs `check --doc <"
+      },
+      {
+        "kind": "text-position",
+        "start": 1951,
+        "end": 2059
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "action.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if [ -n \"$HIBI_SINCE\" ]; then ARGS+=(--since \"$HIBI_SINCE\"); fi",
+          "prefix": " ARGS=(check --fail-on \"$HIBI_FAIL_ON\")\n        ",
+          "suffix": "\n        if [ -n \"$HIBI_DOC\" ]; then ARGS+=(--do"
+        },
+        {
+          "kind": "text-position",
+          "start": 1423,
+          "end": 1486
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "options.onlyFiles.has(c.doc.file) ||",
+          "prefix": "ions.onlyFiles) {\n      const touches =\n        ",
+          "suffix": "\n        evidenceFiles.some((f) => options.onlyF"
+        },
+        {
+          "kind": "text-position",
+          "start": 15096,
+          "end": 15132
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "1b62fdc289beba43",
+          "semanticHash": "17b84fb8bb5d25d4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:42.480Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:42.480Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

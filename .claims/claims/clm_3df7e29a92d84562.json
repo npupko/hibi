@@ -1,0 +1,128 @@
+{
+  "id": "clm_3df7e29a92d84562",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Every judgment is looked up in the judge cache first.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Every judgment is looked up in the judge cache first.",
+        "prefix": "findings.\n\n### 7.3 When the judge is consulted\n\n",
+        "suffix": " The judge is asked only on a miss.\n\n- `referenc"
+      },
+      {
+        "kind": "text-position",
+        "start": 22779,
+        "end": 22832
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hit = await input.cache.get(key);",
+          "prefix": "input.model,\n    input.claim,\n    texts,\n  );\n  ",
+          "suffix": "\n  const values = {\n    sentence: storedValues(t"
+        },
+        {
+          "kind": "text-position",
+          "start": 10628,
+          "end": 10667
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "0a01a23beaaed80b",
+          "semanticHash": "f2dfadff43b98632"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "hit: await cache.get(key),",
+          "prefix": "item.evidence),\n      request,\n      key,\n      ",
+          "suffix": "\n    });\n  }\n\n  // Ask: every miss goes to the j"
+        },
+        {
+          "kind": "text-position",
+          "start": 10399,
+          "end": 10425
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "0f6f0481300bf0cd",
+          "semanticHash": "a36901335044fe65"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hit = await cache.get(key);",
+          "prefix": "ext,\n    );\n    let result: ConflictResult;\n    ",
+          "suffix": "\n    if (hit !== undefined) {\n      result = map"
+        },
+        {
+          "kind": "text-position",
+          "start": 10245,
+          "end": 10278
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "da6c759bb2291049",
+          "semanticHash": "832019563cd84a64"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hit = await cache.get(key);",
+          "prefix": "    const key = cacheKey(model, request);\n      ",
+          "suffix": "\n      let answers: Record<string, Answer>;\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 7961,
+          "end": 7994
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "da6c759bb2291049",
+          "semanticHash": "832019563cd84a64"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:41.674Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:41.674Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_1f6b5a9156eb40b8",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "After a human vouch, a claim with a procedure stays in the worklist as `never-checked` until evidence for it is judged; that is a reminder, not a warning.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "After a human vouch, a claim with a procedure stays in the worklist as `never-checked` until evidence for it is judged; that is a reminder, not a warning.",
+        "prefix": "owardTtl: false` and does not clear the expiry. ",
+        "suffix": " A claim with no procedure and no sources would "
+      },
+      {
+        "kind": "text-position",
+        "start": 17815,
+        "end": 17969
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (claim.kind === \"attested\" && checkable && !hasSupports)",
+          "prefix": "ocedure !== null || claim.sources.length > 0;\n  ",
+          "suffix": "\n    return \"never-checked\";\n  return undefined;"
+        },
+        {
+          "kind": "text-position",
+          "start": 12944,
+          "end": 13003
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "dea848eeec870d1c",
+          "semanticHash": "f1c69407699d1574"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"attested\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:10.800Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:10.800Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

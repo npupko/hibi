@@ -1,6 +1,6 @@
 # hibi cookbook
 
-Eight recipes. Each gives the situation, the commands, the JSON they return, and what to do next. The JSON comes from real runs; long objects are trimmed to the keys the recipe uses. Ids are examples. Commands assume `hibi` is on PATH; otherwise use `bunx @npupko/hibi`.
+Eight recipes. Each gives the situation, the commands, the JSON they return, and what to do next. The JSON has the shape real runs return, trimmed to the keys the recipe uses; the judge's kinds and probabilities are examples. Ids are examples. Commands assume `hibi` is on PATH; otherwise use `bunx @npupko/hibi`.
 
 Shared setup: a knowledge repo `handbook/` with `docs/pricing.md`, `docs/billing-policy.md`, and `AGENTS.md`, and a sibling code repo `../api` with `src/limits.ts` (`export const RATE_LIMIT_PER_MIN = 100;`).
 
@@ -27,7 +27,7 @@ hibi init --instructions AGENTS.md
 Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.
 ```
 
-Then edit `.claims/config.json` when evidence lives in another repo or some paths should be skipped:
+Then edit `.claims/config.json` when evidence lives in another repo or some documents should not be audited:
 
 ```json
 {
@@ -38,7 +38,7 @@ Then edit `.claims/config.json` when evidence lives in another repo or some path
 }
 ```
 
-`judge.threshold` is the one confidence bar for every judgment. Export `TYPESAFE_API_KEY` before the next steps; without it every judgment is `pending`. Commit `.claims/`, including `.claims/judge/`, so other machines and CI reuse cached verdicts.
+`judge.threshold` is the one confidence bar for every judgment. Export `TYPESAFE_API_KEY` before the next steps; without it every judgment is `pending`. Commit `.claims/`. `.claims/judge/` is a local cache that `.claims/.gitignore` excludes; CI restores it with an `actions/cache` step.
 
 ---
 
@@ -99,16 +99,16 @@ EOF
 ```
 
 ```json
-{ "ok": true, "action": "record", "schemaVersion": "v4", "batch": true, "count": 3,
+{ "ok": true, "action": "record", "schemaVersion": "v4", "batch": true, "count": 3, "updated": 0,
   "results": [
-    { "id": "clm_517bbfaa1ac94263", "kind": "attested", "doc": "docs/pricing.md", "evidence": null, "enforcement": "enforced" },
-    { "id": "clm_d55da8f0827540d4", "kind": "code", "doc": "docs/pricing.md", "evidence": "api:src/limits.ts", "enforcement": "enforced" },
-    { "id": "clm_f4cdf35aa5df43d4", "kind": "reference", "doc": "docs/pricing.md", "evidence": "docs/billing-policy.md", "enforcement": "enforced" }
+    { "id": "clm_517bbfaa1ac94263", "kind": "attested", "doc": "docs/pricing.md", "evidence": null, "enforcement": "enforced", "updated": false, "existingClaims": [] },
+    { "id": "clm_d55da8f0827540d4", "kind": "code", "doc": "docs/pricing.md", "evidence": "api:src/limits.ts", "enforcement": "enforced", "updated": false, "existingClaims": [] },
+    { "id": "clm_f4cdf35aa5df43d4", "kind": "reference", "doc": "docs/pricing.md", "evidence": "docs/billing-policy.md", "enforcement": "enforced", "updated": false, "existingClaims": [] }
   ],
   "next": "hibi check" }
 ```
 
-A batch with any invalid item records nothing and lists every problem, one line each. Re-run `hibi audit --doc docs/pricing.md`: the three rows now carry their `claimId`.
+A batch with any invalid item records nothing and lists every problem, one line each. After the batch is recorded, `hibi audit --doc docs/pricing.md` shows the three rows with their `claimId`.
 
 If you edit the document after recording and a claim reports `doc: "moved"`, run `hibi reanchor <id>` to store the new position.
 
@@ -137,12 +137,12 @@ Right after recipe 2, `hibi check --json` lists the attested claim as `expired`,
 
 | reason | which claims |
 |---|---|
-| `expired` | any claim with a `ttl` that ran out, `code` claims included |
+| `expired` | any claim with a `ttl` that ran out or that no attestation counts toward, `code` claims included |
 | `review` | a `reference` or `attested` claim whose judge state is `review` and not acknowledged |
-| `pending` | a `reference` or `attested` claim the judge could not answer: no key, no network, or an unusable answer (`judge error: …` in the verdict's `reasons`) |
-| `never-checked` | an `attested` claim with a `procedure` or `sources` and no judged evidence yet; a claim with neither is listed only when expired |
+| `pending` | a `reference` or `attested` claim the judge could not answer: no key, no network, an unusable answer (`judge error: …` in the verdict's `reasons`), or a referenced span over 32,000 characters |
+| `never-checked` | an `attested` claim with a `procedure` or `sources` and no judged evidence yet; a claim with neither is listed only when expired or in `review` |
 
-A `pending` reference claim needs only a run with a working judge; there is nothing to collect. `lastEvidence: { summary, source, at, by }` appears once a claim has supporting evidence.
+A `pending` reference claim needs only a run with a working judge; there is nothing to collect. `lastEvidence: { summary, source, at, by }` appears once evidence for the claim has been judged.
 
 A Lobster workflow (`hibi-worklist.lobster`) that a scheduler runs nightly. hibi runs none of these steps; the workflow does. `claude -p` is one possible agent; any agent that reads the worklist on stdin and prints an evidence array works.
 
@@ -150,14 +150,14 @@ A Lobster workflow (`hibi-worklist.lobster`) that a scheduler runs nightly. hibi
 name: hibi-worklist
 steps:
   - id: worklist
-    command: hibi check --json --fail-on never | jq '[.worklist[] | select(.procedure != null)]'
+    command: hibi check --json --fail-on never | jq '[.worklist[] | select(.kind == "attested")]'
   - id: collect
     command: >-
       claude -p --allowedTools "Bash(stripe prices list:*)"
       "The JSON on stdin is a hibi worklist. For each item, follow procedure.instructions
       (steps are hints). Print only a JSON array of
       {claimId, evidence, source, summary}: evidence is the observed text that bears on the
-      sentence, under 32000 characters, with no secrets or tokens; source is the sources[].id
+      sentence, at most 32000 characters, with no secrets or tokens; source is the sources[].id
       you used; summary is one line. Skip items you could not check."
     stdin: $worklist.stdout
   - id: submit
@@ -169,7 +169,7 @@ steps:
     command: hibi list --state expired --json
 ```
 
-`--fail-on never` keeps `check` at exit 0 so the workflow continues. The `jq` filter keeps items with a procedure, which are attested claims; `hibi evidence` accepts attested claims only and rejects a batch naming a `code` or `reference` claim. `submit` skips an empty array because `hibi evidence` rejects an empty batch with exit 1. `--by agent:nightly` applies to every item without a `by` key. Run it with `lobster run hibi-worklist.lobster`.
+`--fail-on never` keeps `check` at exit 0 so the workflow continues. The `jq` filter keeps `attested` items only, because `hibi evidence` accepts attested claims only and rejects a batch naming a `code` or `reference` claim, which can also carry a procedure. `submit` skips an empty array because `hibi evidence` rejects an empty batch with exit 1. `--by agent:nightly` applies to every item without a `by` key. Run it with `lobster run hibi-worklist.lobster`.
 
 The `submit` step returns:
 
@@ -189,13 +189,13 @@ The `submit` step returns:
 | `judge` | effect |
 |---|---|
 | `supported` | an `evidence` attestation is appended; ttl restarts; the claim leaves the worklist |
-| `refuted` | nothing is attested; the next `check` gates the claim (fix the sentence or the source of truth). Evidence holding a different money amount, unit-bearing number, version, or date than the sentence is `refuted` in code with `value differs: …`; bare unitless numbers in the evidence are not compared |
+| `refuted` | nothing is attested; the next `check` gates the claim (fix the sentence or the source of truth). Evidence holding a different money amount, unit-bearing number, version, or date than the sentence is `refuted` in code with `value differs: …`, unless the judge answers `does_not_address`; bare unitless numbers in the evidence are not compared |
 | `review` | below threshold or `does_not_address`; collect evidence that addresses the sentence directly, or `hibi attest <id> --by <actor> --ack review --note "<why>"` |
 | `pending` | no key, no network, or a judge error (`judge error: …` in `reasons`); nothing written; resubmit |
 
-`evidence` exits 0 for every verdict. Commit `.claims/` after the run: the claim file gained an attestation and `.claims/judge/` gained a cache entry. The raw evidence text is not stored, only its sha256, the source, and the summary.
+`evidence` exits 0 for every verdict. Commit `.claims/` after the run: the claim file gained an attestation. `.claims/judge/` gained a cache entry, which stays local. The raw evidence text is not stored, only its sha256, the source, the summary, and the numbers, money amounts, versions, and dates in it.
 
-The `expired` step lists claims still expired after the run, for recipe 5.
+The `expired` step of the workflow lists claims still expired after the `submit` step, for recipe 5.
 
 ---
 
@@ -231,15 +231,15 @@ hibi check --json
 }
 ```
 
-The other claim carries the mirror finding. A claim that conflicts with several others gets one `ack` action per other claim. `hibi list --state conflict` returns both. A pair the judge could not answer is not a finding: both claims warn with `conflict check pending with <id>: judge unavailable` (or `: judge error`), and `summary.conflictPass.pending` counts it. Differing numbers, versions, or dates are decided in code (`numbers differ`, probability 1); other contradictions come from the judge with their probabilities in `reason`.
+The other claim carries the mirror finding. A claim that conflicts with several others gets one `ack` action per other claim. `hibi list --state conflict` returns both. A pair the judge could not answer is not a finding: each claim warns with one reason, `conflict checks pending: <n>`, counting its pending pairs, and `summary.conflictPass.pending` counts the pairs. Once the judge says both sentences share a subject and rates `contradicts` at or above 0.5, differing numbers, versions, or dates are decided in code (`numbers differ`, probability 1); other contradictions come from the judge with their probabilities in `reason`.
 
-**Act**: find out which sentence is wrong. The price claim has judged Stripe evidence for $29 (recipe 3), so the FAQ is wrong. Pick one:
+**Act**: find out which sentence is wrong. In this walkthrough, the price claim has judged Stripe evidence for $29 (recipe 3), so the FAQ is wrong. Pick one:
 
-- Fix the wrong sentence, then `hibi reanchor clm_cd53af142f2f4ad3` to accept the new text.
+- Fix the wrong sentence, then `hibi reanchor clm_cd53af142f2f4ad3 --doc-quote "The Pro plan costs $29 per month."` to accept the new text. Plain `hibi reanchor <id>` relocates only a side that reads `moved`; an edited sentence reads `changed` and needs `--doc-quote`.
 - Remove the duplicate sentence (here the FAQ now says "Current prices are on the pricing page."), then `hibi retire clm_cd53af142f2f4ad3`. The claim's doc anchor is `orphaned` until you retire it.
 - If both sentences are true (for example, they describe different plans), acknowledge it: `hibi attest clm_cd53af142f2f4ad3 --by human:alice@example.com --ack conflict:clm_517bbfaa1ac94263 --note "the FAQ describes the annual plan"`. The ack is written to both claims and lapses when either sentence changes.
 
-After the retire, `check` returns `exitCode: 0`, `summary.retired: 1`, `summary.conflicts: 0`. Do not reword either sentence just to make the numbers match without checking the source.
+After the FAQ sentence is removed and its claim retired, `check` returns `exitCode: 0`, `summary.retired: 1`, `summary.conflicts: 0` for this walkthrough. Do not reword either sentence just to make the numbers match without checking the source.
 
 ---
 
@@ -294,9 +294,9 @@ hibi attest clm_67d8afc4c50b4abb --by human:ops@example.com --note "calendar: la
   "countsTowardTtl": true, "next": "hibi check" }
 ```
 
-`check --doc` now exits 0, and the claim's `list` row shows the new `expiresAt`. An agent never runs this with a `human:` actor. `--by agent:<name>` is recorded with `countsTowardTtl: false` and does not clear the expiry. After the human vouch, the claim stays in the worklist as `never-checked` until evidence supports it, because it has a procedure; that is a reminder, not a warning. A claim with no procedure and no sources would leave the worklist.
+After the human vouch, `check --doc docs/process/releases.md` exits 0 for this walkthrough, and the claim's `list` row shows the new `expiresAt`. An agent never runs this with a `human:` actor. `--by agent:<name>` is recorded with `countsTowardTtl: false` and does not clear the expiry. After a human vouch, a claim with a procedure stays in the worklist as `never-checked` until evidence for it is judged; that is a reminder, not a warning. A claim with no procedure and no sources would leave the worklist.
 
-If the sentence is no longer true, rewrite it and `hibi reanchor <id>`, or remove it and `hibi retire <id>`.
+If the sentence is no longer true, rewrite it and run `hibi reanchor <id> --doc-quote "<new sentence>"`, or remove it and `hibi retire <id>`.
 
 ---
 
@@ -341,9 +341,9 @@ Copy `assets/hibi-ci.yml` to `.github/workflows/hibi.yml`. The action's inputs:
 | `doc` | empty | `check --doc <path>`; expired claims then gate |
 | `working-directory` | `.` | the directory holding `.claims/` |
 
-The job exits 0 when every claim is clean or only warns, 2 when a claim gates (any warning also fails under `fail-on: warn`), and 1 on an operational error. A `doc` input naming a document with no registered claims is such an error, so the job fails until the document is audited and recorded.
+The job exits 0 when every claim is clean or only warns, 2 when a claim gates (any warning also fails under `fail-on: warn`; neither fails under `fail-on: never`), and 1 on an operational error. A `doc` input naming a document with no registered claims is such an error, so the job fails until the document is audited and recorded.
 
-Pass `TYPESAFE_API_KEY` as a repository secret in the step's `env`. Without it, judgments not already in the committed `.claims/judge/` cache are `pending`, which warns and does not fail the build. Verdicts the job computes are written to the runner's copy of `.claims/judge/` and lost with it, so run `hibi check` locally with the key and commit the cache entries.
+Pass `TYPESAFE_API_KEY` as a repository secret in the step's `env`. Without it, judgments not already in the `.claims/judge/` cache are `pending`, which warns and does not fail the build under `fail-on: gating`. The `actions/cache` step in `assets/hibi-ci.yml` restores `.claims/judge/` before the check, and saves it at the end of the job only when the job succeeds and no cache exists yet for the current claim files.
 
 For a knowledge repo with `repos` aliases such as `"api": "../api"`, check the repo out with `path: handbook`, each sibling next to it with `path: api`, and set `working-directory: handbook`. The asset shows the commented steps.
 
@@ -367,8 +367,8 @@ hibi check --doc CLAUDE.md --json
       "remediation": { "recommended": "update-claim", "actions": [
         { "id": "update-claim", "title": "Update the sentence, then reanchor",
           "rationale": "the evidence changed; if the sentence is now wrong, rewrite it, then run the command",
-          "command": "hibi reanchor clm_6b0ef79f25f54415" },
-        { "id": "reanchor", "title": "Reanchor as is", "rationale": "…", "command": "hibi reanchor clm_6b0ef79f25f54415" },
+          "command": "hibi reanchor clm_6b0ef79f25f54415 --code-file src/auth.ts --code-quote \"TOKEN_TTL_MIN = 60\"" },
+        { "id": "reanchor", "title": "Reanchor as is", "rationale": "…", "command": "hibi reanchor clm_6b0ef79f25f54415 --code-file src/auth.ts --code-quote \"TOKEN_TTL_MIN = 60\"" },
         { "id": "retire", "title": "Retire the claim", "rationale": "…", "command": "hibi retire clm_6b0ef79f25f54415" } ] },
       "reasons": ["evidence: value changed (was `30`)", "evidence: identifiers or literals renamed"] }
   ],
@@ -383,6 +383,6 @@ hibi check --doc CLAUDE.md --json
 | exit 2 | at least one claim gates: changed, orphaned, ambiguous, refuted, contradicted, or expired |
 | exit 1, `no claims are registered for CLAUDE.md; run hibi audit --doc CLAUDE.md` | the document has no claims; hibi says nothing about its sentences; audit it before relying on it |
 
-The path is normalized relative to the repo root, so `--doc ./CLAUDE.md` checks the same document and the JSON echoes `"doc": "CLAUDE.md"`. Under `--doc`, the contradiction pass judges only pairs with a claim in this document (`summary.conflictPass.scope: "doc"`); a finding may still name a claim in another document.
+The path is normalized relative to the current directory, so `--doc ./CLAUDE.md` checks the same document and the JSON echoes `"doc": "CLAUDE.md"`. Under `--doc`, the contradiction pass judges only pairs with a claim in this document (`summary.conflictPass.scope: "doc"`); a finding may still name a claim in another document.
 
-**Act**: do not follow the 30-minute rule. Read `src/auth.ts`, rewrite the sentence to say 60 minutes, then `hibi reanchor clm_6b0ef79f25f54415`. The result's `after` shows the new doc quote and code quote, and `check --doc CLAUDE.md` exits 0. Never rewrite the sentence without reading the code, and never delete the claim file; `hibi retire` withdraws a claim that no longer applies.
+**Act**: do not follow the 30-minute rule. Read `src/auth.ts`, rewrite the sentence to say 60 minutes, then `hibi reanchor clm_6b0ef79f25f54415 --doc-quote "Auth tokens expire after 60 minutes." --code-file src/auth.ts --code-quote "TOKEN_TTL_MIN = 60"`. Both sides read `changed`, so plain `hibi reanchor <id>` would leave them as stored and exit 1. The result's `after` shows the new doc quote and code quote, and `check --doc CLAUDE.md` exits 0. Never rewrite the sentence without reading the code, and never delete the claim file; `hibi retire` withdraws a claim that no longer applies.

@@ -1,0 +1,238 @@
+{
+  "id": "clm_0e25098191c24139",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "8. Fix pass: judge errors map to `pending`, runnable remediation commands, path normalization and containment, evidence for `attested` claims only, the value rule and pairing bounds, `record --by` required; this document, `docs/`, README, and the plugin skill synced to it. Done.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "8. Fix pass: judge errors map to `pending`, runnable remediation commands, path normalization and containment, evidence for `attested` claims only, the value rule and pairing bounds, `record --by` required; this document, `docs/`, README, and the plugin skill synced to it. Done.",
+        "prefix": "n from scratch. Old ADRs and PRD deleted. Done.\n",
+        "suffix": "\n\n9. CI dogfood: `.claims/` is re-initialized in"
+      },
+      {
+        "kind": "text-position",
+        "start": 73608,
+        "end": 73887
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeError) return `judge error: ${e.message}`;",
+          "prefix": "le) return `judge unavailable: ${e.message}`;\n  ",
+          "suffix": "\n  return undefined;\n}\n\n/**\n * The longest text "
+        },
+        {
+          "kind": "text-position",
+          "start": 3740,
+          "end": 3804
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "d2206c1328e3b3de"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "command: `hibi attest ${id} --by <actor> --ack review --note \"<why>\"`,",
+          "prefix": ", record why; an ack never resets the ttl\",\n    ",
+          "suffix": "\n  };\n}\n\nfunction ackConflict(id: string, other:"
+        },
+        {
+          "kind": "text-position",
+          "start": 8092,
+          "end": 8162
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "787e166f87e46da5",
+          "semanticHash": "a59d723dfd06f3bd"
+        }
+      ]
+    },
+    {
+      "file": "src/fs.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function normalizePath(root: string, p: string): string {",
+          "prefix": "/var` on\n * macOS name the same directory).\n */\n",
+          "suffix": "\n  const split = splitAlias(p);\n  if (split !== "
+        },
+        {
+          "kind": "text-position",
+          "start": 891,
+          "end": 955
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "86d20edeaa19d420",
+          "semanticHash": "ad6d62bc33ee733a"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ESCAPES_ROOT = \"path escapes its root\";",
+          "prefix": "label for an evidence path outside its root. */\n",
+          "suffix": "\n\n/** True when `abs` is `root` or inside it. Bo"
+        },
+        {
+          "kind": "text-position",
+          "start": 1211,
+          "end": 1263
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "7b5c177b0ac8f0d6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"path escapes its root\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence applies to attested claims, and reference claims are judged from the referenced document",
+          "prefix": "    `claim ${claimId} is a ${claim.kind} claim; ",
+          "suffix": "`,\n      );\n    }\n  }\n  const evidence = str(\"ev"
+        },
+        {
+          "kind": "text-position",
+          "start": 6934,
+          "end": 7031
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "887766a2fbcbc5a5"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const SUPPORTS_EXCLUDED_GROUPS: readonly string[] = [\"number\"];",
+          "prefix": ", a line number) says too little to refute.\n */\n",
+          "suffix": "\n\nfunction fmt(p: number): string {\n  return p.t"
+        },
+        {
+          "kind": "text-position",
+          "start": 2593,
+          "end": 2663
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b839a95afff47bf7",
+          "semanticHash": "f01dab213365856a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"number\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const RARE_MAX_CLAIMS = 10;",
+          "prefix": " of claims count as rare and pair them all.\n */\n",
+          "suffix": "\n\n/** Shortest token, in letters, that counts as"
+        },
+        {
+          "kind": "text-position",
+          "start": 1706,
+          "end": 1740
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "857fdc775df638ae"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "10"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"by is required: pass --by <actor> or a by key",
+          "prefix": " if (by === undefined) {\n    errors.push(\n      ",
+          "suffix": ", as human:<id>, agent:<name>, or process:<name>"
+        },
+        {
+          "kind": "text-position",
+          "start": 10743,
+          "end": 10789
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "b715e7808aca7ce0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:18.423Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:18.423Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

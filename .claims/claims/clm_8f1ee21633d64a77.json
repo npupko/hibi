@@ -1,0 +1,88 @@
+{
+  "id": "clm_8f1ee21633d64a77",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "| `enforced` | the default; the claim may gate |",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `enforced` | the default; the claim may gate |",
+        "prefix": "\n\n## Enforcement\n\n| value | meaning |\n|---|---|\n",
+        "suffix": "\n| `suggested` | recorded with `--suggest`; neve"
+      },
+      {
+        "kind": "text-position",
+        "start": 4275,
+        "end": 4323
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "enforcement: Enforcement.default(\"enforced\"),",
+          "prefix": "r.optional(),\n    ttl: Duration.optional(),\n    ",
+          "suffix": "\n    attestations: z.array(Attestation).default("
+        },
+        {
+          "kind": "text-position",
+          "start": 9007,
+          "end": 9052
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "6551225e2881068f",
+          "semanticHash": "8f5cc951cc90749f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"enforced\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { gates, warns: warns && !gates, reasons };",
+          "prefix": " { gates: false, warns: false, reasons };\n  }\n  ",
+          "suffix": "\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 4262,
+          "end": 4312
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "0585c8cae999ea8b",
+          "semanticHash": "58fd5f112b1c6bc5"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:03.083Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:03.083Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

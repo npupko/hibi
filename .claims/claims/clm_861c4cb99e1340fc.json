@@ -1,0 +1,88 @@
+{
+  "id": "clm_861c4cb99e1340fc",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `pending` | the worklist (section 7.5) |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `pending` | the worklist (section 7.5) |",
+        "prefix": "`clean` | claims whose verdict has that state |\n",
+        "suffix": "\n| `expired` | live claims whose ttl ran out |\n|"
+      },
+      {
+        "kind": "text-position",
+        "start": 64650,
+        "end": 64692
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "        case \"pending\":\n          return worklist.has(claim.id);",
+          "prefix": "se \"clean\":\n          return outcome === state;\n",
+          "suffix": "\n        case \"expired\":\n          return live &"
+        },
+        {
+          "kind": "text-position",
+          "start": 5533,
+          "end": 5597
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "switch_case",
+          "structuralHash": "5a4edd5011fe568c",
+          "semanticHash": "044aa9d897ed5aea"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const worklist = new Set(input.report.worklist.map((w) => w.claimId));",
+          "prefix": " new Map(input.claims.map((c) => [c.id, c]));\n  ",
+          "suffix": "\n  const inConflict = new Set(input.pass.finding"
+        },
+        {
+          "kind": "text-position",
+          "start": 4569,
+          "end": 4639
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "cdda4cf958565377",
+          "semanticHash": "ed97097a4807fe35"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:36.262Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:36.262Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_5fd1809d4c89484b",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "hibi sends nothing; use the channel the team uses, for example an issue built from `hibi list --state expired --json` (rows carry `claimId`, `sentence`, `owner`, `ttl`, `expiresAt`).",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "hibi sends nothing; use the channel the team uses, for example an issue built from `hibi list --state expired --json` (rows carry `claimId`, `sentence`, `owner`, `ttl`, `expiresAt`).",
+        "prefix": "the ttl.\n2. If you cannot, contact the `owner`. ",
+        "suffix": "\n3. The owner checks and vouches:\n\n```sh\nhibi at"
+      },
+      {
+        "kind": "text-position",
+        "start": 16843,
+        "end": 17025
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "expiresAt: until === undefined ? null : until.toISOString(),",
+          "prefix": "er ?? null,\n      ttl: claim.ttl ?? null,\n      ",
+          "suffix": "\n      ...(side ? { side } : {}),\n      state: o"
+        },
+        {
+          "kind": "text-position",
+          "start": 6299,
+          "end": 6359
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "419e413ad09c9beb",
+          "semanticHash": "352d8d3ff1759ce8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:10.554Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:10.554Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

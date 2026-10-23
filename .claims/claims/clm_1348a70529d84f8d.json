@@ -1,0 +1,123 @@
+{
+  "id": "clm_1348a70529d84f8d",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 5 | kinds: `code`, `reference`, `attested`; `unverifiable` and `not-a-claim` are audit classes |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 5 | kinds: `code`, `reference`, `attested`; `unverifiable` and `not-a-claim` are audit classes |",
+        "prefix": " not required; recording stays with the agent |\n",
+        "suffix": "\n| 6 | procedure is prose plus optional Lobster-"
+      },
+      {
+        "kind": "text-position",
+        "start": 75835,
+        "end": 75933
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ClaimKind = z.enum([\"code\", \"reference\", \"attested\"]);",
+          "prefix": "* The three recordable claim kinds (SPEC 4). */\n",
+          "suffix": "\nexport type ClaimKind = z.infer<typeof ClaimKin"
+        },
+        {
+          "kind": "text-position",
+          "start": 2080,
+          "end": 2147
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "245292834183a927",
+          "semanticHash": "f94df24c41b11e73"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"code\",\"reference\",\"attested\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (result.kind !== \"factual_claim\") return \"not-a-claim\";",
+          "prefix": "uditKindOf(result: TriageResult): AuditKind {\n  ",
+          "suffix": "\n  switch (result.evidenceKind) {\n    case \"code"
+        },
+        {
+          "kind": "text-position",
+          "start": 5564,
+          "end": 5622
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "1fa165765a34a063",
+          "semanticHash": "de7db4e52e3500e1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"factual_claim\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return \"unverifiable\";",
+          "prefix": "l\":\n      return \"attested\";\n    default:\n      ",
+          "suffix": "\n  }\n}\n\n/** A row with its keys in the documente"
+        },
+        {
+          "kind": "text-position",
+          "start": 5807,
+          "end": 5829
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "3df4bb0705c3a2fa",
+          "semanticHash": "52e9aca49b284a25"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unverifiable\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:18.904Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:18.904Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

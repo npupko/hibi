@@ -1,0 +1,123 @@
+{
+  "id": "clm_1ceafbe989794405",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 13 | `coverage` folds into `audit`; `evidence` and `attest` stay separate verbs |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 13 | `coverage` folds into `audit`; `evidence` and `attest` stay separate verbs |",
+        "prefix": "TypeScript now, Rust later; contracts as JSON |\n",
+        "suffix": "\n| 14 | no topics; pair in code, gate with `same"
+      },
+      {
+        "kind": "text-position",
+        "start": 76467,
+        "end": 76550
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"evidence\",",
+          "prefix": "--doc old.md --successor new.md\"],\n  },\n  {\n    ",
+          "suffix": "\n    summary:\n      \"Submit evidence an agent co"
+        },
+        {
+          "kind": "text-position",
+          "start": 16606,
+          "end": 16623
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "6d4632e024600b82"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"attest\",",
+          "prefix": "om-file - --by agent:opus',\n    ],\n  },\n  {\n    ",
+          "suffix": "\n    summary:\n      \"Vouch for a claim, or ackno"
+        },
+        {
+          "kind": "text-position",
+          "start": 18265,
+          "end": 18280
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "36dc8855774c3c4c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"attest\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"audit\",",
+          "prefix": "-state pending --ids-only\",\n    ],\n  },\n  {\n    ",
+          "suffix": "\n    summary:\n      \"One row per region of a doc"
+        },
+        {
+          "kind": "text-position",
+          "start": 12147,
+          "end": 12161
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "f651221393899995"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"audit\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:19.236Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:19.236Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

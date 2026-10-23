@@ -1,0 +1,65 @@
+{
+  "id": "clm_b99b46242c344d9d",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Its `status` is its most severe tag, in this order: `evidence:orphaned`, `doc:orphaned`, `evidence:ambiguous`, `doc:ambiguous`, `evidence:changed`, `doc:changed`, `judge:refuted`, `conflict`, `expired`, `evidence:moved`, `doc:moved`, `judge:review`, `judge:pending`, `conflict:review`, `conflict:pending`, `evidence:unavailable`, `superseded`, `archived`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Its `status` is its most severe tag, in this order: `evidence:orphaned`, `doc:orphaned`, `evidence:ambiguous`, `doc:ambiguous`, `evidence:changed`, `doc:changed`, `judge:refuted`, `conflict`, `expired`, `evidence:moved`, `doc:moved`, `judge:review`, `judge:pending`, `conflict:review`, `conflict:pending`, `evidence:unavailable`, `superseded`, `archived`.",
+        "prefix": "or when the document is superseded or archived. ",
+        "suffix": " It is never `unchanged`. `--overview` renders t"
+      },
+      {
+        "kind": "text-position",
+        "start": 61671,
+        "end": 62026
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const STATUS_PRECEDENCE = [\n  \"evidence:orphaned\",\n  \"doc:orphaned\",\n  \"evidence:ambiguous\",\n  \"doc:ambiguous\",\n  \"evidence:changed\",\n  \"doc:changed\",\n  \"judge:refuted\",\n  \"conflict\",\n  \"expired\",\n  \"evidence:moved\",\n  \"doc:moved\",\n  \"judge:review\",\n  \"judge:pending\",\n  \"conflict:review\",\n  \"conflict:pending\",\n  \"evidence:unavailable\",\n  \"superseded\",\n  \"archived\",\n];",
+          "prefix": "tagged status precedence, most severe first. */\n",
+          "suffix": "\n\nconst REPORTABLE_STATE: ReadonlySet<EvidenceSt"
+        },
+        {
+          "kind": "text-position",
+          "start": 5261,
+          "end": 5631
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "9e6614f747268dbc",
+          "semanticHash": "430f08d253626c39"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"evidence:orphaned\",\"doc:orphaned\",\"evidence:ambiguous\",\"doc:ambiguous\",\"evidence:changed\",\"doc:changed\",\"judge:refuted\",\"conflict\",\"expired\",\"evidence:moved\",\"doc:moved\",\"judge:review\",\"judge:pending\",\"conflict:review\",\"conflict:pending\",\"evidence:unavailable\",\"superseded\",\"archived\",]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:35.621Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:35.621Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

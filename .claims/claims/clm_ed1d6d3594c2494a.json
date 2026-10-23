@@ -1,0 +1,123 @@
+{
+  "id": "clm_ed1d6d3594c2494a",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "Evidence holding a different money amount, unit-bearing number, version, or date than the sentence is `refuted` in code with `value differs: …`, unless the judge answers `does_not_address`; bare unitless numbers in the evidence are not compared |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Evidence holding a different money amount, unit-bearing number, version, or date than the sentence is `refuted` in code with `value differs: …`, unless the judge answers `does_not_address`; bare unitless numbers in the evidence are not compared |",
+        "prefix": "laim (fix the sentence or the source of truth). ",
+        "suffix": "\n| `review` | below threshold or `does_not_addre"
+      },
+      {
+        "kind": "text-position",
+        "start": 10622,
+        "end": 10868
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (result.relation === \"does_not_address\") {",
+          "prefix": "sult.confidence);\n  const t = `${threshold}`;\n  ",
+          "suffix": "\n    return {\n      state: \"review\",\n      reaso"
+        },
+        {
+          "kind": "text-position",
+          "start": 3425,
+          "end": 3470
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "4166b72ca797dfcd",
+          "semanticHash": "b4aaeda6e2feb9ce"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"does_not_address\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const SUPPORTS_EXCLUDED_GROUPS: readonly string[] = [\"number\"];",
+          "prefix": ", a line number) says too little to refute.\n */\n",
+          "suffix": "\n\nfunction fmt(p: number): string {\n  return p.t"
+        },
+        {
+          "kind": "text-position",
+          "start": 2593,
+          "end": 2663
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b839a95afff47bf7",
+          "semanticHash": "f01dab213365856a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"number\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"refuted\", reasons: [`value differs: ${cmp.label}`] };",
+          "prefix": "cmp.differs && cmp.label !== undefined) {\n      ",
+          "suffix": "\n    }\n  }\n  const verb = result.relation;\n  if "
+        },
+        {
+          "kind": "text-position",
+          "start": 4096,
+          "end": 4166
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "f49ce7ee24e466fc",
+          "semanticHash": "c628178ea96bcff0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"refuted\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:09.370Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:09.370Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

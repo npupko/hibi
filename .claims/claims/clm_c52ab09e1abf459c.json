@@ -1,0 +1,123 @@
+{
+  "id": "clm_c52ab09e1abf459c",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `supports` | money, numbers with a unit (`%`, durations), versions, dates; not unitless numbers | the relation is not `does_not_address` | `value differs: numbers differ: 29 vs 39` (state `refuted`) |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `supports` | money, numbers with a unit (`%`, durations), versions, dates; not unitless numbers | the relation is not `does_not_address` | `value differs: numbers differ: 29 vs 39` (state `refuted`) |",
+        "prefix": "n the values differ | label |\n|---|---|---|---|\n",
+        "suffix": "\n| `conflict` | every group, unitless numbers in"
+      },
+      {
+        "kind": "text-position",
+        "start": 11580,
+        "end": 11782
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const SUPPORTS_EXCLUDED_GROUPS: readonly string[] = [\"number\"];",
+          "prefix": ", a line number) says too little to refute.\n */\n",
+          "suffix": "\n\nfunction fmt(p: number): string {\n  return p.t"
+        },
+        {
+          "kind": "text-position",
+          "start": 2593,
+          "end": 2663
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b839a95afff47bf7",
+          "semanticHash": "f01dab213365856a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"number\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (result.relation === \"does_not_address\") {",
+          "prefix": "sult.confidence);\n  const t = `${threshold}`;\n  ",
+          "suffix": "\n    return {\n      state: \"review\",\n      reaso"
+        },
+        {
+          "kind": "text-position",
+          "start": 3425,
+          "end": 3470
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "4166b72ca797dfcd",
+          "semanticHash": "b4aaeda6e2feb9ce"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"does_not_address\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"refuted\", reasons: [`value differs: ${cmp.label}`] };",
+          "prefix": "cmp.differs && cmp.label !== undefined) {\n      ",
+          "suffix": "\n    }\n  }\n  const verb = result.relation;\n  if "
+        },
+        {
+          "kind": "text-position",
+          "start": 4096,
+          "end": 4166
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "f49ce7ee24e466fc",
+          "semanticHash": "c628178ea96bcff0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"refuted\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:40.095Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:40.095Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

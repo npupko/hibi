@@ -1,0 +1,59 @@
+{
+  "id": "clm_327e4ca25a9a473e",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "It refreshes the claim's `sentence` from the doc span when the doc side is relocated.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It refreshes the claim's `sentence` from the doc span when the doc side is relocated.",
+        "prefix": "stores the relocated sides as the new baseline. ",
+        "suffix": "\n\n- Without span flags for a side, the side is r"
+      },
+      {
+        "kind": "text-position",
+        "start": 5294,
+        "end": 5379
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "      sentence = regionText(contents.docContent, docRegion);\n      relocated++;",
+          "prefix": "undle(docFile, contents.docContent, docRegion);\n",
+          "suffix": "\n    } else {\n      docBundle = claim.doc;\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 11611,
+          "end": 11690
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "829cafae5b6552ad",
+          "semanticHash": "f1e2b1c2036768ce"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.201Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.201Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

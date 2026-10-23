@@ -1,0 +1,88 @@
+{
+  "id": "clm_4354c281f35b4a7e",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "Sets `--from` to `superseded` and records `supersededBy` on it.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Sets `--from` to `superseded` and records `supersededBy` on it.",
+        "prefix": "edure, attestations, and `ref` never change.\n3. ",
+        "suffix": "\n\n```json\n{ \"ok\": true, \"action\": \"supersede\", \""
+      },
+      {
+        "kind": "text-position",
+        "start": 2783,
+        "end": 2846
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "oldDoc.lifecycle = \"superseded\";",
+          "prefix": ", reason: (e as Error).message });\n    }\n  }\n\n  ",
+          "suffix": "\n  oldDoc.supersededBy = newDoc.id;\n  if (!dryRu"
+        },
+        {
+          "kind": "text-position",
+          "start": 4076,
+          "end": 4108
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "e0cf5471d7fd0685",
+          "semanticHash": "315dcd48800898d3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"superseded\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "oldDoc.supersededBy = newDoc.id;",
+          "prefix": "    }\n  }\n\n  oldDoc.lifecycle = \"superseded\";\n  ",
+          "suffix": "\n  if (!dryRun) {\n    await store.putDocument(ne"
+        },
+        {
+          "kind": "text-position",
+          "start": 4111,
+          "end": 4143
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "56fd354f1bf6c5ad",
+          "semanticHash": "d24d5a7486beb224"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.702Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.702Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

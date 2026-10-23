@@ -1,0 +1,88 @@
+{
+  "id": "clm_0fed8bdae02244b2",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "A batch with any invalid item records nothing and lists every problem, one line each.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A batch with any invalid item records nothing and lists every problem, one line each.",
+        "prefix": "laims\": [] }\n  ],\n  \"next\": \"hibi check\" }\n```\n\n",
+        "suffix": " After the batch is recorded, `hibi audit --doc "
+      },
+      {
+        "kind": "text-position",
+        "start": 5722,
+        "end": 5807
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const [index, call] of calls.entries()) {\n      try {\n        await this.record(call, { dryRun: true });\n      } catch (e) {\n        failures.push({ index, message: (e as Error).message });\n      }\n    }\n    if (failures.length > 0) return { results: [], failures };",
+          "prefix": "ilures: RecordBatchResult[\"failures\"] = [];\n    ",
+          "suffix": "\n    const results: RecordResult[] = [];\n    try"
+        },
+        {
+          "kind": "text-position",
+          "start": 15498,
+          "end": 15769
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "425b31e9a2cb5a5b",
+          "semanticHash": "a0768ac83a2af1e7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "nothing was recorded.",
+          "prefix": "ngth} problem${errors.length === 1 ? \"\" : \"s\"}; ",
+          "suffix": "\\n${errors.map((e) => `  ${e}`).join(\"\\n\")}`,\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 2279,
+          "end": 2300
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "83f901eafccd17b9"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:07.791Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:07.791Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

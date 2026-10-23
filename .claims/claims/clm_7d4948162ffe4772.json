@@ -1,0 +1,82 @@
+{
+  "id": "clm_7d4948162ffe4772",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "The path is normalized relative to the current directory, so `--doc ./CLAUDE.md` checks the same document and the JSON echoes `\"doc\": \"CLAUDE.md\"`.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The path is normalized relative to the current directory, so `--doc ./CLAUDE.md` checks the same document and the JSON echoes `\"doc\": \"CLAUDE.md\"`.",
+        "prefix": "its sentences; audit it before relying on it |\n\n",
+        "suffix": " Under `--doc`, the contradiction pass judges on"
+      },
+      {
+        "kind": "text-position",
+        "start": 23991,
+        "end": 24138
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "extra.doc = normalizePath(engine.store.anchorRoot, doc);",
+          "prefix": "\n      }\n      if (doc !== undefined) {\n        ",
+          "suffix": "\n      }\n      const value = projectCheckReport("
+        },
+        {
+          "kind": "text-position",
+          "start": 20429,
+          "end": 20485
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "513e2ba8eb18cc13",
+          "semanticHash": "6b6222ec53e69c9d"
+        }
+      ]
+    },
+    {
+      "file": "src/fs.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ": relative(resolve(root), resolve(root, p));",
+          "prefix": "ealish(resolve(root)), realish(resolve(p)))\n    ",
+          "suffix": "\n  return sep === \"/\" ? rel : rel.split(sep).joi"
+        },
+        {
+          "kind": "text-position",
+          "start": 1219,
+          "end": 1263
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "8e686436456c39c4",
+          "semanticHash": "5e738a705e59704e"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:12.837Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:12.837Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

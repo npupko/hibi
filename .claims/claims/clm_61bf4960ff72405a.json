@@ -1,0 +1,111 @@
+{
+  "id": "clm_61bf4960ff72405a",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "code",
+  "sentence": "A claim can carry a procedure and sources, but an agent or an outer runner carries them out and submits the evidence with `hibi evidence`.",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A claim can carry a procedure and sources, but an agent or an outer runner carries them out and submits the evidence with `hibi evidence`.",
+        "prefix": " URL fetching, no network except the judge API. ",
+        "suffix": "\n  </Accordion>\n\n  <Accordion title=\"2. Same tre"
+      },
+      {
+        "kind": "text-position",
+        "start": 1728,
+        "end": 1866
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "/** One Lobster-compatible step: a hint, never run by hibi (SPEC 4.2). */",
+          "prefix": ";\nexport type Source = z.infer<typeof Source>;\n\n",
+          "suffix": "\nexport const ProcedureStep = z.strictObject({\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 7462,
+          "end": 7535
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "4bde29d13db28ed3"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "/** An opaque pointer to where a claim's truth lives (SPEC 4.3). Never dereferenced. */",
+          "prefix": "ype Attestation = z.infer<typeof Attestation>;\n\n",
+          "suffix": "\nexport const Source = z\n  .strictObject({\n    i"
+        },
+        {
+          "kind": "text-position",
+          "start": 7156,
+          "end": 7243
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "dded549a248480ba"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "basis: \"evidence\",",
+          "prefix": "        by: p.item.by,\n        at: now,\n        ",
+          "suffix": "\n        note: p.item.summary,\n        evidenceH"
+        },
+        {
+          "kind": "text-position",
+          "start": 13068,
+          "end": 13086
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "08b147463c5716c1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:51.191Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:51.191Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

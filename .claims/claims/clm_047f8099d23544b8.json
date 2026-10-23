@@ -1,0 +1,88 @@
+{
+  "id": "clm_047f8099d23544b8",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`list --state duplicate` also includes claims whose sentences are equal after whitespace normalization, with the `why` label `same sentence`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`list --state duplicate` also includes claims whose sentences are equal after whitespace normalization, with the `why` label `same sentence`.",
+        "prefix": "ties to the smaller claim id, as `duplicateOf`. ",
+        "suffix": " `check` reports `summary.conflictPass` as `{ pa"
+      },
+      {
+        "kind": "text-position",
+        "start": 46362,
+        "end": 46503
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (other !== id) add(id, { claimId: other, why: \"same sentence\" });",
+          "prefix": "ids) {\n      for (const other of ids) {\n        ",
+          "suffix": "\n      }\n    }\n  }\n  return out;\n}\n\nexport funct"
+        },
+        {
+          "kind": "text-position",
+          "start": 4256,
+          "end": 4324
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "337f07018ed126d0",
+          "semanticHash": "0d44bdad5bd6dbf4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"same sentence\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const key = normalizeSentence(c.sentence);",
+          "prefix": " if (c.enforcement === \"retired\") continue;\n    ",
+          "suffix": "\n    bySentence.set(key, [...(bySentence.get(key"
+        },
+        {
+          "kind": "text-position",
+          "start": 4032,
+          "end": 4074
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "be8806d2a162254b",
+          "semanticHash": "80945504cf2ae36b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:15.267Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:15.267Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

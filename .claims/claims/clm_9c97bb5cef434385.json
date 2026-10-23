@@ -1,0 +1,59 @@
+{
+  "id": "clm_9c97bb5cef434385",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A group differs when the two texts share no value in it, so `$29` against `$39` differs, `$29 or $49` against `$29` does not, and `5 days` against `5%` is not compared.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A group differs when the two texts share no value in it, so `$29` against `$39` differs, `$29 or $49` against `$29` does not, and `5 days` against `5%` is not compared.",
+        "prefix": "re compared only within groups present in both. ",
+        "suffix": " Versions are compared after dropping a leading "
+      },
+      {
+        "kind": "text-position",
+        "start": 40732,
+        "end": 40900
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (va.some((x) => vb.some((y) => y.key === x.key))) continue;",
+          "prefix": "y) ?? [];\n    const vb = gb.get(key) ?? [];\n    ",
+          "suffix": "\n    const list = (vs: { label: string }[]) => v"
+        },
+        {
+          "kind": "text-position",
+          "start": 14288,
+          "end": 14350
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "b5305abcacdc7f4c",
+          "semanticHash": "c383aae6689d46a5"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:04.518Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:04.518Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

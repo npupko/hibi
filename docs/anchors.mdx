@@ -13,7 +13,7 @@ Each side is a **selector bundle**: one file plus a list of selectors that point
 { "file": "src/retry.ts", "selectors": [ { "kind": "text-quote", … }, { "kind": "text-position", … } ] }
 ```
 
-The store holds the selectors, not a copy of the file. At check time hibi re-reads each file from the working tree and locates the span again. `check` never reads git history.
+The store holds the selectors, not a copy of the file. At check time hibi re-reads each file from the working tree and locates the span again. `check` never reads file contents from git history.
 
 ## Selector kinds
 
@@ -30,7 +30,7 @@ The `value` selector is stored only when a literal lies inside the quoted span. 
 
 ## Tree-sitter
 
-The official tree-sitter grammars for these languages are embedded in the hibi binary; nothing is downloaded. Hibi loads them per language, only for the files being checked:
+The official tree-sitter grammars for these languages are embedded in the hibi binary; nothing is downloaded. Hibi loads them per language, only for languages that evidence files use:
 
 | language | extensions |
 |---|---|
@@ -73,7 +73,7 @@ A claim with several evidence sides reports the worst one on the `evidence` axis
 
 ## Reason labels
 
-Every side's labels appear in the verdict's `reasons[]`, prefixed `doc: ` or `evidence: `. A `changed` side also adds entries to `detail.changes[]` (shown with `--explain`), each `{ path, kind, detail }`. The first change is repeated in the verdict's one-line `changed` field, for example ``src/retry.ts value: value changed (was `5`)``.
+Every side's labels appear in the verdict's `reasons[]`, prefixed `doc: ` or `evidence: `. A `changed` or `orphaned` side also adds entries to `detail.changes[]` (shown with `--explain`), each `{ path, kind, detail }`. The first change is repeated in the verdict's one-line `changed` field, for example ``src/retry.ts value: value changed (was `5`)``.
 
 | condition | label | `changes[].kind` |
 |---|---|---|

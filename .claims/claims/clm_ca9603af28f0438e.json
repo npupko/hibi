@@ -1,0 +1,52 @@
+{
+  "id": "clm_ca9603af28f0438e",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "reference",
+  "sentence": "Hibi reports that evidence moved, expired, was refuted, or conflicts. It never rewrites prose and never declares a sentence false on its own authority.",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi reports that evidence moved, expired, was refuted, or conflicts. It never rewrites prose and never declares a sentence false on its own authority.",
+        "prefix": "le=\"3. A flag means re-verify\" icon=\"flag\">\n    ",
+        "suffix": " Only `archive` (the tombstone) and `init --inst"
+      },
+      {
+        "kind": "text-position",
+        "start": 2199,
+        "end": 2350
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**A flag means re-verify.** Hibi reports that evidence moved, expired, was refuted, or conflicts. It does not rewrite prose (principle 1 lists the only two writes it makes into documents) and never declares a sentence false on its own authority.",
+          "prefix": "t flip them. The cache is local (section 6).\n3. ",
+          "suffix": "\n4. **Nothing clears without evidence or a human"
+        },
+        {
+          "kind": "text-position",
+          "start": 2058,
+          "end": 2303
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:51.301Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:51.301Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

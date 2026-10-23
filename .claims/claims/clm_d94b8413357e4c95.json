@@ -1,0 +1,94 @@
+{
+  "id": "clm_d94b8413357e4c95",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "`--no-ast` skips tree-sitter entirely: no `ast-node` or `value` selector is recorded, and at check time stored `ast-node` and `value` selectors are not compared.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--no-ast` skips tree-sitter entirely: no `ast-node` or `value` selector is recorded, and at check time stored `ast-node` and `value` selectors are not compared.",
+        "prefix": "ote` and `text-position` only, with no warning. ",
+        "suffix": "\n\nA code span without structural checks (under `"
+      },
+      {
+        "kind": "text-position",
+        "start": 2260,
+        "end": 2421
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (this.options.noAst) return undefined;",
+          "prefix": "ring>,\n  ): Promise<Analyzer | undefined> {\n    ",
+          "suffix": "\n    const analyzer = await loadAnalyzer();\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 8935,
+          "end": 8976
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "93908398f53bedcb",
+          "semanticHash": "52e161ce8b484d2c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "language !== undefined && opts.ast",
+          "prefix": "age ?? valSel?.language;\n  const analysis =\n    ",
+          "suffix": "\n      ? opts.ast.analyze(currentText, language,"
+        },
+        {
+          "kind": "text-position",
+          "start": 6717,
+          "end": 6751
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "c5a670afd412145d",
+          "semanticHash": "c77963509c590fcf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.042Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.042Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

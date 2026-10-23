@@ -1,0 +1,111 @@
+{
+  "id": "clm_e71a80cca22c4368",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 37 | a judge answer hibi cannot use (`JudgeError`: a 4xx other than 401, 403, 408, or 429, a malformed body, undecodable answers; 408 and 429 are retried and become `JudgeUnavailable`) is `pending` like an unreachable judge; it never exits 1 |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 37 | a judge answer hibi cannot use (`JudgeError`: a 4xx other than 401, 403, 408, or 429, a malformed body, undecodable answers; 408 and 429 are retried and become `JudgeUnavailable`) is `pending` like an unreachable judge; it never exits 1 |",
+        "prefix": "rning and the worklist entry, not the verdict |\n",
+        "suffix": "\n| 38 | `hibi evidence` accepts `attested` claim"
+      },
+      {
+        "kind": "text-position",
+        "start": 79254,
+        "end": 79499
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "throw new JudgeError(`TypeSafe returned HTTP ${status}: ${text}`);",
+          "prefix": " the request is wrong, not the service.\n        ",
+          "suffix": "\n      }\n      lastFailure = `HTTP ${status}: ${"
+        },
+        {
+          "kind": "text-position",
+          "start": 6347,
+          "end": 6413
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "throw_statement",
+          "structuralHash": "5e7091e61f388ec5",
+          "semanticHash": "e88771fe6458d624"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return status === 408 || status === 429 || (status >= 500 && status <= 599);",
+          "prefix": " isRetryableStatus(status: number): boolean {\n  ",
+          "suffix": "\n}\n\n/**\n * Parses `retry-after` (seconds or HTTP"
+        },
+        {
+          "kind": "text-position",
+          "start": 2301,
+          "end": 2377
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "1a55bd3ff4928c36",
+          "semanticHash": "03adb57329923a5e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "408"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeError) return `judge error: ${e.message}`;",
+          "prefix": "le) return `judge unavailable: ${e.message}`;\n  ",
+          "suffix": "\n  return undefined;\n}\n\n/**\n * The longest text "
+        },
+        {
+          "kind": "text-position",
+          "start": 3740,
+          "end": 3804
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "d2206c1328e3b3de"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:03.736Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:03.736Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

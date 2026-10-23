@@ -1,0 +1,59 @@
+{
+  "id": "clm_1fc832afd271477d",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `0` | clean, or warnings only |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `0` | clean, or warnings only |",
+        "prefix": "`.\n\n## Exit codes\n\n| code | meaning |\n|---|---|\n",
+        "suffix": "\n| `2` | at least one verdict gates; or, under `"
+      },
+      {
+        "kind": "text-position",
+        "start": 3812,
+        "end": 3845
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function computeExitCode(",
+          "prefix": "ning is exit 2 only under `--fail-on warn`.\n */\n",
+          "suffix": "\n  flags: { gating: boolean; warn: boolean },\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 22088,
+          "end": 22120
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "1fdd427fda4527a4",
+          "semanticHash": "59fe1b9640983b54"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:12.627Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:12.627Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

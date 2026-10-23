@@ -1,0 +1,65 @@
+{
+  "id": "clm_7e60847f1c8d4f46",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `gates` | the verdict fails the check |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `gates` | the verdict fails the check |",
+        "prefix": " list of labels:\n\n| field | meaning |\n|---|---|\n",
+        "suffix": "\n| `warns` | the verdict needs attention and doe"
+      },
+      {
+        "kind": "text-position",
+        "start": 2703,
+        "end": 2744
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.gating) return 2;",
+          "prefix": " number {\n  if (failOn === \"never\") return 0;\n  ",
+          "suffix": "\n  if (flags.warn && failOn === \"warn\") return 2"
+        },
+        {
+          "kind": "text-position",
+          "start": 22234,
+          "end": 22261
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "53162d0ab7dd4ae4",
+          "semanticHash": "a4b4953657e79651"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:11.769Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:11.769Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

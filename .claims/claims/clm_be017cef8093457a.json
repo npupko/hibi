@@ -1,0 +1,105 @@
+{
+  "id": "clm_be017cef8093457a",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Any claim whose context text changes under these rules (the lead-in, a thematic break ending a paragraph, frontmatter excluded) gets a new request key and is asked again once; the same holds for audit chunks changed by the section 10 splitter rules.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Any claim whose context text changes under these rules (the lead-in, a thematic break ending a paragraph, frontmatter excluded) gets a new request key and is asked again once; the same holds for audit chunks changed by the section 10 splitter rules.",
+        "prefix": "t has no lead-in, and its context is unchanged. ",
+        "suffix": " A sentence of 600 or more characters, or one th"
+      },
+      {
+        "kind": "text-position",
+        "start": 36064,
+        "end": 36313
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "context: claimContext(texts.docText, {",
+          "prefix": "uest(model, {\n    sentence: texts.sentence,\n    ",
+          "suffix": "\n      ...claim,\n      sentence: texts.sentence,"
+        },
+        {
+          "kind": "text-position",
+          "start": 9124,
+          "end": 9162
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "01beb23861a12215",
+          "semanticHash": "82aee118cc3b4683"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/cache.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".update(`${model}\\n${canonicalJson(request)}`)",
+          "prefix": "wn): string {\n  return createHash(\"sha256\")\n    ",
+          "suffix": "\n    .digest(\"hex\");\n}\n\nfunction matches(subject"
+        },
+        {
+          "kind": "text-position",
+          "start": 1926,
+          "end": 1972
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "b403664e628d2825",
+          "semanticHash": "10448a4ef18de84b"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const key = cacheKey(model, request);",
+          "prefix": "ll(\n    requests.map(async (request) => {\n      ",
+          "suffix": "\n      const hit = await cache.get(key);\n      l"
+        },
+        {
+          "kind": "text-position",
+          "start": 7917,
+          "end": 7954
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "e561efbeab1d6031",
+          "semanticHash": "013fc9fe1cde10e4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:06.172Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:06.172Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_1685da9b1b934e0f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`--fail-uncovered` exits 2 when any uncovered row has kind `code`, `reference`, or `attested`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--fail-uncovered` exits 2 when any uncovered row has kind `code`, `reference`, or `attested`.",
+        "prefix": "ecides anchors and sources and calls `record`.\n\n",
+        "suffix": " Such a row exists only when triage was confiden"
+      },
+      {
+        "kind": "text-position",
+        "start": 52208,
+        "end": 52302
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return opts.failUncovered && report.rows.some(isUncoveredRecordable) ? 2 : 0;",
+          "prefix": " { failUncovered?: boolean } = {},\n): 0 | 2 {\n  ",
+          "suffix": "\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 12319,
+          "end": 12396
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "ed4a641f01f9b379",
+          "semanticHash": "f2d065fbc74439a6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.698Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.698Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

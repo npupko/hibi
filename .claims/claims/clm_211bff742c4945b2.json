@@ -1,0 +1,82 @@
+{
+  "id": "clm_211bff742c4945b2",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "Hibi loads them per language, only for languages that evidence files use:",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi loads them per language, only for languages that evidence files use:",
+        "prefix": "dded in the hibi binary; nothing is downloaded. ",
+        "suffix": "\n\n| language | extensions |\n|---|---|\n| TypeScri"
+      },
+      {
+        "kind": "text-position",
+        "start": 1881,
+        "end": 1954
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (analyzer) await analyzer.loadForFiles(files);",
+          "prefix": "\n    const analyzer = await loadAnalyzer();\n    ",
+          "suffix": "\n    return analyzer;\n  }\n\n  /** Read a repo-rel"
+        },
+        {
+          "kind": "text-position",
+          "start": 9024,
+          "end": 9073
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "17ff4012ce59dde5",
+          "semanticHash": "ed1469c35163768b"
+        }
+      ]
+    },
+    {
+      "file": "src/ast/analyzer.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const f of files) langs.add(languageForFile(f));",
+          "prefix": "onst langs = new Set<string | undefined>();\n    ",
+          "suffix": "\n    await this.load(langs);\n  }\n\n  private pars"
+        },
+        {
+          "kind": "text-position",
+          "start": 2511,
+          "end": 2564
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "1f70535bf7a0ab0a",
+          "semanticHash": "4f31da8b63cc6ebe"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:25.932Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:25.932Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

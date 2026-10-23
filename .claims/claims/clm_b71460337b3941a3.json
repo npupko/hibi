@@ -1,0 +1,65 @@
+{
+  "id": "clm_b71460337b3941a3",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "| checked out, span intact | `evidence: \"unchanged\"` | clean |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| checked out, span intact | `evidence: \"unchanged\"` | clean |",
+        "prefix": "sibling repo | verdict | effect |\n|---|---|---|\n",
+        "suffix": "\n| not checked out | `evidence: \"unavailable\"`, "
+      },
+      {
+        "kind": "text-position",
+        "start": 19037,
+        "end": 19099
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"unchanged\", // found, same text, same place",
+          "prefix": ". */\nexport const AnchorState = z\n  .enum([\n    ",
+          "suffix": "\n    \"moved\", // found, same text, new place\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 2475,
+          "end": 2519
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "c60db945f7b10227",
+          "semanticHash": "d4363f35552a4758"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unchanged\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:11.409Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:11.409Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

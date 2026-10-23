@@ -1,0 +1,169 @@
+{
+  "id": "clm_8183bda6a4284c3c",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- Budgets, at an estimate of 4 characters per token over the request JSON: 48k tokens per request (model, state, and all questions) and 24k tokens for the state plus any one question.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- Budgets, at an estimate of 4 characters per token over the request JSON: 48k tokens per request (model, state, and all questions) and 24k tokens for the state plus any one question.",
+        "prefix": " chunks must all be answered by the same model.\n",
+        "suffix": " The model limits are 64k and 32k. Triage packs "
+      },
+      {
+        "kind": "text-position",
+        "start": 31792,
+        "end": 31975
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const CHARS_PER_TOKEN = 4;",
+          "prefix": "s per token, conservative for English prose. */\n",
+          "suffix": "\n\n/** Per-request budget for state plus question"
+        },
+        {
+          "kind": "text-position",
+          "start": 1778,
+          "end": 1811
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "d8cdd0a0a978f520"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const REQUEST_TOKEN_BUDGET = 48_000;",
+          "prefix": "del limit is 64k (research note, section 5). */\n",
+          "suffix": "\n\n/** Budget for state plus any one question; th"
+        },
+        {
+          "kind": "text-position",
+          "start": 1916,
+          "end": 1959
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "6583f8c35001a5e7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "48_000"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const QUESTION_TOKEN_BUDGET = 24_000;",
+          "prefix": "del limit is 32k (research note, section 5). */\n",
+          "suffix": "\n\n// -------------------------------------------"
+        },
+        {
+          "kind": "text-position",
+          "start": 2059,
+          "end": 2103
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "d624e87a0ec6c24c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "24_000"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return Math.ceil(JSON.stringify(value).length / CHARS_PER_TOKEN);",
+          "prefix": "tion estimateTokens(value: unknown): number {\n  ",
+          "suffix": "\n}\n\n/** Estimated token cost of one region insid"
+        },
+        {
+          "kind": "text-position",
+          "start": 2762,
+          "end": 2827
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "73eb4d89fa826ff9",
+          "semanticHash": "858b9eb9924096d8"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "fixed + state + questions <= budgets.request &&\n    fixed + state + largest <= budgets.question;",
+          "prefix": "ber, questions: number, largest: number) =>\n    ",
+          "suffix": "\n  const chunks: number[][] = [];\n  let current:"
+        },
+        {
+          "kind": "text-position",
+          "start": 3798,
+          "end": 3894
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "a026cd44ef3f7544",
+          "semanticHash": "92f6442f90b742d1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:50.953Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:50.953Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

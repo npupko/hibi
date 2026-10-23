@@ -1,0 +1,105 @@
+{
+  "id": "clm_cf104f337dd24ab4",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- Sentences and evidence are always passed as named state fields, never spliced into instructions.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- Sentences and evidence are always passed as named state fields, never spliced into instructions.",
+        "prefix": " A single region that does not fit is an error.\n",
+        "suffix": "\n- Choice option order is fixed and canonical.\n\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 32292,
+        "end": 32390
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "claim: input.sentence,\n      claim_context: input.context,\n      evidence: input.evidence,\n      evidence_source: input.source,",
+          "prefix": "uest {\n  return {\n    model,\n    state: {\n      ",
+          "suffix": "\n    },\n    questions: supportsFile.questions,\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 11055,
+          "end": 11182
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "e1a61836897c279b",
+          "semanticHash": "d1b46316cc400607"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "questions: supportsFile.questions,",
+          "prefix": "      evidence_source: input.source,\n    },\n    ",
+          "suffix": "\n  };\n}\n\nexport function buildConflictRequest(\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 11194,
+          "end": 11228
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "c85ebfdef73bb134"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "questions: conflictFile.questions,",
+          "prefix": "t, doc: b.doc, context: b.context },\n    },\n    ",
+          "suffix": "\n  };\n}\n\n// ------------------------------------"
+        },
+        {
+          "kind": "text-position",
+          "start": 11516,
+          "end": 11550
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "e45d96cd3cd854e0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:51.399Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:51.399Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

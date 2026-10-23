@@ -1,0 +1,82 @@
+{
+  "id": "clm_f24670d5f33e4494",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "JSON output echoes the normalized form.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "JSON output echoes the normalized form.",
+        "prefix": "normalized: `api:./src/x.ts` is `api:src/x.ts`. ",
+        "suffix": "\n\n## Recording\n\nOne claim from flags:\n\n```sh\nhib"
+      },
+      {
+        "kind": "text-position",
+        "start": 5973,
+        "end": 6012
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "doc: r.document.path,",
+          "prefix": "    id: r.claim.id,\n    kind: r.claim.kind,\n    ",
+          "suffix": "\n    evidence: r.claim.evidence[0]?.file ?? null"
+        },
+        {
+          "kind": "text-position",
+          "start": 11226,
+          "end": 11247
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "5ee06eb33a910fa7",
+          "semanticHash": "014951be814eafbf"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "doc: docPath,",
+          "prefix": "row of rows) byKind[row.kind]++;\n  return {\n    ",
+          "suffix": "\n    summary: {\n      regions: rows.length,\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 11592,
+          "end": 11605
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "032aa2864040c879",
+          "semanticHash": "6e05b919daa786de"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:03.803Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:03.803Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

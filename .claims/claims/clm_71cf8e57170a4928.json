@@ -1,0 +1,59 @@
+{
+  "id": "clm_71cf8e57170a4928",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "| `review` | the reason label `possible conflict with <id>: review: contradictory, …` | warns |",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `review` | the reason label `possible conflict with <id>: review: contradictory, …` | warns |",
+        "prefix": "id> (p=… at or above threshold …): …` | gates |\n",
+        "suffix": "\n| `pending` | one reason label per claim, `conf"
+      },
+      {
+        "kind": "text-position",
+        "start": 5197,
+        "end": 5292
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...reviews.map((f) => `possible conflict with ${f.claimId}: ${f.reason}`),",
+          "prefix": "t(c.id) ?? 0) : 0;\n    const warnings = [\n      ",
+          "suffix": "\n      ...(pendingPairs > 0 ? [`conflict checks "
+        },
+        {
+          "kind": "text-position",
+          "start": 17123,
+          "end": 17197
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "b6cbffe8d3a1e829",
+          "semanticHash": "0e4681b524e12224"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:26.317Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:26.317Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

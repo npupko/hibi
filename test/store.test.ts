@@ -1,7 +1,13 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { readdir, writeFile } from "node:fs/promises";
+import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { recordClaim, resolveRegion } from "../src/engine/record.ts";
+import {
+  documentIdForPath,
+  recordClaim,
+  resolveRegion,
+} from "../src/engine/record.ts";
+import { exists } from "../src/fs.ts";
 import { ClaimStore } from "../src/store/store.ts";
 import { makeRepo, record, type TempRepo } from "./helpers.ts";
 
@@ -69,7 +75,13 @@ describe("claim store", () => {
       ignore: [],
     });
     const entries = (await readdir(r.store.dir)).sort();
-    expect(entries).toEqual(["claims", "config.json", "documents", "judge"]);
+    expect(entries).toEqual([
+      ".gitignore",
+      "claims",
+      "config.json",
+      "documents",
+      "judge",
+    ]);
   });
 
   test("one file per claim, never a monolithic lockfile", async () => {
@@ -268,6 +280,95 @@ describe("claim store", () => {
   });
 });
 
+describe("withRollback", () => {
+  test("a failure undoes this store's writes only", async () => {
+    const r = await repo();
+    await r.write("src/a.ts", "export const A = 1;\n");
+    const a = await record(r, {
+      doc: "d.md",
+      text: "A is 1 here",
+      file: "src/a.ts",
+      quote: "A = 1",
+    });
+    const file = (id: string) => `.claims/claims/${id}.json`;
+    const before = await r.read(file(a.claim.id));
+    const other = await ClaimStore.open(r.root);
+    const ours = "clm_1111111111111111";
+    const oursThenTheirs = "clm_2222222222222222";
+    const theirs = "clm_3333333333333333";
+    await expect(
+      r.store.withRollback(async () => {
+        await r.store.putClaim({ ...a.claim, sentence: "overwritten" });
+        await r.store.putClaim({ ...a.claim, id: ours });
+        await r.store.putClaim({ ...a.claim, id: oursThenTheirs });
+        // Another writer, meanwhile: a new record, and a later write over one of ours.
+        await other.putClaim({ ...a.claim, id: theirs });
+        await other.putClaim({
+          ...a.claim,
+          id: oursThenTheirs,
+          sentence: "their write",
+        });
+        throw new Error("boom");
+      }),
+    ).rejects.toThrow("boom");
+    expect(await r.read(file(a.claim.id))).toBe(before);
+    expect(await r.store.getClaim(ours)).toBeUndefined();
+    expect((await r.store.getClaim(oursThenTheirs))?.sentence).toBe(
+      "their write",
+    );
+    expect((await r.store.getClaim(theirs))?.id).toBe(theirs);
+  });
+});
+
+describe("withRollback keeps created documents", () => {
+  test("a rolled-back batch keeps the document it created when another writer recorded a claim on it", async () => {
+    const r = await repo();
+    await r.write("src/a.ts", "export const A = 1;\nexport const B = 2;\n");
+    await r.write("d.md", "# D\n\nA is 1 here.\nB is 2 here.\n");
+    const contents = async () => ({
+      docContent: await r.read("d.md"),
+      evidenceContents: { "src/a.ts": await r.read("src/a.ts") },
+    });
+    const writerB = await ClaimStore.open(r.root);
+    let ours = "";
+    let theirs = "";
+    await expect(
+      r.store.withRollback(async () => {
+        // Batch A creates the document record for d.md.
+        ours = (
+          await recordClaim(r.store, await contents(), {
+            docPath: "d.md",
+            docSpec: { quote: "A is 1 here." },
+            kind: "code",
+            evidence: [{ file: "src/a.ts", region: { quote: "A = 1" } }],
+            by: "agent:a",
+            ref: "testref",
+          })
+        ).claim.id;
+        // Writer B records a claim on the same path meanwhile.
+        theirs = (
+          await recordClaim(writerB, await contents(), {
+            docPath: "d.md",
+            docSpec: { quote: "B is 2 here." },
+            kind: "code",
+            evidence: [{ file: "src/a.ts", region: { quote: "B = 2" } }],
+            by: "agent:b",
+            ref: "testref",
+          })
+        ).claim.id;
+        throw new Error("apply failed");
+      }),
+    ).rejects.toThrow("apply failed");
+    expect(await r.store.getClaim(ours)).toBeUndefined();
+    const b = await r.store.getClaim(theirs);
+    expect(b?.id).toBe(theirs);
+    expect(b?.documentId).toBe(documentIdForPath("d.md"));
+    expect((await r.store.getDocument(documentIdForPath("d.md")))?.path).toBe(
+      "d.md",
+    );
+  });
+});
+
 describe("record by kind", () => {
   test("a reference claim stores exactly one document span and no AST selectors", async () => {
     const r = await repo();
@@ -335,5 +436,37 @@ describe("record by kind", () => {
     expect(claim.ttl).toBe("P90D");
     expect(claim.sources[0]?.resource).toBe("https://dashboard.stripe.com");
     expect(claim.procedure?.instructions).toContain("dashboard");
+  });
+});
+
+describe("B.10 .claims/.gitignore", () => {
+  let dirs: string[] = [];
+  afterEach(async () => {
+    await Promise.all(dirs.map((d) => rm(d, { recursive: true, force: true })));
+    dirs = [];
+  });
+
+  test("B.10: init writes .claims/.gitignore with judge/, adds it to an existing store, and never rewrites it", async () => {
+    const root = await mkdtemp(join(tmpdir(), "ce-gitignore-"));
+    dirs.push(root);
+    const file = join(root, ".claims", ".gitignore");
+
+    await ClaimStore.init(root);
+    expect(await readFile(file, "utf8")).toBe("judge/\n");
+    expect(await exists(join(root, ".gitignore"))).toBe(false);
+
+    // An existing store without the file gets it on the next init.
+    await rm(file);
+    const config = await readFile(join(root, ".claims", "config.json"), "utf8");
+    await ClaimStore.init(root);
+    expect(await readFile(file, "utf8")).toBe("judge/\n");
+    expect(await readFile(join(root, ".claims", "config.json"), "utf8")).toBe(
+      config,
+    );
+
+    // A file the user edited is left as it is.
+    await writeFile(file, "judge/\nscratch/\n");
+    await ClaimStore.init(root);
+    expect(await readFile(file, "utf8")).toBe("judge/\nscratch/\n");
   });
 });

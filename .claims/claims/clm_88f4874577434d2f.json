@@ -1,0 +1,105 @@
+{
+  "id": "clm_88f4874577434d2f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 34 | an unknown repo alias is `unavailable` at check time and refused at record time; so is a sibling that is not checked out at record time |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 34 | an unknown repo alias is `unavailable` at check time and refused at record time; so is a sibling that is not checked out at record time |",
+        "prefix": "redacts submitted evidence to `sha256:<hash>` |\n",
+        "suffix": "\n| 35 | a contradiction below its bar warns with"
+      },
+      {
+        "kind": "text-position",
+        "start": 78796,
+        "end": 78940
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `repo alias \"${split.alias}\" is not defined in .claims/config.json repos`,",
+          "prefix": "vailable: true,\n      alias: split.alias,\n      ",
+          "suffix": "\n    };\n  }\n  const abs = isAbsolute(dir) ? dir "
+        },
+        {
+          "kind": "text-position",
+          "start": 3505,
+          "end": 3587
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "021711a692bccafd",
+          "semanticHash": "cf76037513a84ef8"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`unknown repo alias \"${split.alias}\" in ${file}; add it to \"repos\" in .claims/config.json",
+          "prefix": ".keys(config.repos);\n    throw new Error(\n      ",
+          "suffix": "${known.length ? ` (known: ${known.join(\", \")})`"
+        },
+        {
+          "kind": "text-position",
+          "start": 2377,
+          "end": 2466
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "6b44e4b2feddf7ff",
+          "semanticHash": "207162f3d8bbd932"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "a claim is recorded against text on disk, so check out the sibling repo first.",
+          "prefix": " }\n  return new Error(\n    `${resolved.reason}; ",
+          "suffix": "`,\n  );\n}\n\nexport class Engine {\n  private const"
+        },
+        {
+          "kind": "text-position",
+          "start": 7888,
+          "end": 7966
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "b64150228b9716c2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:24.045Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:24.045Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

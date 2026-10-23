@@ -1,0 +1,52 @@
+{
+  "id": "clm_987391d6472b4343",
+  "documentId": "doc_da671669435c5749",
+  "kind": "reference",
+  "sentence": "| `triage` of 500 regions | about 10 to 20 requests, 250k to 400k tokens, $0.01 to $0.02, a few seconds |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `triage` of 500 regions | about 10 to 20 requests, 250k to 400k tokens, $0.01 to $0.02, a few seconds |",
+        "prefix": "\n| typical latency | about 100 ms per request |\n",
+        "suffix": "\n| `supports` for 500 claims | 500 requests, 0.1"
+      },
+      {
+        "kind": "text-position",
+        "start": 15044,
+        "end": 15149
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/evidence/typesafe-research-2026-10-22.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "500 regions total -> roughly 10-20 requests, ~250k-400k tokens, about $0.01-0.02, a few seconds wall clock.",
+          "prefix": "stion tokens plus state per request, under 64k. ",
+          "suffix": "\n- **supports, 500 claims:** 500 requests (one p"
+        },
+        {
+          "kind": "text-position",
+          "start": 23493,
+          "end": 23600
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:42.355Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:42.355Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,52 @@
+{
+  "id": "clm_261633a909b94a4a",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "| `since` | empty | `check --since <ref>` |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `since` | empty | `check --since <ref>` |",
+        "prefix": "on` | `gating` | `gating`, `warn`, or `never` |\n",
+        "suffix": "\n| `doc` | empty | `check --doc <path>`; expired"
+      },
+      {
+        "kind": "text-position",
+        "start": 20705,
+        "end": 20748
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "action.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if [ -n \"$HIBI_SINCE\" ]; then ARGS+=(--since \"$HIBI_SINCE\"); fi",
+          "prefix": " ARGS=(check --fail-on \"$HIBI_FAIL_ON\")\n        ",
+          "suffix": "\n        if [ -n \"$HIBI_DOC\" ]; then ARGS+=(--do"
+        },
+        {
+          "kind": "text-position",
+          "start": 1423,
+          "end": 1486
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:12.088Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:12.088Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

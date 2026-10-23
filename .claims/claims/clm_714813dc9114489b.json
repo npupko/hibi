@@ -1,0 +1,97 @@
+{
+  "id": "clm_714813dc9114489b",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "code",
+  "sentence": "| TypeSafe citation-check cookbook | the three-way `supports` question and the `addresses` check that forces `does_not_address` |",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| TypeSafe citation-check cookbook | the three-way `supports` question and the `addresses` check that forces `does_not_address` |",
+        "prefix": "ape of a procedure (`id`, `command`, `stdin`) |\n",
+        "suffix": "\n\n## Next\n\n<CardGroup cols={2}>\n  <Card title=\"C"
+      },
+      {
+        "kind": "text-position",
+        "start": 6944,
+        "end": 7073
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/questions/supports.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"says_nothing\": \"does_not_address\"",
+          "prefix": ": \"supports\",\n    \"contradicts\": \"refutes\",\n    ",
+          "suffix": "\n  }\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 1494,
+          "end": 1528
+        }
+      ]
+    },
+    {
+      "file": "src/judge/questions/supports.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"addresses\": {",
+          "prefix": "e claim asserts, either way\"\n      }\n    },\n    ",
+          "suffix": "\n      \"type\": \"noul\",\n      \"instructions\": \"Do"
+        },
+        {
+          "kind": "text-position",
+          "start": 1032,
+          "end": 1046
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "forced: \"addresses\",",
+          "prefix": "ulConfidence(addresses),\n      addresses,\n      ",
+          "suffix": "\n    };\n  }\n  return {\n    relation: names[raw.c"
+        },
+        {
+          "kind": "text-position",
+          "start": 13886,
+          "end": 13906
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "50c172db08dddb6e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"addresses\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:52.877Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:52.877Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

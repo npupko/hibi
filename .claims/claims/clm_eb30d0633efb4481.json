@@ -1,0 +1,68 @@
+{
+  "id": "clm_eb30d0633efb4481",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "code",
+  "sentence": "/plugin marketplace add npupko/hibi\n/plugin install hibi-cli@hibi",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "/plugin marketplace add npupko/hibi\n/plugin install hibi-cli@hibi",
+        "prefix": "e repository is also a plugin marketplace.\n\n```\n",
+        "suffix": "\n```\n\nThe skill's description tells Claude to us"
+      },
+      {
+        "kind": "text-position",
+        "start": 595,
+        "end": 660
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": ".claude-plugin/marketplace.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"name\": \"hibi\",",
+          "prefix": "{\n  ",
+          "suffix": "\n  \"owner\": {\n    \"name\": \"Nick Pupko\",\n    \"ema"
+        },
+        {
+          "kind": "text-position",
+          "start": 4,
+          "end": 19
+        }
+      ]
+    },
+    {
+      "file": ".claude-plugin/marketplace.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"name\": \"hibi-cli\",",
+          "prefix": "ick7@gmail.com\"\n  },\n  \"plugins\": [\n    {\n      ",
+          "suffix": "\n      \"source\": \"./plugins/hibi-cli\",\n      \"de"
+        },
+        {
+          "kind": "text-position",
+          "start": 126,
+          "end": 145
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:25:22.404Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:25:22.404Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

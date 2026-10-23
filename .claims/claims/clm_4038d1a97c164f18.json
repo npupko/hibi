@@ -1,0 +1,65 @@
+{
+  "id": "clm_4038d1a97c164f18",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `review` | a `reference` or `attested` claim whose judge state is `review` and not acknowledged |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `review` | a `reference` or `attested` claim whose judge state is `review` and not acknowledged |",
+        "prefix": " a `ttl` that ran out, `code` claims included |\n",
+        "suffix": "\n| `pending` | a `reference` or `attested` claim"
+      },
+      {
+        "kind": "text-position",
+        "start": 6668,
+        "end": 6767
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"review\" && !acknowledged) return \"review\";",
+          "prefix": " if (claim.kind === \"code\") return undefined;\n  ",
+          "suffix": "\n  if (v.judge === \"pending\") return \"pending\";\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 12761,
+          "end": 12820
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "2f9319063bdbbff5",
+          "semanticHash": "4a9c6289d1a83460"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"review\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:15.407Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:15.407Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

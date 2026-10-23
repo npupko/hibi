@@ -1,0 +1,88 @@
+{
+  "id": "clm_8277816dfa284ac2",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "It makes the judgment `pending`, which warns.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It makes the judgment `pending`, which warns.",
+        "prefix": "e failure never aborts a run and never exits 1. ",
+        "suffix": "\n\n| failure | kind |\n|---|---|\n| no `TYPESAFE_AP"
+      },
+      {
+        "kind": "text-position",
+        "start": 4221,
+        "end": 4266
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"pending\", reasons: [label] };",
+          "prefix": "l(e);\n    if (label === undefined) throw e;\n    ",
+          "suffix": "\n  }\n  await input.cache.put({\n    key,\n    mode"
+        },
+        {
+          "kind": "text-position",
+          "start": 11618,
+          "end": 11664
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "4e167621b94fec45",
+          "semanticHash": "b1b2b8dff7d09013"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const WARN_JUDGE: ReadonlySet<JudgeState> = new Set<JudgeState>([",
+          "prefix": "idenceState>([\n  \"moved\",\n  \"unavailable\",\n]);\n\n",
+          "suffix": "\n  \"review\",\n  \"pending\",\n]);\n\nfunction isGating"
+        },
+        {
+          "kind": "text-position",
+          "start": 1612,
+          "end": 1677
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "a25feaf2555f5c2e",
+          "semanticHash": "a622cd3b1cc59123"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:36.115Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:36.115Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

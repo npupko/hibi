@@ -1,0 +1,59 @@
+{
+  "id": "clm_d3ecafb8030e4b67",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `answers` | the probabilities returned |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `answers` | the probabilities returned |",
+        "prefix": " |\n| `request` | the state and questions sent |\n",
+        "suffix": "\n| `evidence` | for submitted evidence: `hash`, "
+      },
+      {
+        "kind": "text-position",
+        "start": 13162,
+        "end": 13204
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "/** The exact probabilities returned. */",
+          "prefix": "uestions sent. */\n    request: z.unknown(),\n    ",
+          "suffix": "\n    answers: z.unknown(),\n    evidence: CachedE"
+        },
+        {
+          "kind": "text-position",
+          "start": 13367,
+          "end": 13407
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "bc1376244b86717b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:40.869Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:40.869Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

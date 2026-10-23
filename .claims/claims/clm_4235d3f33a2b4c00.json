@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 14081,
-        "end": 14148
+        "start": 14929,
+        "end": 14996
       }
     ]
   },
@@ -43,8 +43,21 @@
       "by": "agent:claude-dogfood",
       "at": "2026-10-22T19:12:58.026Z",
       "basis": "vouch"
+    },
+    {
+      "by": "human:mikita@peechapp.co",
+      "at": "2026-10-23T07:36:10.843Z",
+      "basis": "vouch",
+      "note": "checked docs.typesafe.ai/models.md: Jev input $0.042 per million tokens, output free"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:28:51.930Z",
+      "basis": "evidence",
+      "note": "TypeSafe models page: Jev 1.14 and 1.13 cost $0.042 per Mtok input; output tokens are free",
+      "evidenceHash": "80e874eb8727a73c43947dbf40bfadc2a7ee42834dd6562f0429841fff57b56d"
     }
   ],
   "createdAt": "2026-10-22T19:12:58.026Z",
-  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
 }

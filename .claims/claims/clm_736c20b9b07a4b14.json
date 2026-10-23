@@ -1,0 +1,88 @@
+{
+  "id": "clm_736c20b9b07a4b14",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A sentence that is not in `--to` reads `orphaned` and gates.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A sentence that is not in `--to` reads `orphaned` and gates.",
+        "prefix": "is omitted when the claim has no evidence span. ",
+        "suffix": " A quote that occurs more than once in `--to` is"
+      },
+      {
+        "kind": "text-position",
+        "start": 70498,
+        "end": 70558
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons: [\"quote not found\"],",
+          "prefix": "\n      region: null,\n      similarity: 0,\n      ",
+          "suffix": "\n      changedEvidence: [\n        { path: bundle"
+        },
+        {
+          "kind": "text-position",
+          "start": 5833,
+          "end": 5862
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "9d2a9669b3aeaf06",
+          "semanticHash": "1ae1e18eb2c6796e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"quotenotfound\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const GATING_ANCHOR: ReadonlySet<EvidenceState> = new Set<EvidenceState>([",
+          "prefix": "es. */\nexport type GateMode = \"store\" | \"doc\";\n\n",
+          "suffix": "\n  \"changed\",\n  \"orphaned\",\n  \"ambiguous\",\n]);\n\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 1384,
+          "end": 1458
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "8706f11a57165105",
+          "semanticHash": "64372cbc388d8456"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:03.164Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:03.164Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

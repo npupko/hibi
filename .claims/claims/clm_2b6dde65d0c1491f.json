@@ -1,0 +1,82 @@
+{
+  "id": "clm_2b6dde65d0c1491f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A changed semantic hash alone makes the span `changed` (section 7.1, step 4).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A changed semantic hash alone makes the span `changed` (section 7.1, step 4).",
+        "prefix": "age, node type, structural hash, semantic hash. ",
+        "suffix": "\n- `value` (code only, optional): language, node"
+      },
+      {
+        "kind": "text-position",
+        "start": 16793,
+        "end": 16870
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (astSel && analysis && analysis.semanticHash !== astSel.semanticHash) {",
+          "prefix": "de side).\n  let astLabel: string | undefined;\n  ",
+          "suffix": "\n    astLabel =\n      analysis.structuralHash =="
+        },
+        {
+          "kind": "text-position",
+          "start": 6936,
+          "end": 7010
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "ba6728d1e5cde7f7",
+          "semanticHash": "0b7e51fc9e9522c3"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (!sameText || astLabel || valueLabel || numberLabel) {",
+          "prefix": "ameText = similarity >= SAME_TEXT_SIMILARITY;\n  ",
+          "suffix": "\n    if (valueLabel) {\n      changedEvidence.pus"
+        },
+        {
+          "kind": "text-position",
+          "start": 8012,
+          "end": 8069
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6003eef6096a4e40",
+          "semanticHash": "35e8d1c3623d39ef"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:24.615Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:24.615Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,94 @@
+{
+  "id": "clm_1f0684a61f074599",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "A verdict that needs action carries `remediation`: a menu, most severe condition first.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A verdict that needs action carries `remediation`: a menu, most severe condition first.",
+        "prefix": "SON still reports everything |\n\n## Remediation\n\n",
+        "suffix": " `recommended` names the action to start with, o"
+      },
+      {
+        "kind": "text-position",
+        "start": 4537,
+        "end": 4624
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function remediationFor(v: RemediationInput): Remediation | null {",
+          "prefix": "dict, or `null` when there is nothing to do. */\n",
+          "suffix": "\n  const id = v.claimId;\n  const sections: Secti"
+        },
+        {
+          "kind": "text-position",
+          "start": 10113,
+          "end": 10186
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ecf7c409b4441e42",
+          "semanticHash": "8d3fae72859cf0c9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (first === undefined) return null;",
+          "prefix": "ed(id)] });\n  }\n\n  const first = sections[0];\n  ",
+          "suffix": "\n  const actions: RemediationAction[] = [];\n  co"
+        },
+        {
+          "kind": "text-position",
+          "start": 11884,
+          "end": 11921
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6e08ec97834fb270",
+          "semanticHash": "ede0e70d4a26654f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:13.294Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:13.294Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

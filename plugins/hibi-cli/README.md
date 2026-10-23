@@ -11,7 +11,7 @@ From inside Claude Code:
 /plugin install hibi-cli@hibi
 ```
 
-Run `/plugin marketplace update` to pull the latest version after the repo changes.
+To pull the latest version after the repo changes, run `claude plugin update hibi-cli@hibi` in your shell, or select **Update now** on the plugin in the **Installed** tab of `/plugin`.
 
 ## What's inside
 
@@ -28,8 +28,8 @@ plugins/hibi-cli/
 
 Claude loads the skill when you ask whether a document is still true, before it relies on `CLAUDE.md` or `AGENTS.md`, after a feature, when docs or a knowledge repo drift, when documents contradict each other, or when you mention claims or `.claims/`. You can also invoke it as `/hibi-cli:hibi`.
 
-The skill pre-approves `hibi check`, `hibi list`, `hibi audit`, and their `bunx @npupko/hibi` forms; they write nothing except judge cache entries. Mutating verbs prompt for permission. The judge needs `TYPESAFE_API_KEY`; without it, judgments are `pending` and nothing fails.
+The skill pre-approves `hibi check`, `hibi list`, `hibi audit`, and their `bunx @npupko/hibi` forms; they write nothing except judge cache entries. Mutating verbs prompt for permission. The judge needs `TYPESAFE_API_KEY`; without it, uncached judgments are `pending` and nothing fails.
 
 ## Develop
 
-The canonical skill source lives in the hibi repo. Edit `skills/hibi/SKILL.md`, `references/cookbook.md`, or `assets/`, commit, and users get it on the next `/plugin marketplace update`. Do not edit `references/cli-reference.md` by hand; run `bun run build:cli-reference` at the repo root.
+The canonical skill source lives in the hibi repo. Edit `skills/hibi/SKILL.md`, `references/cookbook.md`, or `assets/`, commit, and users get it when they update the plugin. Do not edit `references/cli-reference.md` by hand; run `bun run build:cli-reference` at the repo root.

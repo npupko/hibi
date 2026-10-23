@@ -1,0 +1,94 @@
+{
+  "id": "clm_7e1573108c784939",
+  "documentId": "doc_c5adefb4274c6931",
+  "kind": "code",
+  "sentence": "3 regions, 0 covered, 3 uncovered; code 1, reference 1, not-a-claim 1; 1 judge request",
+  "doc": {
+    "file": "docs/quickstart.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "3 regions, 0 covered, 3 uncovered; code 1, reference 1, not-a-claim 1; 1 judge request",
+        "prefix": "unds are issued within two weeks of a request.\"\n",
+        "suffix": "\n```\n\nEach uncovered region gets a kind from the"
+      },
+      {
+        "kind": "text-position",
+        "start": 2076,
+        "end": 2162
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "regions, ${summary.covered} covered, ${summary.uncovered} uncovered; ${counts || \"no regions\"}; ${summary.requests} judge request",
+          "prefix": "const tail = style.dim(\n    `${summary.regions} ",
+          "suffix": "${summary.requests === 1 ? \"\" : \"s\"}`,\n  );\n  re"
+        },
+        {
+          "kind": "text-position",
+          "start": 2919,
+          "end": 3048
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "2551a50698156cf3",
+          "semanticHash": "518a6294b51f750f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"no regions\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const KIND_WIDTH = \"unverifiable\".length;",
+          "prefix": "\n        : \"pending: judge unavailable\";\n  }\n}\n\n",
+          "suffix": "\n\nfunction rowLine(row: AuditRow, style: Style, "
+        },
+        {
+          "kind": "text-position",
+          "start": 1600,
+          "end": 1641
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "643e234fc39a5a8d",
+          "semanticHash": "0af2a4e713c5c0c7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unverifiable\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:29.174Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:29.174Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

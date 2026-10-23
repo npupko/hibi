@@ -1,0 +1,111 @@
+{
+  "id": "clm_8737c9c93d194c19",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The request is `{ claim, claim_context, evidence, evidence_source }` with the current sentence, its context (section 8.3), the referenced text, and the evidence file.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The request is `{ claim, claim_context, evidence, evidence_source }` with the current sentence, its context (section 8.3), the referenced text, and the evidence file.",
+        "prefix": "hanged` or `moved` and both texts were located. ",
+        "suffix": " The cache key covers the model and all four fie"
+      },
+      {
+        "kind": "text-position",
+        "start": 22985,
+        "end": 23151
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sentence: texts.sentence,\n    context: claimContext(texts.docText, {",
+          "prefix": "nst request = buildSupportsRequest(model, {\n    ",
+          "suffix": "\n      ...claim,\n      sentence: texts.sentence,"
+        },
+        {
+          "kind": "text-position",
+          "start": 9094,
+          "end": 9162
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "26b14f2ae861b4de",
+          "semanticHash": "a47c9e677b6c642f"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence: texts.referencedText,\n    source: claim.evidence[0]?.file ?? \"\",",
+          "prefix": "im,\n      sentence: texts.sentence,\n    }),\n    ",
+          "suffix": "\n  });\n  return { request, key: cacheKey(model, "
+        },
+        {
+          "kind": "text-position",
+          "start": 9223,
+          "end": 9297
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "26b14f2ae861b4de",
+          "semanticHash": "a47c9e677b6c642f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "claim: input.sentence,\n      claim_context: input.context,\n      evidence: input.evidence,\n      evidence_source: input.source,",
+          "prefix": "uest {\n  return {\n    model,\n    state: {\n      ",
+          "suffix": "\n    },\n    questions: supportsFile.questions,\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 11055,
+          "end": 11182
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "e1a61836897c279b",
+          "semanticHash": "d1b46316cc400607"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:41.827Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:41.827Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "clm_3d73437871e143be",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| pending | `judge error: TypeSafe returned HTTP 400: …` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| pending | `judge error: TypeSafe returned HTTP 400: …` |",
+        "prefix": "API_KEY is not set; the judge cannot answer.` |\n",
+        "suffix": "\n| pending | `referenced span is longer than 32,"
+      },
+      {
+        "kind": "text-position",
+        "start": 10040,
+        "end": 10098
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "throw new JudgeError(`TypeSafe returned HTTP ${status}: ${text}`);",
+          "prefix": " the request is wrong, not the service.\n        ",
+          "suffix": "\n      }\n      lastFailure = `HTTP ${status}: ${"
+        },
+        {
+          "kind": "text-position",
+          "start": 6347,
+          "end": 6413
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "throw_statement",
+          "structuralHash": "5e7091e61f388ec5",
+          "semanticHash": "e88771fe6458d624"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeError) return `judge error: ${e.message}`;",
+          "prefix": "le) return `judge unavailable: ${e.message}`;\n  ",
+          "suffix": "\n  return undefined;\n}\n\n/**\n * The longest text "
+        },
+        {
+          "kind": "text-position",
+          "start": 3740,
+          "end": 3804
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "d2206c1328e3b3de"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:39.157Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:39.157Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

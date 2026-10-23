@@ -1,14 +1,19 @@
 /**
  * `reanchor`: re-point an existing claim at its current location.
  *
- * Every span re-resolves against the current working tree and the stored
- * baseline is rewritten so a `moved`/`changed` claim settles back to
- * `unchanged`. Explicit replacement spans (`docSpec` / `evidence[]`) override;
- * otherwise each span re-localizes through its existing selectors. The
- * claim's `sentence` is refreshed from the new doc span.
+ * Every span re-resolves against the current working tree. An explicit
+ * replacement span (`docSpec` / `evidence[]`) is stored as given. Without
+ * one, a side that reads `moved` is rebuilt at its new location, a side that
+ * reads `unchanged` is kept, and a side that reads `changed`, `ambiguous` or
+ * `orphaned` is kept as stored and listed in `kept` with a reason naming the
+ * flag to pass. The claim's `sentence` is refreshed from a rebuilt doc span. With `docOnly`
+ * (`supersede`) the claim moves to the new file (`documentId` and the doc
+ * side's file); the text-position selector is rebuilt only when the stored
+ * quote occurs verbatim exactly once there. The sentence, the quote, the
+ * hashes, evidence bundles, their baselines, and `ref` stay as stored.
  *
- * Safety: a side that resolves `orphaned` and has no explicit replacement is
- * refused; an empty span is never stored. An evidence side in a sibling repo
+ * Safety: an empty span is never stored; nothing is written when no side
+ * was rebuilt. An evidence side in a sibling repo
  * that is not checked out keeps its stored bundle unchanged, with a warning. The result carries the before and
  * after quotes per side so the caller can see what moved.
  */
@@ -51,6 +56,12 @@ export interface ReanchorInput {
   docPath?: string;
   /** Replacement evidence targets; omit to re-localize the existing bundles. */
   evidence?: EvidenceTarget[];
+  /**
+   * Move the doc side only (`supersede`): the evidence bundles, their
+   * baselines, and `ref` stay as stored, so a changed evidence side stays
+   * changed.
+   */
+  docOnly?: boolean;
   /** The ref to stamp (the caller resolves git HEAD). */
   ref?: string;
   analyzer?: AnchorAnalyzer & AstAnalyzer;
@@ -64,8 +75,21 @@ export interface SideQuote {
   quote: string;
 }
 
+/** A side plain `reanchor` left as stored, and why. */
+export interface KeptSide {
+  side: "doc" | "evidence";
+  file: string;
+  state: AnchorState;
+  /** e.g. `doc: changed; pass --doc-quote to re-anchor`. */
+  reason: string;
+}
+
 export interface ReanchorResult {
   claim: Claim;
+  /** Number of sides rebuilt (explicit spans and `moved` sides). */
+  relocated: number;
+  /** Sides that needed relocating but were left as stored. */
+  kept: KeptSide[];
   doc: AnchorState;
   /** Absent when the claim has no evidence span. */
   evidence?: EvidenceState;
@@ -159,21 +183,24 @@ function toResolveFiles(contents: RecordContents): ResolveFiles {
   };
 }
 
-function orphanError(
-  id: string,
+function keptSide(
   side: "doc" | "evidence",
   file: string,
+  state: AnchorState,
   kind: ClaimKind,
-): Error {
-  const flags =
+): KeptSide {
+  const flag =
     side === "doc"
-      ? "--doc-quote/--doc-range"
+      ? "--doc-quote"
       : kind === "reference"
-        ? "--ref-file with --ref-quote/--ref-range"
-        : "--code-file with --code-quote/--code-range";
-  return new Error(
-    `claim ${id}: the ${side} span in ${file} was not found (orphaned). Pass an explicit new span for that side (${flags}), run --suggest to find candidates, or retire the claim.`,
-  );
+        ? "--ref-quote"
+        : "--code-quote";
+  return {
+    side,
+    file,
+    state,
+    reason: `${side}: ${state}; pass ${flag} to re-anchor`,
+  };
 }
 
 /** The structural language of an evidence file: code claims only. */
@@ -209,9 +236,10 @@ function bundleFromTarget(
 }
 
 /**
- * Re-localize an existing evidence bundle in place from its resolved side
- * result. An `unavailable` side (sibling repo not checked out) keeps the
- * stored bundle and adds a warning.
+ * Plain `reanchor` on one existing evidence bundle: rebuilt when it reads
+ * `moved`, kept when it reads `unchanged`, kept with a warning when
+ * `unavailable` (sibling repo not checked out), and kept with a `kept` entry
+ * when it reads `changed`, `ambiguous` or `orphaned`.
  */
 function relocateEvidenceBundle(
   kind: ClaimKind,
@@ -219,23 +247,54 @@ function relocateEvidenceBundle(
   contents: RecordContents,
   side: EvidenceSide,
   analyzer: AnchorAnalyzer | undefined,
-  claimId: string,
   warnings: string[],
-): SelectorBundle {
+  kept: KeptSide[],
+): { bundle: SelectorBundle; relocated: boolean } {
   if (side.state === "unavailable") {
     warnings.push(
       `evidence side ${bundle.file} kept unchanged: ${side.reasons.join("; ")}`,
     );
-    return bundle;
+    return { bundle, relocated: false };
   }
+  if (side.state === "unchanged") return { bundle, relocated: false };
   const content = contents.evidenceContents[bundle.file];
-  if (content === undefined || content === null || !side.region) {
-    throw orphanError(claimId, "evidence", bundle.file, kind);
+  if (
+    side.state !== "moved" ||
+    content === undefined ||
+    content === null ||
+    !side.region
+  ) {
+    kept.push(keptSide("evidence", bundle.file, side.state, kind));
+    return { bundle, relocated: false };
   }
-  return buildSelectorBundle(bundle.file, content, side.region, {
-    language: evidenceLanguage(kind, bundle.file),
-    analyzer,
-  });
+  return {
+    bundle: buildSelectorBundle(bundle.file, content, side.region, {
+      language: evidenceLanguage(kind, bundle.file),
+      analyzer,
+    }),
+    relocated: true,
+  };
+}
+
+/**
+ * The doc selectors for `supersede` in a new file: the text-position selector
+ * moved to the stored quote's only verbatim occurrence, or the selectors
+ * unchanged when the quote occurs zero or several times.
+ */
+function repositionDoc(
+  selectors: SelectorBundle["selectors"],
+  content: string,
+): SelectorBundle["selectors"] {
+  const quote = selectors.find((s) => s.kind === "text-quote");
+  if (quote?.kind !== "text-quote" || quote.exact.length === 0)
+    return selectors;
+  const at = content.indexOf(quote.exact);
+  if (at < 0 || content.indexOf(quote.exact, at + 1) >= 0) return selectors;
+  return selectors.map((s) =>
+    s.kind === "text-position"
+      ? { ...s, start: at, end: at + quote.exact.length }
+      : s,
+  );
 }
 
 export async function reanchor(
@@ -248,6 +307,8 @@ export async function reanchor(
 
   const files = toResolveFiles(contents);
   const warnings: string[] = [];
+  const kept: KeptSide[] = [];
+  let relocated = 0;
 
   // Resolve every span once.
   const before = resolveClaimSides(claim, files, { ast: input.analyzer });
@@ -257,35 +318,55 @@ export async function reanchor(
   if (contents.docContent === null) {
     throw new Error(`Document not found on disk: ${docFile}`);
   }
-  if (
-    input.docPath !== undefined &&
-    input.docPath !== claim.doc.file &&
-    !input.docSpec
-  ) {
-    throw new Error(
-      `relocating claim ${claim.id} to ${input.docPath} requires an explicit doc span (--doc-quote/--doc-range); the existing selectors describe the old file.`,
-    );
-  }
-  let docRegion: Region;
-  if (input.docSpec) {
-    docRegion = resolveRegion(contents.docContent, input.docSpec);
+  let docBundle: SelectorBundle;
+  let sentence: string;
+  if (input.docOnly) {
+    // `supersede`: the claim moves to the new file. When the stored quote
+    // occurs verbatim exactly once there, the text-position selector is
+    // rebuilt at that occurrence; otherwise every selector stays as stored,
+    // so the next check reports `changed`, `ambiguous`, or `orphaned`. The
+    // sentence, the quote, and the hashes never change.
+    docBundle = {
+      file: docFile,
+      selectors: repositionDoc(claim.doc.selectors, contents.docContent),
+    };
+    sentence = claim.sentence;
   } else {
-    if (before.doc.state === "orphaned" || !before.doc.region) {
-      throw orphanError(claim.id, "doc", docFile, claim.kind);
+    if (
+      input.docPath !== undefined &&
+      input.docPath !== claim.doc.file &&
+      !input.docSpec
+    ) {
+      throw new Error(
+        `relocating claim ${claim.id} to ${input.docPath} requires an explicit doc span (--doc-quote/--doc-range); the existing selectors describe the old file.`,
+      );
     }
-    docRegion = before.doc.region;
+    let docRegion: Region | undefined;
+    if (input.docSpec) {
+      docRegion = resolveRegion(contents.docContent, input.docSpec);
+    } else if (before.doc.state === "moved" && before.doc.region) {
+      docRegion = before.doc.region;
+    } else if (before.doc.state !== "unchanged") {
+      kept.push(keptSide("doc", docFile, before.doc.state, claim.kind));
+    }
+    if (docRegion) {
+      warnings.push(
+        ...validateDocQuote(contents.docContent, docRegion, docFile),
+      );
+      docBundle = buildSelectorBundle(docFile, contents.docContent, docRegion);
+      sentence = regionText(contents.docContent, docRegion);
+      relocated++;
+    } else {
+      docBundle = claim.doc;
+      sentence = claim.sentence;
+    }
   }
-  warnings.push(...validateDocQuote(contents.docContent, docRegion, docFile));
-  const docBundle = buildSelectorBundle(
-    docFile,
-    contents.docContent,
-    docRegion,
-  );
-  const sentence = regionText(contents.docContent, docRegion);
 
   // Evidence side.
   let evidence: SelectorBundle[];
-  if (input.evidence !== undefined) {
+  if (input.docOnly) {
+    evidence = claim.evidence;
+  } else if (input.evidence !== undefined) {
     if (claim.kind === "attested" && input.evidence.length > 0) {
       throw new Error(
         `claim ${claim.id} is attested and has no evidence spans.`,
@@ -299,18 +380,21 @@ export async function reanchor(
     evidence = input.evidence.map((t) =>
       bundleFromTarget(claim.kind, t, contents, input.analyzer),
     );
+    relocated += evidence.length;
   } else {
-    evidence = claim.evidence.map((bundle, i) =>
-      relocateEvidenceBundle(
+    evidence = claim.evidence.map((bundle, i) => {
+      const r = relocateEvidenceBundle(
         claim.kind,
         bundle,
         contents,
         before.evidence[i] as EvidenceSide,
         input.analyzer,
-        claim.id,
         warnings,
-      ),
-    );
+        kept,
+      );
+      if (r.relocated) relocated++;
+      return r.bundle;
+    });
   }
 
   const documentId = input.docPath
@@ -323,11 +407,14 @@ export async function reanchor(
     sentence,
     doc: docBundle,
     evidence,
-    ref: input.ref ?? claim.ref,
+    ref:
+      input.docOnly || relocated === 0 ? claim.ref : (input.ref ?? claim.ref),
   };
-  if (!input.dryRun) await store.putClaim(next);
+  // `supersede` (docOnly) always writes: the claim moves to the new file.
+  const write = !input.dryRun && (input.docOnly || relocated > 0);
+  if (write) await store.putClaim(next);
 
-  if (!input.dryRun && input.docPath && documentId !== claim.documentId) {
+  if (write && input.docPath && documentId !== claim.documentId) {
     const existing = await store.getDocument(documentId);
     if (!existing) {
       await store.putDocument(
@@ -341,6 +428,8 @@ export async function reanchor(
   const after = resolveClaimSides(next, files, { ast: input.analyzer });
   return {
     claim: next,
+    relocated,
+    kept,
     doc: after.doc.state,
     ...(after.evidence.length > 0
       ? { evidence: worstEvidenceState(after.evidence) }

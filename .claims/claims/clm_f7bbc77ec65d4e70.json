@@ -1,0 +1,105 @@
+{
+  "id": "clm_f7bbc77ec65d4e70",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `subject` | `{ claimId }`, `{ pairId }`, or `{ docId }` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `subject` | `{ claimId }`, `{ pairId }`, or `{ docId }` |",
+        "prefix": "dgment` | `triage`, `supports`, or `conflict` |\n",
+        "suffix": "\n| `request` | the state and questions sent |\n| "
+      },
+      {
+        "kind": "text-position",
+        "start": 13057,
+        "end": 13116
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "subject: { pairId: pair.pairId },",
+          "prefix": "se.model,\n        judgment: \"conflict\",\n        ",
+          "suffix": "\n        request,\n        answers: response.answ"
+        },
+        {
+          "kind": "text-position",
+          "start": 10973,
+          "end": 11006
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1ee2c658a6d505c7",
+          "semanticHash": "6a8294e485716087"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "subject: { claimId: input.claim.id },",
+          "prefix": ": response.model,\n    judgment: \"supports\",\n    ",
+          "suffix": "\n    request,\n    answers: response.answers,\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 11761,
+          "end": 11798
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "3026c516aba32c44",
+          "semanticHash": "303352ae52a40bb2"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "subject: { docId },",
+          "prefix": ".model,\n          judgment: \"triage\",\n          ",
+          "suffix": "\n          request,\n          answers,\n         "
+        },
+        {
+          "kind": "text-position",
+          "start": 9093,
+          "end": 9112
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "16af8fe0f6863eab",
+          "semanticHash": "d03de370e397b111"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:40.721Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:40.721Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

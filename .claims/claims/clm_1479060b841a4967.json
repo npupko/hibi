@@ -1,0 +1,52 @@
+{
+  "id": "clm_1479060b841a4967",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "reference",
+  "sentence": "- It needed a write path into every document, a comment syntax per format, and it produced diff churn on every status change.",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- It needed a write path into every document, a comment syntax per format, and it produced diff churn on every status change.",
+        "prefix": "mentation; only readers of the raw file saw it.\n",
+        "suffix": "\n- The trust call is `hibi check --doc <file>`, "
+      },
+      {
+        "kind": "text-position",
+        "start": 4993,
+        "end": 5118
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "| banners and `--write` | the trust call is `check --doc`; an HTML comment is invisible in rendered docs and only reached raw-file readers; it required a write path, a nonce, a comment-syntax table, and caused diff churn |",
+          "prefix": "ilities and why\n\n| removed | reason |\n|---|---|\n",
+          "suffix": "\n| verifiers | hibi runs no verifiers and its on"
+        },
+        {
+          "kind": "text-position",
+          "start": 71581,
+          "end": 71803
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:51.895Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:51.895Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

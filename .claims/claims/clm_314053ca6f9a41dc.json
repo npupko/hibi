@@ -1,0 +1,94 @@
+{
+  "id": "clm_314053ca6f9a41dc",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It is required when `basis` is `ack` and is invalid for any other basis.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It is required when `basis` is `ack` and is invalid for any other basis.",
+        "prefix": "d, sentenceHashes: [a, b] }` or `{ judgeKey }`. ",
+        "suffix": " Unknown keys are rejected.\n\n- `by` uses OKF act"
+      },
+      {
+        "kind": "text-position",
+        "start": 7904,
+        "end": 7976
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (a.basis === \"ack\" && a.ack === undefined) {",
+          "prefix": "tional(),\n  })\n  .superRefine((a, ctx) => {\n    ",
+          "suffix": "\n      ctx.addIssue({\n        code: \"custom\",\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 6634,
+          "end": 6681
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "7b671fc72f37e3ce",
+          "semanticHash": "e5e0383197999e07"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"ack\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (a.basis !== \"ack\" && a.ack !== undefined) {",
+          "prefix": " it acknowledges in `ack`\",\n      });\n    }\n    ",
+          "suffix": "\n      ctx.addIssue({\n        code: \"custom\",\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 6845,
+          "end": 6892
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "4597741e384e5233",
+          "semanticHash": "ca004a648bf6d265"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"ack\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:23.452Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:23.452Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

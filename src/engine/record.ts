@@ -78,6 +78,8 @@ export interface RecordInput {
   analyzer?: AnchorAnalyzer;
   /** Clock for `createdAt` and the attestation time. Default: now. */
   now?: Date;
+  /** Validate and build the claim, write nothing. */
+  dryRun?: boolean;
 }
 
 /**
@@ -205,7 +207,7 @@ export async function recordClaim(
   let document = await store.getDocument(docId);
   if (!document) {
     document = newDocument(docId, input.docPath, now);
-    await store.putDocument(document);
+    if (!input.dryRun) await store.putDocument(document);
   }
 
   const doc = buildSelectorBundle(input.docPath, docContent, docRegion);
@@ -235,7 +237,7 @@ export async function recordClaim(
       ...(input.ttl !== undefined ? { ttl: input.ttl } : {}),
       attestations: [...existing.attestations, vouch],
     };
-    await store.putClaim(updated);
+    if (!input.dryRun) await store.putClaim(updated);
     return {
       document,
       claim: updated,
@@ -263,7 +265,7 @@ export async function recordClaim(
     createdAt: now.toISOString(),
     ref: input.ref,
   };
-  await store.putClaim(claim);
+  if (!input.dryRun) await store.putClaim(claim);
 
   return {
     document,

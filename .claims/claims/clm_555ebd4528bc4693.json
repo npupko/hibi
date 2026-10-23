@@ -1,0 +1,52 @@
+{
+  "id": "clm_555ebd4528bc4693",
+  "documentId": "doc_da671669435c5749",
+  "kind": "reference",
+  "sentence": "Under Bun it reads the response body twice and every request fails (as of 0.7.0).",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Under Bun it reads the response body twice and every request fails (as of 0.7.0).",
+        "prefix": "fficial `@typesafe-ai/sdk` package is not used. ",
+        "suffix": "\n\n### Retries and limits\n\nThe retry numbers copy"
+      },
+      {
+        "kind": "text-position",
+        "start": 2946,
+        "end": 3027
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/evidence/typesafe-research-2026-10-22.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "but every request rejects with a plain `TypeError: Body already used` thrown from the SDK's `parseBody` (`res.text()`)",
+          "prefix": "constructs (and selects `compression: \"zstd\"`), ",
+          "suffix": ", not a `TypeSafeError`, with `compression: \"zst"
+        },
+        {
+          "kind": "text-position",
+          "start": 28449,
+          "end": 28567
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:35.732Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:35.732Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

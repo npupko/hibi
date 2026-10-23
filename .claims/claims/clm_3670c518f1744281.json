@@ -1,0 +1,88 @@
+{
+  "id": "clm_3670c518f1744281",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Hibi calls TypeSafe's System One API over plain HTTP:",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi calls TypeSafe's System One API over plain HTTP:",
+        "prefix": "a claim in the document |\n\n## Jev and TypeSafe\n\n",
+        "suffix": "\n\n```\nPOST https://api.typesafe.ai/v1/systemone\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 2092,
+        "end": 2145
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "response = await this.fetchImpl(this.url, {",
+          "prefix": "se;\n      let text: string;\n      try {\n        ",
+          "suffix": "\n          method: \"POST\",\n          headers: {\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 5223,
+          "end": 5266
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "28311beeb29db742",
+          "semanticHash": "ad578c471d14790f"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "method: \"POST\",",
+          "prefix": "se = await this.fetchImpl(this.url, {\n          ",
+          "suffix": "\n          headers: {\n            authorization:"
+        },
+        {
+          "kind": "text-position",
+          "start": 5277,
+          "end": 5292
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "2c83b349d2a62922"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"POST\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:35.109Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:35.109Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

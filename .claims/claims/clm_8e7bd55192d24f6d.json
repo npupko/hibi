@@ -1,0 +1,88 @@
+{
+  "id": "clm_8e7bd55192d24f6d",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "`probability` is the judge's probability for `contradictory`, or `1` when the value rule fires.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`probability` is the judge's probability for `contradictory`, or `1` when the value rule fires.",
+        "prefix": "` | nothing on the verdict; see below | none |\n\n",
+        "suffix": " Unlike `supports`, the conflict value rule comp"
+      },
+      {
+        "kind": "text-position",
+        "start": 5510,
+        "end": 5605
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const pContra = r.probabilities.contradictory;",
+          "prefix": "ability: 1, reason: values.label };\n    }\n  }\n  ",
+          "suffix": "\n  if (r.relation === \"contradictory\") {\n    con"
+        },
+        {
+          "kind": "text-position",
+          "start": 5866,
+          "end": 5912
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "e163f29f0b06410c",
+          "semanticHash": "4b8e784d0bf6ac73"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { outcome: \"conflict\", probability: 1, reason: values.label };",
+          "prefix": ".differs && values.label !== undefined) {\n      ",
+          "suffix": "\n    }\n  }\n  const pContra = r.probabilities.con"
+        },
+        {
+          "kind": "text-position",
+          "start": 5784,
+          "end": 5853
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "a4e20b200fce563b",
+          "semanticHash": "7d930ffade48333b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"conflict\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T09:36:14.389Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T09:36:14.389Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,94 @@
+{
+  "id": "clm_4f3dfe1404854974",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| a side `ambiguous` | `reanchor` with a wider span |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| a side `ambiguous` | `reanchor` with a wider span |",
+        "prefix": "anged` | `reverify-doc`, `reanchor`, `retire` |\n",
+        "suffix": "\n| `judge: refuted` | `fix-evidence`, `fix-claim"
+      },
+      {
+        "kind": "text-position",
+        "start": 5167,
+        "end": 5220
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { recommended: \"reanchor\", actions: [reanchorTighten(id, flags)] };",
+          "prefix": "tire(id)],\n    };\n  }\n  if (hasAmbiguous) {\n    ",
+          "suffix": "\n  }\n  return null;\n}\n\n/** The remediation menu "
+        },
+        {
+          "kind": "text-position",
+          "start": 9934,
+          "end": 10008
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "16c9093db0feb5e6",
+          "semanticHash": "ae54f176f990a402"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"reanchor\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "rationale: \"the quote matches several places; pass a wider span\",",
+          "prefix": "r\",\n    title: \"Reanchor to a unique span\",\n    ",
+          "suffix": "\n    command: reanchorCmd(id, flags),\n  };\n}\n\nfu"
+        },
+        {
+          "kind": "text-position",
+          "start": 5690,
+          "end": 5755
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "b452f6c991f9f74e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"the quote matches several places; pass a wider span\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:13.849Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:13.849Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -3,25 +3,25 @@
   "answers": {
     "same_subject": {
       "type": "noul",
-      "noul": 0.95
+      "noul": 0.74
     },
     "relation": {
       "type": "choice",
       "choice": "contradictory",
-      "confidence": 0.895,
+      "confidence": 0.92,
       "probabilities": {
-        "consistent": 0.04,
-        "contradictory": 0.93,
-        "unrelated": 0.03
+        "consistent": 0.05,
+        "contradictory": 0.95,
+        "unrelated": 0.0
       }
     },
     "contradicts": {
       "type": "noul",
-      "noul": 0.92
+      "noul": 0.65
     }
   },
   "usage": {
-    "input_tokens": 402,
-    "output_tokens": 7
+    "input_tokens": 769,
+    "output_tokens": 82
   }
 }

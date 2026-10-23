@@ -1,0 +1,88 @@
+{
+  "id": "clm_9019560f1046426a",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "code",
+  "sentence": "It also finds sentences that contradict each other and sentences nothing could ever verify.",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It also finds sentences that contradict each other and sentences nothing could ever verify.",
+        "prefix": "rence`, and `attested` (see [Claims](/claims)). ",
+        "suffix": "\n\n## The threat model\n\n**A reader asks hibi befo"
+      },
+      {
+        "kind": "text-position",
+        "start": 1107,
+        "end": 1198
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export async function runConflictPass(",
+          "prefix": "return kx < ky ? -1 : kx > ky ? 1 : 0;\n  };\n};\n\n",
+          "suffix": "\n  opts: ConflictPassOptions,\n): Promise<Conflic"
+        },
+        {
+          "kind": "text-position",
+          "start": 9533,
+          "end": 9571
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "0ad1565518a98ff0",
+          "semanticHash": "f277e35965e21898"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return \"unverifiable\";",
+          "prefix": "l\":\n      return \"attested\";\n    default:\n      ",
+          "suffix": "\n  }\n}\n\n/** A row with its keys in the documente"
+        },
+        {
+          "kind": "text-position",
+          "start": 5807,
+          "end": 5829
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "3df4bb0705c3a2fa",
+          "semanticHash": "52e9aca49b284a25"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unverifiable\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:51.028Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:51.028Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

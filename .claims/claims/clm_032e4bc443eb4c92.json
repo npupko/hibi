@@ -1,0 +1,117 @@
+{
+  "id": "clm_032e4bc443eb4c92",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 29 | an `ack` names what it acknowledges: `{ pairId, sentenceHashes }` for a conflict, written to both claims and lapsing when either sentence changes; `{ judgeKey }` for a review |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 29 | an `ack` names what it acknowledges: `{ pairId, sentenceHashes }` for a conflict, written to both claims and lapsing when either sentence changes; `{ judgeKey }` for a review |",
+        "prefix": "up (kind plus unit) and share a content token |\n",
+        "suffix": "\n| 30 | the worklist excludes retired claims, `c"
+      },
+      {
+        "kind": "text-position",
+        "start": 77944,
+        "end": 78127
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await append(store, second, attestation);",
+          "prefix": ");\n  await append(store, first, attestation);\n  ",
+          "suffix": "\n  return {\n    claimIds: [first.id, second.id],"
+        },
+        {
+          "kind": "text-position",
+          "start": 7137,
+          "end": 7178
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "26da7c7db8ddb7e0",
+          "semanticHash": "20d972eaf4c9e2e5"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ack.sentenceHashes[1] === hashes[1]",
+          "prefix": " ack.sentenceHashes[0] === hashes[0] &&\n        ",
+          "suffix": "\n      ) {\n        return true;\n      }\n    }\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 8100,
+          "end": 8135
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "5860afbc714c43ea",
+          "semanticHash": "04bdc04a9a8c5f09"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "judgeKey: z.string().min(1),",
+          "prefix": " of the acknowledged `supports` verdict. */\n    ",
+          "suffix": "\n  }),\n]);\nexport type AttestationAck = z.infer<"
+        },
+        {
+          "kind": "text-position",
+          "start": 6148,
+          "end": 6176
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "ce652e9ff7aaa29d",
+          "semanticHash": "b0a281da7b71633f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:23.807Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:23.807Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

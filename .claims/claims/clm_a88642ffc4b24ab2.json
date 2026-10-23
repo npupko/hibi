@@ -1,0 +1,82 @@
+{
+  "id": "clm_a88642ffc4b24ab2",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `reference` | one span in another document | anchor resolution, plus judge `supports(sentence, referencedText)` when both sides are `unchanged` or `moved`, answered from the cache when the request is unchanged |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `reference` | one span in another document | anchor resolution, plus judge `supports(sentence, referencedText)` when both sides are `unchanged` or `moved`, answered from the cache when the request is unchanged |",
+        "prefix": "code spans | anchor resolution on either side |\n",
+        "suffix": "\n| `attested` | none required; optional `sources"
+      },
+      {
+        "kind": "text-position",
+        "start": 3759,
+        "end": 3972
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const JUDGEABLE: ReadonlySet<EvidenceState> = new Set<EvidenceState>([",
+          "prefix": " judge is consulted for a `reference` claim. */\n",
+          "suffix": "\n  \"unchanged\",\n  \"moved\",\n]);\n\n/** The texts a "
+        },
+        {
+          "kind": "text-position",
+          "start": 7023,
+          "end": 7093
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "a25feaf2555f5c2e",
+          "semanticHash": "e17536a254e6ddbf"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hit = await input.cache.get(key);",
+          "prefix": "input.model,\n    input.claim,\n    texts,\n  );\n  ",
+          "suffix": "\n  const values = {\n    sentence: storedValues(t"
+        },
+        {
+          "kind": "text-position",
+          "start": 10628,
+          "end": 10667
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "0a01a23beaaed80b",
+          "semanticHash": "f2dfadff43b98632"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:24.056Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:24.056Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

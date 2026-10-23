@@ -1,0 +1,59 @@
+{
+  "id": "clm_b84ac26e445d4b70",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "For an `attested` claim it is the newest `supports` cache entry, so newer evidence needs a new ack.",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "For an `attested` claim it is the newest `supports` cache entry, so newer evidence needs a new ack.",
+        "prefix": "read now, so an edit to either needs a new ack. ",
+        "suffix": " `--ack review` is an error when the claim has n"
+      },
+      {
+        "kind": "text-position",
+        "start": 5658,
+        "end": 5757
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const newest = newestSupports(await store.judgeCache().list({ claimId }));",
+          "prefix": "tore,\n  claimId: string,\n): Promise<string> {\n  ",
+          "suffix": "\n  if (newest === undefined) {\n    throw new Err"
+        },
+        {
+          "kind": "text-position",
+          "start": 3577,
+          "end": 3651
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "2b80e3f6d55f5938",
+          "semanticHash": "0ed0f8347e3dd1c1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:13.909Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:13.909Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

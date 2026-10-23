@@ -1,0 +1,152 @@
+{
+  "id": "clm_a212fc29130f45e8",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`check` reports `summary.conflictPass` as `{ pairs, requests, pending, scope }`: the pairs in scope, the judge calls answered in this run, the pairs pending, and `scope`, which is `store` for a whole-store or `--since` check and `doc` for `check --doc`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`check` reports `summary.conflictPass` as `{ pairs, requests, pending, scope }`: the pairs in scope, the judge calls answered in this run, the pairs pending, and `scope`, which is `store` for a whole-store or `--since` check and `doc` for `check --doc`.",
+        "prefix": "lization, with the `why` label `same sentence`. ",
+        "suffix": "\n\n### 9.4 Clearing\n\n`attest <id> --by <actor> --"
+      },
+      {
+        "kind": "text-position",
+        "start": 46504,
+        "end": 46757
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pairs: pass?.pairs.length ?? 0,",
+          "prefix": "ist: worklist.length,\n    conflictPass: {\n      ",
+          "suffix": "\n      requests: pass?.requests ?? 0,\n      pend"
+        },
+        {
+          "kind": "text-position",
+          "start": 21588,
+          "end": 21619
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "38726dc43bb0e132",
+          "semanticHash": "439dfa11f440cb7c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "requests: pass?.requests ?? 0,",
+          "prefix": ": {\n      pairs: pass?.pairs.length ?? 0,\n      ",
+          "suffix": "\n      pending: pass?.pending.length ?? 0,\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 21626,
+          "end": 21656
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "5ca2aba8fe86bfd7",
+          "semanticHash": "dd8072b6c9e29e8e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pending: pass?.pending.length ?? 0,",
+          "prefix": "? 0,\n      requests: pass?.requests ?? 0,\n      ",
+          "suffix": "\n      scope: pass?.scope ?? \"store\",\n    },\n  }"
+        },
+        {
+          "kind": "text-position",
+          "start": 21663,
+          "end": 21698
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "38726dc43bb0e132",
+          "semanticHash": "c883c519d51ce216"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "scope: scope === undefined ? \"store\" : \"doc\",",
+          "prefix": "duplicateOf)),\n    pending: pending.sort(),\n    ",
+          "suffix": "\n    requests,\n    pairs: outcomes,\n  };\n}\n\n/**\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 12740,
+          "end": 12785
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1ffc0abe52dc31be",
+          "semanticHash": "416a388726ec1f48"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:15.289Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:15.289Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

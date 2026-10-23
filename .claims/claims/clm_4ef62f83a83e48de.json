@@ -1,0 +1,65 @@
+{
+  "id": "clm_4ef62f83a83e48de",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The verdict's reasons carry `review acknowledged by <by> at <at>[: <note>]; it no longer warns`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The verdict's reasons carry `review acknowledged by <by> at <at>[: <note>]; it no longer warns`.",
+        "prefix": " does not appear in the worklist (section 7.5). ",
+        "suffix": "\n- **Sentence hash.** sha256, lowercase hex, of "
+      },
+      {
+        "kind": "text-position",
+        "start": 10982,
+        "end": 11078
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`review acknowledged by ${ack.by} at ${ack.at}${ack.note ? `: ${ack.note}` : \"\"}; it no longer warns`,",
+          "prefix": "undefined) {\n      findingReasons.push(\n        ",
+          "suffix": "\n      );\n    }\n    const live = c.enforcement !"
+        },
+        {
+          "kind": "text-position",
+          "start": 16771,
+          "end": 16873
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "6261b8f7081dbcae",
+          "semanticHash": "513fac8b0842b21a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:35.480Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:35.480Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

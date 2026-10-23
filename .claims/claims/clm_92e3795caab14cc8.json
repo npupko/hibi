@@ -1,0 +1,52 @@
+{
+  "id": "clm_92e3795caab14cc8",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "reference",
+  "sentence": "The skill does not include the `hibi` binary.",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The skill does not include the `hibi` binary.",
+        "prefix": " plugin in the **Installed** tab of `/plugin`.\n\n",
+        "suffix": " Install hibi with the prebuilt binary or `bun a"
+      },
+      {
+        "kind": "text-position",
+        "start": 914,
+        "end": 959
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/README.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "plugins/hibi-cli/\n├── .claude-plugin/plugin.json\n└── skills/\n    └── hibi/\n        ├── SKILL.md                     # the skill (auto-discovered on install)\n        ├── references/cli-reference.md  # generated from src/cli/options.ts\n        ├── references/cookbook.md       # eight worked recipes with JSON\n        └── assets/hibi-ci.yml           # drop-in GitHub Actions workflow",
+          "prefix": "lled** tab of `/plugin`.\n\n## What's inside\n\n```\n",
+          "suffix": "\n```\n\nClaude loads the skill when you ask whethe"
+        },
+        {
+          "kind": "text-position",
+          "start": 1133,
+          "end": 1515
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "retired",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:25:22.609Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:25:22.609Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

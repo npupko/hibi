@@ -1,0 +1,65 @@
+{
+  "id": "clm_db43cca48a444e08",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "For a `reference` claim, the judge is consulted only when both sides are `unchanged` or `moved`.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "For a `reference` claim, the judge is consulted only when both sides are `unchanged` or `moved`.",
+        "prefix": "e judge states are defined on [Judge](/judge).\n\n",
+        "suffix": " Otherwise the reasons say `judge: not consulted"
+      },
+      {
+        "kind": "text-position",
+        "start": 1883,
+        "end": 1979
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const JUDGEABLE: ReadonlySet<EvidenceState> = new Set<EvidenceState>([\n  \"unchanged\",\n  \"moved\",\n]);",
+          "prefix": " judge is consulted for a `reference` claim. */\n",
+          "suffix": "\n\n/** The texts a `reference` claim is judged on"
+        },
+        {
+          "kind": "text-position",
+          "start": 7023,
+          "end": 7123
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "a25feaf2555f5c2e",
+          "semanticHash": "e17536a254e6ddbf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"unchanged\",\"moved\",]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:11.363Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:11.363Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

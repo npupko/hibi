@@ -6,9 +6,9 @@ If anything here is unclear or out of date, open an issue.
 
 ## Prerequisites
 
-- **[Bun](https://bun.sh) 1.0 or newer.** The test suite, build, and tooling run on it. Node.js is not needed.
+- **[Bun](https://bun.sh) 1.2 or newer.** The test suite, build, and tooling run on it. Node.js is not needed.
 - No compiler. The tree-sitter grammars are the official prebuilt WebAssembly files; `bun run build:grammars` copies them into `grammars/`.
-- No API key. The tests use a fake judge. `TYPESAFE_API_KEY` is only needed to try the real judge by hand.
+- No API key. The tests use a fake judge. `TYPESAFE_API_KEY` is only needed to try the real judge.
 
 ## Getting started
 
@@ -16,14 +16,13 @@ If anything here is unclear or out of date, open an issue.
 git clone https://github.com/npupko/hibi.git
 cd hibi
 
-bun install              # install dependencies
+bun install              # install dependencies and the pre-commit hook
 bun run build:grammars   # copy the official tree-sitter wasm into grammars/
-bunx lefthook install    # one-time: install the pre-commit hook
 ```
 
-Bun does not run the `prepare` lifecycle script, so the pre-commit hook is not wired up by `bun install` alone. Run `bunx lefthook install` once after cloning. The hook runs Biome on staged files plus a typecheck.
+`bun install` runs the `prepare` script, `lefthook install`, which installs the pre-commit hook. The hook runs Biome on staged files plus a typecheck.
 
-`bun run build:grammars` is required before the tests pass: the analyzer imports the wasm files from `grammars/` and embeds them in the build.
+The analyzer imports the wasm files from `grammars/` and embeds them in the build. The files are committed; rerun `bun run build:grammars` after updating a `tree-sitter-*` dependency.
 
 ## Development
 
@@ -58,7 +57,7 @@ The docs site lives in [`docs/`](docs) and is built with [Mintlify](https://mint
 Preview locally from inside `docs/`:
 
 ```sh
-npm i -g mint          # the Mintlify CLI (requires Node 20.17 or newer; the only Node dependency in this repo)
+npm i -g mint          # the Mintlify CLI (requires Node 20.17 or newer; only the docs preview needs Node locally)
 cd docs
 mint dev               # live preview at http://localhost:3000
 mint broken-links      # validate internal links before pushing
@@ -72,14 +71,14 @@ Writing rules for the docs and the skill: plain prose, short sentences, no metap
 
 ## The judge in tests
 
-No test calls TypeSafe. Two layers stand in for it:
+Without `TYPESAFE_API_KEY`, no test calls TypeSafe; with it set, one test in `test/judge-jev.test.ts` makes a live `supports` call. Two layers stand in for TypeSafe:
 
 - `FakeJudge` (`src/judge/fake.ts`) answers from a script. Its answers use the Jev wire shape and are decoded by the same mappers as the real adapter, so a cache entry it writes reads back exactly like one from Jev.
 - `test/fixtures/judge/` holds, per judgment, the exact request body the Jev adapter builds (`<judgment>.request.json`) and a response in the documented shape (`<judgment>.response.json`). `test/judge-jev.test.ts` fails when a built request differs from its fixture. A change to `src/judge/questions/*.json` or to request building must update these files on purpose; it also changes cache keys, so every cached verdict for that judgment is asked again.
 
-The fixture responses are synthetic; see `test/fixtures/judge/README.md`. `test/e2e.test.ts` runs the whole CLI loop against a local server that answers like System One, with `TYPESAFE_BASE_URL` pointing at it.
+The fixture responses were recorded from live System One calls; see `test/fixtures/judge/README.md`. `test/e2e.test.ts` runs the whole CLI loop against a local server that answers like System One, with `TYPESAFE_BASE_URL` pointing at it.
 
-To try the real judge, set `TYPESAFE_API_KEY` and run the in-tree CLI in a scratch repository (`bun run src/cli/index.ts audit --doc README.md`, `check`, `evidence`). Recorded responses may replace the synthetic fixtures; say so in the PR.
+To try the real judge, set `TYPESAFE_API_KEY` and run the in-tree CLI in a scratch repository (`bun run src/cli/index.ts audit --doc README.md`, `check`, `evidence`). Re-recording a fixture response means updating the expected values in `test/judge-jev.test.ts`; say so in the PR.
 
 ## Commit conventions
 

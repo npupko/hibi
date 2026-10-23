@@ -1,0 +1,117 @@
+{
+  "id": "clm_f4f08308849346a4",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- `ast-node` (code only, optional): language, node type, structural hash, semantic hash.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `ast-node` (code only, optional): language, node type, structural hash, semantic hash.",
+        "prefix": "ter offsets (UTF-16 code units) at record time.\n",
+        "suffix": " A changed semantic hash alone makes the span `c"
+      },
+      {
+        "kind": "text-position",
+        "start": 16704,
+        "end": 16792
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  kind: z.literal(\"ast-node\"),\n  language: z.string(),\n  nodeType: z.string(),\n  structuralHash: z.string(),\n  semanticHash: z.string(),",
+          "prefix": "export const AstNodeSelector = z.strictObject({\n",
+          "suffix": "\n});\n\n/** `value` (code only): the first literal"
+        },
+        {
+          "kind": "text-position",
+          "start": 4220,
+          "end": 4356
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "94a6b87d3bbce87a",
+          "semanticHash": "6a8491c86dc100f9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"ast-node\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    return kind === \"code\"\n      ? buildSelectorBundle(target.file, content, region, {",
+          "prefix": "s located like a doc span: text selectors only.\n",
+          "suffix": "\n          language: target.language ?? language"
+        },
+        {
+          "kind": "text-position",
+          "start": 4609,
+          "end": 4695
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "37d3185c518b987e",
+          "semanticHash": "ab108ae80127220a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"code\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/anchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (opts.language && opts.analyzer) {",
+          "prefix": " { kind: \"text-position\", start, end },\n  ];\n\n  ",
+          "suffix": "\n    const { astNode, value } = opts.analyzer.re"
+        },
+        {
+          "kind": "text-position",
+          "start": 2060,
+          "end": 2097
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "f6b1fe86a4b11086",
+          "semanticHash": "637d7340b53a7c55"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:58.893Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:58.893Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

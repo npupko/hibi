@@ -1,0 +1,88 @@
+{
+  "id": "clm_f2ec8be8d32146cb",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `dotted-version` | version | three or more dotted parts, optional pre-release | as written | none |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `dotted-version` | version | three or more dotted parts, optional pre-release | as written | none |",
+        "prefix": "`, `v4`, `v2.0.0-beta.1` | without `v` | none |\n",
+        "suffix": "\n| `keyword-version` | version | `version 1.2`, "
+      },
+      {
+        "kind": "text-position",
+        "start": 39234,
+        "end": 39335
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"dotted-version\",",
+          "prefix": "  },\n  {\n    // 1.2.3, 10.0.1.4, 1.2.3-rc.1\n    ",
+          "suffix": "\n    kind: \"version\",\n    pattern: re(\n      Str"
+        },
+        {
+          "kind": "text-position",
+          "start": 7238,
+          "end": 7261
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "45309b41dfe28223"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"dotted-version\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(\\d+\\.\\d+\\.\\d+(?:\\.\\d+)*(?:-[0-9A-Za-z]+(?:\\.[0-9A-Za-z]+)*)?)",
+          "prefix": "ion\",\n    pattern: re(\n      String.raw`${START}",
+          "suffix": "${END}`,\n    ),\n    read: (m) => ({ raw: group(m"
+        },
+        {
+          "kind": "text-position",
+          "start": 7325,
+          "end": 7387
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "e223fa6d101e8a29",
+          "semanticHash": "4f5168a8a30df288"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:04.199Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:04.199Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

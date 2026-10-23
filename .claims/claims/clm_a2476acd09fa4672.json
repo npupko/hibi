@@ -1,0 +1,65 @@
+{
+  "id": "clm_a2476acd09fa4672",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It counts only when its first line does not open a list item and does not start with `|`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It counts only when its first line does not open a list item and does not start with `|`.",
+        "prefix": "line, a heading, a fence, or a thematic break). ",
+        "suffix": " The trimmed lead-in, a blank line, and then the"
+      },
+      {
+        "kind": "text-position",
+        "start": 35729,
+        "end": 35818
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (LIST_ITEM.test(top) || top.trimStart().startsWith(\"|\")) return \"\";",
+          "prefix": "k, k);\n  const top = (lines[c] as Line).text;\n  ",
+          "suffix": "\n  return doc.slice((lines[c] as Line).start, li"
+        },
+        {
+          "kind": "text-position",
+          "start": 6201,
+          "end": 6271
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "9a7e7d09b2d24a11",
+          "semanticHash": "61c1c3d6605acaf5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"|\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:05.924Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:05.924Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

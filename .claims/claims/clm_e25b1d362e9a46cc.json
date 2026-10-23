@@ -1,0 +1,117 @@
+{
+  "id": "clm_e25b1d362e9a46cc",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Versions and dates use `versions differ: …` and `dates differ: …`.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Versions and dates use `versions differ: …` and `dates differ: …`.",
+        "prefix": "eds the judge's `contradicts` at or above 0.5.\n\n",
+        "suffix": " For submitted evidence, the extracted values ar"
+      },
+      {
+        "kind": "text-position",
+        "start": 12346,
+        "end": 12412
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "version: \"versions\",",
+          "prefix": " = {\n  money: \"numbers\",\n  number: \"numbers\",\n  ",
+          "suffix": "\n  date: \"dates\",\n};\n\n/**\n * The group a value i"
+        },
+        {
+          "kind": "text-position",
+          "start": 10988,
+          "end": 11008
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "634649f4c7297ca5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"versions\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "date: \"dates\",",
+          "prefix": ",\n  number: \"numbers\",\n  version: \"versions\",\n  ",
+          "suffix": "\n};\n\n/**\n * The group a value is compared within"
+        },
+        {
+          "kind": "text-position",
+          "start": 11011,
+          "end": 11025
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "e84105ff2b26c3e0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"dates\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "label: `${KIND_LABEL[kindOf(key)]} differ: ${list(va)} vs ${list(vb)}`,",
+          "prefix": "(\", \");\n    return {\n      differs: true,\n      ",
+          "suffix": "\n    };\n  }\n  return { differs: false };\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 14472,
+          "end": 14543
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "c48b1453073e6ece",
+          "semanticHash": "ecd72cb0be1a7eb0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:40.323Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:40.323Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

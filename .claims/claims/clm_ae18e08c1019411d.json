@@ -1,0 +1,117 @@
+{
+  "id": "clm_ae18e08c1019411d",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "When it does not fire, the pair gets the outcome the judge's answer gives on its own (section 9.3).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "When it does not fire, the pair gets the outcome the judge's answer gives on its own (section 9.3).",
+        "prefix": "me, including a `consistent` duplicate outcome. ",
+        "suffix": "\n\n## 9. Contradiction and duplicate pass\n\nThe pa"
+      },
+      {
+        "kind": "text-position",
+        "start": 42469,
+        "end": 42568
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.sameSubject >= threshold && r.contradicts >= CONTRADICTS_FLOOR) {",
+          "prefix": "me_subject=${f2(r.sameSubject)})`,\n    };\n  }\n  ",
+          "suffix": "\n    // Numeric rule (SPEC 8.5): only after the "
+        },
+        {
+          "kind": "text-position",
+          "start": 5396,
+          "end": 5467
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "9f7b5a7ff61764e3",
+          "semanticHash": "40a2f24fa63ae4bf"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.relation === \"contradictory\") {",
+          "prefix": "onst pContra = r.probabilities.contradictory;\n  ",
+          "suffix": "\n    const below: string[] = [];\n    if (r.contr"
+        },
+        {
+          "kind": "text-position",
+          "start": 5915,
+          "end": 5952
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "7b2d4e81a4c3382c",
+          "semanticHash": "d426bc86d5069493"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"contradictory\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.relation === \"consistent\" && r.sameSubject >= threshold) {",
+          "prefix": "ntradictory, ${below.join(\", \")}`,\n    };\n  }\n  ",
+          "suffix": "\n    return {\n      outcome: \"duplicate\",\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 6775,
+          "end": 6839
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6cfd29924f8b7a42",
+          "semanticHash": "6922146cc8838fdf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"consistent\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T09:36:10.963Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T09:36:10.963Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

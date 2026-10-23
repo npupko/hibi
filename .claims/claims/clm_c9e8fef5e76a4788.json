@@ -10,12 +10,12 @@
         "kind": "text-quote",
         "exact": "`claim_context` is the heading path above the sentence and the paragraph that contains it, at most 600 characters, built in code.",
         "prefix": " speak to what the claim asserts, either way |\n\n",
-        "suffix": " For a `reference` claim, `evidence` is the curr"
+        "suffix": " For a list item, the context also holds the lis"
       },
       {
         "kind": "text-position",
-        "start": 7049,
-        "end": 7178
+        "start": 7262,
+        "end": 7391
       }
     ]
   },
@@ -26,13 +26,13 @@
         {
           "kind": "text-quote",
           "exact": "CONTEXT_MAX_CHARS = 600",
-          "prefix": " Claim } from \"../core/model.ts\";\n\nexport const ",
+          "prefix": "ATIC_BREAK } from \"./regions.ts\";\n\nexport const ",
           "suffix": ";\n\nconst ELLIPSIS = \"…\";\nconst HEADING = /^ {0,3"
         },
         {
           "kind": "text-position",
-          "start": 778,
-          "end": 801
+          "start": 2335,
+          "end": 2358
         },
         {
           "kind": "ast-node",
@@ -61,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-22T19:12:57.920Z",
-  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
 }

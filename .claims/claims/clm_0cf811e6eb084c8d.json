@@ -1,0 +1,273 @@
+{
+  "id": "clm_0cf811e6eb084c8d",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The whole batch is validated before the judge is asked, and one invalid item rejects the batch and writes nothing: unknown keys are rejected, all five fields must be strings, the claim must exist, be `attested`, and not be retired, `evidence` must be non-empty and at most 32,000 characters, `source` and `summary` must be non-empty, and `by` must be in actor form.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The whole batch is validated before the judge is asked, and one invalid item rejects the batch and writes nothing: unknown keys are rejected, all five fields must be strings, the claim must exist, be `attested`, and not be retired, `evidence` must be non-empty and at most 32,000 characters, `source` and `summary` must be non-empty, and `by` must be in actor form.",
+        "prefix": "laims are judged from the referenced document`. ",
+        "suffix": " For each item the judge answers `supports` (or "
+      },
+      {
+        "kind": "text-position",
+        "start": 65544,
+        "end": 65909
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const items = validateEvidenceItems(input.items, claims);",
+          "prefix": "it store.allClaims()).map((c) => [c.id, c]));\n  ",
+          "suffix": "\n\n  // Plan: build each request and look it up i"
+        },
+        {
+          "kind": "text-position",
+          "start": 9826,
+          "end": 9883
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "b3e32d79cfa8adfe",
+          "semanticHash": "a59dcb634da7193a"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const ITEM_KEYS = [\"claimId\", \"evidence\", \"source\", \"summary\", \"by\"] as const;",
+          "prefix": "  this.name = \"EvidenceValidationError\";\n  }\n}\n\n",
+          "suffix": "\n\n/** sha256 hex of the evidence text as submitt"
+        },
+        {
+          "kind": "text-position",
+          "start": 5440,
+          "end": 5518
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "9551aa4bd88bf252",
+          "semanticHash": "0208e0aa5041656f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"claimId\",\"evidence\",\"source\",\"summary\",\"by\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(`unknown key \"${key}\"; an item has ${ITEM_KEYS.join(\", \")}`);",
+          "prefix": "YS as readonly string[]).includes(key)) {\n      ",
+          "suffix": "\n    }\n  }\n  for (const key of ITEM_KEYS) {\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 6174,
+          "end": 6247
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "97aad4192ea41a8e",
+          "semanticHash": "44307bc2ed8ad263"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\", \""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(`\"${key}\" must be a string`);",
+          "prefix": "{\n    if (typeof raw[key] !== \"string\") {\n      ",
+          "suffix": "\n    }\n  }\n  const str = (k: (typeof ITEM_KEYS)["
+        },
+        {
+          "kind": "text-position",
+          "start": 6337,
+          "end": 6378
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "418e165936bd8a56",
+          "semanticHash": "beb8712b1c01d4ec"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(`claim ${claimId} is retired; evidence is not accepted`);",
+          "prefix": "se if (claim.enforcement === \"retired\") {\n      ",
+          "suffix": "\n    } else if (claim.kind !== \"attested\") {\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 6749,
+          "end": 6818
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "418e165936bd8a56",
+          "semanticHash": "b6354817b206d83d"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "} else if (evidence.length > MAX_EVIDENCE_CHARS) {",
+          "prefix": "{\n      errors.push(`\"evidence\" is empty`);\n    ",
+          "suffix": "\n      errors.push(\n        `\"evidence\" is ${evi"
+        },
+        {
+          "kind": "text-position",
+          "start": 7201,
+          "end": 7251
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "e86411bed4a2c247",
+          "semanticHash": "23cd8b0f8aca91c7"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "MAX_EVIDENCE_CHARS = 32_000",
+          "prefix": "DGET`\n * in src/judge/jev.ts).\n */\nexport const ",
+          "suffix": ";\n\n/** Choice confidence per the TypeSafe docs: "
+        },
+        {
+          "kind": "text-position",
+          "start": 4185,
+          "end": 4212
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "93110d923bb52349"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "32_000"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const key of [\"source\", \"summary\"] as const) {",
+          "prefix": "ntence, or summarize it.`,\n      );\n    }\n  }\n  ",
+          "suffix": "\n    const v = str(key);\n    if (v !== undefined"
+        },
+        {
+          "kind": "text-position",
+          "start": 7449,
+          "end": 7500
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "65de8db32db350d7",
+          "semanticHash": "190446dd577cd03c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"source\",\"summary\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (by !== undefined && !ACTOR_PATTERN.test(by)) {",
+          "prefix": "key}\" is empty`);\n  }\n  const by = str(\"by\");\n  ",
+          "suffix": "\n    errors.push(\n      `\"by\" must be human:<id>"
+        },
+        {
+          "kind": "text-position",
+          "start": 7633,
+          "end": 7683
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "14f1f058f77f62d4",
+          "semanticHash": "ab095fdefd90394d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.819Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.819Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

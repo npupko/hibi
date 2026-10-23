@@ -1,0 +1,88 @@
+{
+  "id": "clm_6448b9b5ed1b4cd5",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 47 | a conflict ack hashes the claims' stored sentences, not the current document text; an edit that keeps the doc anchor `unchanged` does not end it, and re-recording or reanchoring to a different sentence does |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 47 | a conflict ack hashes the claims' stored sentences, not the current document text; an edit that keeps the doc anchor `unchanged` does not end it, and re-recording or reanchoring to a different sentence does |",
+        "prefix": "odes of different commands or section numbers |\n",
+        "suffix": "\n| 48 | `hibi evidence` accepts any `attested` c"
+      },
+      {
+        "kind": "text-position",
+        "start": 81044,
+        "end": 81259
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hashes = [sentenceHash(pair.a.sentence), sentenceHash(pair.b.sentence)];",
+          "prefix": "xport function isAcked(pair: Pair): boolean {\n  ",
+          "suffix": "\n  for (const claim of [pair.a, pair.b]) {\n    f"
+        },
+        {
+          "kind": "text-position",
+          "start": 7755,
+          "end": 7833
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "32c2a1cba34c8a82",
+          "semanticHash": "6a8942dd18e90160"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[sentenceHash(pair.a.sentence),sentenceHash(pair.b.sentence)]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sentenceHash(first.sentence),",
+          "prefix": ":${second.id}`,\n      sentenceHashes: [\n        ",
+          "suffix": "\n        sentenceHash(second.sentence),\n      ],"
+        },
+        {
+          "kind": "text-position",
+          "start": 6976,
+          "end": 7005
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "2d46d21f9e7efc1c",
+          "semanticHash": "8fdbf3e1cd003a96"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:03.904Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:03.904Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

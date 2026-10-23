@@ -1,0 +1,89 @@
+{
+  "id": "clm_ebed8205947944ff",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "The `actions/cache` step in `assets/hibi-ci.yml` restores `.claims/judge/` before the check, and saves it at the end of the job only when the job succeeds and no cache exists yet for the current claim files.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The `actions/cache` step in `assets/hibi-ci.yml` restores `.claims/judge/` before the check, and saves it at the end of the job only when the job succeeds and no cache exists yet for the current claim files.",
+        "prefix": "oes not fail the build under `fail-on: gating`. ",
+        "suffix": "\n\nFor a knowledge repo with `repos` aliases such"
+      },
+      {
+        "kind": "text-position",
+        "start": 21427,
+        "end": 21634
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/skills/hibi/assets/hibi-ci.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "uses: actions/cache@v4",
+          "prefix": "\n\n      - name: Restore the judge cache\n        ",
+          "suffix": "\n        with:\n          path: .claims/judge # w"
+        },
+        {
+          "kind": "text-position",
+          "start": 1634,
+          "end": 1656
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/assets/hibi-ci.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "path: .claims/judge #",
+          "prefix": " uses: actions/cache@v4\n        with:\n          ",
+          "suffix": " with working-directory, prefix this path and th"
+        },
+        {
+          "kind": "text-position",
+          "start": 1681,
+          "end": 1702
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/assets/hibi-ci.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "key: hibi-judge-${{ hashFiles('.claims/claims/**') }}",
+          "prefix": "ath and the hashFiles pattern with it\n          ",
+          "suffix": "\n          restore-keys: hibi-judge-\n\n      - na"
+        },
+        {
+          "kind": "text-position",
+          "start": 1788,
+          "end": 1841
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:12.431Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:05.022Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:12.431Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

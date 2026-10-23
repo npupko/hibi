@@ -1,0 +1,93 @@
+{
+  "id": "clm_32b9302fe2c948f5",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "\"batch\": true, \"count\": 3,",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "\"batch\": true, \"count\": 3,",
+        "prefix": "rue, \"action\": \"record\", \"schemaVersion\": \"v4\", ",
+        "suffix": " \"updated\": 0,\n  \"results\": [\n    { \"id\": \"clm_5"
+      },
+      {
+        "kind": "text-position",
+        "start": 5093,
+        "end": 5119
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "count: summaries.length,",
+          "prefix": "     {\n              batch: true,\n              ",
+          "suffix": "\n              updated: results.filter((r) => r."
+        },
+        {
+          "kind": "text-position",
+          "start": 18757,
+          "end": 18781
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "d1dd0bbddf8a4998"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence: r.claim.evidence[0]?.file ?? null,",
+          "prefix": "nd: r.claim.kind,\n    doc: r.document.path,\n    ",
+          "suffix": "\n    enforcement: r.claim.enforcement,\n    updat"
+        },
+        {
+          "kind": "text-position",
+          "start": 11252,
+          "end": 11296
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "2e97b9bd6534fa12",
+          "semanticHash": "131b7b4b167aa4e3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:07.720Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:04.170Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:07.720Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

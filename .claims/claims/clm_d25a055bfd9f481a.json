@@ -1,0 +1,59 @@
+{
+  "id": "clm_d25a055bfd9f481a",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A relative directory is resolved against the repository root; an absolute path is used as given.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A relative directory is resolved against the repository root; an absolute path is used as given.",
+        "prefix": "an alias to a directory: `{ \"api\": \"../api\" }`. ",
+        "suffix": " A side's `file` may be `api:src/limits.ts`. An "
+      },
+      {
+        "kind": "text-position",
+        "start": 4616,
+        "end": 4712
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const abs = isAbsolute(dir) ? dir : join(root, dir);",
+          "prefix": "ned in .claims/config.json repos`,\n    };\n  }\n  ",
+          "suffix": "\n  if (!isInside(abs, resolve(abs, split.relativ"
+        },
+        {
+          "kind": "text-position",
+          "start": 3601,
+          "end": 3653
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "04033f44309be9a7",
+          "semanticHash": "ad68d6d7cbbe23a5"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:59.901Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:59.901Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

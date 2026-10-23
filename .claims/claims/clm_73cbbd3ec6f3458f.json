@@ -1,0 +1,105 @@
+{
+  "id": "clm_73cbbd3ec6f3458f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`response.model` is stored with the verdict.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`response.model` is stored with the verdict.",
+        "prefix": "inned versioned id from config, never an alias. ",
+        "suffix": " Triage chunks must all be answered by the same "
+      },
+      {
+        "kind": "text-position",
+        "start": 31693,
+        "end": 31737
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "model: response.model,",
+          "prefix": "] };\n  }\n  await input.cache.put({\n    key,\n    ",
+          "suffix": "\n    judgment: \"supports\",\n    subject: { claimI"
+        },
+        {
+          "kind": "text-position",
+          "start": 11708,
+          "end": 11730
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "fc840f3dcf152533"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "model: response.model,",
+          "prefix": "entry: JudgeCacheEntry = {\n        key,\n        ",
+          "suffix": "\n        judgment: \"conflict\",\n        subject: "
+        },
+        {
+          "kind": "text-position",
+          "start": 10912,
+          "end": 10934
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "fc840f3dcf152533"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "model: a.model,",
+          "prefix": "  await cache.put({\n        key: p.key,\n        ",
+          "suffix": "\n        judgment: \"supports\",\n        subject: "
+        },
+        {
+          "kind": "text-position",
+          "start": 12374,
+          "end": 12389
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "09b28528c003abb4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:50.879Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:50.879Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

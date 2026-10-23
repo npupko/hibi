@@ -1,0 +1,168 @@
+{
+  "id": "clm_cb04dc4f2bd34e98",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**init.** Creates `.claims/` with `config.json`, `.gitignore` (the single line `judge/`), and the `documents`, `claims`, and `judge` directories, and does not overwrite an existing config.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**init.** Creates `.claims/` with `config.json`, `.gitignore` (the single line `judge/`), and the `documents`, `claims`, and `judge` directories, and does not overwrite an existing config.",
+        "prefix": "nput that cannot be read or is not valid JSON.\n\n",
+        "suffix": " On an existing store it adds `.claims/.gitignor"
+      },
+      {
+        "kind": "text-position",
+        "start": 55596,
+        "end": 55784
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const sub of Object.values(SUBDIRS))",
+          "prefix": "   await mkdir(s.dir, { recursive: true });\n    ",
+          "suffix": "\n      await mkdir(join(s.dir, sub), { recursive"
+        },
+        {
+          "kind": "text-position",
+          "start": 2918,
+          "end": 2959
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "367f4c4c812b38af",
+          "semanticHash": "00145d2c23b87a64"
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "documents: \"documents\",\n  claims: \"claims\",\n  judge: \"judge\",",
+          "prefix": "n null;\n    throw e;\n  }\n}\n\nconst SUBDIRS = {\n  ",
+          "suffix": "\n} as const;\n\n/**\n * Where a store lives and wha"
+        },
+        {
+          "kind": "text-position",
+          "start": 1120,
+          "end": 1181
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "47d5262381b379c4",
+          "semanticHash": "9b526976af323a46"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"documents\""
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (!(await exists(configPath))) {\n      await writeFile(",
+          "prefix": "dir(join(s.dir, sub), { recursive: true });\n    ",
+          "suffix": "\n        configPath,\n        `${JSON.stringify(C"
+        },
+        {
+          "kind": "text-position",
+          "start": 3022,
+          "end": 3079
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "af28cacb74691ce5",
+          "semanticHash": "3783407d736f27e1"
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const gitignore = join(s.dir, \".gitignore\");",
+          "prefix": "missing; an existing file is left as it is.\n    ",
+          "suffix": "\n    if (!(await exists(gitignore))) {\n      awa"
+        },
+        {
+          "kind": "text-position",
+          "start": 3340,
+          "end": 3384
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "99fa2327edbdb6f1",
+          "semanticHash": "f3bd128174b6c4f9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".gitignore\""
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (!(await exists(gitignore))) {",
+          "prefix": "onst gitignore = join(s.dir, \".gitignore\");\n    ",
+          "suffix": "\n      await writeFile(gitignore, `${SUBDIRS.jud"
+        },
+        {
+          "kind": "text-position",
+          "start": 3389,
+          "end": 3422
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "5adca1e110c67f98",
+          "semanticHash": "6ddbb9ef3c0260e6"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:57.130Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:57.414Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:57.130Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

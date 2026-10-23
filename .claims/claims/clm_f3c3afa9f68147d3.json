@@ -1,0 +1,88 @@
+{
+  "id": "clm_f3c3afa9f68147d3",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "| `pending` | pairs the judge could not answer |",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `pending` | pairs the judge could not answer |",
+        "prefix": "is run; 0 when every pair came from the cache |\n",
+        "suffix": "\n| `scope` | `store` when every pair was judged;"
+      },
+      {
+        "kind": "text-position",
+        "start": 2495,
+        "end": 2543
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pending.push(pair.pairId);",
+          "prefix": "      if (label === undefined) throw e;\n        ",
+          "suffix": "\n        outcomes[index] = {\n          pairId: p"
+        },
+        {
+          "kind": "text-position",
+          "start": 10633,
+          "end": 10659
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "7426f1729a85649a",
+          "semanticHash": "c573501e918cfa02"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pending: pass?.pending.length ?? 0,",
+          "prefix": "? 0,\n      requests: pass?.requests ?? 0,\n      ",
+          "suffix": "\n      scope: pass?.scope ?? \"store\",\n    },\n  }"
+        },
+        {
+          "kind": "text-position",
+          "start": 21663,
+          "end": 21698
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "38726dc43bb0e132",
+          "semanticHash": "c883c519d51ce216"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:25.235Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:25.235Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

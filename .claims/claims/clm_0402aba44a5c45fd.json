@@ -1,0 +1,88 @@
+{
+  "id": "clm_0402aba44a5c45fd",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "| `conflict` | an entry in `conflicts[]`: `{ claimId, probability, reason }` naming the other claim; the reason label `conflicts with <id> (p=… at or above threshold …): …` | gates |",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `conflict` | an entry in `conflicts[]`: `{ claimId, probability, reason }` naming the other claim; the reason label `conflicts with <id> (p=… at or above threshold …): …` | gates |",
+        "prefix": "each claim of the pair | effect |\n|---|---|---|\n",
+        "suffix": "\n| `review` | the reason label `possible conflic"
+      },
+      {
+        "kind": "text-position",
+        "start": 5014,
+        "end": 5196
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".filter((f) => f.claimId === claimId && f.review !== true)",
+          "prefix": "ason: string }[] {\n  return result.findings\n    ",
+          "suffix": "\n    .map((f) => ({\n      claimId: f.otherClaimI"
+        },
+        {
+          "kind": "text-position",
+          "start": 13154,
+          "end": 13212
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "1c56978d49b7b748",
+          "semanticHash": "0eaf68b7ba08c5a3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`conflicts with ${c.claimId} (p=${fmt(c.probability)} at or above threshold ${threshold}): ${c.reason}`,",
+          "prefix": "      gates = true;\n      reasons.push(\n        ",
+          "suffix": "\n      );\n    } else {\n      warns = true;\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 3417,
+          "end": 3521
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "b6bb87c2aad051fa",
+          "semanticHash": "2c758c24632f9a41"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:26.257Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:26.257Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

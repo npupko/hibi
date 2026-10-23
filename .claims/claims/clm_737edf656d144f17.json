@@ -1,0 +1,82 @@
+{
+  "id": "clm_737edf656d144f17",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| pending | `judge unavailable: TYPESAFE_API_KEY is not set; the judge cannot answer.` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| pending | `judge unavailable: TYPESAFE_API_KEY is not set; the judge cannot answer.` |",
+        "prefix": "h `(addresses=0.12)` when the Noul forced it) |\n",
+        "suffix": "\n| pending | `judge error: TypeSafe returned HTT"
+      },
+      {
+        "kind": "text-position",
+        "start": 9951,
+        "end": 10039
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`${API_KEY_ENV} is not set; the judge cannot answer.`,",
+          "prefix": "\"\") {\n      throw new JudgeUnavailable(\n        ",
+          "suffix": "\n      );\n    }\n    await acquire();\n    try {\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 4639,
+          "end": 4693
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "741052939c553a2d",
+          "semanticHash": "b4b501a53d3995ae"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeUnavailable) return `judge unavailable: ${e.message}`;",
+          "prefix": "ailureLabel(e: unknown): string | undefined {\n  ",
+          "suffix": "\n  if (e instanceof JudgeError) return `judge er"
+        },
+        {
+          "kind": "text-position",
+          "start": 3661,
+          "end": 3737
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "e16196633fc6e5f4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:39.094Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:39.094Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

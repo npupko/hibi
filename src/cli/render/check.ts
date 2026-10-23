@@ -50,8 +50,8 @@ interface SuspectClaim {
   claimId: string;
 }
 
-/** A contradiction-pass warning label: a pending pair or a review finding. */
-const PENDING_PAIR = /^conflict check pending with clm_[0-9a-f]+: /;
+/** A contradiction-pass warning label: the pending-pairs count or a review finding. */
+const PENDING_PAIR = /^conflict checks pending: \d+$/;
 const REVIEW_PAIR = /^possible conflict with clm_[0-9a-f]+: /;
 
 /**

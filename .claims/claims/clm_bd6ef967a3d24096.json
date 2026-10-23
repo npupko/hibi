@@ -1,0 +1,111 @@
+{
+  "id": "clm_bd6ef967a3d24096",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`check --doc` and `audit` judge only the pairs with at least one claim in the document; a finding on such a pair may name a claim in another document.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`check --doc` and `audit` judge only the pairs with at least one claim in the document; a finding on such a pair may name a claim in another document.",
+        "prefix": "e `check` and `check --since` judge every pair. ",
+        "suffix": "\n\n### 9.1 Pairing in code\n\nTwo live claims form "
+      },
+      {
+        "kind": "text-position",
+        "start": 42838,
+        "end": 42988
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const pass = await this.conflictPass(documentIdForPath(docPath));",
+          "prefix": "  const config = await this.store.config();\n    ",
+          "suffix": "\n    return runAudit({\n      store: this.store,\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 16640,
+          "end": 16705
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "91176f82ab9c4c0b",
+          "semanticHash": "264775baaf96a6eb"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "claims.filter((c) => c.documentId === documentId).map((c) => c.id),",
+          "prefix": "     ? undefined\n        : new Set(\n            ",
+          "suffix": "\n          );\n    return runConflictPass({\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 10963,
+          "end": 11030
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "35bfb4bcd6c08e13",
+          "semanticHash": "5165dcc222cfe570"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(p) => scope === undefined || scope.has(p.a.id) || scope.has(p.b.id),",
+          "prefix": "nst pairs = pairClaims(opts.claims).filter(\n    ",
+          "suffix": "\n  );\n  const outcomes: PairOutcome[] = new Arra"
+        },
+        {
+          "kind": "text-position",
+          "start": 9755,
+          "end": 9824
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "arrow_function",
+          "structuralHash": "4f3a84c5cb8ee830",
+          "semanticHash": "8a15d44f8d06194e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:40.161Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:40.161Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

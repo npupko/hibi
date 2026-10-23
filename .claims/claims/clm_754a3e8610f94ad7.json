@@ -1,0 +1,88 @@
+{
+  "id": "clm_754a3e8610f94ad7",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Same, at a new offset: `moved`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Same, at a new offset: `moved`.",
+        "prefix": "e change, start within 4 chars: `unchanged`.\n3. ",
+        "suffix": "\n4. Similarity below 0.9, or AST semantic hash c"
+      },
+      {
+        "kind": "text-position",
+        "start": 20074,
+        "end": 20105
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const delta = tp ? Math.abs(region.start - tp.start) : 0;",
+          "prefix": "    };\n  }\n\n  // 2 and 3. Unchanged or moved.\n  ",
+          "suffix": "\n  if (delta > MOVE_AWARENESS_CHARS) {\n    reaso"
+        },
+        {
+          "kind": "text-position",
+          "start": 8894,
+          "end": 8951
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f38c6b7a469beb05",
+          "semanticHash": "48ad598e5a7e80b3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons.push(`span moved ${delta} chars`);",
+          "prefix": " : 0;\n  if (delta > MOVE_AWARENESS_CHARS) {\n    ",
+          "suffix": "\n    return {\n      state: \"moved\",\n      region"
+        },
+        {
+          "kind": "text-position",
+          "start": 8994,
+          "end": 9036
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "418e165936bd8a56",
+          "semanticHash": "751e0f85604d3a45"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.686Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.686Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

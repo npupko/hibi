@@ -1,0 +1,88 @@
+{
+  "id": "clm_2763d92ee9524961",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "code",
+  "sentence": "| `src/cli/options.ts` | shell completions (`hibi completions <shell>`) | at runtime |",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `src/cli/options.ts` | shell completions (`hibi completions <shell>`) | at runtime |",
+        "prefix": "reference.md` | `bun run build:cli-reference` |\n",
+        "suffix": "\n\nCI fails if a generated file is out of date.\n\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 2127,
+        "end": 2213
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/completions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "import { COMMANDS, GLOBAL_OPTIONS, optionsFor } from \"./options.ts\";",
+          "prefix": " never drift from what the parser accepts.\n */\n\n",
+          "suffix": "\n\nexport type Shell = \"zsh\" | \"bash\" | \"fish\";\n\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 129,
+          "end": 197
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "import_statement",
+          "structuralHash": "aed410310ea10895",
+          "semanticHash": "dd6d94f43e5e943d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"./options.ts\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await print(completionScript(shell));",
+          "prefix": "quires zsh | bash | fish`, mode);\n      }\n      ",
+          "suffix": "\n      return 0;\n    }\n\n    case \"version\": {\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 31841,
+          "end": 31878
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "0f85c90b147b1357",
+          "semanticHash": "b13c6f72bf5ef0f6"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:32.720Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:32.720Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

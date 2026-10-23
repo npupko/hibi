@@ -1,0 +1,52 @@
+{
+  "id": "clm_eb86198f93be4696",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "reference",
+  "sentence": "Every rule hibi applies shows up as a label.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Every rule hibi applies shows up as a label.",
+        "prefix": "xpiry, worklist membership, and gating rules |\n\n",
+        "suffix": " A label you do not understand is a question for"
+      },
+      {
+        "kind": "text-position",
+        "start": 3038,
+        "end": 3082
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Every automatic rule appears as a reason label in the report.",
+          "prefix": ".\n5. **One knob per concept, no hidden rules.** ",
+          "suffix": "\n6. **Contracts are data.** Contracts are JSON: "
+        },
+        {
+          "kind": "text-position",
+          "start": 2497,
+          "end": 2558
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:11.974Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:11.974Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -10,12 +10,12 @@
         "kind": "text-quote",
         "exact": "The judge needs `TYPESAFE_API_KEY`; without it uncached judgments are `pending`, a warning, never a failure.",
         "prefix": " it. Every flag: `references/cli-reference.md`. ",
-        "suffix": " Verdicts cache in `.claims/judge/`; commit `.cl"
+        "suffix": " Verdicts cache in `.claims/judge/`, which is lo"
       },
       {
         "kind": "text-position",
-        "start": 2042,
-        "end": 2150
+        "start": 2118,
+        "end": 2226
       }
     ]
   },
@@ -90,5 +90,5 @@
     }
   ],
   "createdAt": "2026-10-22T19:12:57.854Z",
-  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
 }

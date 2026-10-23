@@ -1,0 +1,152 @@
+{
+  "id": "clm_abcf82f84d4d4d58",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Backoff starts at 500 ms, doubles, caps at 5 s, with up to 25 percent downward jitter.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Backoff starts at 500 ms, doubles, caps at 5 s, with up to 25 percent downward jitter.",
+        "prefix": "meouts, are retried up to 2 times (3 attempts). ",
+        "suffix": " A `retry-after` header (seconds or HTTP date) r"
+      },
+      {
+        "kind": "text-position",
+        "start": 30901,
+        "end": 30987
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const BACKOFF_INITIAL_MS = 500;",
+          "prefix": "ESAFE_BASE_URL\";\n\nexport const MAX_RETRIES = 2;\n",
+          "suffix": "\nexport const BACKOFF_MAX_MS = 5_000;\nexport con"
+        },
+        {
+          "kind": "text-position",
+          "start": 637,
+          "end": 675
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "5624357288576aa6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "500"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const BACKOFF_MAX_MS = 5_000;",
+          "prefix": "IES = 2;\nexport const BACKOFF_INITIAL_MS = 500;\n",
+          "suffix": "\nexport const BACKOFF_JITTER = 0.25;\nexport cons"
+        },
+        {
+          "kind": "text-position",
+          "start": 676,
+          "end": 712
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "e36bcff02cd0d612"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "5_000"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const BACKOFF_JITTER = 0.25;",
+          "prefix": "_MS = 500;\nexport const BACKOFF_MAX_MS = 5_000;\n",
+          "suffix": "\nexport const MAX_RETRY_AFTER_MS = 60_000;\nexpor"
+        },
+        {
+          "kind": "text-position",
+          "start": 713,
+          "end": 748
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "4282331b96b0d4c5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.25"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const base = Math.min(BACKOFF_INITIAL_MS * 2 ** retry, BACKOFF_MAX_MS);\n    return base * (1 - BACKOFF_JITTER * this.random());",
+          "prefix": " private backoffMs(retry: number): number {\n    ",
+          "suffix": "\n  }\n\n  private async send(payload: string): Pro"
+        },
+        {
+          "kind": "text-position",
+          "start": 4885,
+          "end": 5012
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "7059238757aa8e4d",
+          "semanticHash": "db8c47e9595fe894"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:50.335Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:50.335Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

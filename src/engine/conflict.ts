@@ -8,7 +8,7 @@
  * | outcome     | rule                                                                 | example label |
  * |-------------|----------------------------------------------------------------------|---------------|
  * | `unrelated` | the judge's `same_subject` floor forced `unrelated`                   | `not the same subject (same_subject=0.12)` |
- * | `conflict`  | `same_subject` >= threshold and the sentences' values differ          | `numbers differ: 29 vs 39` |
+ * | `conflict`  | `same_subject` >= threshold, `contradicts` >= 0.5, and the values differ | `numbers differ: 29 vs 39` |
  * | `conflict`  | `contradictory`, confidence and `same_subject` >= threshold, `contradicts` >= 0.5 | `contradictory (p=0.93, same_subject=0.95)` |
  * | `review`    | `contradictory` with any of those below its bar                      | `review: contradictory, confidence=0.55 below threshold 0.80` |
  * | `duplicate` | `consistent` with `same_subject` >= threshold                         | `consistent and same subject (same_subject=0.95)` |
@@ -37,7 +37,10 @@ import { compareValues, extractValues } from "./values.ts";
 /** At most this many judge calls in flight during one pass. */
 export const MAX_IN_FLIGHT = 8;
 
-/** `contradicts` below this, with a `contradictory` relation, is a review case (SPEC 8.3). */
+/**
+ * `contradicts` below this, with a `contradictory` relation, is a review case
+ * (SPEC 8.3); below it the value rule does not fire either (SPEC 8.5).
+ */
 export const CONTRADICTS_FLOOR = 0.5;
 
 /** One side of a contradiction: a finding on `claimId` naming `otherClaimId`. */
@@ -45,7 +48,7 @@ export interface ConflictFinding {
   claimId: string;
   otherClaimId: string;
   pairId: string;
-  /** p(contradictory) from the judge, or 1 when the values differ. */
+  /** p(contradictory) from the judge, or 1 when the value rule fires. */
   probability: number;
   reason: string;
   /** Set on findings that warn instead of gate. */
@@ -135,8 +138,10 @@ export function decidePair(
       reason: `not the same subject (same_subject=${f2(r.sameSubject)})`,
     };
   }
-  if (r.sameSubject >= threshold) {
-    // Numeric rule (SPEC 8.5): only after the judge says same subject.
+  if (r.sameSubject >= threshold && r.contradicts >= CONTRADICTS_FLOOR) {
+    // Numeric rule (SPEC 8.5): only after the judge says same subject and
+    // `contradicts` reaches its floor; a bare value difference often
+    // describes different situations.
     const values = compareValues(extractValues(a), extractValues(b));
     if (values.differs && values.label !== undefined) {
       return { outcome: "conflict", probability: 1, reason: values.label };

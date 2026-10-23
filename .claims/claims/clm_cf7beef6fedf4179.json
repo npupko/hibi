@@ -1,0 +1,94 @@
+{
+  "id": "clm_cf7beef6fedf4179",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "- Without span flags for a side, the side is relocated only when it reads `moved`. A side that reads `unchanged` is kept.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- Without span flags for a side, the side is relocated only when it reads `moved`. A side that reads `unchanged` is kept.",
+        "prefix": "m the doc span when the doc side is relocated.\n\n",
+        "suffix": "\n- A side that reads `changed`, `ambiguous`, or "
+      },
+      {
+        "kind": "text-position",
+        "start": 5381,
+        "end": 5502
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "} else if (before.doc.state === \"moved\" && before.doc.region) {",
+          "prefix": "Region(contents.docContent, input.docSpec);\n    ",
+          "suffix": "\n      docRegion = before.doc.region;\n    } else"
+        },
+        {
+          "kind": "text-position",
+          "start": 11179,
+          "end": 11242
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "74d962b8d963b839",
+          "semanticHash": "6685b000a6f7686e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"moved\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    } else if (before.doc.state !== \"unchanged\") {\n      kept.push(keptSide(\"doc\", docFile, before.doc.state, claim.kind));",
+          "prefix": ".region) {\n      docRegion = before.doc.region;\n",
+          "suffix": "\n    }\n    if (docRegion) {\n      warnings.push("
+        },
+        {
+          "kind": "text-position",
+          "start": 11280,
+          "end": 11403
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "68ed3be564b104df",
+          "semanticHash": "e438f05250b220cf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unchanged\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:28:03.103Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:28:03.103Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

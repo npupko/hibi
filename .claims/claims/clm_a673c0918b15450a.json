@@ -1,0 +1,82 @@
+{
+  "id": "clm_a673c0918b15450a",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "When either side is not `unchanged` or `moved` (it is `changed`, `ambiguous`, or `orphaned`), or a side's text is not located, the error is ``claim <id> has no current supports verdict to acknowledge: the judge is <reason>.``, where `<reason>` is the judge label of section 7.3, such as `not consulted while the doc side is changed`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "When either side is not `unchanged` or `moved` (it is `changed`, `ambiguous`, or `orphaned`), or a side's text is not located, the error is ``claim <id> has no current supports verdict to acknowledge: the judge is <reason>.``, where `<reason>` is the judge label of section 7.3, such as `not consulted while the doc side is changed`.",
+        "prefix": "or when there is no current `supports` verdict. ",
+        "suffix": " When that key is not in the cache, or its entry"
+      },
+      {
+        "kind": "text-position",
+        "start": 10323,
+        "end": 10656
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`claim ${claim.id} has no current supports verdict to acknowledge: the judge is ${reference.current.reason}.`",
+          "prefix": "reference.current) {\n    throw new Error(\n      ",
+          "suffix": ",\n    );\n  }\n  const { key } = referenceSupports"
+        },
+        {
+          "kind": "text-position",
+          "start": 4401,
+          "end": 4510
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "502df51dc4d62f11",
+          "semanticHash": "0656b44754717bc3"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `not consulted while the doc side is ${sides.doc.state}`,",
+          "prefix": "ABLE.has(sides.doc.state)) {\n    return {\n      ",
+          "suffix": "\n    };\n  }\n  if (ev === undefined || !JUDGEABLE"
+        },
+        {
+          "kind": "text-position",
+          "start": 7924,
+          "end": 7989
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "dfd6756a7158a040",
+          "semanticHash": "7e607c201e6398b7"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:06:19.343Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:06:19.343Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

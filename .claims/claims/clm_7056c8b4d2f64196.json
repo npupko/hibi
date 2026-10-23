@@ -1,0 +1,65 @@
+{
+  "id": "clm_7056c8b4d2f64196",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Question definitions (instructions and criteria) live in `src/judge/questions/*.json` and are loaded, not written in code.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Question definitions (instructions and criteria) live in `src/judge/questions/*.json` and are loaded, not written in code.",
+        "prefix": " be cached. The interface is data in, data out. ",
+        "suffix": " Jev is the only shipped implementation.\n\nA fake"
+      },
+      {
+        "kind": "text-position",
+        "start": 30064,
+        "end": 30186
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "import conflictFile from \"./questions/conflict.json\";\nimport supportsFile from \"./questions/supports.json\";\nimport triageFile from \"./questions/triage.json\";",
+          "prefix": "quest,\n  SystemOneResponse,\n} from \"./http.ts\";\n",
+          "suffix": "\nimport {\n  type ConflictRelation,\n  type Confli"
+        },
+        {
+          "kind": "text-position",
+          "start": 352,
+          "end": 509
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "program",
+          "structuralHash": "930934abff85f58d",
+          "semanticHash": "16a5b2e50e214d01"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"./questions/conflict.json\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:50.074Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:50.074Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

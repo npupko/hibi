@@ -1,0 +1,65 @@
+{
+  "id": "clm_5d28ba2d31474c3f",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "| `instructions` | yes, when `procedure` is present | the contract: what to check and what to report |",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `instructions` | yes, when `procedure` is present | the contract: what to check and what to report |",
+        "prefix": "`\n\n| field | required | meaning |\n|---|---|---|\n",
+        "suffix": "\n| `steps[]` | no | hints in the shape of Lobste"
+      },
+      {
+        "kind": "text-position",
+        "start": 3253,
+        "end": 3355
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "instructions: z.string().min(1),",
+          "prefix": "xport const Procedure = z\n  .strictObject({\n    ",
+          "suffix": "\n    steps: z.array(ProcedureStep).optional(),\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 7865,
+          "end": 7897
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "ce652e9ff7aaa29d",
+          "semanticHash": "76905645d97861d8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:02.689Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:02.689Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

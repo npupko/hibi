@@ -1,0 +1,65 @@
+{
+  "id": "clm_ab78bc6211904112",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "An agent collects evidence and submits it.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An agent collects evidence and submits it.",
+        "prefix": " and the store under `.claims/`, it only reads. ",
+        "suffix": "\n2. **Same tree, same verdicts.** Deterministic "
+      },
+      {
+        "kind": "text-position",
+        "start": 1779,
+        "end": 1821
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"Submit evidence an agent collected; the judge decides whether it supports each claim.\"",
+          "prefix": "},\n  {\n    name: \"evidence\",\n    summary:\n      ",
+          "suffix": ",\n    description: `Reads a JSON array (or one o"
+        },
+        {
+          "kind": "text-position",
+          "start": 16643,
+          "end": 16730
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "9f298b8bd37e1296"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Submit evidence an agent collected; the judge decides whether it supports each claim.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:55.848Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:55.848Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

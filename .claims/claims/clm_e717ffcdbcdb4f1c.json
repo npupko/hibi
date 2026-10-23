@@ -1,0 +1,59 @@
+{
+  "id": "clm_e717ffcdbcdb4f1c",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `gates` | boolean |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `gates` | boolean |",
+        "prefix": " the contradiction pass; gating findings only |\n",
+        "suffix": "\n| `warns` | boolean; true only when the verdict"
+      },
+      {
+        "kind": "text-position",
+        "start": 21943,
+        "end": 21964
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    gates: z.boolean(),",
+          "prefix": "onflicts: z.array(ConflictFinding).default([]),\n",
+          "suffix": "\n    /** True when the verdict warns and does no"
+        },
+        {
+          "kind": "text-position",
+          "start": 16057,
+          "end": 16080
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1510bc52887893f3",
+          "semanticHash": "2b3d975908b4503f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:28.380Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:28.380Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

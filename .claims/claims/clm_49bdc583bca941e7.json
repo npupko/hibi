@@ -1,0 +1,84 @@
+{
+  "id": "clm_49bdc583bca941e7",
+  "documentId": "doc_5be5c5b2d98e3a89",
+  "kind": "code",
+  "sentence": "A Claude Code [Agent Skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) that teaches coding agents to use the [hibi](https://github.com/npupko/hibi) CLI ([docs](https://hibi.mintlify.app)).",
+  "doc": {
+    "file": "plugins/hibi-cli/README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A Claude Code [Agent Skill](https://docs.claude.com/en/docs/agents-and-tools/agent-skills/overview) that teaches coding agents to use the [hibi](https://github.com/npupko/hibi) CLI ([docs](https://hibi.mintlify.app)).",
+        "prefix": "# hibi-cli: Claude Code plugin\n\n",
+        "suffix": " hibi tracks checkable sentences (claims) in any"
+      },
+      {
+        "kind": "text-position",
+        "start": 32,
+        "end": 249
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: hibi",
+          "prefix": "---\n",
+          "suffix": "\ndescription: >-\n  Operate hibi, the CLI that tr"
+        },
+        {
+          "kind": "text-position",
+          "start": 4,
+          "end": 14
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Operate hibi, the CLI that tracks checkable sentences (claims) in documents",
+          "prefix": "---\nname: hibi\ndescription: >-\n  ",
+          "suffix": "\n  and reports which are stale, refuted, expired"
+        },
+        {
+          "kind": "text-position",
+          "start": 33,
+          "end": 108
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"homepage\": \"https://hibi.mintlify.app\",",
+          "prefix": "\"git+https://github.com/npupko/hibi.git\"\n  },\n  ",
+          "suffix": "\n  \"bugs\": {\n    \"url\": \"https://github.com/npup"
+        },
+        {
+          "kind": "text-position",
+          "start": 351,
+          "end": 391
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:29:27.654Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:29:27.654Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_674f6ed307bc42ca",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "Find exact occurrences of the stored quote.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Find exact occurrences of the stored quote.",
+        "prefix": "\n\n<Steps>\n  <Step title=\"Locate the quote\">\n    ",
+        "suffix": " If there are several, rank them by how well the"
+      },
+      {
+        "kind": "text-position",
+        "start": 2964,
+        "end": 3007
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/localize.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hits = exactOccurrences(text, tq.exact);",
+          "prefix": "ateResult {\n  const bias = tp ? tp.start : 0;\n  ",
+          "suffix": "\n  if (hits.length === 1) {\n    const at = hits["
+        },
+        {
+          "kind": "text-position",
+          "start": 5682,
+          "end": 5728
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "deda097796975c82",
+          "semanticHash": "c3f8ae397b969a73"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.145Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.145Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

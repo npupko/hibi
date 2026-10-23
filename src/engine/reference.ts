@@ -142,16 +142,28 @@ function touchedAt(e: JudgeCacheEntry): string {
     : e.at;
 }
 
-/** The newest `supports` entry among `entries`, by `touchedAt`; the later one wins a tie. */
-export function newestSupports(
+/**
+ * The newest entry among `entries` that satisfies `keep`, by `touchedAt`; on
+ * equal times the later entry in the list wins (SPEC 5, `ack: { judgeKey }`).
+ * Every "newest cache entry" in hibi goes through this function.
+ */
+export function newestEntry(
   entries: JudgeCacheEntry[],
+  keep: (e: JudgeCacheEntry) => boolean,
 ): JudgeCacheEntry | undefined {
   let best: JudgeCacheEntry | undefined;
   for (const e of entries) {
-    if (e.judgment !== "supports") continue;
+    if (!keep(e)) continue;
     if (best === undefined || touchedAt(e) >= touchedAt(best)) best = e;
   }
   return best;
+}
+
+/** The newest `supports` entry among `entries` (`newestEntry`). */
+export function newestSupports(
+  entries: JudgeCacheEntry[],
+): JudgeCacheEntry | undefined {
+  return newestEntry(entries, (e) => e.judgment === "supports");
 }
 
 /**

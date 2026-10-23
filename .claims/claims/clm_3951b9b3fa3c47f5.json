@@ -1,0 +1,59 @@
+{
+  "id": "clm_3951b9b3fa3c47f5",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The first matching row decides:",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The first matching row decides:",
+        "prefix": "pairs[]` as `{ pairId, why, outcome, reason }`. ",
+        "suffix": "\n\n| outcome | rule | example label |\n|---|---|--"
+      },
+      {
+        "kind": "text-position",
+        "start": 44681,
+        "end": 44712
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function decidePair(",
+          "prefix": " the result is the judge's answer for them.\n */\n",
+          "suffix": "\n  a: string,\n  b: string,\n  r: ConflictResult,\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 5121,
+          "end": 5148
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "5957f75fe30c8aa5",
+          "semanticHash": "ecc8ba27d360bdf2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:54.276Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:54.276Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

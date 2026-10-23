@@ -1,0 +1,169 @@
+{
+  "id": "clm_951f8d78900e4960",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `reasons` | list of strings: every reason label, in this order: doc-side anchor labels (prefixed `doc: `), evidence-side anchor labels (prefixed `evidence: `), the expiry label, judge labels (prefixed `judge: `), the `review acknowledged by …` label when a review ack applies, the gating-rule labels, then a `worklist: …` label when the claim is in the worklist |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `reasons` | list of strings: every reason label, in this order: doc-side anchor labels (prefixed `doc: `), evidence-side anchor labels (prefixed `evidence: `), the expiry label, judge labels (prefixed `judge: `), the `review acknowledged by …` label when a review ack applies, the gating-rule labels, then a `worklist: …` label when the claim is in the worklist |",
+        "prefix": "e, so `gates` and `warns` are never both true |\n",
+        "suffix": "\n\nThe verdict also carries `claimId`, `documentI"
+      },
+      {
+        "kind": "text-position",
+        "start": 22083,
+        "end": 22448
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...sides.doc.reasons.map((n) => `doc: ${n}`),",
+          "prefix": "UDGE_THRESHOLD },\n  );\n\n  const reasons = [\n    ",
+          "suffix": "\n    ...sides.evidence.flatMap((s) => s.reasons."
+        },
+        {
+          "kind": "text-position",
+          "start": 14916,
+          "end": 14961
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "a2920b1bdac32116",
+          "semanticHash": "8eed3c1f7b23fcf7"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    ...(opts.reasons ?? []),\n    ...gate.reasons,",
+          "prefix": "\n    ...(expiry !== undefined ? [expiry] : []),\n",
+          "suffix": "\n  ];\n\n  const changes = [\n    ...sides.doc.chan"
+        },
+        {
+          "kind": "text-position",
+          "start": 15087,
+          "end": 15136
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "d895c19befe635a6",
+          "semanticHash": "e518e6988475536f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...(outcome?.reasons ?? []).map((r) => `judge: ${r}`),\n        ...findingReasons,",
+          "prefix": " : [],\n      warnings,\n      reasons: [\n        ",
+          "suffix": "\n      ],\n      reviewAcknowledged: ack !== unde"
+        },
+        {
+          "kind": "text-position",
+          "start": 17471,
+          "end": 17552
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "263795d6508639e8",
+          "semanticHash": "7fb85109e931edff"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`review acknowledged by ${ack.by} at ${ack.at}${ack.note ? `: ${ack.note}` : \"\"}; it no longer warns`,",
+          "prefix": "undefined) {\n      findingReasons.push(\n        ",
+          "suffix": "\n      );\n    }\n    const live = c.enforcement !"
+        },
+        {
+          "kind": "text-position",
+          "start": 16771,
+          "end": 16873
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "6261b8f7081dbcae",
+          "semanticHash": "513fac8b0842b21a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "v.reasons.push(worklistLabel(reason, c.kind, c.id));",
+          "prefix": "ndefined;\n    if (reason !== undefined) {\n      ",
+          "suffix": "\n      const last = newestEntry(\n        entries"
+        },
+        {
+          "kind": "text-position",
+          "start": 18210,
+          "end": 18262
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "dd98e41dde59f88a",
+          "semanticHash": "653fcbd989ba5c96"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:12:19.061Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:12:19.061Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

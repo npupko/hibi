@@ -1,0 +1,88 @@
+{
+  "id": "clm_29a27fc49daf4170",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "| `pending` | no key, no network, or a judge error (`judge error: …` in `reasons`); nothing written; resubmit |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `pending` | no key, no network, or a judge error (`judge error: …` in `reasons`); nothing written; resubmit |",
+        "prefix": "id> --by <actor> --ack review --note \"<why>\"` |\n",
+        "suffix": "\n\n`evidence` exits 0 for every verdict. Commit `"
+      },
+      {
+        "kind": "text-position",
+        "start": 11041,
+        "end": 11152
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (a.kind === \"pending\") {",
+          "prefix": "tries()) {\n    const a = asked[i] as Asked;\n    ",
+          "suffix": "\n      summary.pending += 1;\n      results.push("
+        },
+        {
+          "kind": "text-position",
+          "start": 11643,
+          "end": 11670
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "410a3025a4039ca7",
+          "semanticHash": "ce15ee090ac454a9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeUnavailable) return `judge unavailable: ${e.message}`;",
+          "prefix": "ailureLabel(e: unknown): string | undefined {\n  ",
+          "suffix": "\n  if (e instanceof JudgeError) return `judge er"
+        },
+        {
+          "kind": "text-position",
+          "start": 3661,
+          "end": 3737
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "e16196633fc6e5f4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:09.499Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:09.499Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

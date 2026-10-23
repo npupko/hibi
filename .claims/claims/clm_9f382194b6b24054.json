@@ -1,0 +1,94 @@
+{
+  "id": "clm_9f382194b6b24054",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "On `record` and `evidence`, every item needs an actor: the item's `by` key, or `--by`, which is the default for items without one.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "On `record` and `evidence`, every item needs an actor: the item's `by` key, or `--by`, which is the default for items without one.",
+        "prefix": "me>`. The CLI's `--by` is required on `attest`. ",
+        "suffix": " There is no default from git configuration; an "
+      },
+      {
+        "kind": "text-position",
+        "start": 8123,
+        "end": 8253
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const by = typeof raw.by === \"string\" ? raw.by : context.defaultBy;",
+          "prefix": "ot ${JSON.stringify(v)})`,\n      );\n    }\n  }\n  ",
+          "suffix": "\n  if (by === undefined) {\n    errors.push(\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 10626,
+          "end": 10693
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "0d9d1b676b99279b",
+          "semanticHash": "ccbbf218d0e3af3e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"string\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "isItem(item) && !(\"by\" in item) ? { ...item, by } : item,",
+          "prefix": "\n      const items = raws.map((item) =>\n        ",
+          "suffix": "\n      );\n      try {\n        const report = awa"
+        },
+        {
+          "kind": "text-position",
+          "start": 29754,
+          "end": 29811
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "16d381518f365e91",
+          "semanticHash": "bec0ce7639e250db"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"by\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:23.523Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:23.523Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

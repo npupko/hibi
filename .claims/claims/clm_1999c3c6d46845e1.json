@@ -1,0 +1,59 @@
+{
+  "id": "clm_1999c3c6d46845e1",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Two sentences about the same subject can hold different values for different situations, such as the exit codes of two commands, so a value difference alone is not enough.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Two sentences about the same subject can hold different values for different situations, such as the exit codes of two commands, so a value difference alone is not enough.",
+        "prefix": "related`, and `contradicts` is at or above 0.5. ",
+        "suffix": " It yields a conflict finding with probability 1"
+      },
+      {
+        "kind": "text-position",
+        "start": 42132,
+        "end": 42303
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.sameSubject >= threshold && r.contradicts >= CONTRADICTS_FLOOR) {",
+          "prefix": "me_subject=${f2(r.sameSubject)})`,\n    };\n  }\n  ",
+          "suffix": "\n    // Numeric rule (SPEC 8.5): only after the "
+        },
+        {
+          "kind": "text-position",
+          "start": 5396,
+          "end": 5467
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "9f7b5a7ff61764e3",
+          "semanticHash": "40a2f24fa63ae4bf"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T09:36:10.573Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T09:36:10.573Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

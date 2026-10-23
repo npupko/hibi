@@ -1,0 +1,82 @@
+{
+  "id": "clm_5b8ff7050c7540b7",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "Each action has `id`, `title`, `rationale`, and a `command` when one exists.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each action has `id`, `title`, `rationale`, and a `command` when one exists.",
+        "prefix": "claims only) |\n| a side `moved` | `reanchor` |\n\n",
+        "suffix": " `pending` and `unavailable` add no actions; the"
+      },
+      {
+        "kind": "text-position",
+        "start": 5547,
+        "end": 5623
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const RemediationAction = z.strictObject({",
+          "prefix": "──────────────────────────────────────────────\n\n",
+          "suffix": "\n  /** Stable token, e.g. `reanchor`, `retire`. "
+        },
+        {
+          "kind": "text-position",
+          "start": 15017,
+          "end": 15066
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "e0c1e52793f8ba5f",
+          "semanticHash": "42e6fe66c06590c6"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "command: z.string().optional(),",
+          "prefix": "h the claim id filled in, when one exists. */\n  ",
+          "suffix": "\n});\nexport type RemediationAction = z.infer<typ"
+        },
+        {
+          "kind": "text-position",
+          "start": 15259,
+          "end": 15290
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "283889c7f160769f",
+          "semanticHash": "cb4ea6d1dfa02655"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:14.403Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:14.403Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

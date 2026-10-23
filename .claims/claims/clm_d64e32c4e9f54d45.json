@@ -14,8 +14,8 @@
       },
       {
         "kind": "text-position",
-        "start": 7829,
-        "end": 7917
+        "start": 8167,
+        "end": 8255
       }
     ]
   },
@@ -26,13 +26,13 @@
         {
           "kind": "text-quote",
           "exact": "CONTRADICTS_FLOOR = 0.5",
-          "prefix": "n, is a review case (SPEC 8.3). */\nexport const ",
+          "prefix": "es not fire either (SPEC 8.5).\n */\nexport const ",
           "suffix": ";\n\n/** One side of a contradiction: a finding on"
         },
         {
           "kind": "text-position",
-          "start": 2549,
-          "end": 2572
+          "start": 2616,
+          "end": 2639
         },
         {
           "kind": "ast-node",
@@ -61,5 +61,5 @@
     }
   ],
   "createdAt": "2026-10-22T19:12:57.934Z",
-  "ref": "6871efcb53914fc9fc38b5618c2a69a45509d749"
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
 }

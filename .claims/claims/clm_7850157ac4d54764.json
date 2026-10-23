@@ -1,0 +1,65 @@
+{
+  "id": "clm_7850157ac4d54764",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A sentence outside a list has no lead-in, and its context is unchanged.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A sentence outside a list has no lead-in, and its context is unchanged.",
+        "prefix": "character bound trims that text from its start. ",
+        "suffix": " Any claim whose context text changes under thes"
+      },
+      {
+        "kind": "text-position",
+        "start": 35992,
+        "end": 36063
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (head.fenced || !LIST_ITEM.test(head.text)) return \"\";",
+          "prefix": "g): string {\n  const head = lines[a] as Line;\n  ",
+          "suffix": "\n  let k = a - 1;\n  while (\n    k >= 0 &&\n    !("
+        },
+        {
+          "kind": "text-position",
+          "start": 5772,
+          "end": 5829
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "7b844df8136b3272",
+          "semanticHash": "142817e82abe5877"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:06.087Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:06.087Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -295,7 +295,7 @@ export async function runAudit(input: AuditInput): Promise<AuditReport> {
     if (side.region) spans.push({ claim, ...side.region });
   }
 
-  const regions = splitRegions(text);
+  const regions = splitRegions(text, docPath);
   const coveredBy = new Map<string, Claim>();
   for (const region of regions) {
     const hit = spans.find((s) => overlaps(s, region));

@@ -1,0 +1,94 @@
+{
+  "id": "clm_af4f93b7bee64143",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "`hibi schema --name Claim` prints the JSON Schema.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi schema --name Claim` prints the JSON Schema.",
+        "prefix": " claim was recorded or last reanchored against. ",
+        "suffix": "\n\n## Next\n\n<CardGroup cols={2}>\n  <Card title=\"A"
+      },
+      {
+        "kind": "text-position",
+        "start": 11393,
+        "end": 11443
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"A schema name, e.g. Claim, Verdict, Config.\",",
+          "prefix": "string\",\n        placeholder: \"<Name>\",\n        ",
+          "suffix": "\n      },\n    ],\n    examples: [\"hibi schema\", \""
+        },
+        {
+          "kind": "text-position",
+          "start": 20157,
+          "end": 20209
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "a74e6f58eb6182cb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"A schema name, e.g. Claim, Verdict, Config.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "z.toJSONSchema(schema, { target: \"draft-2020-12\", reused: \"inline\" }),",
+          "prefix": "      );\n        }\n        await out(\n          ",
+          "suffix": "\n          pretty,\n        );\n      } else {\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 31443,
+          "end": 31513
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "a2f2076131fe9884",
+          "semanticHash": "1a33fe0f02e46699"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"draft-2020-12\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:05.152Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:05.152Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

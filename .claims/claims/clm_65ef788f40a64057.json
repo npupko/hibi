@@ -1,0 +1,59 @@
+{
+  "id": "clm_65ef788f40a64057",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "`check` never reads file contents from git history.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`check` never reads file contents from git history.",
+        "prefix": "om the working tree and locates the span again. ",
+        "suffix": "\n\n## Selector kinds\n\n| selector | sides | what i"
+      },
+      {
+        "kind": "text-position",
+        "start": 945,
+        "end": 996
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/git/git.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "git is used only to scope `check --since` and to fill\n * the recorded ref; never to pick an actor and never to compute a verdict.",
+          "prefix": "/**\n * Advisory git access. ",
+          "suffix": "\n */\nimport { execFile } from \"node:child_proces"
+        },
+        {
+          "kind": "text-position",
+          "start": 28,
+          "end": 157
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "aef3e288f71e1288"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:25.797Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:25.797Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

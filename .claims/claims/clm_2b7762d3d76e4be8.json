@@ -1,0 +1,117 @@
+{
+  "id": "clm_2b7762d3d76e4be8",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "The request holds both sentences, their document paths, and their context (heading path and paragraph), in claim-id order.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The request holds both sentences, their document paths, and their context (heading path and paragraph), in claim-id order.",
+        "prefix": "h pair is sent to the `conflict` judgment once. ",
+        "suffix": " The answer is cached under the hash of the mode"
+      },
+      {
+        "kind": "text-position",
+        "start": 1918,
+        "end": 2040
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { text: claim.sentence, doc: claim.doc.file, context: context(claim) };",
+          "prefix": "xt: (claim: Claim) => string): ConflictSide {\n  ",
+          "suffix": "\n}\n\n/** The exact request and cache key for a pa"
+        },
+        {
+          "kind": "text-position",
+          "start": 8285,
+          "end": 8363
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "feea801c9368425c",
+          "semanticHash": "48afc3b1f86414d4"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pair.a.id < pair.b.id ? [pair.a, pair.b] : [pair.b, pair.a];",
+          "prefix": "; key: string } {\n  const [first, second] =\n    ",
+          "suffix": "\n  const a = side(first, context);\n  const b = s"
+        },
+        {
+          "kind": "text-position",
+          "start": 8653,
+          "end": 8713
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "0b0bbff3da7511a8",
+          "semanticHash": "c75ec2368be5ff53"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[pair.a,pair.b]"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return text === null ? claim.sentence : claimContext(text, claim);",
+          "prefix": "text = texts.get(claim.doc.file) ?? null;\n      ",
+          "suffix": "\n    };\n  }\n\n  /**\n   * The contradiction and du"
+        },
+        {
+          "kind": "text-position",
+          "start": 10081,
+          "end": 10147
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "34b3f064703fa049",
+          "semanticHash": "83526b3b83e50589"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:24.839Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:24.839Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

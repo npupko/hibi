@@ -69,7 +69,7 @@ describe("archival", () => {
     const r = await repo();
     await r.write("old.md", "# Old policy\n");
     await expect(archiveDocument(r.store, "old.md")).rejects.toThrow(
-      "old.md is not a registered document; nothing to archive (a document is registered when a claim is recorded on it).",
+      "old.md is not a registered document; nothing to archive (a document is registered when a claim is recorded on it, or by supersede or reanchor --doc).",
     );
     expect(await exists(join(r.root, "archive", "old.md"))).toBe(false);
   });
@@ -158,11 +158,13 @@ describe("remediation menus on live verdicts", () => {
       "reanchor",
       "retire",
     ]);
-    expect(v?.remediation?.actions[0]?.command).toBe(`hibi reanchor ${id}`);
+    expect(v?.remediation?.actions[0]?.command).toBe(
+      `hibi reanchor ${id} --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 50"`,
+    );
   });
 
   test("doc changed: recommended reverify-doc", async () => {
-    const { r } = await seeded();
+    const { r, id } = await seeded();
     await r.write("README.md", "# Doc\n\nRetries are capped at 7 attempts.\n");
     const v = (await runCheck(r.store, { ast: analyzer })).verdicts[0];
     expect(v?.doc).toBe("changed");
@@ -173,6 +175,9 @@ describe("remediation menus on live verdicts", () => {
       "reanchor",
       "retire",
     ]);
+    expect(v?.remediation?.actions[0]?.command).toBe(
+      `hibi reanchor ${id} --doc-quote "Retries are capped at 7 attempts"`,
+    );
   });
 
   test("both changed: recommended reconcile", async () => {
@@ -201,6 +206,15 @@ describe("remediation menus on live verdicts", () => {
     expect(ids).toContain("supersede");
     expect(v?.remediation?.actions[0]?.command).toBe(
       `hibi reanchor ${id} --suggest`,
+    );
+  });
+});
+
+describe("B.7 archive error text", () => {
+  test("B.7: the unregistered-document error names every way a document is registered", async () => {
+    const r = await repo();
+    await expect(archiveDocument(r.store, "nope.md")).rejects.toThrow(
+      "nope.md is not a registered document; nothing to archive (a document is registered when a claim is recorded on it, or by supersede or reanchor --doc).",
     );
   });
 });

@@ -1,0 +1,65 @@
+{
+  "id": "clm_d2106012f5e64903",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The ceiling of 10 keeps a token shared by hundreds of claims in a large store from pairing them all.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The ceiling of 10 keeps a token shared by hundreds of claims in a large store from pairing them all.",
+        "prefix": "en shared by exactly two claims is always rare. ",
+        "suffix": "\n- **Values rule.** Both sentences contain a val"
+      },
+      {
+        "kind": "text-position",
+        "start": 43627,
+        "end": 43727
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const RARE_MAX_CLAIMS = 10;",
+          "prefix": " of claims count as rare and pair them all.\n */\n",
+          "suffix": "\n\n/** Shortest token, in letters, that counts as"
+        },
+        {
+          "kind": "text-position",
+          "start": 1706,
+          "end": 1740
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "857fdc775df638ae"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "10"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:40.373Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:40.373Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_86ca9f2077674333",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "code",
+  "sentence": "| Fiberplane Drift | tree-sitter node fingerprints for code spans |",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| Fiberplane Drift | tree-sitter node fingerprints for code spans |",
+        "prefix": "ral equal matches is `ambiguous`, not a guess |\n",
+        "suffix": "\n| Doorstop | a link marked suspect that needs a"
+      },
+      {
+        "kind": "text-position",
+        "start": 6416,
+        "end": 6483
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": " * `ast-node` (code only): the smallest enclosing named tree-sitter node with a\n * two-tier fingerprint.",
+          "prefix": "  end: z.number().int().nonnegative(),\n});\n\n/**\n",
+          "suffix": " A changed semantic hash alone makes the span\n *"
+        },
+        {
+          "kind": "text-position",
+          "start": 3850,
+          "end": 3954
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "217351dddab22b1e"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:52.533Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:52.533Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

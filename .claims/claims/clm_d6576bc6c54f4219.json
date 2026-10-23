@@ -1,0 +1,59 @@
+{
+  "id": "clm_d6576bc6c54f4219",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "- Fix the wrong sentence, then `hibi reanchor clm_cd53af142f2f4ad3 --doc-quote \"The Pro plan costs $29 per month.\"` to accept the new text.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- Fix the wrong sentence, then `hibi reanchor clm_cd53af142f2f4ad3 --doc-quote \"The Pro plan costs $29 per month.\"` to accept the new text.",
+        "prefix": "$29 (recipe 3), so the FAQ is wrong. Pick one:\n\n",
+        "suffix": " Plain `hibi reanchor <id>` relocates only a sid"
+      },
+      {
+        "kind": "text-position",
+        "start": 14103,
+        "end": 14242
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "The claim's sentence is refreshed from the new doc span.",
+          "prefix": "--ref-* flags replace a reference claim's span. ",
+          "suffix": "\",\n    positional: {\n      name: \"claim-id\",\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 14155,
+          "end": 14211
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "a941d74da88b3d9c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:10.170Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:10.170Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

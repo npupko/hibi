@@ -1,0 +1,88 @@
+{
+  "id": "clm_2af8bc810e344cf7",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The stored sentence changes only when the claim is re-recorded or reanchored, so a small edit to the document that keeps the doc anchor `unchanged` does not end an ack.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The stored sentence changes only when the claim is re-recorded or reanchored, so a small edit to the document that keeps the doc anchor `unchanged` does not end an ack.",
+        "prefix": "ored `sentence`, not the current document text. ",
+        "suffix": "\n  - `ack: { judgeKey }` acknowledges a `review`"
+      },
+      {
+        "kind": "text-position",
+        "start": 9604,
+        "end": 9772
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sentenceHash(first.sentence),",
+          "prefix": ":${second.id}`,\n      sentenceHashes: [\n        ",
+          "suffix": "\n        sentenceHash(second.sentence),\n      ],"
+        },
+        {
+          "kind": "text-position",
+          "start": 6976,
+          "end": 7005
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "2d46d21f9e7efc1c",
+          "semanticHash": "8fdbf3e1cd003a96"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hashes = [sentenceHash(pair.a.sentence), sentenceHash(pair.b.sentence)];",
+          "prefix": "xport function isAcked(pair: Pair): boolean {\n  ",
+          "suffix": "\n  for (const claim of [pair.a, pair.b]) {\n    f"
+        },
+        {
+          "kind": "text-position",
+          "start": 7755,
+          "end": 7833
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "32c2a1cba34c8a82",
+          "semanticHash": "6a8942dd18e90160"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[sentenceHash(pair.a.sentence),sentenceHash(pair.b.sentence)]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:24.135Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:24.135Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

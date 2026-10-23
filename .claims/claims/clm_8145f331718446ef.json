@@ -1,0 +1,52 @@
+{
+  "id": "clm_8145f331718446ef",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "reference",
+  "sentence": "| a `verified` boolean | replaced by attestations with actors and bases |",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| a `verified` boolean | replaced by attestations with actors and bases |",
+        "prefix": "radiction pass is done in code and needs none |\n",
+        "suffix": "\n| store upgrade code | v3 stores are not upgrad"
+      },
+      {
+        "kind": "text-position",
+        "start": 5876,
+        "end": 5949
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "| `verified: boolean` | replaced by attestations with actors and bases |",
+          "prefix": " maintained list is metadata nobody asked for |\n",
+          "suffix": "\n| store upgrade code | no compatibility with v3"
+        },
+        {
+          "kind": "text-position",
+          "start": 72310,
+          "end": 72382
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:52.274Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:52.274Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

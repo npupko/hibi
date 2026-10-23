@@ -1,0 +1,123 @@
+{
+  "id": "clm_b72df1d85fc3421a",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "| `code` | one or more code spans | an anchored span changed, disappeared, or matches several places |",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `code` | one or more code spans | an anchored span changed, disappeared, or matches several places |",
+        "prefix": "------------------------|---------------------|\n",
+        "suffix": "\n| `reference` | one span in another document | "
+      },
+      {
+        "kind": "text-position",
+        "start": 1777,
+        "end": 1879
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (c.kind === \"code\" && n < 1) {",
+          "prefix": " ctx) => {\n    const n = c.evidence.length;\n    ",
+          "suffix": "\n      ctx.addIssue({\n        code: \"custom\",\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 9296,
+          "end": 9329
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "419c22c8952625f7",
+          "semanticHash": "1a35e2ace4aadda1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"code\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"changed\",\n  \"orphaned\",\n  \"ambiguous\",",
+          "prefix": "Set<EvidenceState> = new Set<EvidenceState>([\n  ",
+          "suffix": "\n]);\n\nconst WARN_ANCHOR: ReadonlySet<EvidenceSta"
+        },
+        {
+          "kind": "text-position",
+          "start": 1461,
+          "end": 1500
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "066da354b73acab7",
+          "semanticHash": "685b8475d8f82019"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"changed\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (isGatingAnchor(v.doc) || isGatingAnchor(v.evidence)) gates = true;",
+          "prefix": "];\n  let gates = false;\n  let warns = false;\n\n  ",
+          "suffix": "\n  if (isWarnAnchor(v.doc) || isWarnAnchor(v.evi"
+        },
+        {
+          "kind": "text-position",
+          "start": 3038,
+          "end": 3108
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "b1a7b17fe3209c3c",
+          "semanticHash": "5fc554112083c57a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:22.838Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:22.838Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

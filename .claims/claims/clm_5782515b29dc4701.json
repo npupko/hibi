@@ -1,0 +1,117 @@
+{
+  "id": "clm_5782515b29dc4701",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 50 | judge context for a sentence whose paragraph opens with a list item includes the list's lead-in paragraph, found across blank lines and never taken from a heading, fence, frontmatter, thematic break, or tag-only line; context for other sentences is unchanged; affected claims, meaning any claim whose context text changes under the lead-in, thematic-break, or frontmatter rule, get a new request key and are asked again once |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 50 | judge context for a sentence whose paragraph opens with a list item includes the list's lead-in paragraph, found across blank lines and never taken from a heading, fence, frontmatter, thematic break, or tag-only line; context for other sentences is unchanged; affected claims, meaning any claim whose context text changes under the lead-in, thematic-break, or frontmatter rule, get a new request key and are asked again once |",
+        "prefix": "gistered path is an error and creates nothing |\n",
+        "suffix": "\n| 51 | a claim whose conflict pairs are pending"
+      },
+      {
+        "kind": "text-position",
+        "start": 81598,
+        "end": 82031
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (isBreak(above, false) || TAG_LINE.test(above.text.trim())) return \"\";",
+          "prefix": " return \"\";\n  const above = lines[k] as Line;\n  ",
+          "suffix": "\n  const [c] = paragraphLines(lines, k, k);\n  co"
+        },
+        {
+          "kind": "text-position",
+          "start": 6043,
+          "end": 6116
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "522d58f822db8b3a",
+          "semanticHash": "219bb15c2a4a303d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "false",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (LIST_ITEM.test(top) || top.trimStart().startsWith(\"|\")) return \"\";",
+          "prefix": "k, k);\n  const top = (lines[c] as Line).text;\n  ",
+          "suffix": "\n  return doc.slice((lines[c] as Line).start, li"
+        },
+        {
+          "kind": "text-position",
+          "start": 6201,
+          "end": 6271
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "9a7e7d09b2d24a11",
+          "semanticHash": "61c1c3d6605acaf5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"|\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const before = lead ? `${lead}\\n\\n${listBefore}` : listBefore;",
+          "prefix": "ocText.slice(pStart, at).replace(/^\\s+/, \"\");\n  ",
+          "suffix": "\n  const after = docText\n    .slice(at + sentenc"
+        },
+        {
+          "kind": "text-position",
+          "start": 8173,
+          "end": 8235
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "32f0c05edd2b790b",
+          "semanticHash": "7298afe34d748754"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:04.149Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:04.149Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

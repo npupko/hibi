@@ -95,8 +95,10 @@ export const TextPositionSelector = z.strictObject({
 
 /**
  * `ast-node` (code only): the smallest enclosing named tree-sitter node with a
- * two-tier fingerprint. Used for reason labels only: structural equal and
- * semantic different means a rename, both different means a restructure.
+ * two-tier fingerprint. A changed semantic hash alone makes the span
+ * `changed` (SPEC 7.1 step 4). The pair also picks the reason label:
+ * structural equal and semantic different means a rename, both different
+ * means a restructure.
  */
 export const AstNodeSelector = z.strictObject({
   kind: z.literal("ast-node"),

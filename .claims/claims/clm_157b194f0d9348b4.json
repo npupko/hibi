@@ -1,0 +1,117 @@
+{
+  "id": "clm_157b194f0d9348b4",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "- A side that reads `changed`, `ambiguous`, or `orphaned` is left as stored, and the result's `kept` gives the reason, for example `doc: changed; pass --doc-quote to re-anchor` or `evidence: orphaned; pass --code-quote to re-anchor`. Hibi does not guess where an edited or lost span went; pass the new span.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- A side that reads `changed`, `ambiguous`, or `orphaned` is left as stored, and the result's `kept` gives the reason, for example `doc: changed; pass --doc-quote to re-anchor` or `evidence: orphaned; pass --code-quote to re-anchor`. Hibi does not guess where an edited or lost span went; pass the new span.",
+        "prefix": "`moved`. A side that reads `unchanged` is kept.\n",
+        "suffix": "\n- The command exits 0 when at least one side wa"
+      },
+      {
+        "kind": "text-position",
+        "start": 5503,
+        "end": 5810
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    } else if (before.doc.state !== \"unchanged\") {\n      kept.push(keptSide(\"doc\", docFile, before.doc.state, claim.kind));",
+          "prefix": ".region) {\n      docRegion = before.doc.region;\n",
+          "suffix": "\n    }\n    if (docRegion) {\n      warnings.push("
+        },
+        {
+          "kind": "text-position",
+          "start": 11280,
+          "end": 11403
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "68ed3be564b104df",
+          "semanticHash": "e438f05250b220cf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unchanged\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    kept.push(keptSide(\"evidence\", bundle.file, side.state, kind));",
+          "prefix": "\n    content === null ||\n    !side.region\n  ) {\n",
+          "suffix": "\n    return { bundle, relocated: false };\n  }\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 8413,
+          "end": 8480
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "9b3bd5391bff73fc",
+          "semanticHash": "cccfee3556293517"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `${side}: ${state}; pass ${flag} to re-anchor`,",
+          "prefix": ";\n  return {\n    side,\n    file,\n    state,\n    ",
+          "suffix": "\n  };\n}\n\n/** The structural language of an evide"
+        },
+        {
+          "kind": "text-position",
+          "start": 6287,
+          "end": 6342
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "6d27f30184e331db",
+          "semanticHash": "10b91559c14bb781"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:28:03.222Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:28:03.222Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_1e851d024c2546aa",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A conflict review finding warns with the reason label `possible conflict with <id>: <reason>`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A conflict review finding warns with the reason label `possible conflict with <id>: <reason>`.",
+        "prefix": "uggested` or `retired` claim | never | never |\n\n",
+        "suffix": " A pair the judge could not answer (`JudgeUnavai"
+      },
+      {
+        "kind": "text-position",
+        "start": 25896,
+        "end": 25990
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...reviews.map((f) => `possible conflict with ${f.claimId}: ${f.reason}`),",
+          "prefix": "t(c.id) ?? 0) : 0;\n    const warnings = [\n      ",
+          "suffix": "\n      ...(pendingPairs > 0 ? [`conflict checks "
+        },
+        {
+          "kind": "text-position",
+          "start": 17123,
+          "end": 17197
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "b6cbffe8d3a1e829",
+          "semanticHash": "0e4681b524e12224"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:48.310Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:48.310Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

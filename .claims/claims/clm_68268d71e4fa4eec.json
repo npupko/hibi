@@ -1,0 +1,105 @@
+{
+  "id": "clm_68268d71e4fa4eec",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "| `check --doc <path>`, `audit --doc <path>` | the pairs with at least one claim in that document | `doc` |",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `check --doc <path>`, `audit --doc <path>` | the pairs with at least one claim in that document | `doc` |",
+        "prefix": "check --since`, `list` | every pair | `store` |\n",
+        "suffix": "\n\nThe other claim of a judged pair may be on any"
+      },
+      {
+        "kind": "text-position",
+        "start": 2852,
+        "end": 2959
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "claims.filter((c) => c.documentId === documentId).map((c) => c.id),",
+          "prefix": "     ? undefined\n        : new Set(\n            ",
+          "suffix": "\n          );\n    return runConflictPass({\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 10963,
+          "end": 11030
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "35bfb4bcd6c08e13",
+          "semanticHash": "5165dcc222cfe570"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "onlyDocument = scope.documentId;",
+          "prefix": ");\n      }\n      onlyFiles = scope.files;\n      ",
+          "suffix": "\n    }\n    const pass = await this.conflictPass("
+        },
+        {
+          "kind": "text-position",
+          "start": 12921,
+          "end": 12953
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "1356dc74ae89d99b",
+          "semanticHash": "a0e7f34dff6fccd5"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const pass = await this.conflictPass(documentIdForPath(docPath));",
+          "prefix": "  const config = await this.store.config();\n    ",
+          "suffix": "\n    return runAudit({\n      store: this.store,\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 16640,
+          "end": 16705
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "91176f82ab9c4c0b",
+          "semanticHash": "264775baaf96a6eb"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:25.467Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:25.467Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

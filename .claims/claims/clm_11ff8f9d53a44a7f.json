@@ -1,0 +1,158 @@
+{
+  "id": "clm_11ff8f9d53a44a7f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| propositions | duplicate detection comes from sentence text and the conflict pass; supersede moves every live claim by document and uses the stored quote only to rebuild its text position |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| propositions | duplicate detection comes from sentence text and the conflict pass; supersede moves every live claim by document and uses the stored quote only to rebuild its text position |",
+        "prefix": "extension point; no resolver was ever shipped |\n",
+        "suffix": "\n| topics | pairing in code needs none; a mainta"
+      },
+      {
+        "kind": "text-position",
+        "start": 72030,
+        "end": 72221
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (other !== id) add(id, { claimId: other, why: \"same sentence\" });",
+          "prefix": "ids) {\n      for (const other of ids) {\n        ",
+          "suffix": "\n      }\n    }\n  }\n  return out;\n}\n\nexport funct"
+        },
+        {
+          "kind": "text-position",
+          "start": 4256,
+          "end": 4324
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "337f07018ed126d0",
+          "semanticHash": "0d44bdad5bd6dbf4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"same sentence\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "outcome: \"duplicate\",",
+          "prefix": ".sameSubject >= threshold) {\n    return {\n      ",
+          "suffix": "\n      probability: r.probabilities.consistent,\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 6859,
+          "end": 6880
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "59a4e4b4188c60af"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"duplicate\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const live = await liveClaimsOn(store, oldDoc.id);",
+          "prefix": "move that fails is a miss and stays stranded.\n  ",
+          "suffix": "\n  const relocated: RelocatedClaim[] = [];\n  con"
+        },
+        {
+          "kind": "text-position",
+          "start": 3525,
+          "end": 3575
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "59508193a44d26ff",
+          "semanticHash": "a769cbe5b85678bb"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const at = content.indexOf(quote.exact);",
+          "prefix": "ote.exact.length === 0)\n    return selectors;\n  ",
+          "suffix": "\n  if (at < 0 || content.indexOf(quote.exact, at"
+        },
+        {
+          "kind": "text-position",
+          "start": 9201,
+          "end": 9241
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "776f454e1c48774f",
+          "semanticHash": "db9eb735f1ace634"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:13.440Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:56.586Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:41.950Z",
+      "basis": "ack",
+      "note": "both say propositions were removed; the row lists what replaced them",
+      "ack": {
+        "pairId": "clm_11ff8f9d53a44a7f:clm_a5b8bbeb41ad4ce3",
+        "sentenceHashes": [
+          "6150e65c407ad0adb8a86cbdbd0f2c080cbf5e3e59117f5efdd414bf02aa16d1",
+          "874d57d208aa4b3bb249a69cbcc400d29d58e3cb653cef37f5eb6af15d52bcbf"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:13.440Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

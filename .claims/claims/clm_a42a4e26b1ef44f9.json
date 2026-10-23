@@ -1,0 +1,88 @@
+{
+  "id": "clm_a42a4e26b1ef44f9",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 42 | on `supports` the value rule excludes the unitless `number` group; on `conflict` every group counts (amended by 46) |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 42 | on `supports` the value rule excludes the unitless `number` group; on `conflict` every group counts (amended by 46) |",
+        "prefix": " or an item key; there is no default from git |\n",
+        "suffix": "\n| 43 | the rare-token cutoff is `max(3, min(cei"
+      },
+      {
+        "kind": "text-position",
+        "start": 80104,
+        "end": 80228
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const SUPPORTS_EXCLUDED_GROUPS: readonly string[] = [\"number\"];",
+          "prefix": ", a line number) says too little to refute.\n */\n",
+          "suffix": "\n\nfunction fmt(p: number): string {\n  return p.t"
+        },
+        {
+          "kind": "text-position",
+          "start": 2593,
+          "end": 2663
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b839a95afff47bf7",
+          "semanticHash": "f01dab213365856a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"number\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const values = compareValues(extractValues(a), extractValues(b));",
+          "prefix": "ften\n    // describes different situations.\n    ",
+          "suffix": "\n    if (values.differs && values.label !== unde"
+        },
+        {
+          "kind": "text-position",
+          "start": 5656,
+          "end": 5721
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "56cb08a4d0c4db1d",
+          "semanticHash": "80c594a6af113811"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T09:36:12.163Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T09:36:12.163Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,105 @@
+{
+  "id": "clm_faba2646ce104452",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The acks are `hibi attest <id> --by <actor> --ack review --note \"<why>\"` and, one action per other claim, `hibi attest <id> --by <actor> --ack conflict:<other-id> --note \"<why>\"`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The acks are `hibi attest <id> --by <actor> --ack review --note \"<why>\"` and, one action per other claim, `hibi attest <id> --by <actor> --ack conflict:<other-id> --note \"<why>\"`.",
+        "prefix": "aned` side gets `hibi reanchor <id> --suggest`. ",
+        "suffix": " The human vouch is `hibi attest <id> --by human"
+      },
+      {
+        "kind": "text-position",
+        "start": 63464,
+        "end": 63643
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "command: `hibi attest ${id} --by <actor> --ack review --note \"<why>\"`,",
+          "prefix": ", record why; an ack never resets the ttl\",\n    ",
+          "suffix": "\n  };\n}\n\nfunction ackConflict(id: string, other:"
+        },
+        {
+          "kind": "text-position",
+          "start": 8092,
+          "end": 8162
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "787e166f87e46da5",
+          "semanticHash": "a59d723dfd06f3bd"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "command: `hibi attest ${id} --by <actor> --ack conflict:${other} --note \"<why>\"`,",
+          "prefix": "n to both claims and never resets the ttl\",\n    ",
+          "suffix": "\n  };\n}\n\nfunction reconcileConflict(others: stri"
+        },
+        {
+          "kind": "text-position",
+          "start": 8452,
+          "end": 8533
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "26545f0f45cdbf2d",
+          "semanticHash": "94e0898eb5433d58"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...others.map((other) => ackConflict(id, other)),",
+          "prefix": "s: [\n        reconcileConflict(others),\n        ",
+          "suffix": "\n      ],\n    });\n  }\n  // `hibi evidence` accep"
+        },
+        {
+          "kind": "text-position",
+          "start": 10778,
+          "end": 10827
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "9997139e1cfaefdb",
+          "semanticHash": "0f1f0c03c31b9bf0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:35.648Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:35.648Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

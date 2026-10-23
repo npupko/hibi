@@ -1,0 +1,65 @@
+{
+  "id": "clm_dcf17cef4c9841a3",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `judgment` | `triage`, `supports`, or `conflict` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `judgment` | `triage`, `supports`, or `conflict` |",
+        "prefix": "|\n| `model` | the model id the response named |\n",
+        "suffix": "\n| `subject` | `{ claimId }`, `{ pairId }`, or `"
+      },
+      {
+        "kind": "text-position",
+        "start": 13004,
+        "end": 13056
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const Judgment = z.enum([\"triage\", \"supports\", \"conflict\"]);",
+          "prefix": "──────────────────────────────────────────────\n\n",
+          "suffix": "\nexport type Judgment = z.infer<typeof Judgment>"
+        },
+        {
+          "kind": "text-position",
+          "start": 11615,
+          "end": 11682
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "245292834183a927",
+          "semanticHash": "12b69f8cb3d2a272"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"triage\",\"supports\",\"conflict\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:40.653Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:40.653Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

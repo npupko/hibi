@@ -1,0 +1,65 @@
+{
+  "id": "clm_59b5c154e9bb4cd5",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "3. For each `relocated` entry that reads `changed` or `orphaned`, fix the sentence in the new document if it is wrong, then run `hibi reanchor <id> --doc-quote \"…\"`, or `hibi retire <id>`.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "3. For each `relocated` entry that reads `changed` or `orphaned`, fix the sentence in the new document if it is wrong, then run `hibi reanchor <id> --doc-quote \"…\"`, or `hibi retire <id>`.",
+        "prefix": "ibi supersede --from <old-doc> --to <new-doc>`.\n",
+        "suffix": "\n4. For each entry in `misses`, run `hibi reanch"
+      },
+      {
+        "kind": "text-position",
+        "start": 7580,
+        "end": 7768
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const docSpec = spanSpec(values[\"doc-quote\"], values[\"doc-range\"]);",
+          "prefix": "Boolean(values[\"dry-run\"]);\n      try {\n        ",
+          "suffix": "\n        const code = reanchorCodeSide(tokens);\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 23633,
+          "end": 23700
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "5ecd53a500bb3eae",
+          "semanticHash": "cbb3c0364b67ca27"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"doc-quote\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:07:46.591Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:07:46.591Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

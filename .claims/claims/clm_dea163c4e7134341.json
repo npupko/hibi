@@ -1,0 +1,94 @@
+{
+  "id": "clm_dea163c4e7134341",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "| exit 2 | at least one claim gates: changed, orphaned, ambiguous, refuted, contradicted, or expired |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| exit 2 | at least one claim gates: changed, orphaned, ambiguous, refuted, contradicted, or expired |",
+        "prefix": " claim in the document is clean or only warns |\n",
+        "suffix": "\n| exit 1, `no claims are registered for CLAUDE."
+      },
+      {
+        "kind": "text-position",
+        "start": 23703,
+        "end": 23805
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.gating) return 2;",
+          "prefix": " number {\n  if (failOn === \"never\") return 0;\n  ",
+          "suffix": "\n  if (flags.warn && failOn === \"warn\") return 2"
+        },
+        {
+          "kind": "text-position",
+          "start": 22234,
+          "end": 22261
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "53162d0ab7dd4ae4",
+          "semanticHash": "a4b4953657e79651"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (isGatingAnchor(v.doc) || isGatingAnchor(v.evidence)) gates = true;",
+          "prefix": "];\n  let gates = false;\n  let warns = false;\n\n  ",
+          "suffix": "\n  if (isWarnAnchor(v.doc) || isWarnAnchor(v.evi"
+        },
+        {
+          "kind": "text-position",
+          "start": 3038,
+          "end": 3108
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "b1a7b17fe3209c3c",
+          "semanticHash": "5fc554112083c57a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:12.709Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:12.709Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

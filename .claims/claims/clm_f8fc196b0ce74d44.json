@@ -1,0 +1,88 @@
+{
+  "id": "clm_f8fc196b0ce74d44",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "| `review` | `contradictory`, with any of those three below its bar | `review: contradictory, confidence=0.55 below threshold 0.80` |",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `review` | `contradictory`, with any of those three below its bar | `review: contradictory, confidence=0.55 below threshold 0.80` |",
+        "prefix": "| `contradictory (p=0.93, same_subject=0.95)` |\n",
+        "suffix": "\n| `duplicate` | `consistent`, with `same_subjec"
+      },
+      {
+        "kind": "text-position",
+        "start": 3791,
+        "end": 3924
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `review: contradictory, ${below.join(\", \")}`,",
+          "prefix": "me: \"review\",\n      probability: pContra,\n      ",
+          "suffix": "\n    };\n  }\n  if (r.relation === \"consistent\" &&"
+        },
+        {
+          "kind": "text-position",
+          "start": 6708,
+          "end": 6761
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "6908d4a7dad25f2e",
+          "semanticHash": "055921eea214b7a2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\", \""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`confidence=${f2(r.confidence)} below threshold ${f2(threshold)}`,",
+          "prefix": "idence < threshold) {\n      below.push(\n        ",
+          "suffix": "\n      );\n    }\n    if (r.sameSubject < threshol"
+        },
+        {
+          "kind": "text-position",
+          "start": 6200,
+          "end": 6266
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "a5b5b4e43f98f11a",
+          "semanticHash": "7cb8a56745dc8039"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:25.888Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:25.888Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_28a7a4936fa24a92",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 17 | worklist lives inside `check`; no separate verb |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 17 | worklist lives inside `check`; no separate verb |",
+        "prefix": "ence; three-way outcome gate / review / clean |\n",
+        "suffix": "\n| 18 | audit JSON carries `kind`, not advice; t"
+      },
+      {
+        "kind": "text-position",
+        "start": 76781,
+        "end": 76837
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "worklist: WorklistItem[];",
+          "prefix": " {\n  ref: string;\n  verdicts: CheckVerdict[];\n  ",
+          "suffix": "\n  documents: DocumentReport[];\n  summary: Check"
+        },
+        {
+          "kind": "text-position",
+          "start": 8434,
+          "end": 8459
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "property_signature",
+          "structuralHash": "644c2f0014e0ba9c",
+          "semanticHash": "365c1aadbd48095d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:23.267Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:23.267Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

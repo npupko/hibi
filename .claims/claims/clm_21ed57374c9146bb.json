@@ -1,0 +1,82 @@
+{
+  "id": "clm_21ed57374c9146bb",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Per claim, `check` produces a verdict:",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Per claim, `check` produces a verdict:",
+        "prefix": " of `= 50` reads `= 50`.\n\n### 7.2 Claim states\n\n",
+        "suffix": "\n\n| field | values |\n|---|---|\n| `doc` | `unchan"
+      },
+      {
+        "kind": "text-position",
+        "start": 21422,
+        "end": 21460
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    const v = assembleVerdict(c, sides, {",
+          "prefix": "  reviewAcknowledged: ack !== undefined,\n    };\n",
+          "suffix": "\n      ...findings,\n      now,\n      mode,\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 17614,
+          "end": 17655
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f1d7573c6a1950c9",
+          "semanticHash": "f04b4952a25a2b27"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "verdicts.push(v);",
+          "prefix": "     : {}),\n        reason,\n      });\n    }\n    ",
+          "suffix": "\n  }\n\n  // Histograms and rollups.\n  const docHi"
+        },
+        {
+          "kind": "text-position",
+          "start": 18884,
+          "end": 18901
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "23e69a4128cf6a58",
+          "semanticHash": "018d01daf2630eda"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:01.023Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:01.023Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

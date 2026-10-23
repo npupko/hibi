@@ -1,0 +1,107 @@
+{
+  "id": "clm_c77784cc34bd406e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 48 | `hibi evidence` accepts any `attested` claim; a pure vouch claim is listed in the worklist when expired or when its newest verdict is `review` |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 48 | `hibi evidence` accepts any `attested` claim; a pure vouch claim is listed in the worklist when expired or when its newest verdict is `review` |",
+        "prefix": "g or reanchoring to a different sentence does |\n",
+        "suffix": "\n| 49 | a document is created by the first `reco"
+      },
+      {
+        "kind": "text-position",
+        "start": 81260,
+        "end": 81411
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "} else if (claim.kind !== \"attested\") {",
+          "prefix": "Id} is retired; evidence is not accepted`);\n    ",
+          "suffix": "\n      errors.push(\n        `claim ${claimId} is"
+        },
+        {
+          "kind": "text-position",
+          "start": 6823,
+          "end": 6862
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "665fc6fb60c0f6b5",
+          "semanticHash": "b6ab73a0c1ae0074"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"attested\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"review\" && !acknowledged) return \"review\";",
+          "prefix": " if (claim.kind === \"code\") return undefined;\n  ",
+          "suffix": "\n  if (v.judge === \"pending\") return \"pending\";\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 12761,
+          "end": 12820
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "2f9319063bdbbff5",
+          "semanticHash": "4a9c6289d1a83460"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"review\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:03.987Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:58:48.019Z",
+      "basis": "ack",
+      "note": "48 is a decision-row number and 11, 8.5 are section numbers; both say hibi evidence takes attested claims only",
+      "ack": {
+        "pairId": "clm_c77784cc34bd406e:clm_c9410832b5ed4ed0",
+        "sentenceHashes": [
+          "e15005f4fd58094a193497189166d20798d2830155b156a45ec83ffb80bf4356",
+          "7122c2ba64bb0308be327f0552e7682ad4bf918018a0a56cdd3db1a72f47cabf"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:03.987Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

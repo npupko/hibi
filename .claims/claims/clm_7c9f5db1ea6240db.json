@@ -1,0 +1,88 @@
+{
+  "id": "clm_7c9f5db1ea6240db",
+  "documentId": "doc_d11450458251d04c",
+  "kind": "code",
+  "sentence": "**One knob.** `judge.threshold` (default 0.8) is the one configurable confidence bar for every judgment.",
+  "doc": {
+    "file": "docs/index.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**One knob.** `judge.threshold` (default 0.8) is the one configurable confidence bar for every judgment.",
+        "prefix": "t vouch is recorded and does not reset a ttl.\n- ",
+        "suffix": " Every rule that fires is a reason label in the "
+      },
+      {
+        "kind": "text-position",
+        "start": 2671,
+        "end": 2775
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const DEFAULT_JUDGE_THRESHOLD = 0.8;",
+          "prefix": "writes into a new store's config (SPEC 8.4). */\n",
+          "suffix": "\n\n// ── Ids and actors ─────────────────────────"
+        },
+        {
+          "kind": "text-position",
+          "start": 611,
+          "end": 654
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "8b80be36452d0afc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.8"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "/** Choice-confidence threshold for gate and clean outcomes (SPEC 8.4). */\n  threshold: z",
+          "prefix": "-1.14.0, not an alias like jev-latest`,\n  }),\n  ",
+          "suffix": "\n    .number({ error: \"judge.threshold must be a"
+        },
+        {
+          "kind": "text-position",
+          "start": 10723,
+          "end": 10812
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "77a19d0c244ae8f6",
+          "semanticHash": "db0e64641b69cf4c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:34.212Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:34.212Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -110,15 +110,6 @@ describe("splitRegions", () => {
       },
       {
         id: "r8",
-        kind: "table-row",
-        text: "|------|-------|",
-        headingPath: ["Pricing", "Limits"],
-        line: 13,
-        start: 175,
-        end: 191,
-      },
-      {
-        id: "r9",
         kind: "fenced",
         text: "```ts\nconst a = 1;\n\nconst b = 2;\n```",
         headingPath: ["Pricing", "Limits"],
@@ -127,7 +118,7 @@ describe("splitRegions", () => {
         end: 229,
       },
       {
-        id: "r10",
+        id: "r9",
         kind: "heading",
         text: "### Deep",
         headingPath: ["Pricing", "Limits"],
@@ -136,7 +127,7 @@ describe("splitRegions", () => {
         end: 239,
       },
       {
-        id: "r11",
+        id: "r10",
         kind: "heading",
         text: "## Support",
         headingPath: ["Pricing"],
@@ -145,7 +136,7 @@ describe("splitRegions", () => {
         end: 251,
       },
       {
-        id: "r12",
+        id: "r11",
         kind: "sentence",
         text: 'He said "done."',
         headingPath: ["Pricing", "Support"],
@@ -154,7 +145,7 @@ describe("splitRegions", () => {
         end: 268,
       },
       {
-        id: "r13",
+        id: "r12",
         kind: "sentence",
         text: "Then left",
         headingPath: ["Pricing", "Support"],

@@ -1,0 +1,111 @@
+{
+  "id": "clm_3a1534db9ba64d94",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**Covered.** A region is covered when it overlaps the located doc span of a live claim on that document.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**Covered.** A region is covered when it overlaps the located doc span of a live claim on that document.",
+        "prefix": "ng's own path holds its ancestors, not itself.\n\n",
+        "suffix": " The judge is not asked about covered regions.\n\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 49524,
+        "end": 49628
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return a.start < b.end && a.end > b.start;",
+          "prefix": " { start: number; end: number },\n): boolean {\n  ",
+          "suffix": "\n}\n\n/** SPEC 8.3 mapping from a confident triage"
+        },
+        {
+          "kind": "text-position",
+          "start": 5380,
+          "end": 5422
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "4e320846a0a398db",
+          "semanticHash": "2ee107233f74014b"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".filter((c) => c.documentId === docId && c.enforcement !== \"retired\")",
+          "prefix": "umber }[] = [];\n  const live = input.claims\n    ",
+          "suffix": "\n    .sort((a, b) => (a.id < b.id ? -1 : a.id > "
+        },
+        {
+          "kind": "text-position",
+          "start": 10042,
+          "end": 10111
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "8d47fa87b4bd84db",
+          "semanticHash": "e04e2f925be57d30"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const side = resolveSide(claim.doc, text);",
+          "prefix": "id ? 1 : 0));\n  for (const claim of live) {\n    ",
+          "suffix": "\n    if (side.region) spans.push({ claim, ...sid"
+        },
+        {
+          "kind": "text-position",
+          "start": 10209,
+          "end": 10251
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "b3e32d79cfa8adfe",
+          "semanticHash": "c60bc1f9645e5c49"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.141Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.141Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

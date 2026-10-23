@@ -1,0 +1,59 @@
+{
+  "id": "clm_33dcd1f549f34cf2",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Kind is explicit at record time.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Kind is explicit at record time.",
+        "prefix": "ding`, when triage cannot decide (section 10).\n\n",
+        "suffix": " It is not inferred from the shape of the sides."
+      },
+      {
+        "kind": "text-position",
+        "start": 4431,
+        "end": 4463
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "kind must be one of",
+          "prefix": "\n  if (!kind.success) {\n    errors.push(\n      `",
+          "suffix": " ${ClaimKind.options.join(\", \")} (got ${JSON.str"
+        },
+        {
+          "kind": "text-position",
+          "start": 8788,
+          "end": 8807
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "c35933ae9f9a5528"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:59.842Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:59.842Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

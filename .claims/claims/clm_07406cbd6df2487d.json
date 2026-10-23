@@ -1,0 +1,175 @@
+{
+  "id": "clm_07406cbd6df2487d",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Each pair has a `pairId` (the two ids sorted and joined with `:`; side `a` is the smaller id) and a `why` label: `shared rare tokens: a, b` for the first rule, `both state <group> values and share: x, y` for the second, joined with `; ` when both hold.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each pair has a `pairId` (the two ids sorted and joined with `:`; side `a` is the smaller id) and a `why` label: `shared rare tokens: a, b` for the first rule, `both state <group> values and share: x, y` for the second, joined with `; ` when both hold.",
+        "prefix": "e claims share any content token, rare or not.\n\n",
+        "suffix": " Pairs are sorted by `pairId`.\n\n### 9.2 Judge\n\nE"
+      },
+      {
+        "kind": "text-position",
+        "start": 43880,
+        "end": 44132
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return x < y ? `${x}:${y}` : `${y}:${x}`;",
+          "prefix": "tion pairIdOf(x: string, y: string): string {\n  ",
+          "suffix": "\n}\n\n/**\n * The rarity cutoff for `n` live claims"
+        },
+        {
+          "kind": "text-position",
+          "start": 4222,
+          "end": 4263
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "2c696c44c8411b59",
+          "semanticHash": "5d159e70b65c2962"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (rare.length > 0) parts.push(`shared rare tokens: ${rare.join(\", \")}`);",
+          "prefix": "er(isRare);\n    const parts: string[] = [];\n    ",
+          "suffix": "\n    const gj = valueGroups[j] as Set<string>;\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 6611,
+          "end": 6685
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "fc30c91e61026a64",
+          "semanticHash": "cb0a32776dcc8398"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`both state ${sameGroups.join(\", \")} values and share: ${shared.join(\", \")}`,",
+          "prefix": " shared.length > 0) {\n      parts.push(\n        ",
+          "suffix": "\n      );\n    }\n    if (parts.length === 0) cont"
+        },
+        {
+          "kind": "text-position",
+          "start": 6910,
+          "end": 6987
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "34e8f2d5ed9853b7",
+          "semanticHash": "5988f579f6afd2bd"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\", \""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pairs.push({ a, b, pairId: pairIdOf(a.id, b.id), why: parts.join(\"; \") });",
+          "prefix": "    }\n    if (parts.length === 0) continue;\n    ",
+          "suffix": "\n  }\n  return pairs.sort((x, y) =>\n    x.pairId "
+        },
+        {
+          "kind": "text-position",
+          "start": 7045,
+          "end": 7119
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "bfb3c4bf0bdb1a74",
+          "semanticHash": "b215c3ee54503a3e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"; \""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".sort((x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0));",
+          "prefix": ".filter((c) => c.enforcement !== \"retired\")\n    ",
+          "suffix": "\n  const tokens = live.map((c) => new Set(conten"
+        },
+        {
+          "kind": "text-position",
+          "start": 4880,
+          "end": 4938
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "5e90dae0b7767dd6",
+          "semanticHash": "308ffa873bead389"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:54.114Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:54.114Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

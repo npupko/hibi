@@ -1,0 +1,82 @@
+{
+  "id": "clm_89779bbcb237458a",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "When the evidence `source` equals one of the claim's `sources[].id` or `sources[].resource`, the reasons also include `source matches declared source \"<id or resource>\"`.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "When the evidence `source` equals one of the claim's `sources[].id` or `sources[].resource`, the reasons also include `source matches declared source \"<id or resource>\"`.",
+        "prefix": "enced span is longer than 32,000 characters` |\n\n",
+        "suffix": " It changes no state.\n\n## What stays in code\n\nTh"
+      },
+      {
+        "kind": "text-position",
+        "start": 10165,
+        "end": 10335
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return `source matches declared source \"${s.id}\"`;",
+          "prefix": "(s.id !== undefined && s.id === source) {\n      ",
+          "suffix": "\n    }\n    if (s.resource === source) {\n      re"
+        },
+        {
+          "kind": "text-position",
+          "start": 4864,
+          "end": 4914
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "d7397ca4d38ca7a5",
+          "semanticHash": "afa2c251c5db08b2"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (s.resource === source) {",
+          "prefix": "e matches declared source \"${s.id}\"`;\n    }\n    ",
+          "suffix": "\n      return `source matches declared source \"$"
+        },
+        {
+          "kind": "text-position",
+          "start": 4925,
+          "end": 4953
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "31248677a230436a",
+          "semanticHash": "04edbdb292552a5e"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:39.288Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:39.288Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

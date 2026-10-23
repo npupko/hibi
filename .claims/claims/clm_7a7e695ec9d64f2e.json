@@ -1,0 +1,123 @@
+{
+  "id": "clm_7a7e695ec9d64f2e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A number is normalized by removing thousands commas and leading zeros and trailing fractional zeros (`1,299.50` is `1299.5`).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A number is normalized by removing thousands commas and leading zeros and trailing fractional zeros (`1,299.50` is `1299.5`).",
+        "prefix": "is five million dollars and never five minutes. ",
+        "suffix": " Regular expressions, boundary rules, and unit t"
+      },
+      {
+        "kind": "text-position",
+        "start": 40260,
+        "end": 40385
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const [int = \"\", frac] = raw.replaceAll(\",\", \"\").split(\".\");",
+          "prefix": "nction normalizeNumber(raw: string): string {\n  ",
+          "suffix": "\n  const i = int.replace(/^0+(?=\\d)/, \"\");\n  con"
+        },
+        {
+          "kind": "text-position",
+          "start": 4706,
+          "end": 4766
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "12899bec43601be3",
+          "semanticHash": "7f6c7ee66efe4d1a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const i = int.replace(/^0+(?=\\d)/, \"\");",
+          "prefix": ", frac] = raw.replaceAll(\",\", \"\").split(\".\");\n  ",
+          "suffix": "\n  const f = (frac ?? \"\").replace(/0+$/, \"\");\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 4769,
+          "end": 4808
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "81572c9f057bc77f",
+          "semanticHash": "78e0f6a2ab0ebee9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const f = (frac ?? \"\").replace(/0+$/, \"\");",
+          "prefix": "\");\n  const i = int.replace(/^0+(?=\\d)/, \"\");\n  ",
+          "suffix": "\n  return f === \"\" ? i : `${i}.${f}`;\n}\n\n/** Mul"
+        },
+        {
+          "kind": "text-position",
+          "start": 4811,
+          "end": 4853
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "9c1c3bf1ad509f88",
+          "semanticHash": "e15c293b888567a0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:32.027Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:32.027Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

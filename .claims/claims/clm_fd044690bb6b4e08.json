@@ -1,0 +1,94 @@
+{
+  "id": "clm_fd044690bb6b4e08",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "If you skip steps 2 to 4, the claims become `doc: orphaned` after the delete, and an orphaned enforced claim gates.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "If you skip steps 2 to 4, the claims become `doc: orphaned` after the delete, and an orphaned enforced claim gates.",
+        "prefix": "ims` is empty, delete or archive the old file.\n\n",
+        "suffix": " Orphaned is not retired: it is a live record th"
+      },
+      {
+        "kind": "text-position",
+        "start": 7949,
+        "end": 8064
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons: [`file not found: ${bundle.file}`],",
+          "prefix": "\n      region: null,\n      similarity: 0,\n      ",
+          "suffix": "\n      changedEvidence: [\n        { path: bundle"
+        },
+        {
+          "kind": "text-position",
+          "start": 4860,
+          "end": 4904
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "6ea5f41deb92edd2",
+          "semanticHash": "ef3dc0ce57abd5e5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[`filenotfound:${bundle.file}`]"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (isGatingAnchor(v.doc) || isGatingAnchor(v.evidence)) gates = true;",
+          "prefix": "];\n  let gates = false;\n  let warns = false;\n\n  ",
+          "suffix": "\n  if (isWarnAnchor(v.doc) || isWarnAnchor(v.evi"
+        },
+        {
+          "kind": "text-position",
+          "start": 3038,
+          "end": 3108
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "b1a7b17fe3209c3c",
+          "semanticHash": "5fc554112083c57a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.569Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.569Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

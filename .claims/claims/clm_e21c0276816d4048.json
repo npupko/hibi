@@ -1,0 +1,94 @@
+{
+  "id": "clm_e21c0276816d4048",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "```json\n{\n  \"ok\": true,\n  \"action\": \"attest\",\n  \"schemaVersion\": \"v4\",\n  \"claimIds\": [\"clm_418fde0aee55433e\"],\n  \"attestation\": { \"by\": \"human:alice@example.com\", \"at\": \"2026-10-22T18:16:03.426Z\", \"basis\": \"vouch\", \"note\": \"checked Stripe\" },\n  \"countsTowardTtl\": true,\n  \"next\": \"hibi check\"\n}\n```",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```json\n{\n  \"ok\": true,\n  \"action\": \"attest\",\n  \"schemaVersion\": \"v4\",\n  \"claimIds\": [\"clm_418fde0aee55433e\"],\n  \"attestation\": { \"by\": \"human:alice@example.com\", \"at\": \"2026-10-22T18:16:03.426Z\", \"basis\": \"vouch\", \"note\": \"checked Stripe\" },\n  \"countsTowardTtl\": true,\n  \"next\": \"hibi check\"\n}\n```",
+        "prefix": "ardTtl` so the caller sees which rule applied:\n\n",
+        "suffix": "\n\n## ttl durations\n\n`ttl` is an ISO 8601 duratio"
+      },
+      {
+        "kind": "text-position",
+        "start": 2456,
+        "end": 2754
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await emit(mode, envelope(\"attest\", { ...result }, \"hibi check\"), () =>",
+          "prefix": "fined : parseAck(ackValue),\n        });\n        ",
+          "suffix": "\n          renderAttest(result, style, mode),\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 30615,
+          "end": 30686
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "fabadd5c19019647",
+          "semanticHash": "8583e018ea5a6328"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"attest\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    return {\n      claimIds: [claim.id],\n      attestation,\n      countsTowardTtl: by.startsWith(\"human:\"),\n    };",
+          "prefix": ");\n    await append(store, claim, attestation);\n",
+          "suffix": "\n  }\n\n  if (note === undefined) {\n    throw new "
+        },
+        {
+          "kind": "text-position",
+          "start": 5774,
+          "end": 5888
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "eadc1b2fda239cb3",
+          "semanticHash": "a7ccfbb3cc149bd0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[claim.id]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:12.472Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:12.472Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

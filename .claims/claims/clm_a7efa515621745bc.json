@@ -1,0 +1,65 @@
+{
+  "id": "clm_a7efa515621745bc",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "A claim with no procedure and no sources would leave the worklist.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A claim with no procedure and no sources would leave the worklist.",
+        "prefix": "t is judged; that is a reminder, not a warning. ",
+        "suffix": "\n\nIf the sentence is no longer true, rewrite it "
+      },
+      {
+        "kind": "text-position",
+        "start": 17970,
+        "end": 18036
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const checkable = claim.procedure !== null || claim.sources.length > 0;",
+          "prefix": " if (v.judge === \"pending\") return \"pending\";\n  ",
+          "suffix": "\n  if (claim.kind === \"attested\" && checkable &&"
+        },
+        {
+          "kind": "text-position",
+          "start": 12870,
+          "end": 12941
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f9a8c8f5c83617f9",
+          "semanticHash": "50a564d3fb95b2fa"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:10.864Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:10.864Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

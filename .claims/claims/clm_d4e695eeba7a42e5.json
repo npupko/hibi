@@ -1,0 +1,65 @@
+{
+  "id": "clm_d4e695eeba7a42e5",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "`submit` skips an empty array because `hibi evidence` rejects an empty batch with exit 1.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`submit` skips an empty array because `hibi evidence` rejects an empty batch with exit 1.",
+        "prefix": "rence` claim, which can also carry a procedure. ",
+        "suffix": " `--by agent:nightly` applies to every item with"
+      },
+      {
+        "kind": "text-position",
+        "start": 9540,
+        "end": 9629
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "throw new EvidenceValidationError([\"the batch has no items\"]);",
+          "prefix": "videnceItem[] {\n  if (items.length === 0) {\n    ",
+          "suffix": "\n  }\n  const errors: string[] = [];\n  items.forE"
+        },
+        {
+          "kind": "text-position",
+          "start": 8067,
+          "end": 8129
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "throw_statement",
+          "structuralHash": "b976bbb774db3500",
+          "semanticHash": "60fb6d8b0621ca29"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"thebatchhasnoitems\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:08.732Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:08.732Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

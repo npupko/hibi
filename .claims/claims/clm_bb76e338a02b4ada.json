@@ -1,0 +1,88 @@
+{
+  "id": "clm_bb76e338a02b4ada",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- **At record time**, an alias not defined in `config.repos` is refused, with an error naming the alias and the known aliases.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **At record time**, an alias not defined in `config.repos` is refused, with an error naming the alias and the known aliases.",
+        "prefix": "ts root`). `unavailable` warns and never gates.\n",
+        "suffix": " An alias whose sibling repo is not checked out "
+      },
+      {
+        "kind": "text-position",
+        "start": 5762,
+        "end": 5888
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`unknown repo alias \"${split.alias}\" in ${file}; add it to \"repos\" in .claims/config.json${known.length ? ` (known: ${known.join(\", \")})` : \"\"}`,",
+          "prefix": ".keys(config.repos);\n    throw new Error(\n      ",
+          "suffix": "\n    );\n  }\n}\n\nfunction isDirectory(abs: string)"
+        },
+        {
+          "kind": "text-position",
+          "start": 2377,
+          "end": 2522
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "6b44e4b2feddf7ff",
+          "semanticHash": "207162f3d8bbd932"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\", \""
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const resolved = resolveFile(config, target.file, this.store.anchorRoot);",
+          "prefix": "   assertAliasKnown(config, target.file);\n      ",
+          "suffix": "\n      if (\"unavailable\" in resolved) throw reco"
+        },
+        {
+          "kind": "text-position",
+          "start": 14021,
+          "end": 14094
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "40971f0ca4bab827",
+          "semanticHash": "e5a7293a6423f05f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:00.130Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:00.130Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

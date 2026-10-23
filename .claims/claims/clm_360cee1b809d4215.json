@@ -1,0 +1,123 @@
+{
+  "id": "clm_360cee1b809d4215",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Code rule: a region is `code` by construction when it is a fenced block, contains a fence, contains an inline code span holding a path or a command, or contains a file path in prose.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Code rule: a region is `code` by construction when it is a fenced block, contains a fence, contains an inline code span holding a path or a command, or contains a file path in prose.",
+        "prefix": "here an agent would look first for evidence |\n\n\n",
+        "suffix": " Such a region is not asked the `evidenceKind` q"
+      },
+      {
+        "kind": "text-position",
+        "start": 6464,
+        "end": 6646
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (region.kind === \"fenced\" || FENCE.test(region.text)) return true;",
+          "prefix": "CodeByConstruction(region: Region): boolean {\n  ",
+          "suffix": "\n  for (const match of region.text.matchAll(INLI"
+        },
+        {
+          "kind": "text-position",
+          "start": 6429,
+          "end": 6498
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "27e19875b7c4dd09",
+          "semanticHash": "66e1e80185bb287d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"fenced\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (isCommand(span) || isCodePath(span)) return true;",
+          "prefix": "E_CODE)) {\n    const span = match[1] ?? \"\";\n    ",
+          "suffix": "\n  }\n  const prose = region.text.replace(INLINE_"
+        },
+        {
+          "kind": "text-position",
+          "start": 6595,
+          "end": 6648
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "41adee787b297968",
+          "semanticHash": "289d20315336e776"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return prose.split(/\\s+/).some((t) => t !== \"\" && isPathToken(t));",
+          "prefix": ".replace(INLINE_CODE, \" \").replace(URL, \" \");\n  ",
+          "suffix": "\n}\n\n// -----------------------------------------"
+        },
+        {
+          "kind": "text-position",
+          "start": 6728,
+          "end": 6794
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "bd18d8bc4d2f9963",
+          "semanticHash": "957dd9dc877ec736"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:37.471Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:37.471Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

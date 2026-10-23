@@ -1,0 +1,59 @@
+{
+  "id": "clm_42ba81003eb3494b",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "The JSON adds `since` and `changedFiles`.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The JSON adds `since` and `changedFiles`.",
+        "prefix": "mes a file changed since the ref are evaluated. ",
+        "suffix": " `documents[].suspect[]` lists each claim that g"
+      },
+      {
+        "kind": "text-position",
+        "start": 1612,
+        "end": 1653
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "extra.since = since;\n        extra.changedFiles = files;",
+          "prefix": " = {};\n      if (since !== undefined) {\n        ",
+          "suffix": "\n      }\n      if (doc !== undefined) {\n        "
+        },
+        {
+          "kind": "text-position",
+          "start": 20325,
+          "end": 20381
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "ed264acb23bcde4c",
+          "semanticHash": "ffffcc4f04ad8f73"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:37.825Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:37.825Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

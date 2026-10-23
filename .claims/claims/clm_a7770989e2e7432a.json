@@ -1,0 +1,82 @@
+{
+  "id": "clm_a7770989e2e7432a",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Choice options are sent in a fixed order.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Choice options are sent in a fixed order.",
+        "prefix": "s; they are never pasted into the instructions. ",
+        "suffix": "\n\n### triage\n\n| | |\n|---|---|\n| state | `doc: { "
+      },
+      {
+        "kind": "text-position",
+        "start": 6107,
+        "end": 6148
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "questions: supportsFile.questions,",
+          "prefix": "      evidence_source: input.source,\n    },\n    ",
+          "suffix": "\n  };\n}\n\nexport function buildConflictRequest(\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 11194,
+          "end": 11228
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "c85ebfdef73bb134"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "questions: conflictFile.questions,",
+          "prefix": "t, doc: b.doc, context: b.context },\n    },\n    ",
+          "suffix": "\n  };\n}\n\n// ------------------------------------"
+        },
+        {
+          "kind": "text-position",
+          "start": 11516,
+          "end": 11550
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "e45d96cd3cd854e0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:37.160Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:37.160Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

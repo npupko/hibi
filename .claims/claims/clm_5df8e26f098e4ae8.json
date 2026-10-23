@@ -1,0 +1,88 @@
+{
+  "id": "clm_5df8e26f098e4ae8",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `expired` | `attest` (a human vouch), `evidence` (`attested` claims only) |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `expired` | `attest` (a human vouch), `evidence` (`attested` claims only) |",
+        "prefix": "other claims), then one `ack` per other claim |\n",
+        "suffix": "\n| `judge: review` | `ack`, `evidence` (`atteste"
+      },
+      {
+        "kind": "text-position",
+        "start": 5371,
+        "end": 5448
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "attest(id, evidenceApplies),",
+          "prefix": "    recommended: null,\n      actions: [\n        ",
+          "suffix": "\n        ...(evidenceApplies\n          ? [\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 11062,
+          "end": 11090
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "dc9cedac62ad0eed",
+          "semanticHash": "3d39fc854072946d"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const evidenceApplies = v.kind === undefined || v.kind === \"attested\";",
+          "prefix": "`hibi evidence` accepts attested claims only.\n  ",
+          "suffix": "\n  if (v.expired) {\n    sections.push({\n      re"
+        },
+        {
+          "kind": "text-position",
+          "start": 10902,
+          "end": 10972
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "a8a9e21859966926",
+          "semanticHash": "a6379e2c319504fb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:14.116Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:14.116Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_f8c388496d844b27",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "`file` may be `alias:path` via `config.repos`.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`file` may be `alias:path` via `config.repos`.",
+        "prefix": "ote the load-bearing token, not the whole line. ",
+        "suffix": " Agent-recorded claims with a ttl start expired."
+      },
+      {
+        "kind": "text-position",
+        "start": 4173,
+        "end": 4219
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const dir = config.repos[split.alias];",
+          "prefix": " true };\n    }\n    return { path: file };\n  }\n  ",
+          "suffix": "\n  if (dir === undefined) {\n    return {\n      u"
+        },
+        {
+          "kind": "text-position",
+          "start": 3369,
+          "end": 3407
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "c8e6a1d265a7fd76",
+          "semanticHash": "8d1a9b9dd1a4355e"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:32.959Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:32.959Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

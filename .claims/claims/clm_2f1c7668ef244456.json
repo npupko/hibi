@@ -1,0 +1,88 @@
+{
+  "id": "clm_2f1c7668ef244456",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**supersede.** `--from` must be a registered document; otherwise the command fails with `document <path> is not registered`, and no document is created for it.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**supersede.** `--from` must be a registered document; otherwise the command fails with `document <path> is not registered`, and no document is created for it.",
+        "prefix": "e new doc span when the doc side is relocated.\n\n",
+        "suffix": " `--to` is registered when it is not yet. `super"
+      },
+      {
+        "kind": "text-position",
+        "start": 69428,
+        "end": 69587
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "throw new Error(`document ${input.from} is not registered`);",
+          "prefix": "input.from));\n  if (oldDoc === undefined) {\n    ",
+          "suffix": "\n  }\n  const newDoc = await upsertDocument(store"
+        },
+        {
+          "kind": "text-position",
+          "start": 3100,
+          "end": 3160
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "throw_statement",
+          "structuralHash": "92cc050f943b367b",
+          "semanticHash": "02d400a8d9995367"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  if (oldDoc === undefined) {\n    throw new Error",
+          "prefix": "ore.getDocument(documentIdForPath(input.from));\n",
+          "suffix": "(`document ${input.from} is not registered`);\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 3066,
+          "end": 3115
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "315dfb3868806bea",
+          "semanticHash": "fdea4462b1564a41"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:07.891Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:07.891Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}
