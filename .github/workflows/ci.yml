@@ -11,7 +11,9 @@ permissions:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # On pull requests a new push cancels the older run; every push to main
+  # runs to the end.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   CARGO_TERM_COLOR: always
@@ -88,8 +90,8 @@ jobs:
       - run: cargo run -p hibi-cli --example write-schemas
       - name: schemas/ matches the generator
         run: |
-          git add --intent-to-add schemas/
-          if ! git diff --exit-code schemas/; then
+          git add --all schemas/
+          if ! git diff --exit-code HEAD -- schemas/; then
             echo "::error::schemas/ is out of date. Run: cargo run -p hibi-cli --example write-schemas"
             exit 1
           fi
@@ -108,15 +110,17 @@ jobs:
       - run: cargo run -p hibi-cli --example cli-reference
       - name: plugins/hibi-cli/skills/hibi/references/cli-reference.md matches the generator
         run: |
-          git add --intent-to-add plugins/hibi-cli/skills/hibi/references/cli-reference.md
-          if ! git diff --exit-code plugins/hibi-cli/skills/hibi/references/cli-reference.md; then
+          git add --all plugins/hibi-cli/skills/hibi/references/cli-reference.md
+          if ! git diff --exit-code HEAD -- plugins/hibi-cli/skills/hibi/references/cli-reference.md; then
             echo "::error::The CLI reference is out of date. Run: cargo run -p hibi-cli --example cli-reference"
             exit 1
           fi
 
-  # Prints what hibi reports about this repository's own claims. `hibi status`
-  # and `hibi cover` exit 0 whatever they find, so stale claims or uncovered
-  # units never fail this job; only an operational error (exit 1) does.
+  # Prints what hibi reports about this repository's own claims. The job is
+  # report-only: each step prints hibi's output and passes whatever hibi's
+  # exit status is. A non-zero status, such as `hibi cover` exiting 1 with
+  # `no_scopes` while the store has no scopes, is printed and raised as a
+  # warning annotation.
   report:
     runs-on: ubuntu-latest
     steps:
@@ -134,11 +138,21 @@ jobs:
             echo "::notice::This repository has no .hibi/ store yet, so there is nothing to report."
             exit 0
           fi
-          ./target/debug/hibi status --format human
+          code=0
+          ./target/debug/hibi status --format human || code=$?
+          echo "hibi status exited with status $code"
+          if [ "$code" -ne 0 ]; then
+            echo "::warning::hibi status exited with status $code; this job is report-only and passes."
+          fi
       - name: hibi cover
         run: |
           if [ ! -d .hibi ]; then
             echo "::notice::This repository has no .hibi/ store yet, so there is nothing to report."
             exit 0
           fi
-          ./target/debug/hibi cover --format human
+          code=0
+          ./target/debug/hibi cover --format human || code=$?
+          echo "hibi cover exited with status $code"
+          if [ "$code" -ne 0 ]; then
+            echo "::warning::hibi cover exited with status $code; this job is report-only and passes."
+          fi

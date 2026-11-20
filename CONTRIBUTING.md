@@ -49,6 +49,12 @@ turned off, the way an embedder can use it. They name the package with
 `-p hibi` because `hibi-cli` turns every feature on, and a `--workspace`
 build would turn them on for the library too.
 
+In CI, the toolchain action (`actions-rust-lang/setup-rust-toolchain`) sets
+`CARGO_BUILD_WARNINGS=deny` through its `build-warnings` input, whose
+default is `deny`. With the stable toolchain that turns any rustc warning
+into a failed job, so a warning that passes locally fails CI. Cargo 1.90,
+used by the minimum-version job, ignores that setting.
+
 ## The specification
 
 `design/SPEC.md` is the contract. Where the code and the specification
@@ -134,7 +140,9 @@ All three crates share one version, `[workspace.package] version` in
    Conventional Commits since the last tag, updates `Cargo.toml` and
    `Cargo.lock`, and adds a section to `CHANGELOG.md`. The section lists the
    commits that touch any of the three crates. Configuration:
-   `release-plz.toml`.
+   `release-plz.toml`. The release pull request must also set `version` in
+   `plugins/hibi-cli/.claude-plugin/plugin.json` to the new version;
+   `cargo test` fails until it does.
 2. Merging that pull request makes release-plz push the tag `vX.Y.Z`.
 3. The tag starts `.github/workflows/release.yml`.
    [cargo-dist](https://github.com/axodotdev/cargo-dist) builds the `hibi`
