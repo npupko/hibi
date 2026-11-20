@@ -153,6 +153,92 @@ fn r63_oversized_config() {
     );
 }
 
+/// `start` followed by one comment that pads the text to exactly `len`
+/// bytes.
+fn padded(start: &str, len: u64) -> String {
+    let mut text = String::from(start);
+    text.push('#');
+    let fill = len as usize - text.len();
+    text.push_str(&"x".repeat(fill));
+    assert_eq!(text.len() as u64, len);
+    text
+}
+
+/// Sections 11.1 and 11.2: a file of exactly `MAX_CONFIG_BYTES` bytes is
+/// read; one byte more is `invalid_config` / `invalid_user_config`.
+#[test]
+fn max_config_bytes_is_the_largest_size_read() {
+    let dir = tempfile::tempdir().unwrap();
+    let user = dir.path().join("user.toml");
+
+    let exact = padded("version = 1\n", MAX_CONFIG_BYTES);
+    write_repo_config(dir.path(), &exact);
+    assert_eq!(RepoConfig::load(dir.path()).unwrap(), RepoConfig::default());
+    assert_eq!(RepoConfig::parse(&exact).unwrap(), RepoConfig::default());
+
+    let over = padded("version = 1\n", MAX_CONFIG_BYTES + 1);
+    write_repo_config(dir.path(), &over);
+    let e = RepoConfig::load(dir.path()).unwrap_err();
+    assert_eq!(e.code, Code::InvalidConfig);
+    assert!(e.message.contains("is larger than 1048576 bytes"), "{e:?}");
+    let e = RepoConfig::parse(&over).unwrap_err();
+    assert_eq!(e.code, Code::InvalidConfig);
+    assert!(e.message.contains("is larger than 1048576 bytes"), "{e:?}");
+
+    let exact = padded("", MAX_CONFIG_BYTES);
+    fs::write(&user, &exact).unwrap();
+    assert_eq!(
+        UserConfig::load(Some(&user)).unwrap(),
+        UserConfig::default()
+    );
+    assert_eq!(UserConfig::parse(&exact).unwrap(), UserConfig::default());
+
+    let over = padded("", MAX_CONFIG_BYTES + 1);
+    fs::write(&user, &over).unwrap();
+    let e = UserConfig::load(Some(&user)).unwrap_err();
+    assert_eq!(e.code, Code::InvalidUserConfig);
+    assert!(e.message.contains("is larger than 1048576 bytes"), "{e:?}");
+    let e = UserConfig::parse(&over).unwrap_err();
+    assert_eq!(e.code, Code::InvalidUserConfig);
+    assert!(e.message.contains("is larger than 1048576 bytes"), "{e:?}");
+}
+
+/// Section 12.3: a `.hibi/hibi.toml` that exists and is not a regular file
+/// is `store_corrupt`. A FIFO there is refused before it is opened: opening
+/// a FIFO for reading waits for a writer, so the load runs on another thread
+/// and the test fails when it has not returned in time.
+#[cfg(unix)]
+#[test]
+fn a_config_path_that_is_not_a_regular_file_is_refused_without_opening_it() {
+    use std::sync::mpsc::channel;
+    use std::time::Duration;
+
+    let dir = tempfile::tempdir().unwrap();
+    let fifo_root = dir.path().join("fifo");
+    fs::create_dir_all(fifo_root.join(".hibi")).unwrap();
+    let status = std::process::Command::new("mkfifo")
+        .arg(fifo_root.join(".hibi/hibi.toml"))
+        .status()
+        .unwrap();
+    assert!(status.success(), "mkfifo failed");
+    let dir_root = dir.path().join("dir");
+    fs::create_dir_all(dir_root.join(".hibi/hibi.toml")).unwrap();
+
+    for root in [fifo_root, dir_root] {
+        let (tx, rx) = channel();
+        let shown = root.display().to_string();
+        std::thread::spawn(move || {
+            let _ = tx.send(RepoConfig::load(&root));
+        });
+        let e = rx
+            .recv_timeout(Duration::from_secs(10))
+            .unwrap_or_else(|_| panic!("RepoConfig::load did not return for {shown}"))
+            .unwrap_err();
+        assert_eq!(e.code, Code::StoreCorrupt, "{shown}: {e:?}");
+        assert_eq!(e.message, ".hibi/hibi.toml is not a regular file");
+    }
+}
+
 #[test]
 fn repo_config_load() {
     let dir = tempfile::tempdir().unwrap();

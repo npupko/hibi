@@ -492,11 +492,19 @@ impl RepoConfig {
     ///
     /// `.hibi` or `hibi.toml` being a symbolic link is `store_corrupt`
     /// (section 12.3); the file is opened without following a link. A
-    /// missing file is `not_initialized`. A file larger than
+    /// missing file is `not_initialized`. A `hibi.toml` that exists and is
+    /// not a regular file (a directory, FIFO, socket or device) is
+    /// `store_corrupt` (section 12.3) and is not opened. A file larger than
     /// [`MAX_CONFIG_BYTES`] is `invalid_config`.
     pub fn load(root: &Path) -> Result<RepoConfig, Error> {
         let hibi = root.join(".hibi");
         let path = root.join(REPO_CONFIG_PATH);
+        let not_regular = || {
+            Error::new(
+                Code::StoreCorrupt,
+                format!("{REPO_CONFIG_PATH} is not a regular file"),
+            )
+        };
         for (p, rel) in [(&hibi, ".hibi"), (&path, REPO_CONFIG_PATH)] {
             match std::fs::symlink_metadata(p) {
                 Ok(m) if m.file_type().is_symlink() => {
@@ -504,6 +512,11 @@ impl RepoConfig {
                         Code::StoreCorrupt,
                         format!("{rel} is a symbolic link"),
                     ));
+                }
+                // Checked before the file is opened: opening a FIFO for
+                // reading waits for a writer.
+                Ok(m) if rel == REPO_CONFIG_PATH && !m.is_file() => {
+                    return Err(not_regular());
                 }
                 Ok(_) => {}
                 Err(e) if e.kind() == std::io::ErrorKind::NotFound => {
@@ -530,10 +543,9 @@ impl RepoConfig {
         let meta = file
             .metadata()
             .map_err(|e| Error::io(REPO_CONFIG_PATH, &e))?;
+        // The file was replaced between the check above and the open.
         if !meta.is_file() {
-            return Err(invalid_config(format!(
-                "{REPO_CONFIG_PATH} is not a regular file"
-            )));
+            return Err(not_regular());
         }
         let bytes = read_capped(file, MAX_CONFIG_BYTES)
             .map_err(|e| Error::io(REPO_CONFIG_PATH, &e))?
