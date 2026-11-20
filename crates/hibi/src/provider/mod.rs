@@ -26,7 +26,11 @@ pub use protocol::*;
 /// (section 2.5). `FileProvider` and `CommandProvider` implement it, and the
 /// engine uses nothing else from them.
 pub trait Provider {
-    fn info(&self) -> &ProviderInfo;
+    /// What the provider is and accepts. A provider that starts lazily
+    /// (`CommandProvider`) starts here on first use; a start or `hello`
+    /// failure is the error `failed`, which the engine maps to
+    /// `provider_failed` (section 9.2).
+    fn info(&mut self) -> Result<&ProviderInfo, ProviderError>;
     /// One result per anchor, in order.
     fn resolve(&mut self, anchors: &[Anchor]) -> Vec<Result<Vec<Unit>, ProviderError>>;
     fn units(&mut self, loc: &Locator, kind: Option<&str>) -> Result<Vec<Unit>, ProviderError>;
@@ -404,8 +408,8 @@ mod tests {
 
     struct Fake(ProviderInfo);
     impl Provider for Fake {
-        fn info(&self) -> &ProviderInfo {
-            &self.0
+        fn info(&mut self) -> Result<&ProviderInfo, ProviderError> {
+            Ok(&self.0)
         }
         fn resolve(&mut self, anchors: &[Anchor]) -> Vec<Result<Vec<Unit>, ProviderError>> {
             anchors.iter().map(|_| Ok(vec![])).collect()
@@ -443,12 +447,18 @@ mod tests {
             p.provider_for(&loc("repo:a//b"))
                 .unwrap()
                 .info()
+                .unwrap()
                 .provider
                 .name,
             "file"
         );
         assert_eq!(
-            p.provider_for(&loc("file:b")).unwrap().info().provider.name,
+            p.provider_for(&loc("file:b"))
+                .unwrap()
+                .info()
+                .unwrap()
+                .provider
+                .name,
             "file"
         );
         assert_eq!(
