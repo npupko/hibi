@@ -22,8 +22,8 @@
       },
       "answers": {"q0": {"noul": 0.04}}
     },
-    "source": "synthetic, not recorded from the live API: written by hand from SPEC 14.2 and 14.5 and the NoulAnswer schema of https://api.typesafe.ai/openapi.json (read 2026-11-20).",
-    "origin": "spec-derived"
+    "source": "Written by hand from SPEC 14.2 and 14.5 and the NoulAnswer schema of https://api.typesafe.ai/openapi.json (read 2026-11-20).",
+    "origin": "synthetic"
   },
   {
     "name": "judge-order: a response for another question name is unusable",
@@ -48,7 +48,7 @@
       },
       "answers": {"q0": null}
     },
-    "source": "synthetic, not recorded from the live API: SPEC 14.2, a response that lacks an answer for a question of the request fails the request.",
-    "origin": "spec-derived"
+    "source": "SPEC 14.2, a response that lacks an answer for a question of the request fails the request.",
+    "origin": "synthetic"
   }
 ]

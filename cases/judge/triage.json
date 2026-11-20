@@ -38,8 +38,8 @@
       },
       "results": [{"checkable": 0.92, "band": "likely", "evidence": "code"}]
     },
-    "source": "synthetic, not recorded from the live API: written by hand from SPEC 14.2 and 14.3 and the NoulAnswer and ChoiceAnswer schemas of https://api.typesafe.ai/openapi.json (read 2026-11-20). confidence is set low to show that it is not read.",
-    "origin": "spec-derived"
+    "source": "Written by hand from SPEC 14.2 and 14.3 and the NoulAnswer and ChoiceAnswer schemas of https://api.typesafe.ai/openapi.json (read 2026-11-20). confidence is set low to show that it is not read.",
+    "origin": "synthetic"
   },
   {
     "name": "triage: two units, thresholds at 0.3 and 0.6, no headings",
@@ -96,8 +96,8 @@
         {"checkable": 0.55, "band": "unsure", "evidence": "unsure"}
       ]
     },
-    "source": "synthetic, not recorded from the live API: written by hand from SPEC 14.3 (band unlikely at p <= 0.3; the label needs probability >= 0.6) and the answer schemas of https://api.typesafe.ai/openapi.json (read 2026-11-20).",
-    "origin": "spec-derived"
+    "source": "Written by hand from SPEC 14.3 (band unlikely at p <= 0.3; the label needs probability >= 0.6) and the answer schemas of https://api.typesafe.ai/openapi.json (read 2026-11-20).",
+    "origin": "synthetic"
   },
   {
     "name": "triage: an answer of the wrong type, and a choice without its probability, are unusable",
@@ -134,7 +134,7 @@
       "answers": {"q0.checkable": null, "q0.evidence": null},
       "results": null
     },
-    "source": "synthetic, not recorded from the live API: SPEC 14.2, a response that lacks an answer of the right type for any question fails the request.",
-    "origin": "spec-derived"
+    "source": "SPEC 14.2, a response that lacks an answer of the right type for any question fails the request.",
+    "origin": "synthetic"
   }
 ]

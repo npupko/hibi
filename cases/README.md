@@ -17,7 +17,7 @@ Every case has five keys:
 | `input` | the arguments, in the shape described per file below |
 | `expected` | the value v5 must produce |
 | `source` | the v4 test the case comes from (`test/<file> › <describe> › <test>`), or `computed: <v4 source file> <function>`. A `v5-adjusted` case appends `| v5-adjusted: <SPEC section>: <how the value was derived>`. |
-| `origin` | `copied`, `narrowed`, `computed` or `v5-adjusted` for the cases extracted from v4; `rfc8785`, `independent` or `spec-derived` for cases added for v5 (see "Files added for v5" and "Cases added to extracted files") |
+| `origin` | `copied`, `narrowed`, `computed` or `v5-adjusted` for the cases extracted from v4; `rfc8785`, `independent`, `spec-derived` or `synthetic` for cases added for v5 (see "Files added for v5" and "Cases added to extracted files") |
 
 | origin | meaning |
 |---|---|
@@ -257,13 +257,14 @@ This is the list from the extraction, with what v5 does now.
 ## Files added for v5 (SPEC section 16.3)
 
 These files were not extracted from v4. Their cases, and the cases added to
-extracted files (next section), use three more `origin` values.
+extracted files (next section), use four more `origin` values.
 
 | origin | meaning |
 |---|---|
 | `rfc8785` | Input and expected value are taken from RFC 8785 itself. |
 | `independent` | `expected` was computed by implementations that share no code with the Rust crate: the npm packages `canonicalize` 5.1.0 (JCS) and `@noble/hashes` 2.4.0 (pure-JavaScript BLAKE3), with the 100-bit base32 step written bit by bit, and, for `bitap.json`, the npm package `diff-match-patch` 1.0.5 under Bun 1.4.5. |
 | `spec-derived` | `expected` was derived by hand from the SPEC section that `source` names, and `source` gives the derivation step by step. |
+| `synthetic` | A judge request and response pair written by hand in the shapes the vendor documents, not recorded from the live Jev API. Used only under `judge/`, until recorded pairs replace it. |
 
 | File | `input` | `expected` |
 |---|---|---|
@@ -328,10 +329,9 @@ The three files under `judge/` are **synthetic**. They were written by hand
 from SPEC sections 14.2 to 14.5 and from the answer schemas of the vendor's
 OpenAPI document (`https://api.typesafe.ai/openapi.json`, read on
 2026-11-20). No case was recorded from the live Jev API. Every case has
-origin `spec-derived`, and its `source` starts with "synthetic, not recorded
-from the live API". SPEC section 16.3 asks for recorded pairs, so these
-files are a stand-in until someone with a `TYPESAFE_API_KEY` records real
-ones.
+origin `synthetic`, and its `source` names the SPEC sections and schemas it
+was written from. SPEC section 16.3 asks for recorded pairs, so these files
+are a stand-in until someone with a `TYPESAFE_API_KEY` records real ones.
 
 | file | `input` | `expected` |
 |---|---|---|
