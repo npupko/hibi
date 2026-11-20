@@ -30,7 +30,7 @@ If anything here is unclear or out of date, open an issue.
 | `cases/` | Conformance data for the pure algorithms. |
 | `schemas/` | JSON Schemas, generated. |
 
-## The four gates
+## The five gates
 
 Every change must pass these locally before you open a pull request. CI runs
 the same commands.
@@ -39,12 +39,15 @@ the same commands.
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
-cargo build --workspace --no-default-features
+cargo build -p hibi --no-default-features
+cargo test -p hibi --no-default-features
 ```
 
-The last one checks that the library still builds with its optional features
-(`file`, `git-store`, `command`, `cache`, `judge`) turned off, the way an
-embedder can use it.
+The last two check that the library still builds and passes its tests with
+its optional features (`file`, `git-store`, `command`, `cache`, `judge`)
+turned off, the way an embedder can use it. They name the package with
+`-p hibi` because `hibi-cli` turns every feature on, and a `--workspace`
+build would turn them on for the library too.
 
 ## The specification
 

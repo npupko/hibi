@@ -54,8 +54,12 @@ jobs:
           toolchain: stable
           cache-save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: cargo test --workspace
-      - name: Build with the library's default features off
-        run: cargo build --workspace --no-default-features
+      # `-p hibi`, not `--workspace`: hibi-cli enables every feature, and a
+      # workspace build would unify them back on.
+      - name: Build the library with its features off
+        run: cargo build -p hibi --no-default-features
+      - name: Test the library with its features off
+        run: cargo test -p hibi --no-default-features
 
   # Minimum supported Rust version, from `rust-version` in Cargo.toml.
   msrv:
