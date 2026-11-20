@@ -17,7 +17,7 @@ use serde_json::Value;
 
 pub use conformance::{
     Capability, CaseResult, ConformanceCase, ConformanceOptions, ConformanceReport, End, Outgoing,
-    Step, load_cases, protocol_cases, run_conformance,
+    ProviderCheck, Step, check_provider, load_cases, protocol_cases, run_conformance,
 };
 pub use process::STDERR_TAIL_BYTES;
 

@@ -36,6 +36,7 @@ use serde_json::{Map, Value};
 use super::process::{Process, ReadError};
 use super::{DEFAULT_TIMEOUT, SHUTDOWN_GRACE, spawn};
 use crate::Error;
+use crate::config::{RepoConfig, UserConfig};
 use crate::model::Fingerprint;
 
 /// One conformance case (section 13.6).
@@ -234,6 +235,53 @@ pub fn run_conformance(
     }
 }
 
+/// `check` in the output of `hibi providers --check <scheme>` (section
+/// 15.3): the scheme and the outcome of the protocol cases.
+#[derive(Debug, Clone, PartialEq, Serialize, JsonSchema)]
+pub struct ProviderCheck {
+    pub scheme: String,
+    #[serde(flatten)]
+    pub report: ConformanceReport,
+}
+
+/// `hibi providers --check <scheme>` (section 15.3): start the provider
+/// the user config registers for `scheme`, in `root`, with its configured
+/// timeout, and run [`protocol_cases`] against it. A failing case is part
+/// of the report and not an error.
+///
+/// A command is run only for a scheme that `hibi.toml` lists and the user
+/// config registers (section 11.2); any other scheme is `invalid_argument`
+/// and nothing is started.
+pub fn check_provider(
+    config: &RepoConfig,
+    user: &UserConfig,
+    root: &Path,
+    scheme: &str,
+) -> Result<ProviderCheck, Error> {
+    if !config.schemes.contains_key(scheme) {
+        return Err(Error::invalid_argument(format!(
+            "the scheme {scheme:?} is not listed under [schemes] in .hibi/hibi.toml"
+        ))
+        .with_remediation("hibi providers"));
+    }
+    let Some(registered) = user.providers.get(scheme) else {
+        return Err(Error::invalid_argument(format!(
+            "the scheme {scheme:?} has no provider command in the user config"
+        ))
+        .with_remediation("hibi providers"));
+    };
+    let command: Vec<OsString> = registered.command.iter().map(OsString::from).collect();
+    let opts = ConformanceOptions {
+        root: root.to_path_buf(),
+        timeout: Duration::from_millis(registered.timeout_ms),
+        fixtures: None,
+    };
+    Ok(ProviderCheck {
+        scheme: scheme.to_owned(),
+        report: run_conformance(&command, &protocol_cases(), &opts),
+    })
+}
+
 enum Outcome {
     Passed,
     Skipped(String),
@@ -426,6 +474,51 @@ pub(crate) fn matches(expect: &Value, actual: &Value, at: &str) -> Result<(), St
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn check_provider_refuses_a_scheme_that_is_not_listed_or_not_registered() {
+        let config = RepoConfig::parse("version = 1\n[schemes.ref]\n").unwrap();
+        let none = UserConfig::default();
+        let dir = std::env::temp_dir();
+
+        let e = check_provider(&config, &none, &dir, "ref").unwrap_err();
+        assert_eq!(e.code, crate::Code::InvalidArgument);
+        assert!(e.message.contains("user config"), "{}", e.message);
+
+        // Registered by the user but not listed by the repository: the
+        // command, which does not exist, is never started.
+        let user =
+            UserConfig::parse("[providers.other]\ncommand = [\"/nonexistent/hibi-provider\"]\n")
+                .unwrap();
+        let e = check_provider(&config, &user, &dir, "other").unwrap_err();
+        assert_eq!(e.code, crate::Code::InvalidArgument);
+        assert!(e.message.contains("hibi.toml"), "{}", e.message);
+    }
+
+    #[test]
+    fn check_provider_reports_a_command_that_cannot_start_as_failed_cases() {
+        let config = RepoConfig::parse("version = 1\n[schemes.ref]\n").unwrap();
+        let user =
+            UserConfig::parse("[providers.ref]\ncommand = [\"/nonexistent/hibi-provider\"]\n")
+                .unwrap();
+        let check = check_provider(&config, &user, &std::env::temp_dir(), "ref").unwrap();
+        assert_eq!(check.scheme, "ref");
+        assert_eq!(check.report.passed, 0);
+        assert_eq!(check.report.failed, check.report.cases.len());
+        assert!(check.report.hello.is_none());
+        let json = serde_json::to_value(&check).unwrap();
+        let mut keys: Vec<&str> = json
+            .as_object()
+            .unwrap()
+            .keys()
+            .map(String::as_str)
+            .collect();
+        keys.sort_unstable();
+        assert_eq!(
+            keys,
+            ["cases", "failed", "hello", "passed", "scheme", "skipped"]
+        );
+    }
 
     #[test]
     fn matching_rule() {
