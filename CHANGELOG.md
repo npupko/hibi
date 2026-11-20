@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0](https://github.com/npupko/hibi/compare/v0.6.0...v0.7.0) (2026-11-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* the claim model and store format change to v4; banners, verifiers, resolvers and propositions are removed, and the ./resolver export is gone.
+
+### Features
+
+* audit, evidence, attest and list states; record for all claim kinds; init --instructions ([cd65cc9](https://github.com/npupko/hibi/commit/cd65cc94e526cf9e62078fa7188399375526ea61))
+* hibi v4 redesign ([#62](https://github.com/npupko/hibi/issues/62)) ([cd65cc9](https://github.com/npupko/hibi/commit/cd65cc94e526cf9e62078fa7188399375526ea61))
+
+
+### Bug Fixes
+
+* **deps:** zod 4.6.7 (GHSA-mrhx-c7xc-m3w5); biome 2.5.13, lefthook 2.1.14, GitHub Actions minor/patch updates ([cd65cc9](https://github.com/npupko/hibi/commit/cd65cc94e526cf9e62078fa7188399375526ea61))
+* linear-time Markdown heading parsing in claim context ([cd65cc9](https://github.com/npupko/hibi/commit/cd65cc94e526cf9e62078fa7188399375526ea61))
+
 ## [0.6.0](https://github.com/npupko/hibi/compare/v0.5.0...v0.6.0) (2026-09-07)
 
 
