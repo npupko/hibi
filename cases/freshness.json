@@ -402,40 +402,6 @@
     "origin": "spec-derived"
   },
   {
-    "name": "recheck PT0S: expired at the instant of the mark",
-    "input": {
-      "recheck": "PT0S",
-      "retired": false,
-      "now": "2026-01-01T00:00:00Z",
-      "marks": [
-        {
-          "at": "2026-01-01T00:00:00Z",
-          "sides": [
-            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-          ]
-        }
-      ],
-      "sides": [
-        {
-          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-        }
-      ]
-    },
-    "expected": {
-      "state": "expired",
-      "mark": 0,
-      "expiresAt": "2026-01-01T00:00:00Z",
-      "sides": [
-        {
-          "state": "same",
-          "reason": null
-        }
-      ]
-    },
-    "source": "SPEC 9.3 row 4: add(m.at, PT0S) = m.at and now < m.at is false at now == m.at, so row 5: expired.",
-    "origin": "spec-derived"
-  },
-  {
     "name": "an expired matching mark and a live matching mark: fresh",
     "input": {
       "recheck": "P10D",

@@ -17,7 +17,7 @@ use crate::store::{ORPHAN_RECORD, StoreWarning, UNKNOWN_REPLACEMENT};
 pub const TEXT_EXCERPT_CHARS: usize = 240;
 
 /// The sentence `status` carries once in `nextNote` (section 15.2).
-pub const NEXT_NOTE: &str = "Re-check each statement before running its next command. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command.";
+pub const NEXT_NOTE: &str = "Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command.";
 
 /// Schema helper: a field that is always present and may be `null`.
 pub(crate) struct Nullable<T>(std::marker::PhantomData<T>);
@@ -119,6 +119,7 @@ closed_enum!(
         UnknownReplacement => "unknown_replacement",
         CacheUnavailable => "cache_unavailable",
         GitTooOld => "git_too_old",
+        UnknownKind => "unknown_kind",
     }
 );
 
@@ -274,6 +275,33 @@ pub struct ClaimView {
     /// One command line, or `null` (section 15.2).
     #[schemars(with = "Nullable<String>")]
     pub next: Option<String>,
+}
+
+/// One side that was not `same` when a write accepted its claim.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct AcceptedSide {
+    /// 0 for the subject.
+    pub index: usize,
+    pub role: Role,
+    pub loc: crate::model::Locator,
+    /// The side's state before the write.
+    pub state: SideState,
+    #[schemars(with = "Nullable<Reason>")]
+    pub reason: Option<Reason>,
+}
+
+/// What a write that produces a mark took over without being told: the
+/// state the claim was in before the write, and the sides that were not
+/// `same` then. The write made the claim fresh; this is the record that it
+/// was not. `sides` is empty when the claim was `fresh`, and when it was
+/// `expired` (only time had run out).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Accepted {
+    /// The claim's state before the write.
+    pub was: ClaimState,
+    pub sides: Vec<AcceptedSide>,
 }
 
 /// The success envelope of section 15.1: `{"ok": true, "command": ...}`

@@ -134,10 +134,31 @@ pub struct CaseResult {
     pub detail: Option<String>,
 }
 
+/// Schema of [`ConformanceReport::hello`]. The value is the `result` of the
+/// provider's `hello` answer, copied without validation: the `hello` result
+/// of section 13.3 from a provider that conforms, whatever else a provider
+/// that does not conform sent, and `null` when it gave none.
+fn hello_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+    let info = generator.subschema_for::<crate::provider::ProviderInfo>();
+    schemars::json_schema!({
+        "anyOf": [
+            info,
+            {
+                "description": "No `hello` result was received.",
+                "type": "null"
+            },
+            {
+                "description": "The result of a provider that does not conform, as it sent it. The `hello` case then fails."
+            }
+        ]
+    })
+}
+
 /// The outcome of a run.
 #[derive(Debug, Clone, PartialEq, Serialize, JsonSchema)]
 pub struct ConformanceReport {
     /// The first `hello` result the provider gave, or `null`.
+    #[schemars(schema_with = "hello_schema")]
     pub hello: Option<Value>,
     pub passed: usize,
     pub failed: usize,

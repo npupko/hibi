@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Request",
+  "title": "hibi provider request",
   "description": "A request line: `{\"id\": <positive integer>, \"method\", \"params\"}`.",
   "type": "object",
   "properties": {

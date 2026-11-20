@@ -5,8 +5,8 @@
 use std::fmt::Write as _;
 
 use hibi::engine::{
-    ClaimOutput, ClaimState, ClaimView, CoverOutput, ListOutput, MarkOutput, ReanchorOutput,
-    RetireOutput, Role, Side, SideState, StatusOutput, UnitRef, Warning,
+    Accepted, ClaimOutput, ClaimState, ClaimView, CoverOutput, ListOutput, MarkOutput,
+    ReanchorOutput, RetireOutput, Role, Side, SideState, StatusOutput, UnitRef, Warning,
 };
 use hibi::judge::{SuggestOutput, TriageOutput};
 use hibi::model::Anchor;
@@ -136,6 +136,24 @@ fn side_lines(out: &mut String, side: &Side) {
         let _ = write!(line, "  {}", unit_name(unit));
     }
     let _ = writeln!(out, "{line}");
+    // A side that no longer resolves to one unit: what the claim stored,
+    // so that the reader knows what to look for.
+    if matches!(side.state, SideState::Missing | SideState::Ambiguous) {
+        let sel = &side.anchor.sel;
+        let mut stored = Vec::new();
+        if let Some(symbol) = &sel.symbol {
+            stored.push(format!("symbol {symbol}"));
+        }
+        if let Some(quote) = &sel.quote {
+            stored.push(format!("quote \"{}\"", one_line(quote, 80)));
+        }
+        if let Some(key) = &sel.key {
+            stored.push(format!("key {key}"));
+        }
+        if !stored.is_empty() {
+            let _ = writeln!(out, "    stored: {}", stored.join(", "));
+        }
+    }
     if let Some(candidates) = &side.candidates {
         for c in candidates {
             let _ = writeln!(out, "    candidate: {}", unit_name(c));
@@ -156,11 +174,7 @@ fn claim_block(out: &mut String, view: &ClaimView) {
         view.state,
         one_line(&view.statement, LINE_TEXT_CHARS)
     );
-    if view.state == ClaimState::Expired
-        && let (Some(recheck), Some(at)) = (&view.recheck, view.expires_at)
-    {
-        let _ = writeln!(out, "  recheck {recheck} ran out at {at}");
-    }
+    marked_line(out, view);
     for side in &view.sides {
         if side.state != SideState::Same || side.approx || side.text.is_some() {
             side_lines(out, side);
@@ -168,6 +182,66 @@ fn claim_block(out: &mut String, view: &ClaimView) {
     }
     if let Some(next) = &view.next {
         let _ = writeln!(out, "  next: {next}");
+    }
+}
+
+/// `  marked <at> (<mark id>)`, with the recheck period and when it runs
+/// or ran out; `  never marked` for a claim without a mark.
+fn marked_line(out: &mut String, view: &ClaimView) {
+    if view.state == ClaimState::Retired {
+        return;
+    }
+    let (Some(mark), Some(at)) = (&view.mark, view.marked_at) else {
+        let _ = writeln!(out, "  never marked");
+        return;
+    };
+    let mut line = format!("  marked {at} ({mark})");
+    if let (Some(recheck), Some(end)) = (&view.recheck, view.expires_at) {
+        let verb = if view.state == ClaimState::Expired {
+            "ran out"
+        } else {
+            "runs out"
+        };
+        let _ = write!(line, ", recheck {recheck} {verb} at {end}");
+    }
+    let _ = writeln!(out, "{line}");
+}
+
+/// `  was stale: evidence 1 changed (fingerprint_differs); now marked`: what
+/// a write took over for a claim that was not fresh.
+fn accepted_line(out: &mut String, accepted: &Accepted) {
+    if accepted.was == ClaimState::Fresh {
+        return;
+    }
+    let sides: Vec<String> = accepted
+        .sides
+        .iter()
+        .map(|s| {
+            let role = match s.role {
+                Role::Subject => "subject".to_owned(),
+                Role::Evidence => format!("evidence {}", s.index),
+            };
+            match s.reason {
+                Some(reason) => format!("{role} {} {} ({reason})", s.loc, s.state),
+                None => format!("{role} {} {}", s.loc, s.state),
+            }
+        })
+        .collect();
+    let what = if sides.is_empty() {
+        String::new()
+    } else {
+        format!(": {}", sides.join("; "))
+    };
+    let _ = writeln!(out, "  was {}{what}; now marked", accepted.was);
+}
+
+/// The note that goes with a `next` after a write.
+fn note_after_write(out: &mut String, views: &[&ClaimView]) {
+    if views.iter().any(|v| writes_a_mark(v)) {
+        let _ = writeln!(
+            out,
+            "\nA next command here only brings a stored anchor up to date. Look at what the anchor points to now, then run it."
+        );
     }
 }
 
@@ -220,7 +294,7 @@ pub fn status(o: &StatusOutput, default_selection: bool) -> String {
     if o.claims.iter().filter(|v| !fresh(v)).any(writes_a_mark) {
         let _ = writeln!(
             out,
-            "\nRe-check each stale or expired statement before running its next command."
+            "\nRe-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire."
         );
     }
     if o.claims.iter().filter(fresh).any(writes_a_mark) {
@@ -241,8 +315,16 @@ pub fn claim(o: &ClaimOutput) -> String {
     for c in &o.claims {
         let what = if c.created { "created" } else { "marked" };
         let sides: Vec<String> = c.claim.sides.iter().map(side_place).collect();
-        let _ = writeln!(out, "{}  {what}  {}", c.id, sides.join("; "));
+        let _ = writeln!(out, "{}  {what}  {}  {}", c.id, c.mark, sides.join("; "));
+        if let Some(accepted) = &c.accepted {
+            accepted_line(&mut out, accepted);
+        }
+        if let Some(next) = &c.claim.next {
+            let _ = writeln!(out, "  next: {next}");
+        }
     }
+    let views: Vec<&ClaimView> = o.claims.iter().map(|c| &c.claim).collect();
+    note_after_write(&mut out, &views);
     out
 }
 
@@ -250,6 +332,7 @@ pub fn mark(o: &MarkOutput) -> String {
     let mut out = String::new();
     for m in &o.marks {
         let _ = writeln!(out, "{}  marked  {}", m.claim, m.mark);
+        accepted_line(&mut out, &m.accepted);
         for side in m.claim_view.sides.iter().filter(|s| s.approx) {
             side_lines(&mut out, side);
         }
@@ -257,17 +340,32 @@ pub fn mark(o: &MarkOutput) -> String {
             let _ = writeln!(out, "  next: {next}");
         }
     }
+    let views: Vec<&ClaimView> = o.marks.iter().map(|m| &m.claim_view).collect();
+    note_after_write(&mut out, &views);
     out
 }
 
 pub fn reanchor(o: &ReanchorOutput) -> String {
-    let mut out = format!(
-        "{} is retired and replaced by {}\n  mark {}, retirement {}\n",
-        o.old, o.new, o.mark, o.retirement
-    );
+    let mut out = if o.merged {
+        format!(
+            "{} is retired and merged into the existing claim {}\n  mark {}, retirement {}\n",
+            o.old, o.new, o.mark, o.retirement
+        )
+    } else {
+        format!(
+            "{} is retired and replaced by the new claim {}\n  mark {}, retirement {}\n",
+            o.old, o.new, o.mark, o.retirement
+        )
+    };
+    accepted_line(&mut out, &o.accepted);
     for side in &o.claim.sides {
-        let _ = writeln!(out, "  {}  {}", role_name(side), anchor_json(&side.anchor));
+        let _ = writeln!(out, "  {}", side_place(side));
+        let _ = writeln!(out, "    {}", anchor_json(&side.anchor));
     }
+    if let Some(next) = &o.claim.next {
+        let _ = writeln!(out, "  next: {next}");
+    }
+    note_after_write(&mut out, &[&o.claim]);
     out
 }
 
@@ -501,8 +599,9 @@ pub fn providers(o: &ProvidersReply) -> String {
                     "scheme {}: not registered. To register it, add to the user config:",
                     s.scheme
                 );
-                let _ = writeln!(out, "    [providers.{}]", s.scheme);
-                let _ = writeln!(out, "    command = [\"<program>\", \"<argument>\"]");
+                for l in s.remediation.as_deref().unwrap_or_default().lines() {
+                    let _ = writeln!(out, "    {l}");
+                }
             }
         }
     }

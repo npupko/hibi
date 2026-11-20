@@ -40,6 +40,13 @@ pub const DURATION_PATTERN: &str = "^P(?=[0-9]|T[0-9])([0-9]+Y)?([0-9]+M)?([0-9]
 /// full claim id or a prefix of at least four characters after `c1-`.
 pub const CLAIM_ID_ARGUMENT_PATTERN: &str = "^c1-[0-9a-hjkmnp-tv-z]{4,20}$";
 
+/// True when two quotes are the same text apart from whitespace: equal
+/// after `text::normalize`. Used to tell whether a provider kept the quote
+/// a caller asked for or replaced it.
+pub fn same_quote(a: &str, b: &str) -> bool {
+    text::normalize(a) == text::normalize(b)
+}
+
 /// The stored form of a free-text field (`note`, `by`): trimmed (WS,
 /// section 4.1), and `null` when the result is empty.
 fn normalize_free_text(value: Option<String>) -> Option<String> {
@@ -751,11 +758,29 @@ impl Timestamp {
     /// Parse an instant given by a caller, such as the value of `--now`
     /// (section 15.1): RFC 3339 with any offset. The instant is converted
     /// to UTC and a fraction of a second is truncated. Errors are
-    /// `invalid_time`.
+    /// `invalid_time`. The largest instant is `jiff::Timestamp::MAX`,
+    /// 9999-12-30T22:00:00Z; a later one is refused with a message that
+    /// states this value.
     pub fn parse_instant(s: &str) -> Result<Self, Error> {
         let bad =
             |why: String| Error::new(Code::InvalidTime, format!("{s:?} is not a time: {why}"));
-        let instant: jiff::Timestamp = s.parse().map_err(|e: jiff::Error| bad(e.to_string()))?;
+        // A well-formed date, time and offset whose instant is past the
+        // largest one the time library represents.
+        let past_largest = || {
+            let pieces = jiff::fmt::temporal::Pieces::parse(s).ok()?;
+            let offset = pieces.to_numeric_offset()?;
+            let civil = pieces.date().to_datetime(pieces.time()?);
+            (civil.year() > 0 && offset.to_timestamp(civil).is_err())
+                .then(|| Timestamp::from_instant(jiff::Timestamp::MAX).ok())?
+        };
+        let instant: jiff::Timestamp =
+            s.parse().map_err(|e: jiff::Error| match past_largest() {
+                Some(largest) => Error::new(
+                    Code::InvalidTime,
+                    format!("{s:?} is later than the largest time hibi accepts, {largest}"),
+                ),
+                None => bad(e.to_string()),
+            })?;
         Timestamp::from_instant(instant).map_err(|e| bad(e.message))
     }
 
@@ -854,7 +879,7 @@ pub struct Claim {
     pub subject: Anchor,
     /// May be empty. Order is significant.
     pub evidence: Vec<Anchor>,
-    /// A duration in the grammar of section 9.4.
+    /// A duration in the grammar of section 9.4, longer than zero.
     #[schemars(with = "Nullable<String>", extend("pattern" = DURATION_PATTERN))]
     pub recheck: Option<String>,
     /// Never empty: an empty note is stored as `null`.
@@ -968,7 +993,17 @@ impl Claim {
             a.sel.validate()?;
         }
         if let Some(r) = &self.recheck {
-            duration::parse(r)?;
+            // A zero duration would expire the claim the moment it is
+            // marked, and every later mark with it.
+            if duration::parse(r)? == duration::Duration::default() {
+                return Err(Error::new(
+                    Code::InvalidDuration,
+                    format!("the recheck period {r:?} is zero; it must be longer than zero"),
+                )
+                .with_remediation(
+                    "Give a period longer than zero, for example P90D, or leave the recheck period out.",
+                ));
+            }
         }
         check_free_text("claim", "note", &self.note)
     }
@@ -1645,6 +1680,32 @@ mod tests {
             assert_eq!(e.code, Code::InvalidTime, "{bad:?}");
             assert!(e.remediation.is_some());
         }
+        // The largest instant is the time library's, 9999-12-30T22:00:00Z
+        // (any fraction of that second is dropped). One second later is
+        // refused, and the message states the largest value.
+        let max = "9999-12-30T22:00:00Z";
+        for largest in [
+            "9999-12-30T22:00:00Z",
+            "9999-12-30T22:00:00.999999999Z",
+            "9999-12-31T00:00:00+02:00",
+        ] {
+            assert_eq!(t(largest).unwrap(), max, "{largest}");
+        }
+        for late in [
+            "9999-12-30T22:00:01Z",
+            "9999-12-31T00:00:01+02:00",
+            "9999-12-31T23:59:59Z",
+        ] {
+            let e = Timestamp::parse_instant(late).unwrap_err();
+            assert_eq!(e.code, Code::InvalidTime, "{late}");
+            assert_eq!(
+                e.message,
+                format!("{late:?} is later than the largest time hibi accepts, {max}"),
+            );
+        }
+        // A malformed value does not get that message.
+        let e = Timestamp::parse_instant("9999-12-31").unwrap_err();
+        assert!(!e.message.contains("largest"), "{}", e.message);
     }
 
     #[test]

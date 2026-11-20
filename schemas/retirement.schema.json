@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Retirement",
+  "title": "hibi retirement record",
   "description": "A retirement (section 3.4). Permanent.",
   "type": "object",
   "properties": {

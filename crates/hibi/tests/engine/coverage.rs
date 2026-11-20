@@ -368,6 +368,39 @@ fn resources_that_cannot_be_listed_are_unavailable() {
     assert_eq!(reasons, want);
 }
 
+/// A kind of a scope on an external scheme that the provider's `hello`
+/// does not list is reported as `unknown_kind`. A provider that states no
+/// kinds, one that does not start and one that is not registered give no
+/// warning.
+#[test]
+fn a_scope_kind_the_external_provider_does_not_list_is_a_warning() {
+    let mut f = fixture();
+    let warnings = |f: &mut Fixture| {
+        let out = f.cover(&["model", "ghosts", "docs"], 0).unwrap();
+        serde_json::to_value(&out.warnings).unwrap()
+    };
+    // `kinds` is informational and may be empty: unknown, no warning.
+    assert_eq!(warnings(&mut f), serde_json::json!([]));
+    // Every kind of the scope is listed.
+    f.arch.borrow_mut().kinds = vec!["component".to_owned(), "decision".to_owned()];
+    assert_eq!(warnings(&mut f), serde_json::json!([]));
+    // The scope asks for `component`; the provider lists other kinds.
+    f.arch.borrow_mut().kinds = vec!["decision".to_owned(), "service".to_owned()];
+    assert_eq!(
+        warnings(&mut f),
+        serde_json::json!([{
+            "code": "unknown_kind",
+            "message": "scope model: the arch provider lists no unit kind \"component\", so it selects nothing; its kinds are decision, service"
+        }])
+    );
+    // The units are still listed and counted as before.
+    let out = f.cover(&["model"], 0).unwrap();
+    assert_eq!(out.scopes[0].units, 2);
+    // A provider that does not start gives no kinds to compare with.
+    f.arch.borrow_mut().info_error = Some(perr(C::Failed));
+    assert_eq!(warnings(&mut f), serde_json::json!([]));
+}
+
 #[test]
 fn scopes_are_selected_by_name_in_config_order_and_hibi_is_never_listed() {
     let mut f = fixture();

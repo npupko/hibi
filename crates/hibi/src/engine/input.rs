@@ -169,37 +169,52 @@ fn anchor_input(what: &str, value: Value) -> Result<AnchorInput, Error> {
     }
 }
 
-/// Parse the standard input of `claim --stdin`: a non-empty JSON array of
-/// [`ClaimInput`] elements. Every bad element is reported with its `index`:
-/// `invalid_json` for a wrong shape or an unknown key, `invalid_anchor` for
-/// an anchor object that does not parse.
-pub fn parse_claim_stdin(text: &str) -> Result<Vec<ClaimInput>, Vec<Error>> {
-    let mut inputs = Vec::new();
-    let mut errors = Vec::new();
-    for (index, element) in elements(text)?.into_iter().enumerate() {
-        let parsed = serde_json::from_value::<ClaimWire>(element)
-            .map_err(|e| invalid_json(format!("element {index}: {e}")))
-            .and_then(|w| {
-                let subject = anchor_input("subject", w.subject)?;
-                let evidence = w
-                    .evidence
-                    .unwrap_or_default()
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, v)| anchor_input(&format!("evidence {}", i + 1), v))
-                    .collect::<Result<Vec<_>, _>>()?;
-                Ok(ClaimInput {
-                    statement: w.statement,
-                    subject,
-                    evidence,
-                    recheck: w.recheck,
-                    note: w.note,
-                    by: w.by,
+/// Read the standard input of `claim --stdin`: a non-empty JSON array of
+/// [`ClaimInput`] elements. The outer error is for input that is not such
+/// an array (`invalid_json`). Otherwise there is one entry per element, in
+/// order: the element, or why it does not parse, carrying its `index`
+/// (`invalid_json` for a wrong shape or an unknown key, `invalid_anchor`
+/// for an anchor object that does not parse). Give the result to
+/// [`claim_batch`](super::claim_batch), which reports those errors together
+/// with the errors of the elements that parsed.
+pub fn read_claim_stdin(text: &str) -> Result<Vec<Result<ClaimInput, Error>>, Vec<Error>> {
+    Ok(elements(text)?
+        .into_iter()
+        .enumerate()
+        .map(|(index, element)| {
+            serde_json::from_value::<ClaimWire>(element)
+                .map_err(|e| invalid_json(format!("element {index}: {e}")))
+                .and_then(|w| {
+                    let subject = anchor_input("subject", w.subject)?;
+                    let evidence = w
+                        .evidence
+                        .unwrap_or_default()
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, v)| anchor_input(&format!("evidence {}", i + 1), v))
+                        .collect::<Result<Vec<_>, _>>()?;
+                    Ok(ClaimInput {
+                        statement: w.statement,
+                        subject,
+                        evidence,
+                        recheck: w.recheck,
+                        note: w.note,
+                        by: w.by,
+                    })
                 })
-            });
-        match parsed {
+                .map_err(|e| e.with_index(index))
+        })
+        .collect())
+}
+
+/// Every element, or the errors of the elements that do not parse.
+fn all_or_errors<T>(elements: Vec<Result<T, Error>>) -> Result<Vec<T>, Vec<Error>> {
+    let mut inputs = Vec::with_capacity(elements.len());
+    let mut errors = Vec::new();
+    for element in elements {
+        match element {
             Ok(input) => inputs.push(input),
-            Err(e) => errors.push(e.with_index(index)),
+            Err(e) => errors.push(e),
         }
     }
     if errors.is_empty() {
@@ -209,26 +224,29 @@ pub fn parse_claim_stdin(text: &str) -> Result<Vec<ClaimInput>, Vec<Error>> {
     }
 }
 
-/// Parse the standard input of `mark --stdin`: a non-empty JSON array whose
-/// elements are a claim id string or a [`MarkInput`] object. Every bad
-/// element is reported as `invalid_json` with its `index`.
-pub fn parse_mark_stdin(text: &str) -> Result<Vec<MarkInput>, Vec<Error>> {
-    let mut inputs = Vec::new();
-    let mut errors = Vec::new();
-    for (index, element) in elements(text)?.into_iter().enumerate() {
-        let parsed = match element {
+/// [`read_claim_stdin`] for a caller that wants only a document in which
+/// every element parses: every bad element is reported with its `index`.
+pub fn parse_claim_stdin(text: &str) -> Result<Vec<ClaimInput>, Vec<Error>> {
+    all_or_errors(read_claim_stdin(text)?)
+}
+
+/// Read the standard input of `mark --stdin`: a non-empty JSON array whose
+/// elements are a claim id string or a [`MarkInput`] object. As
+/// [`read_claim_stdin`]; a bad element is `invalid_json` with its `index`.
+pub fn read_mark_stdin(text: &str) -> Result<Vec<Result<MarkInput, Error>>, Vec<Error>> {
+    Ok(elements(text)?
+        .into_iter()
+        .enumerate()
+        .map(|(index, element)| match element {
             Value::String(claim) => Ok(MarkInput::new(claim)),
             v => serde_json::from_value::<MarkInput>(v)
-                .map_err(|e| invalid_json(format!("element {index}: {e}"))),
-        };
-        match parsed {
-            Ok(input) => inputs.push(input),
-            Err(e) => errors.push(e.with_index(index)),
-        }
-    }
-    if errors.is_empty() {
-        Ok(inputs)
-    } else {
-        Err(errors)
-    }
+                .map_err(|e| invalid_json(format!("element {index}: {e}")).with_index(index)),
+        })
+        .collect())
+}
+
+/// [`read_mark_stdin`] for a caller that wants only a document in which
+/// every element parses.
+pub fn parse_mark_stdin(text: &str) -> Result<Vec<MarkInput>, Vec<Error>> {
+    all_or_errors(read_mark_stdin(text)?)
 }

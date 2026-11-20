@@ -1,9 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Envelope",
+  "title": "hibi reanchor output",
   "description": "The success envelope of section 15.1: `{\"ok\": true, \"command\": ...}`\nfollowed by the keys of the command's output (which include\n`warnings`).",
   "type": "object",
   "properties": {
+    "accepted": {
+      "description": "The state the old claim was in before this write and its sides that\nwere not `same`, by the old claim's side numbers.",
+      "$ref": "#/$defs/Accepted"
+    },
     "claim": {
       "description": "The view of the new claim.",
       "$ref": "#/$defs/ClaimView"
@@ -14,12 +18,21 @@
     "mark": {
       "$ref": "#/$defs/MarkId"
     },
+    "merged": {
+      "description": "True when `new` is a claim that already existed: the old claim was\nmerged into it, and no claim was written.",
+      "type": "boolean"
+    },
     "new": {
       "$ref": "#/$defs/ClaimId"
     },
+    "nextNote": {
+      "description": "How to read `next` and `accepted` (section 15.2).",
+      "type": "string"
+    },
     "ok": {
       "description": "Always `true`.",
-      "type": "boolean"
+      "type": "boolean",
+      "const": true
     },
     "old": {
       "$ref": "#/$defs/ClaimId"
@@ -34,6 +47,7 @@
       }
     }
   },
+  "additionalProperties": false,
   "required": [
     "ok",
     "command",
@@ -41,10 +55,74 @@
     "new",
     "mark",
     "retirement",
+    "merged",
+    "accepted",
     "claim",
+    "nextNote",
     "warnings"
   ],
   "$defs": {
+    "Accepted": {
+      "description": "What a write that produces a mark took over without being told: the\nstate the claim was in before the write, and the sides that were not\n`same` then. The write made the claim fresh; this is the record that it\nwas not. `sides` is empty when the claim was `fresh`, and when it was\n`expired` (only time had run out).",
+      "type": "object",
+      "properties": {
+        "sides": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AcceptedSide"
+          }
+        },
+        "was": {
+          "description": "The claim's state before the write.",
+          "$ref": "#/$defs/ClaimState"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "was",
+        "sides"
+      ]
+    },
+    "AcceptedSide": {
+      "description": "One side that was not `same` when a write accepted its claim.",
+      "type": "object",
+      "properties": {
+        "index": {
+          "description": "0 for the subject.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
+        },
+        "state": {
+          "description": "The side's state before the write.",
+          "$ref": "#/$defs/SideState"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "role",
+        "loc",
+        "state",
+        "reason"
+      ]
+    },
     "Anchor": {
       "description": "An anchor: a locator plus a selector (section 5.3).",
       "type": "object",
@@ -436,7 +514,8 @@
         "orphan_record",
         "unknown_replacement",
         "cache_unavailable",
-        "git_too_old"
+        "git_too_old",
+        "unknown_kind"
       ]
     }
   }

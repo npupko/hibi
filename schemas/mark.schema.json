@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Mark",
+  "title": "hibi mark record",
   "description": "A mark (section 3.3). Append-only.",
   "type": "object",
   "properties": {

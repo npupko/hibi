@@ -18,7 +18,7 @@ use super::read::{SinceRun, SinceView};
 use super::resolve::{
     Resolved, info_of, reason_of_no_provider, resolve_anchors, side_of_error, validate_units,
 };
-use super::types::{Nullable, Reason, TEXT_EXCERPT_CHARS, UnitRef, Warning, excerpt};
+use super::types::{Nullable, Reason, TEXT_EXCERPT_CHARS, UnitRef, Warning, WarningCode, excerpt};
 
 /// The default of `cover --limit`.
 pub const DEFAULT_COVER_LIMIT: usize = 200;
@@ -311,6 +311,40 @@ fn scope_resources(
     }
 }
 
+/// For a scope on an external scheme: one `unknown_kind` warning per kind
+/// of the scope that the provider's `hello` does not list. The list is
+/// informational and may be empty, which means the kinds are not known; a
+/// provider that is not registered or does not start states none either.
+/// Neither case gives a warning.
+fn unknown_kinds(scope: &Scope, providers: &mut Providers, loc: &Locator) -> Vec<Warning> {
+    let Some(info) = providers
+        .provider_for(loc)
+        .ok()
+        .and_then(|p| info_of(p).ok())
+    else {
+        return Vec::new();
+    };
+    if info.kinds.is_empty() {
+        return Vec::new();
+    }
+    scope
+        .kinds
+        .iter()
+        .filter(|kind| !info.kinds.contains(kind))
+        .map(|kind| {
+            Warning::new(
+                WarningCode::UnknownKind,
+                format!(
+                    "scope {}: the {} provider lists no unit kind {kind:?}, so it selects nothing; its kinds are {}",
+                    scope.name,
+                    scope.resource.scheme(),
+                    info.kinds.join(", ")
+                ),
+            )
+        })
+        .collect()
+}
+
 /// Compute coverage (section 10) for the named scopes, or for every scope
 /// when `scopes` is empty.
 ///
@@ -349,7 +383,7 @@ pub fn coverage(
         .collect();
 
     let ledger = store.load()?;
-    let warnings = Warning::from_store_all(&ledger.warnings)?;
+    let mut warnings = Warning::from_store_all(&ledger.warnings)?;
     let index = Index::new(&ledger);
     let anchors: Vec<&Anchor> = index.live().flat_map(|c| c.sides()).collect();
     let resolved = resolve_anchors(providers, &anchors);
@@ -408,6 +442,9 @@ pub fn coverage(
                 continue;
             }
         };
+        if let PatternKind::Locator(loc) = scope.resource.kind() {
+            warnings.extend(unknown_kinds(scope, providers, loc));
+        }
         if let Some(changed) = &changed {
             resources.retain(|loc| {
                 loc.as_str()

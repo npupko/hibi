@@ -93,10 +93,20 @@ struct Repo {
 }
 
 fn repo(global: &Global) -> Result<Repo, Error> {
-    let root = match &global.root {
-        Some(dir) => git_text::check_root(dir)?,
-        None => git_text::discover_root(&cwd()?)?,
-    };
+    open_repo(find_root(global)?)
+}
+
+/// The root (section 12.5), from `--root` or by discovery. A legacy store
+/// and a missing store are found here; nothing of the store is read.
+fn find_root(global: &Global) -> Result<PathBuf, Error> {
+    match &global.root {
+        Some(dir) => git_text::check_root(dir),
+        None => git_text::discover_root(&cwd()?),
+    }
+}
+
+/// Read `hibi.toml` of this root and open its store.
+fn open_repo(root: PathBuf) -> Result<Repo, Error> {
     let config = RepoConfig::load(&root)?;
     let store = GitTextStore::open(&root)?;
     Ok(Repo {
@@ -104,6 +114,19 @@ fn repo(global: &Global) -> Result<Repo, Error> {
         config,
         store,
     })
+}
+
+/// The root and store of a judge command (section 14.1). After the key,
+/// a judge command checks git before anything else: the root is found,
+/// then git must be usable and the root a git top level
+/// (`not_a_git_repository`, `git_too_old`), and only then are `hibi.toml`
+/// and the store read. The git status is returned so that git is probed
+/// once per run.
+fn judge_repo(global: &Global) -> Result<(Repo, GitStatus), Error> {
+    let root = find_root(global)?;
+    let git = GitStatus::probe();
+    git.require()?.check_root(&root)?;
+    Ok((open_repo(root)?, git))
 }
 
 /// What a command that resolves anchors needs besides the store.
@@ -148,8 +171,14 @@ fn file_options(
 /// the user config registers (started on first use), and a declaration for
 /// each listed scheme without a registration (nothing is started for it).
 fn wire(repo: &Repo, global: &Global) -> Result<Wired, Error> {
+    wire_with(repo, global, None)
+}
+
+/// [`wire`] with the git status of a run that already probed git (a judge
+/// command, [`judge_repo`]).
+fn wire_with(repo: &Repo, global: &Global, probed: Option<GitStatus>) -> Result<Wired, Error> {
     let user = UserConfig::load(config::user_config_path().as_deref())?;
-    let git = GitStatus::probe();
+    let git = probed.unwrap_or_else(GitStatus::probe);
     let (cache, cache_warning) = open_cache(global);
 
     let mut providers = Providers::new();
@@ -289,14 +318,14 @@ fn claim(global: &Global, args: ClaimArgs) -> Result<Reply, Failure> {
     let repo = repo(global).map_err(one)?;
     let now = now(global).map_err(one)?;
     let default_by = by(None);
-    let (inputs, indexed) = if args.stdin {
-        let mut inputs = engine::parse_claim_stdin(&read_stdin().map_err(one)?)?;
-        for input in &mut inputs {
+    let elements = if args.stdin {
+        let mut elements = engine::read_claim_stdin(&read_stdin().map_err(one)?)?;
+        for input in elements.iter_mut().flatten() {
             if input.by.is_none() {
                 input.by.clone_from(&default_by);
             }
         }
-        (inputs, true)
+        elements
     } else {
         let anchor = |text: &String| engine::compact_anchor(text);
         let input = ClaimInput {
@@ -312,17 +341,28 @@ fn claim(global: &Global, args: ClaimArgs) -> Result<Reply, Failure> {
             note: args.note,
             by: args.by.or(default_by),
         };
-        (vec![input], false)
+        vec![Ok(input)]
     };
     let mut wired = wire(&repo, global).map_err(one)?;
-    let mut output = engine::claim(
-        &repo.store,
-        &mut wired.providers,
-        &wired.git,
-        &inputs,
-        indexed,
-        now,
-    )?;
+    let mut output = if args.stdin {
+        engine::claim_batch(
+            &repo.store,
+            &mut wired.providers,
+            &wired.git,
+            &elements,
+            now,
+        )?
+    } else {
+        let inputs: Vec<ClaimInput> = elements.into_iter().flatten().collect();
+        engine::claim(
+            &repo.store,
+            &mut wired.providers,
+            &wired.git,
+            &inputs,
+            false,
+            now,
+        )?
+    };
     wired.add_warnings(&mut output.warnings);
     Reply::new("claim", &output, &output.warnings, human::claim(&output)).map_err(one)
 }
@@ -331,17 +371,17 @@ fn mark(global: &Global, args: MarkArgs) -> Result<Reply, Failure> {
     let repo = repo(global).map_err(one)?;
     let now = now(global).map_err(one)?;
     let default_by = by(None);
-    let (inputs, indexed) = if args.stdin {
-        let mut inputs = engine::parse_mark_stdin(&read_stdin().map_err(one)?)?;
-        for input in &mut inputs {
+    let elements = if args.stdin {
+        let mut elements = engine::read_mark_stdin(&read_stdin().map_err(one)?)?;
+        for input in elements.iter_mut().flatten() {
             if input.by.is_none() {
                 input.by.clone_from(&default_by);
             }
         }
-        (inputs, true)
+        elements
     } else {
         let by = args.by.or(default_by);
-        let inputs = args
+        let inputs: Vec<Result<MarkInput, Error>> = args
             .ids
             .into_iter()
             .map(|claim| MarkInput {
@@ -349,18 +389,30 @@ fn mark(global: &Global, args: MarkArgs) -> Result<Reply, Failure> {
                 note: args.note.clone(),
                 by: by.clone(),
             })
+            .map(Ok)
             .collect();
-        (inputs, false)
+        inputs
     };
     let mut wired = wire(&repo, global).map_err(one)?;
-    let mut output = engine::mark(
-        &repo.store,
-        &mut wired.providers,
-        &wired.git,
-        &inputs,
-        indexed,
-        now,
-    )?;
+    let mut output = if args.stdin {
+        engine::mark_batch(
+            &repo.store,
+            &mut wired.providers,
+            &wired.git,
+            &elements,
+            now,
+        )?
+    } else {
+        let inputs: Vec<MarkInput> = elements.into_iter().flatten().collect();
+        engine::mark(
+            &repo.store,
+            &mut wired.providers,
+            &wired.git,
+            &inputs,
+            false,
+            now,
+        )?
+    };
     wired.add_warnings(&mut output.warnings);
     Reply::new("mark", &output, &output.warnings, human::mark(&output)).map_err(one)
 }
@@ -449,7 +501,13 @@ fn status(global: &Global, args: &StatusArgs) -> Result<Reply, Error> {
     } else {
         None
     };
-    let repo = repo(global)?;
+    // With the judge, git is checked next, before `hibi.toml` is read.
+    let (repo, probed) = if client.is_some() {
+        let (repo, git) = judge_repo(global)?;
+        (repo, Some(git))
+    } else {
+        (repo(global)?, None)
+    };
     let now = now(global)?;
     let query = StatusQuery {
         ids: args.ids.clone(),
@@ -457,10 +515,7 @@ fn status(global: &Global, args: &StatusArgs) -> Result<Reply, Error> {
         locs: args.loc.clone(),
         detail: args.detail,
     };
-    let mut wired = wire(&repo, global)?;
-    if client.is_some() {
-        wired.git.require()?.check_root(&repo.root)?;
-    }
+    let mut wired = wire_with(&repo, global, probed)?;
     let mut since = match &args.since {
         Some(range) => Some(wired.since(&repo, range)?),
         None => None,
@@ -606,11 +661,10 @@ fn judge_client() -> Result<Judge, Error> {
 
 fn triage(global: &Global, args: &TriageArgs) -> Result<Reply, Error> {
     let client = judge_client()?;
-    let repo = repo(global)?;
+    let (repo, probed) = judge_repo(global)?;
     let now = now(global)?;
-    let mut wired = wire(&repo, global)?;
+    let mut wired = wire_with(&repo, global, Some(probed))?;
     let git = wired.git.require()?;
-    git.check_root(&repo.root)?;
     let mut since = match &args.since {
         Some(range) => Some(wired.since(&repo, range)?),
         None => None,
@@ -650,10 +704,9 @@ fn triage(global: &Global, args: &TriageArgs) -> Result<Reply, Error> {
 
 fn suggest_evidence(global: &Global, args: &SuggestEvidenceArgs) -> Result<Reply, Error> {
     let client = judge_client()?;
-    let repo = repo(global)?;
+    let (repo, probed) = judge_repo(global)?;
     let now = now(global)?;
-    let mut wired = wire(&repo, global)?;
-    wired.git.require()?.check_root(&repo.root)?;
+    let mut wired = wire_with(&repo, global, Some(probed))?;
     let env = JudgeEnv {
         root: &repo.root,
         config: &repo.config,

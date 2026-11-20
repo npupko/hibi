@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "ClaimStdin",
+  "title": "hibi claim --stdin input",
   "description": "Standard input of `claim --stdin`: a non-empty array of claims.",
   "type": "array",
   "items": {

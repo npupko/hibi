@@ -24,9 +24,12 @@ Anchors:
     file:src/retry.rs#fetch_with_retry     the declaration with this symbol
     file:docs/retry.md::capped at 30 s     the unit that contains this quote
     file:src/retry.rs#retry::MAX = 5       a quote inside a symbol
-  Use repo:<alias>//<path> for a file in a sibling repository. A path that
-  contains '#' or '::', and any selector for an external scheme, is given as
-  JSON on standard input (claim --stdin).
+  Use repo:<alias>//<path> for a file in a sibling repository.
+  A quote given together with a symbol must occur inside that declaration.
+  An anchor may also be a JSON object, wherever an anchor is accepted:
+    {\"loc\": \"file:docs/a#b.md\", \"sel\": {\"quote\": \"capped at 30 s\"}}
+  Use that form for a path that contains '#' or '::', for a selector of an
+  external scheme, and for an anchor that an error message printed.
 
 Output:
   The result is JSON when standard output is not a terminal, or with
@@ -92,7 +95,7 @@ pub struct Global {
 
     /// Use this instant as the current time, for reproducible runs. RFC
     /// 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of
-    /// a second is dropped
+    /// a second is dropped. The largest value is 9999-12-30T22:00:00Z
     #[arg(
         long,
         global = true,
@@ -101,8 +104,10 @@ pub struct Global {
     )]
     pub now: Option<String>,
 
-    /// Do not read or write the cache database. Results are the same with
-    /// and without the cache
+    /// Do not read or write the cache database. Every command that does
+    /// not call the judge gives the same result with and without the cache.
+    /// The judge commands (triage, suggest-evidence, status --judge-order)
+    /// may rank differently from one run to the next without it
     #[arg(long, global = true, help_heading = "Global options")]
     pub no_cache: bool,
 }
@@ -148,14 +153,18 @@ that support it (the evidence). hibi stores the claim and a first mark with \
 the fingerprint of every side as it is now. Run this after you checked that \
 the statement is true.
 
-Every anchor must match exactly one unit.
+Every anchor must match exactly one unit. When one matches several, the \
+error lists each of them with an anchor that selects it. The recheck period \
+must be longer than zero, and the same evidence anchor may be given only once.
 
 Running the same claim again adds a new mark and no second claim. A live \
 claim is the same claim when it has the same statement, recheck period and \
 note, and each of its anchors has the same locator, resolves to the same \
-unit and has the same quote and symbol. Text edited near a quote does not \
+unit and has the same symbol, and the same quote when you give one. Text edited near a quote does not \
 make a new claim. The result says \"created\": false and gives the id of the \
-existing claim.
+existing claim, and under \"accepted\" the state that claim was in before \
+this mark: if it was stale, the sides that had changed are listed, and this \
+run has now marked them as checked.
 
 With --stdin, standard input is a JSON array of claims, written all or not \
 at all:
@@ -195,6 +204,9 @@ Every side must resolve to one unit. If a side is missing or matches several \
 units, use `hibi reanchor` to point it at the right unit. If the statement is \
 no longer true, fix the text or use `hibi retire`.
 
+The result gives, under \"accepted\", the state each claim was in before the \
+mark and the sides that were not the same then.
+
 With --stdin, standard input is a JSON array, written all or not at all. \
 Each element is a claim id or {\"claim\": \"<id>\", \"note\": \"...\", \
 \"by\": \"...\"}. `hibi schema mark-input` prints the schema.")]
@@ -211,6 +223,12 @@ Sides you do not replace are resolved again from their stored anchors, and \
 every stored selector is refreshed from the unit it resolves to. Without any \
 option this refreshes the selectors of a claim whose text moved or was \
 reworded slightly.
+
+The new claim's mark covers every side, also the ones you did not replace: \
+a kept side that changed since the last mark is marked as checked by this \
+command. The result lists those sides under \"accepted\", with the state the \
+old claim was in. When the new claim equals a claim that already exists, the \
+old claim is merged into it and the result says \"merged\": true.
 
 Evidence numbers start at 1 and always refer to the old claim's list.")]
     Reanchor(ReanchorArgs),
@@ -461,8 +479,8 @@ pub struct RetireArgs {
     #[arg(value_name = "claim-id", required = true)]
     pub ids: Vec<String>,
 
-    /// The claim that takes the place of the retired ones. It must exist
-    /// and must not be one of them
+    /// The claim that takes the place of the retired ones. It must be a
+    /// live claim and must not be one of them
     #[arg(long, value_name = "claim-id")]
     pub replaced_by: Option<String>,
 

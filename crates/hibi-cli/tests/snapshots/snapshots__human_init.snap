@@ -16,3 +16,4 @@ exit status: 1
 (empty)
 ---- standard error ----
 error: already_initialized: [ROOT] already has .hibi/hibi.toml
+  fix: The store is already there. Run hibi status to see its claims.

@@ -32,8 +32,9 @@ pub struct RepoReport {
     /// `null`, `repo_not_found` or `repo_not_allowed`.
     #[schemars(with = "Nullable<String>")]
     pub error: Option<String>,
-    /// For an alias the user config does not allow: the lines to add.
-    #[serde(skip)]
+    /// For an alias the user config does not allow: the lines to add to
+    /// the user config. `null` otherwise.
+    #[schemars(with = "Nullable<String>")]
     pub remediation: Option<String>,
 }
 
@@ -44,6 +45,10 @@ pub struct SchemeReport {
     pub registered: bool,
     #[schemars(with = "Nullable<Vec<String>>")]
     pub command: Option<Vec<String>>,
+    /// For a scheme without a registration: the lines to add to the user
+    /// config, with the command to fill in. `null` otherwise.
+    #[schemars(with = "Nullable<String>")]
+    pub remediation: Option<String>,
 }
 
 /// The output of `providers` without `--check`.
@@ -115,10 +120,14 @@ pub fn scheme_reports(config: &RepoConfig, user: &UserConfig) -> Vec<SchemeRepor
         .keys()
         .map(|scheme| {
             let command = user.providers.get(scheme).map(|p| p.command.clone());
+            let remediation = command.is_none().then(|| {
+                format!("[providers.{scheme}]\ncommand = [\"<program>\", \"<argument>\"]")
+            });
             SchemeReport {
                 scheme: scheme.clone(),
                 registered: command.is_some(),
                 command,
+                remediation,
             }
         })
         .collect()

@@ -316,7 +316,9 @@ fn claim_reports_a_fresh_claim_view_with_completed_selectors() {
     assert_eq!(v["warnings"], json!([]));
     assert_eq!(v["claims"].as_array().unwrap().len(), 1);
     let entry = &v["claims"][0];
-    assert_eq!(keys(entry), ["claim", "created", "id", "mark"]);
+    assert_eq!(keys(entry), ["accepted", "claim", "created", "id", "mark"]);
+    assert_eq!(entry["accepted"], Value::Null);
+    assert!(v["nextNote"].is_string());
     assert_eq!(entry["id"], "c1-1gdm5rr2knddb5tfsp7n");
     assert_eq!(entry["created"], true);
     assert_eq!(entry["mark"], "m1-rg67bhvrxw5kqxa04a80");
@@ -923,7 +925,7 @@ fn r35_every_stale_or_expired_claim_has_the_next_of_the_table() {
     );
     assert_eq!(
         v["nextNote"],
-        "Re-check each statement before running its next command. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command."
+        "Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command."
     );
     assert_eq!(v["since"], Value::Null);
     assert_eq!(v["now"], NOW);
@@ -960,7 +962,7 @@ fn r35_every_stale_or_expired_claim_has_the_next_of_the_table() {
     assert_eq!(at(&repo, TOMORROW, &["status"])["claims"], v["claims"]);
     assert_eq!(
         v["nextNote"],
-        "Re-check each statement before running its next command. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command."
+        "Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command."
     );
     let mut sorted = ids(&v);
     assert_eq!(sorted.len(), 8);
@@ -1289,10 +1291,13 @@ fn r36_reanchor_with_a_new_statement_replaces_the_claim() {
     assert_eq!(
         keys(&v),
         [
+            "accepted",
             "claim",
             "command",
             "mark",
+            "merged",
             "new",
+            "nextNote",
             "ok",
             "old",
             "retirement",
@@ -1837,7 +1842,11 @@ fn r55_mark_accepts_an_approx_side_and_shows_what_was_marked() {
     let v = at(&repo, "2026-11-20T13:00:00Z", &["mark", &id]);
     assert_eq!(v["command"], "mark");
     assert_eq!(v["marks"].as_array().unwrap().len(), 1);
-    assert_eq!(keys(&v["marks"][0]), ["claim", "claimView", "mark"]);
+    assert_eq!(
+        keys(&v["marks"][0]),
+        ["accepted", "claim", "claimView", "mark"]
+    );
+    assert_eq!(v["marks"][0]["accepted"]["was"], "stale");
     assert_eq!(v["marks"][0]["claim"], id.as_str());
     assert_eq!(v["marks"][0]["mark"], "m1-917ssa66gvj3kfctxcb8");
     let marked = &v["marks"][0]["claimView"];

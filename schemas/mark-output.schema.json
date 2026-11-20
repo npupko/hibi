@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Envelope",
+  "title": "hibi mark output",
   "description": "The success envelope of section 15.1: `{\"ok\": true, \"command\": ...}`\nfollowed by the keys of the command's output (which include\n`warnings`).",
   "type": "object",
   "properties": {
@@ -13,9 +13,14 @@
         "$ref": "#/$defs/MarkResult"
       }
     },
+    "nextNote": {
+      "description": "How to read `next` and `accepted` (section 15.2).",
+      "type": "string"
+    },
     "ok": {
       "description": "Always `true`.",
-      "type": "boolean"
+      "type": "boolean",
+      "const": true
     },
     "warnings": {
       "type": "array",
@@ -24,13 +29,76 @@
       }
     }
   },
+  "additionalProperties": false,
   "required": [
     "ok",
     "command",
     "marks",
+    "nextNote",
     "warnings"
   ],
   "$defs": {
+    "Accepted": {
+      "description": "What a write that produces a mark took over without being told: the\nstate the claim was in before the write, and the sides that were not\n`same` then. The write made the claim fresh; this is the record that it\nwas not. `sides` is empty when the claim was `fresh`, and when it was\n`expired` (only time had run out).",
+      "type": "object",
+      "properties": {
+        "sides": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AcceptedSide"
+          }
+        },
+        "was": {
+          "description": "The claim's state before the write.",
+          "$ref": "#/$defs/ClaimState"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "was",
+        "sides"
+      ]
+    },
+    "AcceptedSide": {
+      "description": "One side that was not `same` when a write accepted its claim.",
+      "type": "object",
+      "properties": {
+        "index": {
+          "description": "0 for the subject.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
+        },
+        "state": {
+          "description": "The side's state before the write.",
+          "$ref": "#/$defs/SideState"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "role",
+        "loc",
+        "state",
+        "reason"
+      ]
+    },
     "Anchor": {
       "description": "An anchor: a locator plus a selector (section 5.3).",
       "type": "object",
@@ -165,6 +233,10 @@
       "description": "One entry of `marks` in the output of `mark`.",
       "type": "object",
       "properties": {
+        "accepted": {
+          "description": "The state the claim was in before this mark and the sides that were\nnot `same`.",
+          "$ref": "#/$defs/Accepted"
+        },
         "claim": {
           "$ref": "#/$defs/ClaimId"
         },
@@ -178,6 +250,7 @@
       "required": [
         "claim",
         "mark",
+        "accepted",
         "claimView"
       ]
     },
@@ -438,7 +511,8 @@
         "orphan_record",
         "unknown_replacement",
         "cache_unavailable",
-        "git_too_old"
+        "git_too_old",
+        "unknown_kind"
       ]
     }
   }

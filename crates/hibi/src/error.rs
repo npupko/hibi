@@ -47,6 +47,8 @@ pub enum Code {
     StoreCorrupt,
     /// Section 12.4.
     StoreLocked,
+    /// A write would take a shard or the store over its size limit.
+    StoreFull,
     /// A file operation failed.
     IoError,
     /// Section 10.4.
@@ -93,7 +95,7 @@ pub enum Code {
 
 impl Code {
     /// Every code, in the order of section 15.4.
-    pub const ALL: [Code; 37] = [
+    pub const ALL: [Code; 38] = [
         Code::Usage,
         Code::InvalidArgument,
         Code::InvalidJson,
@@ -110,6 +112,7 @@ impl Code {
         Code::InvalidUserConfig,
         Code::StoreCorrupt,
         Code::StoreLocked,
+        Code::StoreFull,
         Code::IoError,
         Code::GitFailed,
         Code::GitTooOld,
@@ -152,6 +155,7 @@ impl Code {
             Code::InvalidUserConfig => "invalid_user_config",
             Code::StoreCorrupt => "store_corrupt",
             Code::StoreLocked => "store_locked",
+            Code::StoreFull => "store_full",
             Code::IoError => "io_error",
             Code::GitFailed => "git_failed",
             Code::GitTooOld => "git_too_old",
@@ -188,7 +192,7 @@ impl Code {
                 "Run `hibi schema` to list the input schemas, and check standard input against the one for this command."
             }
             Code::InvalidAnchor => {
-                "Write the anchor as <locator>, <locator>#<symbol>, <locator>::<quote> or <locator>#<symbol>::<quote>, or pass it as JSON on standard input."
+                "Write the anchor as <locator>, <locator>#<symbol>, <locator>::<quote> or <locator>#<symbol>::<quote>, or as a JSON object {\"loc\": \"...\", \"sel\": {...}} when the path contains # or ::."
             }
             Code::InvalidDuration => {
                 "Write the duration as P[nY][nM][nW][nD][T[nH][nM][nS]] with whole numbers, for example P90D."
@@ -196,7 +200,9 @@ impl Code {
             Code::InvalidTime => "Write the time in RFC 3339, for example 2026-11-20T18:04:11Z.",
             Code::InvalidRange => "Use A, A.., A..HEAD, A... or A...HEAD, where A names a commit.",
             Code::NotInitialized => "hibi init",
-            Code::AlreadyInitialized => return None,
+            Code::AlreadyInitialized => {
+                "The store is already there. Run hibi status to see its claims."
+            }
             Code::NotAGitRepository => {
                 "Run the command inside a git work tree, with git installed."
             }
@@ -211,6 +217,9 @@ impl Code {
             }
             Code::StoreLocked => {
                 "Wait for the other hibi process to finish, then run the command again."
+            }
+            Code::StoreFull => {
+                "Nothing was written. Retired claims stay in the store by design, so it does not shrink: the store has to be split into several, or a later hibi version has to raise the limits."
             }
             Code::IoError => return None,
             Code::GitFailed => return None,
@@ -257,12 +266,22 @@ impl fmt::Display for Code {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema, thiserror::Error)]
 #[error("{code}: {message}")]
 #[serde(deny_unknown_fields)]
+#[schemars(transform = remediation_is_required)]
 pub struct Error {
     pub code: Code,
     pub message: String,
     pub remediation: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub index: Option<usize>,
+}
+
+/// Schema of [`Error`]: `remediation` is always written, as a string or as
+/// `null` (section 15.1). The generator leaves an optional field out of
+/// `required`.
+fn remediation_is_required(schema: &mut schemars::Schema) {
+    if let Some(serde_json::Value::Array(required)) = schema.get_mut("required") {
+        required.push("remediation".into());
+    }
 }
 
 /// Text appended to the message of an `internal` error.

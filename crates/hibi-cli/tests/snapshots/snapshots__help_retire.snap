@@ -17,7 +17,7 @@ Arguments:
 
 Options:
       --replaced-by <claim-id>
-          The claim that takes the place of the retired ones. It must exist and must not be one of them
+          The claim that takes the place of the retired ones. It must be a live claim and must not be one of them
 
       --note <text>
           A note stored with each retirement, for example why
@@ -40,9 +40,9 @@ Global options:
           - json:  One JSON object
 
       --now <timestamp>
-          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped
+          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped. The largest value is 9999-12-30T22:00:00Z
 
       --no-cache
-          Do not read or write the cache database. Results are the same with and without the cache
+          Do not read or write the cache database. Every command that does not call the judge gives the same result with and without the cache. The judge commands (triage, suggest-evidence, status --judge-order) may rank differently from one run to the next without it
 ---- standard error ----
 (empty)

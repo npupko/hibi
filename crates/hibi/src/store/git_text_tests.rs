@@ -234,3 +234,132 @@ fn random_suffixes_are_16_hex_digits_and_differ() {
 }
 
 use std::collections::BTreeSet;
+
+/// A write that would take a shard or the store over its limit is refused
+/// with `store_full` before anything is written, so that it can never make
+/// every later read fail. The limits here are small stand-ins for
+/// `MAX_SHARD_BYTES` and `MAX_STORE_BYTES`.
+#[test]
+fn a_write_over_a_size_limit_is_store_full_and_writes_nothing() {
+    let dir = tempfile::tempdir().unwrap();
+    init(dir.path()).unwrap();
+    let store = GitTextStore::open(dir.path()).unwrap();
+    let a = claim("a.md", "one");
+    let b = claim("a.md", "two");
+    let line = |c: &Claim| c.canonical().unwrap().len() as u64 + 1;
+    let roomy = Caps {
+        shard: 1 << 20,
+        store: 1 << 20,
+    };
+    let batch_of = |c: &Claim| Batch {
+        claims: vec![c.clone()],
+        ..Batch::default()
+    };
+    store.append_within(&batch_of(&a), roomy).unwrap();
+    let before = store.snapshot_id().unwrap();
+    let files = |root: &Path| -> Vec<(String, u64)> {
+        shard_paths()
+            .into_iter()
+            .map(|p| {
+                let len = fs::metadata(root.join(&p)).map(|m| m.len()).unwrap_or(0);
+                (p, len)
+            })
+            .collect()
+    };
+    let sizes = files(dir.path());
+
+    // The shard limit: exactly the new size fits, one byte less does not.
+    let after = line(&a) + line(&b);
+    let e = store
+        .append_within(
+            &batch_of(&b),
+            Caps {
+                shard: after - 1,
+                store: 1 << 20,
+            },
+        )
+        .unwrap_err();
+    assert_eq!(e.code, Code::StoreFull);
+    assert!(e.message.contains(&format!("{after} bytes long")), "{e}");
+    assert!(
+        e.message
+            .contains(&format!("limit of {} bytes for one shard", after - 1)),
+        "{e}"
+    );
+    assert!(
+        e.remediation
+            .as_deref()
+            .unwrap()
+            .contains("Nothing was written")
+    );
+    assert_eq!(store.snapshot_id().unwrap(), before);
+    assert_eq!(files(dir.path()), sizes);
+
+    // The store limit, with a mark in another file of the same write.
+    let m = mark(&b, "2026-11-20T18:04:11Z");
+    let both = Batch {
+        claims: vec![b.clone()],
+        marks: vec![m.clone()],
+        ..Batch::default()
+    };
+    let total = after + m.canonical().unwrap().len() as u64 + 1;
+    let e = store
+        .append_within(
+            &both,
+            Caps {
+                shard: 1 << 20,
+                store: total - 1,
+            },
+        )
+        .unwrap_err();
+    assert_eq!(e.code, Code::StoreFull);
+    assert!(
+        e.message.contains(&format!("{total} bytes in total")),
+        "{e}"
+    );
+    assert!(
+        e.message
+            .contains(&format!("limit of {} bytes for the store", total - 1)),
+        "{e}"
+    );
+    assert_eq!(store.snapshot_id().unwrap(), before);
+    assert_eq!(files(dir.path()), sizes);
+
+    // Exactly at both limits the write goes through.
+    store
+        .append_within(
+            &both,
+            Caps {
+                shard: after,
+                store: total,
+            },
+        )
+        .unwrap();
+    let ledger = store.load().unwrap();
+    assert_eq!((ledger.claims.len(), ledger.marks.len()), (2, 1));
+    // The real limits are the ones `append` uses.
+    assert_eq!((CAPS.shard, CAPS.store), (MAX_SHARD_BYTES, MAX_STORE_BYTES));
+}
+
+#[test]
+fn check_room_compares_the_sizes_after_the_write() {
+    let caps = Caps {
+        shard: 100,
+        store: 250,
+    };
+    let w = |now: u64, after: u64| ("s".to_owned(), now, after);
+    assert!(check_room(caps, 0, &[]).is_ok());
+    assert!(check_room(caps, 200, &[w(50, 100)]).is_ok());
+    assert_eq!(
+        check_room(caps, 200, &[w(50, 101)]).unwrap_err().code,
+        Code::StoreFull
+    );
+    // 201 now, a shard grows from 50 to 100: 251 in total.
+    assert_eq!(
+        check_room(caps, 201, &[w(50, 100)]).unwrap_err().code,
+        Code::StoreFull
+    );
+    assert!(check_room(caps, 201, &[w(50, 99)]).is_ok());
+    // A write that only sorts a shard does not grow the store.
+    assert!(check_room(caps, 250, &[w(100, 100)]).is_ok());
+}

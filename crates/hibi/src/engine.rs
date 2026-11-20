@@ -40,10 +40,10 @@ pub use cover::{
     ExclusionReport, ScopeCoverage, ScopeReport, Skipped, UnavailableResource, UncoveredUnit,
     UnitCoverage, changed_since, classify, cover, coverage, covered_keys, unit_texts,
 };
-pub use fresh::{Evaluation, Index, ViewOptions, claim_view, evaluate, next_command};
+pub use fresh::{Evaluation, Index, ViewOptions, accepted, claim_view, evaluate, next_command};
 pub use input::{
     AnchorInput, ClaimInput, MarkInput, ReanchorInput, RetireInput, parse_claim_stdin,
-    parse_mark_stdin,
+    parse_mark_stdin, read_claim_stdin, read_mark_stdin,
 };
 pub use read::{
     ListItem, ListOutput, ListQuery, LocFilter, Since, SinceRun, SinceView, StatusOutput,
@@ -55,18 +55,36 @@ pub use report::{
 };
 pub use resolve::{Resolved, reason_of_no_provider, resolve_anchors, resolve_with, side_of_error};
 pub use types::{
-    ClaimState, ClaimView, Envelope, ErrorEnvelope, NEXT_NOTE, Reason, Role, Side, SideState,
-    TEXT_EXCERPT_CHARS, UnitRef, Warning, WarningCode, excerpt, sh_quote,
+    Accepted, AcceptedSide, ClaimState, ClaimView, Envelope, ErrorEnvelope, NEXT_NOTE, Reason,
+    Role, Side, SideState, TEXT_EXCERPT_CHARS, UnitRef, Warning, WarningCode, excerpt, sh_quote,
 };
 pub use write::{
     ClaimOutput, ClaimResult, MarkOutput, MarkResult, ReanchorOutput, RetireOutput, RetireResult,
-    claim, compact_anchor, mark, reanchor, retire,
+    claim, claim_batch, compact_anchor, mark, mark_batch, reanchor, retire,
 };
 
 use crate::error::Error;
 use crate::git::GitStatus;
 use crate::model::Anchor;
 use crate::store::Ledger;
+
+/// Resolve a claim id argument (section 3.6) against `ids`. An argument
+/// that is not an id or an id prefix is `invalid_argument` and says how to
+/// find the ids.
+pub(crate) fn resolve_claim_arg<'a>(
+    arg: &str,
+    ids: impl IntoIterator<Item = &'a str>,
+) -> Result<&'a str, Error> {
+    crate::canon::resolve_prefix(arg, crate::canon::RecordKind::Claim, ids).map_err(|e| {
+        if e.code == crate::error::Code::InvalidArgument && e.remediation.is_none() {
+            e.with_remediation(
+                "Give a claim id as `hibi list` prints it, or its beginning: c1- and at least four more characters.",
+            )
+        } else {
+            e
+        }
+    })
+}
 
 /// The warnings of a run that resolved `anchors`: the store's warnings,
 /// then `git_too_old` once when git is older than `MIN_GIT` and a `repo:`

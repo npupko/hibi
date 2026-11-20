@@ -208,7 +208,8 @@ fn r28_a_listed_scheme_without_registration_is_unavailable_and_starts_nothing() 
     let v = run(&["providers"]).ok();
     assert_eq!(
         v["schemes"],
-        json!([{"scheme": "ref", "registered": false, "command": null}])
+        json!([{"scheme": "ref", "registered": false, "command": null,
+                "remediation": "[providers.ref]\ncommand = [\"<program>\", \"<argument>\"]"}])
     );
     run(&["list"]).ok();
     run(&["status", "--since", "HEAD"]).ok();
@@ -621,8 +622,9 @@ fn providers_lists_the_registration_and_check_runs_the_conformance_cases() {
     assert_eq!(
         v["schemes"],
         json!([
-            {"scheme": "other", "registered": false, "command": null},
-            {"scheme": "ref", "registered": true, "command": command},
+            {"scheme": "other", "registered": false, "command": null,
+             "remediation": "[providers.other]\ncommand = [\"<program>\", \"<argument>\"]"},
+            {"scheme": "ref", "registered": true, "command": command, "remediation": null},
         ])
     );
     assert_eq!(v["userConfig"], repo.user_config_path().to_str().unwrap());
@@ -715,7 +717,7 @@ fn r56_plain_providers_starts_nothing_and_check_starts_the_provider() {
         let v = run(&["providers"]).ok();
         assert_eq!(
             v["schemes"],
-            json!([{"scheme": "ref", "registered": true, "command": command}])
+            json!([{"scheme": "ref", "registered": true, "command": command, "remediation": null}])
         );
         let human = repo
             .hibi()
@@ -905,11 +907,20 @@ fn providers_reports_repo_aliases_and_the_lines_to_add() {
     let parent = repo.root.parent().unwrap();
 
     let v = repo.json(&["providers"]);
+    // The lines to add are in the JSON too: the agent reads JSON.
+    let to_add = |alias: &str| {
+        format!(
+            "Add these lines to the user config:\n[[repo]]\nroot = \"{root}\"\nalias = \"{alias}\"\npath = \"{}\"",
+            parent.join(alias).display()
+        )
+    };
     assert_eq!(
         v["repos"],
         json!([
-            {"alias": "api", "suggested": "../api", "path": null, "error": "repo_not_allowed"},
-            {"alias": "gone", "suggested": "../gone", "path": null, "error": "repo_not_allowed"},
+            {"alias": "api", "suggested": "../api", "path": null, "error": "repo_not_allowed",
+             "remediation": to_add("api")},
+            {"alias": "gone", "suggested": "../gone", "path": null, "error": "repo_not_allowed",
+             "remediation": to_add("gone")},
         ])
     );
     assert_eq!(v["schemes"], json!([]));
@@ -961,8 +972,10 @@ fn providers_reports_repo_aliases_and_the_lines_to_add() {
     assert_eq!(
         v["repos"],
         json!([
-            {"alias": "api", "suggested": "../api", "path": api, "error": null},
-            {"alias": "gone", "suggested": "../gone", "path": gone, "error": "repo_not_found"},
+            {"alias": "api", "suggested": "../api", "path": api, "error": null,
+             "remediation": null},
+            {"alias": "gone", "suggested": "../gone", "path": gone, "error": "repo_not_found",
+             "remediation": null},
         ])
     );
     let human = repo.human(&["providers"]);
@@ -978,11 +991,20 @@ fn providers_reports_repo_aliases_and_the_lines_to_add() {
         "[[repo]]\nroot = {api:?}\nalias = \"api\"\npath = {api:?}\n\n[[repo]]\nroot = {root:?}\nalias = \"gone\"\npath = {inside:?}\n"
     ));
     let v = repo.json(&["providers"]);
+    // The alias with no entry for this root comes with the lines to add;
+    // the entry that points inside the root has none, since adding lines
+    // would not help.
     assert_eq!(
         v["repos"],
         json!([
-            {"alias": "api", "suggested": "../api", "path": null, "error": "repo_not_allowed"},
-            {"alias": "gone", "suggested": "../gone", "path": inside, "error": "repo_not_allowed"},
+            {"alias": "api", "suggested": "../api", "path": null, "error": "repo_not_allowed",
+             "remediation": to_add("api")},
+            {"alias": "gone", "suggested": "../gone", "path": inside, "error": "repo_not_allowed",
+             "remediation": v["repos"][1]["remediation"]},
         ])
+    );
+    assert!(
+        v["repos"][1]["remediation"].is_null()
+            || !v["repos"][1]["remediation"].as_str().unwrap().is_empty()
     );
 }

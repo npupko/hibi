@@ -8,7 +8,6 @@ use globset::{GlobBuilder, GlobSet, GlobSetBuilder};
 use schemars::JsonSchema;
 use serde::Serialize;
 
-use crate::canon::{self, RecordKind};
 use crate::error::Error;
 use crate::git::{Git, GitStatus, ObjectId, parse_range};
 use crate::model::{Anchor, Claim, ClaimId, Locator, LocatorParts, Mark, Retirement, Timestamp};
@@ -232,7 +231,7 @@ pub fn status(
             query
                 .ids
                 .iter()
-                .map(|arg| canon::resolve_prefix(arg, RecordKind::Claim, all()))
+                .map(|arg| super::resolve_claim_arg(arg, all()))
                 .collect::<Result<_, _>>()?,
         )
     };
@@ -421,11 +420,7 @@ pub fn list(store: &dyn Store, query: &ListQuery) -> Result<ListOutput, Error> {
     let index = Index::new(&ledger);
 
     if let Some(arg) = &query.id {
-        let id = canon::resolve_prefix(
-            arg,
-            RecordKind::Claim,
-            ledger.claims.iter().map(|c| c.id.as_str()),
-        )?;
+        let id = super::resolve_claim_arg(arg, ledger.claims.iter().map(|c| c.id.as_str()))?;
         let claim = index
             .claim(id)
             .ok_or_else(|| Error::internal(format!("claim {id} disappeared from the ledger")))?;

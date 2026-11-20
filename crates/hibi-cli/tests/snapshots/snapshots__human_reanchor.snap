@@ -8,15 +8,19 @@ exit status: 1
 (empty)
 ---- standard error ----
 error: no_change: re-anchoring c1-1axpkdaj5vx9dh84d5ns would produce the same claim
+  fix: The stored anchors are up to date. To record a new check, run hibi mark c1-1axpkdaj5vx9dh84d5ns
 
 $ hibi reanchor c1-1axpkdaj5vx9dh84d5ns --statement 'The cache holds at most 64 entries.' --add-evidence file:src/cache.rs#timeout --recheck P30D
 exit status: 0
 ---- standard output ----
-c1-1axpkdaj5vx9dh84d5ns is retired and replaced by c1-9nrjf3hdaxr6r5vak6rz
+c1-1axpkdaj5vx9dh84d5ns is retired and replaced by the new claim c1-9nrjf3hdaxr6r5vak6rz
   mark m1-rj0me16cqzfacq3vvmmh, retirement r1-1qsk878n9jbrbw4qv76m
-  subject  {"loc":"file:docs/guide.md","sel":{"quote":"The cache holds 64 entries.","prefix":"# Guide\n\n","suffix":" Requests time out after 30 seconds.\n\n- Retries ","pos":9}}
-  evidence 1  {"loc":"file:src/cache.rs","sel":{"quote":"let max_entries = 64;","prefix":"pub fn limit() -> u32 {\n    ","suffix":"\n    max_entries\n}\n\npub fn timeout() -> u32 {\n  ","pos":28,"symbol":"limit"}}
-  evidence 2  {"loc":"file:src/cache.rs","sel":{"quote":"pub fn timeout() -> u32 {","prefix":" {\n    let max_entries = 64;\n    max_entries\n}\n\n","suffix":"\n    30\n}\n","pos":69,"symbol":"timeout"}}
+  subject file:docs/guide.md (sentence "The cache holds 64 entries.", line 3)
+    {"loc":"file:docs/guide.md","sel":{"quote":"The cache holds 64 entries.","prefix":"# Guide\n\n","suffix":" Requests time out after 30 seconds.\n\n- Retries ","pos":9}}
+  evidence 1 file:src/cache.rs (function "limit", lines 1-4)
+    {"loc":"file:src/cache.rs","sel":{"quote":"let max_entries = 64;","prefix":"pub fn limit() -> u32 {\n    ","suffix":"\n    max_entries\n}\n\npub fn timeout() -> u32 {\n  ","pos":28,"symbol":"limit"}}
+  evidence 2 file:src/cache.rs (function "timeout", lines 6-8)
+    {"loc":"file:src/cache.rs","sel":{"quote":"pub fn timeout() -> u32 {","prefix":" {\n    let max_entries = 64;\n    max_entries\n}\n\n","suffix":"\n    30\n}\n","pos":69,"symbol":"timeout"}}
 ---- standard error ----
 (empty)
 
@@ -26,6 +30,7 @@ exit status: 1
 (empty)
 ---- standard error ----
 error: claim_retired: the claim c1-1axpkdaj5vx9dh84d5ns is retired and cannot be re-anchored
+  fix: The claim was replaced by c1-9nrjf3hdaxr6r5vak6rz: run hibi status c1-9nrjf3hdaxr6r5vak6rz
 
 $ hibi status c1-1axpkdaj5vx9dh84d5ns
 exit status: 0

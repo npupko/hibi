@@ -7,9 +7,9 @@ exit status: 0
 ---- standard output ----
 Record a claim: a statement, the unit it is about (the subject) and the units that support it (the evidence). hibi stores the claim and a first mark with the fingerprint of every side as it is now. Run this after you checked that the statement is true.
 
-Every anchor must match exactly one unit.
+Every anchor must match exactly one unit. When one matches several, the error lists each of them with an anchor that selects it. The recheck period must be longer than zero, and the same evidence anchor may be given only once.
 
-Running the same claim again adds a new mark and no second claim. A live claim is the same claim when it has the same statement, recheck period and note, and each of its anchors has the same locator, resolves to the same unit and has the same quote and symbol. Text edited near a quote does not make a new claim. The result says "created": false and gives the id of the existing claim.
+Running the same claim again adds a new mark and no second claim. A live claim is the same claim when it has the same statement, recheck period and note, and each of its anchors has the same locator, resolves to the same unit and has the same symbol, and the same quote when you give one. Text edited near a quote does not make a new claim. The result says "created": false and gives the id of the existing claim, and under "accepted" the state that claim was in before this mark: if it was stale, the sides that had changed are listed, and this run has now marked them as checked.
 
 With --stdin, standard input is a JSON array of claims, written all or not at all:
   [{"statement": "...", "subject": "file:docs/a.md::quoted text",
@@ -58,9 +58,9 @@ Global options:
           - json:  One JSON object
 
       --now <timestamp>
-          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped
+          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped. The largest value is 9999-12-30T22:00:00Z
 
       --no-cache
-          Do not read or write the cache database. Results are the same with and without the cache
+          Do not read or write the cache database. Every command that does not call the judge gives the same result with and without the cache. The judge commands (triage, suggest-evidence, status --judge-order) may rank differently from one run to the next without it
 ---- standard error ----
 (empty)

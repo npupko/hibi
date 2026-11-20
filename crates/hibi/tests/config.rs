@@ -109,14 +109,14 @@ fn rule_violations_are_invalid_config() {
         "version = 1\n[schemes.Bad]",
         "version = 1\n[[scope]]\nname = \"d\"\nresource = \"file:**\"\nkinds = []",
         "version = 1\n[[scope]]\nname = \"d\"\nresource = \"file:**\"",
-        "version = 1\n[[scope]]\nname = \"D\"\nresource = \"file:**\"\nkinds = [\"x\"]",
-        "version = 1\n[[scope]]\nname = \"d\"\nresource = \"file:**\"\nkinds = [\"x\"]\n[[scope]]\nname = \"d\"\nresource = \"file:*\"\nkinds = [\"x\"]",
+        "version = 1\n[[scope]]\nname = \"D\"\nresource = \"file:**\"\nkinds = [\"sentence\"]",
+        "version = 1\n[[scope]]\nname = \"d\"\nresource = \"file:**\"\nkinds = [\"sentence\"]\n[[scope]]\nname = \"d\"\nresource = \"file:*\"\nkinds = [\"sentence\"]",
         "version = 1\n[[scope]]\nname = \"d\"\nresource = \"archctl:x\"\nkinds = [\"x\"]",
-        "version = 1\n[[scope]]\nname = \"d\"\nresource = \"file:[\"\nkinds = [\"x\"]",
-        "version = 1\n[[scope]]\nname = \"d\"\nresource = \"file:**\"\nkinds = [\"x\"]\nexclude = [{ resource = \"file:a\" }]",
-        "version = 1\n[[scope]]\nname = \"d\"\nresource = \"file:**\"\nkinds = [\"x\"]\nexclude = [{ resource = \"file:a\", reason = \" \" }]",
-        "version = 1\n[[scope]]\nname = \"d\"\nresource = \"file:**\"\nkinds = [\"x\"]\nexclude = [{ resource = \"file:a\", reason = \"r\", extra = 1 }]",
-        "version = 1\n[[scope]]\nname = \"d\"\nresource = \"file:**\"\nkinds = [\"x\"]\nexclude = [{ resource = \"nope:a\", reason = \"r\" }]",
+        "version = 1\n[[scope]]\nname = \"d\"\nresource = \"file:[\"\nkinds = [\"sentence\"]",
+        "version = 1\n[[scope]]\nname = \"d\"\nresource = \"file:**\"\nkinds = [\"sentence\"]\nexclude = [{ resource = \"file:a\" }]",
+        "version = 1\n[[scope]]\nname = \"d\"\nresource = \"file:**\"\nkinds = [\"sentence\"]\nexclude = [{ resource = \"file:a\", reason = \" \" }]",
+        "version = 1\n[[scope]]\nname = \"d\"\nresource = \"file:**\"\nkinds = [\"sentence\"]\nexclude = [{ resource = \"file:a\", reason = \"r\", extra = 1 }]",
+        "version = 1\n[[scope]]\nname = \"d\"\nresource = \"file:**\"\nkinds = [\"sentence\"]\nexclude = [{ resource = \"nope:a\", reason = \"r\" }]",
     ] {
         assert_eq!(code(text), Code::InvalidConfig, "{text}");
     }

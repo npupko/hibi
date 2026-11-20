@@ -15,7 +15,8 @@ use crate::store::Ledger;
 
 use super::resolve::Resolved;
 use super::types::{
-    ClaimState, ClaimView, Reason, Role, Side, SideState, TEXT_EXCERPT_CHARS, UnitRef, excerpt,
+    Accepted, AcceptedSide, ClaimState, ClaimView, Reason, Role, Side, SideState,
+    TEXT_EXCERPT_CHARS, UnitRef, excerpt,
 };
 
 /// A ledger with its marks grouped by claim and its retired claims as a
@@ -197,6 +198,27 @@ pub fn evaluate<'m>(
         expires_at,
         sides,
     })
+}
+
+/// The record of what a write accepted for `claim`, from its evaluation
+/// before the write.
+pub fn accepted(claim: &Claim, eval: &Evaluation<'_>) -> Accepted {
+    Accepted {
+        was: eval.state,
+        sides: claim
+            .sides()
+            .zip(&eval.sides)
+            .enumerate()
+            .filter(|(_, (_, (state, _)))| *state != SideState::Same)
+            .map(|(index, (anchor, (state, reason)))| AcceptedSide {
+                index,
+                role: Role::of(index),
+                loc: anchor.loc.clone(),
+                state: *state,
+                reason: *reason,
+            })
+            .collect(),
+    }
 }
 
 /// Which side texts a [`ClaimView`] carries.

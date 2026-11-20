@@ -7,21 +7,21 @@ use std::collections::BTreeSet;
 use schemars::JsonSchema;
 use serde::Serialize;
 
-use crate::canon::{self, RecordKind};
 use crate::duration;
 use crate::error::{Code, Error};
 use crate::git::GitStatus;
 use crate::model::{Anchor, Claim, ClaimId, Mark, MarkId, MarkSide, Retirement, RetirementId};
-use crate::model::{Locator, SelectorKey, Timestamp, parse_compact};
+use crate::model::{Locator, SelectorKey, Timestamp, parse_compact, same_quote};
 use crate::provider::{Providers, Unit};
 use crate::store::{Batch, Ledger, Store};
 
-use super::fresh::{Index, ViewOptions, claim_view, evaluate, next_command};
+use super::fresh::{Index, ViewOptions, accepted, claim_view, evaluate, next_command};
 use super::input::{AnchorInput, ClaimInput, MarkInput, ReanchorInput, RetireInput};
 use super::resolve::{Resolved, describe_unit, resolve_anchors};
 use super::run_warnings;
 use super::types::{
-    ClaimView, Nullable, Reason, SideState, TEXT_EXCERPT_CHARS, Warning, excerpt, sh_quote,
+    Accepted, ClaimView, NEXT_NOTE, Nullable, Reason, SideState, TEXT_EXCERPT_CHARS, Warning,
+    excerpt, sh_quote,
 };
 
 /// One entry of `claims` in the output of `claim`.
@@ -32,6 +32,10 @@ pub struct ClaimResult {
     /// `false` when the claim already existed and only received a mark.
     pub created: bool,
     pub mark: MarkId,
+    /// For a claim that already existed: the state it was in before this
+    /// mark and the sides that were not `same`. `null` for a new claim.
+    #[schemars(with = "Nullable<Accepted>")]
+    pub accepted: Option<Accepted>,
     pub claim: ClaimView,
 }
 
@@ -40,6 +44,8 @@ pub struct ClaimResult {
 #[serde(rename_all = "camelCase")]
 pub struct ClaimOutput {
     pub claims: Vec<ClaimResult>,
+    /// How to read `next` and `accepted` (section 15.2).
+    pub next_note: String,
     pub warnings: Vec<Warning>,
 }
 
@@ -49,6 +55,9 @@ pub struct ClaimOutput {
 pub struct MarkResult {
     pub claim: ClaimId,
     pub mark: MarkId,
+    /// The state the claim was in before this mark and the sides that were
+    /// not `same`.
+    pub accepted: Accepted,
     pub claim_view: ClaimView,
 }
 
@@ -57,6 +66,8 @@ pub struct MarkResult {
 #[serde(rename_all = "camelCase")]
 pub struct MarkOutput {
     pub marks: Vec<MarkResult>,
+    /// How to read `next` and `accepted` (section 15.2).
+    pub next_note: String,
     pub warnings: Vec<Warning>,
 }
 
@@ -68,8 +79,16 @@ pub struct ReanchorOutput {
     pub new: ClaimId,
     pub mark: MarkId,
     pub retirement: RetirementId,
+    /// True when `new` is a claim that already existed: the old claim was
+    /// merged into it, and no claim was written.
+    pub merged: bool,
+    /// The state the old claim was in before this write and its sides that
+    /// were not `same`, by the old claim's side numbers.
+    pub accepted: Accepted,
     /// The view of the new claim.
     pub claim: ClaimView,
+    /// How to read `next` and `accepted` (section 15.2).
+    pub next_note: String,
     pub warnings: Vec<Warning>,
 }
 
@@ -124,7 +143,13 @@ fn unresolved_error(index: usize, anchor: &Anchor, r: &Resolved, new: bool) -> O
             Code::SideMissing,
             format!("{what} resolves to no unit ({reason}): {detail}"),
         ),
-        SideState::Ambiguous => Error::new(Code::SideAmbiguous, format!("{what}: {detail}")),
+        SideState::Ambiguous => {
+            let detail = match r {
+                Resolved::Several(units) if new => candidates(anchor, units),
+                _ => detail,
+            };
+            Error::new(Code::SideAmbiguous, format!("{what}: {detail}"))
+        }
         _ => {
             let e = Error::new(
                 Code::SideUnavailable,
@@ -199,6 +224,39 @@ fn advise(providers: &mut Providers, loc: &Locator, e: Error) -> Error {
     }
 }
 
+/// The units a new anchor matched, one per line of the message: kind,
+/// label, line, and an anchor that selects that unit. The anchor is the
+/// compact form when the candidates differ in symbol, and otherwise the
+/// unit's completed anchor as JSON, which carries the context and position
+/// that tell the candidates apart.
+fn candidates(anchor: &Anchor, units: &[Unit]) -> String {
+    let by_symbol = units.iter().all(|u| u.sel.symbol.is_some())
+        && units
+            .iter()
+            .enumerate()
+            .all(|(i, u)| units[..i].iter().all(|v| v.sel.symbol != u.sel.symbol));
+    let lines: Vec<String> = units
+        .iter()
+        .map(|u| {
+            let label = u.label.as_deref().unwrap_or(&u.key);
+            let line = u
+                .range
+                .map_or_else(String::new, |r| format!(", line {}", r.line));
+            let select = match (&u.sel.symbol, by_symbol && anchor.loc.is_file_or_repo()) {
+                (Some(symbol), true) => format!("{}#{symbol}", anchor.loc),
+                _ => serde_json::to_string(&Anchor::new(anchor.loc.clone(), u.sel.clone()))
+                    .unwrap_or_default(),
+            };
+            format!("{} {:?}{line}: {select}", u.kind, excerpt(label, 80))
+        })
+        .collect();
+    format!(
+        "the anchor matches {} units; use one of these anchors: {}",
+        units.len(),
+        lines.join("; ")
+    )
+}
+
 /// The write checks of `claim` step 2 for a new anchor: first that applies.
 fn check_new<'r>(index: usize, anchor: &Anchor, r: &'r Resolved) -> Result<&'r Unit, Error> {
     if let Some(e) = unresolved_error(index, anchor, r, true) {
@@ -232,7 +290,46 @@ fn check_new<'r>(index: usize, anchor: &Anchor, r: &'r Resolved) -> Result<&'r U
         };
         return Err(Error::new(code, format!("{what}: {why}")));
     }
+    // The caller asked for text that the resolved unit does not hold: the
+    // symbol found the unit and the provider replaced the quote.
+    if let (Some(asked), Some(completed)) = (&anchor.sel.quote, &unit.sel.quote)
+        && !same_quote(asked, completed)
+    {
+        let text = unit.text.as_deref().map_or_else(String::new, |t| {
+            format!(", text {:?}", excerpt(t, TEXT_EXCERPT_CHARS))
+        });
+        return Err(Error::new(
+            Code::SelectorNotExact,
+            format!(
+                "{what}: the quote {:?} does not occur in the unit the anchor resolves to; found {}{text}",
+                excerpt(asked, TEXT_EXCERPT_CHARS),
+                describe_unit(unit)
+            ),
+        )
+        .with_remediation(
+            "Quote text that occurs in that unit, or leave the quote out to anchor the whole unit.",
+        ));
+    }
     Ok(unit)
+}
+
+/// `invalid_argument` when two evidence sides are the same anchor: equal
+/// locator, the same resolved unit and an equal completed selector.
+/// `sides` holds the completed anchor and the unit key of every side, the
+/// subject first; the subject is not compared.
+fn duplicate_evidence(sides: &[(Anchor, &str)]) -> Result<(), Error> {
+    for (j, (b, b_key)) in sides.iter().enumerate().skip(2) {
+        for (i, (a, a_key)) in sides.iter().enumerate().take(j).skip(1) {
+            if a == b && a_key == b_key {
+                return Err(Error::invalid_argument(format!(
+                    "evidence {i} and evidence {j} are the same anchor ({})",
+                    a.loc
+                ))
+                .with_remediation("Give each evidence anchor once."));
+            }
+        }
+    }
+    Ok(())
 }
 
 /// A resolution as it will be once the completed selector is stored: the
@@ -268,14 +365,29 @@ fn check_recheck(recheck: &str, now: Timestamp) -> Result<(), Error> {
 }
 
 fn resolve_claim_id<'a>(ledger: &'a Ledger, arg: &str) -> Result<&'a Claim, Error> {
-    let id = canon::resolve_prefix(
-        arg,
-        RecordKind::Claim,
-        ledger.claims.iter().map(|c| c.id.as_str()),
-    )?;
+    let id = super::resolve_claim_arg(arg, ledger.claims.iter().map(|c| c.id.as_str()))?;
     ledger
         .claim(id)
         .ok_or_else(|| Error::internal(format!("claim {id} disappeared from the ledger")))
+}
+
+/// `claim_retired` for a write on a retired claim. The remediation names
+/// the claim that replaced it when there is one, and otherwise shows the
+/// retired claim's record.
+fn retired_error(ledger: &Ledger, claim: &Claim, what: &str) -> Error {
+    let replacement = ledger
+        .retirements_of(&claim.id)
+        .find_map(|r| r.replaced_by.clone());
+    let e = Error::new(
+        Code::ClaimRetired,
+        format!("the claim {} is retired and cannot be {what}", claim.id),
+    );
+    match replacement {
+        Some(new) => e.with_remediation(format!(
+            "The claim was replaced by {new}: run hibi status {new}"
+        )),
+        None => e.with_remediation(format!("hibi list {}", claim.id)),
+    }
 }
 
 fn push_mark(batch: &mut Batch, mark: &Mark) {
@@ -367,6 +479,11 @@ fn prepare_claim(
     })
 }
 
+/// One element of `claim` once its mark is built: the claim that is marked,
+/// whether this run creates it, the mark, the resolutions of its sides and
+/// what the mark took over.
+type ClaimOutcome = (Claim, bool, MarkId, Vec<Resolved>, Option<Accepted>);
+
 /// One element of `claim` after its anchors resolved: the claim built from
 /// the completed selectors, and the resolutions it was built from.
 struct Built<'p> {
@@ -379,18 +496,23 @@ struct Built<'p> {
 /// True when `existing`, whose stored anchors resolve to `resolved`, is
 /// the same claim as `new` in the sense a caller means: equal statement,
 /// `recheck` and `note`, the same number of sides, and for each side the
-/// same locator, the same resolved unit, and an equal completed `quote`
-/// and `symbol`. The context and position of a quote (`prefix`, `suffix`,
-/// `pos`) do not count: they change when text near the quote is edited.
+/// same locator, the same resolved unit and an equal completed `symbol`.
+/// The completed `quote` must be equal too when the caller gave a quote.
+/// When the caller gave none, the provider chose the quote from the unit's
+/// content, and it changes whenever that content does: it is then not
+/// part of what the caller named. The context and position of a quote
+/// (`prefix`, `suffix`, `pos`) never count: they change when text near the
+/// quote is edited.
 fn same_claim(existing: &Claim, resolved: &[Resolved], new: &Built<'_>) -> bool {
     same_fields(existing, &new.claim)
         && existing
             .sides()
             .zip(resolved)
             .zip(new.claim.sides().zip(&new.resolved))
-            .all(|((old, old_r), (side, new_r))| {
-                old.sel.quote == side.sel.quote
-                    && old.sel.symbol == side.sel.symbol
+            .zip(&new.input.anchors)
+            .all(|(((old, old_r), (side, new_r)), asked)| {
+                old.sel.symbol == side.sel.symbol
+                    && (asked.sel.quote.is_none() || old.sel.quote == side.sel.quote)
                     && match (old_r.unit(), new_r.unit()) {
                         (Some(a), Some(b)) => a.key == b.key,
                         _ => false,
@@ -430,6 +552,33 @@ pub fn claim(
     indexed: bool,
     now: Timestamp,
 ) -> Result<ClaimOutput, Vec<Error>> {
+    let elements: Vec<Result<ClaimInput, Error>> = inputs.iter().cloned().map(Ok).collect();
+    claim_elements(store, providers, git, &elements, indexed, now)
+}
+
+/// `hibi claim --stdin`: [`claim`] for the elements that
+/// [`read_claim_stdin`](super::read_claim_stdin) gave. An element that did
+/// not parse is reported with its own error next to the errors of the
+/// elements that did, so one run names every failing element, in index
+/// order. Nothing is written when any element fails.
+pub fn claim_batch(
+    store: &dyn Store,
+    providers: &mut Providers,
+    git: &GitStatus,
+    elements: &[Result<ClaimInput, Error>],
+    now: Timestamp,
+) -> Result<ClaimOutput, Vec<Error>> {
+    claim_elements(store, providers, git, elements, true, now)
+}
+
+fn claim_elements(
+    store: &dyn Store,
+    providers: &mut Providers,
+    git: &GitStatus,
+    inputs: &[Result<ClaimInput, Error>],
+    indexed: bool,
+    now: Timestamp,
+) -> Result<ClaimOutput, Vec<Error>> {
     let ledger = store.load().map_err(|e| vec![e])?;
     let index = Index::new(&ledger);
     let mut errors: Vec<Error> = Vec::new();
@@ -437,6 +586,14 @@ pub fn claim(
     // Step 1.
     let mut prepared: Vec<Option<NewClaim>> = Vec::with_capacity(inputs.len());
     for (i, input) in inputs.iter().enumerate() {
+        let input = match input {
+            Ok(input) => input,
+            Err(e) => {
+                errors.push(e.clone().with_index(i));
+                prepared.push(None);
+                continue;
+            }
+        };
         match prepare_claim(input, providers, now) {
             Ok(p) => prepared.push(Some(p)),
             Err(e) => {
@@ -458,10 +615,14 @@ pub fn claim(
         let rs: Vec<Resolved> = resolved.by_ref().take(p.anchors.len()).collect();
         let claim = (|| -> Result<Claim, Error> {
             let mut stored = Vec::with_capacity(rs.len());
+            let mut keyed = Vec::with_capacity(rs.len());
             for (n, (a, r)) in p.anchors.iter().zip(&rs).enumerate() {
                 let unit = check_new(n, a, r).map_err(|e| advise(providers, &a.loc, e))?;
-                stored.push(Anchor::new(a.loc.clone(), unit.sel.clone()));
+                let anchor = Anchor::new(a.loc.clone(), unit.sel.clone());
+                keyed.push((anchor.clone(), unit.key.as_str()));
+                stored.push(anchor);
             }
+            duplicate_evidence(&keyed)?;
             let subject = stored.remove(0);
             Claim::new(
                 &p.statement,
@@ -507,7 +668,7 @@ pub fn claim(
     // Step 4: the mark of each element, on its own claim or on the live
     // claim it is the same as.
     let mut batch = Batch::default();
-    let mut results: Vec<(Claim, bool, MarkId, Vec<Resolved>)> = Vec::new();
+    let mut results: Vec<ClaimOutcome> = Vec::new();
     for b in &built {
         let id = b.claim.id.as_str();
         let existing = if is_live(id) {
@@ -556,7 +717,22 @@ pub fn claim(
                     batch.claims.push(target.clone());
                 }
                 push_mark(&mut batch, &mark);
-                results.push((target.clone(), !exists, mark.id, target_resolved));
+                // What the mark takes over for a claim that was in the
+                // store before this run.
+                let before = match index.claim(target.id.as_str()) {
+                    None => None,
+                    Some(_) => {
+                        let marks = index.marks_of(target.id.as_str());
+                        match evaluate(target, marks, false, &target_resolved, now) {
+                            Ok(eval) => Some(accepted(target, &eval)),
+                            Err(e) => {
+                                errors.push(e.with_index(b.index));
+                                continue;
+                            }
+                        }
+                    }
+                };
+                results.push((target.clone(), !exists, mark.id, target_resolved, before));
             }
         }
     }
@@ -566,18 +742,23 @@ pub fn claim(
     }
 
     let mut claims = Vec::with_capacity(results.len());
-    for (claim, created, mark, rs) in &results {
+    for (claim, created, mark, rs, before) in &results {
         let view = view_after(claim, &index, &batch, rs, ViewOptions::default(), now)
             .map_err(|e| vec![e])?;
         claims.push(ClaimResult {
             id: claim.id.clone(),
             created: *created,
             mark: mark.clone(),
+            accepted: before.clone(),
             claim: view,
         });
     }
     store.append(&batch).map_err(|e| vec![e])?;
-    Ok(ClaimOutput { claims, warnings })
+    Ok(ClaimOutput {
+        claims,
+        next_note: NEXT_NOTE.to_owned(),
+        warnings,
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -599,19 +780,48 @@ pub fn mark(
     indexed: bool,
     now: Timestamp,
 ) -> Result<MarkOutput, Vec<Error>> {
+    let elements: Vec<Result<MarkInput, Error>> = inputs.iter().cloned().map(Ok).collect();
+    mark_elements(store, providers, git, &elements, indexed, now)
+}
+
+/// `hibi mark --stdin`: [`mark`] for the elements that
+/// [`read_mark_stdin`](super::read_mark_stdin) gave, reporting every
+/// failing element as [`claim_batch`] does.
+pub fn mark_batch(
+    store: &dyn Store,
+    providers: &mut Providers,
+    git: &GitStatus,
+    elements: &[Result<MarkInput, Error>],
+    now: Timestamp,
+) -> Result<MarkOutput, Vec<Error>> {
+    mark_elements(store, providers, git, elements, true, now)
+}
+
+fn mark_elements(
+    store: &dyn Store,
+    providers: &mut Providers,
+    git: &GitStatus,
+    inputs: &[Result<MarkInput, Error>],
+    indexed: bool,
+    now: Timestamp,
+) -> Result<MarkOutput, Vec<Error>> {
     let ledger = store.load().map_err(|e| vec![e])?;
     let index = Index::new(&ledger);
     let mut errors: Vec<Error> = Vec::new();
 
     let mut targets: Vec<Option<&Claim>> = Vec::with_capacity(inputs.len());
     for (i, input) in inputs.iter().enumerate() {
+        let input = match input {
+            Ok(input) => input,
+            Err(e) => {
+                errors.push(e.clone().with_index(i));
+                targets.push(None);
+                continue;
+            }
+        };
         let target = resolve_claim_id(&ledger, &input.claim).and_then(|c| {
             if index.is_retired(c.id.as_str()) {
-                Err(Error::new(
-                    Code::ClaimRetired,
-                    format!("the claim {} is retired and cannot be marked", c.id),
-                )
-                .without_remediation())
+                Err(retired_error(&ledger, c, "marked"))
             } else {
                 Ok(c)
             }
@@ -630,9 +840,11 @@ pub fn mark(
     let warnings = run_warnings(&ledger, git, all.iter().copied()).map_err(|e| vec![e])?;
 
     let mut batch = Batch::default();
-    let mut results: Vec<(&Claim, MarkId, Vec<Resolved>)> = Vec::new();
+    let mut results: Vec<(&Claim, MarkId, Vec<Resolved>, Accepted)> = Vec::new();
     for (i, (input, target)) in inputs.iter().zip(&targets).enumerate() {
-        let Some(claim) = *target else { continue };
+        let (Ok(input), Some(claim)) = (input, *target) else {
+            continue;
+        };
         let rs: Vec<Resolved> = resolved.by_ref().take(claim.side_count()).collect();
         let failure = claim
             .sides()
@@ -663,7 +875,11 @@ pub fn mark(
             Err(e) => errors.push(e.with_index(i)),
             Ok(m) => {
                 push_mark(&mut batch, &m);
-                results.push((claim, m.id, rs));
+                let marks = index.marks_of(claim.id.as_str());
+                let before = evaluate(claim, marks, false, &rs, now)
+                    .map(|eval| accepted(claim, &eval))
+                    .map_err(|e| vec![e])?;
+                results.push((claim, m.id, rs, before));
             }
         }
     }
@@ -677,16 +893,21 @@ pub fn mark(
         approx_excerpt: true,
     };
     let mut marks = Vec::with_capacity(results.len());
-    for (claim, mark, rs) in &results {
+    for (claim, mark, rs, before) in &results {
         let view = view_after(claim, &index, &batch, rs, options, now).map_err(|e| vec![e])?;
         marks.push(MarkResult {
             claim: claim.id.clone(),
             mark: mark.clone(),
+            accepted: before.clone(),
             claim_view: view,
         });
     }
     store.append(&batch).map_err(|e| vec![e])?;
-    Ok(MarkOutput { marks, warnings })
+    Ok(MarkOutput {
+        marks,
+        next_note: NEXT_NOTE.to_owned(),
+        warnings,
+    })
 }
 
 // ---------------------------------------------------------------------------
@@ -746,11 +967,7 @@ pub fn reanchor(
     let index = Index::new(&ledger);
     let old = resolve_claim_id(&ledger, &input.claim)?;
     if index.is_retired(old.id.as_str()) {
-        return Err(Error::new(
-            Code::ClaimRetired,
-            format!("the claim {} is retired and cannot be re-anchored", old.id),
-        )
-        .without_remediation());
+        return Err(retired_error(&ledger, old, "re-anchored"));
     }
 
     // Step 1.
@@ -811,6 +1028,21 @@ pub fn reanchor(
         plan.push((a.parse()?, true));
     }
 
+    // What the write takes over: the old claim as it stands now, by its
+    // own stored anchors. A kept side that changed is marked by this write.
+    let old_anchors: Vec<&Anchor> = old.sides().collect();
+    let old_resolved = resolve_anchors(providers, &old_anchors);
+    let before = accepted(
+        old,
+        &evaluate(
+            old,
+            index.marks_of(old.id.as_str()),
+            false,
+            &old_resolved,
+            now,
+        )?,
+    );
+
     // Step 3.
     let anchors: Vec<&Anchor> = plan.iter().map(|(a, _)| a).collect();
     let resolved = resolve_anchors(providers, &anchors);
@@ -832,6 +1064,12 @@ pub fn reanchor(
         .zip(&units)
         .map(|((a, _), u)| Anchor::new(a.loc.clone(), u.sel.clone()))
         .collect();
+    let keyed: Vec<(Anchor, &str)> = stored
+        .iter()
+        .cloned()
+        .zip(units.iter().map(|u| u.key.as_str()))
+        .collect();
+    duplicate_evidence(&keyed)?;
     let sides = mark_sides(&stored, &units);
     let subject = stored.remove(0);
     let new = Claim::new(statement, subject, stored, recheck, note)?;
@@ -841,7 +1079,11 @@ pub fn reanchor(
         return Err(Error::new(
             Code::NoChange,
             format!("re-anchoring {} would produce the same claim", old.id),
-        ));
+        )
+        .with_remediation(format!(
+            "The stored anchors are up to date. To record a new check, run hibi mark {}",
+            old.id
+        )));
     }
     if index.is_retired(new.id.as_str()) {
         return Err(Error::new(
@@ -856,7 +1098,8 @@ pub fn reanchor(
 
     // Step 6.
     let mut batch = Batch::default();
-    if index.claim(new.id.as_str()).is_none() {
+    let merged = index.claim(new.id.as_str()).is_some();
+    if !merged {
         batch.claims.push(new.clone());
     }
     let mark = Mark::new(new.id.clone(), now, by.clone(), sides, None)?;
@@ -879,7 +1122,10 @@ pub fn reanchor(
         new: new.id,
         mark: mark.id,
         retirement: retirement.id,
+        merged,
+        accepted: before,
         claim: view,
+        next_note: NEXT_NOTE.to_owned(),
         warnings,
     })
 }
@@ -917,6 +1163,13 @@ pub fn retire(
                 Code::ClaimNotFound => e.recode(Code::InvalidArgument),
                 _ => e,
             })?;
+            if index.is_retired(c.id.as_str()) {
+                return Err(Error::invalid_argument(format!(
+                    "--replaced-by names {}, which is retired; a replacement must be a live claim",
+                    c.id
+                ))
+                .with_remediation(format!("hibi list {}", c.id)));
+            }
             if targets.iter().any(|t| t.id == c.id) {
                 return Err(Error::invalid_argument(format!(
                     "--replaced-by names {}, which is one of the claims being retired",
@@ -960,8 +1213,17 @@ pub fn retire(
     Ok(RetireOutput { retired, warnings })
 }
 
-/// Parse one compact anchor argument (section 5.5). Errors are
-/// `invalid_anchor`.
+/// Parse one anchor argument: compact syntax (section 5.5), or, when the
+/// argument starts with `{`, an anchor as a JSON object
+/// `{"loc": ..., "sel": {...}}`. The JSON form is how a path that contains
+/// `#` or `::`, or a selector for an external scheme, is given on the
+/// command line. Errors are `invalid_anchor`.
 pub fn compact_anchor(arg: &str) -> Result<AnchorInput, Error> {
+    if arg.trim_start().starts_with('{') {
+        let anchor: Anchor = serde_json::from_str(arg)
+            .map_err(|e| Error::invalid_anchor(format!("the JSON anchor does not parse: {e}")))?;
+        anchor.sel.validate()?;
+        return Ok(AnchorInput::Anchor(anchor));
+    }
     parse_compact(arg).map(|_| AnchorInput::Compact(arg.to_owned()))
 }

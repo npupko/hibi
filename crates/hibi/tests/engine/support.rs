@@ -116,6 +116,8 @@ pub struct World {
     pub overrides: HashMap<Anchor, Result<Vec<Unit>, ProviderError>>,
     pub info_error: Option<ProviderError>,
     pub selectors: Vec<SelectorKey>,
+    /// The `kinds` of `info`. Empty, the default, means not stated.
+    pub kinds: Vec<String>,
     pub render: bool,
     /// Answer `resolve` with one result too few.
     pub short_answers: bool,
@@ -132,6 +134,7 @@ pub fn world(selectors: &[SelectorKey]) -> Shared {
         overrides: HashMap::new(),
         info_error: None,
         selectors: selectors.to_vec(),
+        kinds: Vec::new(),
         render: true,
         short_answers: false,
         log: Vec::new(),
@@ -189,6 +192,7 @@ impl Provider for Mem {
             return Err(e.clone());
         }
         self.info.selectors = w.selectors.clone();
+        self.info.kinds = w.kinds.clone();
         self.info.capabilities = Capabilities {
             units: true,
             render: w.render,

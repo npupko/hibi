@@ -263,7 +263,8 @@ pub struct SchemeDecl {
 pub struct Scope {
     pub name: String,
     pub resource: ResourcePattern,
-    /// Non-empty. Not validated against any provider's kind list.
+    /// Non-empty. For a scope on scheme `file` or `repo`, every entry is a
+    /// kind of the file provider; for an external scheme any name.
     pub kinds: Vec<String>,
     pub exclude: Vec<Exclusion>,
 }
@@ -454,6 +455,20 @@ impl RepoConfig {
                 return Err(invalid_config(format!(
                     "{REPO_CONFIG_PATH}: {what}: kinds must be a non-empty list of non-empty names"
                 )));
+            }
+            // The kinds of the built-in file provider are known here; a
+            // kind it never returns would select no unit. The kinds of an
+            // external scheme are known only to its provider.
+            #[cfg(feature = "file")]
+            if matches!(resource.scheme(), "file" | "repo") {
+                let known = crate::provider::file::KINDS;
+                if let Some(unknown) = s.kinds.iter().find(|k| !known.contains(&k.as_str())) {
+                    return Err(invalid_config(format!(
+                        "{REPO_CONFIG_PATH}: {what}: {unknown:?} is not a unit kind of {} resources; the kinds are {}",
+                        resource.scheme(),
+                        known.join(", ")
+                    )));
+                }
             }
             let mut exclude = Vec::with_capacity(s.exclude.len());
             for x in s.exclude {
@@ -1084,5 +1099,43 @@ mod tests {
         assert!(ResourcePattern::parse("file:").is_err());
         assert!(ResourcePattern::parse("file:[").is_err());
         assert!(ResourcePattern::parse("nocolon").is_err());
+    }
+
+    fn scope_config(resource: &str, kinds: &str) -> String {
+        format!(
+            "version = 1\n[repos]\napi = \"../api\"\n[schemes.arch]\n[[scope]]\nname = \"docs\"\nresource = \"{resource}\"\nkinds = {kinds}\n"
+        )
+    }
+
+    /// A kind the file provider never returns would select no unit, so it
+    /// is refused for a scope on scheme `file` or `repo`. The message names
+    /// the scope, the kind and the kinds that exist.
+    #[cfg(feature = "file")]
+    #[test]
+    fn a_file_or_repo_scope_with_an_unknown_kind_is_invalid_config() {
+        for resource in ["file:docs/**/*.md", "repo:api//docs/**/*.md"] {
+            let e = RepoConfig::parse(&scope_config(resource, "[\"sentence\", \"sentense\"]"))
+                .unwrap_err();
+            assert_eq!(e.code, Code::InvalidConfig, "{resource}");
+            assert!(e.message.contains("scope docs"), "{}", e.message);
+            assert!(e.message.contains("\"sentense\""), "{}", e.message);
+            assert!(
+                e.message.contains(&crate::provider::file::KINDS.join(", ")),
+                "{}",
+                e.message
+            );
+            // Every kind of the file provider is accepted.
+            let all = format!("{:?}", crate::provider::file::KINDS);
+            let config = RepoConfig::parse(&scope_config(resource, &all)).unwrap();
+            assert_eq!(config.scopes[0].kinds, crate::provider::file::KINDS);
+        }
+    }
+
+    /// The kinds of an external scheme are known only to its provider, so
+    /// the configuration accepts any name there.
+    #[test]
+    fn a_scope_on_an_external_scheme_accepts_any_kind() {
+        let config = RepoConfig::parse(&scope_config("arch:system", "[\"sentense\"]")).unwrap();
+        assert_eq!(config.scopes[0].kinds, ["sentense"]);
     }
 }

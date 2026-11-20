@@ -9,6 +9,8 @@ Build a new claim from an existing one and retire the old one, in one write. Cla
 
 Sides you do not replace are resolved again from their stored anchors, and every stored selector is refreshed from the unit it resolves to. Without any option this refreshes the selectors of a claim whose text moved or was reworded slightly.
 
+The new claim's mark covers every side, also the ones you did not replace: a kept side that changed since the last mark is marked as checked by this command. The result lists those sides under "accepted", with the state the old claim was in. When the new claim equals a claim that already exists, the old claim is merged into it and the result says "merged": true.
+
 Evidence numbers start at 1 and always refer to the old claim's list.
 
 Usage: hibi reanchor [OPTIONS] <claim-id>
@@ -57,9 +59,9 @@ Global options:
           - json:  One JSON object
 
       --now <timestamp>
-          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped
+          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped. The largest value is 9999-12-30T22:00:00Z
 
       --no-cache
-          Do not read or write the cache database. Results are the same with and without the cache
+          Do not read or write the cache database. Every command that does not call the judge gives the same result with and without the cache. The judge commands (triage, suggest-evidence, status --judge-order) may rank differently from one run to the next without it
 ---- standard error ----
 (empty)

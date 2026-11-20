@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Envelope",
+  "title": "hibi init output",
   "description": "The success envelope of section 15.1: `{\"ok\": true, \"command\": ...}`\nfollowed by the keys of the command's output (which include\n`warnings`).",
   "type": "object",
   "properties": {
@@ -16,7 +16,8 @@
     },
     "ok": {
       "description": "Always `true`.",
-      "type": "boolean"
+      "type": "boolean",
+      "const": true
     },
     "root": {
       "description": "The root: the git top level that now holds `.hibi/`.",
@@ -29,6 +30,7 @@
       }
     }
   },
+  "additionalProperties": false,
   "required": [
     "ok",
     "command",
@@ -61,7 +63,8 @@
         "orphan_record",
         "unknown_replacement",
         "cache_unavailable",
-        "git_too_old"
+        "git_too_old",
+        "unknown_kind"
       ]
     }
   }

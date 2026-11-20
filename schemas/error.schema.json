@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "ErrorEnvelope",
+  "title": "hibi error output",
   "description": "The failure envelope of section 15.1: `{\"ok\": false, \"command\",\n\"errors\"}`. `errors` has at least one entry.",
   "type": "object",
   "properties": {
@@ -11,13 +11,16 @@
       "type": "array",
       "items": {
         "$ref": "#/$defs/Error"
-      }
+      },
+      "minItems": 1
     },
     "ok": {
       "description": "Always `false`.",
-      "type": "boolean"
+      "type": "boolean",
+      "const": false
     }
   },
+  "additionalProperties": false,
   "required": [
     "ok",
     "command",
@@ -106,6 +109,11 @@
           "description": "Section 12.4.",
           "type": "string",
           "const": "store_locked"
+        },
+        {
+          "description": "A write would take a shard or the store over its size limit.",
+          "type": "string",
+          "const": "store_full"
         },
         {
           "description": "A file operation failed.",
@@ -242,7 +250,8 @@
       "additionalProperties": false,
       "required": [
         "code",
-        "message"
+        "message",
+        "remediation"
       ]
     }
   }

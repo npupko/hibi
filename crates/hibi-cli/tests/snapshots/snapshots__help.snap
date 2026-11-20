@@ -43,10 +43,10 @@ Global options:
           - json:  One JSON object
 
       --now <timestamp>
-          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped
+          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped. The largest value is 9999-12-30T22:00:00Z
 
       --no-cache
-          Do not read or write the cache database. Results are the same with and without the cache
+          Do not read or write the cache database. Every command that does not call the judge gives the same result with and without the cache. The judge commands (triage, suggest-evidence, status --judge-order) may rank differently from one run to the next without it
 
 Anchors:
   An anchor names one unit of a resource: a sentence, a heading, a function.
@@ -54,9 +54,12 @@ Anchors:
     file:src/retry.rs#fetch_with_retry     the declaration with this symbol
     file:docs/retry.md::capped at 30 s     the unit that contains this quote
     file:src/retry.rs#retry::MAX = 5       a quote inside a symbol
-  Use repo:<alias>//<path> for a file in a sibling repository. A path that
-  contains '#' or '::', and any selector for an external scheme, is given as
-  JSON on standard input (claim --stdin).
+  Use repo:<alias>//<path> for a file in a sibling repository.
+  A quote given together with a symbol must occur inside that declaration.
+  An anchor may also be a JSON object, wherever an anchor is accepted:
+    {"loc": "file:docs/a#b.md", "sel": {"quote": "capped at 30 s"}}
+  Use that form for a path that contains '#' or '::', for a selector of an
+  external scheme, and for an anchor that an error message printed.
 
 Output:
   The result is JSON when standard output is not a terminal, or with

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "ConformanceCase",
+  "title": "hibi provider conformance case",
   "description": "One conformance case (section 13.6).",
   "type": "object",
   "properties": {

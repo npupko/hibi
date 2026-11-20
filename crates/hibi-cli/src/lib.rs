@@ -14,6 +14,7 @@ mod human;
 use std::ffi::OsString;
 use std::io::{IsTerminal, Write};
 use std::process::ExitCode;
+use std::sync::Mutex;
 
 use clap::error::ErrorKind;
 use clap::{ArgAction, CommandFactory, FromArgMatches};
@@ -155,6 +156,11 @@ fn fail(format: Format, command: &str, errors: Vec<Error>) -> ExitCode {
 /// return the exit status: 0 when the command ran, 1 on any error (spec
 /// section 15.1).
 pub fn run(args: &[OsString]) -> ExitCode {
+    // For the test of the panic report only: there is no other way to make
+    // a correct binary panic. Not in the help or the reference.
+    if std::env::var_os(PANIC_TRIGGER).is_some_and(|v| v == "1") {
+        panic!("{PANIC_TRIGGER} is 1, which asks for this panic to test how one is reported");
+    }
     let format = format_of(args);
     let parsed = Cli::command()
         .try_get_matches_from(args)
@@ -197,17 +203,52 @@ pub fn run(args: &[OsString]) -> ExitCode {
     }
 }
 
+/// The environment variable that makes [`run`] panic when its value is `1`.
+/// Only the test of the panic report sets it.
+const PANIC_TRIGGER: &str = "HIBI_TEST_PANIC";
+
+/// The text and place of the first panic of this process, kept by the
+/// panic hook of [`main`] for the error it is reported as.
+static PANIC: Mutex<Option<String>> = Mutex::new(None);
+
 /// The entry point of the binary. A panic is reported as `internal` with
-/// exit status 1, so that no run exits with another status.
+/// exit status 1 in the format of the run, so that no run exits with
+/// another status. The standard panic message is not printed: in JSON
+/// format standard error stays empty (spec section 15.1), and in human
+/// format the error is printed once, in the form of every other error.
 pub fn main() -> ExitCode {
     let args: Vec<OsString> = std::env::args_os().collect();
+    std::panic::set_hook(Box::new(|info| {
+        let payload = info.payload();
+        let text = payload
+            .downcast_ref::<&str>()
+            .copied()
+            .or_else(|| payload.downcast_ref::<String>().map(String::as_str))
+            .unwrap_or("a panic without a message");
+        let place = info
+            .location()
+            .map(|l| format!(" at {}:{}:{}", l.file(), l.line(), l.column()))
+            .unwrap_or_default();
+        if let Ok(mut first) = PANIC.lock() {
+            first.get_or_insert(format!("{text}{place}"));
+        }
+    }));
     match std::panic::catch_unwind(|| run(&args)) {
         Ok(code) => code,
-        Err(_) => fail(
-            format_of(&args),
-            &command_argument(&args),
-            vec![Error::internal("hibi stopped on an unexpected condition")],
-        ),
+        Err(_) => {
+            let what = PANIC
+                .lock()
+                .ok()
+                .and_then(|mut first| first.take())
+                .unwrap_or_else(|| "a panic that left no message".to_owned());
+            fail(
+                format_of(&args),
+                &command_argument(&args),
+                vec![Error::internal(format!(
+                    "hibi stopped on an unexpected condition: {what}"
+                ))],
+            )
+        }
     }
 }
 

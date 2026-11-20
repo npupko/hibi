@@ -19,6 +19,7 @@ fn setup() -> (Shared, Providers, MemStore) {
             unit("k1", "note", "Retries are capped at 5."),
             unit("k2", "note", "The cap is configurable."),
             unit("k3", "note", "Timeouts are 30 seconds."),
+            unit("k4", "note", "Nothing is cached."),
         ],
     );
     let p = providers(&w, &["t"]);
@@ -556,7 +557,7 @@ fn wide(store: &MemStore, p: &mut Providers) -> ClaimId {
         evidence: vec![
             json_anchor("t:a", key_sel("k2")),
             json_anchor("t:a", key_sel("k3")),
-            json_anchor("t:a", key_sel("k2")),
+            json_anchor("t:a", key_sel("k4")),
         ],
         recheck: Some("P30D".into()),
         note: Some("how to check".into()),
@@ -601,7 +602,7 @@ fn r36_reanchor_writes_claim_mark_and_retirement() {
         new.evidence,
         vec![
             anchor("t:a", key_sel("k3")),
-            anchor("t:a", key_sel("k2")),
+            anchor("t:a", key_sel("k4")),
             anchor("t:a", key_sel("k1")),
         ]
     );
@@ -949,6 +950,608 @@ fn reanchor_onto_another_live_claim_marks_it() {
     assert_eq!(out.claim.mark.as_ref(), Some(&out.mark));
     assert_eq!(view(&store, &mut p, &a).state, ClaimState::Retired);
     assert_eq!(view(&store, &mut p, &b).state, ClaimState::Fresh);
+}
+
+/// Spec 15.3: every failing element of a standard-input batch is reported
+/// in one run, whether it fails to parse or fails a later check; nothing
+/// is written.
+#[test]
+fn a_batch_reports_malformed_elements_together_with_the_other_failures() {
+    let (_w, mut p, store) = setup();
+    let text = r#"[
+        {"statement":"a","subject":{"loc":"t:a","sel":{"key":"nope"}}},
+        {"statement":"b","subject":{"loc":"t:a","sel":{"key":"k1"}},"bogus":1},
+        {"statement":"c","subject":{"loc":"t:a","sel":{"key":"k1"}},"recheck":"P1X"},
+        {"statement":"d","subject":{"loc":"t:a","sel":{"key":"k2"}}},
+        {"statement":"e","subject":{"loc":"t:a","sel":{"nokey":1}}}
+    ]"#;
+    let elements = engine::read_claim_stdin(text).unwrap();
+    assert_eq!(elements.len(), 5);
+    let errors = engine::claim_batch(&store, &mut p, &no_git(), &elements, now()).unwrap_err();
+    assert_eq!(
+        codes(&errors),
+        [
+            (Code::SideMissing, Some(0)),
+            (Code::InvalidJson, Some(1)),
+            (Code::InvalidDuration, Some(2)),
+            (Code::InvalidAnchor, Some(4)),
+        ]
+    );
+    assert_eq!(store.counts(), (0, 0, 0));
+    // The strict reader still refuses the document on its own.
+    assert_eq!(
+        codes(&engine::parse_claim_stdin(text).unwrap_err()),
+        [(Code::InvalidJson, Some(1)), (Code::InvalidAnchor, Some(4))]
+    );
+
+    let good = claim(&store, &mut p, &[on("S", "k1")], false).unwrap();
+    let id = good.claims[0].id.to_string();
+    let text = format!(r#"["c1-zzzz", {{"id":"{id}"}}, "{id}", 3, {{"claim":"not an id"}}]"#);
+    let elements = engine::read_mark_stdin(&text).unwrap();
+    let errors = engine::mark_batch(&store, &mut p, &no_git(), &elements, now()).unwrap_err();
+    assert_eq!(
+        codes(&errors),
+        [
+            (Code::ClaimNotFound, Some(0)),
+            (Code::InvalidJson, Some(1)),
+            (Code::InvalidJson, Some(3)),
+            (Code::InvalidArgument, Some(4)),
+        ]
+    );
+    assert_eq!(store.counts(), (1, 1, 0));
+}
+
+// ---------------------------------------------------------------------------
+// What a write accepted
+// ---------------------------------------------------------------------------
+
+/// Every write that produces a mark says what state the claim was in
+/// before, and which sides were not `same`, and carries `nextNote`.
+#[test]
+fn writes_report_the_state_they_accepted() {
+    let (w, mut p, store) = setup();
+    let input = || ClaimInput {
+        evidence: vec![json_anchor("t:a", key_sel("k2"))],
+        ..on("S", "k1")
+    };
+    // A new claim accepted nothing.
+    let first = claim(&store, &mut p, &[input()], false).unwrap();
+    let id = first.claims[0].id.clone();
+    assert_eq!(first.claims[0].accepted, None);
+    assert_eq!(first.next_note, engine::NEXT_NOTE);
+    assert!(engine::NEXT_NOTE.contains("retire the claim"));
+
+    // The same claim again while fresh: was fresh, nothing to list.
+    let again = claim(&store, &mut p, &[input()], false).unwrap();
+    let a = again.claims[0].accepted.as_ref().unwrap();
+    assert_eq!((a.was, a.sides.len()), (ClaimState::Fresh, 0));
+
+    // The evidence changes: the claim is stale, and each write that marks
+    // it says so.
+    edit(&w, "t:a", "k2", "The cap is fixed.");
+    let stale = serde_json::json!({
+        "was": "stale",
+        "sides": [{"index": 1, "role": "evidence", "loc": "t:a", "state": "changed",
+                   "reason": "fingerprint_differs"}]
+    });
+    let again = claim(&store, &mut p, &[input()], false).unwrap();
+    assert!(!again.claims[0].created);
+    assert_eq!(
+        serde_json::to_value(&again.claims[0].accepted).unwrap(),
+        stale
+    );
+    assert_eq!(again.claims[0].claim.state, ClaimState::Fresh);
+
+    edit(&w, "t:a", "k2", "The cap is fixed at 9.");
+    let marked = engine::mark(
+        &store,
+        &mut p,
+        &no_git(),
+        &[MarkInput::new(id.as_str())],
+        false,
+        ts("2026-12-01T00:00:00Z"),
+    )
+    .unwrap();
+    assert_eq!(
+        serde_json::to_value(&marked.marks[0].accepted).unwrap(),
+        stale
+    );
+    assert_eq!(marked.next_note, engine::NEXT_NOTE);
+    let json = serde_json::to_value(&marked).unwrap();
+    assert_eq!(json["nextNote"], engine::NEXT_NOTE);
+    assert_eq!(json["marks"][0]["accepted"], stale);
+
+    // `reanchor` that replaces the subject also marks the kept evidence,
+    // which changed: the output says the old claim was stale and why.
+    edit(&w, "t:a", "k2", "The cap is gone.");
+    let out = reanchor(
+        &store,
+        &mut p,
+        ReanchorInput {
+            claim: id.to_string(),
+            subject: Some(json_anchor("t:a", key_sel("k3"))),
+            ..ReanchorInput::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(serde_json::to_value(&out.accepted).unwrap(), stale);
+    assert!(!out.merged);
+    assert_eq!(out.next_note, engine::NEXT_NOTE);
+    assert_eq!(out.claim.state, ClaimState::Fresh);
+
+    // An expired claim: was expired, no side to list.
+    let timed = claim(
+        &store,
+        &mut p,
+        &[ClaimInput {
+            recheck: Some("P1D".into()),
+            ..on("T", "k1")
+        }],
+        false,
+    )
+    .unwrap();
+    let marked = engine::mark(
+        &store,
+        &mut p,
+        &no_git(),
+        &[MarkInput::new(timed.claims[0].id.as_str())],
+        false,
+        ts("2027-06-01T00:00:00Z"),
+    )
+    .unwrap();
+    let a = &marked.marks[0].accepted;
+    assert_eq!((a.was, a.sides.len()), (ClaimState::Expired, 0));
+}
+
+/// `reanchor` that lands on another live claim says it merged; a
+/// replacement named in `retire` must be live; a write on a retired claim
+/// points at its replacement.
+#[test]
+fn merges_and_retired_claims_are_said_plainly() {
+    let (_w, mut p, store) = setup();
+    let a = claim_at(&store, &mut p, on("A", "k1"), NOW);
+    let b = claim_at(&store, &mut p, on("B", "k1"), NOW);
+    let c = claim_at(&store, &mut p, on("C", "k2"), NOW);
+    // Re-anchoring A to B's statement gives B's id.
+    let out = reanchor(
+        &store,
+        &mut p,
+        ReanchorInput {
+            claim: a.to_string(),
+            statement: Some("B".into()),
+            ..ReanchorInput::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(out.new, b);
+    assert!(out.merged);
+    assert_eq!(serde_json::to_value(&out).unwrap()["merged"], true);
+    assert_eq!(store.counts().0, 3);
+
+    // A is retired with a replacement: a write on it names B.
+    let e = engine::mark(
+        &store,
+        &mut p,
+        &no_git(),
+        &[MarkInput::new(a.as_str())],
+        false,
+        now(),
+    )
+    .unwrap_err();
+    assert_eq!(e[0].code, Code::ClaimRetired);
+    assert_eq!(
+        e[0].remediation.as_deref(),
+        Some(format!("The claim was replaced by {b}: run hibi status {b}").as_str())
+    );
+    let e = reanchor(
+        &store,
+        &mut p,
+        ReanchorInput {
+            claim: a.to_string(),
+            statement: Some("Z".into()),
+            ..ReanchorInput::default()
+        },
+    )
+    .unwrap_err();
+    assert_eq!(e.code, Code::ClaimRetired);
+    assert!(e.remediation.as_deref().unwrap().contains(b.as_str()));
+
+    // A retired claim cannot be a replacement.
+    let before = store.counts();
+    let e = engine::retire(
+        &store,
+        &RetireInput {
+            claims: vec![c.to_string()],
+            replaced_by: Some(a.to_string()),
+            ..RetireInput::default()
+        },
+        now(),
+    )
+    .unwrap_err();
+    assert_eq!(e.code, Code::InvalidArgument);
+    assert!(e.message.contains("is retired"), "{e}");
+    assert_eq!(store.counts(), before);
+
+    // Retired without a replacement: the remediation shows its record.
+    retire(&store, &c);
+    let e = engine::mark(
+        &store,
+        &mut p,
+        &no_git(),
+        &[MarkInput::new(c.as_str())],
+        false,
+        now(),
+    )
+    .unwrap_err();
+    assert_eq!(
+        e[0].remediation.as_deref(),
+        Some(format!("hibi list {c}").as_str())
+    );
+
+    // `no_change` and a malformed id say what to do.
+    let e = reanchor(
+        &store,
+        &mut p,
+        ReanchorInput {
+            claim: b.to_string(),
+            ..ReanchorInput::default()
+        },
+    )
+    .unwrap_err();
+    assert_eq!(e.code, Code::NoChange);
+    assert_eq!(
+        e.remediation.as_deref(),
+        Some(
+            format!("The stored anchors are up to date. To record a new check, run hibi mark {b}")
+                .as_str()
+        )
+    );
+    let e = engine::mark(
+        &store,
+        &mut p,
+        &no_git(),
+        &[MarkInput::new("not-an-id")],
+        false,
+        now(),
+    )
+    .unwrap_err();
+    assert_eq!(e[0].code, Code::InvalidArgument);
+    assert!(e[0].remediation.as_deref().unwrap().contains("hibi list"));
+}
+
+/// An anchor argument that starts with `{` is a JSON anchor, so that a
+/// path with `#` or `::` can be given on the command line.
+#[test]
+fn an_anchor_argument_may_be_a_json_object() {
+    let a = engine::compact_anchor(r#"{"loc":"file:docs/a#b::c.md","sel":{"quote":"x"}}"#)
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert_eq!(a.loc, "file:docs/a#b::c.md");
+    assert_eq!(a.sel.quote.as_deref(), Some("x"));
+    let a = engine::compact_anchor(r#" {"loc":"t:a","sel":{"key":"k1"}}"#)
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert_eq!(a.sel.key.as_deref(), Some("k1"));
+    for bad in [
+        r#"{"loc":"file:a.md"}"#,
+        r#"{"loc":"file:a.md","sel":{"prefix":"p"}}"#,
+        r#"{"loc":"nope","sel":{}}"#,
+        r#"{"loc":"file:a.md","sel":{}} trailing"#,
+        "{",
+    ] {
+        let e = engine::compact_anchor(bad).unwrap_err();
+        assert_eq!(e.code, Code::InvalidAnchor, "{bad}");
+        assert!(
+            e.remediation.as_deref().unwrap().contains("JSON object"),
+            "{bad}"
+        );
+    }
+    // The compact form is unchanged.
+    let a = engine::compact_anchor("file:a.md#sym::q")
+        .unwrap()
+        .parse()
+        .unwrap();
+    assert_eq!(
+        (a.sel.symbol.as_deref(), a.sel.quote.as_deref()),
+        (Some("sym"), Some("q"))
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Rules for new claims and new sides
+// ---------------------------------------------------------------------------
+
+/// A recheck period of zero would expire the claim at once: it is
+/// `invalid_duration` in `claim`, in `reanchor` and when a stored claim is
+/// read. `duration::parse` itself accepts it.
+#[test]
+fn a_zero_recheck_period_is_invalid() {
+    let (_w, mut p, store) = setup();
+    for zero in ["P0D", "PT0S", "P0Y0M0W0DT0H0M0S"] {
+        assert!(hibi::duration::parse(zero).is_ok());
+        let errors = claim(
+            &store,
+            &mut p,
+            &[ClaimInput {
+                recheck: Some(zero.into()),
+                ..on("S", "k1")
+            }],
+            false,
+        )
+        .unwrap_err();
+        assert_eq!(codes(&errors), [(Code::InvalidDuration, None)], "{zero}");
+        assert!(
+            errors[0].message.contains("longer than zero"),
+            "{}",
+            errors[0]
+        );
+    }
+    assert_eq!(store.counts(), (0, 0, 0));
+    let id = claim(&store, &mut p, &[on("S", "k1")], false)
+        .unwrap()
+        .claims[0]
+        .id
+        .clone();
+    let e = reanchor(
+        &store,
+        &mut p,
+        ReanchorInput {
+            claim: id.to_string(),
+            recheck: Some("PT0S".into()),
+            ..ReanchorInput::default()
+        },
+    )
+    .unwrap_err();
+    assert_eq!(e.code, Code::InvalidDuration);
+    assert_eq!(store.counts(), (1, 1, 0));
+    // On read: a stored record with a zero period does not parse.
+    let stored = serde_json::to_value(&store.ledger().claims[0]).unwrap();
+    let mut zero = stored.clone();
+    zero["recheck"] = "P0D".into();
+    assert!(serde_json::from_value::<hibi::model::Claim>(zero).is_err());
+    let mut one = stored;
+    one["recheck"] = "P1D".into();
+    // (The id no longer matches the body, which is a different error.)
+    let e = serde_json::from_value::<hibi::model::Claim>(one).unwrap_err();
+    assert!(!e.to_string().contains("zero"), "{e}");
+}
+
+/// The same evidence anchor twice is `invalid_argument`, in `claim` and
+/// for an added side in `reanchor`. The subject may also be evidence.
+#[test]
+fn duplicate_evidence_anchors_are_refused() {
+    let (_w, mut p, store) = setup();
+    let twice = ClaimInput {
+        evidence: vec![
+            json_anchor("t:a", key_sel("k2")),
+            json_anchor("t:a", key_sel("k3")),
+            json_anchor("t:a", key_sel("k2")),
+        ],
+        ..on("S", "k1")
+    };
+    let errors = claim(&store, &mut p, &[twice], false).unwrap_err();
+    assert_eq!(codes(&errors), [(Code::InvalidArgument, None)]);
+    assert!(
+        errors[0]
+            .message
+            .contains("evidence 1 and evidence 3 are the same anchor"),
+        "{}",
+        errors[0]
+    );
+    assert_eq!(store.counts(), (0, 0, 0));
+
+    // The subject as evidence is allowed.
+    let own = ClaimInput {
+        evidence: vec![json_anchor("t:a", key_sel("k1"))],
+        ..on("S", "k1")
+    };
+    let id = claim(&store, &mut p, &[own], false).unwrap().claims[0]
+        .id
+        .clone();
+    let e = reanchor(
+        &store,
+        &mut p,
+        ReanchorInput {
+            claim: id.to_string(),
+            add_evidence: vec![json_anchor("t:a", key_sel("k1"))],
+            ..ReanchorInput::default()
+        },
+    )
+    .unwrap_err();
+    assert_eq!(e.code, Code::InvalidArgument);
+    assert!(e.message.contains("evidence 1 and evidence 2"), "{e}");
+    assert_eq!(store.counts(), (1, 1, 0));
+}
+
+/// A new anchor with a symbol and a quote: when the provider resolves the
+/// symbol and completes the selector with another quote, the text asked
+/// for is not in that unit and the write fails with `selector_not_exact`.
+/// A stored anchor in the same situation keeps resolving by its symbol.
+#[test]
+fn a_new_anchor_whose_quote_is_not_in_the_resolved_unit_is_refused() {
+    let w = file_world();
+    let body = "fn delay_ms() -> u64 { 300 * 2 }";
+    let unit_for = |quote: &str| Unit {
+        sel: Selector {
+            quote: Some(quote.into()),
+            symbol: Some("delay_ms".into()),
+            prefix: Some(String::new()),
+            suffix: Some(String::new()),
+            pos: Some(0),
+            ..Selector::default()
+        },
+        ..unit("function:delay_ms", "function", body)
+    };
+    // Whatever quote is asked, this provider answers with the default
+    // quote of the declaration, as the file provider does for a quote that
+    // does not occur in it.
+    set(
+        &w,
+        "file:r.rs",
+        vec![unit_for("fn delay_ms() -> u64 { 300 * 2 }")],
+    );
+    let mut p = providers(&w, &["file"]);
+    let store = MemStore::new();
+    let asked = |quote: &str| ClaimInput {
+        subject: json_anchor(
+            "file:r.rs",
+            Selector {
+                quote: Some(quote.into()),
+                symbol: Some("delay_ms".into()),
+                ..Selector::default()
+            },
+        ),
+        ..claim_input("S", "file:r.rs", &[])
+    };
+    w.borrow_mut().overrides.insert(
+        hibi::model::Anchor::new(
+            loc("file:r.rs"),
+            Selector {
+                quote: Some("300 * 7".into()),
+                symbol: Some("delay_ms".into()),
+                ..Selector::default()
+            },
+        ),
+        Ok(vec![unit_for(body)]),
+    );
+    let errors = claim(&store, &mut p, &[asked("300 * 7")], false).unwrap_err();
+    assert_eq!(codes(&errors), [(Code::SelectorNotExact, None)]);
+    assert!(
+        errors[0].message.contains("\"300 * 7\" does not occur"),
+        "{}",
+        errors[0]
+    );
+    assert!(errors[0].message.contains("delay_ms"), "{}", errors[0]);
+    assert!(
+        errors[0]
+            .remediation
+            .as_deref()
+            .unwrap()
+            .contains("leave the quote out"),
+        "{:?}",
+        errors[0].remediation
+    );
+    assert_eq!(store.counts(), (0, 0, 0));
+
+    // A quote that differs from the completed one only in whitespace is
+    // the same quote.
+    w.borrow_mut().overrides.clear();
+    w.borrow_mut().overrides.insert(
+        hibi::model::Anchor::new(
+            loc("file:r.rs"),
+            Selector {
+                quote: Some("fn delay_ms()   -> u64 {\n 300 * 2 }".into()),
+                symbol: Some("delay_ms".into()),
+                ..Selector::default()
+            },
+        ),
+        Ok(vec![unit_for(body)]),
+    );
+    let ok = claim(
+        &store,
+        &mut p,
+        &[asked("fn delay_ms()   -> u64 {\n 300 * 2 }")],
+        false,
+    )
+    .unwrap();
+    let id = ok.claims[0].id.clone();
+
+    // A replaced side in `reanchor` is checked the same way; the kept
+    // stored anchor is not.
+    w.borrow_mut().overrides.insert(
+        hibi::model::Anchor::new(
+            loc("file:r.rs"),
+            Selector {
+                quote: Some("nowhere".into()),
+                symbol: Some("delay_ms".into()),
+                ..Selector::default()
+            },
+        ),
+        Ok(vec![unit_for(body)]),
+    );
+    let e = reanchor(
+        &store,
+        &mut p,
+        ReanchorInput {
+            claim: id.to_string(),
+            subject: Some(json_anchor(
+                "file:r.rs",
+                Selector {
+                    quote: Some("nowhere".into()),
+                    symbol: Some("delay_ms".into()),
+                    ..Selector::default()
+                },
+            )),
+            ..ReanchorInput::default()
+        },
+    )
+    .unwrap_err();
+    assert_eq!(e.code, Code::SelectorNotExact);
+    assert_eq!(store.counts(), (1, 1, 0));
+}
+
+/// `side_ambiguous` on a new anchor lists every candidate with its kind,
+/// label and an anchor that selects it.
+#[test]
+fn an_ambiguous_new_anchor_lists_each_candidate_with_an_anchor() {
+    let w = file_world();
+    let def = |pos: u64, text: &str| Unit {
+        sel: Selector {
+            quote: Some(text.into()),
+            symbol: Some("max_size".into()),
+            prefix: Some(String::new()),
+            suffix: Some(String::new()),
+            pos: Some(pos),
+            ..Selector::default()
+        },
+        ..at(
+            unit(&format!("function:max_size@{pos}"), "function", text),
+            pos as usize,
+            pos as usize + 1,
+        )
+    };
+    set(
+        &w,
+        "file:dup.py",
+        vec![
+            def(0, "def max_size(): return 1"),
+            def(30, "def max_size(): return 2"),
+        ],
+    );
+    let mut p = providers(&w, &["file"]);
+    let store = MemStore::new();
+    let input = ClaimInput {
+        subject: json_anchor("file:dup.py", symbol_sel("max_size")),
+        ..claim_input("S", "file:dup.py", &[])
+    };
+    w.borrow_mut().overrides.insert(
+        hibi::model::Anchor::new(loc("file:dup.py"), symbol_sel("max_size")),
+        Ok(vec![
+            def(0, "def max_size(): return 1"),
+            def(30, "def max_size(): return 2"),
+        ]),
+    );
+    let errors = claim(&store, &mut p, &[input], false).unwrap_err();
+    assert_eq!(codes(&errors), [(Code::SideAmbiguous, None)]);
+    let m = &errors[0].message;
+    assert!(m.contains("matches 2 units"), "{m}");
+    // The same symbol twice: each candidate comes with its full anchor.
+    for (line, pos, text) in [(1, 0, "return 1"), (31, 30, "return 2")] {
+        assert!(
+            m.contains(&format!(
+                "function \"def max_size(): {text}\", line {line}: "
+            )),
+            "{m}"
+        );
+        assert!(m.contains(&format!("\"pos\":{pos}")), "{m}");
+    }
+    assert!(
+        m.contains(r#"{"loc":"file:dup.py","sel":{"quote":"def max_size(): return 1""#),
+        "{m}"
+    );
+    assert_eq!(store.counts(), (0, 0, 0));
 }
 
 // ---------------------------------------------------------------------------

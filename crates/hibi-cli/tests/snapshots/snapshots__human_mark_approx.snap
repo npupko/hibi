@@ -8,10 +8,11 @@ exit status: 0
 2 claims: 1 fresh, 1 stale, 0 expired, 0 retired
 
 c1-dccp96583661kgfj4rex  stale  Workers restart every night.
+  marked 2026-11-20T12:00:00Z (m1-4bx4fmte0fvadk3a769w)
   subject  file:docs/ops.md  changed (fingerprint_differs), found approximately  sentence "Workers are restarted every night.", line 3
   next: hibi mark c1-dccp96583661kgfj4rex
 
-Re-check each stale or expired statement before running its next command.
+Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ---- standard error ----
 (empty)
 
@@ -19,9 +20,12 @@ $ hibi mark c1-dccp96583661kgfj4rex
 exit status: 0
 ---- standard output ----
 c1-dccp96583661kgfj4rex  marked  m1-pr6h6rcx1rgxc0bhp2jp
+  was stale: subject file:docs/ops.md changed (fingerprint_differs); now marked
   subject  file:docs/ops.md  same, found approximately  sentence "Workers are restarted every night.", line 3
     | Workers are restarted every night.
   next: hibi reanchor c1-dccp96583661kgfj4rex
+
+A next command here only brings a stored anchor up to date. Look at what the anchor points to now, then run it.
 ---- standard error ----
 (empty)
 
@@ -31,6 +35,7 @@ exit status: 0
 2 claims: 2 fresh (1 drifted), 0 stale, 0 expired, 0 retired
 
 c1-dccp96583661kgfj4rex  fresh  Workers restart every night.
+  marked 2026-11-20T12:00:00Z (m1-pr6h6rcx1rgxc0bhp2jp)
   subject  file:docs/ops.md  same, found approximately  sentence "Workers are restarted every night.", line 3
   next: hibi reanchor c1-dccp96583661kgfj4rex
 

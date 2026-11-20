@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Unit",
+  "title": "hibi unit",
   "description": "The unit object of section 13.3.",
   "type": "object",
   "properties": {

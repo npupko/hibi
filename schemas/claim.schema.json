@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Claim",
+  "title": "hibi claim record",
   "description": "A claim (section 3.2). Immutable.",
   "type": "object",
   "properties": {
@@ -23,7 +23,7 @@
       "minLength": 1
     },
     "recheck": {
-      "description": "A duration in the grammar of section 9.4.",
+      "description": "A duration in the grammar of section 9.4, longer than zero.",
       "type": [
         "string",
         "null"

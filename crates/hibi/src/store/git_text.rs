@@ -922,12 +922,9 @@ fn replace_shard(hibi: &Path, kind: ShardKind, shard: u8, bytes: &[u8]) -> Resul
 /// record already in the shard is kept. Nothing is written when the result
 /// would equal the file's current bytes.
 fn merge_shard<T: ShardRecord>(
-    hibi: &Path,
-    kind: ShardKind,
-    shard: u8,
     current: &ShardData<T>,
     new: &[(String, Vec<u8>)],
-) -> Result<(), Error> {
+) -> Result<Option<Vec<u8>>, Error> {
     let mut added: BTreeMap<&str, &[u8]> = BTreeMap::new();
     for (id, line) in new {
         let stored = current
@@ -939,7 +936,7 @@ fn merge_shard<T: ShardRecord>(
         }
     }
     if added.is_empty() && current.sorted {
-        return Ok(());
+        return Ok(None);
     }
     let mut out = Vec::new();
     let mut push = |line: &[u8]| {
@@ -956,7 +953,51 @@ fn merge_shard<T: ShardRecord>(
     for (_, line) in added {
         push(line);
     }
-    replace_shard(hibi, kind, shard, &out)
+    Ok(Some(out))
+}
+
+/// The size limits a write must keep, so that a write can never produce a
+/// store that every later read refuses (section 12.3).
+#[derive(Debug, Clone, Copy)]
+struct Caps {
+    shard: u64,
+    store: u64,
+}
+
+const CAPS: Caps = Caps {
+    shard: MAX_SHARD_BYTES,
+    store: MAX_STORE_BYTES,
+};
+
+/// `store_full` when a shard to be written would be longer than the shard
+/// limit, or the store after the write would be larger than the store
+/// limit. `total` is the size of all shard files now; `writes` holds, per
+/// shard to be written, its name, its size now and its size after.
+fn check_room(caps: Caps, total: u64, writes: &[(String, u64, u64)]) -> Result<(), Error> {
+    for (shown, _, after) in writes {
+        if *after > caps.shard {
+            return Err(Error::new(
+                Code::StoreFull,
+                format!(
+                    "the write would make {shown} {after} bytes long, more than the limit of {} bytes for one shard",
+                    caps.shard
+                ),
+            ));
+        }
+    }
+    let before: u64 = writes.iter().map(|(_, now, _)| *now).sum();
+    let after: u64 = writes.iter().map(|(_, _, after)| *after).sum();
+    let new_total = total.saturating_sub(before).saturating_add(after);
+    if new_total > caps.store {
+        return Err(Error::new(
+            Code::StoreFull,
+            format!(
+                "the write would make the shard files hold {new_total} bytes in total, more than the limit of {} bytes for the store (they hold {total} bytes now)",
+                caps.store
+            ),
+        ));
+    }
+    Ok(())
 }
 
 /// Check every record of a batch before anything is locked or written:
@@ -1012,6 +1053,18 @@ impl Store for GitTextStore {
     }
 
     fn append(&self, batch: &Batch) -> Result<(), Error> {
+        self.append_within(batch, CAPS)
+    }
+
+    fn snapshot_id(&self) -> Result<String, Error> {
+        self.snapshot()
+    }
+}
+
+impl GitTextStore {
+    /// [`Store::append`] with the size limits given, so that the refusal
+    /// can be tested without writing a store of the real limits.
+    fn append_within(&self, batch: &Batch, caps: Caps) -> Result<(), Error> {
         verify_records(batch)?;
         // Step 1: the checks that read metadata only, then the lock.
         check_store(&self.hibi)?;
@@ -1066,20 +1119,41 @@ impl Store for GitTextStore {
                 .push((r.id.as_str().to_owned(), r.canonical()?));
         }
 
-        // Step 3: claims shards in ascending order, then marks shards.
+        // Step 3: render every shard that changes, claims shards in
+        // ascending order, then marks shards. Nothing is written until
+        // every one of them is known to fit.
+        let mut writes: Vec<(ShardKind, u8, Vec<u8>)> = Vec::new();
         for (&shard, records) in &new_claims {
             let current = &snap.claims[usize::from(shard)];
-            merge_shard(&self.hibi, ShardKind::Claims, shard, current, records)?;
+            if let Some(bytes) = merge_shard(current, records)? {
+                writes.push((ShardKind::Claims, shard, bytes));
+            }
         }
         for (&shard, records) in &new_marks {
             let current = &snap.marks[usize::from(shard)];
-            merge_shard(&self.hibi, ShardKind::Marks, shard, current, records)?;
+            if let Some(bytes) = merge_shard(current, records)? {
+                writes.push((ShardKind::Marks, shard, bytes));
+            }
+        }
+        let total = scan(&self.hibi)?.shard_bytes;
+        let mut sizes = Vec::with_capacity(writes.len());
+        for (kind, shard, bytes) in &writes {
+            let rel = shard_rel(*kind, *shard);
+            let now = match fs::symlink_metadata(self.hibi.join(&rel)) {
+                Ok(m) => m.len(),
+                Err(_) => 0,
+            };
+            sizes.push((format!("{HIBI_DIR}/{rel}"), now, bytes.len() as u64));
+        }
+        check_room(caps, total, &sizes)?;
+        for (kind, shard, bytes) in &writes {
+            replace_shard(&self.hibi, *kind, *shard, bytes)?;
         }
         // Step 4: the lock is released when `_lock` is dropped.
         Ok(())
     }
 
-    fn snapshot_id(&self) -> Result<String, Error> {
+    fn snapshot(&self) -> Result<String, Error> {
         check_store(&self.hibi)?;
         let mut h = blake3::Hasher::new();
         for (kind, s) in all_shards() {

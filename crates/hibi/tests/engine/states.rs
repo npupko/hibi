@@ -217,7 +217,7 @@ fn status_selection_summary_and_order() {
     assert_eq!(out.snapshot, "mem:4:4:1");
     assert_eq!(
         out.next_note,
-        "Re-check each statement before running its next command. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command."
+        "Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command."
     );
 
     // --state.

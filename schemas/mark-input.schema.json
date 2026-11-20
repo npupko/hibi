@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "MarkStdin",
+  "title": "hibi mark --stdin input",
   "description": "Standard input of `mark --stdin`: a non-empty array.",
   "type": "array",
   "items": {

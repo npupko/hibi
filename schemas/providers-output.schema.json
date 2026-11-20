@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Envelope",
+  "title": "hibi providers output",
   "description": "The success envelope of section 15.1: `{\"ok\": true, \"command\": ...}`\nfollowed by the keys of the command's output (which include\n`warnings`).",
   "type": "object",
   "properties": {
@@ -8,21 +8,15 @@
       "$ref": "#/$defs/Builtin"
     },
     "check": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/ProviderCheck"
-        },
-        {
-          "type": "null"
-        }
-      ]
+      "$ref": "#/$defs/ProviderCheck"
     },
     "command": {
       "type": "string"
     },
     "ok": {
       "description": "Always `true`.",
-      "type": "boolean"
+      "type": "boolean",
+      "const": true
     },
     "repos": {
       "type": "array",
@@ -50,6 +44,7 @@
       }
     }
   },
+  "additionalProperties": false,
   "required": [
     "ok",
     "command",
@@ -89,6 +84,24 @@
         "profiles"
       ]
     },
+    "Capabilities": {
+      "description": "Optional provider methods. A missing key is `false`.",
+      "type": "object",
+      "properties": {
+        "batch": {
+          "type": "boolean",
+          "default": false
+        },
+        "render": {
+          "type": "boolean",
+          "default": false
+        },
+        "units": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
     "CaseResult": {
       "description": "The outcome of one case.",
       "type": "object",
@@ -118,6 +131,22 @@
         "skipped"
       ]
     },
+    "NameVersion": {
+      "description": "A name and a version, as in `hello` (`client`, `provider`).",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version"
+      ]
+    },
     "ProviderCheck": {
       "description": "`check` in the output of `hibi providers --check <scheme>` (section\n15.3): the scheme and the outcome of the protocol cases.",
       "type": "object",
@@ -134,7 +163,19 @@
           "minimum": 0
         },
         "hello": {
-          "description": "The first `hello` result the provider gave, or `null`."
+          "description": "The first `hello` result the provider gave, or `null`.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProviderInfo"
+            },
+            {
+              "description": "No `hello` result was received.",
+              "type": "null"
+            },
+            {
+              "description": "The result of a provider that does not conform, as it sent it. The `hello` case then fails."
+            }
+          ]
         },
         "passed": {
           "type": "integer",
@@ -152,10 +193,62 @@
       },
       "required": [
         "scheme",
+        "hello",
         "passed",
         "failed",
         "skipped",
         "cases"
+      ]
+    },
+    "ProviderInfo": {
+      "description": "The `hello` result (section 13.3): what a provider is and accepts.",
+      "type": "object",
+      "properties": {
+        "capabilities": {
+          "$ref": "#/$defs/Capabilities",
+          "default": {
+            "batch": false,
+            "render": false,
+            "units": false
+          }
+        },
+        "kinds": {
+          "description": "Unit kinds it can return. Informational.",
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          }
+        },
+        "protocol": {
+          "description": "The protocol version chosen from the client's list.",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "provider": {
+          "$ref": "#/$defs/NameVersion"
+        },
+        "schemes": {
+          "description": "Schemes this process serves.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "selectors": {
+          "description": "Selector keys it accepts, from `quote`, `symbol`, `key`. `quote`\nincludes `prefix`, `suffix` and `pos`. `{}` is always accepted. See\n[`Selector::disallowed_key`].",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SelectorKey"
+          }
+        }
+      },
+      "required": [
+        "protocol",
+        "provider",
+        "schemes",
+        "selectors"
       ]
     },
     "RepoReport": {
@@ -179,6 +272,13 @@
             "null"
           ]
         },
+        "remediation": {
+          "description": "For an alias the user config does not allow: the lines to add to\nthe user config. `null` otherwise.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "suggested": {
           "description": "The value in `hibi.toml`.",
           "type": "string"
@@ -188,7 +288,8 @@
         "alias",
         "suggested",
         "path",
-        "error"
+        "error",
+        "remediation"
       ]
     },
     "SchemeReport": {
@@ -207,6 +308,13 @@
         "registered": {
           "type": "boolean"
         },
+        "remediation": {
+          "description": "For a scheme without a registration: the lines to add to the user\nconfig, with the command to fill in. `null` otherwise.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "scheme": {
           "type": "string"
         }
@@ -214,7 +322,25 @@
       "required": [
         "scheme",
         "registered",
-        "command"
+        "command",
+        "remediation"
+      ]
+    },
+    "SelectorKey": {
+      "description": "Selector keys a provider can accept (section 13.3, `hello.selectors`).",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "symbol",
+            "key"
+          ]
+        },
+        {
+          "description": "`quote`, with `prefix`, `suffix` and `pos`.",
+          "type": "string",
+          "const": "quote"
+        }
       ]
     },
     "Warning": {
@@ -241,7 +367,8 @@
         "orphan_record",
         "unknown_replacement",
         "cache_unavailable",
-        "git_too_old"
+        "git_too_old",
+        "unknown_kind"
       ]
     }
   }

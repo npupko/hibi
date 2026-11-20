@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Selector",
+  "title": "hibi selector",
   "description": "A selector (spec section 5.2). No key may be null.",
   "type": "object",
   "properties": {

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Anchor",
+  "title": "hibi anchor",
   "description": "An anchor: a locator plus a selector (section 5.3).",
   "type": "object",
   "properties": {
