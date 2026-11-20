@@ -166,9 +166,16 @@ fn r30_timeout_kills() {
     assert_failed_and_gone(&mut s, r, "within 300 ms");
 }
 
+/// The scripted provider makes its 17 MiB line with `dd | tr`, which needs
+/// seconds of CPU on macOS and more under load. The timeout is set far above
+/// that, so the line limit, not the timeout, is what stops the provider.
+/// Without the limit the whole line is read and the provider fails as "not
+/// a JSON object", so the message check still proves the limit.
+const OVERSIZED_TIMEOUT: Duration = Duration::from_secs(120);
+
 #[test]
 fn r30_oversized_line_kills() {
-    let mut s = scripted(&[hello(), "big".into()], LONG);
+    let mut s = scripted(&[hello(), "big".into()], OVERSIZED_TIMEOUT);
     let r = resolve_one(&mut s.provider, "k");
     assert_failed_and_gone(&mut s, r, "longer than 16777216 bytes");
 }
