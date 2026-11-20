@@ -595,6 +595,28 @@ fn file_list_changed_paths_tree_and_blobs() {
     );
 }
 
+/// Section 10.3: a rename is a deletion and an addition, so both the old
+/// and the new path are changed paths.
+#[test]
+fn changed_paths_reports_a_rename_as_both_paths() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = sample_repo(tmp.path());
+    let git = ready(&recording_git(tmp.path(), &tmp.path().join("log")));
+    let base = git.resolve_commit(&root, "HEAD").unwrap();
+
+    // The content is unchanged, so git's rename detection pairs the paths.
+    sh_git(&root, &["mv", "b.md", "moved.md"]);
+    assert_eq!(
+        sh_git(&root, &["diff", "--name-only", "-M", base.as_str(), "--"]),
+        "moved.md\n",
+        "with rename detection git names only the new path"
+    );
+
+    let changed = git.changed_paths(&root, &base).unwrap();
+    let want: BTreeSet<String> = ["b.md", "moved.md"].iter().map(|s| s.to_string()).collect();
+    assert_eq!(changed, want);
+}
+
 #[test]
 fn ranges_resolve_against_git() {
     let tmp = tempfile::tempdir().unwrap();

@@ -6,6 +6,7 @@ mod support;
 
 mod coverage;
 mod next;
+mod pins;
 mod sides;
 mod since;
 mod states;
