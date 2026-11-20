@@ -7,6 +7,7 @@
 //! traits (spec section 2.2), so an embedder can supply its own store and
 //! providers.
 
+pub mod build_info;
 pub mod canon;
 pub mod config;
 pub mod duration;
