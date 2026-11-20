@@ -4,4 +4,4 @@
 
 # Written by the generator examples of hibi-cli; collapsed in pull request diffs.
 schemas/*.schema.json linguist-generated
-plugins/hibi-cli/reference/cli.md linguist-generated
+plugins/hibi-cli/skills/hibi/references/cli-reference.md linguist-generated

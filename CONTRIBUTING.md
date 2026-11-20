@@ -98,7 +98,7 @@ output.
 | Generated | Command |
 |---|---|
 | `schemas/<name>.schema.json` | `cargo run -p hibi-cli --example write-schemas` |
-| `plugins/hibi-cli/reference/cli.md` | `cargo run -p hibi-cli --example cli-reference` |
+| `plugins/hibi-cli/skills/hibi/references/cli-reference.md` | `cargo run -p hibi-cli --example cli-reference` |
 
 The examples are not shipped in the binary.
 

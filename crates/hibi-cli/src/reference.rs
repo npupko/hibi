@@ -1,13 +1,15 @@
-//! The generated CLI reference, `plugins/hibi-cli/reference/cli.md` (spec
-//! section 2.7): every command, option, default and help text, taken from
-//! the clap definition.
+//! The generated CLI reference,
+//! `plugins/hibi-cli/skills/hibi/references/cli-reference.md` (spec section
+//! 2.7): every command, option, default and help text, taken from the clap
+//! definition. It lives inside the skill's directory because a skill ships
+//! only the files under it.
 
 use std::fmt::Write as _;
 
 use clap::{Arg, ArgAction, Command};
 
 /// Where the reference lives, relative to the repository root.
-pub const PATH: &str = "plugins/hibi-cli/reference/cli.md";
+pub const PATH: &str = "plugins/hibi-cli/skills/hibi/references/cli-reference.md";
 
 /// Help text as one paragraph.
 fn paragraph(text: &str) -> String {

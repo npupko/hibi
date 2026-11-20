@@ -106,10 +106,10 @@ jobs:
           toolchain: stable
           cache-save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: cargo run -p hibi-cli --example cli-reference
-      - name: plugins/hibi-cli/reference/cli.md matches the generator
+      - name: plugins/hibi-cli/skills/hibi/references/cli-reference.md matches the generator
         run: |
-          git add --intent-to-add plugins/hibi-cli/reference/cli.md
-          if ! git diff --exit-code plugins/hibi-cli/reference/cli.md; then
+          git add --intent-to-add plugins/hibi-cli/skills/hibi/references/cli-reference.md
+          if ! git diff --exit-code plugins/hibi-cli/skills/hibi/references/cli-reference.md; then
             echo "::error::The CLI reference is out of date. Run: cargo run -p hibi-cli --example cli-reference"
             exit 1
           fi

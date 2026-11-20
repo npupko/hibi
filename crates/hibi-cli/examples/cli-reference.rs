@@ -1,5 +1,5 @@
-//! Writes `plugins/hibi-cli/reference/cli.md` from the clap definition
-//! (spec section 2.7). Run from anywhere:
+//! Writes `plugins/hibi-cli/skills/hibi/references/cli-reference.md` from the
+//! clap definition (spec section 2.7). Run from anywhere:
 //! `cargo run -p hibi-cli --example cli-reference`.
 
 use std::path::Path;
