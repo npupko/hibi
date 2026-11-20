@@ -179,7 +179,8 @@ impl Cache {
         &self.engine
     }
 
-    /// The cached unit list (JSON text, or the string `not_text`) of a blob
+    /// The cached unit list (a JSON array, or the bare word `not_text`
+    /// without JSON quotes, as the file provider writes it) of a blob
     /// read as `class`, for this engine.
     pub fn units(&self, blob: &str, class: &str) -> Result<Option<String>, Error> {
         self.conn

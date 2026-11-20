@@ -20,11 +20,11 @@ fn creates_and_round_trips() {
     assert_eq!(cache.engine(), ENGINE);
     assert_eq!(cache.units("b", "markdown").unwrap(), None);
     cache.put_units("b", "markdown", "[]").unwrap();
-    cache.put_units("b", "text", "\"not_text\"").unwrap();
+    cache.put_units("b", "text", "not_text").unwrap();
     assert_eq!(cache.units("b", "markdown").unwrap().as_deref(), Some("[]"));
     assert_eq!(
         cache.units("b", "text").unwrap().as_deref(),
-        Some("\"not_text\"")
+        Some("not_text")
     );
     let entry = JudgeEntry {
         model: "jev-1.14.0".into(),
