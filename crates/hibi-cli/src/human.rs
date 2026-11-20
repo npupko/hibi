@@ -143,7 +143,7 @@ fn side_lines(out: &mut String, side: &Side) {
     }
     if let Some(text) = &side.text {
         for l in text.lines() {
-            let _ = writeln!(out, "    | {l}");
+            let _ = writeln!(out, "{}", format!("    | {l}").trim_end());
         }
     }
 }

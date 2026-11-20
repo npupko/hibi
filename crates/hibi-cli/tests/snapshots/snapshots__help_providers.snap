@@ -1,0 +1,38 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "help(&repo, &[command, \"--help\"])"
+---
+$ hibi providers --help
+exit status: 0
+---- standard output ----
+Show what can resolve locators here: the built-in file provider, every sibling repository alias of .hibi/hibi.toml with the directory your user config allows for it, and every external scheme with the command your user config registers for it. For anything that is not set up, the lines to add to your user config are printed.
+
+Without --check no provider command is started.
+
+Usage: hibi providers [OPTIONS]
+
+Options:
+      --check <scheme>
+          Start the provider registered for this scheme and run the protocol conformance cases against it. A failing case is reported and does not make the command fail
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Global options:
+      --root <dir>
+          Use this directory as the root (the directory that contains .hibi/) instead of searching upward from the working directory
+
+      --format <format>
+          Output format. Without this option the output is JSON when standard output is not a terminal, and text when it is
+
+          Possible values:
+          - human: Text for a person
+          - json:  One JSON object
+
+      --now <timestamp>
+          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped
+
+      --no-cache
+          Do not read or write the cache database. Results are the same with and without the cache
+---- standard error ----
+(empty)

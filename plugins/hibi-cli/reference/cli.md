@@ -8,7 +8,7 @@ hibi records that a statement was checked against evidence. Later it reports whi
 hibi decides nothing about whether a statement is true. You check it, hibi remembers that you did and what the text and the evidence looked like then.
 
 ```
-hibi [OPTIONS] <COMMAND>
+hibi [OPTIONS] <command>
 ```
 
 ## Global options
@@ -56,6 +56,7 @@ HIBI_CONFIG        path of the user config file
 HIBI_CACHE_DIR     directory of the cache database
 TYPESAFE_API_KEY   key for the judge commands (triage, suggest-evidence,
                    status --judge-order); nothing else uses the network
+HIBI_JEV_URL       address of the judge service, for tests
 NO_COLOR           turn colour off in help output
 ```
 

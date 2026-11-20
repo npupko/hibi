@@ -1,0 +1,21 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shot(&repo, &[\"cover\"])"
+---
+$ hibi cover
+exit status: 0
+---- standard output ----
+docs (file:docs/**/*.md; sentence, list-item): 6 units, 1 covered, 1 excluded, 4 uncovered
+  file:docs/guide.md
+        3  sentence  Requests time out after 30 seconds.
+        5  list-item  - Retries are capped at 3.
+  file:docs/ops.md
+        3  sentence  Workers are restarted nightly.
+        3  sentence  The queue is drained on shutdown.
+  excluded: file:docs/changelog.md (1 unit): release notes, not claims
+code (file:src/**/*.rs; function): 2 units, 1 covered, 0 excluded, 1 uncovered
+  file:src/cache.rs
+        6  function  pub fn timeout() -> u32 { 30 }
+total: 8 units, 2 covered, 1 excluded, 5 uncovered
+---- standard error ----
+(empty)

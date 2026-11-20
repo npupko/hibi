@@ -42,6 +42,7 @@ Environment:
   HIBI_CACHE_DIR     directory of the cache database
   TYPESAFE_API_KEY   key for the judge commands (triage, suggest-evidence,
                      status --judge-order); nothing else uses the network
+  HIBI_JEV_URL       address of the judge service, for tests
   NO_COLOR           turn colour off in help output";
 
 /// The whole command line.
@@ -54,6 +55,8 @@ Environment:
     after_long_help = AFTER_HELP,
     disable_help_subcommand = true,
     subcommand_required = true,
+    subcommand_value_name = "command",
+    subcommand_help_heading = "Commands",
     max_term_width = 100
 )]
 pub struct Cli {
@@ -68,23 +71,39 @@ pub struct Cli {
 pub struct Global {
     /// Use this directory as the root (the directory that contains .hibi/)
     /// instead of searching upward from the working directory
-    #[arg(long, global = true, value_name = "dir")]
+    #[arg(
+        long,
+        global = true,
+        help_heading = "Global options",
+        value_name = "dir"
+    )]
     pub root: Option<PathBuf>,
 
     /// Output format. Without this option the output is JSON when standard
     /// output is not a terminal, and text when it is
-    #[arg(long, global = true, value_enum, value_name = "format")]
+    #[arg(
+        long,
+        global = true,
+        help_heading = "Global options",
+        value_enum,
+        value_name = "format"
+    )]
     pub format: Option<Format>,
 
     /// Use this instant as the current time, for reproducible runs. RFC
     /// 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of
     /// a second is dropped
-    #[arg(long, global = true, value_name = "timestamp")]
+    #[arg(
+        long,
+        global = true,
+        help_heading = "Global options",
+        value_name = "timestamp"
+    )]
     pub now: Option<String>,
 
     /// Do not read or write the cache database. Results are the same with
     /// and without the cache
-    #[arg(long, global = true)]
+    #[arg(long, global = true, help_heading = "Global options")]
     pub no_cache: bool,
 }
 

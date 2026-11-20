@@ -1,0 +1,48 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "help(&repo, &[command, \"--help\"])"
+---
+$ hibi list --help
+exit status: 0
+---- standard output ----
+Read the store and print claims as they are stored. Nothing is resolved and no state is computed, so this works when files or providers are missing.
+
+Without an id: one line per live claim. With an id: the stored claim, its marks in time order and its retirement.
+
+Usage: hibi list [OPTIONS] [claim-id]
+
+Arguments:
+  [claim-id]
+          Show this claim as stored, with its marks and retirement. May be shortened to a unique prefix
+
+Options:
+      --loc <glob>
+          Keep a claim only when the locator of one of its sides matches this glob. Repeat for several
+
+      --text <substring>
+          Keep a claim only when its statement contains this text. The match is case-sensitive
+
+      --retired
+          Include retired claims
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Global options:
+      --root <dir>
+          Use this directory as the root (the directory that contains .hibi/) instead of searching upward from the working directory
+
+      --format <format>
+          Output format. Without this option the output is JSON when standard output is not a terminal, and text when it is
+
+          Possible values:
+          - human: Text for a person
+          - json:  One JSON object
+
+      --now <timestamp>
+          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped
+
+      --no-cache
+          Do not read or write the cache database. Results are the same with and without the cache
+---- standard error ----
+(empty)

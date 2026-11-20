@@ -1,0 +1,11 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shot(&bare, &[\"status\"])"
+---
+$ hibi status
+exit status: 1
+---- standard output ----
+(empty)
+---- standard error ----
+error: not_initialized: no .hibi/hibi.toml in [ROOT] or any directory above it
+  fix: hibi init

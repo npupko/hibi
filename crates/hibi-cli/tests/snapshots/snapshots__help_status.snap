@@ -1,0 +1,60 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "help(&repo, &[command, \"--help\"])"
+---
+$ hibi status --help
+exit status: 0
+---- standard output ----
+Compare every claim with the current content. A claim is fresh when some mark matches the current fingerprint of every side, stale when none does, expired when a mark matches but the recheck period has passed, and retired when it was retired.
+
+Without arguments the stale and expired claims are listed. Each listed claim shows the sides that are not the same as at its mark, and the next command to run. Re-check the statement before you run that command. The summary always counts every claim in the store.
+
+Usage: hibi status [OPTIONS] [claim-id]...
+
+Arguments:
+  [claim-id]...
+          Show exactly these claims, in any state. An id may be shortened to a unique prefix of at least 4 characters after "c1-"
+
+Options:
+      --since <range>
+          List only the stale claims that the changes since a commit caused. The range is A, A.. or A..HEAD (since commit A), or A... or A...HEAD (since the merge base of A and HEAD). The compared end is always the working tree. Cannot be combined with --state or with ids
+
+      --loc <glob>
+          Keep a claim only when the locator of one of its sides matches this glob, for example 'file:src/**'. Repeat for several
+
+      --state <state>
+          List claims in this state. Repeat for several [default: stale and expired]
+
+          Possible values:
+          - fresh:   Some mark matches the current content and is recent enough
+          - stale:   No mark matches the current content
+          - expired: A mark matches the content, but the recheck period has passed
+          - retired: The claim was retired
+
+      --detail
+          Include the current text of every side
+
+      --judge-order
+          Order the stale claims by how likely each is broken, most likely first, as rated by the judge model. Needs TYPESAFE_API_KEY and git. The order is the only thing that changes
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Global options:
+      --root <dir>
+          Use this directory as the root (the directory that contains .hibi/) instead of searching upward from the working directory
+
+      --format <format>
+          Output format. Without this option the output is JSON when standard output is not a terminal, and text when it is
+
+          Possible values:
+          - human: Text for a person
+          - json:  One JSON object
+
+      --now <timestamp>
+          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped
+
+      --no-cache
+          Do not read or write the cache database. Results are the same with and without the cache
+---- standard error ----
+(empty)

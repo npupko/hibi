@@ -1,0 +1,46 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "help(&repo, &[command, \"--help\"])"
+---
+$ hibi triage --help
+exit status: 0
+---- standard output ----
+Ask the judge model which uncovered sentences, list items, table rows and headings state a fact that could be confirmed by reading code or configuration, and where the evidence would be. The result is a ranking to read, not a finding: nothing is written to the store.
+
+Needs TYPESAFE_API_KEY and git. The text of the listed units is sent to the judge service. Only files that git tracks, or that are untracked and not ignored, are sent.
+
+Usage: hibi triage [OPTIONS]
+
+Options:
+      --scope <name>
+          Consider only this scope. Repeat for several [default: every scope]
+
+      --since <range>
+          Consider only units that were added or changed since a commit. The range is written as for `hibi status --since`
+
+      --limit <n>
+          Print at most this many units; 0 prints all
+          
+          [default: 50]
+
+  -h, --help
+          Print help (see a summary with '-h')
+
+Global options:
+      --root <dir>
+          Use this directory as the root (the directory that contains .hibi/) instead of searching upward from the working directory
+
+      --format <format>
+          Output format. Without this option the output is JSON when standard output is not a terminal, and text when it is
+
+          Possible values:
+          - human: Text for a person
+          - json:  One JSON object
+
+      --now <timestamp>
+          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped
+
+      --no-cache
+          Do not read or write the cache database. Results are the same with and without the cache
+---- standard error ----
+(empty)

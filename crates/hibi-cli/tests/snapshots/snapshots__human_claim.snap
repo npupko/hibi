@@ -1,0 +1,24 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shots(&repo, &[created, created, no_evidence])"
+---
+$ hibi claim 'The cache holds 64 entries.' --subject 'file:docs/guide.md::The cache holds 64 entries.' --evidence 'file:src/cache.rs#limit::let max_entries = 64;' --evidence file:src/cache.rs#timeout
+exit status: 0
+---- standard output ----
+c1-2epmejepkfsf0bcvdwar  created  subject file:docs/guide.md (sentence "The cache holds 64 entries.", line 3); evidence 1 file:src/cache.rs (function "limit", lines 1-4); evidence 2 file:src/cache.rs (function "timeout", lines 6-8)
+---- standard error ----
+(empty)
+
+$ hibi claim 'The cache holds 64 entries.' --subject 'file:docs/guide.md::The cache holds 64 entries.' --evidence 'file:src/cache.rs#limit::let max_entries = 64;' --evidence file:src/cache.rs#timeout
+exit status: 0
+---- standard output ----
+c1-2epmejepkfsf0bcvdwar  marked  subject file:docs/guide.md (sentence "The cache holds 64 entries.", line 3); evidence 1 file:src/cache.rs (function "limit", lines 1-4); evidence 2 file:src/cache.rs (function "timeout", lines 6-8)
+---- standard error ----
+(empty)
+
+$ hibi claim 'Workers restart every night.' --subject 'file:docs/ops.md::Workers are restarted nightly.' --recheck P90D --note 'see the deploy schedule'
+exit status: 0
+---- standard output ----
+c1-0emt7dg16p8w2k211yq8  created  subject file:docs/ops.md (sentence "Workers are restarted nightly.", line 3)
+---- standard error ----
+(empty)

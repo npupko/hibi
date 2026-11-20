@@ -1,0 +1,10 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shot(&repo, &[\"version\"])"
+---
+$ hibi version
+exit status: 0
+---- standard output ----
+hibi [VERSION]
+---- standard error ----
+(empty)

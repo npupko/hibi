@@ -1,0 +1,25 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shots(&repo,\n&[&[\"list\"], &[\"list\", \"--retired\"],\n&[\"list\", \"--text\", \"no such statement\"],])"
+---
+$ hibi list
+exit status: 0
+---- standard output ----
+c1-2epmejepkfsf0bcvdwar  The cache holds 64 entries.  file:docs/guide.md  2 marks  last 2026-11-20T13:00:00Z
+---- standard error ----
+(empty)
+
+$ hibi list --retired
+exit status: 0
+---- standard output ----
+c1-2epmejepkfsf0bcvdwar  The cache holds 64 entries.  file:docs/guide.md  2 marks  last 2026-11-20T13:00:00Z
+c1-dccp96583661kgfj4rex  Workers restart every night.  file:docs/ops.md  1 mark  last 2026-11-20T12:00:00Z  retired
+---- standard error ----
+(empty)
+
+$ hibi list --text 'no such statement'
+exit status: 0
+---- standard output ----
+no claims
+---- standard error ----
+(empty)

@@ -1,0 +1,16 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shot(&repo, &[\"status\"])"
+---
+$ hibi status
+exit status: 0
+---- standard output ----
+2 claims: 1 fresh, 1 stale, 0 expired, 0 retired
+
+c1-1axpkdaj5vx9dh84d5ns  stale  The cache holds 64 entries.
+  evidence 1  file:src/cache.rs  changed (fingerprint_differs)  function "limit", lines 1-4
+  next: hibi mark c1-1axpkdaj5vx9dh84d5ns
+
+Re-check each statement before running its next command.
+---- standard error ----
+(empty)

@@ -1,0 +1,35 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "help(&repo, &[command, \"--help\"])"
+---
+$ hibi init --help
+exit status: 0
+---- standard output ----
+Create the .hibi/ store at the top level of the git repository that contains the working directory: hibi.toml, the claim and mark files, and the files that tell git how to merge them. Nothing is written outside .hibi/.
+
+After init, declare scopes in .hibi/hibi.toml to say which documents and source files must be covered by claims.
+
+Usage: hibi init [OPTIONS]
+
+Options:
+  -h, --help
+          Print help (see a summary with '-h')
+
+Global options:
+      --root <dir>
+          Use this directory as the root (the directory that contains .hibi/) instead of searching upward from the working directory
+
+      --format <format>
+          Output format. Without this option the output is JSON when standard output is not a terminal, and text when it is
+
+          Possible values:
+          - human: Text for a person
+          - json:  One JSON object
+
+      --now <timestamp>
+          Use this instant as the current time, for reproducible runs. RFC 3339 with any offset, for example 2026-11-20T18:04:11Z. A fraction of a second is dropped
+
+      --no-cache
+          Do not read or write the cache database. Results are the same with and without the cache
+---- standard error ----
+(empty)
