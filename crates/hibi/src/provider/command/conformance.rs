@@ -34,10 +34,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
 use super::process::{Process, ReadError};
-use super::{DEFAULT_TIMEOUT, SHUTDOWN_GRACE, spawn};
+use super::{DEFAULT_TIMEOUT, SHUTDOWN_GRACE, parse_response, spawn};
 use crate::Error;
 use crate::config::{RepoConfig, UserConfig};
 use crate::model::Fingerprint;
+use crate::provider::Response;
 
 /// One conformance case (section 13.6).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, JsonSchema)]
@@ -321,20 +322,18 @@ fn run_case(
             }
             Outgoing::Raw(s) => (s.clone(), None, None),
         };
-        let response = match exchange(&mut process, &line, opts.timeout) {
+        let (response, read) = match exchange(&mut process, &line, opts.timeout) {
             Ok(r) => r,
             Err(why) => return failed(&process, format!("step {n}: {why}")),
         };
         if let Some(id) = id
-            && response.get("id") != Some(&Value::from(id))
+            && read.id != Some(id)
         {
             return failed(
                 &process,
                 format!(
                     "step {n}: the response id is {}, the request id {id}",
-                    response
-                        .get("id")
-                        .map_or("absent".to_owned(), Value::to_string)
+                    read.id.map_or("null".to_owned(), |i| i.to_string())
                 ),
             );
         }
@@ -362,8 +361,11 @@ fn run_case(
             }
         }
     }
-    let (rest, status) = process.finish(SHUTDOWN_GRACE);
-    if let Some(bad) = rest.iter().find(|l| !is_object(l)) {
+    let end = process.finish(SHUTDOWN_GRACE);
+    if let Some(problem) = end.problem {
+        return failed(&process, format!("after the last step: {problem}"));
+    }
+    if let Some(bad) = end.lines.iter().find(|l| !is_object(l)) {
         return failed(
             &process,
             format!(
@@ -372,7 +374,8 @@ fn run_case(
             ),
         );
     }
-    match (case.end, status) {
+    // The verdict is the exit of the provider process itself.
+    match (case.end, end.status) {
         (None, _) => Outcome::Passed,
         (Some(End::Exit), Some(s)) if s.success() => Outcome::Passed,
         (Some(End::Exit), Some(s)) => failed(
@@ -402,25 +405,35 @@ fn is_object(line: &[u8]) -> bool {
     matches!(serde_json::from_slice::<Value>(line), Ok(Value::Object(_)))
 }
 
-/// Write one line and read the response, which must be a JSON object.
-fn exchange(process: &mut Process, line: &str, timeout: Duration) -> Result<Value, String> {
+/// Write one line and read the response within `timeout`. The response
+/// must pass the envelope rules that `CommandProvider` applies.
+fn exchange(
+    process: &mut Process,
+    line: &str,
+    timeout: Duration,
+) -> Result<(Value, Response), String> {
     process
         .send(line)
         .map_err(|e| format!("writing the request failed: {e}"))?;
     let bytes = process.read_line(timeout).map_err(|e| match e {
         ReadError::Timeout => format!("no response within {} ms", timeout.as_millis()),
         ReadError::TooLong => "the response line is longer than 16 MiB".to_owned(),
-        ReadError::Ended(_) => {
+        ReadError::Ended {
+            unterminated: true, ..
+        } => "the provider exited or closed its output without answering: its last output does not end with a line feed"
+            .to_owned(),
+        ReadError::Ended { .. } => {
             "the provider exited or closed its output without answering".to_owned()
         }
+        ReadError::WriteFailed(why) => format!("writing the request failed: {why}"),
     })?;
-    match serde_json::from_slice::<Value>(&bytes) {
-        Ok(v @ Value::Object(_)) => Ok(v),
-        _ => Err(format!(
-            "a standard-output line is not a JSON object: {:?}",
-            String::from_utf8_lossy(&bytes[..bytes.len().min(200)])
-        )),
-    }
+    parse_response(&bytes).map_err(|why| {
+        if why.starts_with("is not a JSON object") {
+            format!("a standard-output line {why}")
+        } else {
+            format!("the response {why}")
+        }
+    })
 }
 
 /// The matching rule of section 13.6. `Err` says where and how the

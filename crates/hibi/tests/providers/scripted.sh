@@ -13,6 +13,13 @@
 #   big               print one line of 17 MiB
 #   garbage           print a line that is not JSON
 #   exit              exit without answering
+#   last {...}        print as above, then stop reading standard input
+#                     (the process becomes `sleep`)
+#   flood {...}       print as above, then write lines of 1 MiB to standard
+#                     output for ever, appending "wrote" to <dir>/log after
+#                     each one
+#   fork              start a background `sleep` that keeps standard output
+#                     open, then exit 0 without answering
 #
 # It exits 0 at end of input or when the script has no more lines.
 
@@ -32,6 +39,25 @@ while IFS= read -r request; do
             kib=${rest%% *}
             action=${rest#* }
             dd if=/dev/zero bs=1024 count="$kib" 2>/dev/null | tr '\000' 'e' >&2
+            ;;
+    esac
+    case $action in
+        last\ *)
+            printf '%s\n' "${action#last }" | sed "s/@ID@/$n/g"
+            exec sleep 60
+            ;;
+        flood\ *)
+            printf '%s\n' "${action#flood }" | sed "s/@ID@/$n/g"
+            dd if=/dev/zero bs=1024 count=1024 2>/dev/null | tr '\000' 'a' > "$dir/line"
+            while :; do
+                cat "$dir/line" || exit 0
+                echo || exit 0
+                echo wrote >> "$dir/log"
+            done
+            ;;
+        fork)
+            sleep 20 &
+            exit 0
             ;;
     esac
     case $action in

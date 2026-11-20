@@ -326,7 +326,11 @@ impl<'de> Deserialize<'de> for Response {
                     ));
                 }
             },
-            None => return Err(D::Error::custom("a response has an id")),
+            None => {
+                return Err(D::Error::custom(
+                    "this response has no id; every response carries one",
+                ));
+            }
         };
         let outcome = outcome_from_map::<D::Error>(&mut map)?;
         // Section 13.2: a null id answers only a line that could not be

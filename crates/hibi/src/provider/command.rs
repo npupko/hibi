@@ -19,7 +19,7 @@ pub use conformance::{
     Capability, CaseResult, ConformanceCase, ConformanceOptions, ConformanceReport, End, Outgoing,
     ProviderCheck, Step, check_provider, load_cases, protocol_cases, run_conformance,
 };
-pub use process::STDERR_TAIL_BYTES;
+pub use process::{MAX_TRAILING_BYTES, STDERR_TAIL_BYTES};
 
 use self::process::{Process, ReadError};
 use super::{
@@ -320,9 +320,48 @@ fn invalid_answer(why: &str) -> ProviderError {
     )
 }
 
-/// Write one request and read its response. `Err` is a violation that makes
-/// the provider unusable (section 13.1); `Ok` holds the response's result
-/// or its error.
+/// Why a line read from a provider cannot be used: the text for the
+/// `failed` error. `what` names the awaited line, such as "request 3".
+fn read_failure(e: ReadError, what: &str, timeout: Duration) -> String {
+    match e {
+        ReadError::Timeout => format!("no response to {what} within {} ms", timeout.as_millis()),
+        ReadError::TooLong => {
+            format!("the response to {what} is longer than {MAX_LINE_BYTES} bytes")
+        }
+        ReadError::Ended {
+            why: None,
+            unterminated: false,
+        } => format!("the provider exited or closed its output before answering {what}"),
+        ReadError::Ended {
+            why: None,
+            unterminated: true,
+        } => format!(
+            "the provider exited or closed its output before answering {what}: its last output does not end with a line feed"
+        ),
+        ReadError::Ended { why: Some(why), .. } => {
+            format!("reading the response to {what} failed: {why}")
+        }
+        ReadError::WriteFailed(why) => format!("writing {what} failed: {why}"),
+    }
+}
+
+/// Read one response line by the envelope rules of section 13.2: a JSON
+/// object that is a valid [`Response`]. `CommandProvider` and the
+/// conformance runner both read every line with this function. Returns the
+/// object as it was written and the response read from it.
+pub(crate) fn parse_response(bytes: &[u8]) -> Result<(Value, Response), String> {
+    let value: Value = match serde_json::from_slice(bytes) {
+        Ok(v @ Value::Object(_)) => v,
+        _ => return Err(format!("is not a JSON object: {}", excerpt(bytes))),
+    };
+    let response =
+        serde_json::from_value(value.clone()).map_err(|e| format!("breaks the envelope: {e}"))?;
+    Ok((value, response))
+}
+
+/// Write one request and read its response within `timeout`, which covers
+/// the write and the wait. `Err` is a violation that makes the provider
+/// unusable (section 13.1); `Ok` holds the response's result or its error.
 fn exchange(
     process: &mut Process,
     id: u64,
@@ -334,36 +373,15 @@ fn exchange(
         call: call.clone(),
     }
     .to_line();
+    let what = format!("request {id} ({})", call.method);
     process
         .send(&line)
-        .map_err(|e| format!("writing request {id} failed: {e}"))?;
-    let bytes = process.read_line(timeout).map_err(|e| match e {
-        ReadError::Timeout => format!(
-            "no response to request {id} ({}) within {} ms",
-            call.method,
-            timeout.as_millis()
-        ),
-        ReadError::TooLong => {
-            format!("the response to request {id} is longer than {MAX_LINE_BYTES} bytes")
-        }
-        ReadError::Ended(None) => {
-            format!("the provider exited or closed its output before answering request {id}")
-        }
-        ReadError::Ended(Some(why)) => {
-            format!("reading the response to request {id} failed: {why}")
-        }
-    })?;
-    let value: Value = match serde_json::from_slice(&bytes) {
-        Ok(v @ Value::Object(_)) => v,
-        _ => {
-            return Err(format!(
-                "the response to request {id} is not a JSON object: {}",
-                excerpt(&bytes)
-            ));
-        }
-    };
-    let response: Response = serde_json::from_value(value)
-        .map_err(|e| format!("the response to request {id} breaks the envelope: {e}"))?;
+        .map_err(|e| format!("writing {what} failed: {e}"))?;
+    let bytes = process
+        .read_line(timeout)
+        .map_err(|e| read_failure(e, &what, timeout))?;
+    let (_, response) =
+        parse_response(&bytes).map_err(|why| format!("the response to request {id} {why}"))?;
     if response.id != Some(id) {
         return Err(format!(
             "the response carries id {}, not the request's id {id}",

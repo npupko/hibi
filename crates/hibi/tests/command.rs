@@ -270,6 +270,106 @@ fn stderr_in_volume_is_drained_and_its_tail_kept() {
 }
 
 // ---------------------------------------------------------------------------
+// The timeout covers the write; output is bounded; an exit is seen at once
+// ---------------------------------------------------------------------------
+
+/// Run `f` on another thread and fail when it has not returned in `limit`:
+/// a hang becomes a test failure and does not block the suite.
+fn within<T: Send + 'static>(limit: Duration, f: impl FnOnce() -> T + Send + 'static) -> T {
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        let _ = tx.send(f());
+    });
+    rx.recv_timeout(limit)
+        .unwrap_or_else(|_| panic!("still blocked after {limit:?}"))
+}
+
+/// A provider that stops reading its input cannot block hibi: the timeout
+/// covers the whole exchange, the write included. The request here is far
+/// larger than a pipe buffer, so a blocking write would never return.
+#[test]
+fn a_provider_that_stops_reading_does_not_block_the_request() {
+    let mut s = scripted(
+        &[format!("last {}", hello_batch())],
+        Duration::from_millis(1000),
+    );
+    s.provider.info().unwrap();
+    let anchors: Vec<Anchor> = (0..1000)
+        .map(|i| anchor(&format!("{i:04}-{}", "k".repeat(200))))
+        .collect();
+    assert!(serde_json::to_string(&anchors).unwrap().len() > 200_000);
+    let pid = s.pid();
+    let started = Instant::now();
+    let (results, mut provider) = within(Duration::from_secs(8), move || {
+        let r = s.provider.resolve(&anchors);
+        (r, s.provider)
+    });
+    assert!(
+        started.elapsed() < Duration::from_secs(5),
+        "{:?}",
+        started.elapsed()
+    );
+    assert_eq!(results.len(), 1000);
+    for r in &results {
+        let e = r.as_ref().unwrap_err();
+        assert_eq!(e.code, ProviderErrorCode::Failed, "{e}");
+        assert!(e.message.contains("within 1000 ms"), "{e}");
+    }
+    assert!(!exists(&pid), "the provider process still exists");
+    // Shutdown and drop do not block either.
+    within(Duration::from_secs(3), move || {
+        provider.shutdown();
+        drop(provider);
+    });
+}
+
+/// Output that arrives when no request is outstanding is not stored: the
+/// provider stalls on a full pipe after about one line, and the next
+/// request finds the violation, kills it and fails.
+#[test]
+fn output_with_no_request_outstanding_is_bounded_and_fails_the_provider() {
+    let mut s = scripted(&[format!("flood {}", hello())], LONG);
+    s.provider.info().unwrap();
+    std::thread::sleep(Duration::from_millis(1500));
+    let wrote = |s: &Scripted| s.log().iter().filter(|l| *l == "wrote").count();
+    let before = wrote(&s);
+    assert!(
+        before <= 3,
+        "{before} lines of 1 MiB were taken from the provider while no request was outstanding"
+    );
+    std::thread::sleep(Duration::from_millis(500));
+    assert_eq!(wrote(&s), before, "the provider is still being read");
+    let r = resolve_one(&mut s.provider, "k");
+    assert_failed_and_gone(&mut s, r, "no request was outstanding");
+}
+
+/// A child that exits without answering is noticed when it exits, also
+/// when a grandchild keeps its standard output open: not at the timeout.
+#[test]
+fn an_exit_is_noticed_while_a_grandchild_holds_the_output() {
+    let mut s = scripted(&[hello(), "fork".into()], LONG);
+    s.provider.info().unwrap();
+    let started = Instant::now();
+    let r = resolve_one(&mut s.provider, "k");
+    let took = started.elapsed();
+    assert!(took < Duration::from_secs(3), "noticed after {took:?}");
+    assert_failed_and_gone(&mut s, r, "exited or closed its output");
+}
+
+/// The limits of section 13.1, by value.
+#[test]
+fn the_limits_have_their_specified_values() {
+    use hibi::provider::command::{DEFAULT_TIMEOUT, MAX_TRAILING_BYTES, SHUTDOWN_GRACE};
+    assert_eq!(STDERR_TAIL_BYTES, 4096);
+    assert_eq!(DEFAULT_TIMEOUT, Duration::from_secs(10));
+    assert_eq!(SHUTDOWN_GRACE, Duration::from_secs(2));
+    assert_eq!(MAX_TRAILING_BYTES, 65_536);
+    assert_eq!(hibi::provider::MAX_LINE_BYTES, 16 * 1024 * 1024);
+    assert_eq!(hibi::provider::MAX_BATCH, 1000);
+    assert_eq!(ConformanceOptions::new(".").timeout, DEFAULT_TIMEOUT);
+}
+
+// ---------------------------------------------------------------------------
 // Start and hello
 // ---------------------------------------------------------------------------
 
@@ -738,4 +838,142 @@ fn conformance_runner_checks_the_exit_at_end_of_input() {
     assert!(!r.ok && r.detail.unwrap().contains("did not exit within 2 s"));
     let r = run(format!("read l; echo '{hello1}'; read l; echo oops"));
     assert!(!r.ok && r.detail.unwrap().contains("not a JSON object"));
+}
+
+/// The runner applies the envelope rules that `CommandProvider` enforces:
+/// a response with both `result` and `error`, a wrong id, and an id of the
+/// wrong type all fail the step.
+#[test]
+fn conformance_runner_validates_the_envelope_of_every_response() {
+    let dir = tempfile::tempdir().unwrap();
+    let run = |answer: &str| {
+        let c = case(serde_json::json!({"name": "envelope", "steps": [
+            {"send": {"method": "hello", "params": {"protocol": [1], "client": {"name": "c", "version": "0"}, "root": "."}},
+             "expect": "<any>"}]}));
+        let script = format!("read l; echo '{answer}'; read l");
+        let argv: Vec<OsString> = vec!["sh".into(), "-c".into(), script.into()];
+        run_conformance(&argv, &[c], &ConformanceOptions::new(dir.path()))
+            .cases
+            .remove(0)
+    };
+    let good = hello().replace("@ID@", "1");
+    assert!(run(&good).ok);
+    let detail = |answer: &str| {
+        let r = run(answer);
+        assert!(!r.ok, "{answer} passed");
+        r.detail.unwrap()
+    };
+    let both = r#"{"id":1,"result":{},"error":{"code":"internal","message":"m"}}"#;
+    assert!(
+        detail(both).contains("both result and error"),
+        "{}",
+        detail(both)
+    );
+    let neither = r#"{"id":1}"#;
+    assert!(detail(neither).contains("neither result nor error"));
+    let wrong_id = hello().replace("@ID@", "99");
+    assert!(
+        detail(&wrong_id).contains("the response id is 99, the request id 1"),
+        "{}",
+        detail(&wrong_id)
+    );
+    let no_id = r#"{"result":{}}"#;
+    assert!(detail(no_id).contains("has no id"), "{}", detail(no_id));
+    let text_id = r#"{"id":"1","result":{}}"#;
+    assert!(detail(text_id).contains("positive integer or null"));
+    let null_id = r#"{"id":null,"result":{}}"#;
+    assert!(detail(null_id).contains("invalid_request"));
+}
+
+/// Output after the last response is read with a bound, and output that
+/// does not end in a line feed is a failure, not dropped.
+#[test]
+fn conformance_runner_fails_on_unterminated_and_on_excess_trailing_output() {
+    let dir = tempfile::tempdir().unwrap();
+    let hello1 = hello().replace("@ID@", "1");
+    let run = |end: &str| {
+        let c = case(serde_json::json!({"name": "tail", "steps": [hello_step()], "end": "exit"}));
+        let script = format!("read l; echo '{hello1}'; read l; {end}");
+        let argv: Vec<OsString> = vec!["sh".into(), "-c".into(), script.into()];
+        let started = Instant::now();
+        let r = run_conformance(&argv, &[c], &ConformanceOptions::new(dir.path()))
+            .cases
+            .remove(0);
+        (r, started.elapsed())
+    };
+    assert!(run("exit 0").0.ok);
+    // A terminated JSON object after the last response is allowed (13.6).
+    assert!(run("echo '{}'; exit 0").0.ok);
+    for end in ["printf oops; exit 0", "printf '{}'; exit 0"] {
+        let (r, _) = run(end);
+        assert!(!r.ok, "{end} passed: {r:?}");
+        let detail = r.detail.unwrap();
+        assert!(detail.contains("does not end with a line feed"), "{detail}");
+    }
+    // More than the bound: a failure, reached without reading it all.
+    let flood = "while :; do echo '{\"k\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"}'; done";
+    let (r, took) = run(flood);
+    assert!(!r.ok);
+    let detail = r.detail.unwrap();
+    assert!(detail.contains("more than 65536 bytes"), "{detail}");
+    assert!(took < Duration::from_secs(5), "{took:?}");
+}
+
+/// `end: exit` is judged by the exit of the provider process itself: a
+/// grandchild that keeps the output open neither hides an exit with status
+/// 0 nor delays the verdict to the end of the grace period.
+#[test]
+fn conformance_runner_judges_the_exit_of_the_child_not_the_end_of_output() {
+    let dir = tempfile::tempdir().unwrap();
+    let hello1 = hello().replace("@ID@", "1");
+    let c = case(serde_json::json!({"name": "exit", "steps": [hello_step()], "end": "exit"}));
+    let script = format!("read l; echo '{hello1}'; read l; sleep 20 & exit 0");
+    let argv: Vec<OsString> = vec!["sh".into(), "-c".into(), script.into()];
+    let started = Instant::now();
+    let r = run_conformance(&argv, &[c], &ConformanceOptions::new(dir.path()))
+        .cases
+        .remove(0);
+    assert!(r.ok, "{r:?}");
+    assert!(
+        started.elapsed() < Duration::from_millis(1800),
+        "{:?}",
+        started.elapsed()
+    );
+}
+
+/// The protocol case for an unoffered version asks for the error and for
+/// nothing after it: hibi never sends a second `hello`, so a provider may
+/// keep running or exit once it has answered, with any status.
+#[test]
+fn the_unsupported_protocol_case_passes_whether_the_provider_stays_or_exits() {
+    use hibi::provider::command::protocol_cases;
+    let dir = tempfile::tempdir().unwrap();
+    let case: Vec<ConformanceCase> = protocol_cases()
+        .into_iter()
+        .filter(|c| c.name.contains("unsupported_protocol"))
+        .collect();
+    assert_eq!(case.len(), 1);
+    assert_eq!(case[0].steps.len(), 1);
+    assert!(case[0].end.is_none());
+    let answer = r#"{"id":1,"error":{"code":"unsupported_protocol","message":"only 1"}}"#;
+    for rest in [
+        "exit 0",
+        "exit 3",
+        "read l; exit 0",
+        "while read l; do :; done",
+    ] {
+        let script = format!("read l; echo '{answer}'; {rest}");
+        let argv: Vec<OsString> = vec!["sh".into(), "-c".into(), script.into()];
+        let r = run_conformance(&argv, &case, &ConformanceOptions::new(dir.path()))
+            .cases
+            .remove(0);
+        assert!(r.ok, "{rest}: {r:?}");
+    }
+    // The error itself is still required.
+    let script = format!("read l; echo '{}'; read l", hello().replace("@ID@", "1"));
+    let argv: Vec<OsString> = vec!["sh".into(), "-c".into(), script.into()];
+    let r = run_conformance(&argv, &case, &ConformanceOptions::new(dir.path()))
+        .cases
+        .remove(0);
+    assert!(!r.ok, "{r:?}");
 }

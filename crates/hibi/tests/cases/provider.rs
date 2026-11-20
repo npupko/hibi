@@ -17,7 +17,7 @@ fn load(file: &str) -> ConformanceCase {
 }
 
 /// Every file parses as a case, names are unique, the first step is
-/// `hello`, every case ends with `exit`, and `fixture` is present exactly
+/// `hello`, every case but one ends with `exit`, and `fixture` is present exactly
 /// when `with_fixture` and names a file under `cases/provider/fixtures/`.
 fn check(files: &[String], with_fixture: bool) {
     let mut names = HashSet::new();
@@ -25,7 +25,14 @@ fn check(files: &[String], with_fixture: bool) {
         assert!(f.ends_with(".json"), "{f} is not a .json case file");
         let case = load(f);
         assert!(names.insert(case.name.clone()), "{f}: duplicate case name");
-        assert_eq!(case.end, Some(End::Exit), "{f}: a case ends with exit");
+        // After `unsupported_protocol` a provider may keep running or exit
+        // with any status, so that one case asks for no exit.
+        let end = if f.ends_with("protocol/unsupported-protocol.json") {
+            None
+        } else {
+            Some(End::Exit)
+        };
+        assert_eq!(case.end, end, "{f}: how the case ends");
         let Some(first) = case.steps.first() else {
             panic!("{f}: no steps")
         };
