@@ -1,0 +1,129 @@
+---
+title: "The judge"
+description: "Optional, advisory ranking by TypeSafe's Jev model: what it does, what it sends, and what it never changes."
+---
+
+Three optional features ask a language model for a ranking. They are
+advisory: no answer is written to the store, changes a claim's state, or
+changes which claims or units a command reports. They only rank and label.
+
+| Command | Ranks |
+|---|---|
+| `hibi triage` | Uncovered prose units, by how likely each states a fact that code or configuration could confirm, and where the evidence would be |
+| `hibi suggest-evidence <statement> --in <glob>` | Code units that may decide whether a statement is true, with a signal when none fits |
+| `hibi status --judge-order` | The listed stale claims, most likely broken first |
+
+They exist for bulk an agent would not read itself: thousands of uncovered
+sentences, or every function of a large codebase. For a single statement the
+agent is about to re-check anyway, the judge adds nothing.
+
+<Warning>
+These commands send text to TypeSafe's API at
+`https://api.typesafe.ai/v1/systemone`, authenticated with your
+`TYPESAFE_API_KEY`. Read the next section before you set the key.
+</Warning>
+
+## What is sent
+
+Every request names the model `jev-1.14.0`. Each item is its own question,
+and an item's text is cut to its first 4,000 characters.
+
+| Command | Sent per request | Sent per item |
+|---|---|---|
+| `triage` | The task name and the locator of the document | The unit's text and the headings above it, with two questions: is this a checkable fact, and where would it be confirmed (code, configuration, another document, outside the repository, or no checkable fact) |
+| `suggest-evidence` | The task name and your statement | The candidate unit's locator, label and text |
+| `status --judge-order` | The task name and the claim's statement | The current text of each side of the stale claim |
+
+Text from files is sent only when git lists the file: tracked, or untracked
+and not ignored. Text of an ignored file is never sent; such an item is
+counted as skipped. Text from an external provider is what its `render`
+returns.
+
+Nothing else reads `TYPESAFE_API_KEY` or uses the network. Without the key
+every other command works.
+
+## Availability
+
+Without the key the three commands fail before doing anything else:
+
+```text output
+$ hibi triage
+error: judge_unavailable: TYPESAFE_API_KEY is not set; the judge commands need it
+  fix: Set TYPESAFE_API_KEY, or run the command without the judge.
+```
+
+```text output
+$ TYPESAFE_API_KEY= hibi status --judge-order
+error: judge_unavailable: TYPESAFE_API_KEY is not set; the judge commands need it
+  fix: Set TYPESAFE_API_KEY, or run the command without the judge.
+```
+
+Plain `hibi status` needs no key. With the key set, the commands next check
+git, and fail with `not_a_git_repository` or `git_too_old` before any network
+contact when the root is not the top level of a git work tree or git is older
+than 2.45.0.
+
+## Results
+
+The outputs below are described from their JSON Schemas
+(`hibi schema triage-output`, `hibi schema suggest-evidence-output`), not
+recorded from a live call.
+
+### `triage`
+
+Input: the uncovered units that `hibi cover` would list with the same
+`--scope` and `--since`, restricted to prose kinds (`sentence`, `list-item`,
+`table-row`, `heading`) of the file provider. Other uncovered units are not
+sent and are counted in `skipped`.
+
+| Field | Meaning |
+|---|---|
+| `items[].checkable` | The model's probability that the unit states a checkable fact |
+| `items[].band` | `likely` at 0.7 or more, `unlikely` at 0.3 or less, otherwise `unsure` |
+| `items[].evidence` | `code`, `config`, `doc`, `external` or `none` when the chosen option's probability is at least 0.6, otherwise `unsure` |
+| `items[].loc`, `unit`, `text`, `anchor` | The unit, as in `cover`; `anchor` can be passed to `hibi claim --stdin` |
+| `considered` | Units ranked, before `--limit` (default 50, 0 for all) |
+| `skipped` | Uncovered units that were not sent |
+
+Items are ordered by `checkable`, highest first. The human output ends with
+"This is a ranking to read, not a finding."
+
+### `suggest-evidence`
+
+Candidates are every unit of the kinds given by `--kind` (default `function`,
+`method`, `class`, `struct`, `interface`, `trait`, `enum`, `type`,
+`variable`) in the files matched by `--in`, which takes `file:` or `repo:`
+globs. More than 10,000 candidates is the error `too_many_candidates`.
+
+| Field | Meaning |
+|---|---|
+| `candidates[].p` | The model's probability that reading this unit would confirm or refute the statement |
+| `candidates[].fits` | `true` when `p` is 0.7 or more |
+| `noneFits` | `true` when no candidate reaches 0.7 |
+| `candidates[].loc`, `unit`, `anchor` | The unit and an anchor usable as evidence |
+| `considered` | Candidates ranked, before `--limit` (default 10) |
+
+A candidate is a suggestion to read, never a finding. The human output ends
+with "These are units to read, not findings."
+
+### `status --judge-order`
+
+Only the order of the stale claims changes: most likely broken first. Claims
+with a side that cannot be rendered (missing, ambiguous, or from a provider
+without `render`) are not sent and come first. The answer itself is not
+printed.
+
+## Repeatability and failures
+
+The model gives no determinism guarantee. hibi caches every answer in the
+local [cache database](/configuration#cache), keyed on the model, the request
+state and the exact question, and does not ask a cached question again. Delete
+the cache, or run with `--no-cache`, and a new call may return different
+probabilities.
+
+Each request is tried up to 3 times with backoff on timeouts, connection
+errors and status 408, 429 and 5xx, with at most 6 requests in flight. If a
+request still fails, the command fails with `judge_failed` and prints no
+partial result. A failed call is never read as a "no".
+
+`HIBI_JEV_URL` replaces the service address. It exists for tests.

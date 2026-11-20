@@ -1,0 +1,92 @@
+---
+title: "CLI reference"
+description: "Where the complete command reference lives, the commands at a glance, exit status and error codes."
+---
+
+The complete reference, with every command, option, default and help text, is
+generated from the command definition in the code and kept in the repository
+at
+[`plugins/hibi-cli/skills/hibi/references/cli-reference.md`](https://github.com/npupko/hibi/blob/main/plugins/hibi-cli/skills/hibi/references/cli-reference.md).
+A test fails when that file differs from the code. The same text is available
+from the binary:
+
+```bash
+hibi --help
+hibi claim --help
+```
+
+## Commands
+
+| Command | What it does | Page |
+|---|---|---|
+| `hibi init` | Create the `.hibi/` store in this git repository | [Quickstart](/quickstart) |
+| `hibi claim` | Record a statement, its subject and its evidence, as checked now | [Claims and marks](/concepts/claims-and-marks) |
+| `hibi status` | Report which claims need a new check and why | [Freshness](/concepts/freshness) |
+| `hibi mark` | Record that claims were checked again and still hold | [Claims and marks](/concepts/claims-and-marks#mark) |
+| `hibi reanchor` | Replace a claim with one that has a new statement, anchors or period | [Claims and marks](/concepts/claims-and-marks#changing-a-claim) |
+| `hibi retire` | Retire claims that no longer apply | [Claims and marks](/concepts/claims-and-marks#retirement) |
+| `hibi cover` | List the units in the declared scopes that no claim covers | [Coverage](/coverage) |
+| `hibi list` | List stored claims, or show one claim with its history | [Claims and marks](/concepts/claims-and-marks#reading-the-history) |
+| `hibi triage` | Rank uncovered prose by how likely it states a checkable fact | [The judge](/judge) |
+| `hibi suggest-evidence` | Rank code units that may be evidence for a statement | [The judge](/judge) |
+| `hibi providers` | Show the file provider, sibling repositories and schemes; `--check` runs the conformance cases | [External providers](/providers/external) |
+| `hibi schema` | Print the JSON Schema of a record, an input or a command's output | |
+| `hibi completions` | Print a shell completion script | |
+| `hibi version` | Print the version; in JSON also the protocol, store version, profiles, grammars and judge model | |
+
+## Output and exit status
+
+The result is JSON when standard output is not a terminal or with
+`--format json`: one object with `"ok": true`, `"command"`, `"warnings"` and
+the result keys, or `"ok": false` and `"errors"`. Otherwise it is text, with
+errors and warnings on standard error.
+
+The exit status is 0 when the command ran, whatever it found, and 1 on any
+error, including a usage error. No other status is used.
+
+`hibi schema` lists the schema names; `hibi schema <name>` prints one.
+
+## Error codes
+
+Every error carries one of these codes, a message, and a `remediation` that is
+one sentence or one command, or `null`.
+
+| Code | When |
+|---|---|
+| `usage` | Unknown command or option, missing argument, or options that cannot be combined |
+| `invalid_argument` | A well-formed argument with an unacceptable value |
+| `invalid_json` | Standard input is not the expected JSON |
+| `invalid_anchor` | A locator, selector or compact anchor does not parse |
+| `invalid_duration` | A `recheck` duration does not parse |
+| `invalid_time` | `--now` does not parse |
+| `invalid_range` | A `--since` range is not one of the accepted forms |
+| `not_initialized` | No `.hibi/hibi.toml` was found |
+| `already_initialized` | `init` on an existing store |
+| `not_a_git_repository` | A command that needs git runs where the root is not a git top level, or git is missing |
+| `legacy_store` | The repository has a hibi 0.x store in `.claims/` |
+| `unsupported_store_version` | `version` in `hibi.toml` is not 1 |
+| `invalid_config` | `.hibi/hibi.toml` does not parse or breaks a rule |
+| `invalid_user_config` | The user config does not parse or breaks a rule |
+| `store_corrupt` | A shard is damaged, misplaced, oversized or a symbolic link |
+| `store_locked` | Another hibi process held the write lock for 10 seconds |
+| `io_error` | A file operation failed |
+| `git_failed` | A git command failed |
+| `git_too_old` | git is older than 2.45.0 |
+| `claim_not_found` | No claim id starts with the given prefix |
+| `ambiguous_id` | Several ids start with the given prefix |
+| `claim_retired` | A write on a retired claim, or a claim equal to a retired one |
+| `no_change` | `reanchor` would produce the same claim |
+| `unknown_scheme` | A new anchor uses a scheme that is not declared |
+| `side_missing` | An anchor resolves to no unit |
+| `side_ambiguous` | An anchor resolves to several units |
+| `side_unavailable` | An anchor cannot be evaluated; the message gives the reason |
+| `selector_not_exact` | A new anchor resolved only approximately |
+| `quote_spans_units` | A quote reaches outside one unit |
+| `quote_in_comment` | A quote lies inside a code comment |
+| `unsupported_selector` | A new anchor uses a selector key its provider does not accept, such as `key` on a `file:` locator |
+| `no_scopes` | `cover` or `triage` with no scope declared |
+| `unknown_scope` | `--scope` names no scope |
+| `too_many_candidates` | `suggest-evidence` would rank more than 10,000 units |
+| `judge_unavailable` | A judge command without `TYPESAFE_API_KEY` |
+| `judge_failed` | A judge request failed after its retries |
+| `internal` | A bug in hibi; please report it |

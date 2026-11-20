@@ -1,0 +1,154 @@
+---
+title: "Configuration"
+description: "The repository's .hibi/hibi.toml, your user config, the cache, environment variables and global options."
+---
+
+hibi reads two configuration files. The repository's `.hibi/hibi.toml` is
+committed and says what the repository needs. Your user config is private to
+you and holds everything that runs a program or reads outside the
+repository. `hibi schema config` and `hibi schema user-config` print their
+JSON Schemas.
+
+## `.hibi/hibi.toml`
+
+`hibi init` writes this file with `version = 1` and commented examples:
+
+```toml
+# hibi configuration for this repository.
+version = 1
+
+# Sibling repositories that claims refer to as repo:<alias>//<path>.
+# The value is only a suggested location. Each user allows the directory
+# in their own user config with a [[repo]] entry.
+# [repos]
+# api = "../api"
+
+# External schemes. The provider command for a scheme is registered in
+# each user's own config, never here.
+# [schemes.archctl]
+# description = "Architecture facts served by archctl"
+
+# Units that must be covered by a claim.
+# [[scope]]
+# name = "docs"
+# resource = "file:docs/**/*.md"
+# kinds = ["sentence", "list-item", "table-row"]
+# exclude = [
+#   { resource = "file:docs/changelog.md", reason = "release notes, not claims" },
+# ]
+```
+
+| Key | Rule |
+|---|---|
+| `version` | Required, must be `1`. Another value is the error `unsupported_store_version`. |
+| `[repos]` | Optional. `alias = "suggested directory"`. The value is only shown to people; hibi never reads from it. |
+| `[schemes.<name>]` | Optional, one table per external scheme, with an optional `description`. Any other key, including `command`, is an error. |
+| `[[scope]]` | Optional, repeatable. See [coverage and scopes](/coverage). |
+
+Unknown keys are the error `invalid_config`, as is a file larger than 1 MiB.
+A scope on a scheme that is neither `file`, `repo` nor declared under
+`[schemes]` is also `invalid_config`.
+
+## User config
+
+The first that applies:
+
+1. the path in `HIBI_CONFIG`;
+2. `$XDG_CONFIG_HOME/hibi/config.toml`;
+3. `~/.config/hibi/config.toml` on Linux and macOS,
+   `%APPDATA%\hibi\config.toml` on Windows.
+
+A missing file is an empty config. `hibi providers` prints the path in use.
+
+```toml
+[providers.archctl]                        # one table per scheme
+command = ["archctl", "hibi-provider"]     # required: program and arguments
+timeout_ms = 10000                         # optional, default 10000, 100 to 600000
+
+[[repo]]                                   # one entry per allowed sibling repository
+root  = "/home/me/work/shop"               # the repository whose hibi.toml declares the alias
+alias = "api"
+path  = "/home/me/work/api"                # the directory to use for that alias
+```
+
+`root` and `path` must be absolute; `~` and environment variables are not
+expanded. Unknown keys and two entries with the same `root` and `alias` are
+the error `invalid_user_config`.
+
+A provider command runs only when the scheme is declared in the repository's
+`hibi.toml`, your user config has a command for it, and a command needs a
+locator of that scheme (or you ran `hibi providers --check <scheme>`). See
+[external providers](/providers/external).
+
+## Sibling repositories
+
+A claim in one repository can use evidence from another with a
+`repo:<alias>//<path>` locator, such as
+`repo:api//src/lib.rs#timeout_secs`. Two steps make it work:
+
+1. The repository declares the alias:
+
+   ```toml
+   [repos]
+   api = "../api"
+   ```
+
+2. Each user allows a directory for it in their user config, with a `[[repo]]`
+   entry whose `root` is this repository and whose `path` is the sibling.
+
+Until step 2, sides on that alias are `unavailable` with reason
+`repo_not_allowed`, and both `hibi providers` and the error message print the
+exact `[[repo]]` lines to add, with absolute paths filled in from the
+suggested location. A sibling is used only when its directory exists, is the
+top level of a git work tree, and is not the root, inside it, or above it.
+Files in a sibling are read only when git lists them there. Resolving a
+`repo:` locator needs git.
+
+```bash
+hibi claim "The API times out after 30 seconds." \
+  --subject "file:docs/api.md::times out after 30 seconds" \
+  --evidence "repo:api//src/lib.rs#timeout_secs"
+```
+
+`--since` does not evaluate `repo:` sides or scopes.
+
+## Cache
+
+hibi keeps one SQLite file of cached unit lists (keyed by the file's git blob
+id and the hibi version) and cached judge answers. The first that applies:
+
+1. `$HIBI_CACHE_DIR/cache.sqlite3`;
+2. `$XDG_CACHE_HOME/hibi/cache.sqlite3`;
+3. `~/.cache/hibi/cache.sqlite3` on Linux and macOS,
+   `%LOCALAPPDATA%\hibi\cache.sqlite3` on Windows.
+
+The cache is never committed and never authoritative. Deleting it changes no
+result of any command except the [judge](/judge) commands, for which it is
+the only source of repeatable answers. `--no-cache` makes a run neither read
+nor write it. A cache that cannot be opened is skipped with the warning
+`cache_unavailable`.
+
+## Environment variables
+
+| Variable | Effect |
+|---|---|
+| `HIBI_BY` | Default for `--by` |
+| `HIBI_CONFIG` | Path of the user config |
+| `HIBI_CACHE_DIR` | Directory of the cache database |
+| `TYPESAFE_API_KEY` | Key for the judge commands; nothing else reads it |
+| `HIBI_JEV_URL` | Address of the judge service, for tests |
+| `NO_COLOR` | Turns colour off in help output |
+
+## Global options
+
+Every command accepts these:
+
+| Option | Effect |
+|---|---|
+| `--root <dir>` | Use this directory as the root instead of searching upward from the working directory for `.hibi/hibi.toml` |
+| `--format human` or `--format json` | Output format. Default: JSON when standard output is not a terminal, text when it is. |
+| `--now <timestamp>` | Use this instant as the current time. RFC 3339 with any offset; a fraction of a second is dropped. |
+| `--no-cache` | Do not read or write the cache |
+
+`hibi completions <shell>` prints a completion script for `bash`, `zsh`,
+`fish`, `powershell` or `elvish`.

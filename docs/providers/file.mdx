@@ -1,0 +1,219 @@
+---
+title: "The file provider"
+description: "How hibi splits documents, code and plain text into units: classes, languages and unit kinds."
+---
+
+A provider turns a locator into units, text and fingerprints. The file
+provider is built into hibi and serves the schemes `file:` and `repo:`. Other
+sources are served by [external providers](/providers/external).
+
+## Resource classes
+
+The class of a file follows from its lower-cased extension:
+
+| Class | Extensions | Units |
+|---|---|---|
+| `markdown` | `.md`, `.mdx` | Prose units; frontmatter is skipped |
+| `prose` | `.markdown`, `.txt`, `.rst` | Prose units |
+| `typescript` | `.ts`, `.mts`, `.cts` | Code units |
+| `tsx` | `.tsx`, `.js`, `.mjs`, `.cjs`, `.jsx` | Code units, with the TSX grammar |
+| `python` | `.py`, `.pyi` | Code units |
+| `rust` | `.rs` | Code units |
+| `go` | `.go` | Code units |
+| `java` | `.java` | Code units |
+| `text` | anything else | Blocks |
+
+Every file also has one unit of kind `file` that spans all of it; the empty
+selector, as in `--subject file:docs/retry.md`, selects it.
+
+A code file that does not parse without error is read as class `text` for that
+run, so its units are blocks (see
+[fingerprints](/concepts/fingerprints#a-file-that-does-not-parse)). A file
+that is not valid UTF-8 or is larger than 8 MiB is not read. A symbolic link
+anywhere in the path is not followed: the file counts as not found. CRLF line
+endings are read as LF.
+
+## Unit kinds
+
+| Kinds | From |
+|---|---|
+| `sentence`, `heading`, `list-item`, `table-row`, `fenced` | Prose |
+| `function`, `method`, `class`, `struct`, `interface`, `trait`, `enum`, `type`, `variable`, `field`, `variant`, `module`, `impl`, `macro`, `statement` | Code |
+| `block` | Plain text, and code files that do not parse |
+| `file` | Every file |
+
+`hibi providers` lists the classes and profiles of the build.
+
+## Prose
+
+A Markdown or prose file is split into blocks at blank lines, lines that hold
+only an HTML or JSX tag, and thematic breaks (`---`, `***`, `___`). A fenced
+code block is one unit of kind `fenced`. A heading, a list item, a blockquote
+line and a table row each start a new piece; a table's separator row is
+dropped. Pieces other than headings and fences are cut into sentences after
+`.`, `!` or `?` followed by whitespace, except inside an inline code span.
+
+This document:
+
+````markdown docs/guide.md
+---
+title: Guide
+---
+
+# Configuration
+
+The server reads `config.toml` at start-up. It never reloads it.
+
+- `port`: the port to listen on. Default 8080.
+- `workers`: how many workers run. Default 4.
+
+| Key | Default |
+|---|---|
+| `timeout` | 30 s |
+
+```toml
+port = 8080
+```
+````
+
+has these units, as listed by a scope that asks for every prose kind:
+
+```text output
+guide (file:docs/*.md; sentence, heading, list-item, table-row, fenced): 10 units, 0 covered, 0 excluded, 10 uncovered
+  file:docs/guide.md
+        5  heading  # Configuration
+        7  sentence  The server reads `config.toml` at start-up.
+        7  sentence  It never reloads it.
+        9  list-item  - `port`: the port to listen on.
+        9  list-item  Default 8080.
+       10  list-item  - `workers`: how many workers run.
+       10  list-item  Default 4.
+       12  table-row  | Key | Default |
+       14  table-row  | `timeout` | 30 s |
+       16  fenced  ```toml port = 8080 ```
+```
+
+A list item with two sentences gives two units of kind `list-item`. A
+`.mdx` component tag on its own line is a boundary, so prose inside a
+component is still split.
+
+## Code
+
+Code is parsed with tree-sitter. Six grammars are compiled in: TypeScript,
+TSX, Python, Rust, Go and Java. Declarations are found at the top level and
+inside containers (classes, interfaces, traits, impls, structs, enums,
+modules). hibi never looks inside a function body, so local declarations are
+not units.
+
+- **Members are units.** Struct fields, enum variants, interface members, Java
+  enum constants and record components each are a unit. A data member has
+  kind `field`; an enum variant or constant has kind `variant`; a function
+  member has kind `method`.
+- **Attributes and decorators belong to their declaration.** A Rust
+  `#[derive(...)]` or a TypeScript `@Injectable()` is part of the unit of the
+  declaration it precedes, so changing it stales claims on that declaration.
+- **Doc comments are not part of the fingerprint.** A comment, including
+  rustdoc, JSDoc and Javadoc, never changes a fingerprint and cannot be
+  quoted in an anchor. A Python docstring is a string and counts.
+- **Top-level statements** that are not declarations, such as
+  `console.log("loaded");` or Go's `package main`, are units of kind
+  `statement`.
+
+These files in `src/` give the units below, as listed by a scope over
+`file:src/**` with every code kind:
+
+```rust src/config.rs
+/// Settings read at start-up.
+#[derive(Debug, Clone)]
+pub struct Config {
+    /// Seconds before a request is abandoned.
+    pub timeout_secs: u32,
+    pub retries: u8,
+}
+
+pub enum Mode {
+    Fast,
+    Safe { checks: u8 },
+}
+
+impl Config {
+    pub fn new() -> Self {
+        Config { timeout_secs: 30, retries: 5 }
+    }
+}
+```
+
+```typescript src/api.ts
+export interface Options {
+  timeoutMs: number;
+  retry?: boolean;
+}
+
+export enum Level { Low = 1, High = 2 }
+
+@Injectable()
+export class Client {
+  private base = "https://example.com";
+  fetch(path: string): string { return this.base + path; }
+}
+```
+
+| Unit key | Kind | Line |
+|---|---|---|
+| `struct:Config` | struct | 2, with its `#[derive]` |
+| `field:Config.timeout_secs` | field | 5 |
+| `field:Config.retries` | field | 6 |
+| `enum:Mode` | enum | 9 |
+| `variant:Mode.Fast` | variant | 10 |
+| `variant:Mode.Safe` | variant | 11 |
+| `impl:impl Config` | impl | 14 |
+| `method:Config.new` | method | 15 |
+| `interface:Options` | interface | 1 |
+| `field:Options.timeoutMs` | field | 2 |
+| `field:Options.retry` | field | 3 |
+| `enum:Level` | enum | 6 |
+| `variant:Level.Low` | variant | 6 |
+| `variant:Level.High` | variant | 6 |
+| `class:Client` | class | 8, with its `@Injectable()` |
+| `field:Client.base` | field | 10 |
+| `method:Client.fetch` | method | 11 |
+
+The other languages follow the same pattern:
+
+| Source | Units |
+|---|---|
+| Python `class Job:` with `retries = 3` and `def run(self)` | `class:Job`, `field:Job.retries`, `method:Job.run` |
+| Python module-level `MAX_JOBS = 100` | `variable:MAX_JOBS` |
+| Go `type Server struct { Port int }` and `func (s *Server) Start()` | `type:Server`, `field:Server.Port`, `method:Server.Start` |
+| Java `enum Color { RED, GREEN; private final int code = 1; }` | `enum:Color`, `variant:Color.RED`, `variant:Color.GREEN`, `field:Color.code` |
+| Java `record Point(int x, int y) {}` | `class:Point`, `field:Point.x`, `field:Point.y` |
+| TypeScript `export const handler = (x: number) => x * 2;` | `function:handler` |
+| TypeScript `export const limit = 10;` | `variable:limit` |
+
+## Symbols and keys
+
+The symbol of a declaration is its path, joined with `.`: `MAX_ATTEMPTS`,
+`Config.timeout_secs`, `Store.get`, `inner.LIMIT`. Use it after `#` in a
+compact anchor. A Rust impl block is named `impl Config` (or
+`impl Display for Config` for a trait impl); its methods have paths that start
+with the type, `Config.new`, whichever impl block they are in.
+
+Unit keys identify a unit within one file:
+
+| Unit | Key |
+|---|---|
+| The whole file | `file` |
+| A declaration | `<kind>:<symbol>`, such as `field:Config.timeout_secs` |
+| A prose unit, statement or block | `<kind>:<12 hex digits of its fingerprint>`, such as `sentence:619145cf695d` |
+
+A declaration key stays the same when the declaration is edited or moved
+within the file. A content key stays the same when the unit moves and changes
+when its text changes. When two units of a file would get the same key, the
+second and later get `~2`, `~3` and so on. Exclusions in a scope use these
+keys.
+
+## Sibling repositories
+
+`repo:<alias>//<path>` reads a file of another git repository with the same
+rules. The alias must be declared in `.hibi/hibi.toml` and allowed in your
+user config; see [configuration](/configuration#sibling-repositories).

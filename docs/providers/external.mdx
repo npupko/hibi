@@ -1,0 +1,246 @@
+---
+title: "External providers"
+description: "Serve your own resources to hibi through a command that speaks a JSON-lines protocol."
+---
+
+hibi's core knows nothing about documents. Any tool whose facts live
+somewhere other than files, such as a database of architecture decisions, can
+serve them as units through an external provider: a program that hibi starts
+and talks to over standard input and output. Claims can then anchor to those
+units, `status` reports when they change, and `cover` lists the ones without
+a claim.
+
+## Two halves of the setup
+
+A provider is set up in two places, on purpose:
+
+1. **The repository declares the scheme** in `.hibi/hibi.toml`. This never
+   names a command:
+
+   ```toml
+   [schemes.ref]
+   description = "Notes served by the reference provider"
+   ```
+
+2. **Each user registers the command** in their own user config (see
+   [configuration](/configuration#user-config)):
+
+   ```toml
+   [providers.ref]
+   command = ["hibi-provider-reference", "--fixture", "notes.json"]
+   timeout_ms = 10000
+   ```
+
+hibi never runs a command named by a repository. Running a command from a
+cloned repository's configuration would turn `hibi status` on someone else's
+code into running their code. A `command` key in `hibi.toml` is refused:
+
+```text output
+$ hibi status
+error: invalid_config: .hibi/hibi.toml: [schemes.ref] has a command key; a repository never names a command. Register the provider command in your user config under [providers.ref]
+  fix: Fix .hibi/hibi.toml as the message says.
+```
+
+Until a user registers the command, sides on that scheme are `unavailable`
+with reason `provider_not_registered`, no command is run, and `next` is
+`hibi providers`:
+
+```text output
+c1-cbv9mtv2w2g3zh2bk056  stale  Downloads are retried at most 3 times.
+  subject  ref:notes  unavailable (provider_not_registered)
+  next: hibi providers
+```
+
+`hibi providers` shows what is set up and prints the lines to add for what is
+not. It starts no provider. In this run `HIBI_CONFIG` pointed at a user config
+that does not exist yet:
+
+```text output
+$ HIBI_CONFIG=none.toml hibi providers
+built in: schemes file, repo; classes markdown, prose, typescript, tsx, python, rust, go, java, text; profiles prose-v1, ast-v1
+user config: none.toml
+scheme ref: not registered. To register it, add to the user config:
+    [providers.ref]
+    command = ["<program>", "<argument>"]
+```
+
+## Using provider units in claims
+
+A compact anchor on an external scheme is the locator alone, with the empty
+selector. What the empty selector matches is up to the provider; the
+reference provider answers it with every unit of the resource:
+
+```text output
+$ hibi claim "Downloads are retried at most 3 times." --subject ref:notes --evidence "file:src/retry.rs#MAX_ATTEMPTS"
+error: side_ambiguous: the subject (ref:notes): the selector matches 2 units: n1 (note): Downloads are retried at most 3 times.; n2 (note): The limit is set in src/retry.rs.
+  fix: Add a symbol, or a longer quote, so that the anchor matches one unit.
+```
+
+Give any other selector as JSON on standard input:
+
+```bash
+echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc": "ref:notes", "sel": {"key": "n1"}}, "evidence": ["file:src/retry.rs#MAX_ATTEMPTS"]}]' | hibi claim --stdin
+```
+
+```text output
+c1-cbv9mtv2w2g3zh2bk056  created  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", lines 2-3)
+```
+
+When the provider later serves different text for `n1`, the claim goes stale
+like any other:
+
+```text output
+c1-cbv9mtv2w2g3zh2bk056  stale  Downloads are retried at most 3 times.
+  subject  ref:notes  changed (fingerprint_differs)  note "Downloads are retried at most 4 times."
+  next: hibi mark c1-cbv9mtv2w2g3zh2bk056
+```
+
+A scope can name one external resource; its units come from the provider:
+
+```toml
+[[scope]]
+name = "notes"
+resource = "ref:notes"
+kinds = ["note"]
+```
+
+```text output
+$ hibi cover --scope notes
+notes (ref:notes; note): 2 units, 1 covered, 0 excluded, 1 uncovered
+  ref:notes
+        -  note  The limit is set in src/retry.rs.
+```
+
+## The protocol
+
+Protocol version 1. The full specification is section 13 of
+[`design/SPEC.md`](https://github.com/npupko/hibi/blob/main/design/SPEC.md);
+`hibi schema provider-request`, `hibi schema provider-response` and
+`hibi schema unit` print the JSON Schemas.
+
+### Transport
+
+- hibi starts `command[0]` with the other elements as arguments, without a
+  shell, in the root directory. The environment is inherited, plus
+  `HIBI_ROOT` (the absolute root) and `HIBI_PROTOCOL=1`.
+- One process per scheme per hibi run, started only when a locator of that
+  scheme is needed.
+- Every message is one JSON object on one line. hibi writes requests to the
+  provider's standard input and reads responses from its standard output.
+  Standard output carries protocol lines only; write diagnostics to standard
+  error, of which hibi keeps the last 4096 bytes for its error messages.
+- Requests are sequential. The first is always `hello`.
+- Each response must arrive within `timeout_ms` (default 10000, from 100 to
+  600000). A response line longer than 16 MiB is a violation.
+- When it is done, hibi closes standard input. The provider must then exit;
+  hibi kills it after 2 seconds.
+- On a timeout, an oversized line, a line that is not a JSON object, a
+  response with the wrong `id`, or an unexpected exit, hibi kills the provider
+  for the rest of the run, and every side it had not answered is `unavailable`
+  with reason `provider_failed`.
+
+### Requests
+
+Each request is `{"id": <n>, "method": <name>, "params": {...}}` and each
+response is `{"id": <n>, "result": ...}` or
+`{"id": <n>, "error": {"code", "message"}}`. This is a real session with the
+reference provider and the fixture shown below; requests first, then the
+responses in order:
+
+```json output
+{"id":1,"method":"hello","params":{"protocol":[1],"client":{"name":"hibi","version":"5.0.0"},"root":"/repo"}}
+{"id":2,"method":"resolve","params":{"loc":"ref:notes","sel":{"key":"n1"}}}
+{"id":3,"method":"units","params":{"loc":"ref:notes"}}
+{"id":4,"method":"render","params":{"loc":"ref:notes","unit":"n2"}}
+{"id":5,"method":"resolve","params":{"loc":"ref:missing","sel":{}}}
+```
+
+```json output
+{"id":1,"result":{"capabilities":{"batch":true,"render":true,"units":true},"kinds":["note"],"protocol":1,"provider":{"name":"hibi-provider-reference","version":"5.0.0"},"schemes":["ref"],"selectors":["key","quote"]}}
+{"id":2,"result":{"units":[{"fp":"b3:prose-v1:d492af157920b183a0788bf760e3836a","key":"n1","kind":"note","label":"Downloads are retried at most 3 times.","parent":null,"sel":{"key":"n1"},"text":"Downloads are retried at most 3 times."}]}}
+{"id":3,"result":{"units":[{"fp":"b3:prose-v1:d492af157920b183a0788bf760e3836a","key":"n1","kind":"note","label":"Downloads are retried at most 3 times.","parent":null,"sel":{"key":"n1"}},{"fp":"b3:prose-v1:db7b757033aa0f384fda0b1eee3fc557","key":"n2","kind":"note","label":"The limit is set in src/retry.rs.","parent":"n1","sel":{"key":"n2"}}]}}
+{"id":4,"result":{"context":["Downloads are retried at most 3 times."],"text":"The limit is set in src/retry.rs."}}
+{"error":{"code":"not_found","message":"ref:missing is not in the fixture"},"id":5}
+```
+
+| Method | Params | Result |
+|---|---|---|
+| `hello` | `protocol` (versions hibi speaks), `client`, `root` | `protocol` (the one chosen), `provider` (`name`, `version`), `schemes` (must include the registered one), `selectors` (from `quote`, `symbol`, `key`), `kinds`, `capabilities` (`units`, `render`, `batch`; missing means false) |
+| `resolve` | `loc`, `sel` | `units`: none (the resource exists, nothing matched), one, or several (ambiguous). A resource that does not exist is the error `not_found`, never an empty list. Mandatory. |
+| `units` | `loc`, optional `kind` | `units` without `text`, in a stable order with unique keys |
+| `render` | `loc`, `unit` (a key) | `text` for a person or a judge, and `context`, outermost first |
+| `batch` | `requests`: up to 1000 inner requests without `id` | `responses`: one `result` or `error` per request, same order. Used only when the `batch` capability is true. |
+
+A unit has `key`, `kind`, `fp` and `sel` (required), and `parent`, `label` and
+`range` (optional). `text` is required in `resolve` only. `fp` is a
+fingerprint string `b3:<profile>:<hex>` with 32 to 64 hex digits; the provider
+names its own profile. `sel` must be a selector that, sent back to `resolve`
+with the same `loc`, returns exactly this unit; hibi stores it in the claim. A
+unit's `parent` key makes a claim on it cover its ancestors too.
+
+Both sides ignore object keys they do not know, except inside a selector,
+which is closed: hibi rejects a returned `sel` with an unknown key or a key the
+provider did not list in `selectors`.
+
+### Errors
+
+| Code | Meaning | Side result |
+|---|---|---|
+| `not_found` | The resource does not exist | `missing` |
+| `not_text` | The resource is not text the provider can read | `unavailable` |
+| `too_large` | The resource exceeds a size limit | `unavailable` |
+| `invalid_request`, `unknown_method`, `invalid_locator`, `invalid_selector`, `unavailable`, `internal` | As named | `unavailable` (`provider_error`) |
+| `unsupported_protocol` | `hello` only: no common version | The provider is unusable for the run |
+| `unknown_unit` | `render` only | The side cannot be rendered |
+
+An unknown code is treated as `internal`. A line that is not a request is
+answered with `{"id": null, "error": {"code": "invalid_request", ...}}`, and
+the provider keeps running.
+
+## The reference provider
+
+`hibi-provider-reference` is a complete provider in the repository
+(`crates/hibi-provider-reference`), written to be read. It serves scheme
+`ref` from a fixture file:
+
+```json notes.json
+{"resources": {"ref:notes": {"units": [
+  {"key": "n1", "kind": "note", "parent": null, "text": "Downloads are retried at most 3 times."},
+  {"key": "n2", "kind": "note", "parent": "n1", "text": "The limit is set in src/retry.rs."}
+]}}}
+```
+
+It accepts `key` and `quote` selectors, fingerprints each unit's text with
+`prose-v1`, and answers `{}` with every unit of the resource. Build it from a
+clone of the repository:
+
+```bash
+cargo install --locked --path crates/hibi-provider-reference
+```
+
+## Checking a provider
+
+`hibi providers --check <scheme>` starts the registered command and runs the
+protocol conformance cases that are compiled into hibi. A failing case is
+reported and does not make the command fail.
+
+```bash
+HIBI_CONFIG=user.toml hibi providers --check ref
+```
+
+```text output
+built in: schemes file, repo; classes markdown, prose, typescript, tsx, python, rust, go, java, text; profiles prose-v1, ast-v1
+user config: user.toml
+scheme ref: registered, hibi-provider-reference --fixture notes.json
+check ref: 7 passed, 0 failed, 0 skipped
+  passed  batch answers every inner request in order, errors included
+  passed  hello is answered with protocol 1 and the provider's description
+  passed  a line that is not a request is answered with id null and invalid_request, and the provider keeps running
+  passed  resolve on a locator the provider cannot have is an error, not an empty list
+  passed  the provider exits with status 0 when its standard input is closed
+  passed  an unknown method is unknown_method with the request's id
+  passed  hello offering only an unknown protocol version is unsupported_protocol, and the provider keeps running
+```
+
+The case files are in `cases/provider/protocol/` of the repository; `cases/provider/reference/` holds further cases for the reference
+provider itself.

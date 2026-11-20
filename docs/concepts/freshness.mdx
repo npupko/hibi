@@ -1,0 +1,106 @@
+---
+title: "Freshness"
+description: "The one rule that decides whether a claim is fresh, stale, expired or retired, and what each side state means."
+---
+
+## Claim states
+
+hibi evaluates a claim from the claim, its marks, its retirements, the current
+resolution of each side, and the current time. Nothing else. The first row
+that applies decides:
+
+| Order | Condition | State |
+|---|---|---|
+| 1 | The claim has a retirement | `retired` |
+| 2 | No mark matches: no mark has, for every side, a fingerprint equal to the side's current one | `stale` |
+| 3 | The claim has no `recheck` period | `fresh` |
+| 4 | Some matching mark is younger than the `recheck` period | `fresh` |
+| 5 | Otherwise | `expired` |
+
+Consequences:
+
+- **Any matching mark counts, not only the newest.** Reverting a file to
+  content that an older mark covers makes the claim fresh again.
+- **A claim with no mark is stale.** `claim` writes the first mark itself, so
+  this happens only if a write was interrupted.
+- **Expired means unchanged but old.** The content still equals a marked
+  state; only the time ran out. At exactly the end of the period the claim is
+  already expired.
+- **A stale claim still covers its units** for [coverage](/coverage).
+
+## Side states
+
+`status` reports each side that is not `same`, with a state and a reason:
+
+| State | Reason | Meaning |
+|---|---|---|
+| `same` | | The unit's fingerprint equals the one in the reference mark |
+| `changed` | `fingerprint_differs` | The unit was found and its fingerprint differs |
+| `changed` | `no_mark` | The claim has no mark |
+| `missing` | `selector_not_found` | The resource exists, but no unit matches the anchor |
+| `missing` | `resource_not_found` | The file or resource does not exist |
+| `ambiguous` | `several_units` | The anchor matches several units; `candidates` lists them |
+| `unavailable` | `profile_mismatch` | The fingerprints use different profiles, for example a code file that no longer parses |
+| `unavailable` | `scheme_not_declared` | The locator's scheme is not declared in `.hibi/hibi.toml` |
+| `unavailable` | `provider_not_registered` | The scheme is declared, but your user config has no command for it. No command is run. |
+| `unavailable` | `provider_failed` | The provider command could not start, timed out, broke the protocol or was killed |
+| `unavailable` | `provider_error` | The provider answered with an error, or returned a unit hibi rejects |
+| `unavailable` | `not_text`, `too_large` | The file is not valid UTF-8, or is larger than 8 MiB |
+| `unavailable` | `repo_not_found`, `repo_not_allowed` | A sibling repository could not be used (see [configuration](/configuration#sibling-repositories)) |
+
+A side can also be `approx`: found only approximately, through a fuzzy match
+of its quote or a symbol that no longer exists. `approx` never changes the
+state; it changes `next` to suggest `reanchor` (see
+[agent workflow](/agent-workflow#reading-next)).
+
+The reference mark, against which side states are reported, is the newest
+matching mark if any mark matches, otherwise the newest mark.
+
+## Recheck periods
+
+`--recheck` takes an ISO 8601 duration with whole numbers: `P90D`, `P6M`,
+`P1Y`, `P2W`, `PT12H`. Years and months move the calendar date, using the
+last day of a shorter month; weeks, days, hours, minutes and seconds add fixed
+seconds.
+
+```bash
+hibi claim "Each attempt times out after 10 seconds." \
+  --subject "file:docs/retry.md::times out after 10 seconds" \
+  --recheck P90D \
+  --note "The timeout is set by the HTTP client defaults; check its release notes." \
+  --now 2026-08-01T09:00:00Z
+```
+
+Run on 2026-11-20, more than ninety days after that mark, `status` reports the
+claim expired although nothing changed:
+
+```text output
+$ hibi status
+6 claims: 2 fresh, 0 stale, 1 expired, 3 retired
+
+c1-1y9x18za6d6qb7q5q3nx  expired  Each attempt times out after 10 seconds.
+  recheck P90D ran out at 2026-10-30T09:00:00Z
+  next: hibi mark c1-1y9x18za6d6qb7q5q3nx
+
+Re-check each statement before running its next command.
+```
+
+## The current time
+
+"Now" is the wall clock in UTC. `--now <timestamp>`, accepted by every
+command, replaces it for reproducible runs: RFC 3339 with any offset, a
+fraction of a second dropped. The example above used `--now` to record a mark
+in the past; `hibi status --now 2026-10-01T00:00:00Z` reports the same claim
+fresh.
+
+## Filtering `status`
+
+| Invocation | Lists |
+|---|---|
+| `hibi status` | Stale and expired claims |
+| `hibi status --state fresh --state retired` | Claims in the given states |
+| `hibi status c1-bvy8 c1-dryh` | Exactly these claims, in any state |
+| `hibi status --loc 'file:src/**'` | Claims with a side whose locator matches the glob |
+| `hibi status --since main` | Stale claims that the changes since `main` caused; see [ranges](/ranges) |
+
+The summary line always counts every claim in the store, before any filter.

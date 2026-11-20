@@ -1,0 +1,166 @@
+---
+title: "Anchors and selectors"
+description: "How a claim points at a sentence, a function or a field, and finds it again after edits."
+---
+
+An anchor is a locator plus a selector. The locator names a resource; the
+selector picks one unit inside it and lets hibi find that unit again after
+the file is edited.
+
+## Locators
+
+| Form | Names |
+|---|---|
+| `file:<path>` | A file relative to the root (the directory that contains `.hibi/`). Paths use `/`. |
+| `repo:<alias>//<path>` | A file in a sibling repository. The alias is declared in `.hibi/hibi.toml` and its directory is allowed in your user config. See [configuration](/configuration#sibling-repositories). |
+| `<scheme>:<anything>` | A resource of an [external provider](/providers/external). hibi passes the part after the colon through unchanged. |
+
+## Selectors
+
+| Key | Meaning |
+|---|---|
+| `quote` | Text that occurs in the unit. Matched as given, untrimmed. |
+| `prefix`, `suffix` | Up to 48 characters before and after the quote. Allowed only with `quote`. |
+| `pos` | The byte offset of the quote when it was recorded. A hint only. Allowed only with `quote`. |
+| `symbol` | The declaration path of a code unit, such as `MAX_ATTEMPTS`, `Config.timeout_secs` or `Store.get`. |
+| `key` | A unit key, for external providers that address units by key. The file provider does not accept it. |
+
+The empty selector `{}` selects the whole resource (its `file` unit).
+
+## Compact anchors on the command line
+
+`--subject`, `--evidence` and the other anchor options take a compact string:
+
+| Compact anchor | Selects |
+|---|---|
+| `file:docs/retry.md` | The whole file |
+| `file:src/retry.rs#delay_ms` | The declaration with this symbol |
+| `file:docs/retry.md::gives up after 5 attempts` | The unit that contains this quote |
+| `file:src/retry.rs#delay_ms::200` | A quote inside a symbol |
+
+The part after the first `::` is the quote, taken verbatim. The part between
+`#` and `::` is the symbol. A path that contains `#` or `::`, and any selector
+for an external scheme (such as a `key`), must be given as JSON on standard
+input with `hibi claim --stdin`, where an anchor is either a compact string or
+an object `{"loc": ..., "sel": {...}}`:
+
+```bash
+echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc": "ref:notes", "sel": {"key": "n1"}}, "evidence": ["file:src/retry.rs#MAX_ATTEMPTS"]}]' | hibi claim --stdin
+```
+
+For an external scheme, a compact anchor is the locator alone, with the empty
+selector.
+
+## Stored anchors are completed
+
+hibi never stores a selector as you typed it. It resolves the anchor and
+stores the selector the provider returns for the unit it found. For the file
+provider that is the quote, the 48 characters before and after it, its byte
+position, and the symbol when the unit is a declaration. This is what
+`reanchor` printed for the walkthrough's claim:
+
+```text output
+  subject  {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
+  evidence 1  {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 3;","prefix":"a download is tried before the client gives up.\n","suffix":"\n\n/// The delay before attempt `n`, in milliseco","pos":62,"symbol":"MAX_ATTEMPTS"}}
+```
+
+The evidence was given as `#MAX_ATTEMPTS` only; hibi added the first line of
+the declaration as its quote.
+
+## Finding the unit again
+
+On every later run hibi resolves each stored anchor:
+
+1. A `symbol` that names exactly one declaration selects it. The quote then
+   only decides which text the stored selector keeps.
+2. Otherwise the quote is searched. One exact occurrence selects the unit that
+   contains it. Several exact occurrences are told apart by the similarity of
+   the 48 characters before and after them. A tie goes to the occurrence nearest
+   `pos` when the quote is under 8 characters, and is `ambiguous` otherwise.
+3. With no exact occurrence, a fuzzy search near `pos` looks for the quote
+   with up to 40% of its characters changed (at most 256). A unit found this
+   way is reported as found approximately (`approx`).
+
+A similarity score is used only to find a unit and to propose a re-anchor. It
+never decides whether a claim is fresh: that is exact
+[fingerprint](/concepts/fingerprints) equality.
+
+## Write checks: `claim` is exact, `mark` accepts approximate
+
+When an anchor is new (in `claim`, or a replaced or added side in
+`reanchor`), it must resolve to exactly one unit, exactly:
+
+```text output
+$ hibi claim "Attempts are tried" --subject "file:docs/retry.md::retries a faild download"
+error: selector_not_exact: the subject (file:docs/retry.md) resolved only approximately; found sentence:f62289c99f0c (sentence) at line 3: The client retries a failed download., text "The client retries a failed download."
+  fix: Give a quote that occurs exactly in the unit you mean.
+```
+
+```text output
+$ hibi claim "Attempts are tried" --subject "file:docs/retry.md::nothing like this"
+error: side_missing: the subject (file:docs/retry.md) resolves to no unit (selector_not_found): the selector matches no unit
+  fix: Point the anchor at text that exists in the resource.
+```
+
+A quote must lie inside one unit:
+
+```text output
+$ echo '[{"statement":"x","subject":"file:docs/retry.md::download.\nIt gives"}]' | hibi claim --stdin
+error: element 0: quote_spans_units: the subject (file:docs/retry.md): the quote reaches outside one unit
+  fix: Quote text from one unit only.
+```
+
+`mark` is different: you have just re-checked the claim and are trusted, so a
+side found approximately is accepted. `mark` prints the text of every such
+side so you see what you marked, and suggests `reanchor` to store an exact
+selector again.
+
+## Quotes inside code comments cannot be anchored
+
+The code fingerprint ignores comments, so a claim anchored to a comment could
+never go stale. A quote that lies wholly or partly inside a comment is
+refused, and that includes documentation comments: JSDoc, rustdoc and
+Javadoc.
+
+```text output
+$ hibi claim "A job runs at most 3 times." --subject "file:README.md::at most 3 times" --evidence "file:src/config.rs#Config::Seconds before a request"
+error: quote_in_comment: evidence 1 (file:src/config.rs): the quote lies wholly or partly inside a code comment
+  fix: Anchor the code the comment describes.
+```
+
+A Python docstring is a string, not a comment. It is part of the fingerprint
+and can be anchored:
+
+```text output
+$ hibi claim "A job runs at most 3 times." --subject "file:README.md::at most 3 times" --evidence "file:src/jobs.py#Job::Jobs run at most 3 times"
+c1-15heaync8sdxwfm9amfg  created  subject file:README.md (sentence "A job runs at most 3 times.", line 3); evidence 1 file:src/jobs.py (class "Job", lines 1-8)
+```
+
+## Renames
+
+hibi keeps no alias for a renamed symbol. When a symbol no longer exists, the
+stored quote is searched instead. If the fuzzy search finds the declaration
+under its new name, the side resolves approximately; if the rename changed too
+much of a short quote, the side is missing. Either way a rename changes the
+declaration's own fingerprint, so the claim is stale until someone re-checks
+it. Renaming `JOB_LIMIT = 100` to `MAX_JOBS = 100` in Python gives:
+
+```text output
+c1-zre725c6srw6pf23jj5p  stale  Max jobs
+  evidence 1  file:src/jobs.py  missing (selector_not_found)
+  next: hibi reanchor c1-zre725c6srw6pf23jj5p --evidence 1=<anchor>
+```
+
+A rename of an enclosing container (a struct, class or module) changes a
+member's path but not the member's fingerprint. That side stays the same, is
+found approximately, and the claim stays fresh. Renaming the struct `Config`
+to `Settings` gives, for a claim on its field `Config.timeout_secs`:
+
+```text output
+c1-0v8jc46fz77efrkx852p  fresh  Timeout is 30
+  evidence 1  file:src/config.rs  same, found approximately  field "Settings.timeout_secs", line 5
+  next: hibi reanchor c1-0v8jc46fz77efrkx852p
+```
+
+Plain `hibi status` does not list this claim, because it is fresh. Ask for it
+with `hibi status <id>` or `hibi status --state fresh`.

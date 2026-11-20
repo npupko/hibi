@@ -1,0 +1,150 @@
+---
+title: "Agent workflow"
+description: "How an agent uses hibi in a working session: status, re-check, mark or reanchor, claim, cover."
+---
+
+hibi is built for an agent that is trusted to judge whether a statement is
+true. hibi supplies the memory: which statements were checked, against what,
+and what changed since. The agent supplies the judgement, and asks the user
+when it cannot decide.
+
+## The session loop
+
+<Steps>
+  <Step title="Start with status">
+    ```bash
+    hibi status
+    ```
+
+    By default `status` lists the stale and expired claims. For each one it
+    lists the sides that are not the same as at the mark, with a state and a
+    reason, and a `next` command. Add `--detail` to include the current text
+    of every side, so the re-check needs no extra file reads:
+
+    ```bash
+    hibi status --detail
+    ```
+  </Step>
+  <Step title="Re-check each listed claim">
+    Read the statement and the current text of its sides. Decide whether the
+    statement still holds. `next` is what to run when it does; it is not a
+    verdict. hibi prints the reminder once per run: "Re-check each statement
+    before running its next command."
+  </Step>
+  <Step title="Record what you found">
+    | Finding | Command |
+    |---|---|
+    | The statement still holds | `hibi mark <id>` |
+    | It holds, but a side moved, was reworded or matches several units | `hibi reanchor <id>`, with `--subject` or `--evidence <n>=<anchor>` for the side that moved |
+    | The statement must change (you fixed the text, or the code changed what is true) | Fix the text, then `hibi reanchor <id> --statement "..." --subject ...` |
+    | The statement was removed or no longer applies | `hibi retire <id> --note "why"` |
+    | You cannot tell which side is right, the document or the code | Ask the user. Do not mark. |
+  </Step>
+  <Step title="Claim what you checked">
+    When you write or verify a statement during the session, record it with
+    `hibi claim` right after the check, while the evidence is in front of
+    you.
+  </Step>
+  <Step title="Look for gaps">
+    ```bash
+    hibi cover --since main
+    ```
+
+    lists the units of the declared scopes that the branch added or changed
+    and that no claim covers. Claim the checkable ones. A unit that states
+    nothing checkable can be excluded in `.hibi/hibi.toml` with a reason;
+    exclusions are visible in every `cover` report, so agree on them with the
+    user.
+  </Step>
+  <Step title="Before you finish">
+    ```bash
+    hibi status --since main
+    ```
+
+    lists the claims that the branch made stale. Resolve them, then commit
+    `.hibi/` with the change.
+  </Step>
+</Steps>
+
+## Reading `next`
+
+`next` is one command line quoted for a POSIX shell, or `null`. A part you
+must supply is written `<anchor>` or `<text>`. hibi picks the first row that
+applies:
+
+| Condition | `next` |
+|---|---|
+| Fresh with no approximate side, or retired | `null` |
+| A side is missing or ambiguous | `hibi reanchor <id> --subject <anchor>` or `--evidence <n>=<anchor>`, one option per such side |
+| A side is unavailable because its scheme is not declared, its provider is not registered or failed, or a sibling repository is not allowed | `hibi providers` |
+| A side is unavailable for another reason (repository not found, not text, too large, provider error) | `null` |
+| Fresh, and a side was found only approximately | `hibi reanchor <id>`, or `hibi reanchor <id> --note <text>` when the plain command would recreate a retired claim |
+| Otherwise: expired, or a side changed | `hibi mark <id>` |
+
+A stale claim with an approximately found side gets `hibi mark <id>`. After
+the mark, the claim is fresh with an approximate side, and its `next` becomes
+`hibi reanchor <id>`, which stores a selector that matches exactly again. This
+is what that looks like:
+
+```text output
+$ hibi mark c1-xc82 --by agent:claude
+c1-xc82944rsnhdf8wancz9  marked  m1-rt3t4bhwerew2sgyy0ag
+  subject  file:docs/retry.md  same, found approximately  sentence "The delay between attempts doubles every time, starting at …", line 5
+    | The delay between attempts doubles every time, starting at 200 ms.
+  next: hibi reanchor c1-xc82944rsnhdf8wancz9
+```
+
+`mark` prints the text of every approximately found side, so you see exactly
+what you marked.
+
+<Note>
+Plain `hibi status` lists stale and expired claims only. A fresh claim whose
+side was found approximately is listed by `hibi status --state fresh`, or by
+`hibi status <id>`.
+</Note>
+
+## JSON for agents
+
+In an agent's shell tool standard output is not a terminal, so each command
+prints one JSON object. The fields an agent reads from `status`:
+
+| Field | Meaning |
+|---|---|
+| `summary` | Counts of every claim in the store by state, before any filter |
+| `claims[].state` | `fresh`, `stale`, `expired` or `retired` |
+| `claims[].sides[]` | One entry per side: `role`, `anchor`, `state`, `reason`, `approx`, `unit`, `fp` and `markedFp`, plus `text` with `--detail` |
+| `claims[].next` | The command to run after a successful re-check, or `null` |
+| `nextNote` | The re-check reminder |
+
+Errors are `{"ok": false, "errors": [{"code", "message", "remediation"}]}` with
+exit status 1. `remediation` is one sentence or one command that fixes the
+cause.
+
+## Batches
+
+`claim` and `mark` read a JSON array from standard input with `--stdin`. A
+batch is written all or nothing: if any element fails, nothing is written and
+every failing element is reported with its `index`.
+
+```bash
+echo '["c1-1y9x", {"claim": "c1-dryh", "note": "checked against MAX_ATTEMPTS"}]' | hibi mark --stdin
+```
+
+```bash
+hibi claim --stdin <<'EOF'
+[{"statement": "The client retries a failed download.",
+  "subject": "file:docs/retry.md::retries a failed download",
+  "evidence": ["file:src/retry.rs#MAX_ATTEMPTS"],
+  "by": "agent:claude"}]
+EOF
+```
+
+Each element of a `cover` item list carries an `anchor` object that can be
+used as `subject` as it is. `hibi schema claim-input` and
+`hibi schema mark-input` print the schemas of these documents.
+
+## Who checked
+
+`--by` (or the `by` field, or the `HIBI_BY` environment variable) is free text
+stored with a mark for the record, for example `agent:claude`. hibi never
+interprets it.

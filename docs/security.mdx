@@ -1,0 +1,50 @@
+---
+title: "Security model"
+description: "What untrusted repository content can and cannot make hibi do, and what hibi does not protect against."
+---
+
+hibi runs in repositories other people wrote: a cloned project, a pull
+request branch, a sibling checkout. Everything tracked in such a repository is
+untrusted, including `.hibi/hibi.toml` and the claim records. The full policy,
+including how to report a vulnerability, is in
+[`SECURITY.md`](https://github.com/npupko/hibi/blob/main/SECURITY.md).
+
+## What repository content cannot do
+
+- **Run a command.** A repository declares schemes and sibling aliases by
+  name only. Provider commands and sibling directories come from your user
+  config; a `command` key in `hibi.toml` is refused with `invalid_config`.
+  Provider commands are started without a shell.
+- **Make git run a program.** Every git process hibi starts sets
+  `safe.bareRepository=explicit` and `core.fsmonitor=false`, disables the
+  untracked cache and optional locks, never uses a pager, and sets
+  `GIT_NO_LAZY_FETCH=1` and `GIT_TERMINAL_PROMPT=0`. None of the git commands
+  hibi runs starts a hook or contacts a remote.
+- **Make hibi write elsewhere.** hibi writes only under `.hibi/` and to its
+  cache file. If `.hibi`, `hibi.toml`, a shard directory, a shard or the lock
+  file is a symbolic link, the command stops with `store_corrupt` before
+  writing.
+- **Make hibi read elsewhere.** A path with a symbolic link in it is treated
+  as not found. A sibling repository is read only when your user config
+  allows its directory, and only files that git lists there.
+- **Send data off the machine.** Only `triage`, `suggest-evidence` and
+  `status --judge-order` use the network, and only with `TYPESAFE_API_KEY`
+  set. They send text only from files git lists (tracked, or untracked and
+  not ignored). See [the judge](/judge#what-is-sent) for what is sent.
+
+## What is trusted
+
+- Your user config.
+- The repository's own `.git/config`, and that of a sibling you allowed. git
+  writes it locally and a clone does not transfer it.
+- The provider programs you register.
+- The agent or person running hibi.
+
+## What hibi does not protect against
+
+hibi is memory for a trusted agent, not a gatekeeper. It has no signatures,
+no actor ranks and no tamper detection. Anyone who can commit to the
+repository can add a mark, and `by` is free text that hibi never checks. A
+fresh claim means someone recorded a check against that content; it does not
+prove the check was careful. If you need to know who checked, read the marks
+with `hibi list <id>` and the commit history of `.hibi/`.

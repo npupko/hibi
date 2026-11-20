@@ -1,0 +1,50 @@
+---
+title: "Introduction"
+description: "hibi is deterministic memory for an AI coding agent: what was checked, against which evidence, and what changed since."
+---
+
+An agent that works on a repository checks many statements: that a sentence in
+a document matches the function it describes, that a configuration value is
+what a guide says. Without memory, the next session cannot tell which of those
+checks still hold, so it either trusts stale text or reads everything again.
+
+hibi records each check as a **claim**: a statement, the unit it is about (the
+subject), the units that support it (the evidence), and a **mark** holding the
+fingerprint of every one of those units at the time of the check. Later:
+
+- `hibi status` reports exactly which claims need a new check, side by side,
+  with the reason and the next command to run.
+- `hibi cover` reports which units of a declared scope no claim covers.
+- `hibi status --since <range>` and `hibi cover --since <range>` restrict both
+  to what a branch or a commit range changed.
+
+The store is plain text under `.hibi/`, committed with the code.
+
+## What hibi does not do
+
+hibi decides nothing about whether a statement is true. The agent re-checks a
+statement with its own judgement, asks the user when it is unsure, and then
+tells hibi what it found: `mark` when the statement still holds, `reanchor`
+when the statement or its anchors must change, `retire` when it no longer
+applies. Any re-check by anyone clears a claim. There are no actor ranks,
+signatures or enforcement levels.
+
+Every command exits with status 0 when it ran, whatever it found, and 1 on an
+error. There is no CI gating mode and no GitHub Action.
+
+## Where to go next
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Install hibi and record, break and repair a claim in five minutes.
+  </Card>
+  <Card title="Agent workflow" icon="robot" href="/agent-workflow">
+    How an agent uses hibi in a working session.
+  </Card>
+  <Card title="Claims and marks" icon="bookmark" href="/concepts/claims-and-marks">
+    The records hibi keeps and why they never change.
+  </Card>
+  <Card title="What stales a claim" icon="fingerprint" href="/concepts/fingerprints">
+    Which edits change a fingerprint and which do not.
+  </Card>
+</CardGroup>

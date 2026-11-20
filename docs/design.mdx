@@ -1,0 +1,92 @@
+---
+title: "Design notes"
+description: "Why hibi is memory and not a gatekeeper, and the reasons behind its data model, store and providers."
+---
+
+hibi was rewritten from scratch in Rust after the TypeScript line ended at
+0.7.0. These notes give the main decisions and their reasons. The contract is
+[`design/SPEC.md`](https://github.com/npupko/hibi/blob/main/design/SPEC.md).
+
+## Memory, not gatekeeping
+
+The earlier line was built around a rule that nothing clears without evidence
+or a human, enforced with ranks of actors and a model judge that could fail a
+build. That rule solved a problem the owner did not have. The agent doing the
+work is a capable model and is trusted to check a statement with its own
+judgement and to ask the user when it is unsure. What it lacks is memory across
+sessions.
+
+So hibi records which statement was checked against which evidence at which
+fingerprints, and reports what changed. Any re-check by anyone clears a claim.
+The actor (`by`) is optional free text kept for the record. There is no CI
+gating mode: every command exits 0 when it ran, whatever it found.
+
+## A subject, not a sentence
+
+The earlier model tied a claim's subject to a sentence in a text file, so a
+tool whose facts live elsewhere, such as an architecture database, could not
+use it. Now a claim's subject and evidence are both anchors: a locator plus a
+selector, served by a provider. The core knows nothing about documents; the
+built-in file provider serves documents and code, and any other tool can serve
+its own resources through an [external provider](/providers/external).
+
+## Anchors and fingerprints are separate
+
+An anchor answers "which unit is this". A fingerprint answers "what did the
+checker see". Keeping them apart means that re-finding a moved unit can never
+pass for "unchanged". A similarity score helps find a unit and propose a
+re-anchor; it never decides freshness, which is exact fingerprint equality.
+
+## One freshness rule
+
+A claim is fresh when some mark's fingerprints equal the current fingerprint
+of every side, and its recheck period, if any, has not run out. "Some mark",
+not "the newest mark": a revert to content an older mark covers makes the
+claim fresh again. Behaviour follows from what a claim has (evidence or not, a
+period or not) instead of from claim types.
+
+## Fingerprints that ignore noise
+
+Code is fingerprinted from its syntax tree, so reformatting that only moves
+whitespace, line breaks or comments stales nothing, while any literal,
+identifier or operator change does. Prose is fingerprinted after Unicode NFC
+and whitespace collapsing. The hash is BLAKE3, chosen for decisions that
+depend on it, and every fingerprint names its profile (`prose-v1`, `ast-v1`)
+so that a later change to the rules shows up as a visible profile mismatch,
+not a silent mass change.
+
+## Coverage in both directions
+
+Checking only recorded claims cannot show what has no claim. Scopes declare
+which units must be covered, and `cover` lists the ones that are not.
+Exclusions are explicit records with a reason, printed in every report,
+because hidden globs produce a false 100%.
+
+## The judge is advisory
+
+TypeSafe's Jev model is useful for bulk an agent would not read, such as
+ranking thousands of uncovered sentences. A model's answer is a judgement,
+and hibi's only source of repeatable answers is its own cache. A wrong order
+hides nothing, but a wrong verdict would. So the judge never changes a
+claim's state or what a command reports; it only ranks, and only when you set
+a key. See [the judge](/judge).
+
+## The store travels in git
+
+The ledger must match the branch being checked, so it is plain text committed
+with the code. Records are immutable lines with content-derived ids, sorted
+into 16 shards per kind, and merged with git's union merge. Nothing is
+deleted, because a deleted line does not survive a union merge; a retirement
+record is written instead. Sixteen shards rather than 256 keep the file count
+low: about 3,000 lines per shard at 50,000 claims. The alternatives were
+rejected: a database outside git (a fresh clone has no ledger), a database
+inside git (it cannot merge), hidden git refs (not fetched by default, absent
+from review), and markers inside documents (they change the text they seal).
+
+## Commands come only from the user
+
+A provider command or a sibling directory named by a repository would turn
+`hibi status` on a cloned repository into running that repository's code or
+reading your other files. Both are registered only in your own user config;
+the repository names schemes and aliases and nothing more. See
+[security](/security).

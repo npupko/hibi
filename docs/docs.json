@@ -1,0 +1,80 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "hibi",
+  "description": "Deterministic memory for AI coding agents: record that a statement was checked against evidence, then learn exactly what changed since and what in a declared scope has no claim.",
+  "colors": {
+    "primary": "#D6452F",
+    "light": "#E97A66",
+    "dark": "#B83A28"
+  },
+  "favicon": "/favicon.ico",
+  "logo": {
+    "light": "/logo/light.png",
+    "dark": "/logo/dark.png",
+    "href": "https://github.com/npupko/hibi"
+  },
+  "contextual": {
+    "options": ["copy", "view", "chatgpt", "claude", "mcp"]
+  },
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get started",
+        "pages": ["index", "quickstart", "agent-workflow"]
+      },
+      {
+        "group": "Concepts",
+        "pages": [
+          "concepts/claims-and-marks",
+          "concepts/anchors",
+          "concepts/fingerprints",
+          "concepts/freshness",
+          "coverage",
+          "ranges"
+        ]
+      },
+      {
+        "group": "Providers",
+        "pages": ["providers/file", "providers/external"]
+      },
+      {
+        "group": "Reference",
+        "pages": [
+          "configuration",
+          "store",
+          "judge",
+          "cli-reference",
+          "security"
+        ]
+      },
+      {
+        "group": "Why hibi",
+        "pages": ["design"]
+      }
+    ]
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "GitHub",
+        "href": "https://github.com/npupko/hibi"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Quickstart",
+      "href": "/quickstart"
+    }
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/npupko/hibi"
+    }
+  },
+  "seo": {
+    "metatags": {
+      "og:image": "/logo/og.png"
+    }
+  }
+}

@@ -1,0 +1,205 @@
+---
+title: "Quickstart"
+description: "Install hibi, record a claim, watch it go stale and repair it."
+---
+
+## Install
+
+<Warning>
+No release of this version has been published yet. The latest release on
+GitHub, 0.7.0, is the earlier TypeScript line. The installer commands below
+become valid when version 5.0.0 is released. Until then, build from source.
+</Warning>
+
+<Tabs>
+  <Tab title="macOS and Linux">
+    ```bash
+    curl --proto '=https' --tlsv1.2 -LsSf https://github.com/npupko/hibi/releases/download/v5.0.0/hibi-cli-installer.sh | sh
+    ```
+  </Tab>
+  <Tab title="Windows">
+    ```bash
+    powershell -ExecutionPolicy Bypass -c "irm https://github.com/npupko/hibi/releases/download/v5.0.0/hibi-cli-installer.ps1 | iex"
+    ```
+  </Tab>
+  <Tab title="install.sh">
+    The repository's own script downloads the release tarball for your
+    platform, checks its SHA-256 sum and copies `hibi` into
+    `$HOME/.local/bin` (set `HIBI_BIN_DIR` to change that). It runs nothing
+    it downloads.
+
+    ```bash
+    curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | HIBI_VERSION=5.0.0 sh
+    ```
+  </Tab>
+  <Tab title="From source">
+    With Rust 1.90 or later, in a clone of the repository:
+
+    ```bash
+    cargo install --locked --path crates/hibi-cli
+    ```
+  </Tab>
+</Tabs>
+
+hibi needs git 2.45.0 or later for `init`, `cover`, `--since`, sibling
+repositories and the judge commands. The other commands work without git.
+
+## Record a claim
+
+The example repository has one document and the code it describes.
+
+```markdown docs/retry.md
+# Retries
+
+The client retries a failed download.
+It gives up after 5 attempts.
+The delay between attempts doubles each time, starting at 200 ms.
+```
+
+```rust src/retry.rs
+/// How often a download is tried before the client gives up.
+pub const MAX_ATTEMPTS: u32 = 5;
+
+/// The delay before attempt `n`, in milliseconds.
+pub fn delay_ms(n: u32) -> u64 {
+    200 * 2u64.pow(n)
+}
+```
+
+<Steps>
+  <Step title="Create the store">
+    Run this anywhere inside the git repository. The store is created at the
+    top level.
+
+    ```bash
+    hibi init
+    ```
+
+    `init` writes only under `.hibi/`: `hibi.toml`, the dot files
+    `.gitattributes`, `.gitignore` and `.ignore`, and 16 claim shards and 16
+    mark shards, all empty.
+  </Step>
+  <Step title="Declare a scope">
+    A scope says which units must be covered by a claim. Append it to
+    `.hibi/hibi.toml`:
+
+    ```toml
+    [[scope]]
+    name = "docs"
+    resource = "file:docs/**/*.md"
+    kinds = ["sentence", "list-item", "table-row"]
+    ```
+
+    Then list what is not covered:
+
+    ```bash
+    hibi cover
+    ```
+
+    ```text output
+    docs (file:docs/**/*.md; sentence, list-item, table-row): 3 units, 0 covered, 0 excluded, 3 uncovered
+      file:docs/retry.md
+            3  sentence  The client retries a failed download.
+            4  sentence  It gives up after 5 attempts.
+            5  sentence  The delay between attempts doubles each time, starting at 200 ms.
+    ```
+  </Step>
+  <Step title="Check a statement and record it">
+    Read `src/retry.rs` and confirm that the client gives up after 5
+    attempts. Then record the check. The subject anchor quotes the sentence;
+    the evidence anchor names the constant by its symbol.
+
+    ```bash
+    hibi claim "The client gives up after 5 attempts." \
+      --subject "file:docs/retry.md::gives up after 5 attempts" \
+      --evidence "file:src/retry.rs#MAX_ATTEMPTS"
+    ```
+
+    ```text output
+    c1-bvy8mfb476vwm9ftpx44  created  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+    ```
+
+    `claim` writes the claim and its first mark. The claim is fresh:
+
+    ```bash
+    hibi status
+    ```
+
+    ```text output
+    1 claim: 1 fresh, 0 stale, 0 expired, 0 retired
+    nothing stale
+    ```
+  </Step>
+  <Step title="Change the evidence">
+    Edit `src/retry.rs` so that `MAX_ATTEMPTS` is 3, and ask again:
+
+    ```bash
+    hibi status
+    ```
+
+    ```text output
+    1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
+
+    c1-bvy8mfb476vwm9ftpx44  stale  The client gives up after 5 attempts.
+      evidence 1  file:src/retry.rs  changed (fingerprint_differs)  variable "MAX_ATTEMPTS", line 2
+      next: hibi mark c1-bvy8mfb476vwm9ftpx44
+
+    Re-check each statement before running its next command.
+    ```
+
+    Only the side that changed is listed. `next` is the command to run if a
+    re-check shows that the statement still holds.
+  </Step>
+  <Step title="Re-check and repair">
+    The statement no longer holds: the code now says 3. Fix the sentence in
+    `docs/retry.md` to "It gives up after 3 attempts." and replace the claim
+    with one that states the new fact. An id can be shortened to a unique
+    prefix of at least 4 characters after `c1-`.
+
+    ```bash
+    hibi reanchor c1-bvy8 \
+      --statement "The client gives up after 3 attempts." \
+      --subject "file:docs/retry.md::gives up after 3 attempts"
+    ```
+
+    ```text output
+    c1-bvy8mfb476vwm9ftpx44 is retired and replaced by c1-dryhtmnz5njjpp2ppy6t
+      mark m1-jqkfdpc9r6xa87gh92gs, retirement r1-8drhdychv0qew0t6s13j
+      subject  {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
+      evidence 1  {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 3;","prefix":"a download is tried before the client gives up.\n","suffix":"\n\n/// The delay before attempt `n`, in milliseco","pos":62,"symbol":"MAX_ATTEMPTS"}}
+    ```
+
+    ```bash
+    hibi status
+    ```
+
+    ```text output
+    2 claims: 1 fresh, 0 stale, 0 expired, 1 retired
+    nothing stale
+    ```
+  </Step>
+  <Step title="Commit the store">
+    Commit `.hibi/` together with the change. The next session, on any
+    machine that checks out this branch, starts from the same memory.
+  </Step>
+</Steps>
+
+## Output for agents
+
+When standard output is not a terminal, every command prints exactly one JSON
+object followed by a newline, also on error. `--format human` or
+`--format json` overrides the choice. This is `hibi status` from the last step,
+piped:
+
+```json output
+{"ok":true,"command":"status","now":"2026-11-20T21:28:53Z","snapshot":"b3:608e4c727acf02820576bbba82d90d58990359c4e4965e8c958bf99e07bba461","since":null,"summary":{"claims":2,"fresh":1,"stale":0,"expired":0,"retired":1},"claims":[],"nextNote":"Re-check each statement before running its next command.","warnings":[]}
+```
+
+`hibi schema status-output` prints the JSON Schema of that object. Every
+command with JSON output has one.
+
+## Next
+
+- [Agent workflow](/agent-workflow): the session loop an agent follows.
+- [Anchors](/concepts/anchors): how to point at a sentence, a function or a field.
+- [Coverage and scopes](/coverage): exclusions and what counts as covered.

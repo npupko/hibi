@@ -1,0 +1,108 @@
+---
+title: "The store and git"
+description: "What is under .hibi/, how records are sharded, how branches merge, and what to commit."
+---
+
+The store is plain text in the repository, committed with the code. The
+memory therefore matches the branch being checked: a branch that changes a
+function also carries the claims that were re-checked for it.
+
+## Layout
+
+```text
+.hibi/
+  hibi.toml                               configuration, committed
+  .gitattributes                          merge rules for the shards, committed
+  .gitignore                              ignores .lock and temporary files, committed
+  .ignore                                 keeps search tools out of the shards, committed
+  claims/0.jsonl ... claims/f.jsonl       16 claim shards, committed
+  marks/0.jsonl  ... marks/f.jsonl        16 mark shards, committed
+  .lock                                   write lock, not committed
+```
+
+Commit everything under `.hibi/` except what its own `.gitignore` excludes.
+Nothing outside `.hibi/` is written by hibi, apart from the
+[cache](/configuration#cache) in your user cache directory.
+
+## Shards and lines
+
+A claim lives in `claims/<s>.jsonl`, where `<s>` is the first hex digit of the
+BLAKE3 hash of its subject's locator. Its marks and retirements live in
+`marks/<s>.jsonl`, the shard of their claim. All claims about one document
+are therefore in one shard.
+
+Each line is one record as canonical JSON (RFC 8785: sorted keys, no extra
+whitespace), and each shard is sorted by id. A claim line and a retirement
+line from the walkthrough:
+
+```json output
+{"evidence":[{"loc":"file:src/retry.rs","sel":{"pos":62,"prefix":"a download is tried before the client gives up.\n","quote":"pub const MAX_ATTEMPTS: u32 = 5;","suffix":"\n\n/// The delay before attempt `n`, in milliseco","symbol":"MAX_ATTEMPTS"}}],"id":"c1-bvy8mfb476vwm9ftpx44","note":null,"recheck":null,"statement":"The client gives up after 5 attempts.","subject":{"loc":"file:docs/retry.md","sel":{"pos":52,"prefix":"tries\n\nThe client retries a failed download.\nIt ","quote":"gives up after 5 attempts","suffix":".\nThe delay between attempts doubles each time, "}}}
+{"at":"2026-11-20T21:29:22Z","by":null,"id":"r1-peqhq128s20p7rrw1e2p","note":"The docs no longer state the attempt limit.","replacedBy":null,"retires":"c1-dryhtmnz5njjpp2ppy6t"}
+```
+
+`hibi schema claim`, `hibi schema mark` and `hibi schema retirement` print
+the record schemas.
+
+## Merging branches
+
+`.hibi/.gitattributes`, as `init` writes it, marks the shards for git's union
+merge:
+
+```text
+claims/*.jsonl text eol=lf merge=union linguist-generated
+marks/*.jsonl text eol=lf merge=union linguist-generated
+```
+
+Records are immutable lines with pseudo-random ids, so two branches that add
+claims to the same shard add different lines, and the union merge keeps both
+without a conflict. A merged shard may be unsorted or hold a line twice; hibi
+reads it correctly and the next write sorts it again. The repository's tests
+cover a two-branch merge into one shard.
+
+Because a deleted line does not survive a union merge, nothing is ever
+deleted: a claim that no longer applies gets a retirement record instead.
+
+Whether GitHub's own merge button honours `merge=union` has not been verified.
+If a pull request shows a conflict in a shard, merge locally with git.
+
+## Writes
+
+Every write takes an exclusive lock on `.hibi/.lock` (waiting up to 10
+seconds, then failing with `store_locked`), re-reads each shard it changes,
+writes a temporary file, syncs it to disk and renames it over the shard.
+Claim shards are written before mark shards, so a crash can leave at worst a
+claim without its mark, which reads as stale.
+
+## Damage and refusals
+
+| Finding | Result |
+|---|---|
+| A line that is not valid JSON, is not in canonical form, has the wrong keys, or whose id does not match its content | `store_corrupt`, naming the file and line |
+| A record in the wrong shard | `store_corrupt` |
+| A shard, `.hibi` or another store path that is a symbolic link | `store_corrupt` |
+| A shard larger than 64 MiB | `store_corrupt` |
+| A mark or retirement whose claim is not in the store | Warning `orphan_record`; the record is ignored |
+| A retirement whose `replacedBy` claim is not in the store | Warning `unknown_replacement`; the retirement stands |
+| A missing shard file | Read as empty |
+
+The remediation for `store_corrupt` is to restore the named file from git.
+
+## Stores from hibi 0.x
+
+hibi 0.x kept its store in `.claims/`. This version does not read, convert or
+delete it, and refuses to run in a repository that has one:
+
+```text output
+$ hibi init
+error: legacy_store: this repository has a hibi 0.x store in .claims/, which this version does not read
+  fix: remove or move .claims/, or use hibi 0.7
+```
+
+Only `version`, `schema` and `completions` run in such a repository.
+
+## Finding the root
+
+The root is the directory given by `--root`, or else the nearest directory,
+upward from the working directory, that contains `.hibi/hibi.toml`. None is
+the error `not_initialized`. `init` creates the store at the top level of the
+git repository.

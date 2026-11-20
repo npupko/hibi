@@ -1,0 +1,144 @@
+---
+title: "Claims and marks"
+description: "The three records hibi keeps: claims, marks and retirements."
+---
+
+hibi keeps three kinds of records. None of them is ever edited or deleted.
+
+## Claim
+
+A claim is a statement that was checked, and what it was checked against.
+
+| Field | Meaning |
+|---|---|
+| `statement` | The statement, as text. Stored trimmed. |
+| `subject` | One [anchor](/concepts/anchors): the unit the statement is about, usually the sentence in a document that makes it. |
+| `evidence` | Zero or more anchors: the units that support the statement, usually declarations in code. Order matters; evidence is numbered from 1. |
+| `recheck` | Optional. An ISO 8601 duration such as `P90D` or `P6M`. After this long the claim is expired even if nothing changed. |
+| `note` | Optional. How to check the claim again, or where the truth lives. |
+
+A claim with no evidence is allowed. Its subject alone is fingerprinted, so it
+goes stale when the sentence changes. With a `recheck` period it also expires
+after that time, which suits statements whose truth lives outside the
+repository:
+
+```bash
+hibi claim "Each attempt times out after 10 seconds." \
+  --subject "file:docs/retry.md::times out after 10 seconds" \
+  --recheck P90D \
+  --note "The timeout is set by the HTTP client defaults; check its release notes."
+```
+
+The "sides" of a claim are its subject (side 0) and its evidence (side 1, 2
+and so on).
+
+## Mark
+
+A mark records that the claim was checked: the time (`at`), optionally who
+(`by`) and a `note`, and the fingerprint of every side as it was at that
+moment. `hibi claim` writes the first mark itself. `hibi mark` adds another
+after a re-check. A claim can have any number of marks.
+
+```bash
+hibi mark c1-rj6k --note "200 << n equals 200 * 2^n" --by agent:claude
+```
+
+```text output
+c1-rj6kbh7y1yw79ywz4msv  marked  m1-qbc53e2ce40fx505bvkz
+```
+
+`mark` requires every side to resolve to exactly one unit. A side that is
+missing or matches several units makes the command fail with `side_missing`
+or `side_ambiguous`; use `reanchor` to point that side at the right unit.
+
+## Retirement
+
+A retirement records that a claim no longer applies. It is permanent. A
+retired claim stays in the store, is no longer evaluated, and no longer covers
+anything.
+
+```bash
+hibi retire c1-dryh --note "The docs no longer state the attempt limit."
+```
+
+```text output
+c1-dryhtmnz5njjpp2ppy6t  retired  r1-peqhq128s20p7rrw1e2p
+```
+
+`--replaced-by <claim-id>` names a claim that takes the place of the retired
+one.
+
+## Changing a claim
+
+Claims are immutable. `hibi reanchor` builds a new claim from an old one and,
+in one write, stores the new claim, a mark for it and a retirement of the old
+claim that names the new one in `replacedBy`. Use it to change the statement,
+replace or add or drop an anchor, or change the `recheck` period or the note:
+
+```bash
+hibi reanchor c1-bvy8 \
+  --statement "The client gives up after 3 attempts." \
+  --subject "file:docs/retry.md::gives up after 3 attempts"
+```
+
+Without options, `reanchor` resolves every side again and stores the current
+selectors. That refreshes a claim whose text moved or was reworded slightly.
+Because `reanchor` writes a mark, run it only after you checked the statement.
+
+## Ids
+
+Every record has an id derived from its content: `c1-` for a claim, `m1-` for
+a mark, `r1-` for a retirement, followed by 20 characters of a BLAKE3 hash of
+the record. Two consequences:
+
+- A claim with exactly the same statement, stored anchors, `recheck` and `note`
+  is the same claim. Running the same `hibi claim` again while nothing changed
+  adds a mark to the existing claim and prints `marked` instead of `created`.
+  The stored anchors include the context around a quote (see
+  [anchors](/concepts/anchors)), so after an edit near the quote the same
+  command creates a new claim instead.
+- A claim with the same body as a retired claim is that retired claim, and
+  `claim` fails with `claim_retired`. To record the same statement and anchors
+  again, give a different `--note`.
+
+Commands accept a unique prefix of an id with at least 4 characters after the
+type prefix, such as `c1-bvy8`. A prefix that matches several records is the
+error `ambiguous_id`, and the message lists them.
+
+## Reading the history
+
+`hibi list` reads the store only: nothing is resolved and no state is
+computed, so it works when files or providers are missing.
+
+```bash
+hibi list --retired
+```
+
+```text output
+c1-bvy8mfb476vwm9ftpx44  The client gives up after 5 attempts.  file:docs/retry.md  1 mark  last 2026-11-20T21:28:45Z  retired
+c1-dryhtmnz5njjpp2ppy6t  The client gives up after 3 attempts.  file:docs/retry.md  1 mark  last 2026-11-20T21:28:45Z  retired
+c1-rj6kbh7y1yw79ywz4msv  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  2 marks  last 2026-11-20T21:29:21Z
+```
+
+With an id, `list` prints the stored claim, its marks in time order and its
+retirement:
+
+```bash
+hibi list c1-bvy8
+```
+
+```text output
+c1-bvy8mfb476vwm9ftpx44
+  statement: The client gives up after 5 attempts.
+  subject: {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 5 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
+  evidence 1: {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 5;","prefix":"a download is tried before the client gives up.\n","suffix":"\n\n/// The delay before attempt `n`, in milliseco","pos":62,"symbol":"MAX_ATTEMPTS"}}
+1 mark:
+  m1-v1rs1r1kthxjmdw4ywdz  2026-11-20T21:23:47Z  by agent:claude
+    file:docs/retry.md  b3:prose-v1:0233c89ebf2069292e2778bdc7176396
+    file:src/retry.rs  b3:ast-v1:fb3a4a42c90a9093fe98969b8a0018c0
+retired: r1-j1e3gttzxk7g5qswbygb  2026-11-20T21:24:12Z  replaced by c1-dryhtmnz5njjpp2ppy6t
+```
+
+`--loc <glob>` keeps claims with a side whose locator matches, and
+`--text <substring>` keeps claims whose statement contains the text
+(case-sensitive).
