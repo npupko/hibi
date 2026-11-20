@@ -441,11 +441,11 @@ fn state(arg: StateArg) -> ClaimState {
 }
 
 fn status(global: &Global, args: &StatusArgs) -> Result<Reply, Error> {
+    if args.judge_order {
+        return status_judge_order(global, args);
+    }
     let repo = repo(global)?;
     let now = now(global)?;
-    if args.judge_order {
-        return judge::status_order(global, &repo, args, now);
-    }
     let query = StatusQuery {
         ids: args.ids.clone(),
         states: args.state.iter().copied().map(state).collect(),
@@ -572,62 +572,44 @@ fn providers(global: &Global, args: &ProvidersArgs) -> Result<Reply, Error> {
 // Judge commands (section 14)
 // ---------------------------------------------------------------------------
 
-fn triage(global: &Global, args: &TriageArgs) -> Result<Reply, Error> {
-    let repo = repo(global)?;
-    judge::triage(global, &repo, args)
+/// The first step of every judge command (section 14.1): without
+/// `TYPESAFE_API_KEY` it fails with `judge_unavailable` before any other
+/// work, including root discovery.
+fn judge_key() -> Result<String, Error> {
+    match std::env::var("TYPESAFE_API_KEY") {
+        Ok(key) if !key.is_empty() => Ok(key),
+        _ => Err(Error::new(
+            Code::JudgeUnavailable,
+            "TYPESAFE_API_KEY is not set",
+        )),
+    }
 }
 
-fn suggest_evidence(global: &Global, args: &SuggestEvidenceArgs) -> Result<Reply, Error> {
-    let repo = repo(global)?;
-    judge::suggest_evidence(global, &repo, args)
+/// The second step (section 14.1): git, before any network contact.
+fn judge_git(repo: &Repo) -> Result<GitStatus, Error> {
+    let git = GitStatus::probe();
+    git.require()?.check_root(&repo.root)?;
+    Ok(git)
 }
 
-mod judge {
-    //! The three judge commands. The availability order is section 14.1:
-    //! the key first, then git, before any other work.
+fn no_judge_client() -> Error {
+    Error::new(Code::JudgeUnavailable, "this build has no judge client").without_remediation()
+}
 
-    use super::*;
+fn status_judge_order(global: &Global, _args: &StatusArgs) -> Result<Reply, Error> {
+    judge_key()?;
+    judge_git(&repo(global)?)?;
+    Err(no_judge_client())
+}
 
-    /// `judge_unavailable` without `TYPESAFE_API_KEY`, then the git checks
-    /// of section 10.4.
-    fn available(repo: &Repo) -> Result<(String, GitStatus), Error> {
-        let key = std::env::var("TYPESAFE_API_KEY").unwrap_or_default();
-        if key.is_empty() {
-            return Err(Error::new(
-                Code::JudgeUnavailable,
-                "TYPESAFE_API_KEY is not set",
-            ));
-        }
-        let git = GitStatus::probe();
-        git.require()?.check_root(&repo.root)?;
-        Ok((key, git))
-    }
+fn triage(global: &Global, _args: &TriageArgs) -> Result<Reply, Error> {
+    judge_key()?;
+    judge_git(&repo(global)?)?;
+    Err(no_judge_client())
+}
 
-    fn not_wired() -> Error {
-        Error::new(Code::JudgeUnavailable, "this build has no judge client").without_remediation()
-    }
-
-    pub fn status_order(
-        _global: &Global,
-        repo: &Repo,
-        _args: &StatusArgs,
-        _now: Timestamp,
-    ) -> Result<Reply, Error> {
-        available(repo)?;
-        Err(not_wired())
-    }
-
-    pub fn triage(_global: &Global, repo: &Repo, _args: &TriageArgs) -> Result<Reply, Error> {
-        available(repo)?;
-        Err(not_wired())
-    }
-
-    pub fn suggest_evidence(
-        _global: &Global,
-        repo: &Repo,
-        _args: &SuggestEvidenceArgs,
-    ) -> Result<Reply, Error> {
-        available(repo)?;
-        Err(not_wired())
-    }
+fn suggest_evidence(global: &Global, _args: &SuggestEvidenceArgs) -> Result<Reply, Error> {
+    judge_key()?;
+    judge_git(&repo(global)?)?;
+    Err(no_judge_client())
 }
