@@ -17,16 +17,22 @@
 mod harness;
 
 mod canon;
+#[cfg(feature = "file")]
 mod code;
 mod duration;
 mod engine;
 mod fingerprint;
+#[cfg(feature = "judge")]
 mod judge;
 mod locate;
+#[cfg(feature = "file")]
 mod prose;
+#[cfg(feature = "command")]
 mod provider;
+#[cfg(feature = "file")]
 mod resolve;
 mod text;
+#[cfg(feature = "file")]
 mod units;
 
 /// Case files that no test loads yet, because the module they bind belongs
@@ -39,20 +45,25 @@ enum Binding {
     Dir(&'static str),
 }
 
+// A row may carry `#[cfg(...)]` attributes. They apply to the generated test
+// only: the file stays in `BINDINGS`, so R1 counts it as bound in every
+// feature set, and the test runs when the features it needs are on.
 macro_rules! bindings {
-    ($( $kind:ident $path:literal => $test:ident, $check:path; )*) => {
+    ($( $(#[$m:meta])* $kind:ident $path:literal => $test:ident, $check:path; )*) => {
         const BINDINGS: &[Binding] = &[ $( bindings!(@entry $kind $path) ),* ];
-        $( bindings!(@test $kind $path, $test, $check); )*
+        $( bindings!(@test [$(#[$m])*] $kind $path, $test, $check); )*
     };
     (@entry file $path:literal) => { Binding::File($path) };
     (@entry dir $path:literal) => { Binding::Dir($path) };
-    (@test file $path:literal, $test:ident, $check:path) => {
+    (@test [$(#[$m:meta])*] file $path:literal, $test:ident, $check:path) => {
+        $(#[$m])*
         #[test]
         fn $test() {
             harness::run($path, $check);
         }
     };
-    (@test dir $path:literal, $test:ident, $runner:path) => {
+    (@test [$(#[$m:meta])*] dir $path:literal, $test:ident, $runner:path) => {
+        $(#[$m])*
         #[test]
         fn $test() {
             let files: Vec<String> = harness::all_case_files()
@@ -80,18 +91,18 @@ bindings! {
     file "duration.json" => duration_json, duration::duration;
     file "recheck-boundary.json" => recheck_boundary_json, duration::recheck_boundary;
     file "fingerprint.json" => fingerprint_json, fingerprint::fingerprint;
-    file "regions.json" => regions_json, prose::regions;
-    file "ast-node.json" => ast_node_json, code::ast_node;
-    file "ast-equivalence.json" => ast_equivalence_json, code::ast_equivalence;
-    file "units-code.json" => units_code_json, units::units_code;
-    file "resolve.json" => resolve_json, resolve::resolve;
+    #[cfg(feature = "file")] file "regions.json" => regions_json, prose::regions;
+    #[cfg(feature = "file")] file "ast-node.json" => ast_node_json, code::ast_node;
+    #[cfg(feature = "file")] file "ast-equivalence.json" => ast_equivalence_json, code::ast_equivalence;
+    #[cfg(feature = "file")] file "units-code.json" => units_code_json, units::units_code;
+    #[cfg(feature = "file")] file "resolve.json" => resolve_json, resolve::resolve;
     file "freshness.json" => freshness_json, engine::freshness;
     file "coverage.json" => coverage_json, engine::coverage;
-    file "judge/triage.json" => judge_triage_json, judge::triage;
-    file "judge/suggest-evidence.json" => judge_suggest_evidence_json, judge::suggest_evidence;
-    file "judge/order.json" => judge_order_json, judge::order;
-    dir "provider/protocol/" => provider_protocol_cases, provider::protocol;
-    dir "provider/reference/" => provider_reference_cases, provider::reference;
+    #[cfg(feature = "judge")] file "judge/triage.json" => judge_triage_json, judge::triage;
+    #[cfg(feature = "judge")] file "judge/suggest-evidence.json" => judge_suggest_evidence_json, judge::suggest_evidence;
+    #[cfg(feature = "judge")] file "judge/order.json" => judge_order_json, judge::order;
+    #[cfg(feature = "command")] dir "provider/protocol/" => provider_protocol_cases, provider::protocol;
+    #[cfg(feature = "command")] dir "provider/reference/" => provider_reference_cases, provider::reference;
 }
 
 fn is_bound(file: &str) -> bool {

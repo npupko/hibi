@@ -3,6 +3,8 @@
 //! the absence of a shell. The providers are `tests/providers/scripted.sh`
 //! run by `sh`, so the tests need nothing beyond a POSIX shell.
 
+#![cfg(feature = "command")]
+
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::Command;
