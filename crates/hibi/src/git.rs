@@ -41,6 +41,21 @@ const CONFIG_FLAGS: [&str; 8] = [
     "core.untrackedCache=false",
 ];
 
+/// Inherited variables that would choose the repository, removed from
+/// every invocation so that `-C <dir>` alone decides it (for example when
+/// hibi runs inside a git hook, which sets `GIT_DIR`). The user's
+/// `GIT_CONFIG_*` variables and `GIT_CEILING_DIRECTORIES` are kept.
+pub const GIT_ENV_REMOVED: [&str; 8] = [
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_COMMON_DIR",
+    "GIT_NAMESPACE",
+    "GIT_PREFIX",
+];
+
 /// The environment additions of every invocation (section 10.4).
 pub const GIT_ENV: [(&str, &str); 4] = [
     ("GIT_OPTIONAL_LOCKS", "0"),
@@ -369,7 +384,8 @@ impl Git {
 
     /// The command line of section 10.4: `git --no-pager -C <dir> -c ... <args>`,
     /// without a shell, standard input closed, the environment additions
-    /// set. This is the only place a git `Command` is built after the
+    /// set, the repository-location variables of [`GIT_ENV_REMOVED`] removed.
+    /// This is the only place a git `Command` is built after the
     /// version check.
     fn command(&self, dir: &Path, args: &[&OsStr]) -> Command {
         let mut cmd = Command::new(&self.program);
@@ -382,6 +398,9 @@ impl Git {
             .stdin(Stdio::null())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
+        for var in GIT_ENV_REMOVED {
+            cmd.env_remove(var);
+        }
         cmd
     }
 
@@ -899,6 +918,10 @@ mod tests {
         for (k, v) in GIT_ENV {
             assert_eq!(envs.get(OsStr::new(k)), Some(&Some(OsStr::new(v))));
         }
+        for k in GIT_ENV_REMOVED {
+            assert_eq!(envs.get(OsStr::new(k)), Some(&None), "{k} is removed");
+        }
+        assert!(!envs.contains_key(OsStr::new("GIT_CEILING_DIRECTORIES")));
     }
 
     #[test]

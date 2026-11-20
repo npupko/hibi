@@ -416,3 +416,168 @@ fn root_check_canonicalizes() {
         fs::canonicalize(&root).unwrap()
     );
 }
+
+// ---------------------------------------------------------------------------
+// Inherited environment
+//
+// These tests need variables in the environment of the process that runs
+// the module, which a test cannot set in-process without `unsafe`. The test
+// binary therefore starts itself again with the variables set, and
+// `child_role` runs the module there.
+// ---------------------------------------------------------------------------
+
+const CHILD_ENV: &str = "HIBI_GIT_TEST_CHILD";
+
+/// Start this test binary as a child running `child_role` with `role`,
+/// `root`, `arg` and the extra environment; true when it passed.
+fn run_child(role: &str, root: &Path, arg: &str, env: &[(&str, String)]) -> bool {
+    let mut cmd = Command::new(std::env::current_exe().unwrap());
+    cmd.args(["--exact", "child_role", "--nocapture", "--test-threads=1"])
+        .env(CHILD_ENV, format!("{role}\n{}\n{arg}", root.display()))
+        .env("GIT_CONFIG_GLOBAL", "/dev/null")
+        .env("GIT_CONFIG_NOSYSTEM", "1");
+    for (k, v) in env {
+        cmd.env(k, v);
+    }
+    cmd.status().unwrap().success()
+}
+
+/// The child side. Does nothing unless started by `run_child`.
+#[test]
+fn child_role() {
+    let Ok(spec) = std::env::var(CHILD_ENV) else {
+        return;
+    };
+    let mut parts = spec.splitn(3, '\n');
+    let (role, root, arg) = (
+        parts.next().unwrap(),
+        PathBuf::from(parts.next().unwrap()),
+        parts.next().unwrap(),
+    );
+    let git = ready(Path::new("git"));
+    match role {
+        // `arg` is the marker directory; it must stay empty.
+        "no-hook" => {
+            git.check_root(&root).unwrap();
+            git.file_list(&root).unwrap();
+            let base = git.resolve_commit(&root, "HEAD").unwrap();
+            git.changed_paths(&root, &base).unwrap();
+            assert_eq!(
+                fs::read_dir(arg).unwrap().count(),
+                0,
+                "the hook ran despite core.fsmonitor=false"
+            );
+        }
+        // `arg` is the root's HEAD commit.
+        "own-repo" => {
+            git.check_root(&root).unwrap();
+            let files = git.file_list(&root).unwrap();
+            assert!(files.contains(&"a.md".to_owned()), "{files:?}");
+            assert!(!files.contains(&"other-only.md".to_owned()), "{files:?}");
+            let head = git.resolve_commit(&root, "HEAD").unwrap();
+            assert_eq!(head.as_str(), arg);
+            let changed = git.changed_paths(&root, &head).unwrap();
+            assert!(!changed.contains("other-only.md"), "{changed:?}");
+            let entries = git
+                .tree_entries(&root, &head, &["a.md".to_owned()].into())
+                .unwrap();
+            assert_eq!(
+                git.read_blobs(&root, &[entries["a.md"].id.clone()], 1 << 20)
+                    .unwrap(),
+                vec![Blob::Content(b"alpha\n".to_vec())]
+            );
+        }
+        other => panic!("unknown role {other}"),
+    }
+}
+
+/// The hardening `-c core.fsmonitor=false` wins over the user's
+/// `GIT_CONFIG_COUNT`/`KEY`/`VALUE` and `GIT_CONFIG_PARAMETERS`, which are
+/// passed through unchanged.
+#[test]
+fn hardening_flags_win_over_config_environment() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = sample_repo(tmp.path());
+    fs::write(root.join("a.md"), "alpha changed\n").unwrap();
+    let marker_dir = tmp.path().join("markers");
+    fs::create_dir(&marker_dir).unwrap();
+    let hook = tmp.path().join("hook.sh");
+    write_script(
+        &hook,
+        &format!("touch '{}/ran-$$'\nexit 1\n", marker_dir.display()),
+    );
+    let hook = hook.display().to_string();
+    let variants: [Vec<(&str, String)>; 2] = [
+        vec![
+            ("GIT_CONFIG_COUNT", "1".into()),
+            ("GIT_CONFIG_KEY_0", "core.fsmonitor".into()),
+            ("GIT_CONFIG_VALUE_0", hook.clone()),
+        ],
+        vec![(
+            "GIT_CONFIG_PARAMETERS",
+            format!("'core.fsmonitor'='{hook}'"),
+        )],
+    ];
+    for env in &variants {
+        // Control: plain git with this environment runs the hook.
+        let out = Command::new("git")
+            .arg("-C")
+            .arg(&root)
+            .args(["ls-files", "--cached", "--others", "--exclude-standard"])
+            .env("GIT_CONFIG_GLOBAL", "/dev/null")
+            .env("GIT_CONFIG_NOSYSTEM", "1")
+            .envs(env.iter().map(|(k, v)| (*k, v.as_str())))
+            .output()
+            .unwrap();
+        assert!(out.status.success());
+        assert!(
+            fs::read_dir(&marker_dir).unwrap().count() > 0,
+            "control: {env:?} makes plain git run the hook"
+        );
+        for e in fs::read_dir(&marker_dir).unwrap() {
+            fs::remove_file(e.unwrap().path()).unwrap();
+        }
+        assert!(
+            run_child("no-hook", &root, &marker_dir.display().to_string(), env),
+            "with {env:?} the module ran the hook or failed"
+        );
+    }
+}
+
+/// Inherited repository-location variables are removed: with `GIT_DIR`,
+/// `GIT_WORK_TREE` and `GIT_INDEX_FILE` naming another repository, every
+/// call still reads the root's repository.
+#[test]
+fn inherited_git_dir_does_not_redirect() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = sample_repo(tmp.path());
+    let head = sh_git(&root, &["rev-parse", "HEAD"]).trim().to_owned();
+    let other = tmp.path().join("other");
+    fs::create_dir(&other).unwrap();
+    sh_git(&other, &["init", "-q"]);
+    fs::write(other.join("other-only.md"), "x\n").unwrap();
+    sh_git(&other, &["add", "-A"]);
+    sh_git(&other, &["commit", "-qm", "other"]);
+    let env = vec![
+        ("GIT_DIR", other.join(".git").display().to_string()),
+        ("GIT_WORK_TREE", other.display().to_string()),
+        (
+            "GIT_INDEX_FILE",
+            other.join(".git/index").display().to_string(),
+        ),
+    ];
+
+    // Control: plain git with this environment reads the other repository.
+    let out = Command::new("git")
+        .arg("-C")
+        .arg(&root)
+        .args(["ls-files"])
+        .env("GIT_CONFIG_GLOBAL", "/dev/null")
+        .env("GIT_CONFIG_NOSYSTEM", "1")
+        .envs(env.iter().map(|(k, v)| (*k, v.as_str())))
+        .output()
+        .unwrap();
+    assert_eq!(String::from_utf8_lossy(&out.stdout), "other-only.md\n");
+
+    assert!(run_child("own-repo", &root, &head, &env));
+}
