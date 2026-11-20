@@ -17,21 +17,17 @@
 mod harness;
 
 mod canon;
+mod code;
 mod duration;
 mod fingerprint;
 mod locate;
+mod prose;
 mod text;
 
 /// Case files that no test loads yet, because the module they bind belongs
 /// to a unit that has not landed. R1 fails if a file listed here does not
 /// exist or is bound in `bindings!`. This list MUST be empty at release.
-const PENDING: &[&str] = &[
-    // prose (section 6.3)
-    "regions.json",
-    // code (section 8.4)
-    "ast-node.json",
-    "ast-equivalence.json",
-];
+const PENDING: &[&str] = &[];
 
 enum Binding {
     File(&'static str),
@@ -81,6 +77,9 @@ bindings! {
     file "duration.json" => duration_json, duration::duration;
     file "recheck-boundary.json" => recheck_boundary_json, duration::recheck_boundary;
     file "fingerprint.json" => fingerprint_json, fingerprint::fingerprint;
+    file "regions.json" => regions_json, prose::regions;
+    file "ast-node.json" => ast_node_json, code::ast_node;
+    file "ast-equivalence.json" => ast_equivalence_json, code::ast_equivalence;
 }
 
 fn is_bound(file: &str) -> bool {
