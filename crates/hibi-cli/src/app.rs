@@ -15,6 +15,7 @@ use hibi::engine::{
     ReanchorInput, RetireInput, Since, SinceRun, StatusQuery, Warning,
 };
 use hibi::git::GitStatus;
+use hibi::judge::{self, Judge, JudgeEnv, SuggestQuery, TriageQuery};
 use hibi::model::Timestamp;
 use hibi::provider::Providers;
 use hibi::provider::command::{CommandProvider, check_provider};
@@ -211,11 +212,6 @@ fn read_stdin() -> Result<String, Error> {
 // Commands that need no root
 // ---------------------------------------------------------------------------
 
-/// The model id the judge sends (section 14.2).
-fn judge_model() -> &'static str {
-    "jev-1.14.0"
-}
-
 fn version() -> Result<Reply, Failure> {
     let output = VersionOutput {
         version: env!("CARGO_PKG_VERSION").to_owned(),
@@ -229,7 +225,7 @@ fn version() -> Result<Reply, Failure> {
             .iter()
             .map(|(class, _, version)| ((*class).to_owned(), (*version).to_owned()))
             .collect(),
-        judge_model: judge_model().to_owned(),
+        judge_model: judge::MODEL.to_owned(),
         warnings: Vec::new(),
     };
     Reply::new("version", &output, &[], human::version(&output)).map_err(one)
@@ -441,9 +437,13 @@ fn state(arg: StateArg) -> ClaimState {
 }
 
 fn status(global: &Global, args: &StatusArgs) -> Result<Reply, Error> {
-    if args.judge_order {
-        return status_judge_order(global, args);
-    }
+    // `--judge-order` asks for the judge: its key is checked before any
+    // other work (section 14.1).
+    let client = if args.judge_order {
+        Some(judge_client()?)
+    } else {
+        None
+    };
     let repo = repo(global)?;
     let now = now(global)?;
     let query = StatusQuery {
@@ -453,6 +453,9 @@ fn status(global: &Global, args: &StatusArgs) -> Result<Reply, Error> {
         detail: args.detail,
     };
     let mut wired = wire(&repo, global)?;
+    if client.is_some() {
+        wired.git.require()?.check_root(&repo.root)?;
+    }
     let mut since = match &args.since {
         Some(range) => Some(wired.since(&repo, range)?),
         None => None,
@@ -466,14 +469,27 @@ fn status(global: &Global, args: &StatusArgs) -> Result<Reply, Error> {
         }),
         None => None,
     };
-    let mut output = engine::status(
-        &repo.store,
-        &mut wired.providers,
-        &wired.git,
-        &query,
-        run,
-        now,
-    )?;
+    let mut output = match &client {
+        None => engine::status(
+            &repo.store,
+            &mut wired.providers,
+            &wired.git,
+            &query,
+            run,
+            now,
+        )?,
+        Some(client) => {
+            let env = JudgeEnv {
+                root: &repo.root,
+                config: &repo.config,
+                user: &wired.user,
+                git: &wired.git,
+                cache: wired.cache.as_deref(),
+                now,
+            };
+            judge::judge_order(client, &repo.store, &mut wired.providers, &env, &query, run)?
+        }
+    };
     wired.add_warnings(&mut output.warnings);
     let default_selection =
         args.ids.is_empty() && args.state.is_empty() && args.loc.is_empty() && args.since.is_none();
@@ -573,43 +589,86 @@ fn providers(global: &Global, args: &ProvidersArgs) -> Result<Reply, Error> {
 // ---------------------------------------------------------------------------
 
 /// The first step of every judge command (section 14.1): without
-/// `TYPESAFE_API_KEY` it fails with `judge_unavailable` before any other
-/// work, including root discovery.
-fn judge_key() -> Result<String, Error> {
-    match std::env::var("TYPESAFE_API_KEY") {
-        Ok(key) if !key.is_empty() => Ok(key),
-        _ => Err(Error::new(
-            Code::JudgeUnavailable,
-            "TYPESAFE_API_KEY is not set",
-        )),
-    }
+/// `TYPESAFE_API_KEY` this fails with `judge_unavailable` before any other
+/// work, including root discovery. The library never reads the
+/// environment; both values are passed in.
+fn judge_client() -> Result<Judge, Error> {
+    Judge::new(
+        std::env::var(judge::KEY_VAR).ok().as_deref(),
+        std::env::var(judge::ENDPOINT_VAR).ok().as_deref(),
+    )
 }
 
-/// The second step (section 14.1): git, before any network contact.
-fn judge_git(repo: &Repo) -> Result<GitStatus, Error> {
-    let git = GitStatus::probe();
-    git.require()?.check_root(&repo.root)?;
-    Ok(git)
+fn triage(global: &Global, args: &TriageArgs) -> Result<Reply, Error> {
+    let client = judge_client()?;
+    let repo = repo(global)?;
+    let now = now(global)?;
+    let mut wired = wire(&repo, global)?;
+    let git = wired.git.require()?;
+    git.check_root(&repo.root)?;
+    let mut since = match &args.since {
+        Some(range) => Some(wired.since(&repo, range)?),
+        None => None,
+    };
+    let run = match &mut since {
+        Some((since, base)) => Some(SinceRun {
+            since,
+            base,
+            git,
+            root: &repo.root,
+        }),
+        None => None,
+    };
+    let env = JudgeEnv {
+        root: &repo.root,
+        config: &repo.config,
+        user: &wired.user,
+        git: &wired.git,
+        cache: wired.cache.as_deref(),
+        now,
+    };
+    let query = TriageQuery {
+        scopes: args.scope.clone(),
+        limit: args.limit,
+    };
+    let mut output = judge::triage(
+        &client,
+        &repo.store,
+        &mut wired.providers,
+        &env,
+        &query,
+        run,
+    )?;
+    output.warnings.extend(wired.cache_warning.iter().cloned());
+    Reply::new("triage", &output, &output.warnings, human::triage(&output))
 }
 
-fn no_judge_client() -> Error {
-    Error::new(Code::JudgeUnavailable, "this build has no judge client").without_remediation()
-}
-
-fn status_judge_order(global: &Global, _args: &StatusArgs) -> Result<Reply, Error> {
-    judge_key()?;
-    judge_git(&repo(global)?)?;
-    Err(no_judge_client())
-}
-
-fn triage(global: &Global, _args: &TriageArgs) -> Result<Reply, Error> {
-    judge_key()?;
-    judge_git(&repo(global)?)?;
-    Err(no_judge_client())
-}
-
-fn suggest_evidence(global: &Global, _args: &SuggestEvidenceArgs) -> Result<Reply, Error> {
-    judge_key()?;
-    judge_git(&repo(global)?)?;
-    Err(no_judge_client())
+fn suggest_evidence(global: &Global, args: &SuggestEvidenceArgs) -> Result<Reply, Error> {
+    let client = judge_client()?;
+    let repo = repo(global)?;
+    let now = now(global)?;
+    let mut wired = wire(&repo, global)?;
+    wired.git.require()?.check_root(&repo.root)?;
+    let env = JudgeEnv {
+        root: &repo.root,
+        config: &repo.config,
+        user: &wired.user,
+        git: &wired.git,
+        cache: wired.cache.as_deref(),
+        now,
+    };
+    let query = SuggestQuery {
+        statement: args.statement.clone(),
+        within: args.r#in.clone(),
+        kinds: args.kind.clone(),
+        limit: args.limit,
+    };
+    let mut output = judge::suggest_evidence(&client, &mut wired.providers, &env, &query)?;
+    output.warnings.extend(wired.cache_warning.iter().cloned());
+    Reply::new(
+        "suggest-evidence",
+        &output,
+        &output.warnings,
+        human::suggest_evidence(&output),
+    )
 }

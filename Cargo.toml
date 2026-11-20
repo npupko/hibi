@@ -46,11 +46,6 @@ libc = "0.2.191"
 [workspace.lints.rust]
 unsafe_code = "forbid"
 
-[workspace.lints.cargo]
-# Stage 1 declares every dependency of spec section 2.6 in the crate that
-# will use it, before the modules that use it exist. Remove at release.
-unused_dependencies = "allow"
-
 # The profile that 'dist' will build with
 [profile.dist]
 inherits = "release"

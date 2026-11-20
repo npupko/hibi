@@ -8,6 +8,7 @@ use hibi::engine::{
     ClaimOutput, ClaimState, ClaimView, CoverOutput, ListOutput, MarkOutput, NEXT_NOTE,
     ReanchorOutput, RetireOutput, Role, Side, SideState, StatusOutput, UnitRef, Warning,
 };
+use hibi::judge::{SuggestOutput, TriageOutput};
 use hibi::model::Anchor;
 use hibi::{Code, Error};
 
@@ -509,6 +510,66 @@ pub fn providers(o: &ProvidersReply) -> String {
             let _ = writeln!(out, "  {state}  {}{detail}", case.name);
         }
     }
+    out
+}
+
+// ---------------------------------------------------------------------------
+// triage, suggest-evidence
+// ---------------------------------------------------------------------------
+
+/// The JSON name of a label, such as a band.
+fn label<T: serde::Serialize>(value: &T) -> String {
+    match serde_json::to_value(value) {
+        Ok(serde_json::Value::String(s)) => s,
+        _ => String::new(),
+    }
+}
+
+pub fn triage(o: &TriageOutput) -> String {
+    let mut out = format!(
+        "{} ranked by {}, {} listed, {} not sent\n",
+        plural(o.considered, "unit", "units"),
+        o.model,
+        o.items.len(),
+        o.skipped
+    );
+    for item in &o.items {
+        let line = item.unit.line.map_or_else(String::new, |l| format!(":{l}"));
+        let _ = writeln!(
+            out,
+            "{:.2}  {}  evidence {}  {}{line}  {}",
+            item.checkable,
+            label(&item.band),
+            label(&item.evidence),
+            item.loc,
+            one_line(&item.text, LINE_TEXT_CHARS)
+        );
+    }
+    out.push_str("This is a ranking to read, not a finding.\n");
+    out
+}
+
+pub fn suggest_evidence(o: &SuggestOutput) -> String {
+    let mut out = format!(
+        "{} ranked by {}, {} listed\n",
+        plural(o.considered, "candidate", "candidates"),
+        o.model,
+        o.candidates.len()
+    );
+    for c in &o.candidates {
+        let _ = writeln!(
+            out,
+            "{:.2}  {}  {}  {}",
+            c.p,
+            if c.fits { "fits" } else { "-" },
+            c.loc,
+            unit_name(&c.unit)
+        );
+    }
+    if o.none_fits {
+        out.push_str("None of the candidates fits the statement.\n");
+    }
+    out.push_str("These are units to read, not findings.\n");
     out
 }
 

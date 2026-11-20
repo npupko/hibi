@@ -6,6 +6,7 @@ use hibi::engine::{
     ClaimInput, ClaimOutput, CoverOutput, Envelope, ErrorEnvelope, ListOutput, MarkInput,
     MarkOutput, ReanchorOutput, RetireOutput, StatusOutput,
 };
+use hibi::judge::{SuggestOutput, TriageOutput};
 use hibi::model::{Anchor, Claim, Mark, Retirement, Selector};
 use hibi::provider::command::ConformanceCase;
 use hibi::provider::{Request, Response, Unit};
@@ -36,7 +37,7 @@ enum MarkElement {
 struct MarkStdin(#[schemars(length(min = 1))] Vec<MarkElement>);
 
 /// Every schema name, in the order of section 15.3.
-pub const NAMES: [&str; 25] = [
+pub const NAMES: [&str; 27] = [
     "claim",
     "mark",
     "retirement",
@@ -59,6 +60,8 @@ pub const NAMES: [&str; 25] = [
     "retire-output",
     "cover-output",
     "list-output",
+    "triage-output",
+    "suggest-evidence-output",
     "providers-output",
     "schema-output",
     "version-output",
@@ -89,6 +92,8 @@ pub fn schema(name: &str) -> Option<Schema> {
         "retire-output" => schema_for!(Envelope<RetireOutput>),
         "cover-output" => schema_for!(Envelope<CoverOutput>),
         "list-output" => schema_for!(Envelope<ListOutput>),
+        "triage-output" => schema_for!(Envelope<TriageOutput>),
+        "suggest-evidence-output" => schema_for!(Envelope<SuggestOutput>),
         "providers-output" => schema_for!(Envelope<ProvidersReply>),
         "schema-output" => schema_for!(Envelope<SchemaOutput>),
         "version-output" => schema_for!(Envelope<VersionOutput>),
@@ -141,7 +146,7 @@ mod tests {
             let name = format!("{command}-output");
             assert_eq!(
                 NAMES.contains(&name.as_str()),
-                !["completions", "triage", "suggest-evidence"].contains(&command.as_str()),
+                command != "completions",
                 "{name}"
             );
         }
