@@ -721,6 +721,17 @@ impl Timestamp {
         Timestamp::from_datetime(jiff::tz::Offset::UTC.to_datetime(ts))
     }
 
+    /// Parse an instant given by a caller, such as the value of `--now`
+    /// (section 15.1): RFC 3339 with any offset. The instant is converted
+    /// to UTC and a fraction of a second is truncated. Errors are
+    /// `invalid_time`.
+    pub fn parse_instant(s: &str) -> Result<Self, Error> {
+        let bad =
+            |why: String| Error::new(Code::InvalidTime, format!("{s:?} is not a time: {why}"));
+        let instant: jiff::Timestamp = s.parse().map_err(|e: jiff::Error| bad(e.to_string()))?;
+        Timestamp::from_instant(instant).map_err(|e| bad(e.message))
+    }
+
     /// The UTC civil date and time.
     pub fn datetime(self) -> jiff::civil::DateTime {
         self.0
@@ -1572,6 +1583,35 @@ mod tests {
             .into();
         let e = serde_json::from_value::<Retirement>(v).unwrap_err();
         assert!(e.to_string().contains("replaced by itself"), "{e}");
+    }
+
+    #[test]
+    fn parse_instant_accepts_offsets_and_truncates_fractions() {
+        let t = |s: &str| Timestamp::parse_instant(s).map(|t| t.to_string());
+        assert_eq!(t("2026-11-20T18:04:11Z").unwrap(), "2026-11-20T18:04:11Z");
+        assert_eq!(
+            t("2026-11-20T18:04:11.999Z").unwrap(),
+            "2026-11-20T18:04:11Z"
+        );
+        assert_eq!(
+            t("2026-11-20T20:04:11+02:00").unwrap(),
+            "2026-11-20T18:04:11Z"
+        );
+        assert_eq!(
+            t("2026-11-20T13:34:11.5-04:30").unwrap(),
+            "2026-11-20T18:04:11Z"
+        );
+        for bad in [
+            "",
+            "yesterday",
+            "2026-11-20",
+            "2026-11-20T18:04:11",
+            "2026-13-01T00:00:00Z",
+        ] {
+            let e = Timestamp::parse_instant(bad).unwrap_err();
+            assert_eq!(e.code, Code::InvalidTime, "{bad:?}");
+            assert!(e.remediation.is_some());
+        }
     }
 
     #[test]
