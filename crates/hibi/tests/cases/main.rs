@@ -23,6 +23,7 @@ mod fingerprint;
 mod locate;
 mod prose;
 mod text;
+mod units;
 
 /// Case files that no test loads yet, because the module they bind belongs
 /// to a unit that has not landed. R1 fails if a file listed here does not
@@ -80,6 +81,7 @@ bindings! {
     file "regions.json" => regions_json, prose::regions;
     file "ast-node.json" => ast_node_json, code::ast_node;
     file "ast-equivalence.json" => ast_equivalence_json, code::ast_equivalence;
+    file "units-code.json" => units_code_json, units::units_code;
 }
 
 fn is_bound(file: &str) -> bool {

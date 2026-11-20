@@ -730,14 +730,25 @@ fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
                 None => n.to_owned(),
             };
             let container_kind = body.container.map(|c| found[c].kind);
-            let unit_kind = if d.unit_kind == "function"
+            let table_kind = if d.name == NameRule::TsDeclarator
+                && node.child_by_field_name("value").is_some_and(|v| {
+                    matches!(
+                        v.kind(),
+                        "arrow_function" | "function_expression" | "generator_function"
+                    )
+                }) {
+                "function"
+            } else {
+                d.unit_kind
+            };
+            let unit_kind = if table_kind == "function"
                 && matches!(
                     container_kind,
                     Some("class" | "interface" | "trait" | "impl")
                 ) {
                 "method"
             } else {
-                d.unit_kind
+                table_kind
             };
             let index = found.len();
             found.push(Found {

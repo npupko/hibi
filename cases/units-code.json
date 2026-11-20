@@ -1,0 +1,1624 @@
+[
+  {
+    "name": "typescript: wrappers, containers, overloads, bare namespace",
+    "input": {
+      "fixture": "fixtures/units/typescript.ts",
+      "path": "src/a.ts"
+    },
+    "expected": {
+      "class": "typescript",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 1050,
+          "line": 1,
+          "endLine": 59
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 37,
+          "end": 67,
+          "line": 2,
+          "endLine": 2
+        },
+        {
+          "kind": "variable",
+          "symbol": "VERSION",
+          "key": "variable:VERSION",
+          "parent": "file",
+          "start": 69,
+          "end": 98,
+          "line": 4,
+          "endLine": 4
+        },
+        {
+          "kind": "variable",
+          "symbol": "lo",
+          "key": "variable:lo",
+          "parent": "file",
+          "start": 112,
+          "end": 118,
+          "line": 5,
+          "endLine": 5
+        },
+        {
+          "kind": "variable",
+          "symbol": "hi",
+          "key": "variable:hi",
+          "parent": "file",
+          "start": 120,
+          "end": 126,
+          "line": 5,
+          "endLine": 5
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 128,
+          "end": 160,
+          "line": 6,
+          "endLine": 6
+        },
+        {
+          "kind": "variable",
+          "symbol": "counter",
+          "key": "variable:counter",
+          "parent": "file",
+          "start": 161,
+          "end": 177,
+          "line": 7,
+          "endLine": 7
+        },
+        {
+          "kind": "function",
+          "symbol": "handler",
+          "key": "function:handler",
+          "parent": "file",
+          "start": 178,
+          "end": 230,
+          "line": 8,
+          "endLine": 8
+        },
+        {
+          "kind": "variable",
+          "symbol": "DEBUG",
+          "key": "variable:DEBUG",
+          "parent": "file",
+          "start": 231,
+          "end": 260,
+          "line": 9,
+          "endLine": 9
+        },
+        {
+          "kind": "function",
+          "symbol": "f",
+          "key": "function:f",
+          "parent": "file",
+          "start": 262,
+          "end": 290,
+          "line": 11,
+          "endLine": 11
+        },
+        {
+          "kind": "function",
+          "symbol": "f",
+          "key": "function:f~2",
+          "parent": "file",
+          "start": 291,
+          "end": 319,
+          "line": 12,
+          "endLine": 12
+        },
+        {
+          "kind": "function",
+          "symbol": "f",
+          "key": "function:f~3",
+          "parent": "file",
+          "start": 320,
+          "end": 347,
+          "line": 13,
+          "endLine": 13
+        },
+        {
+          "kind": "function",
+          "symbol": "g",
+          "key": "function:g",
+          "parent": "file",
+          "start": 349,
+          "end": 385,
+          "line": 15,
+          "endLine": 15
+        },
+        {
+          "kind": "function",
+          "symbol": "gen",
+          "key": "function:gen",
+          "parent": "file",
+          "start": 387,
+          "end": 443,
+          "line": 17,
+          "endLine": 19
+        },
+        {
+          "kind": "interface",
+          "symbol": "Shape",
+          "key": "interface:Shape",
+          "parent": "file",
+          "start": 445,
+          "end": 505,
+          "line": 21,
+          "endLine": 24
+        },
+        {
+          "kind": "method",
+          "symbol": "Shape.area",
+          "key": "method:Shape.area",
+          "parent": "interface:Shape",
+          "start": 472,
+          "end": 486,
+          "line": 22,
+          "endLine": 22
+        },
+        {
+          "kind": "variable",
+          "symbol": "Shape.name",
+          "key": "variable:Shape.name",
+          "parent": "interface:Shape",
+          "start": 490,
+          "end": 502,
+          "line": 23,
+          "endLine": 23
+        },
+        {
+          "kind": "class",
+          "symbol": "Base",
+          "key": "class:Base",
+          "parent": "file",
+          "start": 507,
+          "end": 591,
+          "line": 26,
+          "endLine": 29
+        },
+        {
+          "kind": "method",
+          "symbol": "Base.size",
+          "key": "method:Base.size",
+          "parent": "class:Base",
+          "start": 538,
+          "end": 561,
+          "line": 27,
+          "endLine": 27
+        },
+        {
+          "kind": "variable",
+          "symbol": "Base.label",
+          "key": "variable:Base.label",
+          "parent": "class:Base",
+          "start": 565,
+          "end": 588,
+          "line": 28,
+          "endLine": 28
+        },
+        {
+          "kind": "class",
+          "symbol": "Cache",
+          "key": "class:Cache",
+          "parent": "file",
+          "start": 593,
+          "end": 772,
+          "line": 31,
+          "endLine": 40
+        },
+        {
+          "kind": "variable",
+          "symbol": "Cache.count",
+          "key": "variable:Cache.count",
+          "parent": "class:Cache",
+          "start": 632,
+          "end": 657,
+          "line": 32,
+          "endLine": 32
+        },
+        {
+          "kind": "method",
+          "symbol": "Cache.get",
+          "key": "method:Cache.get",
+          "parent": "class:Cache",
+          "start": 661,
+          "end": 680,
+          "line": 33,
+          "endLine": 33
+        },
+        {
+          "kind": "method",
+          "symbol": "Cache.get",
+          "key": "method:Cache.get~2",
+          "parent": "class:Cache",
+          "start": 684,
+          "end": 724,
+          "line": 34,
+          "endLine": 36
+        },
+        {
+          "kind": "method",
+          "symbol": "Cache.size",
+          "key": "method:Cache.size",
+          "parent": "class:Cache",
+          "start": 727,
+          "end": 770,
+          "line": 37,
+          "endLine": 39
+        },
+        {
+          "kind": "type",
+          "symbol": "Id",
+          "key": "type:Id",
+          "parent": "file",
+          "start": 774,
+          "end": 807,
+          "line": 42,
+          "endLine": 42
+        },
+        {
+          "kind": "enum",
+          "symbol": "Color",
+          "key": "enum:Color",
+          "parent": "file",
+          "start": 808,
+          "end": 840,
+          "line": 43,
+          "endLine": 43
+        },
+        {
+          "kind": "module",
+          "symbol": "NS",
+          "key": "module:NS",
+          "parent": "file",
+          "start": 842,
+          "end": 920,
+          "line": 45,
+          "endLine": 48
+        },
+        {
+          "kind": "function",
+          "symbol": "NS.inner",
+          "key": "function:NS.inner",
+          "parent": "module:NS",
+          "start": 866,
+          "end": 898,
+          "line": 46,
+          "endLine": 46
+        },
+        {
+          "kind": "variable",
+          "symbol": "NS.hidden",
+          "key": "variable:NS.hidden",
+          "parent": "module:NS",
+          "start": 901,
+          "end": 918,
+          "line": 47,
+          "endLine": 47
+        },
+        {
+          "kind": "module",
+          "symbol": "Legacy",
+          "key": "module:Legacy",
+          "parent": "file",
+          "start": 922,
+          "end": 971,
+          "line": 50,
+          "endLine": 52
+        },
+        {
+          "kind": "function",
+          "symbol": "Legacy.old",
+          "key": "function:Legacy.old",
+          "parent": "module:Legacy",
+          "start": 948,
+          "end": 969,
+          "line": 51,
+          "endLine": 51
+        },
+        {
+          "kind": "module",
+          "symbol": "Bare",
+          "key": "module:Bare",
+          "parent": "file",
+          "start": 973,
+          "end": 1020,
+          "line": 54,
+          "endLine": 56
+        },
+        {
+          "kind": "function",
+          "symbol": "Bare.inside",
+          "key": "function:Bare.inside",
+          "parent": "module:Bare",
+          "start": 992,
+          "end": 1018,
+          "line": 55,
+          "endLine": 55
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 1022,
+          "end": 1035,
+          "line": 58,
+          "endLine": 58
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*~2",
+          "parent": "file",
+          "start": 1036,
+          "end": 1049,
+          "line": 59,
+          "endLine": 59
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx: jsx components, var with two declarators, class fields",
+    "input": {
+      "fixture": "fixtures/units/tsx.tsx",
+      "path": "src/app.tsx"
+    },
+    "expected": {
+      "class": "tsx",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 581,
+          "line": 1,
+          "endLine": 31
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 0,
+          "end": 26,
+          "line": 1,
+          "endLine": 1
+        },
+        {
+          "kind": "function",
+          "symbol": "Hello",
+          "key": "function:Hello",
+          "parent": "file",
+          "start": 75,
+          "end": 174,
+          "line": 4,
+          "endLine": 6
+        },
+        {
+          "kind": "function",
+          "symbol": "Bye",
+          "key": "function:Bye",
+          "parent": "file",
+          "start": 176,
+          "end": 218,
+          "line": 8,
+          "endLine": 8
+        },
+        {
+          "kind": "function",
+          "symbol": "Title",
+          "key": "function:Title",
+          "parent": "file",
+          "start": 220,
+          "end": 275,
+          "line": 10,
+          "endLine": 12
+        },
+        {
+          "kind": "function",
+          "symbol": "nums",
+          "key": "function:nums",
+          "parent": "file",
+          "start": 281,
+          "end": 315,
+          "line": 14,
+          "endLine": 16
+        },
+        {
+          "kind": "variable",
+          "symbol": "label",
+          "key": "variable:label",
+          "parent": "file",
+          "start": 317,
+          "end": 332,
+          "line": 16,
+          "endLine": 16
+        },
+        {
+          "kind": "class",
+          "symbol": "Panel",
+          "key": "class:Panel",
+          "parent": "file",
+          "start": 335,
+          "end": 494,
+          "line": 18,
+          "endLine": 23
+        },
+        {
+          "kind": "variable",
+          "symbol": "Panel.state",
+          "key": "variable:Panel.state",
+          "parent": "class:Panel",
+          "start": 382,
+          "end": 405,
+          "line": 19,
+          "endLine": 19
+        },
+        {
+          "kind": "method",
+          "symbol": "Panel.render",
+          "key": "method:Panel.render",
+          "parent": "class:Panel",
+          "start": 409,
+          "end": 492,
+          "line": 20,
+          "endLine": 22
+        },
+        {
+          "kind": "interface",
+          "symbol": "Props",
+          "key": "interface:Props",
+          "parent": "file",
+          "start": 496,
+          "end": 533,
+          "line": 25,
+          "endLine": 27
+        },
+        {
+          "kind": "variable",
+          "symbol": "Props.title",
+          "key": "variable:Props.title",
+          "parent": "interface:Props",
+          "start": 516,
+          "end": 530,
+          "line": 26,
+          "endLine": 26
+        },
+        {
+          "kind": "type",
+          "symbol": "Mode",
+          "key": "type:Mode",
+          "parent": "file",
+          "start": 535,
+          "end": 557,
+          "line": 29,
+          "endLine": 29
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 559,
+          "end": 580,
+          "line": 31,
+          "endLine": 31
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source",
+    "origin": "computed"
+  },
+  {
+    "name": "python: decorated definitions, assignments, nested classes, duplicate def",
+    "input": {
+      "fixture": "fixtures/units/python.py",
+      "path": "pkg/a.py"
+    },
+    "expected": {
+      "class": "python",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 649,
+          "line": 1,
+          "endLine": 51
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 0,
+          "end": 38,
+          "line": 1,
+          "endLine": 1
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 39,
+          "end": 48,
+          "line": 2,
+          "endLine": 2
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 49,
+          "end": 72,
+          "line": 3,
+          "endLine": 3
+        },
+        {
+          "kind": "variable",
+          "symbol": "GREETING",
+          "key": "variable:GREETING",
+          "parent": "file",
+          "start": 111,
+          "end": 130,
+          "line": 6,
+          "endLine": 6
+        },
+        {
+          "kind": "variable",
+          "symbol": "LIMIT",
+          "key": "variable:LIMIT",
+          "parent": "file",
+          "start": 131,
+          "end": 146,
+          "line": 7,
+          "endLine": 7
+        },
+        {
+          "kind": "variable",
+          "symbol": "x",
+          "key": "variable:x",
+          "parent": "file",
+          "start": 147,
+          "end": 156,
+          "line": 8,
+          "endLine": 8
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 157,
+          "end": 168,
+          "line": 9,
+          "endLine": 9
+        },
+        {
+          "kind": "function",
+          "symbol": "helper",
+          "key": "function:helper",
+          "parent": "file",
+          "start": 171,
+          "end": 202,
+          "line": 12,
+          "endLine": 13
+        },
+        {
+          "kind": "function",
+          "symbol": "helper",
+          "key": "function:helper~2",
+          "parent": "file",
+          "start": 205,
+          "end": 237,
+          "line": 16,
+          "endLine": 17
+        },
+        {
+          "kind": "function",
+          "symbol": "wrapped",
+          "key": "function:wrapped",
+          "parent": "file",
+          "start": 240,
+          "end": 327,
+          "line": 20,
+          "endLine": 25
+        },
+        {
+          "kind": "class",
+          "symbol": "Cache",
+          "key": "class:Cache",
+          "parent": "file",
+          "start": 330,
+          "end": 502,
+          "line": 28,
+          "endLine": 39
+        },
+        {
+          "kind": "variable",
+          "symbol": "Cache.size",
+          "key": "variable:Cache.size",
+          "parent": "class:Cache",
+          "start": 355,
+          "end": 363,
+          "line": 29,
+          "endLine": 29
+        },
+        {
+          "kind": "method",
+          "symbol": "Cache.get",
+          "key": "method:Cache.get",
+          "parent": "class:Cache",
+          "start": 369,
+          "end": 407,
+          "line": 31,
+          "endLine": 32
+        },
+        {
+          "kind": "method",
+          "symbol": "Cache.make",
+          "key": "method:Cache.make",
+          "parent": "class:Cache",
+          "start": 413,
+          "end": 465,
+          "line": 34,
+          "endLine": 36
+        },
+        {
+          "kind": "class",
+          "symbol": "Cache.Entry",
+          "key": "class:Cache.Entry",
+          "parent": "class:Cache",
+          "start": 471,
+          "end": 502,
+          "line": 38,
+          "endLine": 39
+        },
+        {
+          "kind": "variable",
+          "symbol": "Cache.Entry.value",
+          "key": "variable:Cache.Entry.value",
+          "parent": "class:Cache.Entry",
+          "start": 492,
+          "end": 502,
+          "line": 39,
+          "endLine": 39
+        },
+        {
+          "kind": "class",
+          "symbol": "Point",
+          "key": "class:Point",
+          "parent": "file",
+          "start": 505,
+          "end": 569,
+          "line": 42,
+          "endLine": 45
+        },
+        {
+          "kind": "variable",
+          "symbol": "Point.x",
+          "key": "variable:Point.x",
+          "parent": "class:Point",
+          "start": 533,
+          "end": 543,
+          "line": 44,
+          "endLine": 44
+        },
+        {
+          "kind": "variable",
+          "symbol": "Point.names",
+          "key": "variable:Point.names",
+          "parent": "class:Point",
+          "start": 548,
+          "end": 569,
+          "line": 45,
+          "endLine": 45
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 572,
+          "end": 648,
+          "line": 48,
+          "endLine": 51
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: impl naming, trait and mod members, attributes and use as statements",
+    "input": {
+      "fixture": "fixtures/units/rust.rs",
+      "path": "src/lib.rs"
+    },
+    "expected": {
+      "class": "rust",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 872,
+          "line": 1,
+          "endLine": 59
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 40,
+          "end": 60,
+          "line": 2,
+          "endLine": 2
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 62,
+          "end": 92,
+          "line": 4,
+          "endLine": 4
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 107,
+          "end": 123,
+          "line": 7,
+          "endLine": 7
+        },
+        {
+          "kind": "struct",
+          "symbol": "Cache",
+          "key": "struct:Cache",
+          "parent": "file",
+          "start": 124,
+          "end": 161,
+          "line": 8,
+          "endLine": 10
+        },
+        {
+          "kind": "struct",
+          "symbol": "Wrap",
+          "key": "struct:Wrap",
+          "parent": "file",
+          "start": 163,
+          "end": 185,
+          "line": 12,
+          "endLine": 12
+        },
+        {
+          "kind": "struct",
+          "symbol": "Bits",
+          "key": "struct:Bits",
+          "parent": "file",
+          "start": 186,
+          "end": 215,
+          "line": 13,
+          "endLine": 13
+        },
+        {
+          "kind": "enum",
+          "symbol": "Mode",
+          "key": "enum:Mode",
+          "parent": "file",
+          "start": 216,
+          "end": 240,
+          "line": 14,
+          "endLine": 14
+        },
+        {
+          "kind": "trait",
+          "symbol": "Store",
+          "key": "trait:Store",
+          "parent": "file",
+          "start": 242,
+          "end": 353,
+          "line": 16,
+          "endLine": 21
+        },
+        {
+          "kind": "type",
+          "symbol": "Store.Item",
+          "key": "type:Store.Item",
+          "parent": "trait:Store",
+          "start": 264,
+          "end": 274,
+          "line": 17,
+          "endLine": 17
+        },
+        {
+          "kind": "variable",
+          "symbol": "Store.LIMIT",
+          "key": "variable:Store.LIMIT",
+          "parent": "trait:Store",
+          "start": 279,
+          "end": 298,
+          "line": 18,
+          "endLine": 18
+        },
+        {
+          "kind": "method",
+          "symbol": "Store.get",
+          "key": "method:Store.get",
+          "parent": "trait:Store",
+          "start": 303,
+          "end": 326,
+          "line": 19,
+          "endLine": 19
+        },
+        {
+          "kind": "method",
+          "symbol": "Store.put",
+          "key": "method:Store.put",
+          "parent": "trait:Store",
+          "start": 331,
+          "end": 351,
+          "line": 20,
+          "endLine": 20
+        },
+        {
+          "kind": "impl",
+          "symbol": "impl Cache",
+          "key": "impl:impl Cache",
+          "parent": "file",
+          "start": 355,
+          "end": 428,
+          "line": 23,
+          "endLine": 27
+        },
+        {
+          "kind": "method",
+          "symbol": "Cache.new",
+          "key": "method:Cache.new",
+          "parent": "impl:impl Cache",
+          "start": 372,
+          "end": 426,
+          "line": 24,
+          "endLine": 26
+        },
+        {
+          "kind": "impl",
+          "symbol": "impl Cache",
+          "key": "impl:impl Cache~2",
+          "parent": "file",
+          "start": 430,
+          "end": 472,
+          "line": 29,
+          "endLine": 31
+        },
+        {
+          "kind": "variable",
+          "symbol": "Cache.EMPTY",
+          "key": "variable:Cache.EMPTY",
+          "parent": "impl:impl Cache~2",
+          "start": 447,
+          "end": 470,
+          "line": 30,
+          "endLine": 30
+        },
+        {
+          "kind": "impl",
+          "symbol": "impl Display for Cache",
+          "key": "impl:impl Display for Cache",
+          "parent": "file",
+          "start": 474,
+          "end": 593,
+          "line": 33,
+          "endLine": 37
+        },
+        {
+          "kind": "method",
+          "symbol": "Cache.fmt",
+          "key": "method:Cache.fmt",
+          "parent": "impl:impl Display for Cache",
+          "start": 503,
+          "end": 591,
+          "line": 34,
+          "endLine": 36
+        },
+        {
+          "kind": "impl",
+          "symbol": "impl Wrap",
+          "key": "impl:impl Wrap",
+          "parent": "file",
+          "start": 595,
+          "end": 661,
+          "line": 39,
+          "endLine": 43
+        },
+        {
+          "kind": "method",
+          "symbol": "Wrap.inner",
+          "key": "method:Wrap.inner",
+          "parent": "impl:impl Wrap",
+          "start": 617,
+          "end": 659,
+          "line": 40,
+          "endLine": 42
+        },
+        {
+          "kind": "module",
+          "symbol": "util",
+          "key": "module:util",
+          "parent": "file",
+          "start": 663,
+          "end": 743,
+          "line": 45,
+          "endLine": 48
+        },
+        {
+          "kind": "function",
+          "symbol": "util.helper",
+          "key": "function:util.helper",
+          "parent": "module:util",
+          "start": 678,
+          "end": 705,
+          "line": 46,
+          "endLine": 46
+        },
+        {
+          "kind": "variable",
+          "symbol": "util.NAME",
+          "key": "variable:util.NAME",
+          "parent": "module:util",
+          "start": 710,
+          "end": 741,
+          "line": 47,
+          "endLine": 47
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 745,
+          "end": 758,
+          "line": 50,
+          "endLine": 50
+        },
+        {
+          "kind": "type",
+          "symbol": "Alias",
+          "key": "type:Alias",
+          "parent": "file",
+          "start": 760,
+          "end": 781,
+          "line": 52,
+          "endLine": 52
+        },
+        {
+          "kind": "variable",
+          "symbol": "MAX",
+          "key": "variable:MAX",
+          "parent": "file",
+          "start": 782,
+          "end": 802,
+          "line": 53,
+          "endLine": 53
+        },
+        {
+          "kind": "macro",
+          "symbol": "square",
+          "key": "macro:square",
+          "parent": "file",
+          "start": 804,
+          "end": 857,
+          "line": 55,
+          "endLine": 57
+        },
+        {
+          "kind": "function",
+          "symbol": "main",
+          "key": "function:main",
+          "parent": "file",
+          "start": 859,
+          "end": 871,
+          "line": 59,
+          "endLine": 59
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source",
+    "origin": "computed"
+  },
+  {
+    "name": "go: grouped and single specs, var_spec_list groups, method receivers, duplicate init",
+    "input": {
+      "fixture": "fixtures/units/go.go",
+      "path": "cmd/main.go"
+    },
+    "expected": {
+      "class": "go",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 536,
+          "line": 1,
+          "endLine": 52
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 58,
+          "end": 70,
+          "line": 2,
+          "endLine": 2
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 72,
+          "end": 100,
+          "line": 4,
+          "endLine": 7
+        },
+        {
+          "kind": "variable",
+          "symbol": "Greeting",
+          "key": "variable:Greeting",
+          "parent": "file",
+          "start": 102,
+          "end": 127,
+          "line": 9,
+          "endLine": 9
+        },
+        {
+          "kind": "variable",
+          "symbol": "A",
+          "key": "variable:A",
+          "parent": "file",
+          "start": 138,
+          "end": 143,
+          "line": 12,
+          "endLine": 12
+        },
+        {
+          "kind": "variable",
+          "symbol": "B",
+          "key": "variable:B",
+          "parent": "file",
+          "start": 145,
+          "end": 150,
+          "line": 13,
+          "endLine": 13
+        },
+        {
+          "kind": "variable",
+          "symbol": "x",
+          "key": "variable:x",
+          "parent": "file",
+          "start": 154,
+          "end": 169,
+          "line": 16,
+          "endLine": 16
+        },
+        {
+          "kind": "variable",
+          "symbol": "p",
+          "key": "variable:p",
+          "parent": "file",
+          "start": 178,
+          "end": 185,
+          "line": 19,
+          "endLine": 19
+        },
+        {
+          "kind": "variable",
+          "symbol": "q",
+          "key": "variable:q",
+          "parent": "file",
+          "start": 187,
+          "end": 194,
+          "line": 20,
+          "endLine": 20
+        },
+        {
+          "kind": "variable",
+          "symbol": "r",
+          "key": "variable:r",
+          "parent": "file",
+          "start": 198,
+          "end": 214,
+          "line": 23,
+          "endLine": 25
+        },
+        {
+          "kind": "type",
+          "symbol": "C",
+          "key": "type:C",
+          "parent": "file",
+          "start": 216,
+          "end": 226,
+          "line": 27,
+          "endLine": 27
+        },
+        {
+          "kind": "type",
+          "symbol": "D",
+          "key": "type:D",
+          "parent": "file",
+          "start": 236,
+          "end": 241,
+          "line": 30,
+          "endLine": 30
+        },
+        {
+          "kind": "type",
+          "symbol": "E",
+          "key": "type:E",
+          "parent": "file",
+          "start": 243,
+          "end": 253,
+          "line": 31,
+          "endLine": 31
+        },
+        {
+          "kind": "type",
+          "symbol": "Cache",
+          "key": "type:Cache",
+          "parent": "file",
+          "start": 257,
+          "end": 312,
+          "line": 34,
+          "endLine": 36
+        },
+        {
+          "kind": "method",
+          "symbol": "Cache.Get",
+          "key": "method:Cache.Get",
+          "parent": "file",
+          "start": 314,
+          "end": 371,
+          "line": 38,
+          "endLine": 40
+        },
+        {
+          "kind": "method",
+          "symbol": "Cache.Len",
+          "key": "method:Cache.Len",
+          "parent": "file",
+          "start": 373,
+          "end": 425,
+          "line": 42,
+          "endLine": 44
+        },
+        {
+          "kind": "function",
+          "symbol": "init",
+          "key": "function:init",
+          "parent": "file",
+          "start": 427,
+          "end": 441,
+          "line": 46,
+          "endLine": 46
+        },
+        {
+          "kind": "function",
+          "symbol": "init",
+          "key": "function:init~2",
+          "parent": "file",
+          "start": 443,
+          "end": 457,
+          "line": 48,
+          "endLine": 48
+        },
+        {
+          "kind": "function",
+          "symbol": "main",
+          "key": "function:main",
+          "parent": "file",
+          "start": 459,
+          "end": 535,
+          "line": 50,
+          "endLine": 52
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source",
+    "origin": "computed"
+  },
+  {
+    "name": "java: field declarators, overloads, enum body declarations, record, annotation type",
+    "input": {
+      "fixture": "fixtures/units/java.java",
+      "path": "src/demo/Cache.java"
+    },
+    "expected": {
+      "class": "java",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 760,
+          "line": 1,
+          "endLine": 55
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 0,
+          "end": 13,
+          "line": 1,
+          "endLine": 1
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 15,
+          "end": 37,
+          "line": 3,
+          "endLine": 3
+        },
+        {
+          "kind": "class",
+          "symbol": "Cache",
+          "key": "class:Cache",
+          "parent": "file",
+          "start": 77,
+          "end": 452,
+          "line": 6,
+          "endLine": 29
+        },
+        {
+          "kind": "variable",
+          "symbol": "Cache.x",
+          "key": "variable:Cache.x",
+          "parent": "class:Cache",
+          "start": 117,
+          "end": 118,
+          "line": 7,
+          "endLine": 7
+        },
+        {
+          "kind": "variable",
+          "symbol": "Cache.y",
+          "key": "variable:Cache.y",
+          "parent": "class:Cache",
+          "start": 120,
+          "end": 121,
+          "line": 7,
+          "endLine": 7
+        },
+        {
+          "kind": "variable",
+          "symbol": "Cache.z",
+          "key": "variable:Cache.z",
+          "parent": "class:Cache",
+          "start": 127,
+          "end": 141,
+          "line": 8,
+          "endLine": 8
+        },
+        {
+          "kind": "variable",
+          "symbol": "Cache.NAME",
+          "key": "variable:Cache.NAME",
+          "parent": "class:Cache",
+          "start": 146,
+          "end": 181,
+          "line": 9,
+          "endLine": 9
+        },
+        {
+          "kind": "method",
+          "symbol": "Cache.Cache",
+          "key": "method:Cache.Cache",
+          "parent": "class:Cache",
+          "start": 187,
+          "end": 204,
+          "line": 11,
+          "endLine": 11
+        },
+        {
+          "kind": "method",
+          "symbol": "Cache.get",
+          "key": "method:Cache.get",
+          "parent": "class:Cache",
+          "start": 210,
+          "end": 263,
+          "line": 13,
+          "endLine": 15
+        },
+        {
+          "kind": "method",
+          "symbol": "Cache.get",
+          "key": "method:Cache.get~2",
+          "parent": "class:Cache",
+          "start": 269,
+          "end": 326,
+          "line": 17,
+          "endLine": 19
+        },
+        {
+          "kind": "method",
+          "symbol": "Cache.toString",
+          "key": "method:Cache.toString",
+          "parent": "class:Cache",
+          "start": 332,
+          "end": 399,
+          "line": 21,
+          "endLine": 24
+        },
+        {
+          "kind": "class",
+          "symbol": "Cache.Entry",
+          "key": "class:Cache.Entry",
+          "parent": "class:Cache",
+          "start": 405,
+          "end": 450,
+          "line": 26,
+          "endLine": 28
+        },
+        {
+          "kind": "variable",
+          "symbol": "Cache.Entry.value",
+          "key": "variable:Cache.Entry.value",
+          "parent": "class:Cache.Entry",
+          "start": 434,
+          "end": 444,
+          "line": 27,
+          "endLine": 27
+        },
+        {
+          "kind": "interface",
+          "symbol": "Store",
+          "key": "interface:Store",
+          "parent": "file",
+          "start": 454,
+          "end": 517,
+          "line": 31,
+          "endLine": 34
+        },
+        {
+          "kind": "variable",
+          "symbol": "Store.LIMIT",
+          "key": "variable:Store.LIMIT",
+          "parent": "interface:Store",
+          "start": 476,
+          "end": 491,
+          "line": 32,
+          "endLine": 32
+        },
+        {
+          "kind": "method",
+          "symbol": "Store.put",
+          "key": "method:Store.put",
+          "parent": "interface:Store",
+          "start": 496,
+          "end": 515,
+          "line": 33,
+          "endLine": 33
+        },
+        {
+          "kind": "enum",
+          "symbol": "Mode",
+          "key": "enum:Mode",
+          "parent": "file",
+          "start": 519,
+          "end": 619,
+          "line": 36,
+          "endLine": 44
+        },
+        {
+          "kind": "variable",
+          "symbol": "Mode.level",
+          "key": "variable:Mode.level",
+          "parent": "enum:Mode",
+          "start": 552,
+          "end": 570,
+          "line": 39,
+          "endLine": 39
+        },
+        {
+          "kind": "method",
+          "symbol": "Mode.level",
+          "key": "method:Mode.level",
+          "parent": "enum:Mode",
+          "start": 576,
+          "end": 617,
+          "line": 41,
+          "endLine": 43
+        },
+        {
+          "kind": "class",
+          "symbol": "Point",
+          "key": "class:Point",
+          "parent": "file",
+          "start": 621,
+          "end": 695,
+          "line": 46,
+          "endLine": 50
+        },
+        {
+          "kind": "method",
+          "symbol": "Point.sum",
+          "key": "method:Point.sum",
+          "parent": "class:Point",
+          "start": 654,
+          "end": 693,
+          "line": 47,
+          "endLine": 49
+        },
+        {
+          "kind": "interface",
+          "symbol": "Marker",
+          "key": "interface:Marker",
+          "parent": "file",
+          "start": 697,
+          "end": 759,
+          "line": 52,
+          "endLine": 55
+        },
+        {
+          "kind": "variable",
+          "symbol": "Marker.DEFAULT",
+          "key": "variable:Marker.DEFAULT",
+          "parent": "interface:Marker",
+          "start": 721,
+          "end": 737,
+          "line": 53,
+          "endLine": 53
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source",
+    "origin": "computed"
+  },
+  {
+    "name": "python with a syntax error: class text, block units",
+    "input": {
+      "fixture": "fixtures/units/broken.py",
+      "path": "pkg/broken.py"
+    },
+    "expected": {
+      "class": "text",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 81,
+          "line": 1,
+          "endLine": 10
+        },
+        {
+          "kind": "block",
+          "symbol": null,
+          "key": "block:*",
+          "parent": "file",
+          "start": 0,
+          "end": 22,
+          "line": 1,
+          "endLine": 2
+        },
+        {
+          "kind": "block",
+          "symbol": null,
+          "key": "block:*",
+          "parent": "file",
+          "start": 24,
+          "end": 45,
+          "line": 4,
+          "endLine": 5
+        },
+        {
+          "kind": "block",
+          "symbol": null,
+          "key": "block:*",
+          "parent": "file",
+          "start": 47,
+          "end": 56,
+          "line": 7,
+          "endLine": 7
+        },
+        {
+          "kind": "block",
+          "symbol": null,
+          "key": "block:*~2",
+          "parent": "file",
+          "start": 58,
+          "end": 80,
+          "line": 9,
+          "endLine": 10
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript: html_comment at the top level is a comment, not a statement",
+    "input": {
+      "fixture": "fixtures/units/html-comment.ts",
+      "path": "src/legacy.ts"
+    },
+    "expected": {
+      "class": "typescript",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 52,
+          "line": 1,
+          "endLine": 3
+        },
+        {
+          "kind": "variable",
+          "symbol": "a",
+          "key": "variable:a",
+          "parent": "file",
+          "start": 0,
+          "end": 12,
+          "line": 1,
+          "endLine": 1
+        },
+        {
+          "kind": "function",
+          "symbol": "b",
+          "key": "function:b",
+          "parent": "file",
+          "start": 33,
+          "end": 51,
+          "line": 3,
+          "endLine": 3
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC sections 6.4 and 8.4 and the ruling that html_comment is a comment kind; expected values derived by hand from the fixture source",
+    "origin": "computed"
+  }
+]
