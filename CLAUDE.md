@@ -8,13 +8,14 @@ of them is wrong; say which in the same change.
 
 ## Build and test
 
-These four gates must pass before a commit:
+These five gates must pass before a commit (CONTRIBUTING.md explains them):
 
 ```bash
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
-cargo build --workspace --no-default-features
+cargo build -p hibi --no-default-features
+cargo test -p hibi --no-default-features
 ```
 
 `cases/` holds data cases for the pure algorithms; `cargo test` runs them.
