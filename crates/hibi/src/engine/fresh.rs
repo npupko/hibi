@@ -147,10 +147,11 @@ pub fn evaluate<'m>(
         match &recheck {
             None => ClaimState::Fresh,
             // An expiry past the last representable instant is never
-            // reached.
+            // reached: `add` fails for it, and the mark keeps the claim
+            // fresh. `expiresAt` is then `null`.
             Some(d) => {
                 let live = matching.iter().any(|m| {
-                    duration::add(m.at.datetime(), d).is_ok_and(|end| now.datetime() < end)
+                    duration::add(m.at.datetime(), d).map_or(true, |end| now.datetime() < end)
                 });
                 if live {
                     ClaimState::Fresh

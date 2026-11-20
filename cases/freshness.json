@@ -1274,5 +1274,39 @@
     },
     "source": "SPEC 9.2 first table, the row for this outcome (13.4 gives the same state and reason for the error code). The side does not resolve to one unit, so no mark matches: stale. Reference: the only mark.",
     "origin": "spec-derived"
+  },
+  {
+    "name": "recheck whose expiry is past the last representable instant: fresh, expiresAt null",
+    "input": {
+      "recheck": "P1D",
+      "retired": false,
+      "now": "9999-12-31T23:59:59Z",
+      "marks": [
+        {
+          "at": "9999-12-31T12:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "unit": "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        }
+      ]
+    },
+    "expected": {
+      "state": "fresh",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3 and 9.4: the mark matches. add(mark.at, P1D) would be 10000-01-01T12:00:00Z, past 9999-12-31T23:59:59Z, so the expiry is never reached and row 4 holds for every now: fresh. 15.2: expiresAt is add(markedAt, recheck), which has no value here: null.",
+    "origin": "spec-derived"
   }
 ]

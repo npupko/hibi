@@ -112,6 +112,25 @@ fn r18_recheck_boundary_is_inclusive() {
     assert_eq!(v.next, Some(format!("hibi mark {id}")));
 }
 
+/// An expiry past the last representable instant (section 9.4) is never
+/// reached: the mark keeps the claim fresh and `expiresAt` is `null`.
+#[test]
+fn an_expiry_past_the_last_instant_is_never_reached() {
+    let (_w, mut p, store) = setup();
+    let id = one(&store, &mut p, Some("P1D"), "9999-12-30T00:00:00Z");
+    // The first mark expires at 9999-12-31T00:00:00Z.
+    let v = view_at(&store, &mut p, &id, "9999-12-31T12:00:00Z");
+    assert_eq!(v.state, ClaimState::Expired);
+    assert_eq!(v.expires_at, Some(ts("9999-12-31T00:00:00Z")));
+    // A mark whose `at` plus one day is past 9999-12-31T23:59:59Z.
+    mark_at(&store, &mut p, &id, "9999-12-31T12:00:00Z");
+    let v = view_at(&store, &mut p, &id, "9999-12-31T23:59:59Z");
+    assert_eq!(v.state, ClaimState::Fresh);
+    assert_eq!(v.marked_at, Some(ts("9999-12-31T12:00:00Z")));
+    assert_eq!(v.expires_at, None);
+    assert_eq!(v.next, None);
+}
+
 /// Rule 4 reads "some matching mark": an older matching mark that has
 /// expired does not expire the claim while a newer matching one is live.
 #[test]
