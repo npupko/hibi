@@ -1,0 +1,14 @@
+{
+  "name": "hibi",
+  "owner": {
+    "name": "Nick Pupko",
+    "email": "lazynick7@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "hibi-cli",
+      "source": "./plugins/hibi-cli",
+      "description": "Teaches agents to use the hibi CLI as memory: status, re-check, mark or reanchor, claim, and cover, with a cookbook of worked tasks."
+    }
+  ]
+}
