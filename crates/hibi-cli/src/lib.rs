@@ -178,7 +178,22 @@ pub fn run(args: &[OsString]) -> ExitCode {
     let command = cli.command.name();
     match app::run(cli) {
         Ok(reply) => succeed(format, reply),
-        Err(errors) => fail(format, command, errors),
+        Err(errors) => {
+            // A usage error found after parsing points at the help of the
+            // command that was run, as one found by clap does.
+            let general = hibi::Code::Usage.remediation();
+            let errors = errors
+                .into_iter()
+                .map(|e| {
+                    if e.code == hibi::Code::Usage && e.remediation.as_deref() == general {
+                        e.with_remediation(format!("hibi {command} --help"))
+                    } else {
+                        e
+                    }
+                })
+                .collect();
+            fail(format, command, errors)
+        }
     }
 }
 

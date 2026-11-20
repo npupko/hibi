@@ -116,3 +116,92 @@ fn since_with_state_or_ids_is_usage_before_the_range_is_read() {
         serde_json::json!([])
     );
 }
+
+/// A usage error that the library finds after parsing points at the help
+/// of the command that was run, not at `hibi --help`.
+#[test]
+fn a_usage_error_found_after_parsing_names_the_command_help() {
+    let repo = Repo::new();
+    repo.write("docs/a.md", "One sentence. Another sentence.\n");
+    let id = repo.claim(
+        "One.",
+        "file:docs/a.md::One sentence.",
+        &["file:docs/a.md::Another sentence."],
+    );
+    let cases: [&[&str]; 3] = [
+        &[
+            "reanchor",
+            &id,
+            "--drop-evidence",
+            "1",
+            "--drop-evidence",
+            "1",
+        ],
+        &["reanchor", &id, "--drop-evidence", "7"],
+        &["reanchor", &id, "--evidence", "1"],
+    ];
+    for args in cases {
+        let e = repo.fail(args);
+        assert_eq!(e["code"], "usage", "{args:?}");
+        assert_eq!(e["remediation"], "hibi reanchor --help", "{args:?}");
+    }
+    let e = repo.fail(&["status", "--since", "HEAD", "--state", "stale"]);
+    assert_eq!(e["code"], "usage");
+    assert_eq!(e["remediation"], "hibi status --help");
+}
+
+/// The remediation of `side_ambiguous` and `unsupported_selector` names
+/// the selector keys the provider of that anchor accepts.
+#[test]
+fn selector_advice_comes_from_the_provider() {
+    let repo = Repo::new();
+    repo.config("[schemes.ref]\n");
+    repo.user_config(&format!(
+        "[providers.ref]\ncommand = [{:?}, \"--fixture\", {:?}]\n",
+        reference_provider().to_string_lossy(),
+        notes_fixture().to_string_lossy()
+    ));
+    // The same sentence twice, with the same text around it.
+    let block = "Padding sentence number one that is quite long indeed, really.\n\nThe cap is 5.\n\nPadding sentence number two that is quite long indeed, really.\n\n";
+    repo.write("docs/a.md", &block.repeat(2));
+
+    // The file provider accepts a quote and a symbol.
+    let e = repo.fail(&["claim", "S", "--subject", "file:docs/a.md::The cap is 5."]);
+    assert_eq!(e["code"], "side_ambiguous");
+    assert_eq!(
+        e["remediation"],
+        "Give a symbol, or a longer quote, so that the anchor matches one unit."
+    );
+    let stdin = r#"[{"statement":"S","subject":{"loc":"file:docs/a.md","sel":{"key":"k"}}}]"#;
+    let e = repo
+        .hibi()
+        .args(["--format", "json", "claim", "--stdin"])
+        .stdin(stdin)
+        .run()
+        .err();
+    assert_eq!(e["code"], "unsupported_selector");
+    assert_eq!(
+        e["remediation"],
+        "Use only the selector keys this provider accepts: quote, symbol."
+    );
+
+    // The reference provider accepts a key and a quote, and no symbol.
+    let e = repo.fail(&["claim", "S", "--subject", "ref:notes"]);
+    assert_eq!(e["code"], "side_ambiguous");
+    assert_eq!(
+        e["remediation"],
+        "Give a longer quote, or the unit's key, so that the anchor matches one unit."
+    );
+    let stdin = r#"[{"statement":"S","subject":{"loc":"ref:notes","sel":{"symbol":"x"}}}]"#;
+    let e = repo
+        .hibi()
+        .args(["--format", "json", "claim", "--stdin"])
+        .stdin(stdin)
+        .run()
+        .err();
+    assert_eq!(e["code"], "unsupported_selector");
+    assert_eq!(
+        e["remediation"],
+        "Use only the selector keys this provider accepts: key, quote."
+    );
+}

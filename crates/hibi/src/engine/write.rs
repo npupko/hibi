@@ -12,7 +12,7 @@ use crate::duration;
 use crate::error::{Code, Error};
 use crate::git::GitStatus;
 use crate::model::{Anchor, Claim, ClaimId, Mark, MarkId, MarkSide, Retirement, RetirementId};
-use crate::model::{Timestamp, parse_compact};
+use crate::model::{Locator, SelectorKey, Timestamp, parse_compact};
 use crate::provider::{Providers, Unit};
 use crate::store::{Batch, Ledger, Store};
 
@@ -139,6 +139,64 @@ fn unresolved_error(index: usize, anchor: &Anchor, r: &Resolved, new: bool) -> O
             }
         }
     })
+}
+
+/// Advice for an anchor that matched several units, from the selector keys
+/// its provider accepts: a provider that takes no symbol is not told to
+/// add one.
+fn ambiguous_advice(keys: &[SelectorKey]) -> String {
+    let mut ways = Vec::new();
+    if keys.contains(&SelectorKey::Symbol) {
+        ways.push("a symbol");
+    }
+    if keys.contains(&SelectorKey::Quote) {
+        ways.push("a longer quote");
+    }
+    if keys.contains(&SelectorKey::Key) {
+        ways.push("the unit's key");
+    }
+    match ways.as_slice() {
+        [] => "This provider accepts no selector, so the anchor cannot be narrowed to one unit."
+            .to_owned(),
+        [one] => format!("Give {one}, so that the anchor matches one unit."),
+        [first, rest @ ..] => format!(
+            "Give {first}, or {}, so that the anchor matches one unit.",
+            rest.join(" or ")
+        ),
+    }
+}
+
+/// Replace the general remediation of `side_ambiguous` and
+/// `unsupported_selector` with one that names the selector keys the
+/// provider of `loc` accepts. Other errors, and a provider whose keys
+/// cannot be read, are left as they are.
+fn advise(providers: &mut Providers, loc: &Locator, e: Error) -> Error {
+    if !matches!(e.code, Code::SideAmbiguous | Code::UnsupportedSelector) {
+        return e;
+    }
+    let keys: Option<Vec<SelectorKey>> = providers
+        .provider_for(loc)
+        .ok()
+        .and_then(|p| p.info().ok().map(|i| i.selectors.clone()));
+    let Some(keys) = keys else { return e };
+    match e.code {
+        Code::SideAmbiguous => {
+            let advice = ambiguous_advice(&keys);
+            e.with_remediation(advice)
+        }
+        _ => {
+            let names: Vec<String> = keys.iter().map(ToString::to_string).collect();
+            let accepted = if names.is_empty() {
+                "This provider accepts only the empty selector.".to_owned()
+            } else {
+                format!(
+                    "Use only the selector keys this provider accepts: {}.",
+                    names.join(", ")
+                )
+            };
+            e.with_remediation(accepted)
+        }
+    }
 }
 
 /// The write checks of `claim` step 2 for a new anchor: first that applies.
@@ -401,7 +459,7 @@ pub fn claim(
         let claim = (|| -> Result<Claim, Error> {
             let mut stored = Vec::with_capacity(rs.len());
             for (n, (a, r)) in p.anchors.iter().zip(&rs).enumerate() {
-                let unit = check_new(n, a, r)?;
+                let unit = check_new(n, a, r).map_err(|e| advise(providers, &a.loc, e))?;
                 stored.push(Anchor::new(a.loc.clone(), unit.sel.clone()));
             }
             let subject = stored.remove(0);
@@ -760,9 +818,9 @@ pub fn reanchor(
     let mut units: Vec<&Unit> = Vec::with_capacity(plan.len());
     for (n, ((anchor, new), r)) in plan.iter().zip(&resolved).enumerate() {
         if *new {
-            units.push(check_new(n, anchor, r)?);
+            units.push(check_new(n, anchor, r).map_err(|e| advise(providers, &anchor.loc, e))?);
         } else if let Some(e) = unresolved_error(n, anchor, r, false) {
-            return Err(e);
+            return Err(advise(providers, &anchor.loc, e));
         } else {
             units.push(r.unit().expect("no failure means one unit"));
         }
