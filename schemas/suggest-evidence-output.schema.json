@@ -72,7 +72,7 @@
     "Locator": {
       "description": "file:<path>, repo:<alias>//<path>, or <scheme>:<opaque> (spec section 5.1)",
       "type": "string",
-      "pattern": "^[a-z][a-z0-9-]*:[^\\u0000-\\u001f\\u007f]+$"
+      "pattern": "^(?:file:(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+(?:/(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+)*|repo:[a-z0-9][a-z0-9-]*//(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+(?:/(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+)*|(?!file:|repo:)[a-z][a-z0-9-]*:[^\\u0000-\\u001f\\u007f]+)$"
     },
     "Selector": {
       "description": "A selector (spec section 5.2). No key may be null.",

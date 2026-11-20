@@ -18,6 +18,7 @@ use globset::{GlobBuilder, GlobMatcher};
 use schemars::{JsonSchema, Schema};
 use serde::Deserialize;
 
+use crate::build_info::STORE_VERSION;
 use crate::error::{Code, Error};
 use crate::model::Locator;
 
@@ -92,6 +93,14 @@ fn invalid_config(message: impl Into<String>) -> Error {
 fn invalid_user_config(message: impl Into<String>) -> Error {
     Error::new(Code::InvalidUserConfig, message)
 }
+
+/// [`is_name`] as an ECMA 262 regular expression, for the JSON Schemas:
+/// scope names and repository aliases.
+pub const NAME_PATTERN: &str = "^[a-z0-9][a-z0-9-]*$";
+
+/// [`is_scheme`] as an ECMA 262 regular expression, for the JSON Schemas.
+/// That `file` and `repo` cannot be declared is a separate schema rule.
+pub const SCHEME_PATTERN: &str = "^[a-z][a-z0-9-]*$";
 
 fn is_name(s: &str) -> bool {
     let mut chars = s.chars();
@@ -271,11 +280,22 @@ pub struct Exclusion {
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct RawRepoConfig {
+    /// The store format version. Must be 1.
     #[allow(dead_code)]
+    #[schemars(extend("const" = STORE_VERSION))]
     version: i64,
+    /// Alias to a suggested location, which is only ever displayed.
     #[serde(default)]
+    #[schemars(extend(
+        "propertyNames" = {"pattern": NAME_PATTERN},
+        "additionalProperties" = {"type": "string", "minLength": 1}
+    ))]
     repos: BTreeMap<String, String>,
+    /// One table per external scheme. `file` and `repo` are built in.
     #[serde(default)]
+    #[schemars(extend(
+        "propertyNames" = {"pattern": SCHEME_PATTERN, "not": {"enum": ["file", "repo"]}}
+    ))]
     schemes: BTreeMap<String, RawScheme>,
     #[serde(default)]
     scope: Vec<RawScope>,
@@ -290,8 +310,11 @@ struct RawScheme {
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct RawScope {
+    /// Unique among the scopes.
+    #[schemars(extend("pattern" = NAME_PATTERN))]
     name: String,
     resource: String,
+    #[schemars(length(min = 1), inner(length(min = 1)))]
     kinds: Vec<String>,
     #[serde(default)]
     exclude: Vec<RawExclusion>,
@@ -301,7 +324,11 @@ struct RawScope {
 #[serde(deny_unknown_fields)]
 struct RawExclusion {
     resource: String,
+    /// An exact unit key.
+    #[schemars(length(min = 1))]
     unit: Option<String>,
+    /// Shown in the output of `cover`. Not only whitespace.
+    #[schemars(length(min = 1))]
     reason: String,
 }
 
@@ -568,7 +595,11 @@ pub struct RepoEntry {
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct RawUserConfig {
+    /// One table per external scheme.
     #[serde(default)]
+    #[schemars(extend(
+        "propertyNames" = {"pattern": SCHEME_PATTERN, "not": {"enum": ["file", "repo"]}}
+    ))]
     providers: BTreeMap<String, RawProvider>,
     #[serde(default)]
     repo: Vec<RawRepoEntry>,
@@ -577,15 +608,22 @@ struct RawUserConfig {
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct RawProvider {
+    /// argv: the program, then its arguments.
+    #[schemars(length(min = 1), extend("prefixItems" = [{"type": "string", "minLength": 1}]))]
     command: Vec<String>,
+    /// Default 10000.
+    #[schemars(range(min = MIN_TIMEOUT_MS, max = MAX_TIMEOUT_MS))]
     timeout_ms: Option<u64>,
 }
 
 #[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct RawRepoEntry {
+    /// Absolute: the repository whose `hibi.toml` declares the alias.
     root: String,
+    #[schemars(extend("pattern" = NAME_PATTERN))]
     alias: String,
+    /// Absolute: the directory to use.
     path: String,
 }
 
@@ -905,6 +943,80 @@ mod schema_tests {
             keys(&user, "/$defs/RawRepoEntry/properties"),
             ["alias", "path", "root"]
         );
+    }
+
+    /// The schemas carry the rules the parsers check after reading, with
+    /// the parsers' own constants.
+    #[test]
+    fn the_schemas_carry_the_rules_the_parsers_check() {
+        use serde_json::json;
+        let repo = serde_json::to_value(repo_config_schema()).unwrap();
+        let at = |v: &serde_json::Value, p: &str| {
+            v.pointer(p)
+                .unwrap_or_else(|| panic!("no {p} in {v}"))
+                .clone()
+        };
+        assert_eq!(at(&repo, "/properties/version/const"), STORE_VERSION);
+        assert_eq!(
+            at(&repo, "/properties/repos/propertyNames"),
+            json!({"pattern": NAME_PATTERN})
+        );
+        assert_eq!(
+            at(&repo, "/properties/repos/additionalProperties"),
+            json!({"type": "string", "minLength": 1})
+        );
+        let schemes = json!({"pattern": SCHEME_PATTERN, "not": {"enum": ["file", "repo"]}});
+        assert_eq!(at(&repo, "/properties/schemes/propertyNames"), schemes);
+        let scope = "/$defs/RawScope/properties";
+        assert_eq!(at(&repo, &format!("{scope}/name/pattern")), NAME_PATTERN);
+        assert_eq!(at(&repo, &format!("{scope}/kinds/minItems")), 1);
+        assert_eq!(at(&repo, &format!("{scope}/kinds/items/minLength")), 1);
+        let exclusion = "/$defs/RawExclusion/properties";
+        assert_eq!(at(&repo, &format!("{exclusion}/unit/minLength")), 1);
+        assert_eq!(at(&repo, &format!("{exclusion}/reason/minLength")), 1);
+
+        let user = serde_json::to_value(user_config_schema()).unwrap();
+        assert_eq!(at(&user, "/properties/providers/propertyNames"), schemes);
+        let provider = "/$defs/RawProvider/properties";
+        assert_eq!(at(&user, &format!("{provider}/command/minItems")), 1);
+        assert_eq!(
+            at(&user, &format!("{provider}/command/prefixItems")),
+            json!([{"type": "string", "minLength": 1}])
+        );
+        assert_eq!(
+            at(&user, &format!("{provider}/timeout_ms/minimum")),
+            MIN_TIMEOUT_MS
+        );
+        assert_eq!(
+            at(&user, &format!("{provider}/timeout_ms/maximum")),
+            MAX_TIMEOUT_MS
+        );
+        assert_eq!(
+            at(&user, "/$defs/RawRepoEntry/properties/alias/pattern"),
+            NAME_PATTERN
+        );
+    }
+
+    /// The patterns name the same strings as the parsers' own checks. No
+    /// regular-expression engine is linked, so the patterns are read here
+    /// for their fixed shape and the functions are run on samples.
+    #[test]
+    fn the_name_patterns_describe_the_parser_checks() {
+        assert_eq!(NAME_PATTERN, "^[a-z0-9][a-z0-9-]*$");
+        assert_eq!(SCHEME_PATTERN, "^[a-z][a-z0-9-]*$");
+        for (s, name, scheme) in [
+            ("docs", true, true),
+            ("0docs", true, false),
+            ("a-b-9", true, true),
+            ("-a", false, false),
+            ("", false, false),
+            ("Docs", false, false),
+            ("a_b", false, false),
+            ("a.b", false, false),
+        ] {
+            assert_eq!(is_name(s), name, "{s:?}");
+            assert_eq!(is_scheme(s), scheme, "{s:?}");
+        }
     }
 }
 

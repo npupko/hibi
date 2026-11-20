@@ -4,16 +4,31 @@
   "type": "object",
   "properties": {
     "repos": {
+      "description": "Alias to a suggested location, which is only ever displayed.",
       "type": "object",
       "additionalProperties": {
-        "type": "string"
+        "type": "string",
+        "minLength": 1
       },
-      "default": {}
+      "default": {},
+      "propertyNames": {
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      }
     },
     "schemes": {
+      "description": "One table per external scheme. `file` and `repo` are built in.",
       "type": "object",
       "additionalProperties": {
         "$ref": "#/$defs/RawScheme"
+      },
+      "propertyNames": {
+        "not": {
+          "enum": [
+            "file",
+            "repo"
+          ]
+        },
+        "pattern": "^[a-z][a-z0-9-]*$"
       }
     },
     "scope": {
@@ -23,8 +38,10 @@
       }
     },
     "version": {
+      "description": "The store format version. Must be 1.",
       "type": "integer",
-      "format": "int64"
+      "format": "int64",
+      "const": 1
     }
   },
   "additionalProperties": false,
@@ -36,16 +53,20 @@
       "type": "object",
       "properties": {
         "reason": {
-          "type": "string"
+          "description": "Shown in the output of `cover`. Not only whitespace.",
+          "type": "string",
+          "minLength": 1
         },
         "resource": {
           "type": "string"
         },
         "unit": {
+          "description": "An exact unit key.",
           "type": [
             "string",
             "null"
-          ]
+          ],
+          "minLength": 1
         }
       },
       "additionalProperties": false,
@@ -78,11 +99,15 @@
         "kinds": {
           "type": "array",
           "items": {
-            "type": "string"
-          }
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
         },
         "name": {
-          "type": "string"
+          "description": "Unique among the scopes.",
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
         },
         "resource": {
           "type": "string"

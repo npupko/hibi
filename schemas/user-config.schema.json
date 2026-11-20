@@ -4,9 +4,19 @@
   "type": "object",
   "properties": {
     "providers": {
+      "description": "One table per external scheme.",
       "type": "object",
       "additionalProperties": {
         "$ref": "#/$defs/RawProvider"
+      },
+      "propertyNames": {
+        "not": {
+          "enum": [
+            "file",
+            "repo"
+          ]
+        },
+        "pattern": "^[a-z][a-z0-9-]*$"
       }
     },
     "repo": {
@@ -22,18 +32,28 @@
       "type": "object",
       "properties": {
         "command": {
+          "description": "argv: the program, then its arguments.",
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "minItems": 1,
+          "prefixItems": [
+            {
+              "type": "string",
+              "minLength": 1
+            }
+          ]
         },
         "timeout_ms": {
+          "description": "Default 10000.",
           "type": [
             "integer",
             "null"
           ],
           "format": "uint64",
-          "minimum": 0
+          "maximum": 600000,
+          "minimum": 100
         }
       },
       "additionalProperties": false,
@@ -45,12 +65,15 @@
       "type": "object",
       "properties": {
         "alias": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*$"
         },
         "path": {
+          "description": "Absolute: the directory to use.",
           "type": "string"
         },
         "root": {
+          "description": "Absolute: the repository whose `hibi.toml` declares the alias.",
           "type": "string"
         }
       },

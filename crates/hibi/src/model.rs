@@ -180,6 +180,19 @@ pub enum LocatorParts<'a> {
     External { scheme: &'a str, opaque: &'a str },
 }
 
+/// The locator grammar of section 5.1 as an ECMA 262 regular expression,
+/// for the JSON Schemas. It accepts the strings [`Locator::new`] accepts:
+/// `file:<path>` and `repo:<alias>//<path>` with a path of segments that
+/// are not empty, `.` or `..`, and any other scheme followed by a
+/// non-empty part; no control characters anywhere.
+pub const LOCATOR_PATTERN: &str = concat!(
+    "^(?:",
+    "file:(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+(?:/(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+)*",
+    "|repo:[a-z0-9][a-z0-9-]*//(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+(?:/(?!\\.{1,2}(?:/|$))[^/\\u0000-\\u001f\\u007f]+)*",
+    "|(?!file:|repo:)[a-z][a-z0-9-]*:[^\\u0000-\\u001f\\u007f]+",
+    ")$"
+);
+
 fn is_scheme(s: &str) -> bool {
     let mut chars = s.chars();
     matches!(chars.next(), Some('a'..='z'))
@@ -256,7 +269,7 @@ string_newtype!(
     {
         "type": "string",
         "description": "file:<path>, repo:<alias>//<path>, or <scheme>:<opaque> (spec section 5.1)",
-        "pattern": "^[a-z][a-z0-9-]*:[^\\u0000-\\u001f\\u007f]+$"
+        "pattern": LOCATOR_PATTERN
     }
 );
 

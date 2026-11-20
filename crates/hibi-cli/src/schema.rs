@@ -214,7 +214,14 @@ mod tests {
             "^m1-[0-9a-hjkmnp-tv-z]{20}$"
         );
         assert!(get("mark", "/$defs/Fingerprint/pattern").is_string());
-        assert!(get("mark", "/$defs/Locator/pattern").is_string());
+        assert_eq!(
+            get("mark", "/$defs/Locator/pattern"),
+            hibi::model::LOCATOR_PATTERN
+        );
+        assert_eq!(
+            get("config", "/properties/version/const"),
+            hibi::build_info::STORE_VERSION
+        );
         assert_eq!(
             get("retirement", "/$defs/RetirementId/pattern"),
             "^r1-[0-9a-hjkmnp-tv-z]{20}$"
