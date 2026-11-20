@@ -1,0 +1,576 @@
+//! Coverage (spec section 10) and `cover --since` (section 10.3).
+
+use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::path::Path;
+
+use schemars::JsonSchema;
+use serde::Serialize;
+
+use crate::config::{Exclusion, PatternKind, RepoConfig, Scope, UserConfig, allow_sibling};
+use crate::error::{Code, Error};
+use crate::git::Git;
+use crate::model::{Anchor, Locator};
+use crate::provider::{Provider, ProviderErrorCode, Providers, Unit};
+use crate::store::Store;
+
+use super::fresh::Index;
+use super::read::{SinceRun, SinceView};
+use super::resolve::{
+    Resolved, info_of, reason_of_no_provider, resolve_anchors, side_of_error, validate_units,
+};
+use super::types::{Nullable, Reason, TEXT_EXCERPT_CHARS, UnitRef, Warning, excerpt};
+
+/// The default of `cover --limit`.
+pub const DEFAULT_COVER_LIMIT: usize = 200;
+
+/// What coverage reads besides the store and the providers.
+pub struct CoverEnv<'a> {
+    pub config: &'a RepoConfig,
+    pub user: &'a UserConfig,
+    pub root: &'a Path,
+    pub git: &'a Git,
+}
+
+/// The arguments of `hibi cover`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CoverQuery {
+    /// `--scope` names. Empty means every scope.
+    pub scopes: Vec<String>,
+    /// `--limit`: the cap on `items` per scope; 0 for no cap.
+    pub limit: usize,
+}
+
+impl Default for CoverQuery {
+    fn default() -> Self {
+        CoverQuery {
+            scopes: Vec::new(),
+            limit: DEFAULT_COVER_LIMIT,
+        }
+    }
+}
+
+/// Why a scope was not evaluated.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum Skipped {
+    /// `--since` on a `repo:` or external scope (section 10.3).
+    SinceUnsupported,
+}
+
+/// One exclusion of a scope with the number of units it excluded. A unit
+/// that several exclusions match counts for the first in declaration order.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema)]
+pub struct ExclusionReport {
+    pub resource: String,
+    #[schemars(with = "Nullable<String>")]
+    pub unit: Option<String>,
+    pub reason: String,
+    pub matched: usize,
+}
+
+/// A resource whose units cannot be listed, with the reason of section 9.2.
+/// For a `repo:` scope whose alias is refused, `loc` is the scope's resource
+/// pattern.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema)]
+pub struct UnavailableResource {
+    pub loc: String,
+    pub reason: Reason,
+}
+
+/// An uncovered unit of a scope, as `Provider::units` returned it (without
+/// text).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UncoveredUnit {
+    pub loc: Locator,
+    pub unit: Unit,
+}
+
+/// The coverage of one scope, with every uncovered unit.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ScopeCoverage {
+    pub name: String,
+    pub resource: String,
+    pub kinds: Vec<String>,
+    pub units: usize,
+    pub covered: usize,
+    pub excluded: usize,
+    /// Ordered by locator, then start offset, then key.
+    pub uncovered: Vec<UncoveredUnit>,
+    pub exclusions: Vec<ExclusionReport>,
+    /// Ordered by locator.
+    pub unavailable: Vec<UnavailableResource>,
+    pub skipped: Option<Skipped>,
+}
+
+/// The coverage of the selected scopes, in `hibi.toml` order. The judge's
+/// `triage` reads the uncovered units from here and their text with
+/// [`unit_texts`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Coverage {
+    pub since: Option<SinceView>,
+    pub scopes: Vec<ScopeCoverage>,
+    pub warnings: Vec<Warning>,
+}
+
+/// `summary` in the output of `cover`: the sums over the listed scopes.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, JsonSchema)]
+pub struct CoverSummary {
+    pub units: usize,
+    pub covered: usize,
+    pub excluded: usize,
+    pub uncovered: usize,
+}
+
+/// One uncovered unit in the output of `cover`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema)]
+pub struct CoverItem {
+    pub loc: Locator,
+    pub unit: UnitRef,
+    /// The unit text cut to 240 characters; `null` when the provider did
+    /// not return the unit for its own completed selector.
+    #[schemars(with = "Nullable<String>")]
+    pub text: Option<String>,
+    /// The unit's locator with its completed selector; can be passed to
+    /// `claim --stdin`.
+    pub anchor: Anchor,
+}
+
+/// One scope in the output of `cover`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema)]
+pub struct ScopeReport {
+    pub name: String,
+    pub resource: String,
+    pub kinds: Vec<String>,
+    pub units: usize,
+    pub covered: usize,
+    pub excluded: usize,
+    pub uncovered: usize,
+    /// True when `items` was cut to `--limit`.
+    pub truncated: bool,
+    #[schemars(with = "Nullable<Skipped>")]
+    pub skipped: Option<Skipped>,
+    pub items: Vec<CoverItem>,
+    pub exclusions: Vec<ExclusionReport>,
+    pub unavailable: Vec<UnavailableResource>,
+}
+
+/// The output of `cover`. Scopes are in `hibi.toml` order.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema)]
+pub struct CoverOutput {
+    #[schemars(with = "Nullable<SinceView>")]
+    pub since: Option<SinceView>,
+    pub summary: CoverSummary,
+    pub scopes: Vec<ScopeReport>,
+    pub warnings: Vec<Warning>,
+}
+
+/// The keys of one resource that are covered (section 10.2): every key of
+/// `resolved` (the keys that claim sides resolve to) that is in `units`,
+/// and each ancestor by the `parent` chain. The walk stops at a `null`
+/// parent, at a key that is not in `units`, and at a key already visited.
+pub fn covered_keys<'u, 'k>(
+    units: &'u [Unit],
+    resolved: impl IntoIterator<Item = &'k str>,
+) -> BTreeSet<&'u str> {
+    let by_key: HashMap<&str, &Unit> = units.iter().map(|u| (u.key.as_str(), u)).collect();
+    let mut covered: BTreeSet<&'u str> = BTreeSet::new();
+    for start in resolved {
+        let mut next = by_key.get(start).copied();
+        while let Some(unit) = next {
+            if !covered.insert(unit.key.as_str()) {
+                break;
+            }
+            next = unit.parent.as_deref().and_then(|p| by_key.get(p).copied());
+        }
+    }
+    covered
+}
+
+/// The coverage status of one scope unit.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum UnitCoverage {
+    Covered,
+    /// Not covered, and the exclusion at this position is the first that
+    /// matches.
+    Excluded(usize),
+    Uncovered,
+}
+
+/// Classify a scope unit (section 10.2): `covered` when some side covers
+/// it, `excluded` when not covered and an exclusion matches, otherwise
+/// `uncovered`.
+pub fn classify(
+    loc: &Locator,
+    unit: &Unit,
+    covered: &BTreeSet<&str>,
+    exclusions: &[Exclusion],
+) -> UnitCoverage {
+    if covered.contains(unit.key.as_str()) {
+        return UnitCoverage::Covered;
+    }
+    let hit = exclusions.iter().position(|x| {
+        x.resource.matches_locator(loc) && x.unit.as_deref().is_none_or(|k| k == unit.key)
+    });
+    match hit {
+        Some(i) => UnitCoverage::Excluded(i),
+        None => UnitCoverage::Uncovered,
+    }
+}
+
+/// True when `--since` keeps the unit (section 10.3): no unit of the same
+/// resource at the base has both the same key and the same fingerprint.
+pub fn changed_since(unit: &Unit, base_units: &[Unit]) -> bool {
+    !base_units
+        .iter()
+        .any(|b| b.key == unit.key && b.fp == unit.fp)
+}
+
+type Listing = Result<Vec<Unit>, Reason>;
+
+/// Every unit of a resource, validated by section 2.5, or the reason of
+/// section 9.2 why they cannot be listed.
+fn list_units(provider: &mut dyn Provider, loc: &Locator) -> Result<Vec<Unit>, ProviderErrorOr> {
+    let info = info_of(provider).map_err(|_| ProviderErrorOr::Reason(Reason::ProviderFailed))?;
+    let units = provider
+        .units(loc, None)
+        .map_err(|e| ProviderErrorOr::Code(e.code))?;
+    validate_units(&info, &units).map_err(|_| ProviderErrorOr::Reason(Reason::ProviderError))?;
+    Ok(units)
+}
+
+enum ProviderErrorOr {
+    Code(ProviderErrorCode),
+    Reason(Reason),
+}
+
+impl ProviderErrorOr {
+    fn reason(&self) -> Reason {
+        match self {
+            ProviderErrorOr::Code(c) => side_of_error(*c).1,
+            ProviderErrorOr::Reason(r) => *r,
+        }
+    }
+}
+
+fn list_registered(providers: &mut Providers, loc: &Locator) -> Listing {
+    match providers.provider_for(loc) {
+        Err(np) => Err(reason_of_no_provider(np)),
+        Ok(p) => list_units(p, loc).map_err(|e| e.reason()),
+    }
+}
+
+/// The resources of a scope, or the one `unavailable` entry of a refused
+/// sibling alias.
+fn scope_resources(
+    scope: &Scope,
+    env: &CoverEnv<'_>,
+    root_files: &mut Option<Vec<String>>,
+) -> Result<Result<Vec<Locator>, UnavailableResource>, Error> {
+    let locators = |prefix: &str, files: &[String]| -> Vec<Locator> {
+        files
+            .iter()
+            .filter(|p| scope.resource.matches_path(p))
+            .filter_map(|p| Locator::new(format!("{prefix}{p}")).ok())
+            .collect()
+    };
+    match scope.resource.kind() {
+        PatternKind::File { .. } => {
+            if root_files.is_none() {
+                let mut files = env.git.file_list(env.root)?;
+                files.retain(|p| p != ".hibi" && !p.starts_with(".hibi/"));
+                *root_files = Some(files);
+            }
+            Ok(Ok(locators("file:", root_files.as_deref().unwrap_or(&[]))))
+        }
+        PatternKind::Repo { alias, .. } => {
+            let dir = allow_sibling(alias, env.config, env.user, env.root, |d| {
+                env.git.is_toplevel(d)
+            });
+            match dir {
+                Err(refusal) => Ok(Err(UnavailableResource {
+                    loc: scope.resource.as_str().to_owned(),
+                    reason: match refusal.reason() {
+                        "repo_not_found" => Reason::RepoNotFound,
+                        _ => Reason::RepoNotAllowed,
+                    },
+                })),
+                Ok(dir) => {
+                    let files = env.git.file_list(&dir)?;
+                    Ok(Ok(locators(&format!("repo:{alias}//"), &files)))
+                }
+            }
+        }
+        PatternKind::Locator(loc) => Ok(Ok(vec![loc.clone()])),
+    }
+}
+
+/// Compute coverage (section 10) for the named scopes, or for every scope
+/// when `scopes` is empty.
+///
+/// Every side of every live claim is resolved once, whatever the claim's
+/// state. No scope in `hibi.toml` is `no_scopes`; an unknown name is
+/// `unknown_scope`. With `since`, only scopes on scheme `file` are
+/// evaluated, only their changed paths are listed, and a unit is kept only
+/// when no base unit has its key and fingerprint; a base listing that fails
+/// with anything but `not_found` puts the resource under `unavailable`.
+pub fn coverage(
+    store: &dyn Store,
+    providers: &mut Providers,
+    env: &CoverEnv<'_>,
+    scopes: &[String],
+    mut since: Option<SinceRun<'_>>,
+) -> Result<Coverage, Error> {
+    if env.config.scopes.is_empty() {
+        return Err(Error::new(
+            Code::NoScopes,
+            "no scope is declared in .hibi/hibi.toml",
+        ));
+    }
+    for name in scopes {
+        if env.config.scope(name).is_none() {
+            return Err(Error::new(
+                Code::UnknownScope,
+                format!("no scope is named {name}"),
+            ));
+        }
+    }
+    let selected: Vec<&Scope> = env
+        .config
+        .scopes
+        .iter()
+        .filter(|s| scopes.is_empty() || scopes.contains(&s.name))
+        .collect();
+
+    let ledger = store.load()?;
+    let warnings = Warning::from_store_all(&ledger.warnings)?;
+    let index = Index::new(&ledger);
+    let anchors: Vec<&Anchor> = index.live().flat_map(|c| c.sides()).collect();
+    let resolved = resolve_anchors(providers, &anchors);
+    // Locator to the keys that sides resolve to.
+    let mut direct: BTreeMap<&str, BTreeSet<&str>> = BTreeMap::new();
+    for (a, r) in anchors.iter().zip(&resolved) {
+        if let Resolved::One(u) = r {
+            direct
+                .entry(a.loc.as_str())
+                .or_default()
+                .insert(u.key.as_str());
+        }
+    }
+
+    let changed = match &since {
+        None => None,
+        Some(run) => Some(run.git.changed_paths(run.root, &run.since.base)?),
+    };
+    let mut root_files: Option<Vec<String>> = None;
+    let mut listings: HashMap<Locator, Listing> = HashMap::new();
+    let mut base_listings: HashMap<Locator, Listing> = HashMap::new();
+    let mut out = Vec::with_capacity(selected.len());
+
+    for scope in selected {
+        let mut sc = ScopeCoverage {
+            name: scope.name.clone(),
+            resource: scope.resource.as_str().to_owned(),
+            kinds: scope.kinds.clone(),
+            units: 0,
+            covered: 0,
+            excluded: 0,
+            uncovered: Vec::new(),
+            exclusions: scope
+                .exclude
+                .iter()
+                .map(|x| ExclusionReport {
+                    resource: x.resource.as_str().to_owned(),
+                    unit: x.unit.clone(),
+                    reason: x.reason.clone(),
+                    matched: 0,
+                })
+                .collect(),
+            unavailable: Vec::new(),
+            skipped: None,
+        };
+        if since.is_some() && scope.resource.scheme() != "file" {
+            sc.skipped = Some(Skipped::SinceUnsupported);
+            out.push(sc);
+            continue;
+        }
+        let mut resources = match scope_resources(scope, env, &mut root_files)? {
+            Ok(r) => r,
+            Err(unavailable) => {
+                sc.unavailable.push(unavailable);
+                out.push(sc);
+                continue;
+            }
+        };
+        if let Some(changed) = &changed {
+            resources.retain(|loc| {
+                loc.as_str()
+                    .strip_prefix("file:")
+                    .is_some_and(|p| changed.contains(p))
+            });
+        }
+        for loc in resources {
+            let listing = listings
+                .entry(loc.clone())
+                .or_insert_with(|| list_registered(providers, &loc));
+            let units = match listing {
+                Ok(units) => &*units,
+                Err(reason) => {
+                    sc.unavailable.push(UnavailableResource {
+                        loc: loc.as_str().to_owned(),
+                        reason: *reason,
+                    });
+                    continue;
+                }
+            };
+            let base_units: Option<&[Unit]> = match &mut since {
+                None => None,
+                Some(run) => {
+                    let listing = base_listings.entry(loc.clone()).or_insert_with(|| {
+                        match list_units(run.base, &loc) {
+                            Ok(units) => Ok(units),
+                            Err(ProviderErrorOr::Code(ProviderErrorCode::NotFound)) => {
+                                Ok(Vec::new())
+                            }
+                            Err(e) => Err(e.reason()),
+                        }
+                    });
+                    match listing {
+                        Ok(units) => Some(units.as_slice()),
+                        Err(reason) => {
+                            sc.unavailable.push(UnavailableResource {
+                                loc: loc.as_str().to_owned(),
+                                reason: *reason,
+                            });
+                            continue;
+                        }
+                    }
+                }
+            };
+            let keys = direct.get(loc.as_str());
+            let covered = covered_keys(units, keys.into_iter().flatten().copied());
+            for unit in units {
+                if !scope.kinds.contains(&unit.kind) {
+                    continue;
+                }
+                if base_units.is_some_and(|base| !changed_since(unit, base)) {
+                    continue;
+                }
+                sc.units += 1;
+                match classify(&loc, unit, &covered, &scope.exclude) {
+                    UnitCoverage::Covered => sc.covered += 1,
+                    UnitCoverage::Excluded(i) => {
+                        sc.excluded += 1;
+                        sc.exclusions[i].matched += 1;
+                    }
+                    UnitCoverage::Uncovered => sc.uncovered.push(UncoveredUnit {
+                        loc: loc.clone(),
+                        unit: unit.clone(),
+                    }),
+                }
+            }
+        }
+        sc.uncovered.sort_by(|a, b| {
+            (a.loc.as_str(), a.unit.range.map(|r| r.start), &a.unit.key).cmp(&(
+                b.loc.as_str(),
+                b.unit.range.map(|r| r.start),
+                &b.unit.key,
+            ))
+        });
+        sc.unavailable.sort_by(|a, b| a.loc.cmp(&b.loc));
+        out.push(sc);
+    }
+
+    Ok(Coverage {
+        since: since.as_ref().map(|run| SinceView::from(run.since)),
+        scopes: out,
+        warnings,
+    })
+}
+
+/// The full text of each unit, read with one batched `resolve` of the
+/// unit's completed selector per scheme. `None` where that resolve does not
+/// return a unit with the same key, or returns it without text.
+pub fn unit_texts(providers: &mut Providers, units: &[&UncoveredUnit]) -> Vec<Option<String>> {
+    let anchors: Vec<Anchor> = units
+        .iter()
+        .map(|u| Anchor::new(u.loc.clone(), u.unit.sel.clone()))
+        .collect();
+    let refs: Vec<&Anchor> = anchors.iter().collect();
+    resolve_anchors(providers, &refs)
+        .into_iter()
+        .zip(units)
+        .map(|(r, u)| {
+            let found = match &r {
+                Resolved::One(x) if x.key == u.unit.key => Some(&**x),
+                Resolved::Several(xs) => xs.iter().find(|x| x.key == u.unit.key),
+                _ => None,
+            };
+            found.and_then(|x| x.text.clone())
+        })
+        .collect()
+}
+
+/// `hibi cover` (section 15.3): [`coverage`], with `items` cut to
+/// `query.limit` per scope and each listed item's text cut to 240
+/// characters. Counts are never capped.
+pub fn cover(
+    store: &dyn Store,
+    providers: &mut Providers,
+    env: &CoverEnv<'_>,
+    query: &CoverQuery,
+    since: Option<SinceRun<'_>>,
+) -> Result<CoverOutput, Error> {
+    let coverage = coverage(store, providers, env, &query.scopes, since)?;
+    let shown = |sc: &ScopeCoverage| match query.limit {
+        0 => sc.uncovered.len(),
+        n => n.min(sc.uncovered.len()),
+    };
+    let listed: Vec<&UncoveredUnit> = coverage
+        .scopes
+        .iter()
+        .flat_map(|sc| &sc.uncovered[..shown(sc)])
+        .collect();
+    let mut texts = unit_texts(providers, &listed).into_iter();
+
+    let mut summary = CoverSummary::default();
+    let mut scopes = Vec::with_capacity(coverage.scopes.len());
+    for sc in &coverage.scopes {
+        let n = shown(sc);
+        let items = sc.uncovered[..n]
+            .iter()
+            .map(|u| CoverItem {
+                loc: u.loc.clone(),
+                unit: UnitRef::from(&u.unit),
+                text: texts
+                    .next()
+                    .flatten()
+                    .map(|t| excerpt(&t, TEXT_EXCERPT_CHARS)),
+                anchor: Anchor::new(u.loc.clone(), u.unit.sel.clone()),
+            })
+            .collect();
+        summary.units += sc.units;
+        summary.covered += sc.covered;
+        summary.excluded += sc.excluded;
+        summary.uncovered += sc.uncovered.len();
+        scopes.push(ScopeReport {
+            name: sc.name.clone(),
+            resource: sc.resource.clone(),
+            kinds: sc.kinds.clone(),
+            units: sc.units,
+            covered: sc.covered,
+            excluded: sc.excluded,
+            uncovered: sc.uncovered.len(),
+            truncated: n < sc.uncovered.len(),
+            skipped: sc.skipped,
+            items,
+            exclusions: sc.exclusions.clone(),
+            unavailable: sc.unavailable.clone(),
+        });
+    }
+    Ok(CoverOutput {
+        since: coverage.since,
+        summary,
+        scopes,
+        warnings: coverage.warnings,
+    })
+}
