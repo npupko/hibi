@@ -15,6 +15,7 @@ use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 
 use globset::{GlobBuilder, GlobMatcher};
+use schemars::{JsonSchema, Schema};
 use serde::Deserialize;
 
 use crate::error::{Code, Error};
@@ -267,7 +268,7 @@ pub struct Exclusion {
     pub reason: String,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct RawRepoConfig {
     #[allow(dead_code)]
@@ -280,13 +281,13 @@ struct RawRepoConfig {
     scope: Vec<RawScope>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct RawScheme {
     description: Option<String>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct RawScope {
     name: String,
@@ -296,12 +297,25 @@ struct RawScope {
     exclude: Vec<RawExclusion>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct RawExclusion {
     resource: String,
     unit: Option<String>,
     reason: String,
+}
+
+/// The JSON Schema of `.hibi/hibi.toml` read as a document (section 11.1),
+/// generated from the shape the parser reads. Rules the parser checks after
+/// reading (name patterns, `version = 1`, known schemes) are not in it.
+pub fn repo_config_schema() -> Schema {
+    schemars::schema_for!(RawRepoConfig)
+}
+
+/// The JSON Schema of the user config read as a document (section 11.2),
+/// generated from the shape the parser reads.
+pub fn user_config_schema() -> Schema {
+    schemars::schema_for!(RawUserConfig)
 }
 
 impl RepoConfig {
@@ -551,7 +565,7 @@ pub struct RepoEntry {
     pub path: PathBuf,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct RawUserConfig {
     #[serde(default)]
@@ -560,14 +574,14 @@ struct RawUserConfig {
     repo: Vec<RawRepoEntry>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct RawProvider {
     command: Vec<String>,
     timeout_ms: Option<u64>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 struct RawRepoEntry {
     root: String,
@@ -848,6 +862,50 @@ fn lexical_join(base: &Path, rel: &Path) -> PathBuf {
         }
     }
     out
+}
+
+#[cfg(test)]
+mod schema_tests {
+    use super::*;
+
+    fn keys(schema: &Schema, pointer: &str) -> Vec<String> {
+        let v = serde_json::to_value(schema).unwrap();
+        let mut keys: Vec<String> = v
+            .pointer(pointer)
+            .and_then(|p| p.as_object())
+            .map(|o| o.keys().cloned().collect())
+            .unwrap_or_default();
+        keys.sort();
+        keys
+    }
+
+    #[test]
+    fn the_schemas_list_the_keys_the_parsers_read() {
+        let repo = repo_config_schema();
+        assert_eq!(
+            keys(&repo, "/properties"),
+            ["repos", "schemes", "scope", "version"]
+        );
+        assert_eq!(
+            keys(&repo, "/$defs/RawScope/properties"),
+            ["exclude", "kinds", "name", "resource"]
+        );
+        assert_eq!(keys(&repo, "/$defs/RawScheme/properties"), ["description"]);
+        let v = serde_json::to_value(&repo).unwrap();
+        assert_eq!(v["additionalProperties"], serde_json::json!(false));
+        assert_eq!(v["required"], serde_json::json!(["version"]));
+
+        let user = user_config_schema();
+        assert_eq!(keys(&user, "/properties"), ["providers", "repo"]);
+        assert_eq!(
+            keys(&user, "/$defs/RawProvider/properties"),
+            ["command", "timeout_ms"]
+        );
+        assert_eq!(
+            keys(&user, "/$defs/RawRepoEntry/properties"),
+            ["alias", "path", "root"]
+        );
+    }
 }
 
 #[cfg(test)]
