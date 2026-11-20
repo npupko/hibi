@@ -231,6 +231,19 @@ impl Cache {
     }
 }
 
+/// The unit cache of the file provider (section 11.3). A failing read is a
+/// miss and a failing write is dropped: the cache never changes a result.
+#[cfg(feature = "file")]
+impl crate::provider::file::UnitCache for Cache {
+    fn get_units(&self, blob: &str, class: &str) -> Option<String> {
+        self.units(blob, class).ok().flatten()
+    }
+
+    fn put_units(&self, blob: &str, class: &str, units: &str) {
+        let _ = Cache::put_units(self, blob, class, units);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
