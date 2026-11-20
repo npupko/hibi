@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { CONTEXT_MAX_CHARS, claimContext } from "../src/engine/context.ts";
+import {
+  CONTEXT_MAX_CHARS,
+  claimContext,
+  parseHeading,
+} from "../src/engine/context.ts";
 
 const ctx = (doc: string, sentence: string) => claimContext(doc, { sentence });
 
@@ -96,5 +100,40 @@ describe("claimContext", () => {
       },
     });
     expect(out).toBe("B\n\nSame line.");
+  });
+});
+
+describe("parseHeading", () => {
+  test("level and title of ordinary headings", () => {
+    expect(parseHeading("## Title")).toEqual({ level: 2, title: "Title" });
+    expect(parseHeading("## Title ##")).toEqual({ level: 2, title: "Title" });
+    expect(parseHeading("#   Title   ")).toEqual({ level: 1, title: "Title" });
+    expect(parseHeading("#\tTitle")).toEqual({ level: 1, title: "Title" });
+    expect(parseHeading("   ###### Six")).toEqual({ level: 6, title: "Six" });
+    expect(parseHeading("# a # b")).toEqual({ level: 1, title: "a # b" });
+  });
+
+  test("a trailing run of # is stripped even without a space before it", () => {
+    expect(parseHeading("# C#")).toEqual({ level: 1, title: "C" });
+  });
+
+  test("lines that are not headings", () => {
+    expect(parseHeading("#")).toBeNull();
+    expect(parseHeading("#Title")).toBeNull();
+    expect(parseHeading("####### Seven")).toBeNull();
+    expect(parseHeading("    # Indented")).toBeNull();
+    expect(parseHeading("# Title\r")).toBeNull();
+  });
+
+  test("long runs of tabs finish quickly", () => {
+    const tabs = "\t".repeat(50000);
+    const t0 = performance.now();
+    expect(parseHeading(`# ${tabs}x`)).toEqual({ level: 1, title: "x" });
+    expect(parseHeading(`# a${tabs}b`)).toEqual({
+      level: 1,
+      title: `a${tabs}b`,
+    });
+    expect(parseHeading(`# a${tabs}\r`)).toBeNull();
+    expect(performance.now() - t0).toBeLessThan(100);
   });
 });

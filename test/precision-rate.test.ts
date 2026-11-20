@@ -99,9 +99,10 @@ function driftEdit(src: string, anchorQuote: string, r: () => number): string {
     return src.slice(0, idx) + mutated + src.slice(idx + anchorQuote.length);
   }
   // No digit → mutate an identifier/operator within the region.
-  const mutated = region
-    .replace(/[a-zA-Z]+/, (m) => `${m}X`)
-    .replace(/\*/, "+");
+  const renamed = region.replace(/[a-zA-Z]+/, (m) => `${m}X`);
+  const star = renamed.indexOf("*");
+  const mutated =
+    star < 0 ? renamed : `${renamed.slice(0, star)}+${renamed.slice(star + 1)}`;
   return src.slice(0, idx) + mutated + src.slice(idx + anchorQuote.length);
 }
 

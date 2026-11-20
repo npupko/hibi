@@ -41,7 +41,10 @@ import { frontmatterEnd, TAG_LINE, THEMATIC_BREAK } from "./regions.ts";
 export const CONTEXT_MAX_CHARS = 600;
 
 const ELLIPSIS = "…";
-const HEADING = /^ {0,3}(#{1,6})[ \t]+(.*?)[ \t]*#*[ \t]*$/;
+/** An ATX heading opener: up to 3 spaces, 1-6 `#`, then a space or tab. */
+const HEADING_OPEN = /^ {0,3}(#{1,6})[ \t]/;
+/** Characters `.` does not match; a heading line holding one is not a heading. */
+const LINE_TERMINATOR = /[\n\r\u2028\u2029]/;
 const FENCE = /^ {0,3}(```|~~~)/;
 const LIST_ITEM = /^\s*(?:[-*+]|\d+[.)])\s/;
 
@@ -54,6 +57,30 @@ interface Line {
   heading?: { level: number; title: string };
 }
 
+function isSpaceOrTab(code: number): boolean {
+  return code === 0x20 || code === 0x09;
+}
+
+/**
+ * The level and title of an ATX heading line, or null. The title drops the
+ * leading and trailing spaces and tabs and any run of `#` at its end, so
+ * `## Title ##` and `# C#` give `Title` and `C`. Scans the line once.
+ */
+export function parseHeading(
+  text: string,
+): { level: number; title: string } | null {
+  const open = HEADING_OPEN.exec(text);
+  if (!open) return null;
+  let start = open[0].length;
+  if (LINE_TERMINATOR.test(text.slice(start))) return null;
+  while (start < text.length && isSpaceOrTab(text.charCodeAt(start))) start++;
+  let end = text.length;
+  while (end > start && isSpaceOrTab(text.charCodeAt(end - 1))) end--;
+  while (end > start && text.charCodeAt(end - 1) === 0x23) end--;
+  while (end > start && isSpaceOrTab(text.charCodeAt(end - 1))) end--;
+  return { level: (open[1] as string).length, title: text.slice(start, end) };
+}
+
 function scanLines(doc: string, bodyStart: number): Line[] {
   const out: Line[] = [];
   let start = 0;
@@ -62,16 +89,8 @@ function scanLines(doc: string, bodyStart: number): Line[] {
     const front = start < bodyStart;
     const fenceLine = !front && FENCE.test(text);
     const fenced = inFence || fenceLine;
-    const h = !fenced && !front ? HEADING.exec(text) : null;
-    out.push({
-      text,
-      start,
-      fenced,
-      front,
-      ...(h
-        ? { heading: { level: (h[1] as string).length, title: h[2] ?? "" } }
-        : {}),
-    });
+    const heading = !fenced && !front ? parseHeading(text) : null;
+    out.push({ text, start, fenced, front, ...(heading ? { heading } : {}) });
     if (fenceLine) inFence = !inFence;
     start += text.length + 1;
   }
