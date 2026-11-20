@@ -309,13 +309,61 @@ fn prepare_claim(
     })
 }
 
+/// One element of `claim` after its anchors resolved: the claim built from
+/// the completed selectors, and the resolutions it was built from.
+struct Built<'p> {
+    index: usize,
+    input: &'p NewClaim,
+    claim: Claim,
+    resolved: Vec<Resolved>,
+}
+
+/// True when `existing`, whose stored anchors resolve to `resolved`, is
+/// the same claim as `new` in the sense a caller means: equal statement,
+/// `recheck` and `note`, the same number of sides, and for each side the
+/// same locator, the same resolved unit, and an equal completed `quote`
+/// and `symbol`. The context and position of a quote (`prefix`, `suffix`,
+/// `pos`) do not count: they change when text near the quote is edited.
+fn same_claim(existing: &Claim, resolved: &[Resolved], new: &Built<'_>) -> bool {
+    same_fields(existing, &new.claim)
+        && existing
+            .sides()
+            .zip(resolved)
+            .zip(new.claim.sides().zip(&new.resolved))
+            .all(|((old, old_r), (side, new_r))| {
+                old.sel.quote == side.sel.quote
+                    && old.sel.symbol == side.sel.symbol
+                    && match (old_r.unit(), new_r.unit()) {
+                        (Some(a), Some(b)) => a.key == b.key,
+                        _ => false,
+                    }
+            })
+}
+
+/// The part of [`same_claim`] that needs no resolution.
+fn same_fields(existing: &Claim, new: &Claim) -> bool {
+    existing.statement == new.statement
+        && existing.recheck == new.recheck
+        && existing.note == new.note
+        && existing.side_count() == new.side_count()
+        && existing
+            .sides()
+            .zip(new.sides())
+            .all(|(a, b)| a.loc == b.loc)
+}
+
 /// `hibi claim` (section 15.3). `inputs` holds one element for the argument
 /// form and the array for `--stdin`; with `indexed` every error carries the
 /// `index` of its element. All or nothing: when any element fails, every
 /// failing element is reported (its first failing check) and nothing is
 /// written.
 ///
-/// An element whose claim already exists and is live adds a mark only.
+/// An element adds a mark only, and reports `created: false`, when its
+/// claim already exists and is live. That is the claim with the same id,
+/// or else a live claim that is the same claim by [`same_claim`]: one whose
+/// stored context or position went out of date because text near its quote
+/// was edited. When several such claims exist the one with the smallest id
+/// is marked.
 pub fn claim(
     store: &dyn Store,
     providers: &mut Providers,
@@ -345,54 +393,112 @@ pub fn claim(
     let mut resolved = resolve_anchors(providers, &all).into_iter();
     let warnings = run_warnings(&ledger, git, all.iter().copied()).map_err(|e| vec![e])?;
 
-    let mut batch = Batch::default();
-    let mut results: Vec<(Claim, bool, MarkId, Vec<Resolved>)> = Vec::new();
+    // Step 3: the claim of each element, from the completed selectors.
+    let mut built: Vec<Built<'_>> = Vec::new();
     for (i, p) in prepared.iter().enumerate() {
         let Some(p) = p else { continue };
         let rs: Vec<Resolved> = resolved.by_ref().take(p.anchors.len()).collect();
-        let built = (|| -> Result<(Claim, Mark), Error> {
-            let mut units = Vec::with_capacity(rs.len());
+        let claim = (|| -> Result<Claim, Error> {
+            let mut stored = Vec::with_capacity(rs.len());
             for (n, (a, r)) in p.anchors.iter().zip(&rs).enumerate() {
-                units.push(check_new(n, a, r)?);
+                let unit = check_new(n, a, r)?;
+                stored.push(Anchor::new(a.loc.clone(), unit.sel.clone()));
             }
-            // Steps 3 and 4.
-            let mut stored: Vec<Anchor> = p
-                .anchors
-                .iter()
-                .zip(&units)
-                .map(|(a, u)| Anchor::new(a.loc.clone(), u.sel.clone()))
-                .collect();
-            let sides = mark_sides(&stored, &units);
             let subject = stored.remove(0);
-            let claim = Claim::new(
+            Claim::new(
                 &p.statement,
                 subject,
                 stored,
                 p.recheck.clone(),
                 p.note.clone(),
-            )?;
-            if index.is_retired(claim.id.as_str()) {
+            )
+        })();
+        match claim {
+            Err(e) => errors.push(e.with_index(i)),
+            Ok(claim) => built.push(Built {
+                index: i,
+                input: p,
+                claim,
+                resolved: rs,
+            }),
+        }
+    }
+
+    // An element whose id is not that of a live claim may still be an
+    // existing claim: resolve the stored anchors of every live claim that
+    // agrees with it on the fields that need no resolution, in one pass.
+    let is_live = |id: &str| index.claim(id).is_some() && !index.is_retired(id);
+    let mut candidates: Vec<&Claim> = Vec::new();
+    for b in built.iter().filter(|b| !is_live(b.claim.id.as_str())) {
+        for c in index.live().filter(|c| same_fields(c, &b.claim)) {
+            if !candidates.iter().any(|x| x.id == c.id) {
+                candidates.push(c);
+            }
+        }
+    }
+    let candidate_anchors: Vec<&Anchor> = candidates.iter().flat_map(|c| c.sides()).collect();
+    let mut candidate_resolved = resolve_anchors(providers, &candidate_anchors).into_iter();
+    let candidates: Vec<(&Claim, Vec<Resolved>)> = candidates
+        .into_iter()
+        .map(|c| {
+            let rs = candidate_resolved.by_ref().take(c.side_count()).collect();
+            (c, rs)
+        })
+        .collect();
+
+    // Step 4: the mark of each element, on its own claim or on the live
+    // claim it is the same as.
+    let mut batch = Batch::default();
+    let mut results: Vec<(Claim, bool, MarkId, Vec<Resolved>)> = Vec::new();
+    for b in &built {
+        let id = b.claim.id.as_str();
+        let existing = if is_live(id) {
+            None
+        } else {
+            candidates
+                .iter()
+                .filter(|(c, rs)| same_claim(c, rs, b))
+                .min_by(|(x, _), (y, _)| x.id.cmp(&y.id))
+        };
+        let (target, target_resolved): (&Claim, Vec<Resolved>) = match existing {
+            Some((c, rs)) => (c, rs.clone()),
+            None => (&b.claim, b.resolved.iter().map(as_stored).collect()),
+        };
+        let marked = (|| -> Result<Mark, Error> {
+            if existing.is_none() && index.is_retired(id) {
                 return Err(Error::new(
                     Code::ClaimRetired,
                     format!(
-                        "the claim {} with this statement, these anchors and this note is retired",
-                        claim.id
+                        "the claim {id} with this statement, these anchors and this note is retired"
                     ),
                 ));
             }
-            let mark = Mark::new(claim.id.clone(), now, p.by.clone(), sides, None)?;
-            Ok((claim, mark))
+            let anchors: Vec<Anchor> = target.sides().cloned().collect();
+            let units: Vec<&Unit> = target_resolved.iter().filter_map(Resolved::unit).collect();
+            if units.len() != anchors.len() {
+                return Err(Error::internal(format!(
+                    "claim {} lost a resolved side while it was being marked",
+                    target.id
+                )));
+            }
+            Mark::new(
+                target.id.clone(),
+                now,
+                b.input.by.clone(),
+                mark_sides(&anchors, &units),
+                None,
+            )
         })();
-        match built {
-            Err(e) => errors.push(e.with_index(i)),
-            Ok((claim, mark)) => {
-                let exists = index.claim(claim.id.as_str()).is_some()
-                    || batch.claims.iter().any(|c| c.id == claim.id);
+        match marked {
+            Err(e) => errors.push(e.with_index(b.index)),
+            Ok(mark) => {
+                let exists = index.claim(target.id.as_str()).is_some()
+                    || batch.claims.iter().any(|c| c.id == target.id);
                 if !exists {
-                    batch.claims.push(claim.clone());
+                    batch.claims.push(target.clone());
                 }
                 push_mark(&mut batch, &mark);
-                results.push((claim, !exists, mark.id, rs.iter().map(as_stored).collect()));
+                results.push((target.clone(), !exists, mark.id, target_resolved));
             }
         }
     }

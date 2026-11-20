@@ -99,7 +99,9 @@ hibi claim [OPTIONS] [statement]
 
 Record a claim: a statement, the unit it is about (the subject) and the units that support it (the evidence). hibi stores the claim and a first mark with the fingerprint of every side as it is now. Run this after you checked that the statement is true.
 
-Every anchor must match exactly one unit. Running the same claim again adds a new mark and no second claim.
+Every anchor must match exactly one unit.
+
+Running the same claim again adds a new mark and no second claim. A live claim is the same claim when it has the same statement, recheck period and note, and each of its anchors has the same locator, resolves to the same unit and has the same quote and symbol. Text edited near a quote does not make a new claim. The result says "created": false and gives the id of the existing claim.
 
 With --stdin, standard input is a JSON array of claims, written all or not at all:
 

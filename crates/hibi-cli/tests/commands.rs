@@ -2647,3 +2647,65 @@ fn a_member_claim_goes_stale_only_when_that_member_changes() {
     repo.write("src/m.rs", MEMBERS);
     assert_eq!(states(&repo), (fresh.clone(), fresh));
 }
+
+/// The identical `claim` command after an edit above the quoted sentence
+/// marks the existing claim and creates no second one. The claim id covers
+/// the stored context and position of the quote, which the edit changed.
+#[test]
+fn claiming_again_after_an_edit_near_the_quote_creates_no_duplicate() {
+    let repo = Repo::new();
+    repo.write(
+        "docs/a.md",
+        "# Limits\n\nAn introduction line.\n\nRequests time out after 30 seconds.\n",
+    );
+    repo.write("src/a.rs", "pub const TIMEOUT_SECONDS: u32 = 30;\n");
+    let args = [
+        "claim",
+        "Requests time out after 30 seconds.",
+        "--subject",
+        "file:docs/a.md::time out after 30 seconds",
+        "--evidence",
+        "file:src/a.rs#TIMEOUT_SECONDS",
+    ];
+    let at = |now: &'static str| [&["--now", now][..], &args[..]].concat();
+    let first = repo.json(&at("2026-11-20T12:00:00Z"));
+    let id = first["claims"][0]["id"].as_str().unwrap().to_owned();
+    assert_eq!(first["claims"][0]["created"], true);
+
+    // Delete the line above the sentence.
+    repo.write(
+        "docs/a.md",
+        "# Limits\n\nRequests time out after 30 seconds.\n",
+    );
+    let again = repo.json(&at("2026-11-20T12:05:00Z"));
+    assert_eq!(again["claims"][0]["id"], id.as_str());
+    assert_eq!(again["claims"][0]["created"], false);
+    assert_eq!(again["claims"][0]["claim"]["state"], "fresh");
+    assert_ne!(again["claims"][0]["mark"], first["claims"][0]["mark"]);
+
+    let listed = repo.json(&["list"]);
+    assert_eq!(listed["claims"].as_array().unwrap().len(), 1);
+    assert_eq!(listed["claims"][0]["id"], id.as_str());
+    assert_eq!(listed["claims"][0]["marks"], 2);
+    assert_eq!(repo.records("claims").len(), 1);
+    let summary = repo.json(&["status"])["summary"].clone();
+    assert_eq!(
+        (summary["claims"].as_u64(), summary["fresh"].as_u64()),
+        (Some(1), Some(1))
+    );
+
+    // A different statement on the same anchors is another claim.
+    let mut other = args;
+    other[1] = "Requests time out.";
+    let v = repo.json(&other);
+    assert_eq!(v["claims"][0]["created"], true);
+    assert_ne!(v["claims"][0]["id"], id.as_str());
+
+    // Only a live claim is matched. After the retirement the command
+    // makes a new claim: its completed context differs from the retired
+    // claim's, so it is not the retired claim again either.
+    repo.json(&["retire", &id]);
+    let v = repo.json(&args);
+    assert_eq!(v["claims"][0]["created"], true);
+    assert_ne!(v["claims"][0]["id"], id.as_str());
+}

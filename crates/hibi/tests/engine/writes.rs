@@ -952,6 +952,202 @@ fn reanchor_onto_another_live_claim_marks_it() {
 }
 
 // ---------------------------------------------------------------------------
+// claim on a claim whose stored context went out of date
+// ---------------------------------------------------------------------------
+
+/// A sentence unit whose completed selector is a quote with context, as
+/// the file provider gives it.
+fn quoted(key: &str, text: &str, quote: &str, prefix: &str, pos: u64) -> Unit {
+    Unit {
+        sel: Selector {
+            quote: Some(quote.into()),
+            prefix: Some(prefix.into()),
+            suffix: Some(String::new()),
+            pos: Some(pos),
+            ..Selector::default()
+        },
+        ..unit(key, "sentence", text)
+    }
+}
+
+fn by_quote(statement: &str, quote: &str) -> ClaimInput {
+    ClaimInput {
+        subject: json_anchor("file:d.md", Selector::quote(quote)),
+        ..claim_input(statement, "file:d.md", &[])
+    }
+}
+
+/// The same `claim` command after text near the quote was edited marks the
+/// existing claim: the completed context and position differ, the
+/// statement, the unit and the quote do not.
+#[test]
+fn claim_again_after_an_edit_near_the_quote_marks_the_existing_claim() {
+    let w = file_world();
+    let text = "Retries are capped at 5.";
+    set(
+        &w,
+        "file:d.md",
+        vec![
+            quoted("s1", text, "capped at 5", "Intro.\n\nRetries are ", 20),
+            quoted("s2", "Timeouts are 30 seconds.", "30 seconds", "", 60),
+        ],
+    );
+    let mut p = providers(&w, &["file"]);
+    let store = MemStore::new();
+    let first = claim(&store, &mut p, &[by_quote("S", "capped at 5")], false).unwrap();
+    let id = first.claims[0].id.clone();
+    assert!(first.claims[0].created);
+
+    // The line above the sentence is deleted: same unit, same quote, new
+    // context and position.
+    let moved = quoted("s1", text, "capped at 5", "Retries are ", 12);
+    set(
+        &w,
+        "file:d.md",
+        vec![
+            moved.clone(),
+            quoted("s2", "Timeouts are 30 seconds.", "30 seconds", "", 52),
+        ],
+    );
+    let later = ts("2026-12-01T00:00:00Z");
+    let again = engine::claim(
+        &store,
+        &mut p,
+        &no_git(),
+        &[by_quote("S", "capped at 5")],
+        false,
+        later,
+    )
+    .unwrap();
+    assert_eq!(again.claims[0].id, id);
+    assert!(!again.claims[0].created);
+    assert_eq!(again.claims[0].claim.state, ClaimState::Fresh);
+    assert_eq!(store.counts(), (1, 2, 0));
+    let ledger = store.ledger();
+    let mark = ledger
+        .marks
+        .iter()
+        .find(|m| m.id == again.claims[0].mark)
+        .unwrap();
+    assert_eq!((&mark.claim, mark.at), (&id, later));
+    assert_eq!(mark.sides[0].fp, moved.fp);
+    // The stored anchor is unchanged: `reanchor` refreshes it.
+    assert_eq!(
+        ledger.claims[0].subject.sel.prefix.as_deref(),
+        Some("Intro.\n\nRetries are ")
+    );
+
+    // Two elements that are the same existing claim: one mark, two results.
+    let twice = engine::claim(
+        &store,
+        &mut p,
+        &no_git(),
+        &[by_quote("S", "capped at 5"), by_quote(" S ", "capped at 5")],
+        true,
+        ts("2026-12-02T00:00:00Z"),
+    )
+    .unwrap();
+    assert_eq!(
+        twice
+            .claims
+            .iter()
+            .map(|c| (&c.id, c.created))
+            .collect::<Vec<_>>(),
+        [(&id, false), (&id, false)]
+    );
+    assert_eq!(twice.claims[0].mark, twice.claims[1].mark);
+    assert_eq!(store.counts(), (1, 3, 0));
+
+    // Not the same claim: another statement, another note, another
+    // recheck, another unit, another quote in the same unit.
+    let mut other = |input: ClaimInput| {
+        let out = claim(&store, &mut p, &[input], false).unwrap();
+        assert!(out.claims[0].created);
+        assert_ne!(out.claims[0].id, id);
+    };
+    other(by_quote("T", "capped at 5"));
+    other(ClaimInput {
+        note: Some("n".into()),
+        ..by_quote("S", "capped at 5")
+    });
+    other(ClaimInput {
+        recheck: Some("P1D".into()),
+        ..by_quote("S", "capped at 5")
+    });
+    other(by_quote("S", "30 seconds"));
+    assert_eq!(store.counts().0, 5);
+}
+
+/// The existing claim's stored anchor must resolve to the same unit as the
+/// new anchor; and among several claims that are the same, the smallest id
+/// is marked. A retired claim is never the match.
+#[test]
+fn claim_matches_by_resolved_unit_and_prefers_the_smallest_id() {
+    let w = file_world();
+    let text = "Retries are capped at 5.";
+    let unit_with = |prefix: &str, pos: u64| quoted("s1", text, "capped at 5", prefix, pos);
+    let store = MemStore::new();
+    let mut p = providers(&w, &["file"]);
+    let mut ids = Vec::new();
+    // Three claims that differ only in stored context, as older versions
+    // could leave behind.
+    for (prefix, pos) in [("a ", 1), ("bb ", 2), ("ccc ", 3)] {
+        set(&w, "file:d.md", vec![unit_with(prefix, pos)]);
+        let out = engine::claim(
+            &MemStore::new(),
+            &mut p,
+            &no_git(),
+            &[by_quote("S", "capped at 5")],
+            false,
+            now(),
+        )
+        .unwrap();
+        let mut batch = hibi::store::Batch::default();
+        let c = &out.claims[0].claim;
+        batch.claims.push(
+            hibi::model::Claim::new(&c.statement, c.sides[0].anchor.clone(), vec![], None, None)
+                .unwrap(),
+        );
+        ids.push(batch.claims[0].id.clone());
+        store.insert(batch);
+    }
+    ids.sort();
+    assert_eq!(store.counts(), (3, 0, 0));
+
+    set(&w, "file:d.md", vec![unit_with("dddd ", 4)]);
+    let out = claim(&store, &mut p, &[by_quote("S", "capped at 5")], false).unwrap();
+    assert_eq!((&out.claims[0].id, out.claims[0].created), (&ids[0], false));
+    assert_eq!(store.counts(), (3, 1, 0));
+
+    // With the smallest retired, the next one is marked.
+    retire(&store, &ids[0]);
+    let out = claim(&store, &mut p, &[by_quote("S", "capped at 5")], false).unwrap();
+    assert_eq!((&out.claims[0].id, out.claims[0].created), (&ids[1], false));
+
+    // A stored anchor that now resolves to another unit is not the same
+    // claim, and one that resolves to no unit is not either.
+    let ledger = store.ledger();
+    for c in ledger.claims.iter().filter(|c| c.id != ids[0]) {
+        let answer = if c.id == ids[1] {
+            Ok(vec![quoted(
+                "s9",
+                "Elsewhere capped at 5.",
+                "capped at 5",
+                "",
+                0,
+            )])
+        } else {
+            Ok(vec![])
+        };
+        w.borrow_mut().overrides.insert(c.subject.clone(), answer);
+    }
+    let out = claim(&store, &mut p, &[by_quote("S", "capped at 5")], false).unwrap();
+    assert!(out.claims[0].created);
+    assert!(!ids.contains(&out.claims[0].id));
+    assert_eq!(store.counts().0, 4);
+}
+
+// ---------------------------------------------------------------------------
 // retire
 // ---------------------------------------------------------------------------
 
