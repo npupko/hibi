@@ -4086,5 +4086,117 @@
     },
     "source": "test/languages.test.ts › all five first-party grammars › java: a changed literal never grades evidence:unchanged (span b is where v4's locate step finds the quote; the hash relation is computed and consistent with the test)",
     "origin": "narrowed"
+  },
+  {
+    "name": "pins: rust a comma before > is skipped",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/pins/pins-a.rs",
+        "language": "rust",
+        "quote": "fn g<A, B,>() {}",
+        "start": 68,
+        "end": 84,
+        "startByte": 68,
+        "endByte": 84
+      },
+      "b": {
+        "fixture": "fixtures/ast/pins/pins-b.rs",
+        "language": "rust",
+        "quote": "fn g<A, B>() {}",
+        "start": 68,
+        "end": 83,
+        "startByte": 68,
+        "endByte": 83
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "written for v5 from SPEC 8.4 (content literal kinds and the trailing-comma rule); the type_parameters comma is followed by the anonymous > token",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: rust a comma before ] is skipped",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/pins/pins-a.rs",
+        "language": "rust",
+        "quote": "[1, 2,]",
+        "start": 117,
+        "end": 124,
+        "startByte": 117,
+        "endByte": 124
+      },
+      "b": {
+        "fixture": "fixtures/ast/pins/pins-b.rs",
+        "language": "rust",
+        "quote": "[1, 2]",
+        "start": 107,
+        "end": 113,
+        "startByte": 107,
+        "endByte": 113
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "written for v5 from SPEC 8.4 (content literal kinds and the trailing-comma rule); the array_expression comma is followed by the anonymous ] token",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: rust a comma followed by a comment and then ) is skipped",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/pins/pins-a.rs",
+        "language": "rust",
+        "quote": "k(1, /* c */)",
+        "start": 94,
+        "end": 107,
+        "startByte": 94,
+        "endByte": 107
+      },
+      "b": {
+        "fixture": "fixtures/ast/pins/pins-b.rs",
+        "language": "rust",
+        "quote": "k(1)",
+        "start": 93,
+        "end": 97,
+        "startByte": 93,
+        "endByte": 97
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "written for v5 from SPEC 8.4 (content literal kinds and the trailing-comma rule); the next sibling of the comma, not counting the block_comment, is the anonymous ) token, and the comment is skipped",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: rust a changed element is not skipped (control)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/pins/pins-a.rs",
+        "language": "rust",
+        "quote": "[1, 2]",
+        "start": 145,
+        "end": 151,
+        "startByte": 145,
+        "endByte": 151
+      },
+      "b": {
+        "fixture": "fixtures/ast/pins/pins-b.rs",
+        "language": "rust",
+        "quote": "[1, 3]",
+        "start": 134,
+        "end": 140,
+        "startByte": 134,
+        "endByte": 140
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "written for v5 from SPEC 8.4 (content literal kinds and the trailing-comma rule); integer_literal:2 and =2 differ from integer_literal:3 and =3",
+    "origin": "spec-derived"
   }
 ]

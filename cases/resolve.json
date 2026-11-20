@@ -825,6 +825,174 @@
     "origin": "computed"
   },
   {
+    "name": "rust members: a quote on a field line resolves to the field",
+    "input": {
+      "path": "src/shapes.rs",
+      "fixture": "fixtures/resolve/shapes.rs",
+      "sel": {
+        "quote": "pub host: String"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "field:Config.host",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub host: String",
+            "prefix": "pub struct Config {\n    pub port: u16,\n    ",
+            "suffix": ",\n}\n\npub enum Level {\n    Low,\n    High = 9,\n}\n",
+            "pos": 43,
+            "symbol": "Config.host"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust members: a word on a field line resolves to the field",
+    "input": {
+      "path": "src/shapes.rs",
+      "fixture": "fixtures/resolve/shapes.rs",
+      "sel": {
+        "quote": "host"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "field:Config.host",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "host",
+            "prefix": "pub struct Config {\n    pub port: u16,\n    pub ",
+            "suffix": ": String,\n}\n\npub enum Level {\n    Low,\n    High ",
+            "pos": 47,
+            "symbol": "Config.host"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust members: a quote on a variant line resolves to the variant",
+    "input": {
+      "path": "src/shapes.rs",
+      "fixture": "fixtures/resolve/shapes.rs",
+      "sel": {
+        "quote": "High = 9"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "variant:Level.High",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "High = 9",
+            "prefix": " host: String,\n}\n\npub enum Level {\n    Low,\n    ",
+            "suffix": ",\n}\n",
+            "pos": 94,
+            "symbol": "Level.High"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust members: a quote on the header line resolves to the container",
+    "input": {
+      "path": "src/shapes.rs",
+      "fixture": "fixtures/resolve/shapes.rs",
+      "sel": {
+        "quote": "pub struct Config {"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "struct:Config",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub struct Config {",
+            "prefix": "",
+            "suffix": "\n    pub port: u16,\n    pub host: String,\n}\n\npub",
+            "pos": 0,
+            "symbol": "Config"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust members: a field symbol gives the field with its default quote",
+    "input": {
+      "path": "src/shapes.rs",
+      "fixture": "fixtures/resolve/shapes.rs",
+      "sel": {
+        "symbol": "Config.port"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "field:Config.port",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub port: u16",
+            "prefix": "pub struct Config {\n    ",
+            "suffix": ",\n    pub host: String,\n}\n\npub enum Level {\n    ",
+            "pos": 24,
+            "symbol": "Config.port"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust members: a quote spanning two fields is refused",
+    "input": {
+      "path": "src/shapes.rs",
+      "fixture": "fixtures/resolve/shapes.rs",
+      "sel": {
+        "quote": "u16,\n    pub host"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "field:Config.port",
+          "approx": false,
+          "refuse": "quote_spans_units",
+          "sel": {
+            "quote": "pub port: u16",
+            "prefix": "pub struct Config {\n    ",
+            "suffix": ",\n    pub host: String,\n}\n\npub enum Level {\n    ",
+            "pos": 24,
+            "symbol": "Config.port"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
     "name": "typescript: symbol of overloads: every declaration, ambiguous",
     "input": {
       "path": "src/over.ts",

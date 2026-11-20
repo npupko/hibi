@@ -292,7 +292,30 @@ copied from `ast-node.json`, or written for the case.
 The `units-code.json` expectations were derived by hand from the fixture
 sources, SPEC section 6.4 and the grammars' `grammar.js` and
 `node-types.json`, without running a parser, and then compared with the
-implementation.
+implementation. The binding also checks every content key against the
+unit's own fingerprint: `<kind>:` plus the first 12 hex digits of its digest,
+with `~n` on the n-th duplicate in source order.
+
+Rulings on section 6.4 made after these cases were written changed six of
+them. Each is marked `v5-adjusted` and its `source` names the ruling and the
+edit:
+
+| case | ruling | edit |
+|---|---|---|
+| `rust: impl naming, trait and mod members, struct and enum members, an outer attribute in its item's unit, use as a statement` (was `... attributes and use as statements`) | outer attributes belong to the item; members are units; `field` | the `#[derive(Debug)]` statement is gone and `struct:Cache` starts at it; fields `Cache.size`, `Bits.i`, `Bits.f`; variants `Mode.Fast`, `Mode.Slow`; `Store.LIMIT` and `Cache.EMPTY` are `field` |
+| `java: field declarators, overloads, enum body declarations, record, annotation type` | annotation elements are methods; members are units; `field` | `method:Marker.value`; variants `Mode.FAST`, `Mode.SLOW`; record components `Point.x`, `Point.y`; every class, interface and enum field declarator is `field` |
+| `typescript: wrappers, containers, overloads, bare namespace` | members are units; `field` | variants `Color.Red`, `Color.Green`; `Shape.name`, `Base.label`, `Cache.count` are `field` |
+| `tsx: jsx components, var with two declarators, class fields` | `field` | `Panel.state`, `Props.title` are `field` |
+| `python: decorated definitions, assignments, nested classes, duplicate def` | `field` | the class-body assignments are `field` |
+| `go: grouped and single specs, var_spec_list groups, method receivers, duplicate init` | members are units | `field:Cache.items` |
+
+Cases added for those rulings, `spec-derived`: one per language for the
+members of named containers (`fixtures/units/members.*`; the TypeScript
+fixture is also read as TSX), and `rust: modules 33 deep` for
+`MAX_CONTAINER_DEPTH` (`fixtures/units/depth.rs`). `resolve.json` gained six
+`rust members:` cases on `fixtures/resolve/shapes.rs`: a quote on a field or
+variant line resolves to that member, a quote on the header line to the
+container.
 
 The `freshness.json` and `coverage.json` cases are `spec-derived`: each
 `expected` was written by hand from SPEC sections 9.2, 9.3 and 10.2, and
@@ -310,8 +333,8 @@ and keys in reverse order.
 
 ## Cases added to extracted files
 
-These cases pin steps of SPEC section 7 that no extracted case exercised.
-Each one was checked to fail when its step is changed.
+These cases pin steps of SPEC sections 6.3, 7 and 8.4 that no extracted
+case exercised. Each one was checked to fail when its step is changed.
 
 | file | cases | origin | step pinned |
 |---|---|---|---|
@@ -320,6 +343,26 @@ Each one was checked to fail when its step is changed.
 | `fuzzy-locate.json` | `bias is clamped to len(text) - 1: a candidate exactly at the distance limit is found`, `bias is clamped to len(text) - 1: a candidate one past the distance limit is not found` | `spec-derived` | `bias = clamp(pos, 0, len(text) - 1)` (section 7.2) |
 | `bitap.json` | `equal exact matches at equal distance on both sides of loc: the left one wins` | `independent` | the left edge `max(1, 2 * loc - best)` after a match right of `loc` is inclusive (section 7.3) |
 | `bitap.json` | `the only exact occurrence is more than 40000 characters from loc: no match` | `independent` | the initial threshold is the minimum of the exact-match scores and `THRESHOLD`, never more (section 7.3) |
+| `regions.json` | `four-backtick fence is not closed by a three-backtick line` | `spec-derived` | a fence closes only on a run of its marker at least as long as the opener (section 6.3) |
+| `regions.json` | `a fence line with an info string does not close an open fence` | `spec-derived` | a closing fence holds only the marker character (section 6.3) |
+| `regions.json` | `BOM before --- frontmatter does not prevent recognition` | `spec-derived` | a leading U+FEFF does not prevent frontmatter recognition (section 6.3) |
+| `regions.json` | `+++ TOML frontmatter is skipped in .md` | `spec-derived` | `+++` frontmatter is recognised like `---` (section 6.3) |
+| `regions.json` | `+++ frontmatter is not closed by ---` | `spec-derived` | frontmatter closes only on its own delimiter (section 6.3) |
+| `regions.json` | `thematic breaks with spaces or tabs between the characters separate blocks` | `spec-derived` | a thematic break may have spaces or tabs between its characters (section 6.3) |
+| `regions.json` | `mixed characters are not a thematic break` | `spec-derived` | a thematic break uses one character (section 6.3) |
+| `regions.json` | `closing # run needs whitespace before it` | `spec-derived` | a closing `#` run is stripped only after WS (section 6.3) |
+| `regions.json` | `closing # run after whitespace is stripped; a heading of only a # run has empty text` | `spec-derived` | heading text with a closing `#` run, and a heading of only a `#` run (section 6.3) |
+| `regions.json` | `frontmatter delimiters with trailing whitespace` | `spec-derived` | frontmatter delimiters are compared with trailing WS removed (section 6.3) |
+| `regions.json` | `two backticks are not a fence` | `spec-derived` | a fence needs at least three marker characters (section 6.3) |
+| `regions.json` | `tag line needs a letter first and whitespace before attributes` | `spec-derived` | the tag-line pattern (section 6.3) |
+| `regions.json` | `two dashes are not a thematic break` | `spec-derived` | a thematic break needs at least three characters (section 6.3) |
+| `regions.json` | `> without a following space starts a piece` | `spec-derived` | `>\s?` starts a piece (section 6.3) |
+| `regions.json` | `table separator whose last cell has no trailing pipe is dropped` | `spec-derived` | the optional last cell of the table separator (section 6.3) |
+| `regions.json` | `+ is a list marker at a line start` | `spec-derived` | `+` as a list marker (section 6.3) |
+| `regions.json` | `list marker needs whitespace after it` | `spec-derived` | a list marker needs WS after it (section 6.3) |
+| `regions.json` | `endLine of multi-line units` | `spec-derived` | `endLine` is the line of the unit's last character (sections 6.2 and 6.3); these new `regions.json` cases carry `endLine`, which the binding compares when present |
+| `ast-node.json` | the eight `pins: ... is a content literal` cases (`fixtures/ast/pins/`) | `spec-derived` | `raw_string_literal`, `char_literal`, `float_literal` (Rust), `rune_literal`, `float_literal`, `imaginary_literal`, `raw_string_literal` (Go) and `float` (Python) push `=` and the normalized text (section 8.4) |
+| `ast-equivalence.json` | `pins: rust a comma before > is skipped`, `pins: rust a comma before ] is skipped`, `pins: rust a comma followed by a comment and then ) is skipped`, `pins: rust a changed element is not skipped (control)` | `spec-derived` | the trailing-comma rule for `>` and `]`, and its "not counting comment nodes" clause (section 8.4) |
 
 The `spec-derived` values were also computed by section 7.2 written in
 JavaScript over `diff-match-patch` 1.0.5 `match_main`. Both agree. All text

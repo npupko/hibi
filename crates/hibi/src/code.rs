@@ -6,7 +6,7 @@
 //! requirement R49): its stack use does not grow with the depth of the tree.
 //! Offsets are UTF-8 bytes into the resource text of section 4.2.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use tree_sitter::{Language, Node, Parser, Tree};
 
@@ -154,6 +154,21 @@ fn is_content_literal_kind(kind: &str) -> bool {
     )
 }
 
+/// True for a node the semantic stream skips with its subtree: a comment
+/// node, or a TSX `jsx_expression` whose only content is comments, such as
+/// `{/* note */}` or `{}` (ruling on section 8.4).
+fn is_skipped(node: Node<'_>) -> bool {
+    if is_comment_kind(node.kind()) {
+        return true;
+    }
+    if node.kind() != "jsx_expression" {
+        return false;
+    }
+    let mut cursor = node.walk();
+    node.named_children(&mut cursor)
+        .all(|c| is_comment_kind(c.kind()))
+}
+
 fn node_text<'t>(node: Node<'_>, text: &'t str) -> &'t str {
     &text[node.byte_range()]
 }
@@ -163,13 +178,49 @@ fn node_text<'t>(node: Node<'_>, text: &'t str) -> &'t str {
 /// comment subtrees and a comma directly before a closing delimiter.
 /// `text` is the source the tree was parsed from.
 pub fn semantic_stream(node: Node<'_>, text: &str) -> Vec<String> {
+    stream_walk(node, text, &HashSet::new()).0
+}
+
+/// One step of [`stream_walk`]: emit a node, or close the token range of a
+/// marked node after all its descendants.
+enum Step<'t> {
+    Enter(Node<'t>),
+    Exit(usize),
+}
+
+/// The semantic stream of `node`, and for every node whose id is in `marks`
+/// and that the walk reaches, its token range `[start, end)` in that
+/// stream. The stream of a reached descendant is exactly that slice: a
+/// pre-order walk visits a subtree contiguously, and the skip rules for the
+/// nodes inside a subtree depend only on that subtree. (A marked node is
+/// never itself a skipped node or a trailing comma.)
+fn stream_walk(
+    node: Node<'_>,
+    text: &str,
+    marks: &HashSet<usize>,
+) -> (Vec<String>, HashMap<usize, (usize, usize)>) {
     let mut out = Vec::new();
+    let mut ranges = HashMap::new();
     let mut cursor = node.walk();
-    let mut stack = vec![node];
+    let mut stack = vec![Step::Enter(node)];
     let mut kept = Vec::new();
-    while let Some(n) = stack.pop() {
-        if is_comment_kind(n.kind()) {
+    while let Some(step) = stack.pop() {
+        let n = match step {
+            Step::Enter(n) => n,
+            Step::Exit(id) => {
+                if let Some(r) = ranges.get_mut(&id) {
+                    let r: &mut (usize, usize) = r;
+                    r.1 = out.len();
+                }
+                continue;
+            }
+        };
+        if is_skipped(n) {
             continue;
+        }
+        if marks.contains(&n.id()) {
+            ranges.insert(n.id(), (out.len(), out.len()));
+            stack.push(Step::Exit(n.id()));
         }
         let kind = n.kind();
         if n.child_count() == 0 {
@@ -186,7 +237,7 @@ pub fn semantic_stream(node: Node<'_>, text: &str) -> Vec<String> {
         let mut next: Option<Node<'_>> = None;
         let children: Vec<Node<'_>> = n.children(&mut cursor).collect();
         for &c in children.iter().rev() {
-            if is_comment_kind(c.kind()) {
+            if is_skipped(c) {
                 continue;
             }
             let trailing_comma = !c.is_named()
@@ -199,9 +250,9 @@ pub fn semantic_stream(node: Node<'_>, text: &str) -> Vec<String> {
                 kept.push(c);
             }
         }
-        stack.extend(kept.iter().copied());
+        stack.extend(kept.iter().copied().map(Step::Enter));
     }
-    out
+    (out, ranges)
 }
 
 /// The `ast-v1` fingerprint of `node` in a resource of class `class`.
@@ -286,6 +337,15 @@ enum NameRule {
     /// Java `variable_declarator` under `field_declaration` or
     /// `constant_declaration`.
     JavaDeclarator,
+    /// A TypeScript enum member written as a bare name directly in an
+    /// `enum_body`: the node's own text.
+    TsEnumMember,
+    /// Go `field_declaration`: the first `name` field, or for an embedded
+    /// field its type name (without `*`, package qualifier and type
+    /// arguments).
+    GoField,
+    /// Java `formal_parameter` in the `formal_parameters` of a record.
+    JavaRecordComponent,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -312,6 +372,9 @@ fn wrappers(class: Class) -> &'static [&'static str] {
             "variable_declaration",
         ],
         Class::Python => &["decorated_definition", "expression_statement"],
+        // An extern block has no name; its items belong to the enclosing
+        // module (ruling on section 6.4).
+        Class::Rust => &["foreign_mod_item"],
         // `var_spec_list`: grouped `var (...)` (ruling on section 6.4).
         Class::Go => &[
             "type_declaration",
@@ -341,6 +404,8 @@ fn is_namespace_statement(class: Class, node: Node<'_>) -> bool {
 fn inner_bodies(class: Class) -> &'static [&'static str] {
     match class {
         Class::Java => &["enum_body_declarations"],
+        // The body of an extern block, looked through with the block.
+        Class::Rust => &["declaration_list"],
         _ => &[],
     }
 }
@@ -359,7 +424,16 @@ fn declaration(class: Class, kind: &str) -> Option<Decl> {
             decl("interface", Field, &["interface_body"])
         }
         (Class::Typescript | Class::Tsx, "type_alias_declaration") => decl("type", Field, &[]),
-        (Class::Typescript | Class::Tsx, "enum_declaration") => decl("enum", Field, &[]),
+        (Class::Typescript | Class::Tsx, "enum_declaration") => decl("enum", Field, &["enum_body"]),
+        (Class::Typescript | Class::Tsx, "enum_assignment") => decl("variant", Field, &[]),
+        (
+            Class::Typescript | Class::Tsx,
+            "property_identifier"
+            | "private_property_identifier"
+            | "string"
+            | "number"
+            | "computed_property_name",
+        ) => decl("variant", TsEnumMember, &[]),
         (Class::Typescript | Class::Tsx, "internal_module" | "module") => {
             decl("module", Field, &["statement_block"])
         }
@@ -379,8 +453,12 @@ fn declaration(class: Class, kind: &str) -> Option<Decl> {
         (Class::Python, "assignment") => decl("variable", PyAssignment, &[]),
 
         (Class::Rust, "function_item" | "function_signature_item") => decl("function", Field, &[]),
-        (Class::Rust, "struct_item" | "union_item") => decl("struct", Field, &[]),
-        (Class::Rust, "enum_item") => decl("enum", Field, &[]),
+        (Class::Rust, "struct_item" | "union_item") => {
+            decl("struct", Field, &["field_declaration_list"])
+        }
+        (Class::Rust, "field_declaration") => decl("field", Field, &[]),
+        (Class::Rust, "enum_item") => decl("enum", Field, &["enum_variant_list"]),
+        (Class::Rust, "enum_variant") => decl("variant", Field, &[]),
         (Class::Rust, "trait_item") => decl("trait", Field, &["declaration_list"]),
         (Class::Rust, "impl_item") => decl("impl", RustImpl, &["declaration_list"]),
         (Class::Rust, "mod_item") => decl("module", RustMod, &["declaration_list"]),
@@ -390,12 +468,22 @@ fn declaration(class: Class, kind: &str) -> Option<Decl> {
 
         (Class::Go, "function_declaration") => decl("function", Field, &[]),
         (Class::Go, "method_declaration") => decl("method", GoMethod, &[]),
-        (Class::Go, "type_spec" | "type_alias") => decl("type", Field, &[]),
+        // A `type_spec` is a container through its `type` field (see
+        // `bodies_of`).
+        (Class::Go, "type_spec") => {
+            decl("type", Field, &["field_declaration_list", "interface_type"])
+        }
+        (Class::Go, "type_alias") => decl("type", Field, &[]),
+        (Class::Go, "field_declaration") => decl("field", GoField, &[]),
+        (Class::Go, "method_elem") => decl("method", Field, &[]),
         (Class::Go, "const_spec" | "var_spec") => decl("variable", Field, &[]),
 
-        (Class::Java, "class_declaration" | "record_declaration") => {
-            decl("class", Field, &["class_body"])
+        (Class::Java, "class_declaration") => decl("class", Field, &["class_body"]),
+        (Class::Java, "record_declaration") => {
+            decl("class", Field, &["formal_parameters", "class_body"])
         }
+        (Class::Java, "formal_parameter") => decl("field", JavaRecordComponent, &[]),
+        (Class::Java, "enum_constant") => decl("variant", Field, &["class_body"]),
         (Class::Java, "interface_declaration" | "annotation_type_declaration") => decl(
             "interface",
             Field,
@@ -406,12 +494,60 @@ fn declaration(class: Class, kind: &str) -> Option<Decl> {
             decl("method", Field, &[])
         }
         (Class::Java, "variable_declarator") => decl("variable", JavaDeclarator, &[]),
+        // An element of an annotation type (ruling on section 6.4).
+        (Class::Java, "annotation_type_element_declaration") => decl("method", Field, &[]),
         _ => return None,
     })
 }
 
-fn without_ws(s: &str) -> String {
-    s.chars().filter(|&c| !text::is_ws(c)).collect()
+/// The member bodies of a container declaration: its named children whose
+/// kind is in `bodies`, in source order. A Go `type_spec` reaches them
+/// through its `type` field: the `field_declaration_list` of a struct type,
+/// or an interface type itself.
+fn bodies_of<'t>(node: Node<'t>, class: Class, bodies: &[&str]) -> Vec<Node<'t>> {
+    if class == Class::Go && node.kind() == "type_spec" {
+        let Some(ty) = node.child_by_field_name("type") else {
+            return Vec::new();
+        };
+        return match ty.kind() {
+            "interface_type" => vec![ty],
+            "struct_type" => {
+                let mut c = ty.walk();
+                ty.named_children(&mut c)
+                    .filter(|ch| ch.kind() == "field_declaration_list")
+                    .collect()
+            }
+            _ => Vec::new(),
+        };
+    }
+    let mut c = node.walk();
+    node.named_children(&mut c)
+        .filter(|ch| bodies.contains(&ch.kind()))
+        .collect()
+}
+
+/// The symbol form of a type written in source (ruling on section 6.4, for
+/// Rust `impl` types and traits and Go receivers): whitespace is dropped,
+/// except that a run of whitespace between two characters that are each
+/// alphanumeric, `_` or `'` becomes one space; the result is trimmed.
+/// `dyn  Tr` gives `dyn Tr`, `& 'a G < u8 >` gives `&'a G<u8>`, `* Sp`
+/// gives `*Sp`.
+pub fn symbol_text(s: &str) -> String {
+    let word = |c: char| c.is_alphanumeric() || c == '_' || c == '\'';
+    let mut out = String::with_capacity(s.len());
+    let mut gap = false;
+    for c in s.chars() {
+        if text::is_ws(c) {
+            gap = true;
+            continue;
+        }
+        if gap && out.chars().next_back().is_some_and(word) && word(c) {
+            out.push(' ');
+        }
+        gap = false;
+        out.push(c);
+    }
+    out
 }
 
 /// The own name of a declaration and the path prefix it gives its members
@@ -445,10 +581,10 @@ fn decl_name(
             own(node_text(field("name")?, text).to_owned())
         }
         NameRule::RustImpl => {
-            let ty = without_ws(node_text(field("type")?, text));
+            let ty = symbol_text(node_text(field("type")?, text));
             let t = ty.split('<').next().unwrap_or("").to_owned();
             let name = match field("trait") {
-                Some(tr) => format!("impl {} for {t}", without_ws(node_text(tr, text))),
+                Some(tr) => format!("impl {} for {t}", symbol_text(node_text(tr, text))),
                 None => format!("impl {t}"),
             };
             Some((name, t))
@@ -459,13 +595,35 @@ fn decl_name(
             let param = receiver
                 .named_children(&mut cursor)
                 .find(|c| c.kind() == "parameter_declaration")?;
-            let ty = node_text(param.child_by_field_name("type")?, text);
-            let ty = ty.strip_prefix('*').unwrap_or(ty);
+            let ty = symbol_text(node_text(param.child_by_field_name("type")?, text));
+            let ty = ty.strip_prefix('*').unwrap_or(&ty);
             let r = ty.split('[').next().unwrap_or("");
             own(format!("{r}.{}", node_text(field("name")?, text)))
         }
         NameRule::JavaDeclarator => {
             parent.filter(|p| matches!(p.kind(), "field_declaration" | "constant_declaration"))?;
+            own(node_text(field("name")?, text).to_owned())
+        }
+        NameRule::TsEnumMember => {
+            parent.filter(|p| p.kind() == "enum_body")?;
+            own(node_text(node, text).to_owned())
+        }
+        NameRule::GoField => match field("name") {
+            Some(n) => own(node_text(n, text).to_owned()),
+            None => {
+                // An embedded field: its name is the type name.
+                let ty = symbol_text(node_text(field("type")?, text));
+                let ty = ty.strip_prefix('*').unwrap_or(&ty);
+                let ty = ty.split('[').next().unwrap_or("");
+                let name = ty.rsplit('.').next().unwrap_or("");
+                (!name.is_empty()).then(|| name.to_owned()).and_then(own)
+            }
+        },
+        NameRule::JavaRecordComponent => {
+            parent
+                .filter(|p| p.kind() == "formal_parameters")
+                .and_then(|p| p.parent())
+                .filter(|r| r.kind() == "record_declaration")?;
             own(node_text(field("name")?, text).to_owned())
         }
     }
@@ -558,6 +716,9 @@ struct Found<'t> {
     parent: Option<usize>,
     /// Index of the root named child it lies in.
     top: usize,
+    /// The leading attributes or decorators that belong to the unit
+    /// (ruling on section 6.4), in source order.
+    lead: Vec<Node<'t>>,
 }
 
 /// A container body to visit.
@@ -567,6 +728,46 @@ struct Body<'t> {
     container: Option<usize>,
     /// The root named child this body lies in; `None` for the root itself.
     top: Option<usize>,
+    /// The container depth of this body: 0 for the root, `d` for the body
+    /// of a declaration at depth `d`.
+    depth: usize,
+}
+
+/// The deepest container whose declarations are discovered. A declaration
+/// at this depth (its path has this many segments) is a unit, but its body
+/// is not searched: deeper declarations stay part of it (ruling on section
+/// 6.4). This bounds the work of fingerprinting nested containers.
+pub const MAX_CONTAINER_DEPTH: usize = 32;
+
+/// The node kind that, in a run immediately before a unit node, belongs to
+/// that unit (ruling on section 6.4): Rust outer attributes and TypeScript
+/// and TSX decorators that are siblings of a class member.
+fn lead_kind(class: Class) -> Option<&'static str> {
+    match class {
+        Class::Rust => Some("attribute_item"),
+        Class::Typescript | Class::Tsx => Some("decorator"),
+        _ => None,
+    }
+}
+
+/// The run of lead nodes immediately before `node`, comments between them
+/// skipped, in source order.
+fn leading<'t>(node: Node<'t>, class: Class) -> Vec<Node<'t>> {
+    let Some(kind) = lead_kind(class) else {
+        return Vec::new();
+    };
+    let mut lead = Vec::new();
+    let mut prev = node.prev_named_sibling();
+    while let Some(p) = prev {
+        if p.kind() == kind {
+            lead.push(p);
+        } else if !is_comment_kind(p.kind()) {
+            break;
+        }
+        prev = p.prev_named_sibling();
+    }
+    lead.reverse();
+    lead
 }
 
 /// Parse a file of a code class and build its units, or fall back to class
@@ -603,35 +804,82 @@ fn code_units(root: Node<'_>, text: &str, class: Class) -> CodeFile {
     for f in &found {
         has_unit[f.top] = true;
     }
+    // A lead node (attribute, decorator) that belongs to a unit is not a
+    // statement of its own. A lead node is not given leads itself, so a
+    // run with no item after it stays as statements.
+    let lead = lead_kind(class);
+    let mut absorbed: HashSet<usize> = found
+        .iter()
+        .flat_map(|f| f.lead.iter().map(|n| n.id()))
+        .collect();
     let mut cursor = root.walk();
-    let statements: Vec<Node<'_>> = root
+    let candidates: Vec<(Node<'_>, Vec<Node<'_>>)> = root
         .named_children(&mut cursor)
         .enumerate()
         .filter(|&(i, c)| !has_unit[i] && !is_comment_kind(c.kind()))
-        .map(|(_, c)| c)
+        .map(|(_, c)| {
+            let l = if Some(c.kind()) == lead {
+                Vec::new()
+            } else {
+                leading(c, class)
+            };
+            (c, l)
+        })
+        .collect();
+    absorbed.extend(
+        candidates
+            .iter()
+            .flat_map(|(_, l)| l.iter().map(|n| n.id())),
+    );
+    let statements: Vec<(Node<'_>, Vec<Node<'_>>)> = candidates
+        .into_iter()
+        .filter(|(c, _)| !absorbed.contains(&c.id()))
         .collect();
 
-    // Every unit with its unit node, then source order.
+    // Every unit with its unit node and leads, then source order.
     enum Src {
         File,
         Decl(usize),
         Statement,
     }
-    let mut all: Vec<(Node<'_>, Src)> = Vec::with_capacity(1 + found.len() + statements.len());
-    all.push((root, Src::File));
+    let start_of = |n: &Node<'_>, l: &[Node<'_>]| l.first().unwrap_or(n).start_byte();
+    let mut all: Vec<(Node<'_>, Vec<Node<'_>>, Src)> =
+        Vec::with_capacity(1 + found.len() + statements.len());
+    all.push((root, Vec::new(), Src::File));
     all.extend(
         found
             .iter()
             .enumerate()
-            .map(|(i, f)| (f.unit_node, Src::Decl(i))),
+            .map(|(i, f)| (f.unit_node, f.lead.clone(), Src::Decl(i))),
     );
-    all.extend(statements.into_iter().map(|n| (n, Src::Statement)));
-    all[1..].sort_by_key(|(n, _)| (n.start_byte(), std::cmp::Reverse(n.end_byte())));
+    all.extend(statements.into_iter().map(|(n, l)| (n, l, Src::Statement)));
+    all[1..].sort_by_key(|(n, l, _)| (start_of(n, l), std::cmp::Reverse(n.end_byte())));
+
+    // One walk of the root gives every unit's stream as a slice of the
+    // root's stream, so nested containers are not walked once per level.
+    let marks: HashSet<usize> = all
+        .iter()
+        .flat_map(|(n, l, _)| l.iter().chain(std::iter::once(n)).map(|x| x.id()))
+        .collect();
+    let (root_stream, ranges) = stream_walk(root, text, &marks);
 
     let mut decl_pos = vec![0; found.len()];
     let mut units: Vec<CodeUnit> = Vec::with_capacity(all.len());
-    for (node, src) in &all {
-        let fp = ast_fingerprint(*node, text, class);
+    for (node, lead, src) in &all {
+        // The stream of a unit with leads is the leads' streams followed by
+        // the unit node's, in source order: one slice, because only comment
+        // nodes, which emit nothing, lie between them.
+        let first = lead.first().unwrap_or(node);
+        let fp = match (ranges.get(&first.id()), ranges.get(&node.id())) {
+            (Some(&(s, _)), Some(&(_, e))) => fingerprint::ast_v1(class.name(), &root_stream[s..e]),
+            _ => {
+                let mut stream = Vec::new();
+                for n in lead.iter().chain(std::iter::once(node)) {
+                    stream.extend(semantic_stream(*n, text));
+                }
+                fingerprint::ast_v1(class.name(), &stream)
+            }
+        };
         let (kind, symbol, key) = match src {
             Src::File => ("file", None, "file".to_owned()),
             Src::Decl(i) => {
@@ -658,8 +906,10 @@ fn code_units(root: Node<'_>, text: &str, class: Class) -> CodeFile {
                 (0, text.len(), 1, text::line_at(text, last))
             }
             _ => {
-                let (line, end_line) = line_range(*node);
-                (node.start_byte(), node.end_byte(), line, end_line)
+                let first = lead.first().unwrap_or(node);
+                let (_, end_line) = line_range(*node);
+                let line = first.start_position().row + 1;
+                (first.start_byte(), node.end_byte(), line, end_line)
             }
         };
         units.push(CodeUnit {
@@ -679,7 +929,7 @@ fn code_units(root: Node<'_>, text: &str, class: Class) -> CodeFile {
     for (u, k) in units.iter_mut().zip(keys) {
         u.key = k;
     }
-    for (pos, (_, src)) in all.iter().enumerate().skip(1) {
+    for (pos, (_, _, src)) in all.iter().enumerate().skip(1) {
         let parent = match src {
             Src::Decl(i) => found[*i].parent.map(|p| units[decl_pos[p]].key.clone()),
             _ => None,
@@ -704,6 +954,7 @@ fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
         prefix: None,
         container: None,
         top: None,
+        depth: 0,
     }];
     let mut cursor = root.walk();
     while let Some(body) = bodies.pop() {
@@ -753,14 +1004,17 @@ fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
             } else {
                 d.unit_kind
             };
-            let unit_kind = if table_kind == "function"
-                && matches!(
-                    container_kind,
-                    Some("class" | "interface" | "trait" | "impl")
-                ) {
-                "method"
-            } else {
-                table_kind
+            // In a class-like container a function is a method and a data
+            // binding is a field (ruling on section 6.4); elsewhere they
+            // stay `function` and `variable`.
+            let class_like = matches!(
+                container_kind,
+                Some("class" | "interface" | "trait" | "impl" | "struct" | "enum" | "variant")
+            );
+            let unit_kind = match table_kind {
+                "function" if class_like => "method",
+                "variable" if class_like => "field",
+                k => k,
             };
             let index = found.len();
             found.push(Found {
@@ -770,19 +1024,19 @@ fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
                 symbol: join(&name),
                 parent: body.container,
                 top,
+                lead: Vec::new(),
             });
             members.push((index, chain));
-            if !d.bodies.is_empty() {
-                let mut c = node.walk();
-                let inner_body = node
-                    .named_children(&mut c)
-                    .find(|ch| d.bodies.contains(&ch.kind()));
-                if let Some(b) = inner_body {
+            // A declaration at depth MAX_CONTAINER_DEPTH is a unit, but its
+            // body is not searched.
+            if !d.bodies.is_empty() && body.depth + 1 < MAX_CONTAINER_DEPTH {
+                for b in bodies_of(node, class, d.bodies) {
                     nested.push(Body {
                         node: b,
                         prefix: Some(join(&member_prefix)),
                         container: Some(index),
                         top: Some(top),
+                        depth: body.depth + 1,
                     });
                 }
             }
@@ -805,6 +1059,7 @@ fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
                 }
             }
             found[*index].unit_node = unit_node;
+            found[*index].lead = leading(unit_node, class);
         }
         // Visit nested bodies in source order.
         bodies.extend(nested.into_iter().rev());
@@ -894,6 +1149,177 @@ mod tests {
             Analysis::Code(f) => f,
             Analysis::Text(_) => panic!("{text:?} did not parse as {class:?}"),
         }
+    }
+
+    fn unit_fp(f: &CodeFile, key: &str) -> Fingerprint {
+        f.units
+            .iter()
+            .find(|u| u.key == key)
+            .unwrap_or_else(|| panic!("no unit {key}"))
+            .fp
+            .clone()
+    }
+
+    /// Ruling on section 6.4 (MAX_CONTAINER_DEPTH): containers nested 4,000
+    /// deep give 32 declaration units, and the work stays bounded: one
+    /// stream walk of the root serves every unit. A debug build takes under
+    /// 1 s per input; without the depth limit the work is quadratic and
+    /// takes minutes, so the generous bound still catches it.
+    #[test]
+    fn deep_container_nesting_is_bounded() {
+        const N: usize = 4000;
+        let ts = format!("{}{}", "namespace A {\n".repeat(N), "}\n".repeat(N));
+        let rs = format!("{}{}", "mod a {\n".repeat(N), "}\n".repeat(N));
+        for (class, text) in [(Class::Typescript, ts), (Class::Rust, rs)] {
+            let started = std::time::Instant::now();
+            let f = code(&text, class);
+            let decls = f.units.iter().filter(|u| u.symbol.is_some()).count();
+            assert_eq!(decls, MAX_CONTAINER_DEPTH, "{class:?}");
+            let deepest = f
+                .units
+                .iter()
+                .filter_map(|u| u.symbol.as_ref())
+                .max_by_key(|s| s.len())
+                .unwrap();
+            assert_eq!(deepest.split('.').count(), MAX_CONTAINER_DEPTH);
+            let took = started.elapsed();
+            assert!(
+                took < std::time::Duration::from_secs(10),
+                "{class:?} took {took:?}"
+            );
+        }
+    }
+
+    /// The one-walk fingerprints equal the fingerprints of each unit's own
+    /// stream (leads, then the unit node), on every units-code fixture.
+    #[test]
+    fn slice_fingerprints_equal_direct_streams() {
+        let dir =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../cases/fixtures/units");
+        let mut checked = 0;
+        for entry in std::fs::read_dir(dir).unwrap() {
+            let path = entry.unwrap().path();
+            let text = std::fs::read_to_string(&path).unwrap();
+            let name = path.file_name().unwrap().to_str().unwrap();
+            for class in [Class::from_path(name), Class::Tsx] {
+                if !class.is_code() || (class == Class::Tsx && !name.ends_with(".ts")) {
+                    continue;
+                }
+                let Some(tree) = parse(&text, class) else {
+                    continue;
+                };
+                let root = tree.root_node();
+                if root.has_error() {
+                    continue;
+                }
+                let found = discover(root, &text, class);
+                let f = code_units(root, &text, class);
+                for d in &found {
+                    let mut stream = Vec::new();
+                    for n in d.lead.iter().chain(std::iter::once(&d.unit_node)) {
+                        stream.extend(semantic_stream(*n, &text));
+                    }
+                    let start = d.lead.first().unwrap_or(&d.unit_node).start_byte();
+                    let u = f
+                        .units
+                        .iter()
+                        .find(|u| {
+                            u.start == start
+                                && u.end == d.unit_node.end_byte()
+                                && u.symbol.as_deref() == Some(&d.symbol)
+                        })
+                        .unwrap_or_else(|| panic!("{name}: {}", d.symbol));
+                    assert_eq!(
+                        u.fp,
+                        fingerprint::ast_v1(class.name(), &stream),
+                        "{name}: {}",
+                        d.symbol
+                    );
+                    checked += 1;
+                }
+                assert_eq!(f.units[0].fp, ast_fingerprint(root, &text, class), "{name}");
+            }
+        }
+        assert!(checked > 100, "{checked}");
+    }
+
+    /// Ruling 14: a struct with 5,000 fields and an enum with 5,000
+    /// variants are analyzed in linear time (each member fingerprints only
+    /// itself, the container once).
+    #[test]
+    fn many_members_stay_linear() {
+        const N: usize = 5000;
+        let fields: String = (0..N).map(|i| format!("    f{i}: u8,\n")).collect();
+        let variants: String = (0..N).map(|i| format!("    V{i},\n")).collect();
+        let text = format!("struct S {{\n{fields}}}\nenum E {{\n{variants}}}\n");
+        let started = std::time::Instant::now();
+        let f = code(&text, Class::Rust);
+        assert_eq!(f.units.len(), 1 + 2 + 2 * N);
+        assert_eq!(unit_fp(&f, "field:S.f4999").profile(), "ast-v1");
+        let took = started.elapsed();
+        assert!(took < std::time::Duration::from_secs(10), "took {took:?}");
+    }
+
+    /// Ruling 2: leading attributes and decorators are part of the unit's
+    /// range and fingerprint; a statement does not form for them.
+    #[test]
+    fn leading_attributes_and_decorators_belong_to_the_unit() {
+        let a = code(
+            "// c\n#[derive(Debug)]\n/// doc\n#[repr(C)]\npub struct S;\n",
+            Class::Rust,
+        );
+        let b = code(
+            "// c\n#[derive(Clone)]\n/// doc\n#[repr(C)]\npub struct S;\n",
+            Class::Rust,
+        );
+        assert_ne!(unit_fp(&a, "struct:S"), unit_fp(&b, "struct:S"));
+        assert!(a.units.iter().all(|u| u.kind != "statement"));
+        let s = a.units.iter().find(|u| u.key == "struct:S").unwrap();
+        assert_eq!((s.start, s.line), (5, 2));
+        // Comments between the attributes do not count.
+        let c = code(
+            "// c\n#[derive(Debug)]\n#[repr(C)]\npub struct S;\n",
+            Class::Rust,
+        );
+        assert_eq!(unit_fp(&a, "struct:S"), unit_fp(&c, "struct:S"));
+        // An inner attribute stays a statement.
+        let d = code("#![allow(x)]\nfn f() {}\n", Class::Rust);
+        assert_eq!(d.units[1].kind, "statement");
+
+        let m = |dec: &str| {
+            let f = code(
+                &format!("class C {{\n  {dec}\n  m() {{}}\n}}\n"),
+                Class::Typescript,
+            );
+            unit_fp(&f, "method:C.m")
+        };
+        assert_ne!(m("@log"), m("@trace"));
+        assert_eq!(m("@log"), m("@log // why"));
+    }
+
+    /// Ruling 4: a JSX expression container with only comments is skipped.
+    #[test]
+    fn comment_only_jsx_expressions_are_skipped() {
+        let fp = |body: &str| {
+            let f = code(&format!("const v = <div>{body}</div>;\n"), Class::Tsx);
+            unit_fp(&f, "variable:v")
+        };
+        assert_eq!(fp("{/* j */}"), fp(""));
+        assert_eq!(fp("{}"), fp(""));
+        assert_eq!(fp("{/* a */ /* b */}"), fp(""));
+        assert_ne!(fp("{x}"), fp(""));
+        assert_ne!(fp("{/* j */ x}"), fp(""));
+    }
+
+    /// Ruling 3: symbol text normalisation.
+    #[test]
+    fn symbol_text_keeps_one_space_between_words() {
+        assert_eq!(symbol_text("dyn  Tr"), "dyn Tr");
+        assert_eq!(symbol_text(" & 'a  G < u8 > "), "&'a G<u8>");
+        assert_eq!(symbol_text("* Sp"), "*Sp");
+        assert_eq!(symbol_text("G2 [T]"), "G2[T]");
+        assert_eq!(symbol_text("Iterator<Item = u8>"), "Iterator<Item=u8>");
+        assert_eq!(symbol_text("a_b\n\tc'd"), "a_b c'd");
     }
 
     /// R49: a file nested 100,000 levels deep is processed or reported as

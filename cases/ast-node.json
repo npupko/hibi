@@ -7810,5 +7810,209 @@
     },
     "source": "computed: src/ast/analyzer.ts analyze (snap + semantic hash input)",
     "origin": "computed"
+  },
+  {
+    "name": "pins: rust raw_string_literal is a content literal",
+    "input": {
+      "fixture": "fixtures/ast/pins/pins-a.rs",
+      "language": "rust",
+      "quote": "r\"x y\"",
+      "start": 24,
+      "end": 30,
+      "startByte": 24,
+      "endByte": 30
+    },
+    "expected": {
+      "nodeType": "raw_string_literal",
+      "start": 24,
+      "end": 30,
+      "startByte": 24,
+      "endByte": 30,
+      "semanticStream": [
+        "raw_string_literal",
+        "=r\"x y\"",
+        "string_content:x y"
+      ]
+    },
+    "source": "written for v5 from SPEC 8.4 (content literal kinds and the trailing-comma rule); the span is exactly the literal node; the node has one child, string_content (the delimiters are hidden tokens), so it pushes its kind, then = and its normalized text, then the leaf",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: rust char_literal is a content literal",
+    "input": {
+      "fixture": "fixtures/ast/pins/pins-a.rs",
+      "language": "rust",
+      "quote": "'c'",
+      "start": 44,
+      "end": 47,
+      "startByte": 44,
+      "endByte": 47
+    },
+    "expected": {
+      "nodeType": "char_literal",
+      "start": 44,
+      "end": 47,
+      "startByte": 44,
+      "endByte": 47,
+      "semanticStream": [
+        "char_literal:'c'",
+        "='c'"
+      ]
+    },
+    "source": "written for v5 from SPEC 8.4 (content literal kinds and the trailing-comma rule); the span is exactly the literal node; a leaf token: kind:text, then = and its normalized text",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: rust float_literal is a content literal",
+    "input": {
+      "fixture": "fixtures/ast/pins/pins-a.rs",
+      "language": "rust",
+      "quote": "1.5",
+      "start": 61,
+      "end": 64,
+      "startByte": 61,
+      "endByte": 64
+    },
+    "expected": {
+      "nodeType": "float_literal",
+      "start": 61,
+      "end": 64,
+      "startByte": 61,
+      "endByte": 64,
+      "semanticStream": [
+        "float_literal:1.5",
+        "=1.5"
+      ]
+    },
+    "source": "written for v5 from SPEC 8.4 (content literal kinds and the trailing-comma rule); the span is exactly the literal node; a leaf token",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: go rune_literal is a content literal",
+    "input": {
+      "fixture": "fixtures/ast/pins/pins.go",
+      "language": "go",
+      "quote": "'x'",
+      "start": 19,
+      "end": 22,
+      "startByte": 19,
+      "endByte": 22
+    },
+    "expected": {
+      "nodeType": "rune_literal",
+      "start": 19,
+      "end": 22,
+      "startByte": 19,
+      "endByte": 22,
+      "semanticStream": [
+        "rune_literal:'x'",
+        "='x'"
+      ]
+    },
+    "source": "written for v5 from SPEC 8.4 (content literal kinds and the trailing-comma rule); the span is exactly the literal node; a leaf token",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: go float_literal is a content literal",
+    "input": {
+      "fixture": "fixtures/ast/pins/pins.go",
+      "language": "go",
+      "quote": "1.5",
+      "start": 31,
+      "end": 34,
+      "startByte": 31,
+      "endByte": 34
+    },
+    "expected": {
+      "nodeType": "float_literal",
+      "start": 31,
+      "end": 34,
+      "startByte": 31,
+      "endByte": 34,
+      "semanticStream": [
+        "float_literal:1.5",
+        "=1.5"
+      ]
+    },
+    "source": "written for v5 from SPEC 8.4 (content literal kinds and the trailing-comma rule); the span is exactly the literal node; a leaf token",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: go imaginary_literal is a content literal",
+    "input": {
+      "fixture": "fixtures/ast/pins/pins.go",
+      "language": "go",
+      "quote": "2i",
+      "start": 43,
+      "end": 45,
+      "startByte": 43,
+      "endByte": 45
+    },
+    "expected": {
+      "nodeType": "imaginary_literal",
+      "start": 43,
+      "end": 45,
+      "startByte": 43,
+      "endByte": 45,
+      "semanticStream": [
+        "imaginary_literal:2i",
+        "=2i"
+      ]
+    },
+    "source": "written for v5 from SPEC 8.4 (content literal kinds and the trailing-comma rule); the span is exactly the literal node; a leaf token",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: go raw_string_literal is a content literal",
+    "input": {
+      "fixture": "fixtures/ast/pins/pins.go",
+      "language": "go",
+      "quote": "`raw  text`",
+      "start": 54,
+      "end": 65,
+      "startByte": 54,
+      "endByte": 65
+    },
+    "expected": {
+      "nodeType": "raw_string_literal",
+      "start": 54,
+      "end": 65,
+      "startByte": 54,
+      "endByte": 65,
+      "semanticStream": [
+        "raw_string_literal",
+        "=`raw text`",
+        "`:`",
+        "raw_string_literal_content:raw  text",
+        "`:`"
+      ]
+    },
+    "source": "written for v5 from SPEC 8.4 (content literal kinds and the trailing-comma rule); the span is exactly the literal node; children are the backtick token, raw_string_literal_content and the backtick token; the = token is normalized, the leaf is not",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "pins: python float is a content literal",
+    "input": {
+      "fixture": "fixtures/ast/pins/pins.py",
+      "language": "python",
+      "quote": "1.5",
+      "start": 4,
+      "end": 7,
+      "startByte": 4,
+      "endByte": 7
+    },
+    "expected": {
+      "nodeType": "float",
+      "start": 4,
+      "end": 7,
+      "startByte": 4,
+      "endByte": 7,
+      "semanticStream": [
+        "float:1.5",
+        "=1.5"
+      ]
+    },
+    "source": "written for v5 from SPEC 8.4 (content literal kinds and the trailing-comma rule); the span is exactly the literal node; a leaf token",
+    "origin": "spec-derived"
   }
 ]

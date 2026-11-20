@@ -303,6 +303,84 @@ fn r12_r13_r14_code_fingerprints_per_language() {
     }
 }
 
+/// Ruling 14 on section 6.4: a claim quoted on a member resolves to the
+/// member, so editing a sibling member keeps its fingerprint and editing
+/// the member changes it. The container changes in both cases.
+#[test]
+fn members_are_units_with_their_own_fingerprints() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    let cases: &[(&str, &str, &str, &str, &str)] = &[
+        // (path, base, sibling edit, own edit, quote)
+        (
+            "a.rs",
+            "pub struct C {\n    pub port: u16,\n    pub host: String,\n}\n",
+            "pub struct C {\n    pub port: u32,\n    pub host: String,\n}\n",
+            "pub struct C {\n    pub port: u16,\n    pub host: Vec<u8>,\n}\n",
+            "pub host",
+        ),
+        (
+            "b.rs",
+            "enum L {\n    Low = 1,\n    High = 9,\n}\n",
+            "enum L {\n    Low = 2,\n    High = 9,\n}\n",
+            "enum L {\n    Low = 1,\n    High = 8,\n}\n",
+            "High",
+        ),
+        (
+            "c.ts",
+            "interface C {\n  port: number;\n  host: string;\n}\n",
+            "interface C {\n  port: string;\n  host: string;\n}\n",
+            "interface C {\n  port: number;\n  host: number;\n}\n",
+            "host",
+        ),
+        (
+            "d.go",
+            "package p\n\ntype C struct {\n\tPort int\n\tHost string\n}\n",
+            "package p\n\ntype C struct {\n\tPort uint\n\tHost string\n}\n",
+            "package p\n\ntype C struct {\n\tPort int\n\tHost []byte\n}\n",
+            "Host",
+        ),
+        (
+            "E.java",
+            "enum E {\n    LOW(1),\n    HIGH(9);\n    E(int v) {}\n}\n",
+            "enum E {\n    LOW(2),\n    HIGH(9);\n    E(int v) {}\n}\n",
+            "enum E {\n    LOW(1),\n    HIGH(8);\n    E(int v) {}\n}\n",
+            "HIGH",
+        ),
+        (
+            "f.py",
+            "class C:\n    port = 1\n    host = \"h\"\n",
+            "class C:\n    port = 2\n    host = \"h\"\n",
+            "class C:\n    port = 1\n    host = \"i\"\n",
+            "host",
+        ),
+    ];
+    for (path, base, sibling, own, quote) in cases {
+        let l = format!("file:{path}");
+        let resolve_at = |text: &str| {
+            write(root, path, text);
+            let member = one(&mut wt(root), &l, json!({"quote": quote}));
+            let units = wt(root).units(&loc(&l), None).unwrap();
+            let parent = member.parent.clone().unwrap();
+            let container = units.iter().find(|u| u.key == parent).unwrap().fp.clone();
+            (member, container)
+        };
+        let (m0, c0) = resolve_at(base);
+        assert!(
+            matches!(m0.kind.as_str(), "field" | "variant"),
+            "{path}: {}",
+            m0.kind
+        );
+        let (m1, c1) = resolve_at(sibling);
+        assert_eq!((&m1.key, &m1.fp), (&m0.key, &m0.fp), "{path}: sibling edit");
+        assert_ne!(c1, c0, "{path}: the container sees the sibling edit");
+        let (m2, c2) = resolve_at(own);
+        assert_eq!(m2.key, m0.key, "{path}");
+        assert_ne!(m2.fp, m0.fp, "{path}: own edit");
+        assert_ne!(c2, c0, "{path}");
+    }
+}
+
 #[test]
 fn r15_reflowing_a_paragraph_keeps_sentence_fingerprints() {
     let tmp = tempfile::tempdir().unwrap();

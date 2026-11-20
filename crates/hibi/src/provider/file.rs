@@ -35,7 +35,7 @@ pub const MAX_FILE_BYTES: u64 = 8_388_608;
 pub const PROVIDER_NAME: &str = "hibi-file";
 
 /// Every unit kind the file provider returns (section 6.2).
-pub const KINDS: [&str; 20] = [
+pub const KINDS: [&str; 22] = [
     "sentence",
     "heading",
     "list-item",
@@ -50,6 +50,8 @@ pub const KINDS: [&str; 20] = [
     "enum",
     "type",
     "variable",
+    "field",
+    "variant",
     "module",
     "impl",
     "macro",

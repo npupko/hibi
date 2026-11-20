@@ -32,6 +32,29 @@ fn key_matches(got: &str, want: &str) -> bool {
         && &after[12..] == rest
 }
 
+/// Section 6.6 for content keys, which the case data writes as `<kind>:*`:
+/// every `statement` and `block` key is `<kind>:` plus the first 12 hex
+/// digits of that unit's own fingerprint, and the n-th unit (n >= 2) with
+/// that base key in source order gets `~n`.
+fn check_content_keys(units: &[(&str, &str, &hibi::model::Fingerprint)]) -> Result<(), String> {
+    let mut seen: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
+    for (kind, key, fp) in units {
+        if !matches!(*kind, "statement" | "block") {
+            continue;
+        }
+        let base = format!("{kind}:{}", &fp.hex()[..12]);
+        let n = seen.entry(base.clone()).or_insert(0);
+        *n += 1;
+        let want = if *n == 1 { base } else { format!("{base}~{n}") };
+        if *key != want {
+            return Err(format!(
+                "content key {key:?}, want {want:?} from the unit's fingerprint"
+            ));
+        }
+    }
+    Ok(())
+}
+
 /// `input: {fixture, path}`; `expected: {class, units}`, every unit in
 /// source order as `{kind, symbol, key, parent, start, end, line, endLine}`.
 pub fn units_code(case: &Case) -> Result<(), String> {
@@ -39,6 +62,20 @@ pub fn units_code(case: &Case) -> Result<(), String> {
     let text = std::fs::read_to_string(cases_dir().join(fixture))
         .map_err(|e| format!("{fixture}: {e}"))?;
     let class = Class::from_path(str_field(&case.input, "path"));
+    match code::analyze(&text, class) {
+        Analysis::Code(f) => check_content_keys(
+            &f.units
+                .iter()
+                .map(|u| (u.kind, u.key.as_str(), &u.fp))
+                .collect::<Vec<_>>(),
+        )?,
+        Analysis::Text(blocks) => check_content_keys(
+            &blocks
+                .iter()
+                .map(|u| ("block", u.key.as_str(), &u.fp))
+                .collect::<Vec<_>>(),
+        )?,
+    }
     let (class_name, mut got) = match code::analyze(&text, class) {
         Analysis::Code(f) => (
             f.class.name(),

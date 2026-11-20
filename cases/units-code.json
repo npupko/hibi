@@ -169,9 +169,9 @@
           "endLine": 22
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Shape.name",
-          "key": "variable:Shape.name",
+          "key": "field:Shape.name",
           "parent": "interface:Shape",
           "start": 490,
           "end": 502,
@@ -199,9 +199,9 @@
           "endLine": 27
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Base.label",
-          "key": "variable:Base.label",
+          "key": "field:Base.label",
           "parent": "class:Base",
           "start": 565,
           "end": 588,
@@ -219,9 +219,9 @@
           "endLine": 40
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Cache.count",
-          "key": "variable:Cache.count",
+          "key": "field:Cache.count",
           "parent": "class:Cache",
           "start": 632,
           "end": 657,
@@ -275,6 +275,26 @@
           "parent": "file",
           "start": 808,
           "end": 840,
+          "line": 43,
+          "endLine": 43
+        },
+        {
+          "kind": "variant",
+          "symbol": "Color.Red",
+          "key": "variant:Color.Red",
+          "parent": "enum:Color",
+          "start": 828,
+          "end": 831,
+          "line": 43,
+          "endLine": 43
+        },
+        {
+          "kind": "variant",
+          "symbol": "Color.Green",
+          "key": "variant:Color.Green",
+          "parent": "enum:Color",
+          "start": 833,
+          "end": 838,
           "line": 43,
           "endLine": 43
         },
@@ -370,8 +390,8 @@
         }
       ]
     },
-    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source",
-    "origin": "computed"
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | v5-adjusted: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; Shape.name, Base.label and Cache.count become field; Color gains variants Red and Green on line 43",
+    "origin": "v5-adjusted"
   },
   {
     "name": "tsx: jsx components, var with two declarators, class fields",
@@ -463,9 +483,9 @@
           "endLine": 23
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Panel.state",
-          "key": "variable:Panel.state",
+          "key": "field:Panel.state",
           "parent": "class:Panel",
           "start": 382,
           "end": 405,
@@ -493,9 +513,9 @@
           "endLine": 27
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Props.title",
-          "key": "variable:Props.title",
+          "key": "field:Props.title",
           "parent": "interface:Props",
           "start": 516,
           "end": 530,
@@ -524,8 +544,8 @@
         }
       ]
     },
-    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source",
-    "origin": "computed"
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | v5-adjusted: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; Panel.state and Props.title become field",
+    "origin": "v5-adjusted"
   },
   {
     "name": "python: decorated definitions, assignments, nested classes, duplicate def",
@@ -657,9 +677,9 @@
           "endLine": 39
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Cache.size",
-          "key": "variable:Cache.size",
+          "key": "field:Cache.size",
           "parent": "class:Cache",
           "start": 355,
           "end": 363,
@@ -697,9 +717,9 @@
           "endLine": 39
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Cache.Entry.value",
-          "key": "variable:Cache.Entry.value",
+          "key": "field:Cache.Entry.value",
           "parent": "class:Cache.Entry",
           "start": 492,
           "end": 502,
@@ -717,9 +737,9 @@
           "endLine": 45
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Point.x",
-          "key": "variable:Point.x",
+          "key": "field:Point.x",
           "parent": "class:Point",
           "start": 533,
           "end": 543,
@@ -727,9 +747,9 @@
           "endLine": 44
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Point.names",
-          "key": "variable:Point.names",
+          "key": "field:Point.names",
           "parent": "class:Point",
           "start": 548,
           "end": 569,
@@ -748,11 +768,11 @@
         }
       ]
     },
-    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source",
-    "origin": "computed"
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | v5-adjusted: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; the class-body assignments Cache.size, Cache.Entry.value, Point.x and Point.names become field",
+    "origin": "v5-adjusted"
   },
   {
-    "name": "rust: impl naming, trait and mod members, attributes and use as statements",
+    "name": "rust: impl naming, trait and mod members, struct and enum members, an outer attribute in its item's unit, use as a statement",
     "input": {
       "fixture": "fixtures/units/rust.rs",
       "path": "src/lib.rs"
@@ -791,24 +811,24 @@
           "endLine": 4
         },
         {
-          "kind": "statement",
-          "symbol": null,
-          "key": "statement:*",
-          "parent": "file",
-          "start": 107,
-          "end": 123,
-          "line": 7,
-          "endLine": 7
-        },
-        {
           "kind": "struct",
           "symbol": "Cache",
           "key": "struct:Cache",
           "parent": "file",
-          "start": 124,
+          "start": 107,
           "end": 161,
-          "line": 8,
+          "line": 7,
           "endLine": 10
+        },
+        {
+          "kind": "field",
+          "symbol": "Cache.size",
+          "key": "field:Cache.size",
+          "parent": "struct:Cache",
+          "start": 147,
+          "end": 158,
+          "line": 9,
+          "endLine": 9
         },
         {
           "kind": "struct",
@@ -831,12 +851,52 @@
           "endLine": 13
         },
         {
+          "kind": "field",
+          "symbol": "Bits.i",
+          "key": "field:Bits.i",
+          "parent": "struct:Bits",
+          "start": 199,
+          "end": 205,
+          "line": 13,
+          "endLine": 13
+        },
+        {
+          "kind": "field",
+          "symbol": "Bits.f",
+          "key": "field:Bits.f",
+          "parent": "struct:Bits",
+          "start": 207,
+          "end": 213,
+          "line": 13,
+          "endLine": 13
+        },
+        {
           "kind": "enum",
           "symbol": "Mode",
           "key": "enum:Mode",
           "parent": "file",
           "start": 216,
           "end": 240,
+          "line": 14,
+          "endLine": 14
+        },
+        {
+          "kind": "variant",
+          "symbol": "Mode.Fast",
+          "key": "variant:Mode.Fast",
+          "parent": "enum:Mode",
+          "start": 228,
+          "end": 232,
+          "line": 14,
+          "endLine": 14
+        },
+        {
+          "kind": "variant",
+          "symbol": "Mode.Slow",
+          "key": "variant:Mode.Slow",
+          "parent": "enum:Mode",
+          "start": 234,
+          "end": 238,
           "line": 14,
           "endLine": 14
         },
@@ -861,9 +921,9 @@
           "endLine": 17
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Store.LIMIT",
-          "key": "variable:Store.LIMIT",
+          "key": "field:Store.LIMIT",
           "parent": "trait:Store",
           "start": 279,
           "end": 298,
@@ -921,9 +981,9 @@
           "endLine": 31
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Cache.EMPTY",
-          "key": "variable:Cache.EMPTY",
+          "key": "field:Cache.EMPTY",
           "parent": "impl:impl Cache~2",
           "start": 447,
           "end": 470,
@@ -1052,8 +1112,8 @@
         }
       ]
     },
-    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source",
-    "origin": "computed"
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | v5-adjusted: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; and Rust outer attributes belong to the item they precede: the statement for `#[derive(Debug)]` (107..123) is removed and struct:Cache starts there on line 7; Cache gains field size, Bits fields i and f, Mode variants Fast and Slow; the associated consts Store.LIMIT and Cache.EMPTY become field",
+    "origin": "v5-adjusted"
   },
   {
     "name": "go: grouped and single specs, var_spec_list groups, method receivers, duplicate init",
@@ -1205,6 +1265,16 @@
           "endLine": 36
         },
         {
+          "kind": "field",
+          "symbol": "Cache.items",
+          "key": "field:Cache.items",
+          "parent": "type:Cache",
+          "start": 292,
+          "end": 310,
+          "line": 35,
+          "endLine": 35
+        },
+        {
           "kind": "method",
           "symbol": "Cache.Get",
           "key": "method:Cache.Get",
@@ -1256,8 +1326,8 @@
         }
       ]
     },
-    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source",
-    "origin": "computed"
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | v5-adjusted: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; struct type Cache gains field items on line 35",
+    "origin": "v5-adjusted"
   },
   {
     "name": "java: field declarators, overloads, enum body declarations, record, annotation type",
@@ -1309,9 +1379,9 @@
           "endLine": 29
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Cache.x",
-          "key": "variable:Cache.x",
+          "key": "field:Cache.x",
           "parent": "class:Cache",
           "start": 117,
           "end": 118,
@@ -1319,9 +1389,9 @@
           "endLine": 7
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Cache.y",
-          "key": "variable:Cache.y",
+          "key": "field:Cache.y",
           "parent": "class:Cache",
           "start": 120,
           "end": 121,
@@ -1329,9 +1399,9 @@
           "endLine": 7
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Cache.z",
-          "key": "variable:Cache.z",
+          "key": "field:Cache.z",
           "parent": "class:Cache",
           "start": 127,
           "end": 141,
@@ -1339,9 +1409,9 @@
           "endLine": 8
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Cache.NAME",
-          "key": "variable:Cache.NAME",
+          "key": "field:Cache.NAME",
           "parent": "class:Cache",
           "start": 146,
           "end": 181,
@@ -1399,9 +1469,9 @@
           "endLine": 28
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Cache.Entry.value",
-          "key": "variable:Cache.Entry.value",
+          "key": "field:Cache.Entry.value",
           "parent": "class:Cache.Entry",
           "start": 434,
           "end": 444,
@@ -1419,9 +1489,9 @@
           "endLine": 34
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Store.LIMIT",
-          "key": "variable:Store.LIMIT",
+          "key": "field:Store.LIMIT",
           "parent": "interface:Store",
           "start": 476,
           "end": 491,
@@ -1449,9 +1519,29 @@
           "endLine": 44
         },
         {
-          "kind": "variable",
+          "kind": "variant",
+          "symbol": "Mode.FAST",
+          "key": "variant:Mode.FAST",
+          "parent": "enum:Mode",
+          "start": 535,
+          "end": 539,
+          "line": 37,
+          "endLine": 37
+        },
+        {
+          "kind": "variant",
+          "symbol": "Mode.SLOW",
+          "key": "variant:Mode.SLOW",
+          "parent": "enum:Mode",
+          "start": 541,
+          "end": 545,
+          "line": 37,
+          "endLine": 37
+        },
+        {
+          "kind": "field",
           "symbol": "Mode.level",
-          "key": "variable:Mode.level",
+          "key": "field:Mode.level",
           "parent": "enum:Mode",
           "start": 552,
           "end": 570,
@@ -1479,6 +1569,26 @@
           "endLine": 50
         },
         {
+          "kind": "field",
+          "symbol": "Point.x",
+          "key": "field:Point.x",
+          "parent": "class:Point",
+          "start": 634,
+          "end": 639,
+          "line": 46,
+          "endLine": 46
+        },
+        {
+          "kind": "field",
+          "symbol": "Point.y",
+          "key": "field:Point.y",
+          "parent": "class:Point",
+          "start": 641,
+          "end": 646,
+          "line": 46,
+          "endLine": 46
+        },
+        {
           "kind": "method",
           "symbol": "Point.sum",
           "key": "method:Point.sum",
@@ -1499,19 +1609,29 @@
           "endLine": 55
         },
         {
-          "kind": "variable",
+          "kind": "field",
           "symbol": "Marker.DEFAULT",
-          "key": "variable:Marker.DEFAULT",
+          "key": "field:Marker.DEFAULT",
           "parent": "interface:Marker",
           "start": 721,
           "end": 737,
           "line": 53,
           "endLine": 53
+        },
+        {
+          "kind": "method",
+          "symbol": "Marker.value",
+          "key": "method:Marker.value",
+          "parent": "interface:Marker",
+          "start": 742,
+          "end": 757,
+          "line": 54,
+          "endLine": 54
         }
       ]
     },
-    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source",
-    "origin": "computed"
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | v5-adjusted: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; the field declarators Cache.x, y, z, NAME, Cache.Entry.value, Store.LIMIT, Mode.level and Marker.DEFAULT become field; Mode gains variants FAST and SLOW; the record Point gains components x and y as field; and the annotation element `String value();` is method:Marker.value (ruling on annotation_type_element_declaration)",
+    "origin": "v5-adjusted"
   },
   {
     "name": "python with a syntax error: class text, block units",
@@ -1654,5 +1774,1443 @@
     },
     "source": "written for v5 from SPEC sections 6.2 (the file unit has range [0, len)) and 6.4; expected values derived by hand from the fixture bytes",
     "origin": "computed"
+  },
+  {
+    "name": "typescript: interface, enum and class members, decorators before a method, no units in literals",
+    "input": {
+      "fixture": "fixtures/units/members.ts",
+      "path": "src/members.ts"
+    },
+    "expected": {
+      "class": "typescript",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 462,
+          "line": 1,
+          "endLine": 28
+        },
+        {
+          "kind": "interface",
+          "symbol": "Shape",
+          "key": "interface:Shape",
+          "parent": "file",
+          "start": 0,
+          "end": 131,
+          "line": 1,
+          "endLine": 7
+        },
+        {
+          "kind": "field",
+          "symbol": "Shape.kind",
+          "key": "field:Shape.kind",
+          "parent": "interface:Shape",
+          "start": 20,
+          "end": 32,
+          "line": 2,
+          "endLine": 2
+        },
+        {
+          "kind": "method",
+          "symbol": "Shape.area",
+          "key": "method:Shape.area",
+          "parent": "interface:Shape",
+          "start": 36,
+          "end": 50,
+          "line": 3,
+          "endLine": 3
+        },
+        {
+          "kind": "method",
+          "symbol": "Shape.area",
+          "key": "method:Shape.area~2",
+          "parent": "interface:Shape",
+          "start": 54,
+          "end": 81,
+          "line": 4,
+          "endLine": 4
+        },
+        {
+          "kind": "enum",
+          "symbol": "Color",
+          "key": "enum:Color",
+          "parent": "file",
+          "start": 133,
+          "end": 185,
+          "line": 9,
+          "endLine": 13
+        },
+        {
+          "kind": "variant",
+          "symbol": "Color.Red",
+          "key": "variant:Color.Red",
+          "parent": "enum:Color",
+          "start": 148,
+          "end": 151,
+          "line": 10,
+          "endLine": 10
+        },
+        {
+          "kind": "variant",
+          "symbol": "Color.Green",
+          "key": "variant:Color.Green",
+          "parent": "enum:Color",
+          "start": 155,
+          "end": 164,
+          "line": 11,
+          "endLine": 11
+        },
+        {
+          "kind": "variant",
+          "symbol": "Color.\"Blue-ish\"",
+          "key": "variant:Color.\"Blue-ish\"",
+          "parent": "enum:Color",
+          "start": 168,
+          "end": 182,
+          "line": 12,
+          "endLine": 12
+        },
+        {
+          "kind": "class",
+          "symbol": "Box",
+          "key": "class:Box",
+          "parent": "file",
+          "start": 187,
+          "end": 392,
+          "line": 15,
+          "endLine": 25
+        },
+        {
+          "kind": "field",
+          "symbol": "Box.size",
+          "key": "field:Box.size",
+          "parent": "class:Box",
+          "start": 210,
+          "end": 230,
+          "line": 16,
+          "endLine": 16
+        },
+        {
+          "kind": "field",
+          "symbol": "Box.handler",
+          "key": "field:Box.handler",
+          "parent": "class:Box",
+          "start": 234,
+          "end": 251,
+          "line": 17,
+          "endLine": 17
+        },
+        {
+          "kind": "method",
+          "symbol": "Box.width",
+          "key": "method:Box.width",
+          "parent": "class:Box",
+          "start": 255,
+          "end": 280,
+          "line": 18,
+          "endLine": 18
+        },
+        {
+          "kind": "method",
+          "symbol": "Box.run",
+          "key": "method:Box.run",
+          "parent": "class:Box",
+          "start": 283,
+          "end": 303,
+          "line": 19,
+          "endLine": 19
+        },
+        {
+          "kind": "field",
+          "symbol": "Box.count",
+          "key": "field:Box.count",
+          "parent": "class:Box",
+          "start": 307,
+          "end": 329,
+          "line": 20,
+          "endLine": 20
+        },
+        {
+          "kind": "method",
+          "symbol": "Box.open",
+          "key": "method:Box.open",
+          "parent": "class:Box",
+          "start": 354,
+          "end": 390,
+          "line": 22,
+          "endLine": 24
+        },
+        {
+          "kind": "variable",
+          "symbol": "shape",
+          "key": "variable:shape",
+          "parent": "file",
+          "start": 394,
+          "end": 433,
+          "line": 27,
+          "endLine": 27
+        },
+        {
+          "kind": "type",
+          "symbol": "Point",
+          "key": "type:Point",
+          "parent": "file",
+          "start": 434,
+          "end": 461,
+          "line": 28,
+          "endLine": 28
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.4 and the rulings on it (members of named containers are units, `field` for data members of class-like containers, `variant`, leading attributes and decorators belong to the unit, symbol text normalisation, extern blocks as wrappers); every unit's kind, symbol, key, parent and source text derived by hand from the fixture and the grammars' node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "tsx: the same members through the TSX grammar",
+    "input": {
+      "fixture": "fixtures/units/members.ts",
+      "path": "src/members.tsx"
+    },
+    "expected": {
+      "class": "tsx",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 462,
+          "line": 1,
+          "endLine": 28
+        },
+        {
+          "kind": "interface",
+          "symbol": "Shape",
+          "key": "interface:Shape",
+          "parent": "file",
+          "start": 0,
+          "end": 131,
+          "line": 1,
+          "endLine": 7
+        },
+        {
+          "kind": "field",
+          "symbol": "Shape.kind",
+          "key": "field:Shape.kind",
+          "parent": "interface:Shape",
+          "start": 20,
+          "end": 32,
+          "line": 2,
+          "endLine": 2
+        },
+        {
+          "kind": "method",
+          "symbol": "Shape.area",
+          "key": "method:Shape.area",
+          "parent": "interface:Shape",
+          "start": 36,
+          "end": 50,
+          "line": 3,
+          "endLine": 3
+        },
+        {
+          "kind": "method",
+          "symbol": "Shape.area",
+          "key": "method:Shape.area~2",
+          "parent": "interface:Shape",
+          "start": 54,
+          "end": 81,
+          "line": 4,
+          "endLine": 4
+        },
+        {
+          "kind": "enum",
+          "symbol": "Color",
+          "key": "enum:Color",
+          "parent": "file",
+          "start": 133,
+          "end": 185,
+          "line": 9,
+          "endLine": 13
+        },
+        {
+          "kind": "variant",
+          "symbol": "Color.Red",
+          "key": "variant:Color.Red",
+          "parent": "enum:Color",
+          "start": 148,
+          "end": 151,
+          "line": 10,
+          "endLine": 10
+        },
+        {
+          "kind": "variant",
+          "symbol": "Color.Green",
+          "key": "variant:Color.Green",
+          "parent": "enum:Color",
+          "start": 155,
+          "end": 164,
+          "line": 11,
+          "endLine": 11
+        },
+        {
+          "kind": "variant",
+          "symbol": "Color.\"Blue-ish\"",
+          "key": "variant:Color.\"Blue-ish\"",
+          "parent": "enum:Color",
+          "start": 168,
+          "end": 182,
+          "line": 12,
+          "endLine": 12
+        },
+        {
+          "kind": "class",
+          "symbol": "Box",
+          "key": "class:Box",
+          "parent": "file",
+          "start": 187,
+          "end": 392,
+          "line": 15,
+          "endLine": 25
+        },
+        {
+          "kind": "field",
+          "symbol": "Box.size",
+          "key": "field:Box.size",
+          "parent": "class:Box",
+          "start": 210,
+          "end": 230,
+          "line": 16,
+          "endLine": 16
+        },
+        {
+          "kind": "field",
+          "symbol": "Box.handler",
+          "key": "field:Box.handler",
+          "parent": "class:Box",
+          "start": 234,
+          "end": 251,
+          "line": 17,
+          "endLine": 17
+        },
+        {
+          "kind": "method",
+          "symbol": "Box.width",
+          "key": "method:Box.width",
+          "parent": "class:Box",
+          "start": 255,
+          "end": 280,
+          "line": 18,
+          "endLine": 18
+        },
+        {
+          "kind": "method",
+          "symbol": "Box.run",
+          "key": "method:Box.run",
+          "parent": "class:Box",
+          "start": 283,
+          "end": 303,
+          "line": 19,
+          "endLine": 19
+        },
+        {
+          "kind": "field",
+          "symbol": "Box.count",
+          "key": "field:Box.count",
+          "parent": "class:Box",
+          "start": 307,
+          "end": 329,
+          "line": 20,
+          "endLine": 20
+        },
+        {
+          "kind": "method",
+          "symbol": "Box.open",
+          "key": "method:Box.open",
+          "parent": "class:Box",
+          "start": 354,
+          "end": 390,
+          "line": 22,
+          "endLine": 24
+        },
+        {
+          "kind": "variable",
+          "symbol": "shape",
+          "key": "variable:shape",
+          "parent": "file",
+          "start": 394,
+          "end": 433,
+          "line": 27,
+          "endLine": 27
+        },
+        {
+          "kind": "type",
+          "symbol": "Point",
+          "key": "type:Point",
+          "parent": "file",
+          "start": 434,
+          "end": 461,
+          "line": 28,
+          "endLine": 28
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.4 and the rulings on it (members of named containers are units, `field` for data members of class-like containers, `variant`, leading attributes and decorators belong to the unit, symbol text normalisation, extern blocks as wrappers); every unit's kind, symbol, key, parent and source text derived by hand from the fixture and the grammars' node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "rust: struct, union and enum members, attributes on items and members, extern blocks, impl types with spaces",
+    "input": {
+      "fixture": "fixtures/units/members.rs",
+      "path": "src/members.rs"
+    },
+    "expected": {
+      "class": "rust",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 604,
+          "line": 1,
+          "endLine": 45
+        },
+        {
+          "kind": "struct",
+          "symbol": "Point",
+          "key": "struct:Point",
+          "parent": "file",
+          "start": 0,
+          "end": 94,
+          "line": 1,
+          "endLine": 6
+        },
+        {
+          "kind": "field",
+          "symbol": "Point.x",
+          "key": "field:Point.x",
+          "parent": "struct:Point",
+          "start": 40,
+          "end": 50,
+          "line": 3,
+          "endLine": 3
+        },
+        {
+          "kind": "field",
+          "symbol": "Point.y",
+          "key": "field:Point.y",
+          "parent": "struct:Point",
+          "start": 56,
+          "end": 91,
+          "line": 4,
+          "endLine": 5
+        },
+        {
+          "kind": "struct",
+          "symbol": "Pair",
+          "key": "struct:Pair",
+          "parent": "file",
+          "start": 96,
+          "end": 120,
+          "line": 8,
+          "endLine": 8
+        },
+        {
+          "kind": "struct",
+          "symbol": "Bits",
+          "key": "struct:Bits",
+          "parent": "file",
+          "start": 122,
+          "end": 151,
+          "line": 10,
+          "endLine": 10
+        },
+        {
+          "kind": "field",
+          "symbol": "Bits.i",
+          "key": "field:Bits.i",
+          "parent": "struct:Bits",
+          "start": 135,
+          "end": 141,
+          "line": 10,
+          "endLine": 10
+        },
+        {
+          "kind": "field",
+          "symbol": "Bits.f",
+          "key": "field:Bits.f",
+          "parent": "struct:Bits",
+          "start": 143,
+          "end": 149,
+          "line": 10,
+          "endLine": 10
+        },
+        {
+          "kind": "enum",
+          "symbol": "Mode",
+          "key": "enum:Mode",
+          "parent": "file",
+          "start": 153,
+          "end": 243,
+          "line": 12,
+          "endLine": 18
+        },
+        {
+          "kind": "variant",
+          "symbol": "Mode.Fast",
+          "key": "variant:Mode.Fast",
+          "parent": "enum:Mode",
+          "start": 181,
+          "end": 185,
+          "line": 14,
+          "endLine": 14
+        },
+        {
+          "kind": "variant",
+          "symbol": "Mode.Slow",
+          "key": "variant:Mode.Slow",
+          "parent": "enum:Mode",
+          "start": 191,
+          "end": 214,
+          "line": 15,
+          "endLine": 16
+        },
+        {
+          "kind": "variant",
+          "symbol": "Mode.Custom",
+          "key": "variant:Mode.Custom",
+          "parent": "enum:Mode",
+          "start": 220,
+          "end": 240,
+          "line": 17,
+          "endLine": 17
+        },
+        {
+          "kind": "function",
+          "symbol": "abs",
+          "key": "function:abs",
+          "parent": "file",
+          "start": 262,
+          "end": 284,
+          "line": 21,
+          "endLine": 21
+        },
+        {
+          "kind": "variable",
+          "symbol": "ERRNO",
+          "key": "variable:ERRNO",
+          "parent": "file",
+          "start": 289,
+          "end": 307,
+          "line": 22,
+          "endLine": 22
+        },
+        {
+          "kind": "function",
+          "symbol": "labs",
+          "key": "function:labs",
+          "parent": "file",
+          "start": 311,
+          "end": 353,
+          "line": 25,
+          "endLine": 27
+        },
+        {
+          "kind": "trait",
+          "symbol": "Store",
+          "key": "trait:Store",
+          "parent": "file",
+          "start": 355,
+          "end": 442,
+          "line": 29,
+          "endLine": 33
+        },
+        {
+          "kind": "field",
+          "symbol": "Store.LIMIT",
+          "key": "field:Store.LIMIT",
+          "parent": "trait:Store",
+          "start": 373,
+          "end": 392,
+          "line": 30,
+          "endLine": 30
+        },
+        {
+          "kind": "type",
+          "symbol": "Store.Item",
+          "key": "type:Store.Item",
+          "parent": "trait:Store",
+          "start": 397,
+          "end": 407,
+          "line": 31,
+          "endLine": 31
+        },
+        {
+          "kind": "method",
+          "symbol": "Store.get",
+          "key": "method:Store.get",
+          "parent": "trait:Store",
+          "start": 412,
+          "end": 440,
+          "line": 32,
+          "endLine": 32
+        },
+        {
+          "kind": "impl",
+          "symbol": "impl dyn Store",
+          "key": "impl:impl dyn Store",
+          "parent": "file",
+          "start": 444,
+          "end": 487,
+          "line": 35,
+          "endLine": 37
+        },
+        {
+          "kind": "field",
+          "symbol": "dyn Store.EMPTY",
+          "key": "field:dyn Store.EMPTY",
+          "parent": "impl:impl dyn Store",
+          "start": 465,
+          "end": 485,
+          "line": 36,
+          "endLine": 36
+        },
+        {
+          "kind": "impl",
+          "symbol": "impl Store for &'a Point",
+          "key": "impl:impl Store for &'a Point",
+          "parent": "file",
+          "start": 489,
+          "end": 575,
+          "line": 39,
+          "endLine": 42
+        },
+        {
+          "kind": "type",
+          "symbol": "&'a Point.Item",
+          "key": "type:&'a Point.Item",
+          "parent": "impl:impl Store for &'a Point",
+          "start": 528,
+          "end": 543,
+          "line": 40,
+          "endLine": 40
+        },
+        {
+          "kind": "method",
+          "symbol": "&'a Point.get",
+          "key": "method:&'a Point.get",
+          "parent": "impl:impl Store for &'a Point",
+          "start": 548,
+          "end": 573,
+          "line": 41,
+          "endLine": 41
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 577,
+          "end": 603,
+          "line": 44,
+          "endLine": 45
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.4 and the rulings on it (members of named containers are units, `field` for data members of class-like containers, `variant`, leading attributes and decorators belong to the unit, symbol text normalisation, extern blocks as wrappers); every unit's kind, symbol, key, parent and source text derived by hand from the fixture and the grammars' node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "go: struct fields with several names, tags and embedded types, interface methods, receivers with spaces",
+    "input": {
+      "fixture": "fixtures/units/members.go",
+      "path": "members.go"
+    },
+    "expected": {
+      "class": "go",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 237,
+          "line": 1,
+          "endLine": 22
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 0,
+          "end": 9,
+          "line": 1,
+          "endLine": 1
+        },
+        {
+          "kind": "type",
+          "symbol": "Point",
+          "key": "type:Point",
+          "parent": "file",
+          "start": 11,
+          "end": 90,
+          "line": 3,
+          "endLine": 8
+        },
+        {
+          "kind": "field",
+          "symbol": "Point.X",
+          "key": "field:Point.X",
+          "parent": "type:Point",
+          "start": 32,
+          "end": 41,
+          "line": 4,
+          "endLine": 4
+        },
+        {
+          "kind": "field",
+          "symbol": "Point.Label",
+          "key": "field:Point.Label",
+          "parent": "type:Point",
+          "start": 43,
+          "end": 70,
+          "line": 5,
+          "endLine": 5
+        },
+        {
+          "kind": "field",
+          "symbol": "Point.Base",
+          "key": "field:Point.Base",
+          "parent": "type:Point",
+          "start": 72,
+          "end": 77,
+          "line": 6,
+          "endLine": 6
+        },
+        {
+          "kind": "field",
+          "symbol": "Point.Reader",
+          "key": "field:Point.Reader",
+          "parent": "type:Point",
+          "start": 79,
+          "end": 88,
+          "line": 7,
+          "endLine": 7
+        },
+        {
+          "kind": "type",
+          "symbol": "Shape",
+          "key": "type:Shape",
+          "parent": "file",
+          "start": 92,
+          "end": 146,
+          "line": 10,
+          "endLine": 13
+        },
+        {
+          "kind": "method",
+          "symbol": "Shape.Area",
+          "key": "method:Shape.Area",
+          "parent": "type:Shape",
+          "start": 116,
+          "end": 130,
+          "line": 11,
+          "endLine": 11
+        },
+        {
+          "kind": "type",
+          "symbol": "A",
+          "key": "type:A",
+          "parent": "file",
+          "start": 156,
+          "end": 173,
+          "line": 16,
+          "endLine": 16
+        },
+        {
+          "kind": "field",
+          "symbol": "A.v",
+          "key": "field:A.v",
+          "parent": "type:A",
+          "start": 166,
+          "end": 171,
+          "line": 16,
+          "endLine": 16
+        },
+        {
+          "kind": "type",
+          "symbol": "B",
+          "key": "type:B",
+          "parent": "file",
+          "start": 175,
+          "end": 180,
+          "line": 17,
+          "endLine": 17
+        },
+        {
+          "kind": "method",
+          "symbol": "Point.Move",
+          "key": "method:Point.Move",
+          "parent": "file",
+          "start": 184,
+          "end": 210,
+          "line": 20,
+          "endLine": 20
+        },
+        {
+          "kind": "method",
+          "symbol": "G2.Gap",
+          "key": "method:G2.Gap",
+          "parent": "file",
+          "start": 212,
+          "end": 236,
+          "line": 22,
+          "endLine": 22
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.4 and the rulings on it (members of named containers are units, `field` for data members of class-like containers, `variant`, leading attributes and decorators belong to the unit, symbol text normalisation, extern blocks as wrappers); every unit's kind, symbol, key, parent and source text derived by hand from the fixture and the grammars' node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "java: enum constants with annotations and bodies, record components, interface and abstract members",
+    "input": {
+      "fixture": "fixtures/units/members.java",
+      "path": "src/Members.java"
+    },
+    "expected": {
+      "class": "java",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 393,
+          "line": 1,
+          "endLine": 24
+        },
+        {
+          "kind": "enum",
+          "symbol": "Level",
+          "key": "enum:Level",
+          "parent": "file",
+          "start": 0,
+          "end": 119,
+          "line": 1,
+          "endLine": 7
+        },
+        {
+          "kind": "variant",
+          "symbol": "Level.LOW",
+          "key": "variant:Level.LOW",
+          "parent": "enum:Level",
+          "start": 17,
+          "end": 32,
+          "line": 2,
+          "endLine": 2
+        },
+        {
+          "kind": "variant",
+          "symbol": "Level.HIGH",
+          "key": "variant:Level.HIGH",
+          "parent": "enum:Level",
+          "start": 38,
+          "end": 85,
+          "line": 3,
+          "endLine": 5
+        },
+        {
+          "kind": "method",
+          "symbol": "Level.HIGH.weight",
+          "key": "method:Level.HIGH.weight",
+          "parent": "variant:Level.HIGH",
+          "start": 53,
+          "end": 79,
+          "line": 4,
+          "endLine": 4
+        },
+        {
+          "kind": "method",
+          "symbol": "Level.weight",
+          "key": "method:Level.weight",
+          "parent": "enum:Level",
+          "start": 91,
+          "end": 117,
+          "line": 6,
+          "endLine": 6
+        },
+        {
+          "kind": "class",
+          "symbol": "Pair",
+          "key": "class:Pair",
+          "parent": "file",
+          "start": 121,
+          "end": 258,
+          "line": 9,
+          "endLine": 14
+        },
+        {
+          "kind": "field",
+          "symbol": "Pair.left",
+          "key": "field:Pair.left",
+          "parent": "class:Pair",
+          "start": 133,
+          "end": 141,
+          "line": 9,
+          "endLine": 9
+        },
+        {
+          "kind": "field",
+          "symbol": "Pair.right",
+          "key": "field:Pair.right",
+          "parent": "class:Pair",
+          "start": 143,
+          "end": 165,
+          "line": 9,
+          "endLine": 9
+        },
+        {
+          "kind": "field",
+          "symbol": "Pair.count",
+          "key": "field:Pair.count",
+          "parent": "class:Pair",
+          "start": 239,
+          "end": 256,
+          "line": 13,
+          "endLine": 13
+        },
+        {
+          "kind": "interface",
+          "symbol": "Api",
+          "key": "interface:Api",
+          "parent": "file",
+          "start": 260,
+          "end": 313,
+          "line": 16,
+          "endLine": 19
+        },
+        {
+          "kind": "method",
+          "symbol": "Api.call",
+          "key": "method:Api.call",
+          "parent": "interface:Api",
+          "start": 280,
+          "end": 292,
+          "line": 17,
+          "endLine": 17
+        },
+        {
+          "kind": "field",
+          "symbol": "Api.LIMIT",
+          "key": "field:Api.LIMIT",
+          "parent": "interface:Api",
+          "start": 297,
+          "end": 311,
+          "line": 18,
+          "endLine": 18
+        },
+        {
+          "kind": "class",
+          "symbol": "Base",
+          "key": "class:Base",
+          "parent": "file",
+          "start": 315,
+          "end": 392,
+          "line": 21,
+          "endLine": 24
+        },
+        {
+          "kind": "method",
+          "symbol": "Base.run",
+          "key": "method:Base.run",
+          "parent": "class:Base",
+          "start": 341,
+          "end": 361,
+          "line": 22,
+          "endLine": 22
+        },
+        {
+          "kind": "field",
+          "symbol": "Base.size",
+          "key": "field:Base.size",
+          "parent": "class:Base",
+          "start": 380,
+          "end": 384,
+          "line": 23,
+          "endLine": 23
+        },
+        {
+          "kind": "field",
+          "symbol": "Base.cap",
+          "key": "field:Base.cap",
+          "parent": "class:Base",
+          "start": 386,
+          "end": 389,
+          "line": 23,
+          "endLine": 23
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.4 and the rulings on it (members of named containers are units, `field` for data members of class-like containers, `variant`, leading attributes and decorators belong to the unit, symbol text normalisation, extern blocks as wrappers); every unit's kind, symbol, key, parent and source text derived by hand from the fixture and the grammars' node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python: class-body assignments with and without values are fields; definitions in control flow stay in their statement",
+    "input": {
+      "fixture": "fixtures/units/members.py",
+      "path": "members.py"
+    },
+    "expected": {
+      "class": "python",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 198,
+          "line": 1,
+          "endLine": 15
+        },
+        {
+          "kind": "class",
+          "symbol": "Config",
+          "key": "class:Config",
+          "parent": "file",
+          "start": 0,
+          "end": 147,
+          "line": 1,
+          "endLine": 9
+        },
+        {
+          "kind": "field",
+          "symbol": "Config.name",
+          "key": "field:Config.name",
+          "parent": "class:Config",
+          "start": 18,
+          "end": 28,
+          "line": 2,
+          "endLine": 2
+        },
+        {
+          "kind": "field",
+          "symbol": "Config.port",
+          "key": "field:Config.port",
+          "parent": "class:Config",
+          "start": 33,
+          "end": 47,
+          "line": 3,
+          "endLine": 3
+        },
+        {
+          "kind": "field",
+          "symbol": "Config.debug",
+          "key": "field:Config.debug",
+          "parent": "class:Config",
+          "start": 52,
+          "end": 63,
+          "line": 4,
+          "endLine": 4
+        },
+        {
+          "kind": "field",
+          "symbol": "Config.handler",
+          "key": "field:Config.handler",
+          "parent": "class:Config",
+          "start": 68,
+          "end": 87,
+          "line": 5,
+          "endLine": 5
+        },
+        {
+          "kind": "method",
+          "symbol": "Config.load",
+          "key": "method:Config.load",
+          "parent": "class:Config",
+          "start": 93,
+          "end": 147,
+          "line": 7,
+          "endLine": 9
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 149,
+          "end": 188,
+          "line": 11,
+          "endLine": 13
+        },
+        {
+          "kind": "variable",
+          "symbol": "TOP",
+          "key": "variable:TOP",
+          "parent": "file",
+          "start": 190,
+          "end": 197,
+          "line": 15,
+          "endLine": 15
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.4 and the rulings on it (members of named containers are units, `field` for data members of class-like containers, `variant`, leading attributes and decorators belong to the unit, symbol text normalisation, extern blocks as wrappers); every unit's kind, symbol, key, parent and source text derived by hand from the fixture and the grammars' node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "rust: modules 33 deep: declarations at depth 32 are units, deeper ones are not",
+    "input": {
+      "fixture": "fixtures/units/depth.rs",
+      "path": "src/depth.rs"
+    },
+    "expected": {
+      "class": "rust",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 4610,
+          "line": 1,
+          "endLine": 66
+        },
+        {
+          "kind": "module",
+          "symbol": "m0",
+          "key": "module:m0",
+          "parent": "file",
+          "start": 0,
+          "end": 4609,
+          "line": 1,
+          "endLine": 66
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1",
+          "key": "module:m0.m1",
+          "parent": "module:m0",
+          "start": 13,
+          "end": 4607,
+          "line": 2,
+          "endLine": 65
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2",
+          "key": "module:m0.m1.m2",
+          "parent": "module:m0.m1",
+          "start": 30,
+          "end": 4601,
+          "line": 3,
+          "endLine": 64
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3",
+          "key": "module:m0.m1.m2.m3",
+          "parent": "module:m0.m1.m2",
+          "start": 51,
+          "end": 4591,
+          "line": 4,
+          "endLine": 63
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4",
+          "key": "module:m0.m1.m2.m3.m4",
+          "parent": "module:m0.m1.m2.m3",
+          "start": 76,
+          "end": 4577,
+          "line": 5,
+          "endLine": 62
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5",
+          "key": "module:m0.m1.m2.m3.m4.m5",
+          "parent": "module:m0.m1.m2.m3.m4",
+          "start": 105,
+          "end": 4559,
+          "line": 6,
+          "endLine": 61
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6",
+          "parent": "module:m0.m1.m2.m3.m4.m5",
+          "start": 138,
+          "end": 4537,
+          "line": 7,
+          "endLine": 60
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6",
+          "start": 175,
+          "end": 4511,
+          "line": 8,
+          "endLine": 59
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7",
+          "start": 216,
+          "end": 4481,
+          "line": 9,
+          "endLine": 58
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8",
+          "start": 261,
+          "end": 4447,
+          "line": 10,
+          "endLine": 57
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9",
+          "start": 310,
+          "end": 4409,
+          "line": 11,
+          "endLine": 56
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10",
+          "start": 364,
+          "end": 4367,
+          "line": 12,
+          "endLine": 55
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11",
+          "start": 422,
+          "end": 4321,
+          "line": 13,
+          "endLine": 54
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12",
+          "start": 484,
+          "end": 4271,
+          "line": 14,
+          "endLine": 53
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13",
+          "start": 550,
+          "end": 4217,
+          "line": 15,
+          "endLine": 52
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14",
+          "start": 620,
+          "end": 4159,
+          "line": 16,
+          "endLine": 51
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15",
+          "start": 694,
+          "end": 4097,
+          "line": 17,
+          "endLine": 50
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16",
+          "start": 772,
+          "end": 4031,
+          "line": 18,
+          "endLine": 49
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17",
+          "start": 854,
+          "end": 3961,
+          "line": 19,
+          "endLine": 48
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18",
+          "start": 940,
+          "end": 3887,
+          "line": 20,
+          "endLine": 47
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19",
+          "start": 1030,
+          "end": 3809,
+          "line": 21,
+          "endLine": 46
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20",
+          "start": 1124,
+          "end": 3727,
+          "line": 22,
+          "endLine": 45
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21",
+          "start": 1222,
+          "end": 3641,
+          "line": 23,
+          "endLine": 44
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22",
+          "start": 1324,
+          "end": 3551,
+          "line": 24,
+          "endLine": 43
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23",
+          "start": 1430,
+          "end": 3457,
+          "line": 25,
+          "endLine": 42
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24",
+          "start": 1540,
+          "end": 3359,
+          "line": 26,
+          "endLine": 41
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25",
+          "start": 1654,
+          "end": 3257,
+          "line": 27,
+          "endLine": 40
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26.m27",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26.m27",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26",
+          "start": 1772,
+          "end": 3151,
+          "line": 28,
+          "endLine": 39
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26.m27.m28",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26.m27.m28",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26.m27",
+          "start": 1894,
+          "end": 3041,
+          "line": 29,
+          "endLine": 38
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26.m27.m28.m29",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26.m27.m28.m29",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26.m27.m28",
+          "start": 2020,
+          "end": 2927,
+          "line": 30,
+          "endLine": 37
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26.m27.m28.m29.m30",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26.m27.m28.m29.m30",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26.m27.m28.m29",
+          "start": 2150,
+          "end": 2809,
+          "line": 31,
+          "endLine": 36
+        },
+        {
+          "kind": "module",
+          "symbol": "m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26.m27.m28.m29.m30.m31",
+          "key": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26.m27.m28.m29.m30.m31",
+          "parent": "module:m0.m1.m2.m3.m4.m5.m6.m7.m8.m9.m10.m11.m12.m13.m14.m15.m16.m17.m18.m19.m20.m21.m22.m23.m24.m25.m26.m27.m28.m29.m30",
+          "start": 2284,
+          "end": 2687,
+          "line": 32,
+          "endLine": 35
+        }
+      ]
+    },
+    "source": "written for v5 from the ruling on SPEC 6.4 (MAX_CONTAINER_DEPTH = 32: a declaration at depth 32 is a unit, its body is not searched); module m_d (depth d+1) spans from its `mod` keyword to its own closing brace; m32 stays inside module m0...m31",
+    "origin": "spec-derived"
   }
 ]
