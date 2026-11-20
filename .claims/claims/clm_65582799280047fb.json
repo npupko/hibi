@@ -1,0 +1,88 @@
+{
+  "id": "clm_65582799280047fb",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "Attestations are append-only `{by, at, basis: vouch|evidence|ack, note}`; actors are `human:<id>`, `agent:<name>`, `process:<name>`.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Attestations are append-only `{by, at, basis: vouch|evidence|ack, note}`; actors are `human:<id>`, `agent:<name>`, `process:<name>`.",
+        "prefix": "` (judge not reached, or its answer unusable).\n\n",
+        "suffix": " Counting rule: ttl runs from the newest `eviden"
+      },
+      {
+        "kind": "text-position",
+        "start": 1416,
+        "end": 1548
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "[\"vouch\", \"evidence\", \"ack\"]",
+          "prefix": "C 5). */\nexport const AttestationBasis = z.enum(",
+          "suffix": ");\nexport type AttestationBasis = z.infer<typeof"
+        },
+        {
+          "kind": "text-position",
+          "start": 5900,
+          "end": 5928
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "4f22346ddf3f12c8",
+          "semanticHash": "234c6498d795c14c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"vouch\",\"evidence\",\"ack\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(human|agent|process)",
+          "prefix": "cess:<name>`. */\nexport const ACTOR_PATTERN = /^",
+          "suffix": ":.+$/;\nexport const Actor = z.string().regex(ACT"
+        },
+        {
+          "kind": "text-position",
+          "start": 1083,
+          "end": 1104
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "regex_pattern",
+          "structuralHash": "a8186a5e063640dc",
+          "semanticHash": "4ef69ee7710a4eaa"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.833Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.833Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

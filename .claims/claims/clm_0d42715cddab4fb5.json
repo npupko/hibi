@@ -1,0 +1,117 @@
+{
+  "id": "clm_0d42715cddab4fb5",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- Retries: 408, 429, and every 5xx status (including 529), and connection errors and per-attempt timeouts, are retried up to 2 times (3 attempts).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- Retries: 408, 429, and every 5xx status (including 529), and connection errors and per-attempt timeouts, are retried up to 2 times (3 attempts).",
+        "prefix": "DK is not used; it fails under Bun as of 0.7.0.\n",
+        "suffix": " Backoff starts at 500 ms, doubles, caps at 5 s,"
+      },
+      {
+        "kind": "text-position",
+        "start": 31571,
+        "end": 31717
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return status === 408 || status === 429 || (status >= 500 && status <= 599);",
+          "prefix": " isRetryableStatus(status: number): boolean {\n  ",
+          "suffix": "\n}\n\n/**\n * Parses `retry-after` (seconds or HTTP"
+        },
+        {
+          "kind": "text-position",
+          "start": 2301,
+          "end": 2377
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "1a55bd3ff4928c36",
+          "semanticHash": "03adb57329923a5e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "408"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const MAX_RETRIES = 2;",
+          "prefix": "port const BASE_URL_ENV = \"TYPESAFE_BASE_URL\";\n\n",
+          "suffix": "\nexport const BACKOFF_INITIAL_MS = 500;\nexport c"
+        },
+        {
+          "kind": "text-position",
+          "start": 607,
+          "end": 636
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "039bd1226a4ed729"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "// Connection error or the per-attempt timeout.",
+          "prefix": "esponse.text();\n      } catch (error) {\n        ",
+          "suffix": "\n        lastFailure = error instanceof Error ? "
+        },
+        {
+          "kind": "text-position",
+          "start": 5699,
+          "end": 5746
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "618ea4feb561ed7f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:50.298Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:50.298Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,117 @@
+{
+  "id": "clm_8deddf63b87340de",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "Each claim has a doc side (the sentence) and, for `code` and `reference`, evidence sides.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each claim has a doc side (the sentence) and, for `code` and `reference`, evidence sides.",
+        "prefix": "gest` makes a claim advisory.\n\n## How it works\n\n",
+        "suffix": " Each side stores selectors against one file: th"
+      },
+      {
+        "kind": "text-position",
+        "start": 5851,
+        "end": 5940
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sentence: z.string().min(1),",
+          "prefix": "ocumentId: DocumentId,\n    kind: ClaimKind,\n    ",
+          "suffix": "\n    doc: SelectorBundle,\n    evidence: z.array("
+        },
+        {
+          "kind": "text-position",
+          "start": 9319,
+          "end": 9347
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "ce652e9ff7aaa29d",
+          "semanticHash": "adb92e6ef9077442"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "doc: SelectorBundle,",
+          "prefix": "ClaimKind,\n    sentence: z.string().min(1),\n    ",
+          "suffix": "\n    evidence: z.array(SelectorBundle).default(["
+        },
+        {
+          "kind": "text-position",
+          "start": 9352,
+          "end": 9372
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "032aa2864040c879",
+          "semanticHash": "71b05ab194d977eb"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence: z.array(SelectorBundle).default([]),",
+          "prefix": "z.string().min(1),\n    doc: SelectorBundle,\n    ",
+          "suffix": "\n    sources: z.array(Source).default([]),\n    p"
+        },
+        {
+          "kind": "text-position",
+          "start": 9377,
+          "end": 9423
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1393ec7729f6c1cb",
+          "semanticHash": "e679fe26d68f059a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:23.880Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:23.880Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

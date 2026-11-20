@@ -1,0 +1,59 @@
+{
+  "id": "clm_bc46db4c8f784a05",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "[Audit](/audit) maps the result to a row kind.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "[Audit](/audit) maps the result to a row kind.",
+        "prefix": "hs, and names such as `Node.js` are not files.\n\n",
+        "suffix": "\n\n### supports\n\n| | |\n|---|---|\n| state | `claim"
+      },
+      {
+        "kind": "text-position",
+        "start": 6851,
+        "end": 6897
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function auditKindOf(result: TriageResult): AuditKind {",
+          "prefix": " a confident triage answer to an audit kind. */\n",
+          "suffix": "\n  if (result.kind !== \"factual_claim\") return \""
+        },
+        {
+          "kind": "text-position",
+          "start": 5499,
+          "end": 5561
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "08b77c113c46a5bb",
+          "semanticHash": "ae138a66b078c91c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:37.675Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:37.675Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

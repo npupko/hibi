@@ -1,0 +1,68 @@
+{
+  "id": "clm_48aed2be91c042bb",
+  "documentId": "doc_c5adefb4274c6931",
+  "kind": "code",
+  "sentence": "curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | sh",
+  "doc": {
+    "file": "docs/quickstart.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | sh",
+        "prefix": "uilt single-file executable (no runtime needed)\n",
+        "suffix": "\n\n# Or, in a Bun or JS project\nbun add @npupko/h"
+      },
+      {
+        "kind": "text-position",
+        "start": 789,
+        "end": 874
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "scripts/install.sh",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "# Downloads the prebuilt single-file executable for this platform",
+          "prefix": "nt.com/npupko/hibi/main/scripts/install.sh | sh\n",
+          "suffix": " (§12).\nset -eu\n\nREPO=\"${HIBI_REPO:-npupko/hibi}"
+        },
+        {
+          "kind": "text-position",
+          "start": 98,
+          "end": 163
+        }
+      ]
+    },
+    {
+      "file": "scripts/install.sh",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "REPO=\"${HIBI_REPO:-npupko/hibi}\"",
+          "prefix": "le executable for this platform (§12).\nset -eu\n\n",
+          "suffix": "\nVERSION=\"${HIBI_VERSION:-latest}\"\nBIN_DIR=\"${HI"
+        },
+        {
+          "kind": "text-position",
+          "start": 180,
+          "end": 212
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:28.769Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:28.769Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

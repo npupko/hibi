@@ -1,0 +1,59 @@
+{
+  "id": "clm_34ee9687f93642bb",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "The store holds the selectors, not a copy of the file.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The store holds the selectors, not a copy of the file.",
+        "prefix": "\", … }, { \"kind\": \"text-position\", … } ] }\n```\n\n",
+        "suffix": " At check time hibi re-reads each file from the "
+      },
+      {
+        "kind": "text-position",
+        "start": 802,
+        "end": 856
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/anchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const selectors: Selector[] = [",
+          "prefix": "tent.length, end + TEXT_QUOTE_CONTEXT),\n  );\n\n  ",
+          "suffix": "\n    { kind: \"text-quote\", exact, prefix, suffix"
+        },
+        {
+          "kind": "text-position",
+          "start": 1926,
+          "end": 1957
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "72ec6013925c0dc1",
+          "semanticHash": "85cd884e28585f75"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:25.756Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:25.756Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

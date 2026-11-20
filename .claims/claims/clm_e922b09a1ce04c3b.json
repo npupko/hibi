@@ -1,0 +1,123 @@
+{
+  "id": "clm_e922b09a1ce04c3b",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "A model judge (TypeSafe's Jev, over HTTP) answers three questions: what kind of claim a region is (`audit`), whether evidence supports a sentence (`reference` claims and `evidence`), and whether two sentences contradict each other (the contradiction pass).",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A model judge (TypeSafe's Jev, over HTTP) answers three questions: what kind of claim a region is (`audit`), whether evidence supports a sentence (`reference` claims and `evidence`), and whether two sentences contradict each other (the contradiction pass).",
+        "prefix": "repo that is not checked out is `unavailable`.\n\n",
+        "suffix": " Every answer is cached in `.claims/judge/` by m"
+      },
+      {
+        "kind": "text-position",
+        "start": 6488,
+        "end": 6744
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const Judgment = z.enum([\"triage\", \"supports\", \"conflict\"]);",
+          "prefix": "──────────────────────────────────────────────\n\n",
+          "suffix": "\nexport type Judgment = z.infer<typeof Judgment>"
+        },
+        {
+          "kind": "text-position",
+          "start": 12188,
+          "end": 12255
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "245292834183a927",
+          "semanticHash": "12b69f8cb3d2a272"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"triage\",\"supports\",\"conflict\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const DEFAULT_JUDGE_MODEL = \"jev-1.14.0\";",
+          "prefix": " id `init` writes into a new store's config. */\n",
+          "suffix": "\n/** The judge threshold `init` writes into a ne"
+        },
+        {
+          "kind": "text-position",
+          "start": 483,
+          "end": 531
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "a500cd48e31eda71"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"jev-1.14.0\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const DEFAULT_BASE_URL = \"https://api.typesafe.ai\";",
+          "prefix": "geError, JudgeUnavailable } from \"./types.ts\";\n\n",
+          "suffix": "\nexport const API_KEY_ENV = \"TYPESAFE_API_KEY\";\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 451,
+          "end": 509
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "89d08764a6f1f2bb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"https://api.typesafe.ai\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:24.042Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:24.042Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

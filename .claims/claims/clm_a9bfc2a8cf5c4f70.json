@@ -1,0 +1,65 @@
+{
+  "id": "clm_a9bfc2a8cf5c4f70",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Several values in one group are listed comma-separated.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Several values in one group are listed comma-separated.",
+        "prefix": "3.0`, `dates differ: 2026-10-01 vs 2026-11-01`. ",
+        "suffix": "\n\n**On `supports`**, the unitless `number` group"
+      },
+      {
+        "kind": "text-position",
+        "start": 42425,
+        "end": 42480
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const list = (vs: { label: string }[]) => vs.map((v) => v.label).join(\", \");",
+          "prefix": "vb.some((y) => y.key === x.key))) continue;\n    ",
+          "suffix": "\n    return {\n      differs: true,\n      label: "
+        },
+        {
+          "kind": "text-position",
+          "start": 14355,
+          "end": 14431
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "44fe6ca6e730552e",
+          "semanticHash": "e1a61c6ea8a70639"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\", \""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:04.573Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:04.573Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

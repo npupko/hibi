@@ -1,0 +1,82 @@
+{
+  "id": "clm_414a04ccc2c04f29",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The decision is taken only when the `kind` Choice confidence is at or above `judge.threshold` and, for a `factual_claim`, the `evidenceKind` Choice confidence is too.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The decision is taken only when the `kind` Choice confidence is at or above `judge.threshold` and, for a `factual_claim`, the `evidenceKind` Choice confidence is too.",
+        "prefix": "d row takes its kind from triage (section 8.3). ",
+        "suffix": " `kind` is checked first. A region that is `code"
+      },
+      {
+        "kind": "text-position",
+        "start": 52093,
+        "end": 52259
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "result.kindConfidence < threshold",
+          "prefix": "old: number,\n): AuditRow {\n  const unsure =\n    ",
+          "suffix": "\n      ? \"kind\"\n      : result.evidenceProbabili"
+        },
+        {
+          "kind": "text-position",
+          "start": 6381,
+          "end": 6414
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "7c60d5f38eb1fbfb",
+          "semanticHash": "c378ac6275a92f8a"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "choiceConfidence(result.evidenceProbabilities) < threshold",
+          "prefix": "videnceProbabilities !== undefined &&\n          ",
+          "suffix": "\n        ? \"evidenceKind\"\n        : null;\n  if ("
+        },
+        {
+          "kind": "text-position",
+          "start": 6494,
+          "end": 6552
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "c15aef9a3928b87e",
+          "semanticHash": "be12d21a63ba25e9"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.229Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.229Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

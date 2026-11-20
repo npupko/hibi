@@ -1,0 +1,59 @@
+{
+  "id": "clm_129c88138755428e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It is not inferred from the shape of the sides.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It is not inferred from the shape of the sides.",
+        "prefix": "(section 10).\n\nKind is explicit at record time. ",
+        "suffix": "\n\n### 4.1 Cross-repository evidence\n\n`config.rep"
+      },
+      {
+        "kind": "text-position",
+        "start": 4464,
+        "end": 4511
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "code is only for kind code (kind is",
+          "prefix": "= undefined && k !== \"code\") {\n    errors.push(`",
+          "suffix": " ${k})`);\n  }\n  if (raw.ref !== undefined && k !"
+        },
+        {
+          "kind": "text-position",
+          "start": 9063,
+          "end": 9098
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "679a3452e74dbfdb"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:59.884Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:59.884Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

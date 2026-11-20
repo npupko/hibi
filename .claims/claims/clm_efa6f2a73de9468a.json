@@ -1,0 +1,128 @@
+{
+  "id": "clm_efa6f2a73de9468a",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "code",
+  "sentence": "- **One small interface.** Three judgments: `triage` (what kind of region is this), `supports` (does this evidence support this sentence), and `conflict` (do these two sentences contradict). Jev, from TypeSafe, is the only shipped implementation. See [Judge](/judge).",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **One small interface.** Three judgments: `triage` (what kind of region is this), `supports` (does this evidence support this sentence), and `conflict` (do these two sentences contradict). Jev, from TypeSafe, is the only shipped implementation. See [Judge](/judge).",
+        "prefix": "ons need a reader. Hibi asks one, with limits:\n\n",
+        "suffix": "\n- **One threshold, three outcomes.** A judgment"
+      },
+      {
+        "kind": "text-position",
+        "start": 3596,
+        "end": 3863
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "supports(input: SupportsInput): Promise<JudgeResponse<SupportsResult>>;",
+          "prefix": "\n  ): Promise<JudgeResponse<TriageResult[]>>;\n  ",
+          "suffix": "\n  conflict(\n    a: ConflictSide,\n    b: Conflic"
+        },
+        {
+          "kind": "text-position",
+          "start": 2598,
+          "end": 2669
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "method_signature",
+          "structuralHash": "896e80aeb6d4b9b0",
+          "semanticHash": "04f10cec256867e5"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  triage(\n    doc: { path: string },",
+          "prefix": "udge answers with. */\n  readonly model: string;\n",
+          "suffix": "\n    regions: Region[],\n  ): Promise<JudgeRespon"
+        },
+        {
+          "kind": "text-position",
+          "start": 2491,
+          "end": 2527
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "method_signature",
+          "structuralHash": "50abb05ff8dde8f8",
+          "semanticHash": "57f2eac1b200c995"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  conflict(\n    a: ConflictSide,",
+          "prefix": "Input): Promise<JudgeResponse<SupportsResult>>;\n",
+          "suffix": "\n    b: ConflictSide,\n  ): Promise<JudgeResponse"
+        },
+        {
+          "kind": "text-position",
+          "start": 2670,
+          "end": 2702
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "method_signature",
+          "structuralHash": "362590d82690d9d8",
+          "semanticHash": "88be42eba41d9dce"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "new JevJudge({ model: config.judge.model, http: new TypeSafeHttp() })",
+          "prefix": "\n    return (\n      this.options.judge ??\n      ",
+          "suffix": "\n    );\n  }\n\n  /** The analyzer with the grammar"
+        },
+        {
+          "kind": "text-position",
+          "start": 8801,
+          "end": 8870
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "new_expression",
+          "structuralHash": "f4417c67a3382f17",
+          "semanticHash": "3e5c4fe2cd1bdd4f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:51.544Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:51.544Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

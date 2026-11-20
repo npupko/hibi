@@ -1,0 +1,94 @@
+{
+  "id": "clm_fd1bb3d0741c43b5",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A judge that is unreachable or whose answer cannot be used is never an operational error; it yields `pending`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A judge that is unreachable or whose answer cannot be used is never an operational error; it yields `pending`.",
+        "prefix": "eck --doc` on a path with no registered claims. ",
+        "suffix": " `--fail-on gating|warn|never`: `gating` is the "
+      },
+      {
+        "kind": "text-position",
+        "start": 27936,
+        "end": 28046
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function judgeFailureLabel(e: unknown): string | undefined {",
+          "prefix": "ny other error (which the caller rethrows).\n */\n",
+          "suffix": "\n  if (e instanceof JudgeUnavailable) return `ju"
+        },
+        {
+          "kind": "text-position",
+          "start": 3591,
+          "end": 3658
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "98a379167be83d92",
+          "semanticHash": "bc63c06e2d4b3f27"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (label === undefined) throw e;\n    return { state: \"pending\", reasons: [label] };",
+          "prefix": ") {\n    const label = judgeFailureLabel(e);\n    ",
+          "suffix": "\n  }\n  await input.cache.put({\n    key,\n    mode"
+        },
+        {
+          "kind": "text-position",
+          "start": 11580,
+          "end": 11664
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "957cb44022a88c39",
+          "semanticHash": "96061490e901b82a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:48.887Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:48.887Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "clm_d5baa32bb5b44cf2",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "JSON Schemas generated from the TypeScript model are in `schemas/*.v4.json` for `Selector`, `SelectorBundle`, `Attestation`, `Source`, `Procedure`, `Document`, `Claim`, `Config`, `JudgeCacheEntry`, `Remediation`, `RemediationAction`, and `Verdict`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "JSON Schemas generated from the TypeScript model are in `schemas/*.v4.json` for `Selector`, `SelectorBundle`, `Attestation`, `Source`, `Procedure`, `Document`, `Claim`, `Config`, `JudgeCacheEntry`, `Remediation`, `RemediationAction`, and `Verdict`.",
+        "prefix": "e strict:\n unknown fields are rejected at load. ",
+        "suffix": "\n\n### 6.1 config.json\n\n```json\n{\n  \"version\": \"v"
+      },
+      {
+        "kind": "text-position",
+        "start": 14457,
+        "end": 14705
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const SCHEMAS = {\n  Selector,\n  SelectorBundle,\n  Attestation,\n  Source,\n  Procedure,\n  Document,\n  Claim,\n  Config,\n  JudgeCacheEntry,\n  RemediationAction,\n  Remediation,\n  Verdict,\n} as const;",
+          "prefix": "export type Verdict = z.infer<typeof Verdict>;\n\n",
+          "suffix": "\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 17149,
+          "end": 17350
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "4230b7e37516c2b7",
+          "semanticHash": "cdbfb4a6a4fddc7a"
+        }
+      ]
+    },
+    {
+      "file": "scripts/gen-schemas.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const [name, schema] of Object.entries(SCHEMAS)) {",
+          "prefix": "ive: true });\n  const written: string[] = [];\n  ",
+          "suffix": "\n    // Shared shapes are deduplicated into `$de"
+        },
+        {
+          "kind": "text-position",
+          "start": 621,
+          "end": 676
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "130e006dc3dea0f0",
+          "semanticHash": "76b43ba9e64dcc21"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:36.714Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:36.714Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,88 @@
+{
+  "id": "clm_1a7d7533b3e142bf",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A pair whose answer could not be used warns with `conflict check pending with <id>: judge error`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A pair whose answer could not be used warns with `conflict check pending with <id>: judge error`.",
+        "prefix": "ct check pending with <id>: judge unavailable`. ",
+        "suffix": " A `conflicts[]` entry whose probability is belo"
+      },
+      {
+        "kind": "text-position",
+        "start": 23589,
+        "end": 23686
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const why = pair.reason.startsWith(\"judge error\")\n      ? \"judge error\"",
+          "prefix": "pair.pairId.split(\":\") as [string, string];\n    ",
+          "suffix": "\n      : \"judge unavailable\";\n    pendingWith.se"
+        },
+        {
+          "kind": "text-position",
+          "start": 13705,
+          "end": 13776
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "18345d18baa517ba",
+          "semanticHash": "c6baaf87a4226df6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"judge error\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(p) => `conflict check pending with ${p.other}: ${p.why}`,",
+          "prefix": "f.reason}`),\n      ...pendingPairs.map(\n        ",
+          "suffix": "\n      ),\n    ];\n    const findings: ClaimFindin"
+        },
+        {
+          "kind": "text-position",
+          "start": 17247,
+          "end": 17305
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "arrow_function",
+          "structuralHash": "83b37552b657423b",
+          "semanticHash": "318bcb63f8a0242b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "retired",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:48.389Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:48.389Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

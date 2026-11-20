@@ -1,0 +1,65 @@
+{
+  "id": "clm_ae6a443bdc3a4989",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A file that escapes its root is refused with `<file>: path escapes its root; an evidence file must be inside the anchor root` (or `inside the directory of repo alias \"x\"`).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A file that escapes its root is refused with `<file>: path escapes its root; an evidence file must be inside the anchor root` (or `inside the directory of repo alias \"x\"`).",
+        "prefix": "cause a claim is recorded against text on disk. ",
+        "suffix": " `reanchor` refuses an unknown alias, a sibling "
+      },
+      {
+        "kind": "text-position",
+        "start": 6003,
+        "end": 6175
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`${file}: ${resolved.reason}; an evidence file must be inside ${resolved.alias === undefined ? \"the anchor root\" : `the directory of repo alias \"${resolved.alias}\"`}.`,",
+          "prefix": "resolved.escapes) {\n    return new Error(\n      ",
+          "suffix": "\n    );\n  }\n  return new Error(\n    `${resolved."
+        },
+        {
+          "kind": "text-position",
+          "start": 7798,
+          "end": 7966
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "8f4f2bb90929d884",
+          "semanticHash": "af70c74ca32856d3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:00.163Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:00.163Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

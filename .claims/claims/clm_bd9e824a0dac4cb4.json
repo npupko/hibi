@@ -1,0 +1,88 @@
+{
+  "id": "clm_bd9e824a0dac4cb4",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`reanchor` refuses an unknown alias and an escaping path in a new span the same way.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`reanchor` refuses an unknown alias and an escaping path in a new span the same way.",
+        "prefix": " (or `inside the directory of repo alias \"x\"`). ",
+        "suffix": " A new span in a sibling repo that is not checke"
+      },
+      {
+        "kind": "text-position",
+        "start": 6176,
+        "end": 6260
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "      assertAliasKnown(config, target.file);\n      const r = resolveFile(config, target.file, this.store.anchorRoot);\n      if (\"unavailable\" in r) {",
+          "prefix": " if (target.file in evidenceContents) continue;\n",
+          "suffix": "\n        // A sibling repo that is not checked o"
+        },
+        {
+          "kind": "text-position",
+          "start": 21431,
+          "end": 21580
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "4e5725f37ef951b8",
+          "semanticHash": "826d56b5b9d2ae5e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unavailable\""
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.escapes) throw recordRefusal(target.file, r);",
+          "prefix": "ile is kept as stored (see `reanchor`).\n        ",
+          "suffix": "\n        unavailable.set(target.file, r.reason);"
+        },
+        {
+          "kind": "text-position",
+          "start": 21717,
+          "end": 21768
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6d8a2996e5436b57",
+          "semanticHash": "a407905eb543e65a"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:00.177Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:00.177Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

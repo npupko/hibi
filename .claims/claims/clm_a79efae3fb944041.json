@@ -1,0 +1,94 @@
+{
+  "id": "clm_a79efae3fb944041",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "\"procedure\":{\"instructions\":\"Open the Stripe Pro product and report its monthly price.\",",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "\"procedure\":{\"instructions\":\"Open the Stripe Pro product and report its monthly price.\",",
+        "prefix": "://dashboard.stripe.com/products/prod_123\"}],\n  ",
+        "suffix": "\n    \"steps\":[{\"id\":\"price\",\"command\":\"stripe pr"
+      },
+      {
+        "kind": "text-position",
+        "start": 3400,
+        "end": 3488
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const PROCEDURE_KEYS = [\"instructions\", \"steps\"];",
+          "prefix": "onst SOURCE_KEYS = [\"id\", \"resource\", \"title\"];\n",
+          "suffix": "\nconst STEP_KEYS = [\"id\", \"command\", \"stdin\"];\n\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 1936,
+          "end": 1985
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f1be0885bf24c67d",
+          "semanticHash": "c4ac9644319036fe"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"instructions\",\"steps\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const STEP_KEYS = [\"id\", \"command\", \"stdin\"];",
+          "prefix": "nst PROCEDURE_KEYS = [\"instructions\", \"steps\"];\n",
+          "suffix": "\n\n/** A batch with problems; `errors` holds one "
+        },
+        {
+          "kind": "text-position",
+          "start": 1986,
+          "end": 2031
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f2c56dc607c5780d",
+          "semanticHash": "f41c0d7c2941d408"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"id\",\"command\",\"stdin\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:32.647Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:32.647Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

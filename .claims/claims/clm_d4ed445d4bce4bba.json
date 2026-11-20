@@ -1,0 +1,140 @@
+{
+  "id": "clm_d4ed445d4bce4bba",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `1` | operational error: no store, an unknown flag, an unknown `--since` ref, an invalid input, `check --doc` on a path with no registered claims |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `1` | operational error: no store, an unknown flag, an unknown `--since` ref, an invalid input, `check --doc` on a path with no registered claims |",
+        "prefix": "r, under `--fail-on warn`, at least one warns |\n",
+        "suffix": "\n\nGating means a `changed`, `orphaned`, or `ambi"
+      },
+      {
+        "kind": "text-position",
+        "start": 4187,
+        "end": 4336
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/shared.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const EXIT_OPERATIONAL_ERROR = 1;",
+          "prefix": " type Style } from \"./render/style.ts\";\n\nexport ",
+          "suffix": "\n\nexport type Values = Record<string, string | b"
+        },
+        {
+          "kind": "text-position",
+          "start": 451,
+          "end": 484
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "b020cf8744ffe46d",
+          "semanticHash": "10cafcc71b88d6bf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "err.code === \"ERR_PARSE_ARGS_UNKNOWN_OPTION\"",
+          "prefix": "\n    const flag = m?.[1];\n    const msg =\n      ",
+          "suffix": "\n        ? `unknown option ${flag ?? \"\"} for hib"
+        },
+        {
+          "kind": "text-position",
+          "start": 3892,
+          "end": 3936
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "c759993fc19ba314",
+          "semanticHash": "70acdfdc6aea6715"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"ERR_PARSE_ARGS_UNKNOWN_OPTION\""
+        }
+      ]
+    },
+    {
+      "file": "src/git/git.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "throw new Error(`unknown git ref: ${ref}`);",
+          "prefix": "[]> {\n  if (!(await refExists(ref, cwd))) {\n    ",
+          "suffix": "\n  }\n  const set = new Set<string>();\n  for (con"
+        },
+        {
+          "kind": "text-position",
+          "start": 1546,
+          "end": 1589
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "throw_statement",
+          "structuralHash": "0048373850a990f0",
+          "semanticHash": "7f3ad7fdbe6a6831"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "      if (!live) {\n        throw new Error(\n          `no claims are registered for ${doc}; run hibi audit --doc ${doc}`,",
+          "prefix": "mentId && c.enforcement !== \"retired\",\n      );\n",
+          "suffix": "\n        );\n      }\n      onlyFiles = scope.file"
+        },
+        {
+          "kind": "text-position",
+          "start": 12878,
+          "end": 12999
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "8ff8819ebe617bd6",
+          "semanticHash": "6fe669982b89c5b0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:12.786Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:12.786Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

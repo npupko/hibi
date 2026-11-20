@@ -1,0 +1,82 @@
+{
+  "id": "clm_1632add304e94e34",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 21 | evidence stored as hash, source, summary; raw text discarded |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 21 | evidence stored as hash, source, summary; raw text discarded |",
+        "prefix": "| 20 | no default ttl; required on `attested` |\n",
+        "suffix": "\n| 22 | propositions removed |\n| 23 | docs, READ"
+      },
+      {
+        "kind": "text-position",
+        "start": 80454,
+        "end": 80523
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "The evidence a `supports` verdict was asked about. Raw text is never stored.",
+          "prefix": "tedValue = z.infer<typeof ExtractedValue>;\n\n/** ",
+          "suffix": " */\nexport const CachedEvidence = z.strictObject"
+        },
+        {
+          "kind": "text-position",
+          "start": 13064,
+          "end": 13140
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "29d7acae963482a8"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence: `sha256:${hash}`,",
+          "prefix": "equest.state as Record<string, unknown>),\n      ",
+          "suffix": "\n    },\n  };\n}\n\ninterface Planned {\n  item: Evid"
+        },
+        {
+          "kind": "text-position",
+          "start": 8913,
+          "end": 8940
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "2f8a75a8609e7b56",
+          "semanticHash": "f966e5e75e23e851"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:23.390Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:23.390Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_7679b393420b4b53",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Exactly one of `docQuote` and `docRange` is required.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Exactly one of `docQuote` and `docRange` is required.",
+        "prefix": ": false }\n```\n\n- `doc` and `kind` are required. ",
+        "suffix": " A `range` is `L<a>:L<b>` (inclusive 1-based lin"
+      },
+      {
+        "kind": "text-position",
+        "start": 58918,
+        "end": 58971
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(\"needs exactly one of docQuote or docRange\");",
+          "prefix": "= undefined;\n  if (hasQuote === hasRange) {\n    ",
+          "suffix": "\n  } else if (hasQuote) {\n    if (nonEmptyString"
+        },
+        {
+          "kind": "text-position",
+          "start": 8230,
+          "end": 8287
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "ab93fd8725166832",
+          "semanticHash": "f1ff76a79fcec78c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"needs exactly one of docQuote or docRange\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:33.710Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:33.710Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

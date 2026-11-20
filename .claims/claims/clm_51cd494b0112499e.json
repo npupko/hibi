@@ -1,0 +1,82 @@
+{
+  "id": "clm_51cd494b0112499e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Offsets are UTF-16 code units.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Offsets are UTF-16 code units.",
+        "prefix": "ce` (blockquote and prose lines are sentences). ",
+        "suffix": " Ids are `r<index>` in document order. `headingP"
+      },
+      {
+        "kind": "text-position",
+        "start": 50955,
+        "end": 50985
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Offsets are string indices (UTF-16 code units)",
+          "prefix": "\n *    pipe stays with the last sentence.\n *\n * ",
+          "suffix": ", the same unit the anchor\n * resolver and `text"
+        },
+        {
+          "kind": "text-position",
+          "start": 1715,
+          "end": 1761
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "1a0e94080611857a"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "text: text.slice(span.start, span.end),",
+          "prefix": "length}`,\n          kind: piece.kind,\n          ",
+          "suffix": "\n          headingPath: [...headingPath],\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 10746,
+          "end": 10785
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "3993ff5f7fd257b6",
+          "semanticHash": "414f77e0884dfe02"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:18.979Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:18.979Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

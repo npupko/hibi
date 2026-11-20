@@ -1,0 +1,65 @@
+{
+  "id": "clm_a4d19e53097d4e93",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "| Go | `.go` |",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| Go | `.go` |",
+        "prefix": "` |\n| Python | `.py`, `.pyi` |\n| Rust | `.rs` |\n",
+        "suffix": "\n| Java | `.java` |\n\nA code span in any other la"
+      },
+      {
+        "kind": "text-position",
+        "start": 2130,
+        "end": 2144
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/lang.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\".go\": \"go\",",
+          "prefix": "python\",\n  \".pyi\": \"python\",\n  \".rs\": \"rust\",\n  ",
+          "suffix": "\n  \".java\": \"java\",\n};\n\nexport function language"
+        },
+        {
+          "kind": "text-position",
+          "start": 399,
+          "end": 411
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "af5da0359bc343ec",
+          "semanticHash": "1df009ee7fdb271e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".go\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:25.987Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:25.987Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

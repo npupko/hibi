@@ -8,7 +8,7 @@
     {
       "name": "hibi-cli",
       "source": "./plugins/hibi-cli",
-      "description": "Teaches agents to set up and operate the hibi CLI: record code-anchored documentation claims, run check/list/coverage, respond to drift (changed/orphaned/ambiguous/moved/expired), wire CI, and manage doc lifecycle."
+      "description": "Teaches agents to operate the hibi CLI: audit documents for checkable sentences, record code, reference, and attested claims, check docs before trusting them, work the evidence worklist, resolve contradictions and expired claims, and wire CI."
     }
   ]
 }

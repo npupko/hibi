@@ -1,0 +1,65 @@
+{
+  "id": "clm_7d609df123e949a2",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| doc `changed` | `reverify-doc`, `reanchor`, `retire` |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| doc `changed` | `reverify-doc`, `reanchor`, `retire` |",
+        "prefix": "w wrong, then reanchor), `reanchor`, `retire` |\n",
+        "suffix": "\n| a side `ambiguous` | `reanchor` with a wider "
+      },
+      {
+        "kind": "text-position",
+        "start": 5366,
+        "end": 5422
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "actions: [reverifyDoc(id, flags), reanchorAsIs(id, flags), retire(id)],",
+          "prefix": "turn {\n      recommended: \"reverify-doc\",\n      ",
+          "suffix": "\n    };\n  }\n  if (hasAmbiguous) {\n    return { r"
+        },
+        {
+          "kind": "text-position",
+          "start": 9825,
+          "end": 9896
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "bf34224c8d79cd6f",
+          "semanticHash": "7fe018aaa79276af"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[reverifyDoc(id,flags),reanchorAsIs(id,flags),retire(id)]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:13.772Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:13.772Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

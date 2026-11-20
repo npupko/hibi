@@ -1,0 +1,59 @@
+{
+  "id": "clm_b1c88bb7bbd54212",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "A `reference` claim has exactly one span in another document.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `reference` claim has exactly one span in another document.",
+        "prefix": " fingerprint and the literal inside the span.\n- ",
+        "suffix": " It stores text selectors only.\n- An `attested` "
+      },
+      {
+        "kind": "text-position",
+        "start": 1653,
+        "end": 1714
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "a reference claim needs exactly one evidence span (got ${n})",
+          "prefix": ",\n        path: [\"evidence\"],\n        message: `",
+          "suffix": "`,\n      });\n    }\n    if (c.kind === \"attested\""
+        },
+        {
+          "kind": "text-position",
+          "start": 10194,
+          "end": 10254
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "45d070aa4137959b",
+          "semanticHash": "0a06fde5cb58fccd"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:01.967Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:01.967Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

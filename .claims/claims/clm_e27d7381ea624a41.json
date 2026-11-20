@@ -1,0 +1,59 @@
+{
+  "id": "clm_e27d7381ea624a41",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`supersede --from` does not create a document: a `--from` path that is not registered is the error `document <path> is not registered`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`supersede --from` does not create a document: a `--from` path that is not registered is the error `document <path> is not registered`.",
+        "prefix": "h, by `supersede --to`, or by `reanchor --doc`. ",
+        "suffix": "\n\n### 6.3 Claim\n\n```json\n{\n  \"id\": \"clm_…\",\n  \"d"
+      },
+      {
+        "kind": "text-position",
+        "start": 15577,
+        "end": 15712
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "throw new Error(`document ${input.from} is not registered`);",
+          "prefix": "input.from));\n  if (oldDoc === undefined) {\n    ",
+          "suffix": "\n  }\n  const newDoc = await upsertDocument(store"
+        },
+        {
+          "kind": "text-position",
+          "start": 3100,
+          "end": 3160
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "throw_statement",
+          "structuralHash": "92cc050f943b367b",
+          "semanticHash": "02d400a8d9995367"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:24.539Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:24.539Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

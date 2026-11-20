@@ -1,0 +1,117 @@
+{
+  "id": "clm_d6e626859ebc44ea",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 16 | one threshold at 0.8 confidence; three-way outcome gate / review / clean |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 16 | one threshold at 0.8 confidence; three-way outcome gate / review / clean |",
+        "prefix": "eck`, gates in `check --doc`; no grace window |\n",
+        "suffix": "\n| 17 | worklist lives inside `check`; no separa"
+      },
+      {
+        "kind": "text-position",
+        "start": 80159,
+        "end": 80240
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const DEFAULT_JUDGE_THRESHOLD = 0.8;",
+          "prefix": "writes into a new store's config (SPEC 8.4). */\n",
+          "suffix": "\n\n// ── Ids and actors ─────────────────────────"
+        },
+        {
+          "kind": "text-position",
+          "start": 611,
+          "end": 654
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "8b80be36452d0afc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.8"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons: [`evidence leans ${verb}, confidence ${c} below threshold ${t}`],",
+          "prefix": "\n    };\n  }\n  return {\n    state: \"review\",\n    ",
+          "suffix": "\n  };\n}\n\n/** `source matches declared source \"<i"
+        },
+        {
+          "kind": "text-position",
+          "start": 4472,
+          "end": 4546
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "84e679a09f03869b",
+          "semanticHash": "da08da2c5582e0e3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[`evidenceleans${verb},confidence${c}belowthreshold${t}`]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `review: contradictory, confidence=${f2(r.confidence)} below threshold ${f2(threshold)}`,",
+          "prefix": "\"review\",\n        probability: pContra,\n        ",
+          "suffix": "\n      };\n    }\n    if (r.contradicts < CONTRADI"
+        },
+        {
+          "kind": "text-position",
+          "start": 6687,
+          "end": 6784
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "453c24b1bf22b001",
+          "semanticHash": "ebdbdb1b96fa876a"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:23.221Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:23.221Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

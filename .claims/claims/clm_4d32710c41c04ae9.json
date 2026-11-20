@@ -1,0 +1,163 @@
+{
+  "id": "clm_4d32710c41c04ae9",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `conflict` | `contradictory` with confidence, `same_subject`, and `contradicts` all at their bars; or the value rule fires | `contradictory` with `same_subject` at or above the threshold and confidence below the threshold or `contradicts` below 0.5 | everything else, including a `contradictory` lean with `same_subject` below the threshold |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `conflict` | `contradictory` with confidence, `same_subject`, and `contradicts` all at their bars; or the value rule fires | `contradictory` with `same_subject` at or above the threshold and confidence below the threshold or `contradicts` below 0.5 | everything else, including a `contradictory` lean with `same_subject` below the threshold |",
+        "prefix": "dress` | `supports` at or above the threshold |\n",
+        "suffix": "\n| `triage` | never | never | n/a: a row below t"
+      },
+      {
+        "kind": "text-position",
+        "start": 9049,
+        "end": 9393
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "      outcome: \"conflict\",\n      probability: pContra,",
+          "prefix": "NTRADICTS_FLOOR)}`,\n      };\n    }\n    return {\n",
+          "suffix": "\n      reason: `contradictory (p=${f2(pContra)},"
+        },
+        {
+          "kind": "text-position",
+          "start": 7051,
+          "end": 7105
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "0a00e17a878b184a",
+          "semanticHash": "69f0f28579f615c5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"conflict\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { outcome: \"conflict\", probability: 1, reason: values.label };",
+          "prefix": ".differs && values.label !== undefined) {\n      ",
+          "suffix": "\n    }\n  }\n  const pContra = r.probabilities.con"
+        },
+        {
+          "kind": "text-position",
+          "start": 6080,
+          "end": 6149
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "a4e20b200fce563b",
+          "semanticHash": "7d930ffade48333b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"conflict\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `review: contradictory, confidence=${f2(r.confidence)} below threshold ${f2(threshold)}`,",
+          "prefix": "\"review\",\n        probability: pContra,\n        ",
+          "suffix": "\n      };\n    }\n    if (r.contradicts < CONTRADI"
+        },
+        {
+          "kind": "text-position",
+          "start": 6687,
+          "end": 6784
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "453c24b1bf22b001",
+          "semanticHash": "ebdbdb1b96fa876a"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `review: contradictory, contradicts=${f2(r.contradicts)} below ${f2(CONTRADICTS_FLOOR)}`,",
+          "prefix": "\"review\",\n        probability: pContra,\n        ",
+          "suffix": "\n      };\n    }\n    return {\n      outcome: \"con"
+        },
+        {
+          "kind": "text-position",
+          "start": 6925,
+          "end": 7022
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "453c24b1bf22b001",
+          "semanticHash": "7ed76779a39b738c"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `contradictory, same_subject=${f2(r.sameSubject)} below threshold ${f2(threshold)}`,",
+          "prefix": "     return {\n        outcome: \"clean\",\n        ",
+          "suffix": "\n      };\n    }\n    if (r.confidence < threshold"
+        },
+        {
+          "kind": "text-position",
+          "start": 6463,
+          "end": 6555
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "453c24b1bf22b001",
+          "semanticHash": "92546be632cdb7e7"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:38.525Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:38.525Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

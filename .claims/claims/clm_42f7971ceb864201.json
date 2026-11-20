@@ -1,0 +1,88 @@
+{
+  "id": "clm_42f7971ceb864201",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A sentence of 600 or more characters, or one that cannot be located in the current document, is its own context.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A sentence of 600 or more characters, or one that cannot be located in the current document, is its own context.",
+        "prefix": "hunks changed by the section 10 splitter rules. ",
+        "suffix": "\n\n### 8.4 Thresholds and outcomes\n\nOne threshold"
+      },
+      {
+        "kind": "text-position",
+        "start": 37371,
+        "end": 37483
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (sentence.length >= CONTEXT_MAX_CHARS) return sentence;",
+          "prefix": ": string {\n  const sentence = claim.sentence;\n  ",
+          "suffix": "\n  const at = locate(docText, claim);\n  if (at <"
+        },
+        {
+          "kind": "text-position",
+          "start": 7549,
+          "end": 7607
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "5f6863aa77e4d00b",
+          "semanticHash": "aac4214d4ab2a813"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (at < 0) return sentence;",
+          "prefix": "entence;\n  const at = locate(docText, claim);\n  ",
+          "suffix": "\n\n  const lines = scanLines(docText, frontmatter"
+        },
+        {
+          "kind": "text-position",
+          "start": 7647,
+          "end": 7675
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "fbdf1dd6095749b1",
+          "semanticHash": "ec186f5c0b748327"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:52.754Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:52.754Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

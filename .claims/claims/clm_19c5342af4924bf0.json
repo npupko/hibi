@@ -1,0 +1,65 @@
+{
+  "id": "clm_19c5342af4924bf0",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`state` is the verdict outcome `gating`, `warning`, `clean`, or `retired`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`state` is the verdict outcome `gating`, `warning`, `clean`, or `retired`.",
+        "prefix": ", ttl, expiresAt, side?, state, duplicates? }`. ",
+        "suffix": " `owner`, `ttl`, and `expiresAt` are null when a"
+      },
+      {
+        "kind": "text-position",
+        "start": 65989,
+        "end": 66063
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "function rowState(v: Verdict, enforcement: Enforcement): RowState {\n  if (enforcement === \"retired\") return \"retired\";\n  if (v.gates) return \"gating\";\n  if (v.warns) return \"warning\";\n  return \"clean\";\n}",
+          "prefix": "ath)) return \"evidence\";\n  return undefined;\n}\n\n",
+          "suffix": "\n\n/** Duplicates per live claim: the pass's cand"
+        },
+        {
+          "kind": "text-position",
+          "start": 3167,
+          "end": 3370
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "function_declaration",
+          "structuralHash": "8165ec43e3fd9370",
+          "semanticHash": "9a6aac0d06e42b97"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:35.937Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:35.937Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,88 @@
+{
+  "id": "clm_60943de5d9aa483f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "At most 8 pair requests are in flight.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "At most 8 pair requests are in flight.",
+        "prefix": " 8.3). The result is cached by the request key. ",
+        "suffix": " A pair the judge cannot answer (`JudgeUnavailab"
+      },
+      {
+        "kind": "text-position",
+        "start": 45541,
+        "end": 45579
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const MAX_IN_FLIGHT = 8;",
+          "prefix": " many judge calls in flight during one pass. */\n",
+          "suffix": "\n\n/**\n * `contradicts` below this, with a `contr"
+        },
+        {
+          "kind": "text-position",
+          "start": 2666,
+          "end": 2697
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "e6d738d829fa0cda"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "8"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await pool(pairs, MAX_IN_FLIGHT, async (pair, index) => {",
+          "prefix": " pending: string[] = [];\n  let requests = 0;\n\n  ",
+          "suffix": "\n    const { a, b, request, key } = conflictRequ"
+        },
+        {
+          "kind": "text-position",
+          "start": 10462,
+          "end": 10519
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "4451b34ba93f5cfb",
+          "semanticHash": "3b89081d21a782cb"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:54.211Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:54.211Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

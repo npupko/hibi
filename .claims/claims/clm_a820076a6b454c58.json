@@ -1,0 +1,94 @@
+{
+  "id": "clm_a820076a6b454c58",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A `suggested` or `retired` claim never gates or warns.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `suggested` or `retired` claim never gates or warns.",
+        "prefix": "s. It is the default whenever `--doc` is given. ",
+        "suffix": " When a rule would have fired on a `suggested` c"
+      },
+      {
+        "kind": "text-position",
+        "start": 27439,
+        "end": 27493
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { gates: false, warns: false, reasons };",
+          "prefix": "ement} claim: never gates or warns`);\n    }\n    ",
+          "suffix": "\n  }\n  return { gates, warns: warns && !gates, r"
+        },
+        {
+          "kind": "text-position",
+          "start": 4208,
+          "end": 4255
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "b870f9715494ad25",
+          "semanticHash": "d90f8b5fcf5af18e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "false",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const RETIRED_REASON = \"retired claim: never gates or warns\";",
+          "prefix": "e reason label of a retired claim's verdict. */\n",
+          "suffix": "\n\n/**\n * The verdict of a retired claim: its spa"
+        },
+        {
+          "kind": "text-position",
+          "start": 16180,
+          "end": 16248
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "b09532aa4f8b21b8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired claim: never gates or warns\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:48.543Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:48.543Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

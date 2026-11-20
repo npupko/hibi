@@ -1,0 +1,65 @@
+{
+  "id": "clm_d994dff3b0b543c7",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "| `procedure` | `{instructions, steps?}`; steps are hints |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `procedure` | `{instructions, steps?}`; steps are hints |",
+        "prefix": " | `[{id?, resource, title?}]`, never fetched |\n",
+        "suffix": "\n| `ttl` | ISO 8601 (`P90D`); required on attest"
+      },
+      {
+        "kind": "text-position",
+        "start": 3876,
+        "end": 3935
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "[\"instructions\", \"steps\"]",
+          "prefix": "\", \"resource\", \"title\"];\nconst PROCEDURE_KEYS = ",
+          "suffix": ";\nconst STEP_KEYS = [\"id\", \"command\", \"stdin\"];\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 1959,
+          "end": 1984
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "3163be2228eb3027",
+          "semanticHash": "b409167f4bf2b5f7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"instructions\",\"steps\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.876Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.876Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,123 @@
+{
+  "id": "clm_e9e00070cd474ceb",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 26 | `does_not_address` is `review`, not `pending`: the judge answered, so the claim warns and is listed (amended by 37: `pending` also covers a `JudgeError` and a referenced span over 32,000 characters) |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 26 | `does_not_address` is `review`, not `pending`: the judge answered, so the claim warns and is listed (amended by 37: `pending` also covers a `JudgeError` and a referenced span over 32,000 characters) |",
+        "prefix": "d verdict after the raw evidence text is gone |\n",
+        "suffix": "\n| 27 | audit reports `unsure` rows, with the Ch"
+      },
+      {
+        "kind": "text-position",
+        "start": 80896,
+        "end": 81103
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (result.relation === \"does_not_address\") {",
+          "prefix": "sult.confidence);\n  const t = `${threshold}`;\n  ",
+          "suffix": "\n    return {\n      state: \"review\",\n      reaso"
+        },
+        {
+          "kind": "text-position",
+          "start": 3425,
+          "end": 3470
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "4166b72ca797dfcd",
+          "semanticHash": "b4aaeda6e2feb9ce"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"does_not_address\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"pending\", reasons: [REFERENCE_TOO_LONG] };",
+          "prefix": "ferencedText.length > MAX_EVIDENCE_CHARS) {\n    ",
+          "suffix": "\n  }\n  const { request, key } = referenceSupport"
+        },
+        {
+          "kind": "text-position",
+          "start": 10437,
+          "end": 10496
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "4e167621b94fec45",
+          "semanticHash": "70ac2501d85f9ef8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"pending\", reasons: [label] };",
+          "prefix": "l(e);\n    if (label === undefined) throw e;\n    ",
+          "suffix": "\n  }\n  await input.cache.put({\n    key,\n    mode"
+        },
+        {
+          "kind": "text-position",
+          "start": 11618,
+          "end": 11664
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "4e167621b94fec45",
+          "semanticHash": "b1b2b8dff7d09013"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:03.656Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:03.656Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

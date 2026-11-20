@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, test } from "bun:test";
-import { resolveAssertion } from "../src/algo/resolve.ts";
+import { resolveClaim } from "../src/algo/resolve.ts";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
-import type { Assertion } from "../src/core/model.ts";
-import { buildSelectorBundle, composeAnchor } from "../src/engine/anchor.ts";
+import { buildSelectorBundle } from "../src/engine/anchor.ts";
+import { codeClaim } from "./helpers.ts";
 
 let analyzer: Awaited<ReturnType<typeof getAnalyzer>>;
 beforeAll(async () => {
@@ -72,7 +72,7 @@ const DOC_SENTENCE = "The retry budget is five attempts.";
 
 describe("all five first-party grammars (§16, §17.4)", () => {
   for (const c of CASES) {
-    test(`${c.language}: parses, fingerprints, extracts value, and a changed literal never grades code:unchanged`, () => {
+    test(`${c.language}: parses, fingerprints, extracts value, and a changed literal never grades evidence:unchanged`, () => {
       const start = c.original.indexOf(c.quote);
       const r = { start, end: start + c.quote.length };
 
@@ -102,34 +102,23 @@ describe("all five first-party grammars (§16, §17.4)", () => {
         region(DOC_TEXT, DOC_SENTENCE),
       );
 
-      const a: Assertion = {
-        id: "a",
-        propositionId: "p",
-        documentId: "d",
-        owner: "o",
-        ref: "r",
-        anchor: composeAnchor(docBundle, [codeBundle]),
-        enforcement: "suggested",
-        verified: false,
-        verifiers: [],
-        attrs: {},
-      };
+      const a = codeClaim(docBundle, [codeBundle], "suggested");
 
-      // The unchanged file grades code:unchanged.
-      const fresh = resolveAssertion(
+      // The unchanged file grades evidence:unchanged.
+      const fresh = resolveClaim(
         a,
-        { doc: DOC_TEXT, code: new Map([[c.file, c.original]]) },
+        { doc: DOC_TEXT, evidence: new Map([[c.file, c.original]]) },
         { ast: analyzer },
       );
-      expect(fresh.code).toBe("unchanged");
+      expect(fresh.evidence).toBe("unchanged");
 
-      // A changed literal is detected — never graded code:unchanged.
-      const drift = resolveAssertion(
+      // A changed literal is detected — never graded evidence:unchanged.
+      const drift = resolveClaim(
         a,
-        { doc: DOC_TEXT, code: new Map([[c.file, c.drifted]]) },
+        { doc: DOC_TEXT, evidence: new Map([[c.file, c.drifted]]) },
         { ast: analyzer },
       );
-      expect(drift.code).not.toBe("unchanged");
+      expect(drift.evidence).not.toBe("unchanged");
     });
   }
 });

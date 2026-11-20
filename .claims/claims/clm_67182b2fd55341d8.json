@@ -1,0 +1,52 @@
+{
+  "id": "clm_67182b2fd55341d8",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "reference",
+  "sentence": "| the external extension protocol | the judge interface is the one extension point |",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| the external extension protocol | the judge interface is the one extension point |",
+        "prefix": "s; the agent-run procedure loop replaces them |\n",
+        "suffix": "\n| a separate layer of normalized statements | d"
+      },
+      {
+        "kind": "text-position",
+        "start": 5503,
+        "end": 5587
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "| external resolver protocol | the judge interface is the one extension point; no resolver was ever shipped |",
+          "prefix": "`; the agent-run procedure loop replaces them |\n",
+          "suffix": "\n| propositions | duplicate detection comes from"
+        },
+        {
+          "kind": "text-position",
+          "start": 75229,
+          "end": 75338
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:52.087Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:52.087Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

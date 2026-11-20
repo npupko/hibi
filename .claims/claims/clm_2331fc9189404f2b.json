@@ -1,0 +1,52 @@
+{
+  "id": "clm_2331fc9189404f2b",
+  "documentId": "doc_d11450458251d04c",
+  "kind": "reference",
+  "sentence": "Every rule that fires is a reason label in the output.",
+  "doc": {
+    "file": "docs/index.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Every rule that fires is a reason label in the output.",
+        "prefix": "configurable confidence bar for every judgment. ",
+        "suffix": "\n- **No key, no silent pass.** Without `TYPESAFE"
+      },
+      {
+        "kind": "text-position",
+        "start": 2776,
+        "end": 2830
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**One knob per concept, no hidden rules.** Every automatic rule appears as a reason label in the report.",
+          "prefix": "d by the model, or a human attestation, can.\n5. ",
+          "suffix": "\n6. **Contracts are data.** Contracts are JSON: "
+        },
+        {
+          "kind": "text-position",
+          "start": 2454,
+          "end": 2558
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:34.247Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:34.247Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

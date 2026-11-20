@@ -1,0 +1,65 @@
+{
+  "id": "clm_01cdf7a5cb8f494a",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| both sides `changed` | `reconcile`, `reanchor`, `retire` |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| both sides `changed` | `reconcile`, `reanchor`, `retire` |",
+        "prefix": "est` to find the span), `retire`, `supersede` |\n",
+        "suffix": "\n| evidence `changed` | `update-claim` (rewrite "
+      },
+      {
+        "kind": "text-position",
+        "start": 5186,
+        "end": 5246
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "actions: [reconcile(id, flags), reanchorAsIs(id, flags), retire(id)],",
+          "prefix": " return {\n      recommended: \"reconcile\",\n      ",
+          "suffix": "\n    };\n  }\n  if (evidenceChanged) {\n    return "
+        },
+        {
+          "kind": "text-position",
+          "start": 9468,
+          "end": 9537
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "bf34224c8d79cd6f",
+          "semanticHash": "e5097aa0f5290470"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[reconcile(id,flags),reanchorAsIs(id,flags),retire(id)]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:13.619Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:13.619Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

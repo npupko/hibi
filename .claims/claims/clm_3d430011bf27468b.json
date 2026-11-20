@@ -1,0 +1,94 @@
+{
+  "id": "clm_3d430011bf27468b",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Cached verdicts keep working without a key.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Cached verdicts keep working without a key.",
+        "prefix": "\n| `audit` | uncovered regions are `pending` |\n\n",
+        "suffix": " CI without the secret still gates on anchors, c"
+      },
+      {
+        "kind": "text-position",
+        "start": 14625,
+        "end": 14668
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (hit !== undefined) {",
+          "prefix": "nce: storedValues(texts.referencedText),\n  };\n  ",
+          "suffix": "\n    const outcome = supportsOutcome(\n      mapS"
+        },
+        {
+          "kind": "text-position",
+          "start": 10788,
+          "end": 10812
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "1743d920d7aef1d1",
+          "semanticHash": "0e8f08d793d2d5ae"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (hit !== undefined) {",
+          "prefix": "sult;\n    const hit = await cache.get(key);\n    ",
+          "suffix": "\n      result = mapConflictAnswers(hit.answers a"
+        },
+        {
+          "kind": "text-position",
+          "start": 10712,
+          "end": 10736
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "4a1d02a65e16fc7c",
+          "semanticHash": "9cbcf244678aaadb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:42.052Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:42.052Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

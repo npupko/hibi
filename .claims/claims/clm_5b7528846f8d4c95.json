@@ -1,0 +1,82 @@
+{
+  "id": "clm_5b7528846f8d4c95",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`supersede` never reads the `--from` file.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`supersede` never reads the `--from` file.",
+        "prefix": "or it. `--to` is registered when it is not yet. ",
+        "suffix": " It moves every live claim on `--from` to `--to`"
+      },
+      {
+        "kind": "text-position",
+        "start": 72938,
+        "end": 72980
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "readDoc: (rel) => this.readAnchored(rel),",
+          "prefix": "rn supersede(\n      this.store,\n      {\n        ",
+          "suffix": "\n        moveDoc: (id, o) => this.reanchor(id, {"
+        },
+        {
+          "kind": "text-position",
+          "start": 26576,
+          "end": 26617
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "207dc9d0b27ef6a6",
+          "semanticHash": "0002fc196183e496"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const toContent = await deps.readDoc(input.to);",
+          "prefix": "supersede --from and --to must differ.\");\n  }\n  ",
+          "suffix": "\n  if (toContent === null) {\n    throw new Error"
+        },
+        {
+          "kind": "text-position",
+          "start": 2809,
+          "end": 2856
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "84358a90aa501827",
+          "semanticHash": "547c9aa2622da299"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:02.667Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:02.667Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

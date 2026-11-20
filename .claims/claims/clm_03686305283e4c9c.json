@@ -1,0 +1,82 @@
+{
+  "id": "clm_03686305283e4c9c",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- `audit`: once per triage chunk request key.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `audit`: once per triage chunk request key.",
+        "prefix": "on pass: once per pair request key (section 9).\n",
+        "suffix": "\n- No API key, a rejected key, or a network fail"
+      },
+      {
+        "kind": "text-position",
+        "start": 24502,
+        "end": 24547
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const key = cacheKey(model, request);",
+          "prefix": "ll(\n    requests.map(async (request) => {\n      ",
+          "suffix": "\n      const hit = await cache.get(key);\n      l"
+        },
+        {
+          "kind": "text-position",
+          "start": 7917,
+          "end": 7954
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "e561efbeab1d6031",
+          "semanticHash": "013fc9fe1cde10e4"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hit = await cache.get(key);",
+          "prefix": "    const key = cacheKey(model, request);\n      ",
+          "suffix": "\n      let answers: Record<string, Answer>;\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 7961,
+          "end": 7994
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "da6c759bb2291049",
+          "semanticHash": "832019563cd84a64"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:47.230Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:47.230Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

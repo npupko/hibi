@@ -1,0 +1,123 @@
+{
+  "id": "clm_f0fb0d69f2104710",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `list` | `--state all\\|gating\\|warning\\|clean\\|pending\\|expired\\|conflict\\|duplicate\\|suggested\\|stranded`, `--path <path>`, `--ids-only` | one row per claim |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `list` | `--state all\\|gating\\|warning\\|clean\\|pending\\|expired\\|conflict\\|duplicate\\|suggested\\|stranded`, `--path <path>`, `--ids-only` | one row per claim |",
+        "prefix": "il-on gating\\|warn\\|never` | sections 7 and 9 |\n",
+        "suffix": "\n| `audit` | `--doc <path>` (required), `--fail-"
+      },
+      {
+        "kind": "text-position",
+        "start": 55286,
+        "end": 55447
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const LIST_STATES = [\n  \"all\",\n  \"gating\",\n  \"warning\",\n  \"clean\",\n  \"pending\",\n  \"expired\",\n  \"conflict\",\n  \"duplicate\",\n  \"suggested\",\n  \"stranded\",\n] as const;",
+          "prefix": "import { normalizeSentence } from \"./hash.ts\";\n\n",
+          "suffix": "\nexport type ListState = (typeof LIST_STATES)[nu"
+        },
+        {
+          "kind": "text-position",
+          "start": 1603,
+          "end": 1772
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "768db7000a543b60",
+          "semanticHash": "ea565399e6348acf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"all\",\"gating\",\"warning\",\"clean\",\"pending\",\"expired\",\"conflict\",\"duplicate\",\"suggested\",\"stranded\",]"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Only claims whose doc or evidence side names this path.\",",
+          "prefix": "string\",\n        placeholder: \"<path>\",\n        ",
+          "suffix": "\n      },\n      {\n        name: \"ids-only\",\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 11774,
+          "end": 11838
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "2c62123f62148b02"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Only claims whose doc or evidence side names this path.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"ids-only\",",
+          "prefix": "ide names this path.\",\n      },\n      {\n        ",
+          "suffix": "\n        type: \"boolean\",\n        help: \"Print b"
+        },
+        {
+          "kind": "text-position",
+          "start": 11864,
+          "end": 11881
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "bf50df3529abaf2f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"ids-only\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:56.595Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:56.595Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

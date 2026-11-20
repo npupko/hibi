@@ -1,0 +1,88 @@
+{
+  "id": "clm_180af575e12340ef",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`--code-file` with `--code-quote` or `--code-range` replaces a `code` claim's spans; `--ref-file` with `--ref-quote` or `--ref-range` replaces a `reference` claim's span.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--code-file` with `--code-quote` or `--code-range` replaces a `code` claim's spans; `--ref-file` with `--ref-quote` or `--ref-range` replaces a `reference` claim's span.",
+        "prefix": "nt and requires `--doc-quote` or `--doc-range`. ",
+        "suffix": " A flag for the wrong kind is an error: `claim <"
+      },
+      {
+        "kind": "text-position",
+        "start": 68342,
+        "end": 68512
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "opts.reference !== undefined ? [opts.reference] : opts.evidence",
+          "prefix": "his.store.config();\n    const targets = (\n      ",
+          "suffix": "\n    )?.map((t) => ({ ...t, file: this.norm(t.fi"
+        },
+        {
+          "kind": "text-position",
+          "start": 20510,
+          "end": 20573
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "9a3ac08199a7ad5a",
+          "semanticHash": "099211f1b72dd163"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence = input.evidence.map((t) =>",
+          "prefix": "exactly one evidence span.`,\n      );\n    }\n    ",
+          "suffix": "\n      bundleFromTarget(claim.kind, t, contents,"
+        },
+        {
+          "kind": "text-position",
+          "start": 12300,
+          "end": 12336
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "41f492312e981289",
+          "semanticHash": "b599141008d59086"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "retired",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:20.448Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:20.448Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

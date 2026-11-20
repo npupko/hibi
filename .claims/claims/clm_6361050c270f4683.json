@@ -1,0 +1,59 @@
+{
+  "id": "clm_6361050c270f4683",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "There are no hidden weights.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "There are no hidden weights.",
+        "prefix": "olution constants live in `src/algo/params.ts`. ",
+        "suffix": "\n\n| constant | value | effect |\n|---|---|---|\n| "
+      },
+      {
+        "kind": "text-position",
+        "start": 5748,
+        "end": 5776
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/params.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "is named and documented; there are no hidden weights.",
+          "prefix": "ery constant here changes a verdict, so each\n * ",
+          "suffix": "\n */\nimport type { BitapOptions } from \"../vendo"
+        },
+        {
+          "kind": "text-position",
+          "start": 86,
+          "end": 139
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "0dd49e3c555896b1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.780Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.780Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

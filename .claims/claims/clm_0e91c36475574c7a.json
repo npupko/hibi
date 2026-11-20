@@ -1,0 +1,88 @@
+{
+  "id": "clm_0e91c36475574c7a",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "Steps are only accepted through `--from-file`.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Steps are only accepted through `--from-file`.",
+        "prefix": "\n\nOn the command line: `--instructions <text>`. ",
+        "suffix": "\n\n## Owner and ttl\n\n| field | meaning |\n|---|---"
+      },
+      {
+        "kind": "text-position",
+        "start": 3792,
+        "end": 3838
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/commands/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "? { procedure: { instructions: values.instructions } }",
+          "prefix": "    ...(values.instructions !== undefined\n      ",
+          "suffix": "\n      : {}),\n    ttl: values.ttl,\n    owner: va"
+        },
+        {
+          "kind": "text-position",
+          "start": 2839,
+          "end": 2893
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "d673dd4fb0e3f8b2",
+          "semanticHash": "b623438020a423b5"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const STEP_KEYS = [\"id\", \"command\", \"stdin\"];",
+          "prefix": "nst PROCEDURE_KEYS = [\"instructions\", \"steps\"];\n",
+          "suffix": "\n\n/** A batch with problems; `errors` holds one "
+        },
+        {
+          "kind": "text-position",
+          "start": 1986,
+          "end": 2031
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f2c56dc607c5780d",
+          "semanticHash": "f41c0d7c2941d408"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"id\",\"command\",\"stdin\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:02.937Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:02.937Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

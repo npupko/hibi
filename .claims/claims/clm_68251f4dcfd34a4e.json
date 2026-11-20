@@ -1,0 +1,157 @@
+{
+  "id": "clm_68251f4dcfd34a4e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Similarity below 0.9, or AST semantic hash changed, or in-span literal changed, or (where the structural checks do not run) a numeric token in the span changed: `changed`, with a reason label.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Similarity below 0.9, or AST semantic hash changed, or in-span literal changed, or (where the structural checks do not run) a numeric token in the span changed: `changed`, with a reason label.",
+        "prefix": "changed`.\n3. Same, at a new offset: `moved`.\n4. ",
+        "suffix": "\n5. Not found: `orphaned`.\n6. Several exact occu"
+      },
+      {
+        "kind": "text-position",
+        "start": 20241,
+        "end": 20433
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (!sameText || astLabel || valueLabel || numberLabel) {",
+          "prefix": "ameText = similarity >= SAME_TEXT_SIMILARITY;\n  ",
+          "suffix": "\n    if (valueLabel) {\n      changedEvidence.pus"
+        },
+        {
+          "kind": "text-position",
+          "start": 8012,
+          "end": 8069
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6003eef6096a4e40",
+          "semanticHash": "35e8d1c3623d39ef"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (astSel && analysis && analysis.semanticHash !== astSel.semanticHash) {",
+          "prefix": "de side).\n  let astLabel: string | undefined;\n  ",
+          "suffix": "\n    astLabel =\n      analysis.structuralHash =="
+        },
+        {
+          "kind": "text-position",
+          "start": 6936,
+          "end": 7010
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "ba6728d1e5cde7f7",
+          "semanticHash": "0b7e51fc9e9522c3"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "collapseWhitespace(extracted) !== collapseWhitespace(valSel.value)",
+          "prefix": "  );\n    if (\n      extracted === null ||\n      ",
+          "suffix": "\n    ) {\n      valueLabel = `value changed (was "
+        },
+        {
+          "kind": "text-position",
+          "start": 7451,
+          "end": 7517
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "671f731f03ed77b4",
+          "semanticHash": "2a4db8baf473e9be"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "numberLabel = \"a number in the sentence changed\";",
+          "prefix": "tText, region)) !== numbers(tq.exact)\n  ) {\n    ",
+          "suffix": "\n  }\n\n  // 4. Changed.\n  const sameText = simila"
+        },
+        {
+          "kind": "text-position",
+          "start": 7883,
+          "end": 7932
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "1341ae31d79aa8fc",
+          "semanticHash": "09c015bda4c7f33a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"a number in the sentence changed\""
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const c of changedEvidence) if (c.detail) reasons.push(c.detail);",
+          "prefix": "ilarity * 100)}% similar)`,\n      });\n    }\n    ",
+          "suffix": "\n    return {\n      state: \"changed\",\n      regi"
+        },
+        {
+          "kind": "text-position",
+          "start": 8598,
+          "end": 8668
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "2324223ded382263",
+          "semanticHash": "ba583970c221fff6"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.727Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.727Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

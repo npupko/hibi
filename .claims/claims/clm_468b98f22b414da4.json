@@ -1,0 +1,65 @@
+{
+  "id": "clm_468b98f22b414da4",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "code",
+  "sentence": "Evidence applies to `attested` claims only.",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Evidence applies to `attested` claims only.",
+        "prefix": "hibi evidence --from-file - --by agent:<name>`. ",
+        "suffix": "\n- **For findings**, reconcile a contradiction b"
+      },
+      {
+        "kind": "text-position",
+        "start": 2652,
+        "end": 2695
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "} else if (claim.kind !== \"attested\") {",
+          "prefix": "Id} is retired; evidence is not accepted`);\n    ",
+          "suffix": "\n      errors.push(\n        `claim ${claimId} is"
+        },
+        {
+          "kind": "text-position",
+          "start": 6823,
+          "end": 6862
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "665fc6fb60c0f6b5",
+          "semanticHash": "b6ab73a0c1ae0074"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"attested\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:25:23.293Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:25:23.293Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

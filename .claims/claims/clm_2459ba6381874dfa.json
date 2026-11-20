@@ -1,0 +1,117 @@
+{
+  "id": "clm_2459ba6381874dfa",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`ref` is the git HEAD the claim was last recorded or reanchored against, or `WORKTREE` when there is none.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`ref` is the git HEAD the claim was last recorded or reanchored against, or `WORKTREE` when there is none.",
+        "prefix": "d>\"\n}\n```\n\n`owner` and `ttl` are optional keys. ",
+        "suffix": " `evidence` holds code spans for `code` (at leas"
+      },
+      {
+        "kind": "text-position",
+        "start": 16333,
+        "end": 16439
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "/** The git HEAD the claim was last recorded or reanchored against. */",
+          "prefix": "ation).default([]),\n    createdAt: Instant,\n    ",
+          "suffix": "\n    ref: z.string(),\n  })\n  .superRefine((c, ct"
+        },
+        {
+          "kind": "text-position",
+          "start": 9706,
+          "end": 9776
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "62318260dc4dfe01"
+        }
+      ]
+    },
+    {
+      "file": "src/git/git.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  const out = await git([\"rev-parse\", \"HEAD\"], cwd);\n  return out ? out.trim() : \"WORKTREE\";",
+          "prefix": "tion currentRef(cwd: string): Promise<string> {\n",
+          "suffix": "\n}\n\n/** Whether `ref` names a commit git can res"
+        },
+        {
+          "kind": "text-position",
+          "start": 883,
+          "end": 975
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "bb7c25cfc587df61",
+          "semanticHash": "ebb48b3efd9688c3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"rev-parse\",\"HEAD\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "input.docOnly || relocated === 0 ? claim.ref : (input.ref ?? claim.ref),",
+          "prefix": "   doc: docBundle,\n    evidence,\n    ref:\n      ",
+          "suffix": "\n  };\n  // `supersede` (docOnly) always writes: "
+        },
+        {
+          "kind": "text-position",
+          "start": 15428,
+          "end": 15500
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "9026e3963acc6d53",
+          "semanticHash": "cdeaa24621d2a227"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:58.822Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:58.822Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

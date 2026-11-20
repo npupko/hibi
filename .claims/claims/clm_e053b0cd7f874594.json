@@ -1,0 +1,59 @@
+{
+  "id": "clm_e053b0cd7f874594",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`supports` outcomes, first matching row, with the reason label each produces:",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`supports` outcomes, first matching row, with the reason label each produces:",
+        "prefix": "er | never | n/a; probabilities are reported |\n\n",
+        "suffix": "\n\n| rule | judge state | label |\n|---|---|---|\n|"
+      },
+      {
+        "kind": "text-position",
+        "start": 38397,
+        "end": 38474
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function supportsOutcome(",
+          "prefix": " sentence and evidence values are\n * given.\n */\n",
+          "suffix": "\n  result: SupportsResult,\n  threshold: number,\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 3190,
+          "end": 3222
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "577ea4fb815ac77d",
+          "semanticHash": "5b961925e1b8ad6b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:17.011Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:17.011Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

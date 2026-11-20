@@ -1,0 +1,146 @@
+{
+  "id": "clm_9a20e6d40d414dbb",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "\"instructions\": { \"file\": \"AGENTS.md\", \"appended\": true },",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "\"instructions\": { \"file\": \"AGENTS.md\", \"appended\": true },",
+        "prefix": " { \"model\": \"jev-1.14.0\", \"threshold\": 0.8 },\n  ",
+        "suffix": "\n  \"next\": \"hibi audit --doc <file>\" }\n```\n\n`--i"
+      },
+      {
+        "kind": "text-position",
+        "start": 886,
+        "end": 944
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/commands/init.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "envelope(\"init\", payload, \"hibi audit --doc <file>\"),",
+          "prefix": "{ instructions } : {}),\n  };\n  await emit(mode, ",
+          "suffix": " () =>\n    misc.renderInit(payload, style, mode)"
+        },
+        {
+          "kind": "text-position",
+          "start": 2136,
+          "end": 2189
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "c6a9bcbd349a0c3c",
+          "semanticHash": "b06a161eb2b78596"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"init\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/commands/init.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "instructions = { file: instructionsFile, appended: r.appended };",
+          "prefix": "h(anchorRoot, instructionsFile),\n      );\n      ",
+          "suffix": "\n    } catch (e) {\n      return fail((e as Error"
+        },
+        {
+          "kind": "text-position",
+          "start": 1808,
+          "end": 1872
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "59cba0dec9453fce",
+          "semanticHash": "4bb9bb1e2bed653a"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "DEFAULT_JUDGE_MODEL = \"jev-1.14.0\"",
+          "prefix": "ites into a new store's config. */\nexport const ",
+          "suffix": ";\n/** The judge threshold `init` writes into a n"
+        },
+        {
+          "kind": "text-position",
+          "start": 496,
+          "end": 530
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "8bec3950d5682efb",
+          "semanticHash": "8036c0f849791fc9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"jev-1.14.0\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "DEFAULT_JUDGE_THRESHOLD = 0.8",
+          "prefix": " new store's config (SPEC 8.4). */\nexport const ",
+          "suffix": ";\n\n// ── Ids and actors ────────────────────────"
+        },
+        {
+          "kind": "text-position",
+          "start": 624,
+          "end": 653
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "a56b92b9befadadb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.8"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:06.929Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:06.929Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

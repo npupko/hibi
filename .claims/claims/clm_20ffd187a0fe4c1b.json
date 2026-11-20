@@ -1,0 +1,94 @@
+{
+  "id": "clm_20ffd187a0fe4c1b",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `expired` | any claim with a `ttl` that ran out, `code` claims included |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `expired` | any claim with a `ttl` that ran out, `code` claims included |",
+        "prefix": " is listed when:\n\n| reason | claims |\n|---|---|\n",
+        "suffix": "\n| `review` | a `reference` or `attested` claim "
+      },
+      {
+        "kind": "text-position",
+        "start": 6848,
+        "end": 6923
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.expired) return \"expired\";",
+          "prefix": ".enforcement === \"retired\") return undefined;\n  ",
+          "suffix": "\n  if (claim.kind === \"code\") return undefined;\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 12690,
+          "end": 12722
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "c6e2ae1864093512",
+          "semanticHash": "8f947346d730a3d5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"expired\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (claim.kind === \"code\") return undefined;",
+          "prefix": "undefined;\n  if (v.expired) return \"expired\";\n  ",
+          "suffix": "\n  if (v.judge === \"review\" && !acknowledged) re"
+        },
+        {
+          "kind": "text-position",
+          "start": 12725,
+          "end": 12769
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "02b693156b190a82",
+          "semanticHash": "90b4c04fa24c36f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"code\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:15.328Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:15.328Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

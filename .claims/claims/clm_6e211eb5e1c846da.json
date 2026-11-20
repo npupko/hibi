@@ -1,0 +1,111 @@
+{
+  "id": "clm_6e211eb5e1c846da",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "Otherwise the verdict carries a label such as `judge: not consulted while the doc side is changed` or `judge: not consulted while the evidence side is orphaned`, and the anchor state decides the outcome.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Otherwise the verdict carries a label such as `judge: not consulted while the doc side is changed` or `judge: not consulted while the evidence side is orphaned`, and the anchor state decides the outcome.",
+        "prefix": "h sides were located as `unchanged` or `moved`. ",
+        "suffix": " Fix the anchor first; the judge runs on the nex"
+      },
+      {
+        "kind": "text-position",
+        "start": 7417,
+        "end": 7620
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `not consulted while the doc side is ${sides.doc.state}`,",
+          "prefix": "ABLE.has(sides.doc.state)) {\n    return {\n      ",
+          "suffix": "\n    };\n  }\n  if (ev === undefined || !JUDGEABLE"
+        },
+        {
+          "kind": "text-position",
+          "start": 7924,
+          "end": 7989
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "dfd6756a7158a040",
+          "semanticHash": "7e607c201e6398b7"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `not consulted while the evidence side is ${ev?.state ?? \"missing\"}`,",
+          "prefix": " !JUDGEABLE.has(ev.state)) {\n    return {\n      ",
+          "suffix": "\n    };\n  }\n  if (docText === null || ev.liveTex"
+        },
+        {
+          "kind": "text-position",
+          "start": 8074,
+          "end": 8151
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1b78bca897d9d4e9",
+          "semanticHash": "68b93a685d44bd5e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"missing\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "findingReasons.push(`judge: ${judgeable.reason}`);",
+          "prefix": "xt);\n      if (\"reason\" in judgeable) {\n        ",
+          "suffix": "\n      } else {\n        outcome = await judgeRef"
+        },
+        {
+          "kind": "text-position",
+          "start": 16270,
+          "end": 16320
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "4885d99cb408ea42",
+          "semanticHash": "4e17f5ad3d161417"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:27.067Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:27.067Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

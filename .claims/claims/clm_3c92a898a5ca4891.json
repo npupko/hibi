@@ -1,0 +1,82 @@
+{
+  "id": "clm_3c92a898a5ca4891",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "A claim has a **doc side**, the sentence in its document.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A claim has a **doc side**, the sentence in its document.",
+        "prefix": "cade with fixed constants.\"\nicon: \"anchor\"\n---\n\n",
+        "suffix": " `code` and `reference` claims also have **evide"
+      },
+      {
+        "kind": "text-position",
+        "start": 294,
+        "end": 351
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "doc: SelectorBundle,",
+          "prefix": "ClaimKind,\n    sentence: z.string().min(1),\n    ",
+          "suffix": "\n    evidence: z.array(SelectorBundle).default(["
+        },
+        {
+          "kind": "text-position",
+          "start": 9352,
+          "end": 9372
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "032aa2864040c879",
+          "semanticHash": "71b05ab194d977eb"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const sentence = regionText(docContent, docRegion);",
+          "prefix": "n = resolveRegion(docContent, input.docSpec);\n  ",
+          "suffix": "\n  warnings.push(...validateDocQuote(docContent,"
+        },
+        {
+          "kind": "text-position",
+          "start": 6252,
+          "end": 6303
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "e561efbeab1d6031",
+          "semanticHash": "8768b909d462c02c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:25.653Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:25.653Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

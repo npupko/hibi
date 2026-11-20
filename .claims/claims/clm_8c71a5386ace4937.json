@@ -1,0 +1,88 @@
+{
+  "id": "clm_8c71a5386ace4937",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The `evidence` action pipes one item into `hibi evidence --from-file - --by agent:<name>` and is offered only for `attested` claims; a `reference` claim is judged from the referenced document.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The `evidence` action pipes one item into `hibi evidence --from-file - --by agent:<name>` and is offered only for `attested` claims; a `reference` claim is judged from the referenced document.",
+        "prefix": " --by human:<you> --note \"<what you checked>\"`. ",
+        "suffix": "\n\n**list.** One row per claim: `{ claimId, docum"
+      },
+      {
+        "kind": "text-position",
+        "start": 65660,
+        "end": 65852
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "| hibi evidence --from-file - --by agent:<name>`;",
+          "prefix": ">\",\"source\":\"<where>\",\"summary\":\"<one line>\"}]' ",
+          "suffix": "\n\nfunction submitEvidence(id: string, why: strin"
+        },
+        {
+          "kind": "text-position",
+          "start": 7168,
+          "end": 7217
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "45d070aa4137959b",
+          "semanticHash": "9eda7b6da4e08f16"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const evidenceApplies = v.kind === undefined || v.kind === \"attested\";",
+          "prefix": "`hibi evidence` accepts attested claims only.\n  ",
+          "suffix": "\n  if (v.expired) {\n    sections.push({\n      re"
+        },
+        {
+          "kind": "text-position",
+          "start": 10902,
+          "end": 10972
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "a8a9e21859966926",
+          "semanticHash": "a6379e2c319504fb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:35.912Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:35.912Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,163 @@
+{
+  "id": "clm_214049a1c9ab4508",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The sentence is never cut: the paragraph is trimmed around it first, with cut ends marked `…`, then the heading path from its outer end.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The sentence is never cut: the paragraph is trimmed around it first, with cut ends marked `…`, then the heading path from its outer end.",
+        "prefix": "aragraph. The result is at most 600 characters. ",
+        "suffix": "\n\n**List lead-in.** When a sentence's paragraph "
+      },
+      {
+        "kind": "text-position",
+        "start": 36150,
+        "end": 36286
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const ELLIPSIS = \"…\";",
+          "prefix": "ns.ts\";\n\nexport const CONTEXT_MAX_CHARS = 600;\n\n",
+          "suffix": "\nconst HEADING = /^ {0,3}(#{1,6})[ \\t]+(.*?)[ \\t"
+        },
+        {
+          "kind": "text-position",
+          "start": 2361,
+          "end": 2382
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "7e62af82d1f67957",
+          "semanticHash": "1eff4460655823a4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"…\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "? ELLIPSIS + before.slice(before.length - keepBefore)",
+          "prefix": "nst head =\n    keepBefore < before.length\n      ",
+          "suffix": "\n      : before;\n  const tail =\n    keepAfter < "
+        },
+        {
+          "kind": "text-position",
+          "start": 7123,
+          "end": 7176
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "2d45322d3f756eb9",
+          "semanticHash": "7895d86549c94675"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "keepAfter < after.length ? after.slice(0, keepAfter) + ELLIPSIS : after;",
+          "prefix": " keepBefore)\n      : before;\n  const tail =\n    ",
+          "suffix": "\n  return head + sentence + tail;\n}\n\n/** The bou"
+        },
+        {
+          "kind": "text-position",
+          "start": 7212,
+          "end": 7284
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "06e4eb23c603885e",
+          "semanticHash": "7f455ee703edfeff"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "// The heading path gives way to the sentence, from its outer end.",
+          "prefix": " sentence.length))\n    .replace(/\\s+$/, \"\");\n\n  ",
+          "suffix": "\n  const sep = \"\\n\\n\";\n  const maxPath = CONTEXT"
+        },
+        {
+          "kind": "text-position",
+          "start": 8360,
+          "end": 8426
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "8a8dae62e8c9cdd4"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "? ELLIPSIS + path.slice(path.length - (maxPath - ELLIPSIS.length))",
+          "prefix": " path =\n      maxPath > ELLIPSIS.length\n        ",
+          "suffix": "\n        : \"\";\n  }\n  const top = path ? path + s"
+        },
+        {
+          "kind": "text-position",
+          "start": 8599,
+          "end": 8665
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "bc77cb58eda0f6db",
+          "semanticHash": "de10913d736d0485"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:52.713Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:52.713Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

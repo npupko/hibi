@@ -1,0 +1,146 @@
+{
+  "id": "clm_bf6ee72205bd4274",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "```json\n{\n  \"id\": \"clm_…\",\n  \"documentId\": \"doc_…\",\n  \"kind\": \"code | reference | attested\",\n  \"sentence\": \"Pro costs $29/month.\",\n  \"doc\": { \"file\": \"docs/pricing.md\", \"selectors\": [ /* text-quote, text-position */ ] },\n  \"evidence\": [ { \"file\": \"api:src/billing.ts\", \"selectors\": [ /* text-quote, text-position, ast-node?, value? */ ] } ],\n  \"sources\": [],\n  \"procedure\": null,\n  \"owner\": \"human:alice@example.com\",\n  \"ttl\": \"P90D\",\n  \"enforcement\": \"enforced | suggested | retired\",\n  \"attestations\": [],\n  \"createdAt\": \"…\",\n  \"ref\": \"<git HEAD at record>\"\n}\n```",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```json\n{\n  \"id\": \"clm_…\",\n  \"documentId\": \"doc_…\",\n  \"kind\": \"code | reference | attested\",\n  \"sentence\": \"Pro costs $29/month.\",\n  \"doc\": { \"file\": \"docs/pricing.md\", \"selectors\": [ /* text-quote, text-position */ ] },\n  \"evidence\": [ { \"file\": \"api:src/billing.ts\", \"selectors\": [ /* text-quote, text-position, ast-node?, value? */ ] } ],\n  \"sources\": [],\n  \"procedure\": null,\n  \"owner\": \"human:alice@example.com\",\n  \"ttl\": \"P90D\",\n  \"enforcement\": \"enforced | suggested | retired\",\n  \"attestations\": [],\n  \"createdAt\": \"…\",\n  \"ref\": \"<git HEAD at record>\"\n}\n```",
+        "prefix": "ment <path> is not registered`.\n\n### 6.3 Claim\n\n",
+        "suffix": "\n\n`owner` and `ttl` are optional keys. `ref` is "
+      },
+      {
+        "kind": "text-position",
+        "start": 15729,
+        "end": 16294
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    id: ClaimId,\n    documentId: DocumentId,\n    kind: ClaimKind,\n    sentence: z.string().min(1),\n    doc: SelectorBundle,\n    evidence: z.array(SelectorBundle).default([]),\n    sources: z.array(Source).default([]),\n    procedure: Procedure.nullable().default(null),\n    owner: Actor.optional(),\n    ttl: Duration.optional(),\n    enforcement: Enforcement.default(\"enforced\"),\n    attestations: z.array(Attestation).default([]),\n    createdAt: Instant,",
+          "prefix": "`.\n */\nexport const Claim = z\n  .strictObject({\n",
+          "suffix": "\n    /** The git HEAD the claim was last recorde"
+        },
+        {
+          "kind": "text-position",
+          "start": 9249,
+          "end": 9701
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "c9d78f1987063c4a",
+          "semanticHash": "07fb3bfde49ccf46"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ClaimKind = z.enum([\"code\", \"reference\", \"attested\"]);",
+          "prefix": "* The three recordable claim kinds (SPEC 4). */\n",
+          "suffix": "\nexport type ClaimKind = z.infer<typeof ClaimKin"
+        },
+        {
+          "kind": "text-position",
+          "start": 2080,
+          "end": 2147
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "245292834183a927",
+          "semanticHash": "f94df24c41b11e73"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"code\",\"reference\",\"attested\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const Enforcement = z.enum([\"enforced\", \"suggested\", \"retired\"]);",
+          "prefix": "record --suggest`); `retired` is withdrawn.\n */\n",
+          "suffix": "\nexport type Enforcement = z.infer<typeof Enforc"
+        },
+        {
+          "kind": "text-position",
+          "start": 1901,
+          "end": 1973
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "245292834183a927",
+          "semanticHash": "ed0e560d49a440c4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"enforced\",\"suggested\",\"retired\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    ref: z.string(),\n  })",
+          "prefix": "aim was last recorded or reanchored against. */\n",
+          "suffix": "\n  .superRefine((c, ctx) => {\n    const n = c.ev"
+        },
+        {
+          "kind": "text-position",
+          "start": 9777,
+          "end": 9802
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "c9d78f1987063c4a",
+          "semanticHash": "07fb3bfde49ccf46"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:58.789Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:58.789Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

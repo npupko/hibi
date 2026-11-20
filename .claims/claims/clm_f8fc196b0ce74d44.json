@@ -1,0 +1,82 @@
+{
+  "id": "clm_f8fc196b0ce74d44",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "| `review` | `contradictory`, with `same_subject` at or above the threshold and confidence below the threshold or `contradicts` below 0.5 | `review: contradictory, confidence=0.55 below threshold 0.80`, `review: contradictory, contradicts=0.48 below 0.50` |",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `review` | `contradictory`, with `same_subject` at or above the threshold and confidence below the threshold or `contradicts` below 0.5 | `review: contradictory, confidence=0.55 below threshold 0.80`, `review: contradictory, contradicts=0.48 below 0.50` |",
+        "prefix": "| `contradictory (p=0.93, same_subject=0.95)` |\n",
+        "suffix": "\n| `duplicate` | `consistent`, with `same_subjec"
+      },
+      {
+        "kind": "text-position",
+        "start": 3791,
+        "end": 4048
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `review: contradictory, confidence=${f2(r.confidence)} below threshold ${f2(threshold)}`,",
+          "prefix": "\"review\",\n        probability: pContra,\n        ",
+          "suffix": "\n      };\n    }\n    if (r.contradicts < CONTRADI"
+        },
+        {
+          "kind": "text-position",
+          "start": 6687,
+          "end": 6784
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "453c24b1bf22b001",
+          "semanticHash": "ebdbdb1b96fa876a"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `review: contradictory, contradicts=${f2(r.contradicts)} below ${f2(CONTRADICTS_FLOOR)}`,",
+          "prefix": "\"review\",\n        probability: pContra,\n        ",
+          "suffix": "\n      };\n    }\n    return {\n      outcome: \"con"
+        },
+        {
+          "kind": "text-position",
+          "start": 6925,
+          "end": 7022
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "453c24b1bf22b001",
+          "semanticHash": "7ed76779a39b738c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:25.888Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:25.888Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

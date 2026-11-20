@@ -1,0 +1,65 @@
+{
+  "id": "clm_71a91461fad24d8b",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "| exit 0 | every claim in the document is clean or only warns |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| exit 0 | every claim in the document is clean or only warns |",
+        "prefix": "ed\" }] }]\n}\n```\n\n| result | meaning |\n|---|---|\n",
+        "suffix": "\n| exit 2 | at least one claim gates: changed, o"
+      },
+      {
+        "kind": "text-position",
+        "start": 23947,
+        "end": 24010
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.warn && failOn === \"warn\") return 2;",
+          "prefix": "ver\") return 0;\n  if (flags.gating) return 2;\n  ",
+          "suffix": "\n  return 0;\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 22264,
+          "end": 22310
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "bccaa0a62493fb72",
+          "semanticHash": "a278e5457df0d7f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"warn\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:12.654Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:12.654Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,226 @@
+/**
+ * `hibi attest` (design/SPEC.md sections 11, 5, 9.4): append an attestation
+ * to a claim. Without `ack` it is a `vouch`; with `ack` it acknowledges a
+ * finding and requires a note:
+ *
+ *   - `conflict:<otherClaimId>`: the same ack is written to both claims,
+ *     pinned to the pair id and both sentence hashes, so it lapses when
+ *     either sentence changes;
+ *   - `review`: pinned to the cache key of the claim's current `supports`
+ *     verdict. For a `reference` claim that is the key of the request built
+ *     from its sentence and referenced span as they read now
+ *     (`referenceSupportsRequest`, the same function `check` judges with);
+ *     for an `attested` claim it is the newest `supports` cache entry.
+ *
+ * Counting rule (SPEC 5): only a `human:` vouch resets the ttl. An `agent:`
+ * or `process:` vouch is recorded and does not count; an ack never counts.
+ * The result carries `countsTowardTtl` so the caller sees which applied.
+ *
+ * JSON output (inside the CLI envelope `{ ok, action: "attest", schemaVersion, …, next }`):
+ *
+ *   { "claimIds": ["clm_…"] | ["clm_a", "clm_b"],   // two for an ack on a conflict
+ *     "attestation": { "by": "human:alice@example.com", "at": "…",
+ *                      "basis": "vouch | ack", "note": "…",
+ *                      "ack": { "pairId": "clm_a:clm_b", "sentenceHashes": ["…", "…"] }
+ *                           | { "judgeKey": "…" } },               // ack only
+ *     "countsTowardTtl": true }
+ */
+
+import {
+  ACTOR_PATTERN,
+  Attestation,
+  type AttestationAck,
+  type Claim,
+} from "../core/model.ts";
+import type { ClaimStore } from "../store/store.ts";
+import { sentenceHash } from "./hash.ts";
+import {
+  newestSupports,
+  type ReferenceTexts,
+  referenceSupportsRequest,
+} from "./reference.ts";
+
+/** What `--ack` names: a contradiction with another claim, or a `review` verdict. */
+export type AckTarget =
+  | { kind: "conflict"; otherClaimId: string }
+  | { kind: "review" };
+
+export interface AttestInput {
+  store: ClaimStore;
+  claimId: string;
+  by: string;
+  note?: string;
+  ack?: AckTarget;
+  now?: Date;
+  /**
+   * For `--ack review` on a `reference` claim: the claim's texts as they read
+   * now, or the reason the judge is not consulted, and the model in the cache
+   * key. The caller resolves the claim's sides.
+   */
+  reference?: {
+    model: string;
+    current: { texts: ReferenceTexts } | { reason: string };
+  };
+}
+
+export interface AttestResult {
+  /** The claims the attestation was appended to: one, or both sides of a conflict pair. */
+  claimIds: string[];
+  attestation: Attestation;
+  /** True only for a `human:` vouch (SPEC 5). */
+  countsTowardTtl: boolean;
+}
+
+/** Parse the CLI's `--ack` value: `conflict:<claimId>` or `review`. */
+export function parseAck(value: string): AckTarget {
+  if (value === "review") return { kind: "review" };
+  const m = /^conflict:(.+)$/.exec(value);
+  if (m?.[1]) return { kind: "conflict", otherClaimId: m[1] };
+  throw new Error(
+    `--ack expects conflict:<claimId> or review (got ${JSON.stringify(value)})`,
+  );
+}
+
+async function liveClaim(store: ClaimStore, id: string): Promise<Claim> {
+  const claim = await store.getClaim(id);
+  if (!claim) throw new Error(`No claim ${id} in the store.`);
+  if (claim.enforcement === "retired") {
+    throw new Error(`claim ${id} is retired; nothing to attest.`);
+  }
+  return claim;
+}
+
+/** The key of the claim's newest `supports` verdict (`newestSupports`, shared with `check`). */
+async function newestSupportsKey(
+  store: ClaimStore,
+  claimId: string,
+): Promise<string> {
+  const newest = newestSupports(await store.judgeCache().list({ claimId }));
+  if (newest === undefined) {
+    throw new Error(
+      `claim ${claimId} has no supports verdict to acknowledge; submit evidence with \`hibi evidence\` first.`,
+    );
+  }
+  return newest.key;
+}
+
+/**
+ * The key of a `reference` claim's current `supports` verdict: the request
+ * built from its texts as they read now. It must already be in the cache,
+ * which `hibi check` fills.
+ */
+async function currentReferenceKey(
+  store: ClaimStore,
+  claim: Claim,
+  reference: AttestInput["reference"],
+): Promise<string> {
+  if (reference === undefined) {
+    throw new Error(
+      `claim ${claim.id} is a reference claim; its current texts are needed to name its verdict.`,
+    );
+  }
+  if ("reason" in reference.current) {
+    throw new Error(
+      `claim ${claim.id} has no current supports verdict to acknowledge: the judge is ${reference.current.reason}.`,
+    );
+  }
+  const { key } = referenceSupportsRequest(
+    reference.model,
+    claim,
+    reference.current.texts,
+  );
+  const entry = await store.judgeCache().get(key);
+  if (entry === undefined || entry.judgment !== "supports") {
+    throw new Error(
+      `claim ${claim.id} has no supports verdict for its current text; run \`hibi check\` first.`,
+    );
+  }
+  return key;
+}
+
+async function append(
+  store: ClaimStore,
+  claim: Claim,
+  attestation: Attestation,
+): Promise<void> {
+  await store.putClaim({
+    ...claim,
+    attestations: [...claim.attestations, attestation],
+  });
+}
+
+export async function attestClaim(input: AttestInput): Promise<AttestResult> {
+  const { store, claimId, by, note, ack } = input;
+  const at = (input.now ?? new Date()).toISOString();
+  if (!ACTOR_PATTERN.test(by)) {
+    throw new Error(
+      `--by must be human:<id>, agent:<name>, or process:<name> (got ${JSON.stringify(by)}).`,
+    );
+  }
+  if (note !== undefined && note.trim() === "") {
+    throw new Error("--note is empty; pass the text or leave it out.");
+  }
+  const claim = await liveClaim(store, claimId);
+
+  if (ack === undefined) {
+    const attestation = Attestation.parse({ by, at, basis: "vouch", note });
+    await append(store, claim, attestation);
+    return {
+      claimIds: [claim.id],
+      attestation,
+      countsTowardTtl: by.startsWith("human:"),
+    };
+  }
+
+  if (note === undefined) {
+    throw new Error(
+      "an ack needs --note saying why the finding is acceptable.",
+    );
+  }
+
+  if (ack.kind === "review") {
+    const judgeKey =
+      claim.kind === "reference"
+        ? await currentReferenceKey(store, claim, input.reference)
+        : await newestSupportsKey(store, claim.id);
+    const attestation = Attestation.parse({
+      by,
+      at,
+      basis: "ack",
+      note,
+      ack: { judgeKey } satisfies AttestationAck,
+    });
+    await append(store, claim, attestation);
+    return { claimIds: [claim.id], attestation, countsTowardTtl: false };
+  }
+
+  if (ack.otherClaimId === claim.id) {
+    throw new Error(
+      "--ack conflict: names the same claim; name the other one.",
+    );
+  }
+  const other = await liveClaim(store, ack.otherClaimId);
+  const [first, second] = [claim, other].sort((a, b) =>
+    a.id < b.id ? -1 : 1,
+  ) as [Claim, Claim];
+  const attestation = Attestation.parse({
+    by,
+    at,
+    basis: "ack",
+    note,
+    ack: {
+      pairId: `${first.id}:${second.id}`,
+      sentenceHashes: [
+        sentenceHash(first.sentence),
+        sentenceHash(second.sentence),
+      ],
+    } satisfies AttestationAck,
+  });
+  await append(store, first, attestation);
+  await append(store, second, attestation);
+  return {
+    claimIds: [first.id, second.id],
+    attestation,
+    countsTowardTtl: false,
+  };
+}

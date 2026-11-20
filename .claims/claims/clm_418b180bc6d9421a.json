@@ -1,0 +1,59 @@
+{
+  "id": "clm_418b180bc6d9421a",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "Registers `--to` in the store if needed.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Registers `--to` in the store if needed.",
+        "prefix": "d> --to <new> [--dry-run]\n```\n\nIn one pass:\n\n1. ",
+        "suffix": " `--from` must already be registered; otherwise "
+      },
+      {
+        "kind": "text-position",
+        "start": 2484,
+        "end": 2524
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const newDoc = await upsertDocument(store, input.to, dryRun);",
+          "prefix": "cument ${input.from} is not registered`);\n  }\n  ",
+          "suffix": "\n\n  // Every live claim moves to the new documen"
+        },
+        {
+          "kind": "text-position",
+          "start": 3167,
+          "end": 3228
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "08a425e1d1d32ae3",
+          "semanticHash": "aac2f23a470ba843"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.619Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.619Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

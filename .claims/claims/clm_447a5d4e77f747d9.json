@@ -1,0 +1,59 @@
+{
+  "id": "clm_447a5d4e77f747d9",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Pairs are formed over all of them.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Pairs are formed over all of them.",
+        "prefix": "ed`, on a document whose lifecycle is `active`. ",
+        "suffix": " A whole-store `check` and `check --since` judge"
+      },
+      {
+        "kind": "text-position",
+        "start": 43932,
+        "end": 43966
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const pairs = pairClaims(opts.claims).filter(",
+          "prefix": "ore.judgeCache();\n  const scope = opts.scope;\n  ",
+          "suffix": "\n    (p) => scope === undefined || scope.has(p.a"
+        },
+        {
+          "kind": "text-position",
+          "start": 10134,
+          "end": 10179
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "63fd7602739aa7f1",
+          "semanticHash": "596016bdbc16f539"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:18.587Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:18.587Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,52 @@
+{
+  "id": "clm_6bb3accac9254d11",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "reference",
+  "sentence": "With `--fail-uncovered`, `audit` exits 2 when any uncovered row has kind `code`, `reference`, or `attested`.",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "With `--fail-uncovered`, `audit` exits 2 when any uncovered row has kind `code`, `reference`, or `attested`.",
+        "prefix": " scale\"), or remove it.\n\n## `--fail-uncovered`\n\n",
+        "suffix": " Otherwise it exits 0. `unsure`, `unverifiable`,"
+      },
+      {
+        "kind": "text-position",
+        "start": 8417,
+        "end": 8525
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`--fail-uncovered` exits 2 when any uncovered row has kind `code`, `reference`, or `attested`.",
+          "prefix": "ecides anchors and sources and calls `record`.\n\n",
+          "suffix": " Such a row exists only when triage was confiden"
+        },
+        {
+          "kind": "text-position",
+          "start": 53820,
+          "end": 53914
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:58.010Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:58.010Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

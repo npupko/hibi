@@ -1,0 +1,116 @@
+{
+  "id": "clm_aab7537a484d4140",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A sentence edited before `supersede` still shows `doc: changed` on the next check.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A sentence edited before `supersede` still shows `doc: changed` on the next check.",
+        "prefix": "side, the attestations, and `ref` never change. ",
+        "suffix": "\n\nThe result's `relocated[]` holds `{ claimId, d"
+      },
+      {
+        "kind": "text-position",
+        "start": 73361,
+        "end": 73443
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    sentence = claim.sentence;\n  } else {",
+          "prefix": "aim.doc.selectors, contents.docContent),\n    };\n",
+          "suffix": "\n    if (\n      input.docPath !== undefined &&\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 12769,
+          "end": 12810
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "61a02e709166c439",
+          "semanticHash": "622ec5a858f26789"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (at < 0 || content.indexOf(quote.exact, at + 1) >= 0) return selectors;",
+          "prefix": "s;\n  const at = content.indexOf(quote.exact);\n  ",
+          "suffix": "\n  return selectors.map((s) =>\n    s.kind === \"t"
+        },
+        {
+          "kind": "text-position",
+          "start": 11306,
+          "end": 11380
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "d9180d7e246ba38c",
+          "semanticHash": "a6c298089dafb812"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (!sameText || astLabel || valueLabel || numberLabel) {",
+          "prefix": "ameText = similarity >= SAME_TEXT_SIMILARITY;\n  ",
+          "suffix": "\n    if (valueLabel) {\n      changedEvidence.pus"
+        },
+        {
+          "kind": "text-position",
+          "start": 8012,
+          "end": 8069
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6003eef6096a4e40",
+          "semanticHash": "35e8d1c3623d39ef"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:03.003Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:22:55.763Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:03.003Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

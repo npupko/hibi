@@ -1,0 +1,128 @@
+{
+  "id": "clm_4f9abb5d1b74466f",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "| `conflict` | `contradictory`, with confidence and `same_subject` at or above the threshold and `contradicts` at or above 0.5 | `contradictory (p=0.93, same_subject=0.95)` |",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `conflict` | `contradictory`, with confidence and `same_subject` at or above the threshold and `contradicts` at or above 0.5 | `contradictory (p=0.93, same_subject=0.95)` |",
+        "prefix": "me kind and unit | `numbers differ: 29 vs 39` |\n",
+        "suffix": "\n| `review` | `contradictory`, with any of those"
+      },
+      {
+        "kind": "text-position",
+        "start": 3616,
+        "end": 3790
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.contradicts < CONTRADICTS_FLOOR) {",
+          "prefix": "threshold ${f2(threshold)}`,\n      };\n    }\n    ",
+          "suffix": "\n      return {\n        outcome: \"review\",\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 6804,
+          "end": 6844
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "e39077de3ac9ac45",
+          "semanticHash": "bcc46ff68945b8e1"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.confidence < threshold) {",
+          "prefix": "threshold ${f2(threshold)}`,\n      };\n    }\n    ",
+          "suffix": "\n      return {\n        outcome: \"review\",\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 6575,
+          "end": 6606
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "e39077de3ac9ac45",
+          "semanticHash": "3cb1048f5abab690"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.sameSubject < threshold) {",
+          "prefix": "ver review. Each label names one condition.\n    ",
+          "suffix": "\n      return {\n        outcome: \"clean\",\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 6381,
+          "end": 6413
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "92322fb5b772ae22",
+          "semanticHash": "2c1771677a68ad4f"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `contradictory (p=${f2(pContra)}, same_subject=${f2(r.sameSubject)})`,",
+          "prefix": ": \"conflict\",\n      probability: pContra,\n      ",
+          "suffix": "\n    };\n  }\n  if (r.relation === \"consistent\" &&"
+        },
+        {
+          "kind": "text-position",
+          "start": 7112,
+          "end": 7190
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "2cf7792215a60e01",
+          "semanticHash": "5f808464a30c5f2b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:25.823Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:25.823Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

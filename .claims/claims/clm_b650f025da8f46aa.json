@@ -1,0 +1,88 @@
+{
+  "id": "clm_b650f025da8f46aa",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "| `suggested` | recorded with `--suggest`; never gates or warns |",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `suggested` | recorded with `--suggest`; never gates or warns |",
+        "prefix": " `enforced` | the default; the claim may gate |\n",
+        "suffix": "\n| `retired` | withdrawn with `hibi retire`; kep"
+      },
+      {
+        "kind": "text-position",
+        "start": 4324,
+        "end": 4389
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "enforcement: raw.suggest === true ? \"suggested\" : \"enforced\",",
+          "prefix": "tl === \"string\" ? { ttl: raw.ttl } : {}),\n      ",
+          "suffix": "\n    },\n  };\n}\n\n/**\n * Validate a batch. Throws "
+        },
+        {
+          "kind": "text-position",
+          "start": 11490,
+          "end": 11551
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "84801268d0e61020",
+          "semanticHash": "31604a3105375d6e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons.push(`${enforcement} claim: never gates or warns`);",
+          "prefix": "= \"enforced\") {\n    if (gates || warns) {\n      ",
+          "suffix": "\n    }\n    return { gates: false, warns: false, "
+        },
+        {
+          "kind": "text-position",
+          "start": 4138,
+          "end": 4197
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "0d4c05c5526a9656",
+          "semanticHash": "a952933e63526c0c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:03.125Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:03.125Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

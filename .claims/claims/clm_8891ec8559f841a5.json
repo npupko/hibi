@@ -1,0 +1,59 @@
+{
+  "id": "clm_8891ec8559f841a5",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "A `pending` reference claim needs only a run with a working judge; there is nothing to collect.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `pending` reference claim needs only a run with a working judge; there is nothing to collect.",
+        "prefix": "r is listed only when expired or in `review` |\n\n",
+        "suffix": " `lastEvidence: { summary, source, at, by }` app"
+      },
+      {
+        "kind": "text-position",
+        "start": 8020,
+        "end": 8115
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "response = await input.judge.supports({",
+          "prefix": "ted<ReturnType<Judge[\"supports\"]>>;\n  try {\n    ",
+          "suffix": "\n      sentence: texts.sentence,\n      context: "
+        },
+        {
+          "kind": "text-position",
+          "start": 11249,
+          "end": 11288
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "a8847d61f52f7876",
+          "semanticHash": "45dbb3a2c9eba2bb"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:08.490Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:08.490Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

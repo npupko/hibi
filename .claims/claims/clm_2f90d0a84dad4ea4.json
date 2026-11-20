@@ -1,0 +1,65 @@
+{
+  "id": "clm_2f90d0a84dad4ea4",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "| similarity below 0.9 | `text changed (NN% similar)` | `text` |",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| similarity below 0.9 | `text changed (NN% similar)` | `text` |",
+        "prefix": "| `a number in the sentence changed` | `text` |\n",
+        "suffix": "\n| quote not located | `quote not found` | `text"
+      },
+      {
+        "kind": "text-position",
+        "start": 5363,
+        "end": 5427
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`text changed (${Math.round(similarity * 100)}% similar)`",
+          "prefix": "     detail:\n          numberLabel ??\n          ",
+          "suffix": ",\n      });\n    }\n    for (const c of changedEvi"
+        },
+        {
+          "kind": "text-position",
+          "start": 8519,
+          "end": 8576
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "f9197fadb3a71d10",
+          "semanticHash": "0189172726cc48b0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "100"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.605Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.605Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

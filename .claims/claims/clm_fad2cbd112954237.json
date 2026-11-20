@@ -1,0 +1,94 @@
+{
+  "id": "clm_fad2cbd112954237",
+  "documentId": "doc_c5adefb4274c6931",
+  "kind": "code",
+  "sentence": "`--by` is required: it names the actor whose `vouch` the new claim starts with. There is no default.",
+  "doc": {
+    "file": "docs/quickstart.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--by` is required: it names the actor whose `vouch` the new claim starts with. There is no default.",
+        "prefix": "ent\": \"enforced\",\n  \"next\": \"hibi check\"\n}\n```\n\n",
+        "suffix": " Paths are stored as POSIX paths relative to the"
+      },
+      {
+        "kind": "text-position",
+        "start": 3637,
+        "end": 3737
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"by is required: pass --by <actor> or a by key, as human:<id>, agent:<name>, or process:<name>\"",
+          "prefix": " if (by === undefined) {\n    errors.push(\n      ",
+          "suffix": ",\n    );\n  }\n  if (raw.suggest !== undefined && "
+        },
+        {
+          "kind": "text-position",
+          "start": 10743,
+          "end": 10838
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "b715e7808aca7ce0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"by is required: pass --by <actor> or a by key, as human:<id>, agent:<name>, or process:<name>\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "basis: \"vouch\" as const,",
+          "prefix": "   by: input.by,\n    at: now.toISOString(),\n    ",
+          "suffix": "\n  };\n\n  // One claim per (sentence, document): "
+        },
+        {
+          "kind": "text-position",
+          "start": 6903,
+          "end": 6927
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "fec8da68cf9661ba",
+          "semanticHash": "c1f3ec2741a33367"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"vouch\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:29.488Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:29.488Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,111 @@
+{
+  "id": "clm_3630403907b84392",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Years and months add calendar units in UTC and clamp the day to the last day of a shorter target month; weeks, days, hours, minutes, and seconds add fixed seconds, a day being 86,400 seconds.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Years and months add calendar units in UTC and clamp the day to the last day of a shorter target month; weeks, days, hours, minutes, and seconds add fixed seconds, a day being 86,400 seconds.",
+        "prefix": "s expired when now is at or after that instant. ",
+        "suffix": "\n- `owner` is optional, must be in actor form, a"
+      },
+      {
+        "kind": "text-position",
+        "start": 12112,
+        "end": 12303
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "out.setUTCMonth(out.getUTCMonth() + months);",
+          "prefix": " = out.getUTCDate();\n    out.setUTCDate(1);\n    ",
+          "suffix": "\n    const lastDay = new Date(\n      Date.UTC(ou"
+        },
+        {
+          "kind": "text-position",
+          "start": 2201,
+          "end": 2245
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "7d002fb15650a872",
+          "semanticHash": "64458e92de23984a"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "out.setUTCDate(Math.min(day, lastDay));",
+          "prefix": ".getUTCMonth() + 1, 0),\n    ).getUTCDate();\n    ",
+          "suffix": "\n  }\n  return new Date(out.getTime() + seconds *"
+        },
+        {
+          "kind": "text-position",
+          "start": 2364,
+          "end": 2403
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "9e5812802efe3ccb",
+          "semanticHash": "3e0f186de061e606"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "n(w) * 7 * 86_400 + n(d) * 86_400 + n(h) * 3_600 + n(mi) * 60 + n(s);",
+          "prefix": "nths = n(y) * 12 + n(mo);\n  const seconds =\n    ",
+          "suffix": "\n\n  const out = new Date(start.getTime());\n  if "
+        },
+        {
+          "kind": "text-position",
+          "start": 2008,
+          "end": 2077
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "efad4e71c3509868",
+          "semanticHash": "77ced90db4308eef"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "7"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:35.910Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:35.910Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

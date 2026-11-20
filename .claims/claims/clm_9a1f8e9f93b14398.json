@@ -1,0 +1,52 @@
+{
+  "id": "clm_9a1f8e9f93b14398",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "The action passes no key of its own.",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The action passes no key of its own.",
+        "prefix": "secret and set it in the job's `env`, as above. ",
+        "suffix": "\n\n### What runs without a key\n\nMost of `check` n"
+      },
+      {
+        "kind": "text-position",
+        "start": 2448,
+        "end": 2484
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "action.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "env:\n        HIBI_FAIL_ON: ${{ inputs.fail-on }}\n        HIBI_SINCE: ${{ inputs.since }}\n        HIBI_DOC: ${{ inputs.doc }}",
+          "prefix": "ge cannot answer are pending (a warning).\n      ",
+          "suffix": "\n      run: |\n        ARGS=(check --fail-on \"$HI"
+        },
+        {
+          "kind": "text-position",
+          "start": 1230,
+          "end": 1354
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:42.659Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:42.659Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

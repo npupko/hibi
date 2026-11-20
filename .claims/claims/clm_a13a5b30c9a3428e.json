@@ -1,0 +1,52 @@
+{
+  "id": "clm_a13a5b30c9a3428e",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "| `working-directory` | `.` | the directory holding `.claims/` |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `working-directory` | `.` | the directory holding `.claims/` |",
+        "prefix": "check --doc <path>`; expired claims then gate |\n",
+        "suffix": "\n\nThe job exits 0 when every claim is clean or o"
+      },
+      {
+        "kind": "text-position",
+        "start": 21124,
+        "end": 21188
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "action.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "working-directory: ${{ inputs.working-directory }}",
+          "prefix": ".0\n    - name: Run Hibi\n      shell: bash\n      ",
+          "suffix": "\n      # The judge reads TYPESAFE_API_KEY from t"
+        },
+        {
+          "kind": "text-position",
+          "start": 1010,
+          "end": 1060
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:12.190Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:12.190Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

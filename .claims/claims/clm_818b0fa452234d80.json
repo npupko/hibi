@@ -1,0 +1,117 @@
+{
+  "id": "clm_818b0fa452234d80",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "At check time every side is located again and graded `unchanged`, `moved`, `changed`, `ambiguous`, or `orphaned`; an evidence side whose repo alias is undefined or not checked out, or whose path escapes its root, is `unavailable` instead.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "At check time every side is located again and graded `unchanged`, `moved`, `changed`, `ambiguous`, or `orphaned`; an evidence side whose repo alias is undefined or not checked out, or whose path escapes its root, is `unavailable` instead.",
+        "prefix": "ce[]`. Its truth lives outside the repository.\n\n",
+        "suffix": " See [Anchors](/anchors).\n\n## Sources\n\nAny claim"
+      },
+      {
+        "kind": "text-position",
+        "start": 1836,
+        "end": 2074
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const STATE_RANK: Record<AnchorState, number> = {",
+          "prefix": "erface ResolveOptions {\n  ast?: AstAnalyzer;\n}\n\n",
+          "suffix": "\n  orphaned: 4,\n  ambiguous: 3,\n  changed: 2,\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 2528,
+          "end": 2577
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "402f315159169849",
+          "semanticHash": "a1c76bd8d6654c2c"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (\"unavailable\" in resolved) unavailable.set(f, resolved.reason);",
+          "prefix": " resolved = resolveFile(config, f, root);\n      ",
+          "suffix": "\n      else evidence.set(f, await readFileText(r"
+        },
+        {
+          "kind": "text-position",
+          "start": 15686,
+          "end": 15753
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "abc5dad2114c5099",
+          "semanticHash": "301a5daaee8c540b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unavailable\""
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "state: \"unavailable\",",
+          "prefix": " (label !== undefined) {\n      return {\n        ",
+          "suffix": "\n        region: null,\n        similarity: 0,\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 11195,
+          "end": 11216
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "b8e43ff973584644"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unavailable\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:02.106Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:02.106Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

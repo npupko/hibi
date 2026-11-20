@@ -1,0 +1,88 @@
+{
+  "id": "clm_a3dc2d2ead254e41",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "| `docQuote` / `docRange` | exactly one; `L3:L3` or offsets `100:130` |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `docQuote` / `docRange` | exactly one; `L3:L3` or offsets `100:130` |",
+        "prefix": "| rule |\n|---|---|\n| `doc`, `kind` | required |\n",
+        "suffix": "\n| `code` | code only: `[{file, quote or range}]"
+      },
+      {
+        "kind": "text-position",
+        "start": 3641,
+        "end": 3712
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(\"needs exactly one of docQuote or docRange\");",
+          "prefix": "= undefined;\n  if (hasQuote === hasRange) {\n    ",
+          "suffix": "\n  } else if (hasQuote) {\n    if (nonEmptyString"
+        },
+        {
+          "kind": "text-position",
+          "start": 8230,
+          "end": 8287
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "ab93fd8725166832",
+          "semanticHash": "f1ff76a79fcec78c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"needs exactly one of docQuote or docRange\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return isLine ? { startLine: a, endLine: b } : { start: a, end: b };",
+          "prefix": "ger bounds, got ${JSON.stringify(raw)}`);\n  }\n  ",
+          "suffix": "\n}\n\nfunction isObject(x: unknown): x is Record<s"
+        },
+        {
+          "kind": "text-position",
+          "start": 3221,
+          "end": 3289
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "891207975fd425de",
+          "semanticHash": "8e7ba157fa2cd442"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:32.728Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:32.728Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

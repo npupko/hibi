@@ -1,0 +1,267 @@
+{
+  "id": "clm_9709fc3019a34333",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "```sh\nhibi init --instructions AGENTS.md   # create .claims/; add the check line to AGENTS.md\nhibi audit --doc README.md           # one row per region: covered, or what kind of claim it could be\n\n# Record a claim of each kind\nhibi record --doc README.md --doc-quote \"Retries are capped at 5 attempts.\" \\\n  --kind code --code-file src/retry.ts --code-quote \"MAX_ATTEMPTS = 5\" --by agent:opus\nhibi record --doc README.md --doc-quote \"Refunds are issued within two weeks of a request.\" \\\n  --kind reference --ref-file docs/billing.md --ref-quote \"Refunds are issued within 14 days.\" --by agent:opus\nhibi record --doc docs/pricing.md --doc-quote 'The Pro plan costs $29 per month.' \\\n  --kind attested --ttl P90D --source stripe=https://dashboard.stripe.com/products/prod_123 \\\n  --instructions \"Open the Stripe dashboard and report the Pro monthly price.\" --by human:alice@example.com\n\nhibi check                      # every claim, the contradiction pass, and the worklist\nhibi check --doc CLAUDE.md      # can this one document be trusted now? (exit 1 if it has no claims)\nhibi check --since origin/main  # what did this change invalidate?\nhibi list --state pending       # the worklist: claims an agent should re-check\n\n# Submit evidence an agent collected; the judge decides whether it supports the claim\necho '[{\"claimId\":\"clm_…\",\"evidence\":\"Pro plan: $29.00 per month\",\"source\":\"stripe\",\n        \"summary\":\"Stripe lists Pro at $29/month\"}]' | hibi evidence --from-file - --by agent:opus\n\nhibi attest <claim-id> --by human:alice@example.com --note \"checked, still true\"\nhibi attest <claim-id> --by human:alice@example.com --ack conflict:<other-id> --note \"different plans\"\n```",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```sh\nhibi init --instructions AGENTS.md   # create .claims/; add the check line to AGENTS.md\nhibi audit --doc README.md           # one row per region: covered, or what kind of claim it could be\n\n# Record a claim of each kind\nhibi record --doc README.md --doc-quote \"Retries are capped at 5 attempts.\" \\\n  --kind code --code-file src/retry.ts --code-quote \"MAX_ATTEMPTS = 5\" --by agent:opus\nhibi record --doc README.md --doc-quote \"Refunds are issued within two weeks of a request.\" \\\n  --kind reference --ref-file docs/billing.md --ref-quote \"Refunds are issued within 14 days.\" --by agent:opus\nhibi record --doc docs/pricing.md --doc-quote 'The Pro plan costs $29 per month.' \\\n  --kind attested --ttl P90D --source stripe=https://dashboard.stripe.com/products/prod_123 \\\n  --instructions \"Open the Stripe dashboard and report the Pro monthly price.\" --by human:alice@example.com\n\nhibi check                      # every claim, the contradiction pass, and the worklist\nhibi check --doc CLAUDE.md      # can this one document be trusted now? (exit 1 if it has no claims)\nhibi check --since origin/main  # what did this change invalidate?\nhibi list --state pending       # the worklist: claims an agent should re-check\n\n# Submit evidence an agent collected; the judge decides whether it supports the claim\necho '[{\"claimId\":\"clm_…\",\"evidence\":\"Pro plan: $29.00 per month\",\"source\":\"stripe\",\n        \"summary\":\"Stripe lists Pro at $29/month\"}]' | hibi evidence --from-file - --by agent:opus\n\nhibi attest <claim-id> --by human:alice@example.com --note \"checked, still true\"\nhibi attest <claim-id> --by human:alice@example.com --ack conflict:<other-id> --note \"different plans\"\n```",
+        "prefix": "g` too; it never aborts a run.\n\n## Quick start\n\n",
+        "suffix": "\n\n`--by` is required on `record` and `attest`; t"
+      },
+      {
+        "kind": "text-position",
+        "start": 2650,
+        "end": 4329
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.\";",
+          "prefix": "ion file. */\nexport const INSTRUCTIONS_LINE =\n  ",
+          "suffix": "\n\nexport const FORMATS = [\"human\", \"compact\", \"j"
+        },
+        {
+          "kind": "text-position",
+          "start": 1415,
+          "end": 1518
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "4d8b5b38ea3dae8b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await appendFile(file, `${sep}${INSTRUCTIONS_LINE}\\n`);",
+          "prefix": "xt === \"\" || text.endsWith(\"\\n\") ? \"\" : \"\\n\";\n  ",
+          "suffix": "\n  return { file, appended: true };\n}\n\n/** The l"
+        },
+        {
+          "kind": "text-position",
+          "start": 9504,
+          "end": 9559
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "aa98e1c6d91612bd",
+          "semanticHash": "0e09ec92bee2e53d"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"One row per region of a document: the claim that covers it, or the judge's triage kind.\",",
+          "prefix": "\n  },\n  {\n    name: \"audit\",\n    summary:\n      ",
+          "suffix": "\n    description:\n      \"Splits the document int"
+        },
+        {
+          "kind": "text-position",
+          "start": 12181,
+          "end": 12271
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "03613a6e8488233b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"One row per region of a document: the claim that covers it, or the judge's triage kind.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "placeholder: \"<id>=<resource>\",",
+          "prefix": "name: \"source\",\n        type: \"string\",\n        ",
+          "suffix": "\n        multiple: true,\n        help: \"A pointe"
+        },
+        {
+          "kind": "text-position",
+          "start": 8049,
+          "end": 8080
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "efa921a104cc16bb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"<id>=<resource>\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "runs the contradiction pass, and lists the worklist",
+          "prefix": "ithout TYPESAFE_API_KEY the result is pending), ",
+          "suffix": ": claims an agent should re-check. Writes nothin"
+        },
+        {
+          "kind": "text-position",
+          "start": 10417,
+          "end": 10468
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "2565d59b20024bae"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`no claims are registered for ${doc}; run hibi audit --doc ${doc}`,",
+          "prefix": "if (!live) {\n        throw new Error(\n          ",
+          "suffix": "\n        );\n      }\n      onlyFiles = scope.file"
+        },
+        {
+          "kind": "text-position",
+          "start": 12595,
+          "end": 12662
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "1249b007122c9694",
+          "semanticHash": "d6a9d9f48dc91234"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Check only the claims touching a file changed since this git ref.\",",
+          "prefix": "  type: \"string\",\n    placeholder: \"<ref>\",\n    ",
+          "suffix": "\n  },\n  {\n    name: \"doc\",\n    type: \"string\",\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 4949,
+          "end": 5023
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "1f1bdffbe5839ed2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Check only the claims touching a file changed since this git ref.\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return worklist.has(claim.id);",
+          "prefix": "me === state;\n        case \"pending\":\n          ",
+          "suffix": "\n        case \"expired\":\n          return live &"
+        },
+        {
+          "kind": "text-position",
+          "start": 5567,
+          "end": 5597
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "3f930d1ee8c383c5",
+          "semanticHash": "896b75c0d879f1ec"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const m = /^conflict:(.+)$/.exec(value);",
+          "prefix": "alue === \"review\") return { kind: \"review\" };\n  ",
+          "suffix": "\n  if (m?.[1]) return { kind: \"conflict\", otherC"
+        },
+        {
+          "kind": "text-position",
+          "start": 2861,
+          "end": 2901
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "64d5eb368e2f9051",
+          "semanticHash": "18d73bcae9b6058d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "retired",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:23.297Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:23.297Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

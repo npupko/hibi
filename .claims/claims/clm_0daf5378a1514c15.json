@@ -1,0 +1,52 @@
+{
+  "id": "clm_0daf5378a1514c15",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "reference",
+  "sentence": "**For the worklist**, follow each `attested` item's `procedure` and `sources`, collect the evidence, and submit it with `hibi evidence --from-file - --by agent:<name>`.",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**For the worklist**, follow each `attested` item's `procedure` and `sources`, collect the evidence, and submit it with `hibi evidence --from-file - --by agent:<name>`.",
+        "prefix": "`, and run `hibi audit --doc <file>` instead.\n- ",
+        "suffix": " Evidence applies to `attested` claims only.\n- *"
+      },
+      {
+        "kind": "text-position",
+        "start": 2483,
+        "end": 2651
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Follow `procedure.instructions` with your tools, then:\n\n```sh\nhibi evidence --from-file - --by agent:claude <<'EOF'",
+          "prefix": "edure, sources, owner, lastEvidence?, reason}`. ",
+          "suffix": "\n[{\"claimId\":\"clm_…\",\"evidence\":\"Pro plan: $29.0"
+        },
+        {
+          "kind": "text-position",
+          "start": 4409,
+          "end": 4524
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:25:23.237Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:25:23.237Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

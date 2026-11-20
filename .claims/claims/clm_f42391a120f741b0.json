@@ -1,0 +1,117 @@
+{
+  "id": "clm_f42391a120f741b0",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A `triage` entry holds one chunk request and its answers.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `triage` entry holds one chunk request and its answers.",
+        "prefix": "ntries the pair, `triage` entries the document. ",
+        "suffix": "\n- **Answers.** `answers` is the raw System One "
+      },
+      {
+        "kind": "text-position",
+        "start": 18457,
+        "end": 18514
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const chunk = (request.state as { regions: Region[] }).regions;",
+          "prefix": " Record<string, Answer>;\n      } else {\n        ",
+          "suffix": "\n        let response: Awaited<ReturnType<Judge["
+        },
+        {
+          "kind": "text-position",
+          "start": 8149,
+          "end": 8212
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "d0d3d8486143fce8",
+          "semanticHash": "1d959c4e02c864e7"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"The judge answered one triage chunk with more or fewer than one answer set.\",",
+          "prefix": "            throw new JudgeError(\n              ",
+          "suffix": "\n            );\n          }\n          answers = "
+        },
+        {
+          "kind": "text-position",
+          "start": 8519,
+          "end": 8597
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "5b5fe9062e51a9f1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"The judge answered one triage chunk with more or fewer than one answer set.\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "answers = raw[0] as Record<string, Answer>;",
+          "prefix": "wer set.\",\n            );\n          }\n          ",
+          "suffix": "\n        } catch (e) {\n          // Unavailable "
+        },
+        {
+          "kind": "text-position",
+          "start": 8635,
+          "end": 8678
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "5bc853480885d7cb",
+          "semanticHash": "308e458cc378c9e8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:58.211Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:58.211Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

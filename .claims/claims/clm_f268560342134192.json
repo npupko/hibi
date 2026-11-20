@@ -1,0 +1,84 @@
+{
+  "id": "clm_f268560342134192",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- Choice option order is fixed and canonical.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- Choice option order is fixed and canonical.",
+        "prefix": " state fields, never spliced into instructions.\n",
+        "suffix": "\n\n### 8.3 Judgments\n\n**triage.** State: `{ doc: "
+      },
+      {
+        "kind": "text-position",
+        "start": 33448,
+        "end": 33493
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/questions/triage.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"factual_claim\": {",
+          "prefix": "software.\"\n      },\n      \"criteria\": {\n        ",
+          "suffix": "\n          \"definition\": \"Asserts something abou"
+        },
+        {
+          "kind": "text-position",
+          "start": 1015,
+          "end": 1033
+        }
+      ]
+    },
+    {
+      "file": "src/judge/questions/supports.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"says_nothing\": \"`evidence` does not address what the claim asserts, either way\"",
+          "prefix": "e of the claim or implies it is false\",\n        ",
+          "suffix": "\n      }\n    },\n    \"addresses\": {\n      \"type\":"
+        },
+        {
+          "kind": "text-position",
+          "start": 932,
+          "end": 1012
+        }
+      ]
+    },
+    {
+      "file": "src/judge/questions/conflict.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"consistent\": {",
+          "prefix": "ome from.\"\n      },\n      \"criteria\": {\n        ",
+          "suffix": "\n          \"what\": \"Both can be true at the same"
+        },
+        {
+          "kind": "text-position",
+          "start": 963,
+          "end": 978
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:51.440Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:51.440Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

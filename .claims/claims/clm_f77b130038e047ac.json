@@ -1,0 +1,59 @@
+{
+  "id": "clm_f77b130038e047ac",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A side whose alias is defined but whose directory does not exist resolves to `unavailable` with the label `sibling repo \"x\" is not checked out at <dir>`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A side whose alias is defined but whose directory does not exist resolves to `unavailable` with the label `sibling repo \"x\" is not checked out at <dir>`.",
+        "prefix": "\" is not defined in .claims/config.json repos`. ",
+        "suffix": " A side whose file escapes its root resolves to "
+      },
+      {
+        "kind": "text-position",
+        "start": 5408,
+        "end": 5561
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `sibling repo \"${split.alias}\" is not checked out at ${dir}`,",
+          "prefix": "vailable: true,\n      alias: split.alias,\n      ",
+          "suffix": "\n    };\n  }\n  return { path: posix.join(dir, spl"
+        },
+        {
+          "kind": "text-position",
+          "start": 3929,
+          "end": 3998
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "814784ed387c58ab",
+          "semanticHash": "92c7f17901c036df"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:59.975Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:59.975Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

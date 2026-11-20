@@ -1,0 +1,111 @@
+{
+  "id": "clm_d8710f3dbfb5473f",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "code",
+  "sentence": "`test/e2e.test.ts` runs the whole CLI loop against a local server that answers like System One, with `TYPESAFE_BASE_URL` pointing at it.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`test/e2e.test.ts` runs the whole CLI loop against a local server that answers like System One, with `TYPESAFE_BASE_URL` pointing at it.",
+        "prefix": "One calls; see `test/fixtures/judge/README.md`. ",
+        "suffix": "\n\nTo try the real judge, set `TYPESAFE_API_KEY` "
+      },
+      {
+        "kind": "text-position",
+        "start": 4462,
+        "end": 4598
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "test/e2e.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const CLI = join(import.meta.dir, \"..\", \"src\", \"cli\", \"index.ts\");",
+          "prefix": "  type Region,\n} from \"../src/judge/types.ts\";\n\n",
+          "suffix": "\n\nconst CODE_SENTENCE = \"Retries are capped at 5"
+        },
+        {
+          "kind": "text-position",
+          "start": 1103,
+          "end": 1169
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "24cabed5e8ff6423",
+          "semanticHash": "a1fc9781509bff49"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"..\""
+        }
+      ]
+    },
+    {
+      "file": "test/e2e.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "server = Bun.serve({",
+          "prefix": "s: 0, conflict: 0 };\n\nbeforeAll(async () => {\n  ",
+          "suffix": "\n    port: 0,\n    async fetch(req) {\n      if (r"
+        },
+        {
+          "kind": "text-position",
+          "start": 2715,
+          "end": 2735
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "243db4bd30ee61b7",
+          "semanticHash": "8e83966de7841e43"
+        }
+      ]
+    },
+    {
+      "file": "test/e2e.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "env.TYPESAFE_BASE_URL = `http://localhost:${server.port}`;",
+          "prefix": "e) {\n    env.TYPESAFE_API_KEY = \"test-key\";\n    ",
+          "suffix": "\n  }\n  const proc = Bun.spawn([\"bun\", \"run\", CLI"
+        },
+        {
+          "kind": "text-position",
+          "start": 5373,
+          "end": 5431
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "c96e35aef9ac0c2b",
+          "semanticHash": "4cf8d69fda66d74c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:41.446Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:41.446Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,192 @@
+{
+  "id": "clm_ee2f0db1fd3e45d9",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**Paths.** Every path a user passes (`--doc`, `--code-file`, `--ref-file`, `--path`, `--from`, `--to`, `--successor`, and the `doc` and `file` keys of a `--from-file` item) is normalized before use: to a POSIX path relative to the anchor root, so `./docs/a.md`, `docs/a.md`, and `<root>/docs/a.md` are the same document.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**Paths.** Every path a user passes (`--doc`, `--code-file`, `--ref-file`, `--path`, `--from`, `--to`, `--successor`, and the `doc` and `file` keys of a `--from-file` item) is normalized before use: to a POSIX path relative to the anchor root, so `./docs/a.md`, `docs/a.md`, and `<root>/docs/a.md` are the same document.",
+        "prefix": "no propositions. The claim holds its sentence.\n\n",
+        "suffix": " An absolute path is compared after resolving sy"
+      },
+      {
+        "kind": "text-position",
+        "start": 13787,
+        "end": 14107
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/fs.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ": relative(resolve(root), resolve(root, p));",
+          "prefix": "ealish(resolve(root)), realish(resolve(p)))\n    ",
+          "suffix": "\n  return sep === \"/\" ? rel : rel.split(sep).joi"
+        },
+        {
+          "kind": "text-position",
+          "start": 1219,
+          "end": 1263
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "8e686436456c39c4",
+          "semanticHash": "5e738a705e59704e"
+        }
+      ]
+    },
+    {
+      "file": "src/fs.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return sep === \"/\" ? rel : rel.split(sep).join(\"/\");",
+          "prefix": " : relative(resolve(root), resolve(root, p));\n  ",
+          "suffix": "\n}\n\n/** `abs` with symlinks resolved in its long"
+        },
+        {
+          "kind": "text-position",
+          "start": 1266,
+          "end": 1318
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "fde3af8ce348e4f7",
+          "semanticHash": "c2d1417d0bdc0d0d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"/\""
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return normalizePath(this.store.anchorRoot, p);",
+          "prefix": "h`). */\n  private norm(p: string): string {\n    ",
+          "suffix": "\n  }\n\n  /**\n   * Verify every claim against the "
+        },
+        {
+          "kind": "text-position",
+          "start": 11506,
+          "end": 11553
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "3d6ec06db677013d",
+          "semanticHash": "056ecf59a96c2e10"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ ...input, from: this.norm(input.from), to: this.norm(input.to) },",
+          "prefix": "or(id, { ...o, docOnly: true }),\n      },\n      ",
+          "suffix": "\n    );\n  }\n\n  /** Move an obsolete document out"
+        },
+        {
+          "kind": "text-position",
+          "start": 26705,
+          "end": 26772
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "c86f1a5c1ce9cbe4",
+          "semanticHash": "cc9f1e479e19f5f7"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "successorPath === undefined ? undefined : this.norm(successorPath),",
+          "prefix": "    this.store,\n      this.norm(docPath),\n      ",
+          "suffix": "\n      opts,\n    );\n  }\n\n  /** Withdraw a claim:"
+        },
+        {
+          "kind": "text-position",
+          "start": 27074,
+          "end": 27141
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "a0418b2b4c3d1ad5",
+          "semanticHash": "98a5788b61a0dfae"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "path: opts.path === undefined ? undefined : this.norm(opts.path),",
+          "prefix": "     ),\n      state: opts.state ?? \"all\",\n      ",
+          "suffix": "\n    });\n  }\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 27884,
+          "end": 27949
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "8948bb00cffde26f",
+          "semanticHash": "38c85626add4ee8b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:36.584Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:36.584Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_dcac5001d06d4ace",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| coarse selector | navigation only, nobody used it |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| coarse selector | navigation only, nobody used it |",
+        "prefix": "il-on tamper` | already gone in v3; stay gone |\n",
+        "suffix": "\n\n## 13. Implementation plan\n\nLanguage: TypeScri"
+      },
+      {
+        "kind": "text-position",
+        "start": 75828,
+        "end": 75881
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const Selector = z\n  .discriminatedUnion(\"kind\", [\n    TextQuoteSelector,\n    TextPositionSelector,\n    AstNodeSelector,\n    ValueSelector,\n  ])\n  .meta({ id: \"Selector\" });",
+          "prefix": "nodeKind: z.string(),\n  value: z.string(),\n});\n\n",
+          "suffix": "\nexport type Selector = z.infer<typeof Selector>"
+        },
+        {
+          "kind": "text-position",
+          "start": 5175,
+          "end": 5355
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b15ded5836bdaa86",
+          "semanticHash": "9a5a19755b17009c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"kind\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:13.643Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:13.643Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

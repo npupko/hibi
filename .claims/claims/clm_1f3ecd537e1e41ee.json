@@ -1,0 +1,65 @@
+{
+  "id": "clm_1f3ecd537e1e41ee",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Hibi does not delete old entries.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi does not delete old entries.",
+        "prefix": " the model therefore asks every judgment again. ",
+        "suffix": "\n\n## Without a key\n\nThere is no offline flag. Wi"
+      },
+      {
+        "kind": "text-position",
+        "start": 13984,
+        "end": 14017
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/cache.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "import { mkdir, readdir, readFile, writeFile } from \"node:fs/promises\";",
+          "prefix": "\n */\n\nimport { createHash } from \"node:crypto\";\n",
+          "suffix": "\nimport { join } from \"node:path\";\nimport { Judg"
+        },
+        {
+          "kind": "text-position",
+          "start": 314,
+          "end": 385
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "import_statement",
+          "structuralHash": "4dd2a517a2dbed87",
+          "semanticHash": "2e1c6222e9e8fdc4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"node:fs/promises\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:41.441Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:41.441Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

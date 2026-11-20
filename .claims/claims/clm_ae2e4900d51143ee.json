@@ -1,0 +1,52 @@
+{
+  "id": "clm_ae2e4900d51143ee",
+  "documentId": "doc_d068824e08521674",
+  "kind": "reference",
+  "sentence": "- **A flag means re-verify.** Hibi reports that evidence moved, expired, was refuted, or conflicts. It never rewrites prose.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **A flag means re-verify.** Hibi reports that evidence moved, expired, was refuted, or conflicts. It never rewrites prose.",
+        "prefix": "d judge verdicts are cached and never re-asked.\n",
+        "suffix": "\n- **Nothing clears without evidence or a human."
+      },
+      {
+        "kind": "text-position",
+        "start": 7373,
+        "end": 7497
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**A flag means re-verify.** Hibi reports that evidence moved, expired, was refuted, or conflicts. It never rewrites prose and never declares a sentence false on its own authority.",
+          "prefix": "ame input, so a second run cannot flip them.\n3. ",
+          "suffix": "\n4. **Nothing clears without evidence or a human"
+        },
+        {
+          "kind": "text-position",
+          "start": 1567,
+          "end": 1746
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "retired",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:24.348Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:24.348Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

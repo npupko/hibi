@@ -1,0 +1,65 @@
+{
+  "id": "clm_d36aada0ea7d49ae",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "hibi runs no verifiers and its only subprocess is `git`",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "hibi runs no verifiers and its only subprocess is `git`",
+        "prefix": "ax table, and caused diff churn |\n| verifiers | ",
+        "suffix": "; the agent-run procedure loop replaces them |\n|"
+      },
+      {
+        "kind": "text-position",
+        "start": 75127,
+        "end": 75182
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/git/git.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const { stdout } = await exec(\"git\", args, {",
+          "prefix": ": string): Promise<string | null> {\n  try {\n    ",
+          "suffix": "\n      cwd,\n      maxBuffer: 64 * 1024 * 1024,\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 370,
+          "end": 414
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "6c6a17c45e3dbab8",
+          "semanticHash": "e55fcac3f5547f9f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"git\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:03.410Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:03.410Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

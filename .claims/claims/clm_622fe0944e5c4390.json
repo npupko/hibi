@@ -1,0 +1,88 @@
+{
+  "id": "clm_622fe0944e5c4390",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Before it writes the tombstone, `archive` copies the document to `archive/<path>` under the repository root.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Before it writes the tombstone, `archive` copies the document to `archive/<path>` under the repository root.",
+        "prefix": "init --instructions` appends to the named file. ",
+        "suffix": " Apart from those writes and the store under `.c"
+      },
+      {
+        "kind": "text-position",
+        "start": 1599,
+        "end": 1707
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    const relDest = join(\"archive\", docPath);\n    const dest = join(root, relDest);",
+          "prefix": "tring | null = null;\n  if (await exists(abs)) {\n",
+          "suffix": "\n    const alreadyArchived =\n      doc.lifecycle"
+        },
+        {
+          "kind": "text-position",
+          "start": 1891,
+          "end": 1974
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "dff7b1175b92e342",
+          "semanticHash": "7e9661eedd24629e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"archive\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "      await writeFile(dest, content);\n      await writeFile(abs, tombstone(docPath, successorPath));",
+          "prefix": "   const content = await readFile(abs, \"utf8\");\n",
+          "suffix": "\n    }\n    archivedTo = relDest;\n  }\n\n  doc.life"
+        },
+        {
+          "kind": "text-position",
+          "start": 2208,
+          "end": 2308
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "6b546fd3c7a83b0e",
+          "semanticHash": "4f0d34392e47ac73"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:05:52.288Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:05:52.288Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

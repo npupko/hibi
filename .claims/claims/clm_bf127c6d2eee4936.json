@@ -1,0 +1,59 @@
+{
+  "id": "clm_bf127c6d2eee4936",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "An **attestation** records that an actor stood behind a claim at a time, and on what basis.",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An **attestation** records that an actor stood behind a claim at a time, and on what basis.",
+        "prefix": "n vouch resets the ttl.\"\nicon: \"signature\"\n---\n\n",
+        "suffix": " Each claim has an append-only `attestations[]`."
+      },
+      {
+        "kind": "text-position",
+        "start": 245,
+        "end": 336
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    by: Actor,\n    at: Instant,\n    basis: AttestationBasis,",
+          "prefix": "\nexport const Attestation = z\n  .strictObject({\n",
+          "suffix": "\n    note: z.string().optional(),\n    evidenceHa"
+        },
+        {
+          "kind": "text-position",
+          "start": 6998,
+          "end": 7058
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "7b84392c75546292",
+          "semanticHash": "3dfba55ac5536936"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:10.785Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:10.785Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_543e1fe76f56444d",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "`list --state pending` is the same set.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`list --state pending` is the same set.",
+        "prefix": "rces` and no judged evidence (`never-checked`). ",
+        "suffix": "\n\n## Invoking\n\nUse `hibi`, else `bunx @npupko/hi"
+      },
+      {
+        "kind": "text-position",
+        "start": 1946,
+        "end": 1985
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return worklist.has(claim.id);",
+          "prefix": "me === state;\n        case \"pending\":\n          ",
+          "suffix": "\n        case \"expired\":\n          return live &"
+        },
+        {
+          "kind": "text-position",
+          "start": 5567,
+          "end": 5597
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "3f930d1ee8c383c5",
+          "semanticHash": "896b75c0d879f1ec"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:32.163Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:32.163Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

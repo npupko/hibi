@@ -1,0 +1,82 @@
+{
+  "id": "clm_139fa30ab83148c0",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`--to` is registered when it is not yet.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--to` is registered when it is not yet.",
+        "prefix": "registered`, and no document is created for it. ",
+        "suffix": " `supersede` never reads the `--from` file. It m"
+      },
+      {
+        "kind": "text-position",
+        "start": 72897,
+        "end": 72937
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const newDoc = await upsertDocument(store, input.to, dryRun);",
+          "prefix": "cument ${input.from} is not registered`);\n  }\n  ",
+          "suffix": "\n\n  // Every live claim moves to the new documen"
+        },
+        {
+          "kind": "text-position",
+          "start": 3167,
+          "end": 3228
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "08a425e1d1d32ae3",
+          "semanticHash": "aac2f23a470ba843"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "doc = newDocument(id, path, now);",
+          "prefix": " await store.getDocument(id);\n  if (!doc) {\n    ",
+          "suffix": "\n    if (!dryRun) await store.putDocument(doc);\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 1201,
+          "end": 1234
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "c49da9b2b50d0969",
+          "semanticHash": "371e23412c21eb72"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:07.968Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:07.968Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

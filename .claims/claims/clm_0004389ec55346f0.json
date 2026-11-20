@@ -1,0 +1,123 @@
+{
+  "id": "clm_0004389ec55346f0",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Its verdict has `doc: retired`, `evidence: retired` when the claim has an evidence side, `expired: false`, no judge state, no conflicts, `gates` and `warns` false, `remediation: null`, and exactly one reason, `retired claim: never gates or warns`, whatever its spans would read.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Its verdict has `doc: retired`, `evidence: retired` when the claim has an evidence side, `expired: false`, no judge state, no conflicts, `gates` and `warns` false, `remediation: null`, and exactly one reason, `retired claim: never gates or warns`, whatever its spans would read.",
+        "prefix": "ction pass skip it, and expiry is not computed. ",
+        "suffix": "\n\n### 7.3 When the judge is consulted\n\nEvery jud"
+      },
+      {
+        "kind": "text-position",
+        "start": 23010,
+        "end": 23288
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    doc: \"retired\",\n    ...(claim.evidence.length > 0 ? { evidence: \"retired\" as const } : {}),",
+          "prefix": "mentId: claim.documentId,\n    kind: claim.kind,\n",
+          "suffix": "\n    expired: false,\n    conflicts: [],\n    gate"
+        },
+        {
+          "kind": "text-position",
+          "start": 16623,
+          "end": 16718
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "712470056945b50d",
+          "semanticHash": "3cbaadd6173075f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired\""
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const RETIRED_REASON = \"retired claim: never gates or warns\";",
+          "prefix": "e reason label of a retired claim's verdict. */\n",
+          "suffix": "\n\n/**\n * The verdict of a retired claim: its spa"
+        },
+        {
+          "kind": "text-position",
+          "start": 16180,
+          "end": 16248
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "b09532aa4f8b21b8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired claim: never gates or warns\""
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    expired: false,\n    conflicts: [],\n    gates: false,\n    warns: false,\n    remediation: null,",
+          "prefix": "h > 0 ? { evidence: \"retired\" as const } : {}),\n",
+          "suffix": "\n    detail: { evidenceRegions: [], changes: [] "
+        },
+        {
+          "kind": "text-position",
+          "start": 16719,
+          "end": 16816
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "712470056945b50d",
+          "semanticHash": "3cbaadd6173075f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "false",
+          "value": "false"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:48.280Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:48.280Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

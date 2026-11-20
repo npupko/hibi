@@ -1,0 +1,68 @@
+{
+  "id": "clm_08b458654d66441d",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "code",
+  "sentence": "CI runs `biome ci .`, so keep `bun run check:biome` clean locally.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "CI runs `biome ci .`, so keep `bun run check:biome` clean locally.",
+        "prefix": "rs, schemas, CLI reference, then dist/hibi\n```\n\n",
+        "suffix": "\n\n## Generated files\n\nThree artifacts are genera"
+      },
+      {
+        "kind": "text-position",
+        "start": 1618,
+        "end": 1684
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": ".github/workflows/ci.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "- run: biome ci . # read-only; emits GitHub annotations",
+          "prefix": "tep with the @biomejs/biome devDependency\n      ",
+          "suffix": "\n\n  test:\n    runs-on: ubuntu-latest\n    steps:\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 573,
+          "end": 628
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"check:biome\": \"biome check .\",",
+          "prefix": ".\",\n    \"format\": \"biome format --write .\",\n    ",
+          "suffix": "\n    \"cli\": \"bun run src/cli/index.ts\",\n    \"pre"
+        },
+        {
+          "kind": "text-position",
+          "start": 1359,
+          "end": 1390
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:30.384Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:30.384Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

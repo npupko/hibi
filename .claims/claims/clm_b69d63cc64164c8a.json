@@ -1,0 +1,117 @@
+{
+  "id": "clm_b69d63cc64164c8a",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The located text is first widened to whole numbers at its edges, so a quote `= 5` that now matches the start of `= 50` reads `= 50`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The located text is first widened to whole numbers at its edges, so a quote `= 5` that now matches the start of `= 50` reads `= 50`.",
+        "prefix": "it differ from the numbers in the stored quote. ",
+        "suffix": "\n\n### 7.2 Claim states\n\nPer claim, `check` produ"
+      },
+      {
+        "kind": "text-position",
+        "start": 21398,
+        "end": 21530
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "function withWholeNumbers(text: string, region: Region): string {",
+          "prefix": "w matches the start of `= 50` reads `= 50`.\n */\n",
+          "suffix": "\n  const digit = (i: number) => /\\d/.test(text[i"
+        },
+        {
+          "kind": "text-position",
+          "start": 3659,
+          "end": 3724
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "function_declaration",
+          "structuralHash": "ddbe6f0987790ff8",
+          "semanticHash": "f2ffcdb50cf49a7a"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (digit(start)) while (digit(start - 1)) start--;",
+          "prefix": "start = region.start;\n  let end = region.end;\n  ",
+          "suffix": "\n  if (digit(end - 1)) {\n    for (;;) {\n      if"
+        },
+        {
+          "kind": "text-position",
+          "start": 3836,
+          "end": 3887
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "787c1d04025204c1",
+          "semanticHash": "5664d4100bf7fe46"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "else if (text[end] === \".\" && digit(end + 1)) end += 2;",
+          "prefix": "  for (;;) {\n      if (digit(end)) end++;\n      ",
+          "suffix": "\n      else break;\n    }\n  }\n  return text.slice"
+        },
+        {
+          "kind": "text-position",
+          "start": 3962,
+          "end": 4017
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "else_clause",
+          "structuralHash": "7dd9769e6dc28537",
+          "semanticHash": "4016eb6954b8aab7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:00.992Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:00.992Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

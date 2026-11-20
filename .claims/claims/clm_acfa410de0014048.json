@@ -1,0 +1,59 @@
+{
+  "id": "clm_acfa410de0014048",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "`check` output includes `worklist[]`: the claims an agent should re-check now.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`check` output includes `worklist[]`: the claims an agent should re-check now.",
+        "prefix": "from the referenced document.\n\n## The worklist\n\n",
+        "suffix": " A live claim on an active document is listed wh"
+      },
+      {
+        "kind": "text-position",
+        "start": 6687,
+        "end": 6765
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/json.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "worklist: report.worklist,",
+          "prefix": "rdicts.map((v) => projectVerdict(v, opts)),\n    ",
+          "suffix": "\n    documents: report.documents,\n  });\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 2328,
+          "end": 2354
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "2c3fb0b40b8ae659"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:15.180Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:15.180Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

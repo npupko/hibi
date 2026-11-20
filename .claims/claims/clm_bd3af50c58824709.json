@@ -1,0 +1,94 @@
+{
+  "id": "clm_bd3af50c58824709",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Each claim has an append-only `attestations[]`:",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each claim has an append-only `attestations[]`:",
+        "prefix": " changes no state.\n\n## 5. Attestations and ttl\n\n",
+        "suffix": "\n\n```json\n{ \"by\": \"human:alice@example.com\", \"at"
+      },
+      {
+        "kind": "text-position",
+        "start": 7622,
+        "end": 7669
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "attestations: z.array(Attestation).default([]),",
+          "prefix": "forcement: Enforcement.default(\"enforced\"),\n    ",
+          "suffix": "\n    createdAt: Instant,\n    /** The git HEAD th"
+        },
+        {
+          "kind": "text-position",
+          "start": 9630,
+          "end": 9677
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1393ec7729f6c1cb",
+          "semanticHash": "96d6de19ba72cf10"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "attestations: [...claim.attestations, attestation],",
+          "prefix": "d> {\n  await store.putClaim({\n    ...claim,\n    ",
+          "suffix": "\n  });\n}\n\nexport async function attestClaim(inpu"
+        },
+        {
+          "kind": "text-position",
+          "start": 5044,
+          "end": 5095
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "428e1da5423f8c15",
+          "semanticHash": "4244afb88293fc60"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[...claim.attestations,attestation]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:23.354Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:23.354Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

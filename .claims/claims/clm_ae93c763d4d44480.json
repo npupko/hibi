@@ -1,0 +1,128 @@
+{
+  "id": "clm_ae93c763d4d44480",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 40 | every user path is normalized to a POSIX path relative to the anchor root, and JSON echoes the normalized form; an evidence file must stay inside the anchor root or its alias directory |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 40 | every user path is normalized to a POSIX path relative to the anchor root, and JSON echoes the normalized form; an evidence file must stay inside the anchor root or its alias directory |",
+        "prefix": "unt) exits 1 and points to `hibi audit --doc` |\n",
+        "suffix": "\n| 41 | `record --by` is required, as a flag or "
+      },
+      {
+        "kind": "text-position",
+        "start": 83294,
+        "end": 83487
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/fs.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function normalizePath(root: string, p: string): string {",
+          "prefix": "/var` on\n * macOS name the same directory).\n */\n",
+          "suffix": "\n  const split = splitAlias(p);\n  if (split !== "
+        },
+        {
+          "kind": "text-position",
+          "start": 891,
+          "end": 955
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "86d20edeaa19d420",
+          "semanticHash": "ad6d62bc33ee733a"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/commands/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "extra.doc = normalizePath(engine.store.anchorRoot, doc);",
+          "prefix": "les = files;\n  }\n  if (doc !== undefined) {\n    ",
+          "suffix": "\n  }\n  const value = projectCheckReport(report, "
+        },
+        {
+          "kind": "text-position",
+          "start": 2143,
+          "end": 2199
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "513e2ba8eb18cc13",
+          "semanticHash": "6b6222ec53e69c9d"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function isInside(root: string, abs: string): boolean {",
+          "prefix": "root` or inside it. Both are resolved first. */\n",
+          "suffix": "\n  const rel = relative(resolve(root), resolve(a"
+        },
+        {
+          "kind": "text-position",
+          "start": 1337,
+          "end": 1399
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "e3f5063a5c59ce84",
+          "semanticHash": "0b5ee928216df071"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "an evidence file must be inside",
+          "prefix": " new Error(\n      `${file}: ${resolved.reason}; ",
+          "suffix": " ${resolved.alias === undefined ? \"the anchor ro"
+        },
+        {
+          "kind": "text-position",
+          "start": 7828,
+          "end": 7859
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "e27490b02083f4de"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:24.435Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:24.435Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

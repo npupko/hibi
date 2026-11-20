@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: biomejs/setup-biome@4c91541eaada48f67d7dbd7833600ce162b68f51 # v2.7.1
         with:
-          version: 2.5.11 # keep in lockstep with the @biomejs/biome devDependency
+          version: 2.5.13 # keep in lockstep with the @biomejs/biome devDependency
       - run: biome ci . # read-only; emits GitHub annotations
 
   test:
@@ -42,8 +42,25 @@ jobs:
         run: |
           bun run build:cli-reference
           git diff --exit-code docs/cli-reference.mdx plugins/hibi-cli/skills/hibi/references/cli-reference.md || (echo "generated CLI reference is stale — run bun run build:cli-reference" && exit 1)
-      - name: Dogfood — hibi checks its own docs (in-tree engine, read-only)
-        # Runs the current tree's engine read-only (no --write) and executes
-        # declared verifiers, so drift this PR introduces between docs/ and
-        # src/ fails the build via hibi itself.
-        run: bun run src/cli/index.ts check --run-verifiers --fail-on gating
+      # .claims/judge/ is a local cache and is not committed; restore it
+      # between runs, keyed on the claim files.
+      - name: Restore the judge cache
+        uses: actions/cache@v4
+        with:
+          path: .claims/judge
+          key: hibi-judge-${{ hashFiles('.claims/claims/**') }}
+          restore-keys: hibi-judge-
+      # Dogfood: hibi checks its own docs against its own code. With the
+      # TYPESAFE_API_KEY secret set, judgments missing from the cache are
+      # asked and gate as the spec says (refuted, and a conflict at or above
+      # the threshold, gate). Without it they are pending, which warns and
+      # never gates. Changed, orphaned, or ambiguous anchors gate either way,
+      # and under --doc an expired claim gates too.
+      - name: Claims in .claims/ hold (whole store)
+        env:
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+        run: bun run src/cli/index.ts check --fail-on gating --json
+      - name: README.md claims hold (doc gate; README has only code and reference claims)
+        env:
+          TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
+        run: bun run src/cli/index.ts check --doc README.md --fail-on gating --json

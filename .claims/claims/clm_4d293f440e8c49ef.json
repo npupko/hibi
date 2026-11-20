@@ -1,0 +1,59 @@
+{
+  "id": "clm_4d293f440e8c49ef",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "{ \"repos\": { \"api\": \"../api\" } }",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "{ \"repos\": { \"api\": \"../api\" } }",
+        "prefix": "ctory relative to the repository root:\n\n```json\n",
+        "suffix": "\n```\n\nAn evidence side's file may then be `api:s"
+      },
+      {
+        "kind": "text-position",
+        "start": 6347,
+        "end": 6379
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "repos: z.record(z.string(), z.string()).default({}),",
+          "prefix": " a path relative to the repository root. */\n    ",
+          "suffix": "\n    judge: JudgeConfig,\n    /** Globs of docume"
+        },
+        {
+          "kind": "text-position",
+          "start": 11836,
+          "end": 11888
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "8ff51f3b3d25cc20",
+          "semanticHash": "34424941f228a982"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:41.476Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:41.476Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

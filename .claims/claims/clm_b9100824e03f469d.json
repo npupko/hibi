@@ -1,0 +1,111 @@
+{
+  "id": "clm_b9100824e03f469d",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "| `acked` | a `conflict` or `review` that an ack on either claim covers | `acknowledged: numbers differ: 29 vs 39` |",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `acked` | a `conflict` or `review` that an ack on either claim covers | `acknowledged: numbers differ: 29 vs 39` |",
+        "prefix": "related (confidence=0.80, same_subject=0.40)` |\n",
+        "suffix": "\n| `pending` | the judge was unavailable, or its"
+      },
+      {
+        "kind": "text-position",
+        "start": 4382,
+        "end": 4498
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (isAcked(pair)) {",
+          "prefix": "lict\" || decision.outcome === \"review\") {\n      ",
+          "suffix": "\n        outcome = \"acked\";\n        reason = `ac"
+        },
+        {
+          "kind": "text-position",
+          "start": 11942,
+          "end": 11962
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "ae6db0262b92bc4e",
+          "semanticHash": "9180b46ecd10b686"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason = `acknowledged: ${decision.reason}`;",
+          "prefix": "ked(pair)) {\n        outcome = \"acked\";\n        ",
+          "suffix": "\n      } else {\n        for (const [self, other]"
+        },
+        {
+          "kind": "text-position",
+          "start": 11998,
+          "end": 12042
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "3c0fc54c482d039e",
+          "semanticHash": "8e97d145e92d83f3"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const claim of [pair.a, pair.b]) {",
+          "prefix": ".a.sentence), sentenceHash(pair.b.sentence)];\n  ",
+          "suffix": "\n    for (const att of claim.attestations) {\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 8265,
+          "end": 8304
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "0154fa6ba9e21be4",
+          "semanticHash": "8534b68ca51447c9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[pair.a,pair.b]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:26.048Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:26.048Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

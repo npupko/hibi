@@ -1,0 +1,88 @@
+{
+  "id": "clm_2279a939a47a4cb7",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`steps` is optional, Lobster-compatible YAML-as-JSON (`id`, `command`, `stdin`), and purely a hint.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`steps` is optional, Lobster-compatible YAML-as-JSON (`id`, `command`, `stdin`), and purely a hint.",
+        "prefix": "ct and is required when `procedure` is present. ",
+        "suffix": " Hibi never runs either.\n\n### 4.3 Sources\n\nAny c"
+      },
+      {
+        "kind": "text-position",
+        "start": 6980,
+        "end": 7079
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "steps: z.array(ProcedureStep).optional(),",
+          "prefix": "ject({\n    instructions: z.string().min(1),\n    ",
+          "suffix": "\n  })\n  .meta({ id: \"Procedure\" });\nexport type "
+        },
+        {
+          "kind": "text-position",
+          "start": 8475,
+          "end": 8516
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "eb868092b40bebea",
+          "semanticHash": "3df190edf5209548"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ProcedureStep = z.strictObject({\n  id: z.string().min(1),\n  command: z.string().min(1),\n  stdin: z.string().optional(),\n});",
+          "prefix": " step: a hint, never run by hibi (SPEC 4.2). */\n",
+          "suffix": "\nexport type ProcedureStep = z.infer<typeof Proc"
+        },
+        {
+          "kind": "text-position",
+          "start": 8109,
+          "end": 8245
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "2c5039b7a821af95",
+          "semanticHash": "6ebfc51d66bf7782"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:22.954Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:22.954Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

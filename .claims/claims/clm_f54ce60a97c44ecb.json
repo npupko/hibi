@@ -1,0 +1,82 @@
+{
+  "id": "clm_f54ce60a97c44ecb",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "code",
+  "sentence": "Only `archive` (the tombstone) and `init --instructions` (one appended line) write to a document.",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Only `archive` (the tombstone) and `init --instructions` (one appended line) write to a document.",
+        "prefix": "declares a sentence false on its own authority. ",
+        "suffix": "\n  </Accordion>\n\n  <Accordion title=\"4. Nothing "
+      },
+      {
+        "kind": "text-position",
+        "start": 2351,
+        "end": 2448
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await writeFile(abs, tombstone(docPath, successorPath));",
+          "prefix": "\");\n      await writeFile(dest, content);\n      ",
+          "suffix": "\n    }\n    archivedTo = relDest;\n  }\n\n  doc.life"
+        },
+        {
+          "kind": "text-position",
+          "start": 2252,
+          "end": 2308
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "454d0d8fcb895a74",
+          "semanticHash": "0894b8c2d2026289"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/commands/init.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await appendFile(file, `${sep}${INSTRUCTIONS_LINE}\\n`);",
+          "prefix": "xt === \"\" || text.endsWith(\"\\n\") ? \"\" : \"\\n\";\n  ",
+          "suffix": "\n  return { file, appended: true };\n}\n\nexport as"
+        },
+        {
+          "kind": "text-position",
+          "start": 1079,
+          "end": 1134
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "aa98e1c6d91612bd",
+          "semanticHash": "0e09ec92bee2e53d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:42.964Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:42.964Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

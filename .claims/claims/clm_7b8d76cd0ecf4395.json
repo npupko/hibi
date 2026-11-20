@@ -1,0 +1,94 @@
+{
+  "id": "clm_7b8d76cd0ecf4395",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "A `duplicate` outcome never gates or warns.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `duplicate` outcome never gates or warns.",
+        "prefix": "`conflict` or `review` finding.\n\n## Duplicates\n\n",
+        "suffix": " It is reported in two places:\n\n- `hibi list --s"
+      },
+      {
+        "kind": "text-position",
+        "start": 6488,
+        "end": 6531
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "} else if (decision.outcome === \"duplicate\") {",
+          "prefix": "  findings.push(finding);\n        }\n      }\n    ",
+          "suffix": "\n      for (const [self, other] of [\n        [pa"
+        },
+        {
+          "kind": "text-position",
+          "start": 12539,
+          "end": 12585
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "fac515856d120abd",
+          "semanticHash": "025ec420aea4727d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"duplicate\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "conflicts: pass !== undefined ? conflictsFor(pass, c.id) : [],",
+          "prefix": "Findings = {\n      judge: outcome?.state,\n      ",
+          "suffix": "\n      warnings,\n      reasons: [\n        ...(ou"
+        },
+        {
+          "kind": "text-position",
+          "start": 17414,
+          "end": 17476
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "9f8bed328159c3c3",
+          "semanticHash": "b6c4643fc02ad573"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:26.744Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:26.744Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

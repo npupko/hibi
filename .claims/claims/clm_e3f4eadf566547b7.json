@@ -1,0 +1,59 @@
+{
+  "id": "clm_e3f4eadf566547b7",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 60 | a single-value flag given twice is an error, `--<flag> given twice; <command> takes one span per side` for span flags and `…takes one --<flag>` otherwise, never a silently dropped value; `reanchor`'s `--code-file`, `--code-quote` and `--code-range` are repeatable as on `record`, each `--code-file` opening a span, so a remediation command can name every span of a multi-span claim; a missing value names the `--flag=<value>` form for values that start with `-` |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 60 | a single-value flag given twice is an error, `--<flag> given twice; <command> takes one span per side` for span flags and `…takes one --<flag>` otherwise, never a silently dropped value; `reanchor`'s `--code-file`, `--code-quote` and `--code-range` are repeatable as on `record`, each `--code-file` opening a span, so a remediation command can name every span of a multi-span claim; a missing value names the `--flag=<value>` form for values that start with `-` |",
+        "prefix": "et a new request key and are asked again once |\n",
+        "suffix": "\n| 61 | plain `reanchor` relocates only a side t"
+      },
+      {
+        "kind": "text-position",
+        "start": 87686,
+        "end": 88156
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return `--${t.name} given twice; ${cmd.name} takes ${takes}`;",
+          "prefix": "an per side\"\n        : `one --${t.name}`;\n      ",
+          "suffix": "\n    }\n    seen.add(t.name);\n  }\n  return undefi"
+        },
+        {
+          "kind": "text-position",
+          "start": 23313,
+          "end": 23374
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "d097db0bd8498a22",
+          "semanticHash": "478e22cfa964c487"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:54.320Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:54.320Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_3196db8d46d843e8",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "A `reference` claim is judged from the referenced document.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `reference` claim is judged from the referenced document.",
+        "prefix": "ms, because `hibi evidence` accepts only those. ",
+        "suffix": "\n\n## The worklist\n\n`check` output includes `work"
+      },
+      {
+        "kind": "text-position",
+        "start": 6609,
+        "end": 6668
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence: texts.referencedText,\n    source: claim.evidence[0]?.file ?? \"\",",
+          "prefix": "im,\n      sentence: texts.sentence,\n    }),\n    ",
+          "suffix": "\n  });\n  return { request, key: cacheKey(model, "
+        },
+        {
+          "kind": "text-position",
+          "start": 9223,
+          "end": 9297
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "26b14f2ae861b4de",
+          "semanticHash": "a47c9e677b6c642f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:15.104Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:15.104Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

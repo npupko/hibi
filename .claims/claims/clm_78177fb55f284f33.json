@@ -1,0 +1,81 @@
+{
+  "id": "clm_78177fb55f284f33",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `evidenceKind_<i>` | Choice over `code`, `other_doc`, `external`, `nothing`: where an agent would look first for evidence |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `evidenceKind_<i>` | Choice over `code`, `other_doc`, `external`, `nothing`: where an agent would look first for evidence |",
+        "prefix": "claim`, `instruction`, `opinion`, `narrative` |\n",
+        "suffix": "\n\n\nCode rule: a region is `code` by construction"
+      },
+      {
+        "kind": "text-position",
+        "start": 6336,
+        "end": 6461
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export type EvidenceKind = \"code\" | \"other_doc\" | \"external\" | \"nothing\";",
+          "prefix": " | \"instruction\"\n  | \"opinion\"\n  | \"narrative\";\n",
+          "suffix": "\n\nexport interface TriageResult {\n  regionId: st"
+        },
+        {
+          "kind": "text-position",
+          "start": 402,
+          "end": 475
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "c95677f6f206c607",
+          "semanticHash": "9d03631fc25ad9e8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"code\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/questions/triage.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "where would an agent look first for evidence that settles whether it is true?",
+          "prefix": "ion whose `id` is `{{id}}`, is a factual claim, ",
+          "suffix": "\",\n        \"focus\": \"Answer as if the region is "
+        },
+        {
+          "kind": "text-position",
+          "start": 4026,
+          "end": 4103
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:37.402Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:37.402Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "clm_5ab03ca396d046eb",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A new span in a sibling repo that is not checked out keeps the claim's stored span for that file (decision 66), and is refused when the claim has no stored span there.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A new span in a sibling repo that is not checked out keeps the claim's stored span for that file (decision 66), and is refused when the claim has no stored span there.",
+        "prefix": "nd an escaping path in a new span the same way. ",
+        "suffix": " Without a new span, `reanchor` keeps an evidenc"
+      },
+      {
+        "kind": "text-position",
+        "start": 6261,
+        "end": 6428
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "        return keepUnavailableTarget(claim, i, t, reason, kept);",
+          "prefix": ".get(t.file);\n      if (reason !== undefined) {\n",
+          "suffix": "\n      }\n      relocatedSides.push({ side: \"evid"
+        },
+        {
+          "kind": "text-position",
+          "start": 14559,
+          "end": 14623
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "a548de58aa643023",
+          "semanticHash": "05d719742b2e400e"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`${reason}; ${target.file} is not a stored span of claim ${claim.id}, so check out the sibling repo first.`,",
+          "prefix": "red === undefined) {\n    throw new Error(\n      ",
+          "suffix": "\n    );\n  }\n  const alias = splitAlias(target.fi"
+        },
+        {
+          "kind": "text-position",
+          "start": 8298,
+          "end": 8406
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "342bf395d6e1c0fd",
+          "semanticHash": "92c3e23c1e76a46d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:17:13.595Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:17:13.595Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

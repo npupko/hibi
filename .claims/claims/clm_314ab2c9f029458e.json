@@ -1,0 +1,169 @@
+{
+  "id": "clm_314ab2c9f029458e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Code rule: `same_subject < 0.3` means `relation: unrelated` with `forced: \"same_subject\"`, and `confidence` is the Noul confidence of `same_subject`. Otherwise `confidence` is the Choice confidence.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Code rule: `same_subject < 0.3` means `relation: unrelated` with `forced: \"same_subject\"`, and `confidence` is the Noul confidence of `same_subject`. Otherwise `confidence` is the Choice confidence.",
+        "prefix": "contradictory / unrelated`, Noul `contradicts`. ",
+        "suffix": "\n\n**Context.** `claim_context` and each side's `"
+      },
+      {
+        "kind": "text-position",
+        "start": 35513,
+        "end": 35711
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const SAME_SUBJECT_FLOOR = 0.3;",
+          "prefix": " \"same_subject\"` and the Noul's confidence.\n */\n",
+          "suffix": "\n\n/** Token estimate: 4 characters per token, co"
+        },
+        {
+          "kind": "text-position",
+          "start": 1659,
+          "end": 1697
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "2cf4c0a5a2ddcede"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.3"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (sameSubject < SAME_SUBJECT_FLOOR) {\n    return {\n      relation: \"unrelated\",",
+          "prefix": "t contradicts = noul(answers, \"contradicts\");\n  ",
+          "suffix": "\n      probabilities: relation.probabilities,\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 14507,
+          "end": 14588
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "f25e189f17d6c2d0",
+          "semanticHash": "19cb04380e61e6c0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unrelated\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "confidence: noulConfidence(sameSubject),",
+          "prefix": "   probabilities: relation.probabilities,\n      ",
+          "suffix": "\n      sameSubject,\n      contradicts,\n      for"
+        },
+        {
+          "kind": "text-position",
+          "start": 14640,
+          "end": 14680
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "b34135da11c76957",
+          "semanticHash": "31a0281292de063c"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "forced: \"same_subject\",",
+          "prefix": "t),\n      sameSubject,\n      contradicts,\n      ",
+          "suffix": "\n    };\n  }\n  return {\n    relation: relation.ch"
+        },
+        {
+          "kind": "text-position",
+          "start": 14725,
+          "end": 14748
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "01ed21984b5dd0ed"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"same_subject\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "confidence: choiceConfidence(relation.probabilities),",
+          "prefix": "\n    probabilities: relation.probabilities,\n    ",
+          "suffix": "\n    sameSubject,\n    contradicts,\n  };\n}\n\n// --"
+        },
+        {
+          "kind": "text-position",
+          "start": 14849,
+          "end": 14902
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "e36a2b58a83e8134",
+          "semanticHash": "9cdbd58254f2d6c4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:52.837Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:52.837Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

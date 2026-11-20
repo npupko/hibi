@@ -1,0 +1,82 @@
+{
+  "id": "clm_6a6317c310cc431f",
+  "documentId": "doc_c5adefb4274c6931",
+  "kind": "code",
+  "sentence": "\"evidence supports the sentence (confidence 0.92 >= threshold 0.8)\",\n        \"source matches declared source \\\"stripe\\\"\"",
+  "doc": {
+    "file": "docs/quickstart.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "\"evidence supports the sentence (confidence 0.92 >= threshold 0.8)\",\n        \"source matches declared source \\\"stripe\\\"\"",
+        "prefix": "ot_address\": 0.02 },\n      \"reasons\": [\n        ",
+        "suffix": "\n      ],\n      \"attested\": true,\n      \"cached\""
+      },
+      {
+        "kind": "text-position",
+        "start": 5929,
+        "end": 6049
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`evidence ${verb} the sentence (confidence ${c} >= threshold ${t})`,",
+          "prefix": "upported\" : \"refuted\",\n      reasons: [\n        ",
+          "suffix": "\n      ],\n    };\n  }\n  return {\n    state: \"revi"
+        },
+        {
+          "kind": "text-position",
+          "start": 4347,
+          "end": 4415
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "40dcf61d1a3f4cf6",
+          "semanticHash": "d41d829ecd59b76e"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return `source matches declared source \"${s.id}\"`;",
+          "prefix": "(s.id !== undefined && s.id === source) {\n      ",
+          "suffix": "\n    }\n    if (s.resource === source) {\n      re"
+        },
+        {
+          "kind": "text-position",
+          "start": 4864,
+          "end": 4914
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "d7397ca4d38ca7a5",
+          "semanticHash": "afa2c251c5db08b2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:30.040Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:30.040Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

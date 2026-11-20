@@ -1,0 +1,59 @@
+{
+  "id": "clm_5b4712cd02214e56",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "The worklist in `check` output carries each claim's `procedure` and `sources` so the agent has what it needs.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The worklist in `check` output carries each claim's `procedure` and `sources` so the agent has what it needs.",
+        "prefix": " submits what it observed with `hibi evidence`. ",
+        "suffix": " See [Workflows](/workflows).\n\nOn the command li"
+      },
+      {
+        "kind": "text-position",
+        "start": 3606,
+        "end": 3715
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "procedure: c.procedure,\n        sources: c.sources,",
+          "prefix": ": c.kind,\n        document: c.doc.file,\n        ",
+          "suffix": "\n        owner: c.owner ?? null,\n        ...(las"
+        },
+        {
+          "kind": "text-position",
+          "start": 18554,
+          "end": 18605
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "b423551d96cde6a4",
+          "semanticHash": "d3dcc3f41ec620e3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:02.842Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:02.842Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

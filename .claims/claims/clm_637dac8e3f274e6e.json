@@ -1,0 +1,105 @@
+{
+  "id": "clm_637dac8e3f274e6e",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "| `pending` | the judge was unavailable, or its answer could not be used | `judge unavailable: TYPESAFE_API_KEY is not set; the judge cannot answer.`, `judge error: TypeSafe returned HTTP 400: …` |",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `pending` | the judge was unavailable, or its answer could not be used | `judge unavailable: TYPESAFE_API_KEY is not set; the judge cannot answer.`, `judge error: TypeSafe returned HTTP 400: …` |",
+        "prefix": "rs | `acknowledged: numbers differ: 29 vs 39` |\n",
+        "suffix": "\n\nThe value comparison runs in code, not in the "
+      },
+      {
+        "kind": "text-position",
+        "start": 4499,
+        "end": 4696
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const label = judgeFailureLabel(e);",
+          "prefix": "dge.conflict(a, b);\n      } catch (e) {\n        ",
+          "suffix": "\n        if (label === undefined) throw e;\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 10976,
+          "end": 11011
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "639659356565b76d",
+          "semanticHash": "9ee50ce7aa972656"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`${API_KEY_ENV} is not set; the judge cannot answer.`,",
+          "prefix": "\"\") {\n      throw new JudgeUnavailable(\n        ",
+          "suffix": "\n      );\n    }\n    await acquire();\n    try {\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 4639,
+          "end": 4693
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "741052939c553a2d",
+          "semanticHash": "b4b501a53d3995ae"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "throw new JudgeError(`TypeSafe returned HTTP ${status}: ${text}`);",
+          "prefix": " the request is wrong, not the service.\n        ",
+          "suffix": "\n      }\n      lastFailure = `HTTP ${status}: ${"
+        },
+        {
+          "kind": "text-position",
+          "start": 6347,
+          "end": 6413
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "throw_statement",
+          "structuralHash": "5e7091e61f388ec5",
+          "semanticHash": "e88771fe6458d624"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:26.101Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:26.101Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

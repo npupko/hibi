@@ -1,0 +1,117 @@
+{
+  "id": "clm_cfa8c418162f4837",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "`record` and `reanchor` refuse:",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`record` and `reanchor` refuse:",
+        "prefix": "ns on the next `check`.\n\n## Record-time checks\n\n",
+        "suffix": "\n\n- a doc quote shorter than 8 characters;\n- a q"
+      },
+      {
+        "kind": "text-position",
+        "start": 7703,
+        "end": 7734
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (\"unavailable\" in resolved) throw recordRefusal(target.file, resolved);",
+          "prefix": "fig, target.file, this.store.anchorRoot);\n      ",
+          "suffix": "\n      evidenceContents[target.file] = await thi"
+        },
+        {
+          "kind": "text-position",
+          "start": 14236,
+          "end": 14310
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "8a90e38518edf8fe",
+          "semanticHash": "9f626a575f6fb13b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unavailable\""
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "      assertAliasKnown(config, target.file);\n      const r = resolveFile(config, target.file, this.store.anchorRoot);\n      if (\"unavailable\" in r) {",
+          "prefix": " if (target.file in evidenceContents) continue;\n",
+          "suffix": "\n        // A sibling repo that is not checked o"
+        },
+        {
+          "kind": "text-position",
+          "start": 21431,
+          "end": 21580
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "4e5725f37ef951b8",
+          "semanticHash": "826d56b5b9d2ae5e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unavailable\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...validateDocQuote(contents.docContent, docRegion, docFile),",
+          "prefix": "  if (docRegion) {\n      warnings.push(\n        ",
+          "suffix": "\n      );\n      docBundle = buildSelectorBundle("
+        },
+        {
+          "kind": "text-position",
+          "start": 13547,
+          "end": 13608
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "9fd37beb08ec1bb4",
+          "semanticHash": "0f31310b7c09c3e8"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:41.559Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:41.559Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

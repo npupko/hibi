@@ -1,0 +1,72 @@
+{
+  "id": "clm_11e4cfe3545f4982",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "Under `--since` the contradiction pass still runs over the whole store, so a scoped check still reports a conflict with a claim outside its scope.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Under `--since` the contradiction pass still runs over the whole store, so a scoped check still reports a conflict with a claim outside its scope.",
+        "prefix": "re-read the sentence). An unknown ref exits 1.\n\n",
+        "suffix": "\n\n### 3. A new or unaudited document\n\n```sh\nhibi"
+      },
+      {
+        "kind": "text-position",
+        "start": 1908,
+        "end": 2054
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const pass = await this.conflictPass(onlyDocument);",
+          "prefix": "     onlyDocument = scope.documentId;\n    }\n    ",
+          "suffix": "\n    const options: CheckOptions = {\n      ast: "
+        },
+        {
+          "kind": "text-position",
+          "start": 13099,
+          "end": 13150
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "d4d9a8eab0ba334e",
+          "semanticHash": "c663ae201949e4ad"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:38.001Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:41.894Z",
+      "basis": "ack",
+      "note": "one is about which claims the worklist lists in a scoped check, the other about conflict findings naming claims outside scope",
+      "ack": {
+        "pairId": "clm_11b4b67d2fda4a8b:clm_11e4cfe3545f4982",
+        "sentenceHashes": [
+          "17c64c14841cb2d289185b3a889d4cbc2c28cb34aa33fd8d1e438dbfcd166bc7",
+          "0acc056913b85f050dbb001eb3cb9c38d4c3021053bf2a173a8adfc63fb0508e"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:38.001Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

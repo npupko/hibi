@@ -1,0 +1,140 @@
+{
+  "id": "clm_e2f2206013464064",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "The tree-sitter grammars are embedded in the binary; `--no-ast` skips them, and a language without a grammar gets text selectors only.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The tree-sitter grammars are embedded in the binary; `--no-ast` skips them, and a language without a grammar gets text selectors only.",
+        "prefix": "ing `MAX_ATTEMPTS = 5` to `50` flags the claim. ",
+        "suffix": " On `check`, each side resolves to `unchanged`, "
+      },
+      {
+        "kind": "text-position",
+        "start": 6190,
+        "end": 6324
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/ast/analyzer.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "import tsWasm from \"../../grammars/tree-sitter-typescript.wasm\" with {",
+          "prefix": "rs/tree-sitter-tsx.wasm\" with { type: \"file\" };\n",
+          "suffix": "\n  type: \"file\",\n};\nimport type { AstAnalysis, A"
+        },
+        {
+          "kind": "text-position",
+          "start": 931,
+          "end": 1001
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "import_statement",
+          "structuralHash": "78f64cd519940e4d",
+          "semanticHash": "4ee5a7603e061103"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"../../grammars/tree-sitter-typescript.wasm\""
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (this.options.noAst) return undefined;",
+          "prefix": "ring>,\n  ): Promise<Analyzer | undefined> {\n    ",
+          "suffix": "\n    const analyzer = await loadAnalyzer();\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 9070,
+          "end": 9111
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "93908398f53bedcb",
+          "semanticHash": "52e161ce8b484d2c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/anchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (opts.language && opts.analyzer) {",
+          "prefix": " { kind: \"text-position\", start, end },\n  ];\n\n  ",
+          "suffix": "\n    const { astNode, value } = opts.analyzer.re"
+        },
+        {
+          "kind": "text-position",
+          "start": 2060,
+          "end": 2097
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "f6b1fe86a4b11086",
+          "semanticHash": "637d7340b53a7c55"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/lang.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return BY_EXT[extname(path).toLowerCase()];",
+          "prefix": "geForFile(path: string): string | undefined {\n  ",
+          "suffix": "\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 505,
+          "end": 548
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "e16792a0fc74588e",
+          "semanticHash": "54c71f8c6647f40c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:23.966Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:23.966Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

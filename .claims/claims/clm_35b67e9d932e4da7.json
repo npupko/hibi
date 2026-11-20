@@ -1,0 +1,65 @@
+{
+  "id": "clm_35b67e9d932e4da7",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "`config.json` as `hibi init` writes it:",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`config.json` as `hibi init` writes it:",
+        "prefix": "emove <dir>, run `hibi init`, and re-record.``\n\n",
+        "suffix": "\n\n```json\n{\n  \"version\": \"v4\",\n  \"repos\": {},\n  "
+      },
+      {
+        "kind": "text-position",
+        "start": 9250,
+        "end": 9289
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`${JSON.stringify(ClaimStore.defaultConfig(), null, 2)}\\n`,",
+          "prefix": "   await writeFile(\n        configPath,\n        ",
+          "suffix": "\n      );\n    }\n    // The judge cache is local "
+        },
+        {
+          "kind": "text-position",
+          "start": 3108,
+          "end": 3167
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "ca829ab2f8760f96",
+          "semanticHash": "be6d1f5aa0103cc1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:04.738Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:04.738Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

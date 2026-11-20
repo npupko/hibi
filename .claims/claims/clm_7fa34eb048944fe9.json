@@ -1,0 +1,117 @@
+{
+  "id": "clm_7fa34eb048944fe9",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "code",
+  "sentence": "| W3C Web Annotation Data Model | the `text-quote` and `text-position` selectors; several equal matches is `ambiguous`, not a guess |",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| W3C Web Annotation Data Model | the `text-quote` and `text-position` selectors; several equal matches is `ambiguous`, not a guess |",
+        "prefix": "thin an error budget, position as a weak bias |\n",
+        "suffix": "\n| Fiberplane Drift | tree-sitter node fingerpri"
+      },
+      {
+        "kind": "text-position",
+        "start": 6282,
+        "end": 6415
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "kind: z.literal(\"text-quote\"),",
+          "prefix": "rt const TextQuoteSelector = z.strictObject({\n  ",
+          "suffix": "\n  exact: z.string(),\n  prefix: z.string().defau"
+        },
+        {
+          "kind": "text-position",
+          "start": 4030,
+          "end": 4060
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "6551225e2881068f",
+          "semanticHash": "9d899d8a6515295b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"text-quote\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "kind: z.literal(\"text-position\"),",
+          "prefix": "const TextPositionSelector = z.strictObject({\n  ",
+          "suffix": "\n  start: z.number().int().nonnegative(),\n  end:"
+        },
+        {
+          "kind": "text-position",
+          "start": 4300,
+          "end": 4333
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "6551225e2881068f",
+          "semanticHash": "ed99e24c8d0176bd"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"text-position\""
+        }
+      ]
+    },
+    {
+      "file": "src/algo/localize.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "/** True when several exact occurrences scored equally on context. */",
+          "prefix": "rface LocateResult {\n  region: Region | null;\n  ",
+          "suffix": "\n  ambiguous: boolean;\n  /** Whether the region "
+        },
+        {
+          "kind": "text-position",
+          "start": 903,
+          "end": 972
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "e48e402a5c9f70d6"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:52.476Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:52.476Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

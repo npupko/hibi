@@ -1,0 +1,82 @@
+{
+  "id": "clm_887b24c420bd48af",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Every call returns the model id, the exact request, the raw answers, and the result.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Every call returns the model id, the exact request, the raw answers, and the result.",
+        "prefix": ", `confidence`, `sameSubject`, `contradicts` |\n\n",
+        "suffix": " Hibi stores the first three in the [cache](#the"
+      },
+      {
+        "kind": "text-position",
+        "start": 1364,
+        "end": 1448
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export interface JudgeResponse<T> {",
+          "prefix": "w answers so they can be cached and audited. */\n",
+          "suffix": "\n  model: string;\n  request: unknown;\n  answers:"
+        },
+        {
+          "kind": "text-position",
+          "start": 2267,
+          "end": 2302
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "d8e648767c12f3d0",
+          "semanticHash": "711d6f57b6f5efb9"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "result: T;",
+          "prefix": "ring;\n  request: unknown;\n  answers: unknown;\n  ",
+          "suffix": "\n}\n\nexport interface Judge {\n  /** The pinned ve"
+        },
+        {
+          "kind": "text-position",
+          "start": 2362,
+          "end": 2372
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "property_signature",
+          "structuralHash": "3644705a4bf84a12",
+          "semanticHash": "8e55b819a650af30"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:34.661Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:34.661Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

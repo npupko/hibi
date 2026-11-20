@@ -1,0 +1,94 @@
+{
+  "id": "clm_82f31fb9be5e43ff",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The lead-in is found from the line above the list: blank lines are skipped, and the line reached must not be a heading, a fence or fenced line, a frontmatter line, a thematic break, or a tag-only line (section 10).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The lead-in is found from the line above the list: blank lines are skipped, and the line reached must not be a heading, a fence or fenced line, a frontmatter line, a thematic break, or a tag-only line (section 10).",
+        "prefix": "ce), the context also holds the list's lead-in. ",
+        "suffix": " The lead-in is that line's paragraph (the lines"
+      },
+      {
+        "kind": "text-position",
+        "start": 36452,
+        "end": 36666
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(lines[k] as Line).text.trim() === \"\"",
+          "prefix": " k >= 0 &&\n    !(lines[k] as Line).front &&\n    ",
+          "suffix": "\n  ) {\n    k -= 1;\n  }\n  if (k < 0 || k === a - "
+        },
+        {
+          "kind": "text-position",
+          "start": 5908,
+          "end": 5945
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "1894ceb2e9287222",
+          "semanticHash": "1abf1a7e97c640d3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (isBreak(above, false) || TAG_LINE.test(above.text.trim())) return \"\";",
+          "prefix": " return \"\";\n  const above = lines[k] as Line;\n  ",
+          "suffix": "\n  const [c] = paragraphLines(lines, k, k);\n  co"
+        },
+        {
+          "kind": "text-position",
+          "start": 6043,
+          "end": 6116
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "522d58f822db8b3a",
+          "semanticHash": "219bb15c2a4a303d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "false",
+          "value": "false"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:05.759Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:05.759Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

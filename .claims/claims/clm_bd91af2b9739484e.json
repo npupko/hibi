@@ -1,0 +1,82 @@
+{
+  "id": "clm_bd91af2b9739484e",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "an alias that `config.repos` does not define.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "an alias that `config.repos` does not define.",
+        "prefix": "or an aliased file (`path escapes its root`);\n- ",
+        "suffix": "\n\nPaths are normalized to POSIX paths relative t"
+      },
+      {
+        "kind": "text-position",
+        "start": 8030,
+        "end": 8075
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`unknown repo alias \"${split.alias}\" in ${file}; add it to \"repos\" in .claims/config.json",
+          "prefix": ".keys(config.repos);\n    throw new Error(\n      ",
+          "suffix": "${known.length ? ` (known: ${known.join(\", \")})`"
+        },
+        {
+          "kind": "text-position",
+          "start": 2377,
+          "end": 2466
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "6b44e4b2feddf7ff",
+          "semanticHash": "207162f3d8bbd932"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "assertAliasKnown(config, target.file);\n      const resolved",
+          "prefix": "arget.file in evidenceContents) continue;\n      ",
+          "suffix": " = resolveFile(config, target.file, this.store.a"
+        },
+        {
+          "kind": "text-position",
+          "start": 14111,
+          "end": 14170
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "fe14806447b35677",
+          "semanticHash": "aa6c4a662761de8a"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:27.198Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:27.198Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

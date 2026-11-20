@@ -1,0 +1,157 @@
+{
+  "id": "clm_1781933b67d948ae",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It is scripted by sentence or pair text, and it encodes each scripted result as System One answers and decodes them with the Jev mappers, so a result produced by the fake and one produced by Jev take the same decode path.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It is scripted by sentence or pair text, and it encodes each scripted result as System One answers and decodes them with the Jev mappers, so a result produced by the fake and one produced by Jev take the same decode path.",
+        "prefix": "mentation.\n\nA fake implementation serves tests. ",
+        "suffix": "\n\n### 8.2 Jev adapter\n\n- Direct HTTP: `POST http"
+      },
+      {
+        "kind": "text-position",
+        "start": 31081,
+        "end": 31302
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/fake.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const answer = lookup(this.script.supports, input.sentence, [input]);",
+          "prefix": " input);\n    this.begin(\"supports\", input);\n    ",
+          "suffix": "\n    if (answer === undefined) {\n      throw new"
+        },
+        {
+          "kind": "text-position",
+          "start": 4651,
+          "end": 4720
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "2d7f99a73ac40a74",
+          "semanticHash": "c6710bd80aa32a4c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[input]"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/fake.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "lookup(this.script.conflict, pairKey(a.text, b.text), [",
+          "prefix": "begin(\"conflict\", { a, b });\n    const answer = ",
+          "suffix": "\n      a,\n      b,\n    ]);\n    if (answer === un"
+        },
+        {
+          "kind": "text-position",
+          "start": 5272,
+          "end": 5327
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "7e89055dac3b6dd6",
+          "semanticHash": "da34f04e8bbff89d"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/fake.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const answers = encodeSupports(answer);",
+          "prefix": "stringify(input.sentence)}`,\n      );\n    }\n    ",
+          "suffix": "\n    return {\n      model: this.model,\n      req"
+        },
+        {
+          "kind": "text-position",
+          "start": 4886,
+          "end": 4925
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "639659356565b76d",
+          "semanticHash": "b309f35d6a452b0c"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/fake.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "result: mapSupportsAnswers(answers),",
+          "prefix": "this.model,\n      request,\n      answers,\n      ",
+          "suffix": "\n    };\n  }\n\n  async conflict(\n    a: ConflictSi"
+        },
+        {
+          "kind": "text-position",
+          "start": 5000,
+          "end": 5036
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "b34135da11c76957",
+          "semanticHash": "2c455b9f74eb45a5"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/fake.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "result: mapConflictAnswers(answers),",
+          "prefix": "this.model,\n      request,\n      answers,\n      ",
+          "suffix": "\n    };\n  }\n}\n\n// ── Wire encoding: a result as "
+        },
+        {
+          "kind": "text-position",
+          "start": 5655,
+          "end": 5691
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "b34135da11c76957",
+          "semanticHash": "19fbf8dd34c71cec"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:50.187Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:50.187Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

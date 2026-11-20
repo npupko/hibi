@@ -1,0 +1,65 @@
+{
+  "id": "clm_05067f9e298d4848",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| value rule fires (section 8.5) | `refuted` | `value differs: <label>` |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| value rule fires (section 8.5) | `refuted` | `value differs: <label>` |",
+        "prefix": "esses=0.12)` appended when the Noul forced it |\n",
+        "suffix": "\n| `supports`, confidence at or above threshold "
+      },
+      {
+        "kind": "text-position",
+        "start": 38668,
+        "end": 38741
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"refuted\", reasons: [`value differs: ${cmp.label}`] };",
+          "prefix": "cmp.differs && cmp.label !== undefined) {\n      ",
+          "suffix": "\n    }\n  }\n  const verb = result.relation;\n  if "
+        },
+        {
+          "kind": "text-position",
+          "start": 4096,
+          "end": 4166
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "f49ce7ee24e466fc",
+          "semanticHash": "c628178ea96bcff0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"refuted\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:17.026Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:17.026Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,94 @@
+{
+  "id": "clm_d4ceb7d8363e4138",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "It changes no state.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It changes no state.",
+        "prefix": "ce matches declared source \"<id or resource>\"`. ",
+        "suffix": "\n\n## What stays in code\n\nThe comparison of quant"
+      },
+      {
+        "kind": "text-position",
+        "start": 10486,
+        "end": 10506
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons: source ? [...outcome.reasons, source] : outcome.reasons,",
+          "prefix": "    : undefined;\n  return {\n    ...outcome,\n    ",
+          "suffix": "\n    key: entry.key,\n  };\n}\n\n/** The anchor stat"
+        },
+        {
+          "kind": "text-position",
+          "start": 6847,
+          "end": 6912
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db6d005028c3ea25",
+          "semanticHash": "48a0d8dad17cc61c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[...outcome.reasons,source]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (source !== undefined) outcome.reasons.push(source);",
+          "prefix": "eclaredSourceLabel(p.claim, p.item.source);\n    ",
+          "suffix": "\n    summary[outcome.state] += 1;\n    let attest"
+        },
+        {
+          "kind": "text-position",
+          "start": 12823,
+          "end": 12878
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "90810c592281622b",
+          "semanticHash": "d9b8aeb2a5683aa7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:39.347Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:39.347Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

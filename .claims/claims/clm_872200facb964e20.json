@@ -1,0 +1,65 @@
+{
+  "id": "clm_872200facb964e20",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "On `supports`, a bare number in the evidence (a count, an id, a line number) says too little to refute the sentence, so unitless numbers are left out.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "On `supports`, a bare number in the evidence (a count, an id, a line number) says too little to refute the sentence, so unitless numbers are left out.",
+        "prefix": "r: 29 vs 39` (a conflict with probability 1) |\n\n",
+        "suffix": " On `conflict`, two sentences about the same sub"
+      },
+      {
+        "kind": "text-position",
+        "start": 12134,
+        "end": 12284
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const SUPPORTS_EXCLUDED_GROUPS: readonly string[] = [\"number\"];",
+          "prefix": ", a line number) says too little to refute.\n */\n",
+          "suffix": "\n\nfunction fmt(p: number): string {\n  return p.t"
+        },
+        {
+          "kind": "text-position",
+          "start": 2593,
+          "end": 2663
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b839a95afff47bf7",
+          "semanticHash": "f01dab213365856a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"number\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:40.247Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:40.247Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

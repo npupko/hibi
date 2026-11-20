@@ -1,0 +1,117 @@
+{
+  "id": "clm_5a04058abe8d4977",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "For an expired `code` or `reference` claim, that reason is `worklist: expired: re-verify, then hibi attest <id> --by human:<name>`, because an agent vouch does not reset its ttl.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "For an expired `code` or `reference` claim, that reason is `worklist: expired: re-verify, then hibi attest <id> --by human:<name>`, because an agent vouch does not reset its ttl.",
+        "prefix": "ts verdict also carries a `worklist: …` reason. ",
+        "suffix": " A pure vouch claim (`attested`, with no `proced"
+      },
+      {
+        "kind": "text-position",
+        "start": 7351,
+        "end": 7529
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return `worklist: expired: re-verify, then hibi attest ${id} --by human:<name>`;",
+          "prefix": " expiredNoEvidenceLabel(id: string): string {\n  ",
+          "suffix": "\n}\n\nfunction worklistLabel(\n  reason: WorklistRe"
+        },
+        {
+          "kind": "text-position",
+          "start": 9238,
+          "end": 9318
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "b0665cb31c56a6df",
+          "semanticHash": "c402ee604000bd1e"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return reason === \"expired\" && kind !== \"attested\"",
+          "prefix": "\n  kind: ClaimKind,\n  id: string,\n): string {\n  ",
+          "suffix": "\n    ? expiredNoEvidenceLabel(id)\n    : WORKLIST"
+        },
+        {
+          "kind": "text-position",
+          "start": 9419,
+          "end": 9469
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "eb2f5ce7a7ff3af9",
+          "semanticHash": "f0e490713b516acb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"expired\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return a.basis === \"vouch\" && a.by.startsWith(\"human:\");",
+          "prefix": " {\n  if (a.basis === \"evidence\") return true;\n  ",
+          "suffix": "\n}\n\n/**\n * The newest counting attestation, or u"
+        },
+        {
+          "kind": "text-position",
+          "start": 649,
+          "end": 705
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "f5a90e37e56fc368",
+          "semanticHash": "e13e9b92ec8f5bcc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"vouch\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:42.715Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:42.715Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

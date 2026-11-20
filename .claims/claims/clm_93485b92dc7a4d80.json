@@ -1,0 +1,59 @@
+{
+  "id": "clm_93485b92dc7a4d80",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "- the comparison of numbers, money, versions, and dates, which happens in code.",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- the comparison of numbers, money, versions, and dates, which happens in code.",
+        "prefix": "ms/judge/` (the cache is read, never re-asked);\n",
+        "suffix": "\n\nA judgment that is not in the cache comes back"
+      },
+      {
+        "kind": "text-position",
+        "start": 2721,
+        "end": 2800
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const cmp = compareValues(",
+          "prefix": "ng numbers, versions, and dates can refute.\n    ",
+          "suffix": "\n      values.sentence.map((v) => ({ ...v, raw: "
+        },
+        {
+          "kind": "text-position",
+          "start": 3831,
+          "end": 3857
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "44e354aff6161769",
+          "semanticHash": "f50412c11c84d13f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:42.832Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:42.832Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

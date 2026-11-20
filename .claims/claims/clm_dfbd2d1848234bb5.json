@@ -1,0 +1,88 @@
+{
+  "id": "clm_dfbd2d1848234bb5",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "```bash pre-push\n#!/bin/sh\nhibi check --since origin/main || {\n  echo \"hibi: a document sentence is stale; re-verify before pushing.\" >&2\n  exit 1\n}\n```",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```bash pre-push\n#!/bin/sh\nhibi check --since origin/main || {\n  echo \"hibi: a document sentence is stale; re-verify before pushing.\" >&2\n  exit 1\n}\n```",
+        "prefix": " this gate. See [Audit](/audit).\n\n## git hooks\n\n",
+        "suffix": "\n\n```bash pre-commit\n#!/bin/sh\nhibi check || {\n "
+      },
+      {
+        "kind": "text-position",
+        "start": 4242,
+        "end": 4394
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Check only the claims touching a file changed since this git ref.\",",
+          "prefix": "  type: \"string\",\n    placeholder: \"<ref>\",\n    ",
+          "suffix": "\n  },\n  {\n    name: \"doc\",\n    type: \"string\",\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 4949,
+          "end": 5023
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "1f1bdffbe5839ed2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Check only the claims touching a file changed since this git ref.\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function computeExitCode(",
+          "prefix": "ning is exit 2 only under `--fail-on warn`.\n */\n",
+          "suffix": "\n  flags: { gating: boolean; warn: boolean },\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 22088,
+          "end": 22120
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "1fdd427fda4527a4",
+          "semanticHash": "59fe1b9640983b54"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:43.319Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:43.319Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

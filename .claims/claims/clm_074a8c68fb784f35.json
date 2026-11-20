@@ -1,0 +1,59 @@
+{
+  "id": "clm_074a8c68fb784f35",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "| `ref` | reference only: `{file, quote or range}` |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `ref` | reference only: `{file, quote or range}` |",
+        "prefix": "code` | code only: `[{file, quote or range}]` |\n",
+        "suffix": "\n| `sources` | `[{id?, resource, title?}]`, neve"
+      },
+      {
+        "kind": "text-position",
+        "start": 3764,
+        "end": 3816
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(`ref is only for kind reference (kind is ${k})`);",
+          "prefix": " && k !== undefined && k !== \"reference\") {\n    ",
+          "suffix": "\n  }\n  if (k === \"code\") {\n    if (!Array.isArra"
+        },
+        {
+          "kind": "text-position",
+          "start": 9187,
+          "end": 9248
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "418e165936bd8a56",
+          "semanticHash": "0ecbeb0d3845ba34"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:32.806Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:32.806Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_5c9263ea24354928",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| request budget | 48,000 estimated tokens for state plus questions (model limit 64k) |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| request budget | 48,000 estimated tokens for state plus questions (model limit 64k) |",
+        "prefix": "\n| requests in flight | at most 8 per process |\n",
+        "suffix": "\n| question budget | 24,000 estimated tokens for"
+      },
+      {
+        "kind": "text-position",
+        "start": 3550,
+        "end": 3637
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "REQUEST_TOKEN_BUDGET = 48_000",
+          "prefix": "64k (research note, section 5). */\nexport const ",
+          "suffix": ";\n\n/** Budget for state plus any one question; t"
+        },
+        {
+          "kind": "text-position",
+          "start": 1929,
+          "end": 1958
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "c352b6f45f145f95"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "48_000"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.903Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.903Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

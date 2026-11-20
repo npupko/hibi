@@ -1,0 +1,65 @@
+{
+  "id": "clm_1cba939812204d08",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "Every flag: `references/cli-reference.md`.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Every flag: `references/cli-reference.md`.",
+        "prefix": "pko/hibi`. JSON when piped; `--json` forces it. ",
+        "suffix": " The judge needs `TYPESAFE_API_KEY`; without it "
+      },
+      {
+        "kind": "text-position",
+        "start": 2075,
+        "end": 2117
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "scripts/gen-cli-reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"cli-reference.md\",",
+          "prefix": "kills\",\n      \"hibi\",\n      \"references\",\n      ",
+          "suffix": "\n    ),\n    frontmatter: \"# hibi CLI reference\\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 881,
+          "end": 900
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "c11c370cccf04d09"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"cli-reference.md\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:32.276Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:32.276Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

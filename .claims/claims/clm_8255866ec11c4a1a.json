@@ -1,0 +1,59 @@
+{
+  "id": "clm_8255866ec11c4a1a",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "A list item's context also includes the list's lead-in paragraph.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A list item's context also includes the list's lead-in paragraph.",
+        "prefix": "heading path and paragraph), in claim-id order. ",
+        "suffix": " The answer is cached under the hash of the mode"
+      },
+      {
+        "kind": "text-position",
+        "start": 2041,
+        "end": 2106
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const before = lead ? `${lead}\\n\\n${listBefore}` : listBefore;",
+          "prefix": "ocText.slice(pStart, at).replace(/^\\s+/, \"\");\n  ",
+          "suffix": "\n  const after = docText\n    .slice(at + sentenc"
+        },
+        {
+          "kind": "text-position",
+          "start": 8173,
+          "end": 8235
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "32f0c05edd2b790b",
+          "semanticHash": "7298afe34d748754"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:43.584Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:43.584Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

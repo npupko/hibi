@@ -1,0 +1,111 @@
+{
+  "id": "clm_be2ed00bbe624f6f",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "There are no topics and nothing to configure.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "There are no topics and nothing to configure.",
+        "prefix": "ms in the same document pair by the same rules. ",
+        "suffix": "\n\n| constant | value | in `src/engine/pairing.ts"
+      },
+      {
+        "kind": "text-position",
+        "start": 1279,
+        "end": 1324
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "repos: z.record(z.string(), z.string()).default({}),",
+          "prefix": " a path relative to the repository root. */\n    ",
+          "suffix": "\n    judge: JudgeConfig,\n    /** Globs of docume"
+        },
+        {
+          "kind": "text-position",
+          "start": 11836,
+          "end": 11888
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "8ff51f3b3d25cc20",
+          "semanticHash": "34424941f228a982"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ignore: z.array(z.string()).default([]),",
+          "prefix": " `audit` refuses; nothing else reads it. */\n    ",
+          "suffix": "\n  })\n  .meta({ id: \"Config\" });\nexport type Con"
+        },
+        {
+          "kind": "text-position",
+          "start": 11987,
+          "end": 12027
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "4e9da358970d851e",
+          "semanticHash": "60c6a07f44206969"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "/** Overrides `RARE_SHARE`; for tests. */",
+          "prefix": " string;\n}\n\nexport interface PairingOptions {\n  ",
+          "suffix": "\n  rareShare?: number;\n  /** Overrides `RARE_MIN"
+        },
+        {
+          "kind": "text-position",
+          "start": 3498,
+          "end": 3539
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "c0ee9c4e5c128d84"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:24.503Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:24.503Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,94 @@
+{
+  "id": "clm_934ce5f0a12f460c",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- **Sentence hash.** sha256, lowercase hex, of the sentence after Unicode NFC normalization, replacing every run of whitespace with one space, and trimming.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **Sentence hash.** sha256, lowercase hex, of the sentence after Unicode NFC normalization, replacing every run of whitespace with one space, and trimming.",
+        "prefix": "by <by> at <at>[: <note>]; it no longer warns`.\n",
+        "suffix": "\n- **Counting rule.** `ttl` is measured from the"
+      },
+      {
+        "kind": "text-position",
+        "start": 11211,
+        "end": 11367
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/hash.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return text.normalize(\"NFC\").replace(/\\s+/g, \" \").trim();",
+          "prefix": "ion normalizeSentence(text: string): string {\n  ",
+          "suffix": "\n}\n\nexport function sentenceHash(text: string): "
+        },
+        {
+          "kind": "text-position",
+          "start": 517,
+          "end": 574
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "c206459d3ca7f6b5",
+          "semanticHash": "01490715bc3927c6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"NFC\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/hash.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return createHash(\"sha256\").update(normalizeSentence(text)).digest(\"hex\");",
+          "prefix": "function sentenceHash(text: string): string {\n  ",
+          "suffix": "\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 633,
+          "end": 707
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "a46ea2ebb57baaf3",
+          "semanticHash": "9036abbb6dd938a9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"sha256\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:35.496Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:35.496Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

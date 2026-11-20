@@ -1,0 +1,59 @@
+{
+  "id": "clm_c19b9e7937a34a06",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The verdict's reasons gain a `worklist: …` label for the reason.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The verdict's reasons gain a `worklist: …` label for the reason.",
+        "prefix": "uperseded or archived document is never listed. ",
+        "suffix": " Each item carries `claimId`, `sentence`, `kind`"
+      },
+      {
+        "kind": "text-position",
+        "start": 29619,
+        "end": 29683
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "v.reasons.push(worklistLabel(reason, c.kind, c.id));",
+          "prefix": "ndefined;\n    if (reason !== undefined) {\n      ",
+          "suffix": "\n      const last = newestEntry(\n        entries"
+        },
+        {
+          "kind": "text-position",
+          "start": 18257,
+          "end": 18309
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "dd98e41dde59f88a",
+          "semanticHash": "653fcbd989ba5c96"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:49.608Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:49.608Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

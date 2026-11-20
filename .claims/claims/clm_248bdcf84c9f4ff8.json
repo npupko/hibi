@@ -1,0 +1,117 @@
+{
+  "id": "clm_248bdcf84c9f4ff8",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Each item carries `claimId`, `sentence`, `kind`, `document` (the claim's document path), `procedure`, `sources`, `owner` (or null), the reason, and `lastEvidence` (`summary`, `source`, `at`, `by`) from the claim's newest cache entry that has an evidence block, when there is one; newest is defined as in section 7.3.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each item carries `claimId`, `sentence`, `kind`, `document` (the claim's document path), `procedure`, `sources`, `owner` (or null), the reason, and `lastEvidence` (`summary`, `source`, `at`, `by`) from the claim's newest cache entry that has an evidence block, when there is one; newest is defined as in section 7.3.",
+        "prefix": "sons gain a `worklist: …` label for the reason. ",
+        "suffix": " `list --state pending` returns the same set. A "
+      },
+      {
+        "kind": "text-position",
+        "start": 29684,
+        "end": 30000
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "document: c.doc.file,",
+          "prefix": "ence: c.sentence,\n        kind: c.kind,\n        ",
+          "suffix": "\n        procedure: c.procedure,\n        sources"
+        },
+        {
+          "kind": "text-position",
+          "start": 18524,
+          "end": 18545
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "5ee06eb33a910fa7",
+          "semanticHash": "e700bb86b65df324"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "owner: c.owner ?? null,",
+          "prefix": ".procedure,\n        sources: c.sources,\n        ",
+          "suffix": "\n        ...(last !== undefined\n          ? {\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 18614,
+          "end": 18637
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "c3736af1d5e3eece",
+          "semanticHash": "ee1a23f132c43143"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(e) => e.evidence !== undefined,",
+          "prefix": "st last = newestEntry(\n        entries,\n        ",
+          "suffix": "\n      )?.evidence;\n      worklist.push({\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 18367,
+          "end": 18399
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "arrow_function",
+          "structuralHash": "2b560f07ff6112f8",
+          "semanticHash": "145ef496ef3399bc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:25.197Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:25.197Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

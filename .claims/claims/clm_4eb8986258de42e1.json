@@ -1,0 +1,82 @@
+{
+  "id": "clm_4eb8986258de42e1",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Each request's state holds `doc` plus only that chunk's regions, and question ids and `regions[i]` paths index within the request.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each request's state holds `doc` plus only that chunk's regions, and question ids and `regions[i]` paths index within the request.",
+        "prefix": "a chunk before either budget would be exceeded. ",
+        "suffix": " Each triage question names its region twice: by"
+      },
+      {
+        "kind": "text-position",
+        "start": 32931,
+        "end": 33061
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "state: { doc: docState, regions: chunk.map(stateRegion) },",
+          "prefix": "[i] as Region);\n    return {\n      model,\n      ",
+          "suffix": "\n      questions: Object.assign(\n        {},\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 10880,
+          "end": 10938
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "179d82d726e25659",
+          "semanticHash": "12d26b74152e3cd6"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...chunk.map((r, i) => triageQuestionsFor(i, r)),",
+          "prefix": "  questions: Object.assign(\n        {},\n        ",
+          "suffix": "\n      ),\n    };\n  });\n}\n\nexport function buildS"
+        },
+        {
+          "kind": "text-position",
+          "start": 10991,
+          "end": 11040
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "f145c084bda44ecb",
+          "semanticHash": "48922eacf892e075"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:51.326Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:51.326Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

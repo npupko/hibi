@@ -1,0 +1,105 @@
+{
+  "id": "clm_de00d9bd70694ec9",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Sentences and evidence are always passed as named state fields; they are never pasted into the instructions.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Sentences and evidence are always passed as named state fields; they are never pasted into the instructions.",
+        "prefix": "a verdict looks wrong, read the question first. ",
+        "suffix": " Choice options are sent in a fixed order.\n\n### "
+      },
+      {
+        "kind": "text-position",
+        "start": 5998,
+        "end": 6106
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "claim: input.sentence,",
+          "prefix": "uest {\n  return {\n    model,\n    state: {\n      ",
+          "suffix": "\n      claim_context: input.context,\n      evide"
+        },
+        {
+          "kind": "text-position",
+          "start": 11208,
+          "end": 11230
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "6816477b617ceaf8"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence: input.evidence,",
+          "prefix": "ence,\n      claim_context: input.context,\n      ",
+          "suffix": "\n      evidence_source: input.source,\n    },\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 11273,
+          "end": 11298
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "185b8c0140050fdd"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "a: { text: a.text, doc: a.doc, context: a.context },",
+          "prefix": "uest {\n  return {\n    model,\n    state: {\n      ",
+          "suffix": "\n      b: { text: b.text, doc: b.doc, context: b"
+        },
+        {
+          "kind": "text-position",
+          "start": 11546,
+          "end": 11598
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "866b61e1aed5d90d",
+          "semanticHash": "84f924badcbc1332"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:37.082Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:37.082Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

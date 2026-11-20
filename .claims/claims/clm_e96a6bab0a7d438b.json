@@ -1,0 +1,94 @@
+{
+  "id": "clm_e96a6bab0a7d438b",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `doc` | `unchanged / moved / changed / ambiguous / orphaned`, or `retired` for a retired claim |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `doc` | `unchanged / moved / changed / ambiguous / orphaned`, or `retired` for a retired claim |",
+        "prefix": "oduces a verdict:\n\n| field | values |\n|---|---|\n",
+        "suffix": "\n| `evidence` | same five, plus `unavailable`; t"
+      },
+      {
+        "kind": "text-position",
+        "start": 21623,
+        "end": 21721
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"unchanged\", // found, same text, same place",
+          "prefix": ". */\nexport const AnchorState = z\n  .enum([\n    ",
+          "suffix": "\n    \"moved\", // found, same text, new place\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 2475,
+          "end": 2519
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "c60db945f7b10227",
+          "semanticHash": "d4363f35552a4758"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unchanged\""
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    doc: \"retired\",\n    ...(claim.evidence.length > 0 ? { evidence: \"retired\" as const } : {}),",
+          "prefix": "mentId: claim.documentId,\n    kind: claim.kind,\n",
+          "suffix": "\n    expired: false,\n    conflicts: [],\n    gate"
+        },
+        {
+          "kind": "text-position",
+          "start": 16623,
+          "end": 16718
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "712470056945b50d",
+          "semanticHash": "3cbaadd6173075f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:01.054Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:01.054Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_aecd2592ad884285",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 28 | pairing has a second rule: both sentences state a value in the same group (kind plus unit) and share a content token |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 28 | pairing has a second rule: both sentences state a value in the same group (kind plus unit) and share a content token |",
+        "prefix": "elow the threshold; `evidenceHint` is dropped |\n",
+        "suffix": "\n| 29 | an `ack` names what it acknowledges: `{ "
+      },
+      {
+        "kind": "text-position",
+        "start": 81278,
+        "end": 81403
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (sameGroups.length > 0 && shared.length > 0) {",
+          "prefix": "ng>)].filter((g) =>\n      gj.has(g),\n    );\n    ",
+          "suffix": "\n      parts.push(\n        `both state ${sameGro"
+        },
+        {
+          "kind": "text-position",
+          "start": 6834,
+          "end": 6883
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "64ff36506f8f0ffc",
+          "semanticHash": "84a37c5accf66f80"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:23.761Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:23.761Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

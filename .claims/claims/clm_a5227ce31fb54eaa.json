@@ -1,0 +1,88 @@
+{
+  "id": "clm_a5227ce31fb54eaa",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "A region is **covered** when the located doc span of a live claim on this document overlaps it.",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A region is **covered** when the located doc span of a live claim on this document overlaps it.",
+        "prefix": " headings above it).\n\n## Covered and uncovered\n\n",
+        "suffix": " A covered row takes the claim's kind and id. Th"
+      },
+      {
+        "kind": "text-position",
+        "start": 2437,
+        "end": 2532
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".filter((c) => c.documentId === docId && c.enforcement !== \"retired\")",
+          "prefix": "umber }[] = [];\n  const live = input.claims\n    ",
+          "suffix": "\n    .sort((a, b) => (a.id < b.id ? -1 : a.id > "
+        },
+        {
+          "kind": "text-position",
+          "start": 10042,
+          "end": 10111
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "8d47fa87b4bd84db",
+          "semanticHash": "e04e2f925be57d30"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hit = spans.find((s) => overlaps(s, region));",
+          "prefix": "Claim>();\n  for (const region of regions) {\n    ",
+          "suffix": "\n    if (hit) coveredBy.set(region.id, hit.claim"
+        },
+        {
+          "kind": "text-position",
+          "start": 10448,
+          "end": 10499
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "6f09fafe2575c3fd",
+          "semanticHash": "eecdfba9631417fe"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:24.825Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:24.825Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

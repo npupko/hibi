@@ -1,0 +1,94 @@
+{
+  "id": "clm_824ff2da6ea44e0a",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "They live in `src/judge/http.ts` and `src/judge/jev.ts`.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "They live in `src/judge/http.ts` and `src/judge/jev.ts`.",
+        "prefix": "try numbers copy the SDK's documented defaults. ",
+        "suffix": "\n\n| rule | value |\n|---|---|\n| retried statuses "
+      },
+      {
+        "kind": "text-position",
+        "start": 3107,
+        "end": 3163
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const MAX_RETRIES = 2;",
+          "prefix": "port const BASE_URL_ENV = \"TYPESAFE_BASE_URL\";\n\n",
+          "suffix": "\nexport const BACKOFF_INITIAL_MS = 500;\nexport c"
+        },
+        {
+          "kind": "text-position",
+          "start": 607,
+          "end": 636
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "039bd1226a4ed729"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const REQUEST_TOKEN_BUDGET = 48_000;",
+          "prefix": "del limit is 64k (research note, section 5). */\n",
+          "suffix": "\n\n/** Budget for state plus any one question; th"
+        },
+        {
+          "kind": "text-position",
+          "start": 1916,
+          "end": 1959
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "6583f8c35001a5e7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "48_000"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:35.857Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:35.857Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

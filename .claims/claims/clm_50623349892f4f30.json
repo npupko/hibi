@@ -1,0 +1,52 @@
+{
+  "id": "clm_50623349892f4f30",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "The asset shows the commented steps.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The asset shows the commented steps.",
+        "prefix": "h: api`, and set `working-directory: handbook`. ",
+        "suffix": "\n\n---\n\n## 8. `check --doc` as a pre-trust gate\n\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 22136,
+        "end": 22172
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/skills/hibi/assets/hibi-ci.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "#     path: api",
+          "prefix": "ith:\n      #     repository: your-org/api\n      ",
+          "suffix": "\n\n      - name: Restore the judge cache\n        "
+        },
+        {
+          "kind": "text-position",
+          "start": 1571,
+          "end": 1586
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:12.488Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:12.488Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

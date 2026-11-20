@@ -1,0 +1,59 @@
+{
+  "id": "clm_c4505d009fb742d6",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "`claimId` set: covered.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`claimId` set: covered.",
+        "prefix": " `hibi audit --doc <path>`, one row per region. ",
+        "suffix": " Else `kind`: `code`/`reference`/`attested` → re"
+      },
+      {
+        "kind": "text-position",
+        "start": 2803,
+        "end": 2826
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ ...base, claimId: claim.id, duplicateOf: duplicateOf(claim.id) },",
+          "prefix": "id);\n    if (claim) {\n      return row(\n        ",
+          "suffix": "\n        { kind: claim.kind },\n      );\n    }\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 11050,
+          "end": 11117
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "62bb9eac135657cb",
+          "semanticHash": "d0c25c389f08d26a"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:32.528Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:32.528Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

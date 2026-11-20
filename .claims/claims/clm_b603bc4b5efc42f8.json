@@ -1,0 +1,94 @@
+{
+  "id": "clm_b603bc4b5efc42f8",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| base URL | `TYPESAFE_BASE_URL` in the environment; default `https://api.typesafe.ai` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| base URL | `TYPESAFE_BASE_URL` in the environment; default `https://api.typesafe.ai` |",
+        "prefix": "I key | `TYPESAFE_API_KEY` in the environment |\n",
+        "suffix": "\n| model | `judge.model` in `.claims/config.json"
+      },
+      {
+        "kind": "text-position",
+        "start": 2382,
+        "end": 2470
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const BASE_URL_ENV = \"TYPESAFE_BASE_URL\";",
+          "prefix": "\nexport const API_KEY_ENV = \"TYPESAFE_API_KEY\";\n",
+          "suffix": "\n\nexport const MAX_RETRIES = 2;\nexport const BAC"
+        },
+        {
+          "kind": "text-position",
+          "start": 557,
+          "end": 605
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "45aebe1321551c04"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"TYPESAFE_BASE_URL\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const DEFAULT_BASE_URL = \"https://api.typesafe.ai\";",
+          "prefix": "geError, JudgeUnavailable } from \"./types.ts\";\n\n",
+          "suffix": "\nexport const API_KEY_ENV = \"TYPESAFE_API_KEY\";\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 451,
+          "end": 509
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "89d08764a6f1f2bb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"https://api.typesafe.ai\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:35.346Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:35.346Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

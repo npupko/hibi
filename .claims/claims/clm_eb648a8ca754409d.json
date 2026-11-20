@@ -1,0 +1,94 @@
+{
+  "id": "clm_eb648a8ca754409d",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "Hibi stores where the sentence is, what kind of claim it is, where its truth can be observed, and who stood behind it and when.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi stores where the sentence is, what kind of claim it is, where its truth can be observed, and who stood behind it and when.",
+        "prefix": " one document that asserts something checkable. ",
+        "suffix": "\n\n## Kinds\n\nEvery claim has exactly one kind. Yo"
+      },
+      {
+        "kind": "text-position",
+        "start": 364,
+        "end": 491
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "kind: ClaimKind,\n    sentence: z.string().min(1),\n    doc: SelectorBundle,",
+          "prefix": "   id: ClaimId,\n    documentId: DocumentId,\n    ",
+          "suffix": "\n    evidence: z.array(SelectorBundle).default(["
+        },
+        {
+          "kind": "text-position",
+          "start": 9298,
+          "end": 9372
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "c9d78f1987063c4a",
+          "semanticHash": "07fb3bfde49ccf46"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "attestations: z.array(Attestation).default([]),",
+          "prefix": "forcement: Enforcement.default(\"enforced\"),\n    ",
+          "suffix": "\n    createdAt: Instant,\n    /** The git HEAD th"
+        },
+        {
+          "kind": "text-position",
+          "start": 9630,
+          "end": 9677
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1393ec7729f6c1cb",
+          "semanticHash": "96d6de19ba72cf10"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:01.311Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:01.311Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

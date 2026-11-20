@@ -1,0 +1,105 @@
+{
+  "id": "clm_dddaf52a1ebf4386",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "No upgrade path from v3: a store with any other version is refused at open and by `init`, with the message ``this claim store is version <v>; hibi v4 has no upgrade path from it. Remove <dir>, run `hibi init`, and re-record.``",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "No upgrade path from v3: a store with any other version is refused at open and by `init`, with the message ``this claim store is version <v>; hibi v4 has no upgrade path from it. Remove <dir>, run `hibi init`, and re-record.``",
+        "prefix": " with the cache present. Store `version: \"v4\"`. ",
+        "suffix": "\n\n```\n.claims/\n  .gitignore                 # ju"
+      },
+      {
+        "kind": "text-position",
+        "start": 13000,
+        "end": 13226
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`this claim store is version ${found}; hibi ${MODEL_VERSION} has no upgrade path from it. Remove ${this.dir}, run \\`hibi init\\`, and re-record.`,",
+          "prefix": "MODEL_VERSION) {\n      throw new Error(\n        ",
+          "suffix": "\n      );\n    }\n  }\n\n  static async isInitialize"
+        },
+        {
+          "kind": "text-position",
+          "start": 4582,
+          "end": 4727
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "f13c15c4af6c3f60",
+          "semanticHash": "e7100302ce5005d3"
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (await exists(configPath)) await s.assertVersion();",
+          "prefix": "st configPath = join(s.dir, \"config.json\");\n    ",
+          "suffix": "\n    await mkdir(s.dir, { recursive: true });\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 2814,
+          "end": 2868
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "e68e811f9ab76b9d",
+          "semanticHash": "cf9b7c96e9e376d8"
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await s.assertVersion();\n    await s.config();",
+          "prefix": "${s.dir}. Run \\`hibi init\\` first.`);\n    }\n    ",
+          "suffix": "\n    return s;\n  }\n\n  /** Throws the \"no upgrade"
+        },
+        {
+          "kind": "text-position",
+          "start": 3965,
+          "end": 4011
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "a593dd79909e035d",
+          "semanticHash": "e8eca27f32a008ff"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:36.244Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:36.244Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

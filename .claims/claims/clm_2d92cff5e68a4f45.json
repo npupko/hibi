@@ -1,0 +1,59 @@
+{
+  "id": "clm_2d92cff5e68a4f45",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "Recording is never automatic.",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Recording is never automatic.",
+        "prefix": "dit --doc docs/pricing.md --fail-uncovered\n```\n\n",
+        "suffix": " The agent or person reads the rows, picks the a"
+      },
+      {
+        "kind": "text-position",
+        "start": 651,
+        "end": 680
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "The contradiction pass judges only pairs with a claim in this document. Recording is never automatic.",
+          "prefix": "ing (judge unavailable or its answer unusable). ",
+          "suffix": "\",\n    options: [\n      {\n        name: \"doc\",\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 12663,
+          "end": 12764
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "f484cfe735fab88d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:24.495Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:24.495Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

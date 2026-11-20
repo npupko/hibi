@@ -1,0 +1,94 @@
+{
+  "id": "clm_18d06d584e5041b8",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "Hibi records lifecycle and enforcement and reports what is stranded or orphaned.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi records lifecycle and enforcement and reports what is stranded or orphaned.",
+        "prefix": "at points at a missing file.\n\n## Who does what\n\n",
+        "suffix": " A person or an agent rewrites the prose, decide"
+      },
+      {
+        "kind": "text-position",
+        "start": 9237,
+        "end": 9317
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return live && lifecycle !== \"active\";",
+          "prefix": "\"suggested\";\n        case \"stranded\":\n          ",
+          "suffix": "\n      }\n    })();\n    if (!matches) continue;\n\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 5936,
+          "end": 5974
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "d3c223d7d48159ee",
+          "semanticHash": "de29e6873dbf14f2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"active\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"doc:orphaned\",",
+          "prefix": " STATUS_PRECEDENCE = [\n  \"evidence:orphaned\",\n  ",
+          "suffix": "\n  \"evidence:ambiguous\",\n  \"doc:ambiguous\",\n  \"e"
+        },
+        {
+          "kind": "text-position",
+          "start": 5332,
+          "end": 5347
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "35be0ac7ac92099f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"doc:orphaned\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.633Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.633Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

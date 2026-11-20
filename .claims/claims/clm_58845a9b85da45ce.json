@@ -1,0 +1,59 @@
+{
+  "id": "clm_58845a9b85da45ce",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A file that another writer changed again after the batch wrote it is left alone.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A file that another writer changed again after the batch wrote it is left alone.",
+        "prefix": "path and another writer may already use its id. ",
+        "suffix": "\n- The doc span's text is the claim's sentence. "
+      },
+      {
+        "kind": "text-position",
+        "start": 60352,
+        "end": 60432
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if ((await readOrNull(path)) !== after) continue;",
+          "prefix": "[path, { before, after }] of journal) {\n        ",
+          "suffix": "\n        if (before === null) {\n          // A d"
+        },
+        {
+          "kind": "text-position",
+          "start": 7597,
+          "end": 7646
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "9818ea122ef19fbe",
+          "semanticHash": "ece3a067a6175ab8"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:05:27.030Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:05:27.030Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_e1f22e63dca64197",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "| `active` | In the read path. The default. |",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `active` | In the read path. The default. |",
+        "prefix": "documents/`.\n\n| lifecycle | meaning |\n|---|---|\n",
+        "suffix": "\n| `superseded` | Replaced by another document. "
+      },
+      {
+        "kind": "text-position",
+        "start": 1667,
+        "end": 1712
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "lifecycle: DocumentLifecycle.default(\"active\"),",
+          "prefix": "{\n    id: DocumentId,\n    path: z.string(),\n    ",
+          "suffix": "\n    supersededBy: DocumentId.optional(),\n    cr"
+        },
+        {
+          "kind": "text-position",
+          "start": 8776,
+          "end": 8823
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "6551225e2881068f",
+          "semanticHash": "6b8b8a402aa69086"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"active\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.349Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.349Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,52 @@
+{
+  "id": "clm_a49a26abf581403b",
+  "documentId": "doc_5be5c5b2d98e3a89",
+  "kind": "code",
+  "sentence": "The canonical skill source lives in the hibi repo.",
+  "doc": {
+    "file": "plugins/hibi-cli/README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The canonical skill source lives in the hibi repo.",
+        "prefix": "s are `pending` and nothing fails.\n\n## Develop\n\n",
+        "suffix": " Edit `skills/hibi/SKILL.md`, `references/cookbo"
+      },
+      {
+        "kind": "text-position",
+        "start": 2117,
+        "end": 2167
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": ".claude-plugin/marketplace.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"source\": \"./plugins/hibi-cli\",",
+          "prefix": "ugins\": [\n    {\n      \"name\": \"hibi-cli\",\n      ",
+          "suffix": "\n      \"description\": \"Teaches agents to operate"
+        },
+        {
+          "kind": "text-position",
+          "start": 152,
+          "end": 183
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:29:36.088Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:29:36.088Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

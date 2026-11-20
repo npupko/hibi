@@ -1,86 +1,100 @@
 ---
-title: "Integrating Hibi into CI, Git Hooks, and Agent Loops"
-sidebarTitle: "CI & Agents"
-description: "Run hibi check in GitHub Actions, a git hook, or an agent session, and act on its exit code: 0 clean, 2 gating, 1 error."
+title: "Running Hibi in CI and Git Hooks"
+sidebarTitle: "CI"
+description: "The GitHub Action and its inputs, the TypeSafe key as a secret, what runs without a key, exit codes, --fail-on, git hooks, and audit as a gate."
 icon: "robot"
 ---
 
-Hibi is one command with one exit-code contract, so it fits anywhere a non-zero exit can block: CI, a git hook, or an agent's session hooks. `hibi check` flags; a person or agent decides what the prose should now say.
+`hibi check` has one exit-code contract, so it works anywhere a non-zero exit blocks: a CI job, a git hook, or an agent's session hook.
 
-| Code | Meaning |
+| exit | meaning |
 |---|---|
-| `0` | clean, or only `moved` warnings |
-| `2` | a gating verdict on an enforced claim (`changed`, `orphaned`, `ambiguous`, `expired`, `refuted`); or a warning under `--fail-on warn` |
-| `1` | operational error (no store, unknown flag, unknown `--since` ref) |
+| `0` | clean, or warnings only |
+| `2` | gating: a `changed`, `orphaned`, or `ambiguous` side, a `refuted` judgment, or a contradiction at or above the threshold on an enforced claim; `expired` under `check --doc`; any warning under `--fail-on warn` |
+| `1` | operational error: no store, an unknown flag, an unknown `--since` ref, `check --doc` on a path with no registered claims |
+
+A judge failure is never an exit 1. An unreachable judge or an answer hibi cannot use (a 4xx other than 401, 403, 408, and 429, a body that is not JSON) makes the judgment `pending`, which warns.
 
 ## GitHub Action
 
-The repository is itself a composite action. It installs Bun and runs `hibi check` (falling back to `bunx @npupko/hibi` when no binary is on PATH).
+The repository is a composite action. It installs Bun, then runs `hibi check` with the binary on `PATH`, or `bunx @npupko/hibi` when there is none.
 
 ```yaml
-name: docs-drift
-on: [push, pull_request]
+name: hibi
+on: [pull_request]
 
 jobs:
-  hibi:
+  check:
     runs-on: ubuntu-latest
+    env:
+      TYPESAFE_API_KEY: ${{ secrets.TYPESAFE_API_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0   # needed when `since` compares refs
-      - uses: npupko/hibi@v0
+      - uses: actions/cache@v4
+        with:
+          path: .claims/judge
+          key: hibi-judge-${{ hashFiles('.claims/claims/**') }}
+          restore-keys: hibi-judge-
+      - uses: npupko/hibi@v0.6.0
         with:
           fail-on: gating
           since: origin/${{ github.base_ref }}
 ```
 
+Pin the action to a release tag, as above, and bump the tag when you upgrade hibi.
+
 ### Inputs
 
-<ParamField path="fail-on" type="string" default="gating">
-  `gating`, `warn`, or `never`. Same vocabulary as the CLI's `--fail-on`.
-</ParamField>
+| input | default | effect |
+|---|---|---|
+| `fail-on` | `gating` | passed as `check --fail-on`: `gating`, `warn`, or `never` |
+| `since` | empty | when set, runs `check --since <ref>`: only claims touching files changed since the ref |
+| `doc` | empty | when set, runs `check --doc <path>`: only claims on that document, and `expired` gates; a document with no registered claims fails the step with exit 1 |
+| `working-directory` | `.` | the directory that holds `.claims/` |
 
-<ParamField path="since" type="string">
-  A git ref. When set, the action runs `check --since <ref>` and evaluates only the claims that touch a file changed since that ref.
-</ParamField>
+### The API key
 
-<ParamField path="write" type="boolean" default="false">
-  When `true`, passes `--write` so banners are stamped into suspect documents. Commit the result separately.
-</ParamField>
+The judge reads `TYPESAFE_API_KEY` from the environment. Store it as a repository secret and set it in the job's `env`, as above. The action passes no key of its own.
 
-<ParamField path="run-verifiers" type="boolean" default="false">
-  When `true`, passes `--run-verifiers`. Verifiers execute repo-committed commands, so this stays off unless you opt in.
-</ParamField>
+### What runs without a key
 
-<ParamField path="working-directory" type="string" default=".">
-  The directory holding the `.claims/` store.
-</ParamField>
+Most of `check` needs no key:
 
-A ready-made workflow file ships with the Claude Code plugin at `plugins/hibi-cli/skills/hibi/assets/hibi-ci.yml`.
+- anchor resolution of every doc and evidence span;
+- expiry from attestations and ttl;
+- every judge verdict already in `.claims/judge/` (the cache is read, never re-asked);
+- the comparison of numbers, money, versions, and dates, which happens in code.
+
+A judgment that is not in the cache comes back `pending`. The same holds when the key is set and the judge returns an error. `pending` is a warning, so it does not fail the build under the default `fail-on: gating`. Under `fail-on: warn` it does.
+
+`.claims/judge/` is a local cache and is not committed: `hibi init` writes `.claims/.gitignore` with the line `judge/`. The `actions/cache` step above restores the cache between runs, keyed on the claim files. When the restored cache already holds every verdict the tree needs, CI asks the judge nothing and gives the same verdicts with or without a key. See [Judge](/judge).
 
 ### Strictness
 
-| `fail-on` | Build fails when |
+| `fail-on` | the build fails when |
 |---|---|
 | `gating` | any enforced claim gates. The default. |
-| `warn` | any enforced claim gates or has a `moved` side. |
+| `warn` | any enforced claim gates or warns (`moved`, `review`, `pending`, `unavailable`, an `expired` claim in a whole-store check, a conflict below the threshold) |
 | `never` | never. The JSON still reports everything. |
 
-## Gating a plan with `coverage --fail-uncovered`
+`suggested` and `retired` claims never gate or warn under any setting.
+
+## Audit as a gate
 
 ```sh
-hibi coverage --doc plan.md --fail-uncovered   # exit 2 while any sentence is uncovered
+hibi audit --doc plan.md --fail-uncovered
 ```
 
-An uncovered region is a sentence no claim backs. Hibi does not judge whether code implements a sentence; the author anchors each promise to its code, and `--fail-uncovered` checks that the anchoring is complete.
+Exits 2 while any uncovered region of the document is triaged as `code`, `reference`, or `attested` at or above the threshold, and 0 once each such region is covered by a claim. Without a key, uncovered regions whose triage is not in `.claims/judge/` are `pending` and do not fail this gate. See [Audit](/audit).
 
 ## git hooks
 
-<CodeGroup>
 ```bash pre-push
 #!/bin/sh
 hibi check --since origin/main || {
-  echo "hibi: documentation drift detected; re-verify before pushing." >&2
+  echo "hibi: a document sentence is stale; re-verify before pushing." >&2
   exit 1
 }
 ```
@@ -88,48 +102,30 @@ hibi check --since origin/main || {
 ```bash pre-commit
 #!/bin/sh
 hibi check || {
-  echo "hibi: documentation drift detected; re-verify before committing." >&2
+  echo "hibi: a document sentence is stale; re-verify before committing." >&2
   exit 1
 }
 ```
-</CodeGroup>
 
-`check --since <ref>` suits a pre-push hook; plain `check` suits pre-commit. Register the same command in lefthook or husky if you use one. Leave `--write` off in a hook unless you want each developer to re-stamp banners locally.
+`check --since <ref>` suits a pre-push hook. Plain `check` suits a pre-commit hook. The same commands work in lefthook or husky. `check` writes nothing except new judge cache entries.
 
-## Agent sessions
+## Output in CI
 
-An agent reads an instruction file and trusts it. Two moments close the gap:
+Output is JSON when stdout is not a terminal. Useful flags:
 
-<Steps>
-  <Step title="Before trusting a document">
-    `hibi check --doc CLAUDE.md`. Exit 2 means a sentence in that file no longer matches the code. The agent reads the verdicts and does not act on the flagged sentences as written.
-  </Step>
-  <Step title="After editing code">
-    `hibi check --since origin/main`. The `documents` array names the files whose sentences the edit invalidated. The agent fixes the prose and runs the `command` from each verdict's remediation menu.
-  </Step>
-</Steps>
+| flag | effect |
+|---|---|
+| `--no-hints` (or `HIBI_ADVICE=0`) | drops the `remediation` menu for shorter logs |
+| `--explain` | adds `detail` to each verdict: located regions, span changes, similarity |
+| `--format human` | the terminal report, if you prefer it in logs |
 
-Both commands are read-only. For instruction files the stamped banner is one line, `STALE — N claim(s); run hibi check --doc <path>`, so the always-loaded file stays short (see [Banners](/banners)). The Claude Code skill that teaches these loops is on the [Claude Code](/claude-code) page.
-
-An MCP shim that serves verdicts must recompute them on every request. A cached index would itself drift.
-
-<Tip>
-  Add `--no-hints` (or `HIBI_ADVICE=0`) for shorter CI logs. Add `--explain` when you need the evidence behind a verdict.
-</Tip>
-
-## Where to go next
+## Next
 
 <CardGroup cols={2}>
-  <Card title="CLI reference" icon="terminal" href="/cli-reference">
-    Every flag on `check` and `coverage`.
-  </Card>
   <Card title="Verdicts" icon="scale-balanced" href="/verdicts">
-    The gates rule behind the exit codes.
+    The gating table behind the exit codes.
   </Card>
-  <Card title="Banners" icon="stamp" href="/banners">
-    What `--write` stamps into a document.
-  </Card>
-  <Card title="Claude Code skill" icon="wand-magic-sparkles" href="/claude-code">
-    The Agent Skill that teaches the two moments above.
+  <Card title="Workflows" icon="route" href="/workflows">
+    When to run which command.
   </Card>
 </CardGroup>

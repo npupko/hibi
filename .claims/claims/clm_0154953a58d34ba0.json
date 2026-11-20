@@ -1,0 +1,163 @@
+{
+  "id": "clm_0154953a58d34ba0",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The verdict also carries `claimId`, `documentId`, `kind`, a `remediation` menu (recommended action id and actions with ready-to-run commands), and a `detail` block (located regions, similarity, changes).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The verdict also carries `claimId`, `documentId`, `kind`, a `remediation` menu (recommended action id and actions with ready-to-run commands), and a `detail` block (located regions, similarity, changes).",
+        "prefix": ": …` label when the claim is in the worklist |\n\n",
+        "suffix": " A claim whose `enforcement` is `retired` is not"
+      },
+      {
+        "kind": "text-position",
+        "start": 22647,
+        "end": 22850
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    claimId: claim.id,\n    documentId: claim.documentId,\n    kind: claim.kind,",
+          "prefix": "Map((s) => s.changedEvidence),\n  ];\n\n  return {\n",
+          "suffix": "\n    doc: sides.doc.state,\n    ...(evidence !== "
+        },
+        {
+          "kind": "text-position",
+          "start": 15271,
+          "end": 15349
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "52f14b322d61aab5",
+          "semanticHash": "b790a471f3d94112"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "remediation: remediationFor({",
+          "prefix": "  gates: gate.gates,\n    warns: gate.warns,\n    ",
+          "suffix": "\n      claimId: claim.id,\n      kind: claim.kind"
+        },
+        {
+          "kind": "text-position",
+          "start": 15571,
+          "end": 15600
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "340a9fa6d34a2748",
+          "semanticHash": "6b5dc48314cf4173"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    detail: {\n      docRegion: sides.doc.region ?? undefined,\n      evidenceRegions: sides.evidence",
+          "prefix": "idenceSpansFor(claim, sides, evidence),\n    }),\n",
+          "suffix": "\n        .map((s) => s.region)\n        .filter(("
+        },
+        {
+          "kind": "text-position",
+          "start": 15859,
+          "end": 15958
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "fd436b7375ba0580",
+          "semanticHash": "17fa59265b8dae8c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "      similarity: primary.similarity,\n      changes,",
+          "prefix": "       .filter((r): r is Region => r !== null),\n",
+          "suffix": "\n    },\n    reasons,\n  };\n}\n\n/**\n * Resolve a si"
+        },
+        {
+          "kind": "text-position",
+          "start": 16038,
+          "end": 16090
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "ba8789c207297eec",
+          "semanticHash": "b795017cadbe665f"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  recommended: z.string().nullable(),\n  actions: z.array(RemediationAction).default([]),",
+          "prefix": ">;\n\nexport const Remediation = z.strictObject({\n",
+          "suffix": "\n});\nexport type Remediation = z.infer<typeof Re"
+        },
+        {
+          "kind": "text-position",
+          "start": 15980,
+          "end": 16068
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "434d2f306355f5a7",
+          "semanticHash": "c7b7334a763a811f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:28.493Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:28.493Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

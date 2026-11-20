@@ -1,0 +1,123 @@
+{
+  "id": "clm_8d61e3bc55164960",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `judge: refuted` (at or above `judge.threshold`, or from the value rule) | gate | gate |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `judge: refuted` (at or above `judge.threshold`, or from the value rule) | gate | gate |",
+        "prefix": ", or `ambiguous` on either side | gate | gate |\n",
+        "suffix": "\n| a conflict at or above `judge.threshold` | ga"
+      },
+      {
+        "kind": "text-position",
+        "start": 3369,
+        "end": 3459
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"refuted\") gates = true;",
+          "prefix": "c) || isWarnAnchor(v.evidence)) warns = true;\n  ",
+          "suffix": "\n  if (v.judge !== undefined && WARN_JUDGE.has(v"
+        },
+        {
+          "kind": "text-position",
+          "start": 3180,
+          "end": 3220
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "045e3f715206f391",
+          "semanticHash": "c5efdf039031fded"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"refuted\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "state: verb === \"supports\" ? \"supported\" : \"refuted\",",
+          "prefix": "t.confidence >= threshold) {\n    return {\n      ",
+          "suffix": "\n      reasons: [\n        `evidence ${verb} the "
+        },
+        {
+          "kind": "text-position",
+          "start": 4268,
+          "end": 4321
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "68ed9cc192e0477c",
+          "semanticHash": "790f39a1c5996b10"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"supports\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"refuted\", reasons: [`value differs: ${cmp.label}`] };",
+          "prefix": "cmp.differs && cmp.label !== undefined) {\n      ",
+          "suffix": "\n    }\n  }\n  const verb = result.relation;\n  if "
+        },
+        {
+          "kind": "text-position",
+          "start": 4096,
+          "end": 4166
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "f49ce7ee24e466fc",
+          "semanticHash": "c628178ea96bcff0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"refuted\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:12.099Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:12.099Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,117 @@
+{
+  "id": "clm_7529d84a313f4020",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "An actor is required on `record`, `attest`, and `evidence`; there is no default.",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An actor is required on `record`, `attest`, and `evidence`; there is no default.",
+        "prefix": "ron` | a script, a CI job, a workflow runner |\n\n",
+        "suffix": " On `record --from-file`, each item may carry it"
+      },
+      {
+        "kind": "text-position",
+        "start": 1175,
+        "end": 1255
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"by is required: pass --by <actor> or a by key, as human:<id>, agent:<name>, or process:<name>\",",
+          "prefix": " if (by === undefined) {\n    errors.push(\n      ",
+          "suffix": "\n    );\n  }\n  if (raw.suggest !== undefined && t"
+        },
+        {
+          "kind": "text-position",
+          "start": 10743,
+          "end": 10839
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "b715e7808aca7ce0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"by is required: pass --by <actor> or a by key, as human:<id>, agent:<name>, or process:<name>\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"The attesting actor: human:<id>, agent:<name>, or process:<name>.\",\n        required: true,",
+          "prefix": "tring\",\n        placeholder: \"<actor>\",\n        ",
+          "suffix": "\n      },\n      {\n        name: \"note\",\n        "
+        },
+        {
+          "kind": "text-position",
+          "start": 19954,
+          "end": 20052
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "15154156d14c03d8",
+          "semanticHash": "6a51f0e9a23ba933"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"The attesting actor: human:<id>, agent:<name>, or process:<name>.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/commands/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ": no \"by\"; pass --by <actor> or a \"by\" key: human:<id>, agent:<name>, or process:<name>`,",
+          "prefix": "laimId === \"string\" ? ` (${item.claimId})` : \"\"}",
+          "suffix": "\n          ]\n        : [],\n    );\n    if (missin"
+        },
+        {
+          "kind": "text-position",
+          "start": 1386,
+          "end": 1475
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "753ad64375fb62c5",
+          "semanticHash": "9a654a50c0382d9a"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:11.673Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:11.673Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

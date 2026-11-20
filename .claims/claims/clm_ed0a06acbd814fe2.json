@@ -1,0 +1,88 @@
+{
+  "id": "clm_ed0a06acbd814fe2",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "The ack is written to both claims and lapses when either sentence changes.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The ack is written to both claims and lapses when either sentence changes.",
+        "prefix": "63 --note \"the FAQ describes the annual plan\"`. ",
+        "suffix": "\n\nAfter the FAQ sentence is removed and its clai"
+      },
+      {
+        "kind": "text-position",
+        "start": 14893,
+        "end": 14967
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await append(store, second, attestation);",
+          "prefix": ");\n  await append(store, first, attestation);\n  ",
+          "suffix": "\n  return {\n    claimIds: [first.id, second.id],"
+        },
+        {
+          "kind": "text-position",
+          "start": 7137,
+          "end": 7178
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "26da7c7db8ddb7e0",
+          "semanticHash": "20d972eaf4c9e2e5"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ack.sentenceHashes[1] === hashes[1]",
+          "prefix": " ack.sentenceHashes[0] === hashes[0] &&\n        ",
+          "suffix": "\n      ) {\n        return true;\n      }\n    }\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 8529,
+          "end": 8564
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "5860afbc714c43ea",
+          "semanticHash": "04bdc04a9a8c5f09"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:10.286Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:10.286Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

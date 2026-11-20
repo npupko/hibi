@@ -1,0 +1,117 @@
+{
+  "id": "clm_f2774dd08e8641c4",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "The retry numbers copy the SDK's documented defaults.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The retry numbers copy the SDK's documented defaults.",
+        "prefix": "t fails (as of 0.7.0).\n\n### Retries and limits\n\n",
+        "suffix": " They live in `src/judge/http.ts` and `src/judge"
+      },
+      {
+        "kind": "text-position",
+        "start": 3053,
+        "end": 3106
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "below copy the SDK's documented defaults from the same section.",
+          "prefix": "arch-2026-10-22.md section 6). Retry numbers\n * ",
+          "suffix": "\n */\nimport { JudgeError, JudgeUnavailable } fro"
+        },
+        {
+          "kind": "text-position",
+          "start": 323,
+          "end": 386
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "a7d0dbe71ba3f3be"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const MAX_RETRIES = 2;",
+          "prefix": "port const BASE_URL_ENV = \"TYPESAFE_BASE_URL\";\n\n",
+          "suffix": "\nexport const BACKOFF_INITIAL_MS = 500;\nexport c"
+        },
+        {
+          "kind": "text-position",
+          "start": 607,
+          "end": 636
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "039bd1226a4ed729"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ATTEMPT_TIMEOUT_MS = 10_000;",
+          "prefix": "0.25;\nexport const MAX_RETRY_AFTER_MS = 60_000;\n",
+          "suffix": "\nexport const MAX_IN_FLIGHT = 8;\n\nexport interfa"
+        },
+        {
+          "kind": "text-position",
+          "start": 791,
+          "end": 832
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "b3ee35a960d4afd4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "10_000"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:35.789Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:35.789Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

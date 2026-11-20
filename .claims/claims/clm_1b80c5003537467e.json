@@ -1,0 +1,65 @@
+{
+  "id": "clm_1b80c5003537467e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "An `attested` claim may carry:",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An `attested` claim may carry:",
+        "prefix": "t aliases, nothing changes.\n\n### 4.2 Procedure\n\n",
+        "suffix": "\n\n```json\n\"procedure\": {\n  \"instructions\": \"Open"
+      },
+      {
+        "kind": "text-position",
+        "start": 6659,
+        "end": 6689
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "procedure: Procedure.nullable().default(null),",
+          "prefix": ",\n    sources: z.array(Source).default([]),\n    ",
+          "suffix": "\n    owner: Actor.optional(),\n    ttl: Duration."
+        },
+        {
+          "kind": "text-position",
+          "start": 9470,
+          "end": 9516
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "3b6ecdfe9cc5b916",
+          "semanticHash": "9087ab57d4af707f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:22.882Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:22.882Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

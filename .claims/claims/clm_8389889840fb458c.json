@@ -1,0 +1,82 @@
+{
+  "id": "clm_8389889840fb458c",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "An alias such as `jev-latest` is refused when the config is loaded, because an alias can point at a different model tomorrow and change verdicts without a change in the repository.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An alias such as `jev-latest` is refused when the config is loaded, because an alias can point at a different model tomorrow and change verdicts without a change in the repository.",
+        "prefix": "st be a pinned version of the form `jev-X.Y.Z`. ",
+        "suffix": "\n\nThe official `@typesafe-ai/sdk` package is not"
+      },
+      {
+        "kind": "text-position",
+        "start": 2711,
+        "end": 2891
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "not an alias like jev-latest",
+          "prefix": "ersioned id; hibi needs one such as jev-1.14.0, ",
+          "suffix": "`,\n  }),\n  /** Choice-confidence threshold for g"
+        },
+        {
+          "kind": "text-position",
+          "start": 11257,
+          "end": 11285
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "f235248e4f88b9e9"
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const parsed = Config.safeParse(raw);",
+          "prefix": "n(this.dir, \"config.json\"), \"utf8\"),\n    );\n    ",
+          "suffix": "\n    if (!parsed.success) {\n      const issue = "
+        },
+        {
+          "kind": "text-position",
+          "start": 5136,
+          "end": 5173
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "430540f217ccb185",
+          "semanticHash": "07e20f67fabf1280"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:35.614Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:35.614Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,88 @@
+{
+  "id": "clm_8390f35b34f54aaf",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "So an `attested` claim recorded with `\"by\": \"agent:<name>\"` has no counting attestation and is `expired` until evidence or a human vouch arrives.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "So an `attested` claim recorded with `\"by\": \"agent:<name>\"` has no counting attestation and is `expired` until evidence or a human vouch arrives.",
+        "prefix": " ttl; an `agent:` or `process:` vouch does not. ",
+        "suffix": "\n\n## Store layout\n\n`.claims/` sits at the reposi"
+      },
+      {
+        "kind": "text-position",
+        "start": 8423,
+        "end": 8568
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (a.basis === \"evidence\") return true;\n  return a.basis === \"vouch\" && a.by.startsWith(\"human:\");",
+          "prefix": "rt function counts(a: Attestation): boolean {\n  ",
+          "suffix": "\n}\n\n/**\n * The newest counting attestation, or u"
+        },
+        {
+          "kind": "text-position",
+          "start": 606,
+          "end": 705
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "cdfebd9fbed0fa60",
+          "semanticHash": "657d6ca11f9a5631"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "is set and no attestation counts (only evidence or a human vouch resets ttl)",
+          "prefix": "efined) {\n    return `expired: ttl ${claim.ttl} ",
+          "suffix": "`;\n  }\n  const until = expiresAt(claim)?.toISOSt"
+        },
+        {
+          "kind": "text-position",
+          "start": 3527,
+          "end": 3603
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "63aa78d2a098cf88"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:04.496Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:04.496Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

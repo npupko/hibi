@@ -1,0 +1,59 @@
+{
+  "id": "clm_43ef3663b26a4572",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "The judge is not asked about covered regions.",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The judge is not asked about covered regions.",
+        "prefix": "t. A covered row takes the claim's kind and id. ",
+        "suffix": "\n\nEvery other region is **uncovered** and goes t"
+      },
+      {
+        "kind": "text-position",
+        "start": 2578,
+        "end": 2623
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const uncovered = regions.filter((r) => !coveredBy.has(r.id));",
+          "prefix": "hit) coveredBy.set(region.id, hit.claim);\n  }\n  ",
+          "suffix": "\n  const { results, pending, answered } = await "
+        },
+        {
+          "kind": "text-position",
+          "start": 10556,
+          "end": 10618
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "e4f54d9e7a794e37",
+          "semanticHash": "6ada28d7d5e40f60"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:24.896Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:24.896Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

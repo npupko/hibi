@@ -1,0 +1,59 @@
+{
+  "id": "clm_4fff505e7db14c82",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`note`, `evidenceHash`, and `ack` are optional.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`note`, `evidenceHash`, and `ack` are optional.",
+        "prefix": "a:clm_b\", \"sentenceHashes\": [\"…\", \"…\"] } }\n```\n\n",
+        "suffix": " The `ack` field is `{ pairId, sentenceHashes: ["
+      },
+      {
+        "kind": "text-position",
+        "start": 7913,
+        "end": 7960
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "note: z.string().optional(),\n    evidenceHash: z.string().optional(),\n    ack: AttestationAck.optional(),",
+          "prefix": "  at: Instant,\n    basis: AttestationBasis,\n    ",
+          "suffix": "\n  })\n  .superRefine((a, ctx) => {\n    if (a.bas"
+        },
+        {
+          "kind": "text-position",
+          "start": 7063,
+          "end": 7168
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "7b84392c75546292",
+          "semanticHash": "3dfba55ac5536936"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:23.409Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:23.409Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

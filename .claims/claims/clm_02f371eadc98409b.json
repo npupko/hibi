@@ -1,0 +1,94 @@
+{
+  "id": "clm_02f371eadc98409b",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "Each new claim gets one `vouch` attestation by `by`.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each new claim gets one `vouch` attestation by `by`.",
+        "prefix": "r documents with the same normalized sentence.\n\n",
+        "suffix": " A `human:` vouch counts toward the ttl; an `age"
+      },
+      {
+        "kind": "text-position",
+        "start": 8288,
+        "end": 8340
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "attestations: [vouch],",
+          "prefix": " { ttl: input.ttl } : {}),\n    enforcement,\n    ",
+          "suffix": "\n    createdAt: now.toISOString(),\n    ref: inpu"
+        },
+        {
+          "kind": "text-position",
+          "start": 8360,
+          "end": 8382
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "cd4de9ccd783bf10",
+          "semanticHash": "c5c6667dd66e5787"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[vouch]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "basis: \"vouch\" as const,",
+          "prefix": "   by: input.by,\n    at: now.toISOString(),\n    ",
+          "suffix": "\n  };\n\n  // One claim per (sentence, document): "
+        },
+        {
+          "kind": "text-position",
+          "start": 6903,
+          "end": 6927
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "fec8da68cf9661ba",
+          "semanticHash": "c1f3ec2741a33367"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"vouch\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:04.414Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:04.414Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

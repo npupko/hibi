@@ -1,0 +1,88 @@
+{
+  "id": "clm_def3f65c4ea046d8",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "A sentence that was edited reads `changed`.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A sentence that was edited reads `changed`.",
+        "prefix": "ove. A quote found in `--to` reads `unchanged`. ",
+        "suffix": " A sentence that is not in `--to` reads `orphane"
+      },
+      {
+        "kind": "text-position",
+        "start": 3460,
+        "end": 3503
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (at < 0 || content.indexOf(quote.exact, at + 1) >= 0) return selectors;",
+          "prefix": "s;\n  const at = content.indexOf(quote.exact);\n  ",
+          "suffix": "\n  return selectors.map((s) =>\n    s.kind === \"t"
+        },
+        {
+          "kind": "text-position",
+          "start": 11306,
+          "end": 11380
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "d9180d7e246ba38c",
+          "semanticHash": "a6c298089dafb812"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sentence = claim.sentence;",
+          "prefix": "doc.selectors, contents.docContent),\n    };\n    ",
+          "suffix": "\n  } else {\n    if (\n      input.docPath !== und"
+        },
+        {
+          "kind": "text-position",
+          "start": 12773,
+          "end": 12799
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "1356dc74ae89d99b",
+          "semanticHash": "2f6623bc3e4c96d4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:41.900Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:41.900Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

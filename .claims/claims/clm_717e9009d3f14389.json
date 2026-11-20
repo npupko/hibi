@@ -1,0 +1,65 @@
+{
+  "id": "clm_717e9009d3f14389",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "| same-text similarity | 0.9 | below it, `changed` |",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| same-text similarity | 0.9 | below it, `changed` |",
+        "prefix": "haracters each side | ranks exact occurrences |\n",
+        "suffix": "\n| move awareness | 4 characters | beyond it, sa"
+      },
+      {
+        "kind": "text-position",
+        "start": 5993,
+        "end": 6045
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/params.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "SAME_TEXT_SIMILARITY = 0.9",
+          "prefix": "w it the\n * span is `changed`.\n */\nexport const ",
+          "suffix": ";\n\n/** A same-text span whose start moved by mor"
+        },
+        {
+          "kind": "text-position",
+          "start": 1376,
+          "end": 1402
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "96f4f85317a64f68"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.9"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.963Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.963Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

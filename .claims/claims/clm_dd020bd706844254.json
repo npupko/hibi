@@ -1,0 +1,88 @@
+{
+  "id": "clm_dd020bd706844254",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**List lead-in.** When a sentence's paragraph opens with a list item (`-`, `*`, `+`, `1.`, or `1)` followed by a space), the context also holds the list's lead-in.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**List lead-in.** When a sentence's paragraph opens with a list item (`-`, `*`, `+`, `1.`, or `1)` followed by a space), the context also holds the list's lead-in.",
+        "prefix": "`…`, then the heading path from its outer end.\n\n",
+        "suffix": " The lead-in is found from the line above the li"
+      },
+      {
+        "kind": "text-position",
+        "start": 36288,
+        "end": 36451
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const LIST_ITEM = /^\\s*(?:[-*+]|\\d+[.)])\\s/;",
+          "prefix": "]*#*[ \\t]*$/;\nconst FENCE = /^ {0,3}(```|~~~)/;\n",
+          "suffix": "\n\ninterface Line {\n  text: string;\n  start: numb"
+        },
+        {
+          "kind": "text-position",
+          "start": 2478,
+          "end": 2522
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "b708438f7e7c6fc6",
+          "semanticHash": "6ec83719c95c2153"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/context.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (head.fenced || !LIST_ITEM.test(head.text)) return \"\";",
+          "prefix": "g): string {\n  const head = lines[a] as Line;\n  ",
+          "suffix": "\n  let k = a - 1;\n  while (\n    k >= 0 &&\n    !("
+        },
+        {
+          "kind": "text-position",
+          "start": 5772,
+          "end": 5829
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "7b844df8136b3272",
+          "semanticHash": "142817e82abe5877"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:05.679Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:05.679Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,128 +1,107 @@
 ---
 name: hibi
 description: >-
-  Set up and operate hibi, the deterministic CLI that flags documentation and
-  AI-agent instruction files when the code they describe has changed. hibi
-  tracks claims (a doc sentence anchored to a code span) in a committed
-  .claims/ store and grades drift without running a model. Use this skill when
-  the user wants to initialize hibi in a repo (`hibi init`), record claims, run
-  `hibi check` (with `--doc`, `--since`, or `--overview`), `hibi list`, or
-  `hibi coverage`, wire hibi into CI or a git hook, respond to a flagged claim
-  (changed / orphaned / moved / ambiguous / expired / refuted) using its
-  remediation menu, reanchor or retire a claim, or manage document lifecycle
-  (supersede / archive). Trigger this skill even when the user does not say
-  "hibi" but describes the problem: docs drifting out of sync with code, stale
-  READMEs or AGENTS.md/CLAUDE.md files, "keep the docs honest when code
-  changes", verifying a doc is still current before trusting it, or anything
-  involving a `.claims/` store or a `HIBI:BEGIN` banner.
+  Operate hibi, the CLI that tracks checkable sentences (claims) in documents
+  and reports which are stale, refuted, expired, or contradicted. Use before
+  trusting CLAUDE.md, AGENTS.md, or any doc; after a feature; when docs or a
+  knowledge repo go stale; for process, marketing, or decision docs that drift; for
+  contradictions between docs; for anything about claims or .claims/.
 allowed-tools: >-
-  Bash(hibi check:*), Bash(hibi list:*), Bash(hibi coverage:*),
-  Bash(bunx hibi check:*), Bash(bunx hibi list:*), Bash(bunx hibi coverage:*)
+  Bash(hibi check:*), Bash(hibi list:*), Bash(hibi audit:*),
+  Bash(bunx @npupko/hibi check:*), Bash(bunx @npupko/hibi list:*),
+  Bash(bunx @npupko/hibi audit:*)
 ---
 
-# Using hibi
+# hibi
+
+A claim is one document region (sentence, list item, table row) that asserts something checkable. hibi never edits a sentence, fetches a source, or runs a procedure step; `archive` replaces a whole document with a tombstone.
 
 ## Vocabulary
 
-- **Claim**: one sentence in a document anchored to the code span it describes. One JSON file per claim under `.claims/`, committed.
-- **Doc side / code side**: the two anchors of a claim. On `check`, each resolves to one of five **anchor states**: `unchanged`; `moved` (same text, new position); `changed` (text, structure, or a literal differs); `ambiguous` (several equal matches); `orphaned` (not found).
-- **Enforcement**: `enforced` (default; may gate), `suggested` (`record --suggest`; advisory, never gates), `retired` (withdrawn by `hibi retire`).
-- **Verifiers**: `--verifier kind:ref` commands, run only under `check --run-verifiers`; they set `behavior` to `supported` or `refuted`. Without a verifier there is no `behavior` field.
-- **Gates**: an enforced claim gates on `changed`, `orphaned`, or `ambiguous` (either side), `expired` (ttl passed), or `refuted`. `moved` is a warning.
-
-A flag means re-verify. hibi never edits prose.
-
-## Invoking hibi
-
-If `command -v hibi` succeeds, use `hibi`. In a Bun repo without a binary, use `bunx @npupko/hibi`. With no JS runtime: `curl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | sh`.
-
-Output is JSON when piped, human on a TTY (`--json` forces JSON). `--explain` adds evidence; `--no-hints` drops remediation. `hibi <cmd> --help` prints options without running the command.
-
-## The five commands
-
-**1. init** creates `.claims/`. Commit it.
-
-```sh
-hibi init
-```
-
-**2. record** anchors a sentence to code. Send a JSON array on stdin; keys mirror the flags in camelCase (`doc`, `docQuote`, `docRange`, `codeFile`, `codeQuote`, `codeRange`, `glob`, `suggest`, `verified`, `verifier`, `ttl`, `owner`). The batch is all or nothing. Quote the load-bearing token on the code side (the value, not the line). Set `verified: true` only after you confirmed the code backs the sentence.
-
-```sh
-echo '[{"doc":"README.md","docQuote":"Retries are capped at 5 attempts",
-        "codeFile":"src/retry.ts","codeQuote":"MAX_ATTEMPTS = 5","verified":true}]' \
-  | hibi record --from-file -
-```
-
-**3. check** resolves every claim against the working tree. `--doc <path>` scopes to one document, `--since <ref>` to files changed since a git ref, `--overview` prints a per-document table, `--write` stamps banners.
-
-```sh
-hibi check --since origin/main
-```
-
-**4. list** prints one row per claim. `--state all|gating|warning|clean|orphaned|suggested|stranded|duplicate`, `--path <p>` (either side), `--ids-only` for shell loops.
-
-```sh
-hibi list --path src/auth.ts
-```
-
-**5. reanchor** re-resolves a claim and stores the new baseline. A side that is not found is refused unless you pass a new span for it. `--suggest` lists candidate locations (read-only). `--doc <path> --doc-quote "…"` moves the claim to another document. `--dry-run` previews.
-
-```sh
-hibi reanchor asrt_1a2b3c4d --suggest
-```
-
-## JSON shapes
-
-`check`:
-
-```json
-{ "ok": true, "action": "check", "schemaVersion": "v3", "exitCode": 2,
-  "summary": { "total": 3, "gating": 1, "warning": 0, "clean": 2, "retired": 0, "expired": 0 },
-  "verdicts": [{ "assertionId": "asrt_…", "doc": "unchanged", "code": "changed",
-                 "expired": false, "gates": true,
-                 "remediation": { "recommended": "update-claim",
-                   "actions": [{ "id": "update-claim", "title": "…", "rationale": "…",
-                                 "command": "hibi reanchor asrt_…" }] } }],
-  "documents": [{ "path": "README.md", "lifecycle": "active", "suspect": [{ "propositionId": "prop_…", "status": "code:changed" }] }] }
-```
-
-`record`: `{ ok, action, schemaVersion, id, doc, code, enforcement, verified, warnings?, next }`. Batch: `{ ok, action, schemaVersion, batch: true, count, results: [{ id, doc, code, enforcement, warnings? }], next }`.
-
-## When to run
-
-- Before trusting an instruction file: `hibi check --doc CLAUDE.md`. Exit 2 means a sentence in it no longer matches the code.
-- After a feature or refactor: `hibi check --since origin/main`. Fix the prose in the same change.
-- To find doc sentences backed by no claim: `hibi coverage --doc README.md`. Uncovered regions get a claim or get removed.
-
-## Verdict to action
-
-Read `remediation.recommended`, find that action in `actions[]`, and run its `command`. When there is no `command`, do the work the `title` names, then run `hibi check` again.
-
-| verdict | recommended | do |
+| kind | evidence side | stale when |
 |---|---|---|
-| `code:changed` | `update-claim` | rewrite the sentence if wrong, then `hibi reanchor <id>` |
-| `doc:changed` | `reverify-doc` | confirm the edited sentence against the code, then reanchor |
-| both changed | `reconcile` | reconcile doc and code, then reanchor |
-| `*:orphaned` | `reanchor` | `hibi reanchor <id> --suggest`, then reanchor with an explicit span, or `retire` |
-| `*:moved`, `*:ambiguous` | `reanchor` | `hibi reanchor <id>` (wider span when ambiguous) |
-| `behavior:refuted` | none | `fix-code` or `fix-claim`; never reanchor |
-| `expired` | `reverify-and-rerecord` | re-verify, then re-record |
+| `code` | code spans | an anchor `changed`, `orphaned`, `ambiguous` |
+| `reference` | one span in another doc | an anchor change, or the judge finds no support |
+| `attested` | none; optional `sources`, `procedure`; `ttl` required | ttl elapsed, or evidence refutes it |
 
-Never rewrite a sentence to silence a banner. Never delete a `.claims/` file; use `hibi retire <id>`.
+Anchor states: `unchanged`, `moved`, `changed`, `ambiguous`, `orphaned`; evidence also `unavailable`. Judge: `supported`, `refuted`, `review` (unsure, or evidence did not address it), `pending` (judge not reached, or its answer unusable).
 
-## Exit codes
+Attestations are append-only `{by, at, basis: vouch|evidence|ack, note}`; actors are `human:<id>`, `agent:<name>`, `process:<name>`. Counting rule: ttl runs from the newest `evidence` attestation or `human:` vouch. Agent and process vouches and acks never count. A claim of any kind with a ttl and nothing counting is `expired`.
 
-| exit | meaning |
-|:---:|---|
-| 0 | clean (`moved` warnings included, unless `--fail-on warn`) |
-| 2 | gating: `changed`/`orphaned`/`ambiguous`, `expired`, or `refuted` on an enforced claim |
-| 1 | operational error (no store, unknown flag or ref) |
+`check` lists a `worklist`: claims that are `expired`; reference or attested claims in `review` or `pending`; attested claims with a `procedure` or `sources` and no judged evidence (`never-checked`). `list --state pending` is the same set.
 
-`--fail-on gating|warn|never` moves the threshold.
+## Invoking
 
-## References
+Use `hibi`, else `bunx @npupko/hibi`. JSON when piped; `--json` forces it. Every flag: `references/cli-reference.md`. The judge needs `TYPESAFE_API_KEY`; without it uncached judgments are `pending`, a warning, never a failure. Verdicts cache in `.claims/judge/`, which is local and gitignored; commit the rest of `.claims/`. Paths are normalized relative to the current directory (or `--cwd`); evidence files must stay inside it or their alias directory.
 
-- `references/cli-reference.md`: every command, flag, and JSON shape.
-- `references/cookbook.md`: six worked examples.
-- `assets/hibi-ci.yml`: a GitHub Actions workflow.
+## The loop
+
+**a. Before trusting a doc:** `hibi check --doc <path>`. Exit 2: a claim in it gates; do not rely on its gating sentences. Exit 1 with `no claims are registered for <path>`: audit it.
+
+**b. After a change:** `hibi check --since origin/main`. Fix prose in the same change.
+
+**c. Audit:** `hibi audit --doc <path>`, one row per region. `claimId` set: covered. Else `kind`: `code`/`reference`/`attested` → record; `unverifiable` → rewrite as attributed opinion or remove; `not-a-claim` → nothing; `unsure` → decide from `probabilities`; `pending` → no judge answer. Never record an `unverifiable` region.
+
+**d. Record** (stdin array, all or nothing):
+
+```sh
+hibi record --from-file - <<'EOF'
+[{"doc":"docs/pricing.md","docQuote":"Pro costs $29/month.","kind":"attested","ttl":"P90D",
+  "owner":"human:alice@example.com","by":"agent:claude",
+  "sources":[{"id":"stripe","resource":"https://dashboard.stripe.com/products/prod_123"}],
+  "procedure":{"instructions":"Open the Stripe Pro product and report its monthly price.",
+    "steps":[{"id":"price","command":"stripe prices list --product prod_123 --json"}]}}]
+EOF
+```
+
+| key | rule |
+|---|---|
+| `doc`, `kind` | required |
+| `docQuote` / `docRange` | exactly one; `L3:L3` or offsets `100:130` |
+| `code` | code only: `[{file, quote or range}]` |
+| `ref` | reference only: `{file, quote or range}` |
+| `sources` | `[{id?, resource, title?}]`, never fetched |
+| `procedure` | `{instructions, steps?}`; steps are hints |
+| `ttl` | ISO 8601 (`P90D`); required on attested |
+| `owner` | actor to contact on expiry |
+| `by` | required (here or `--by`); use `agent:<name>` |
+| `suggest` | `true`: never gates |
+
+Quote the load-bearing token, not the whole line. `file` may be `alias:path` via `config.repos`. Agent-recorded claims with a ttl start expired.
+
+**e. Worklist:** `hibi check --json` → `worklist[]: {claimId, sentence, kind, document, procedure, sources, owner, lastEvidence?, reason}`. Follow `procedure.instructions` with your tools, then:
+
+```sh
+hibi evidence --from-file - --by agent:claude <<'EOF'
+[{"claimId":"clm_…","evidence":"Pro plan: $29.00 / month","source":"stripe","summary":"Stripe lists Pro at $29/month"}]
+EOF
+```
+
+`evidence`: observed text, at most 32,000 characters, never secrets; only its hash and the numbers, money, versions, and dates in it are stored. `summary`: one stored line. `--by` is required unless every item has `by`. Attested claims only. `results[].judge`: `supported` appends an evidence attestation and resets ttl; `refuted` gates; `review` needs more pointed evidence; `pending` writes nothing. Exit 0 regardless.
+
+**f. Attest:** `hibi attest <id> --by <actor> --note "…"`. A `human:` vouch resets ttl; an agent vouch returns `countsTowardTtl: false`. Never vouch as `human:`; ask the `owner`. `--ack conflict:<otherId>` or `--ack review` acknowledges a finding; it needs `--note` and never resets ttl. `--ack review` fails when there is no current supports verdict.
+
+**g. Verdicts.**
+
+| enforced claim | `check` | `check --doc` |
+|---|---|---|
+| `changed`, `orphaned`, `ambiguous`, `refuted`, conflict | gate | gate |
+| `expired` | warn | gate |
+| `moved`, `review`, `pending`, `unavailable` | warn | warn |
+
+Exit 0 clean or warnings, 2 gating (any warning under `--fail-on warn`), 1 error.
+
+`check` verdict: `{claimId, kind, doc, evidence?, judge?, expired, conflicts[], gates, warns, changed?, reasons[], remediation}`. `reasons[]` names every rule applied. `remediation.actions[].command` runs once you fill its `<…>` placeholders.
+
+| flag | do |
+|---|---|
+| `changed` | fix the sentence if wrong, then run the remediation `reanchor` command (it names the new span) |
+| `orphaned` | `hibi reanchor <id> --suggest`, reanchor with a span, or retire |
+| `moved` | `hibi reanchor <id>`; every moved claim at once: `hibi reanchor --moved [--doc <path>]` |
+| `refuted` | fix sentence or evidence; never reanchor |
+| conflict | rewrite the wrong sentence, or ack |
+| `expired` | submit evidence (attested), or ask the owner |
+
+Never rewrite a sentence to silence a flag. Never delete a `.claims/` file; use `hibi retire <id>`.
+
+Recipes: `references/cookbook.md`. CI: `assets/hibi-ci.yml`.

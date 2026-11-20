@@ -1,0 +1,152 @@
+{
+  "id": "clm_7bc61bd17037460f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`supports` entries name the claim, `conflict` entries the pair, `triage` entries the document.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`supports` entries name the claim, `conflict` entries the pair, `triage` entries the document.",
+        "prefix": "ast one of `claimId`, `pairId`, `docId` is set. ",
+        "suffix": " A `triage` entry holds one chunk request and it"
+      },
+      {
+        "kind": "text-position",
+        "start": 18362,
+        "end": 18456
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "        judgment: \"supports\",\n        subject: { claimId: p.claim.id },",
+          "prefix": "t({\n        key: p.key,\n        model: a.model,\n",
+          "suffix": "\n        request: storedSupportsRequest(p.reques"
+        },
+        {
+          "kind": "text-position",
+          "start": 12390,
+          "end": 12461
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "9a0af44d9c11aee7",
+          "semanticHash": "b04e5dd896f6a88a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"supports\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    judgment: \"supports\",\n    subject: { claimId: input.claim.id },",
+          "prefix": "cache.put({\n    key,\n    model: response.model,\n",
+          "suffix": "\n    request,\n    answers: response.answers,\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 11731,
+          "end": 11798
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "0cde8b6465af90cb",
+          "semanticHash": "be715642b99b238d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"supports\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "        judgment: \"conflict\",\n        subject: { pairId: pair.pairId },",
+          "prefix": "= {\n        key,\n        model: response.model,\n",
+          "suffix": "\n        request,\n        answers: response.answ"
+        },
+        {
+          "kind": "text-position",
+          "start": 11364,
+          "end": 11435
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "29a9ee076bb560bc",
+          "semanticHash": "e00e2b3b5e1c290e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"conflict\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "          judgment: \"triage\",\n          subject: { docId },",
+          "prefix": "          key,\n          model: response.model,\n",
+          "suffix": "\n          request,\n          answers,\n         "
+        },
+        {
+          "kind": "text-position",
+          "start": 9053,
+          "end": 9112
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "abef21cd3390928d",
+          "semanticHash": "9699392ad07e6a81"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"triage\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:34.732Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:34.732Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

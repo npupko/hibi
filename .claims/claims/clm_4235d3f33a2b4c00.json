@@ -1,0 +1,63 @@
+{
+  "id": "clm_4235d3f33a2b4c00",
+  "documentId": "doc_da671669435c5749",
+  "kind": "attested",
+  "sentence": "| price | $0.042 per million input tokens; output tokens are free |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| price | $0.042 per million input tokens; output tokens are free |",
+        "prefix": "e runs.\n</Warning>\n\n| item | figure |\n|---|---|\n",
+        "suffix": "\n| typical latency | about 100 ms per request |\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 15079,
+        "end": 15146
+      }
+    ]
+  },
+  "evidence": [],
+  "sources": [
+    {
+      "id": "research-note",
+      "resource": "design/evidence/typesafe-research-2026-10-22.md",
+      "title": "TypeSafe research note, 2026-10-22"
+    },
+    {
+      "id": "typesafe-models",
+      "resource": "https://docs.typesafe.ai/models.md",
+      "title": "TypeSafe models"
+    }
+  ],
+  "procedure": {
+    "instructions": "Open https://docs.typesafe.ai/models.md and the TypeSafe pricing page. Report the input price per million tokens and the output token price for the Jev model pinned in .claims/config.json (judge.model). Submit the quoted text with hibi evidence."
+  },
+  "owner": "human:mikita@peechapp.co",
+  "ttl": "P90D",
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:58.026Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "human:mikita@peechapp.co",
+      "at": "2026-10-23T07:36:10.843Z",
+      "basis": "vouch",
+      "note": "checked docs.typesafe.ai/models.md: Jev input $0.042 per million tokens, output free"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:28:51.930Z",
+      "basis": "evidence",
+      "note": "TypeSafe models page: Jev 1.14 and 1.13 cost $0.042 per Mtok input; output tokens are free",
+      "evidenceHash": "80e874eb8727a73c43947dbf40bfadc2a7ee42834dd6562f0429841fff57b56d"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:58.026Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

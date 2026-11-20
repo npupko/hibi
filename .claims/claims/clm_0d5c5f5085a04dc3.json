@@ -1,0 +1,82 @@
+{
+  "id": "clm_0d5c5f5085a04dc3",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "For an `attested` claim, `judge` comes from the newest cached `supports` verdict for evidence submitted with `hibi evidence`.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "For an `attested` claim, `judge` comes from the newest cached `supports` verdict for evidence submitted with `hibi evidence`.",
+        "prefix": "idence side is <state>`, and `judge` is absent. ",
+        "suffix": "\n\n`judge: pending` has one of three causes, each"
+      },
+      {
+        "kind": "text-position",
+        "start": 2183,
+        "end": 2308
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const newest = newestSupports(entries);",
+          "prefix": "}\n    } else if (c.kind === \"attested\") {\n      ",
+          "suffix": "\n      if (newest !== undefined) {\n        outco"
+        },
+        {
+          "kind": "text-position",
+          "start": 16595,
+          "end": 16634
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "639659356565b76d",
+          "semanticHash": "35f1d49925df13d4"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "outcome = cachedSupportsOutcome(newest, threshold, c);",
+          "prefix": "ies);\n      if (newest !== undefined) {\n        ",
+          "suffix": "\n      }\n    }\n\n    const ack =\n      outcome?.s"
+        },
+        {
+          "kind": "text-position",
+          "start": 16677,
+          "end": 16731
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "c49da9b2b50d0969",
+          "semanticHash": "c654c055c110a81b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:11.497Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:11.497Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,12 +1,14 @@
 import { afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
-import { renderCheck } from "../src/cli/render/check.ts";
+import { renderCheck, statusTags } from "../src/cli/render/check.ts";
 import { fileReader } from "../src/cli/render/helpers.ts";
 import { resolveMode } from "../src/cli/render/mode.ts";
-import { duplicateCount, renderOverview } from "../src/cli/render/status.ts";
+import { renderOverview } from "../src/cli/render/status.ts";
 import { makeStyle } from "../src/cli/render/style.ts";
 import { runCheck } from "../src/engine/check.ts";
+import { recordClaim } from "../src/engine/record.ts";
 import type { CheckReport } from "../src/index.ts";
+import { FakeJudge } from "../src/judge/fake.ts";
 import { makeRepo, record, type TempRepo } from "./helpers.ts";
 
 let analyzer: Awaited<ReturnType<typeof getAnalyzer>>;
@@ -26,19 +28,24 @@ afterEach(async () => {
 });
 
 /** Build a render context from a real store + report, with color off. */
-async function ctx(r: TempRepo, report: CheckReport, kind: "rich" | "compact") {
+async function ctx(
+  r: TempRepo,
+  report: CheckReport,
+  kind: "rich" | "compact",
+  explain = false,
+) {
   const mode = resolveMode(
-    { color: "never", format: kind === "compact" ? "compact" : "human" },
+    {
+      color: "never",
+      format: kind === "compact" ? "compact" : "human",
+      explain,
+    },
     { isTTY: false },
   );
-  const [assertions, propositions] = await Promise.all([
-    r.store.allAssertions(),
-    r.store.allPropositions(),
-  ]);
+  const claims = await r.store.allClaims();
   return {
     report,
-    assertionsById: new Map(assertions.map((a) => [a.id, a])),
-    propsById: new Map(propositions.map((p) => [p.id, p])),
+    claimsById: new Map(claims.map((c) => [c.id, c])),
     read: fileReader(r.store.anchorRoot),
     style: makeStyle(false),
     mode,
@@ -78,7 +85,7 @@ describe("renderCheck: rich", () => {
     // biome-ignore lint/suspicious/noControlCharactersInRegex: assert no ANSI leaked.
     expect(text).not.toMatch(/\x1b\[/);
     expect(text).toContain("✖ README.md");
-    expect(text).toContain("code:changed");
+    expect(text).toContain("evidence:changed");
     expect(text).toContain('"Capped at 5 attempts"');
     expect(text).toContain("src/retry.ts:1");
     expect(text).toContain("help:");
@@ -123,7 +130,7 @@ describe("renderCheck: compact", () => {
     // biome-ignore lint/suspicious/noControlCharactersInRegex: assert no ANSI leaked.
     expect(text).not.toMatch(/\x1b\[/);
     expect(text).toContain("✖ README.md");
-    expect(text).toContain("code:changed");
+    expect(text).toContain("evidence:changed");
     expect(text).toContain("src/retry.ts:1");
     expect(text).not.toContain("help:");
   });
@@ -137,15 +144,11 @@ describe("renderOverview: repo-wide table", () => {
       { color: "never", format: "human" },
       { isTTY: false },
     );
-    const [assertions, propositions] = await Promise.all([
-      r.store.allAssertions(),
-      r.store.allPropositions(),
-    ]);
+    const claims = await r.store.allClaims();
     const text = renderOverview({
       report,
-      assertions,
-      propositions,
-      storeVersion: "v3",
+      claims,
+      storeVersion: "v4",
       style: makeStyle(false),
       mode,
     });
@@ -159,7 +162,169 @@ describe("renderOverview: repo-wide table", () => {
     // The gating doc sorts above the clean one.
     expect(text.indexOf("README.md")).toBeLessThan(text.indexOf("docs/api.md"));
     expect(text).toMatch(/Tracking 2 documents.* exit 2/);
-    expect(text).toContain("Store v3, 0 duplicate propositions.");
-    expect(duplicateCount(assertions, propositions)).toBe(0);
+    expect(text).toContain("Store v4.");
+  });
+});
+
+describe("renderCheck: v4 tags, reasons, and worklist", () => {
+  const NOW = new Date("2026-06-01T00:00:00Z");
+
+  /** A code claim in conflict, a reference claim left pending, an expired attested claim. */
+  async function v4Repo() {
+    const r = await repo();
+    await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 5;\n");
+    await r.write("README.md", "# Doc\n\nRetries are capped at 5.\n");
+    const code = await record(r, {
+      doc: "README.md",
+      text: "Retries are capped at 5.",
+      file: "src/retry.ts",
+      quote: "MAX_ATTEMPTS = 5",
+    });
+    const pricing =
+      "# Pricing\n\nPro costs $29/month.\n\nTeam costs $99/month.\n";
+    const billing = "The Pro plan is billed at $29 per month.\n";
+    await r.write("docs/pricing.md", pricing);
+    await r.write("docs/billing.md", billing);
+    const base = {
+      docPath: "docs/pricing.md",
+      owner: "human:alice@example.com",
+      ref: "testref",
+      now: new Date("2026-05-01T00:00:00Z"),
+    };
+    await recordClaim(
+      r.store,
+      { docContent: pricing, evidenceContents: { "docs/billing.md": billing } },
+      {
+        ...base,
+        kind: "reference",
+        docSpec: { quote: "Pro costs $29/month." },
+        evidence: [
+          {
+            file: "docs/billing.md",
+            region: { quote: "The Pro plan is billed at $29 per month." },
+          },
+        ],
+        by: "human:alice@example.com",
+      },
+    );
+    const att = await recordClaim(
+      r.store,
+      { docContent: pricing, evidenceContents: {} },
+      {
+        ...base,
+        kind: "attested",
+        docSpec: { quote: "Team costs $99/month." },
+        evidence: [],
+        ttl: "P10D",
+        by: "agent:opus",
+        procedure: {
+          instructions: "Open the Stripe dashboard and read the Team price.",
+        },
+      },
+    );
+    const judge = new FakeJudge();
+    judge.setUnavailable("no TYPESAFE_API_KEY");
+    const report = await runCheck(r.store, {
+      ast: analyzer,
+      ref: "WORKTREE",
+      judge,
+      now: NOW,
+      conflictPass: {
+        findings: [
+          {
+            claimId: code.claim.id,
+            otherClaimId: att.claim.id,
+            pairId: [code.claim.id, att.claim.id].sort().join(":"),
+            probability: 0.95,
+            reason: "numbers differ",
+          },
+        ],
+        duplicates: [],
+        pending: [],
+        requests: 0,
+        pairs: [],
+        scope: "store",
+      },
+    });
+    return { r, report, code: code.claim, att: att.claim };
+  }
+
+  test("rich: judge and conflict tags in the status column, then the worklist", async () => {
+    const { r, report, att } = await v4Repo();
+    const text = renderCheck(await ctx(r, report, "rich"));
+    expect(text).toContain(`conflict:${att.id}`);
+    expect(text).toContain("judge:pending");
+    expect(text).toContain("expired");
+    expect(text).toContain("Worklist (2)");
+    expect(text).toContain(`expired       ${att.id}   docs/pricing.md`);
+    expect(text).toContain(
+      "procedure: Open the Stripe dashboard and read the Team price.",
+    );
+    expect(text).toMatch(/Found 1 gating, 2 warning, 2 in worklist .* exit 2/);
+    // Without --explain, judge and expiry labels stay out of the block.
+    expect(text).not.toContain("reason: expired: ttl");
+    expect(text.indexOf("Worklist")).toBeGreaterThan(text.indexOf("README.md"));
+  });
+
+  test("a claim that warns only from the contradiction pass shows conflict:pending, not unchanged", async () => {
+    const { report, code } = await v4Repo();
+    const base = report.verdicts.find((v) => v.claimId === code.id);
+    if (base === undefined) throw new Error("no verdict");
+    const pendingOnly = {
+      ...base,
+      conflicts: [],
+      gates: false,
+      warns: true,
+      reasons: ["conflict checks pending: 1"],
+    };
+    expect(statusTags(pendingOnly)).toBe("conflict:pending");
+    const reviewOnly = {
+      ...pendingOnly,
+      reasons: [
+        "possible conflict with clm_0123456789abcdef: review: contradictory, confidence=0.55 below threshold 0.80",
+      ],
+    };
+    expect(statusTags(reviewOnly)).toBe("conflict:review");
+    // The engine's suspect status fills in a tag the verdict does not show.
+    expect(
+      statusTags({ ...pendingOnly, reasons: [] }, [], "judge:pending"),
+    ).toBe("judge:pending");
+  });
+
+  test("--explain prints every reason label", async () => {
+    const { r, report } = await v4Repo();
+    const text = renderCheck(await ctx(r, report, "rich", true));
+    expect(text).toContain(
+      "reason: expired: ttl P10D is set and no attestation counts (only evidence or a human vouch resets ttl)",
+    );
+    expect(text).toContain(
+      "reason: judge: judge unavailable: no TYPESAFE_API_KEY",
+    );
+    expect(text).toMatch(
+      /reason: conflicts with clm_[0-9a-f]{16} \(p=0\.95 at or above threshold 0\.8\): numbers differ/,
+    );
+  });
+
+  test("compact: one line per worklist item", async () => {
+    const { r, report, att } = await v4Repo();
+    const text = renderCheck(await ctx(r, report, "compact"));
+    const worklist = text.slice(text.indexOf("Worklist (2)"));
+    const lines = worklist.split("\n").filter((l) => l.includes(att.id));
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toContain(`expired       ${att.id}   docs/pricing.md`);
+    expect(lines[0]).toContain('"Team costs $99/month."');
+  });
+
+  test("the overview counts warnings from the verdict's warns", async () => {
+    const { r, report } = await v4Repo();
+    const text = renderOverview({
+      report,
+      claims: await r.store.allClaims(),
+      storeVersion: "v4",
+      style: makeStyle(false),
+      mode: resolveMode({ color: "never", format: "human" }, { isTTY: false }),
+    });
+    expect(text).toContain("docs/pricing.md");
+    expect(text).toMatch(/1 gating, 2 warning/);
   });
 });

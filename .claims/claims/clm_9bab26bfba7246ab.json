@@ -1,0 +1,94 @@
+{
+  "id": "clm_9bab26bfba7246ab",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "A `supported` result appends an `evidence` attestation, which resets the ttl.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `supported` result appends an `evidence` attestation, which resets the ttl.",
+        "prefix": " `code` or `reference` claim rejects the batch. ",
+        "suffix": " A `refuted` result gates the claim: fix the sen"
+      },
+      {
+        "kind": "text-position",
+        "start": 5527,
+        "end": 5604
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (outcome.state === \"supported\") {",
+          "prefix": "come.state] += 1;\n    let attested = false;\n    ",
+          "suffix": "\n      const attestation: Attestation = {\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 12942,
+          "end": 12978
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "56dff5cf98b59951",
+          "semanticHash": "cf149a5e29b812c6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"supported\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (a.basis === \"evidence\") return true;",
+          "prefix": "rt function counts(a: Attestation): boolean {\n  ",
+          "suffix": "\n  return a.basis === \"vouch\" && a.by.startsWith"
+        },
+        {
+          "kind": "text-position",
+          "start": 606,
+          "end": 646
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "2b86e5c896c53ef4",
+          "semanticHash": "64443608661256fc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:38.963Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:38.963Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

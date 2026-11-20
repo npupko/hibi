@@ -1,23 +1,21 @@
 ---
-title: "Enforcement and Document Lifecycle in Hibi"
+title: "Enforcement and Document Lifecycle"
 sidebarTitle: "Lifecycle"
-description: "Claims are enforced, suggested, or retired. Documents are active, superseded, or archived. Three verbs manage both: retire, supersede, archive."
+description: "Claims are enforced, suggested, or retired. Documents are active, superseded, or archived. retire, supersede, archive, and reanchor manage both."
 icon: "arrows-spin"
 ---
 
-Two separate questions: may this claim gate a build, and where is this document in its life. Hibi answers each with its own field and its own verb.
+Hibi asks two separate questions. May this claim gate? Where is this document in its life? Each has its own field and its own verbs.
 
 ## Enforcement
 
-Enforcement lives on the claim.
+Enforcement is a field on the claim.
 
-| Enforcement | Meaning |
+| enforcement | meaning |
 |---|---|
-| `enforced` | The default. May gate a build and may stamp a banner. |
-| `suggested` | Advisory. Never gates, never warns. Recorded with `record --suggest`. May have a coarse (`--glob`) or empty code side. |
-| `retired` | Withdrawn with `hibi retire`. Kept for history; ignored by every verdict. |
-
-`--verified` on `record` is a separate boolean: it records that the author confirmed the code backs the sentence. It does not change enforcement.
+| `enforced` | The default. The claim may gate (exit 2) and warn. |
+| `suggested` | Advisory. Recorded with `record --suggest` (or `"suggest": true` in a `--from-file` item). It never gates and never warns. |
+| `retired` | Withdrawn with `hibi retire`. Kept in the store for history. It never gates or warns, the contradiction pass skips it, and `evidence` and `attest` refuse it. |
 
 ### `retire`
 
@@ -25,19 +23,32 @@ Enforcement lives on the claim.
 hibi retire <claim-id> [--dry-run]
 ```
 
-Flips the claim's `enforcement` to `retired`. Idempotent: a second call reports `alreadyRetired: true`. A retired claim never gates, never warns, is excluded from `clean`, and is never stamped. Do not delete the file under `.claims/` by hand; the record is the audit trail.
+Sets the claim's `enforcement` to `retired` and saves it. The claim file stays in `.claims/claims/`; do not delete it by hand. A second call changes nothing and reports `alreadyRetired: true`.
+
+```json
+{ "ok": true, "action": "retire", "schemaVersion": "v4",
+  "id": "clm_…", "alreadyRetired": false, "next": "hibi check" }
+```
+
+In `check`, a retired claim is not resolved: its verdict reads `doc: "retired"` (and `evidence: "retired"` when it has an evidence side) and carries one reason, `retired claim: never gates or warns`. It is counted in `summary.retired` and in none of `gating`, `warning`, or `clean`.
 
 ## Document lifecycle
 
-Lifecycle lives on the document.
+Lifecycle is a field on the document record in `.claims/documents/`.
 
-| Lifecycle | Meaning |
+| lifecycle | meaning |
 |---|---|
-| `active` | In the read path. |
-| `superseded` | Replaced in full by another document. The new document carries a `supersedes` edge pointing at the old one. |
-| `archived` | Moved out of the read path with a tombstone at its old path. |
+| `active` | In the read path. The default. |
+| `superseded` | Replaced by another document. The old document's record carries `supersededBy` with the new document's id. |
+| `archived` | Moved to `archive/`, with a tombstone at the old path. |
 
-A live claim on a `superseded` or `archived` document is **stranded**. `hibi list --state stranded` lists them. A stranded claim still resolves and can still gate; the document's lifecycle is added to its banner status.
+A live claim (not retired) on a `superseded` or `archived` document is **stranded**. List them with:
+
+```sh
+hibi list --state stranded
+```
+
+A stranded claim still resolves, still gates, and still warns. In `check` JSON, every live claim on a non-active document appears in that document's `suspect[]` with the lifecycle as its status when nothing worse applies. Claims on a non-active document are left out of the worklist, so no agent is asked to collect evidence for them.
 
 ### `supersede`
 
@@ -47,11 +58,23 @@ hibi supersede --from <old> --to <new> [--dry-run]
 
 In one pass:
 
-1. Registers `--to` if needed and authors the `supersedes` edge on it.
-2. Flips `--from` to `superseded`.
-3. Relocates every live claim on `--from` whose sentence appears verbatim in `--to`. A relocated claim keeps its id, code side, and history; only its document changes.
+1. Registers `--to` in the store if needed. `--from` must already be registered; otherwise the command fails with `document <path> is not registered`.
+2. Moves every live claim on `--from` to `--to`, without reading the old file. When a claim's stored quote occurs verbatim exactly once in `--to`, its position is updated; otherwise its anchors are left as stored. The claim's id, sentence, quote, hashes, evidence, sources, procedure, attestations, and `ref` never change.
+3. Sets `--from` to `superseded` and records `supersededBy` on it.
 
-The result lists `relocated`, `misses` (claims whose sentence was not found verbatim, with a reason), and `strandedClaims` (the live claims still on the old document after the pass). For each miss, either move it by hand with `hibi reanchor <id> --doc <new> --doc-quote "…"` (use `hibi reanchor <id> --suggest` to find the sentence) or withdraw it with `hibi retire <id>`. When `strandedClaims` is empty the old file can be deleted or archived without orphaning anything.
+```json
+{ "ok": true, "action": "supersede", "schemaVersion": "v4",
+  "from": "design-v1.md", "to": "design-v2.md",
+  "relocated": [{ "claimId": "clm_…", "doc": "unchanged", "evidence": "unchanged" }],
+  "misses": [],
+  "strandedClaims": [],
+  "dryRun": false,
+  "next": "hibi check" }
+```
+
+Each `relocated` entry is `{ claimId, doc, evidence? }` with the claim's anchor states after the move. A quote found in `--to` reads `unchanged`. A sentence that was edited reads `changed`. A sentence that is not in `--to` reads `orphaned` and gates; fix it with `hibi reanchor <id> --doc-quote "…"` or `hibi retire <id>`. A quote found more than once is resolved by the normal resolver and may read `moved`.
+
+`misses` lists only claims whose move failed with an error, so it is normally empty. `strandedClaims` lists the live claims still on the old document after the pass, and is normally empty too. A claim stays on a superseded document only when its move failed (it is listed in `misses`) or when it was recorded there after the supersede.
 
 ### `archive`
 
@@ -59,30 +82,67 @@ The result lists `relocated`, `misses` (claims whose sentence was not found verb
 hibi archive --doc <path> [--successor <path>] [--dry-run]
 ```
 
-Moves the file to `archive/`, leaves a tombstone at the old path (pointing at `--successor` when given), and sets the document's lifecycle to `archived`. Claims are not moved; the result reports `strandedClaims`. To withdraw a document that has no successor, archive it without `--successor`.
+Copies the file to `archive/<path>`, replaces the original with a short tombstone, and sets the document's lifecycle to `archived`. The tombstone is a Markdown page headed `# Archived` that names the old path and, with `--successor`, links to the successor. Claims are not moved.
+
+```json
+{ "ok": true, "action": "archive", "schemaVersion": "v4",
+  "doc": "old.md", "archivedTo": "archive/old.md", "successor": "new.md",
+  "lifecycle": "archived", "strandedClaims": ["clm_…"], "dryRun": false,
+  "next": "reanchor or retire each stranded claim, then hibi check" }
+```
+
+`archivedTo` is null when the document is registered but its file was not on disk. A path that is not a registered document (one with no record in `.claims/documents/`) is an error, and nothing is written. To withdraw a document that has no successor, archive it without `--successor`.
+
+## Reanchoring a claim
+
+```sh
+hibi reanchor <claim-id> [--doc <path>] [--doc-quote <text> | --doc-range L1:L3]
+                         [--code-file <path> (--code-quote <text> | --code-range L1:L9)]...
+                         [--ref-file <path> (--ref-quote <text> | --ref-range L1:L3)]
+                         [--suggest] [--dry-run]
+hibi reanchor --moved [--doc <path>] [--dry-run]
+```
+
+`reanchor` re-resolves every span of the claim against the working tree and stores the relocated sides as the new baseline. It refreshes the claim's `sentence` from the doc span when the doc side is relocated.
+
+- Without span flags for a side, the side is relocated only when it reads `moved`. A side that reads `unchanged` is kept.
+- A side that reads `changed`, `ambiguous`, or `orphaned` is left as stored, and the result's `kept` gives the reason, for example `doc: changed; pass --doc-quote to re-anchor` or `evidence: orphaned; pass --code-quote to re-anchor`. Hibi does not guess where an edited or lost span went; pass the new span.
+- The command exits 0 when at least one side was relocated or no side needed relocating. It exits 1 and writes nothing when a side needed relocating and no side was relocated.
+- `--doc`, the doc span flags, and the ref span flags may each be given once. A repeat is an error such as `--doc-quote given twice; reanchor takes one span per side`.
+- A value that starts with `-` takes the `=` form: `--doc-quote="- Retries are capped at 5 attempts"`.
+- `--doc <path>` with `--doc-quote` or `--doc-range` moves the claim to another document.
+- `--code-file` is repeatable: each one opens a span that takes the `--code-quote` or `--code-range` after it, and the spans given replace all of a `code` claim's spans, in order; `--ref-file` with `--ref-quote` or `--ref-range` replaces a `reference` claim's span. The wrong kind is an error, for example `claim <id> is a code claim; --ref-file, --ref-quote, and --ref-range are for reference claims.`
+- An evidence side in a sibling repo that is not checked out is kept as stored, with a warning such as `evidence side api:src/limits.ts kept unchanged: sibling repo "api" is not checked out at ../api`. The other sides are re-resolved.
+- An explicit `--code-file` span in a sibling repo that is not checked out keeps the stored span for that file. The result's `kept` lists it with `state: "unavailable"` and the reason `evidence: repository api not checked out; kept as stored`, and the command exits 0 when another side was relocated.
+- `--moved` takes no claim id. It applies the plain rule to every live claim in the store, or with `--doc <path>` to the live claims of that document: `moved` sides are relocated, and `changed`, `ambiguous`, and `orphaned` sides are kept and listed. It prints one line per claim with a side relocated or kept, and exits 0. The JSON is `{ "action": "reanchor", "moved": true, "relocated": <sides relocated>, "claims": [{ "id", "relocated": [{ "side", "file" }], "kept": [{ "side", "file", "state", "reason" }] }], "next" }`. `--dry-run` writes nothing.
+- `--suggest` is read-only. It ranks candidate locations for the stored doc and evidence quotes. It cannot be combined with span flags or `--dry-run`.
+- `--dry-run` computes the result and writes nothing.
+
+Reanchor only after you have re-read the sentence against its evidence. A reanchor tells hibi that the current text is correct.
 
 ## Deleting or renaming a document
 
-Claims are content. Move them in the same change as the prose:
+Claims belong to the document they quote. Move them in the same change as the prose:
 
-1. `hibi list --path <old-doc>` to see the claims on it.
+1. `hibi list --path <old-doc>` lists the claims that name the file on either side.
 2. `hibi supersede --from <old-doc> --to <new-doc>`.
-3. Resolve each entry in `misses` with `reanchor` or `retire`.
-4. When `strandedClaims` is empty, delete or archive the old file.
+3. For each `relocated` entry that reads `changed` or `orphaned`, fix the sentence in the new document if it is wrong, then run `hibi reanchor <id> --doc-quote "…"`, or `hibi retire <id>`.
+4. For each entry in `misses`, run `hibi reanchor <id> --doc <new-doc> --doc-quote "…"`, or `hibi retire <id>`.
+5. When `strandedClaims` is empty, delete or archive the old file.
 
-Skipping steps 2 and 3 leaves the claims `doc:orphaned` after the delete. Orphaned is not retired: it is a live record pointing at a missing file.
+If you skip steps 2 to 4, the claims become `doc: orphaned` after the delete, and an orphaned enforced claim gates. Orphaned is not retired: it is a live record that points at a missing file.
 
 ## Who does what
 
-The engine flags, stamps, and records edges. The author or agent rewrites prose and re-runs `hibi check`. The engine never writes prose.
+Hibi records lifecycle and enforcement and reports what is stranded or orphaned. A person or an agent rewrites the prose, decides what to reanchor and what to retire, and runs `hibi check` again. Hibi never edits prose. Two verbs write a document: `archive` copies it to `archive/` and writes the tombstone in its place, and `init --instructions` appends one line to an agent instruction file.
 
-## Where to go next
+## Next
 
 <CardGroup cols={2}>
-  <Card title="Banners" icon="stamp" href="/banners">
-    How lifecycle and drift appear in the file itself.
+  <Card title="Verdicts" icon="scale-balanced" href="/verdicts">
+    How enforcement and states become gates, warnings, and exit codes.
   </Card>
   <Card title="CLI reference" icon="terminal" href="/cli-reference">
-    `retire`, `supersede`, `archive`, and the rest of the verbs.
+    Every flag of `retire`, `supersede`, `archive`, and `reanchor`.
   </Card>
 </CardGroup>

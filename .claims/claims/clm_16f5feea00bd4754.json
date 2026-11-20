@@ -1,0 +1,59 @@
+{
+  "id": "clm_16f5feea00bd4754",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "An `ack` on a review is pinned to the cache key of the claim's current `supports` verdict.",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An `ack` on a review is pinned to the cache key of the claim's current `supports` verdict.",
+        "prefix": "ding is not a problem, and say why in `--note`. ",
+        "suffix": " For a `reference` claim that is the key of the "
+      },
+      {
+        "kind": "text-position",
+        "start": 5412,
+        "end": 5502
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ack: { judgeKey } satisfies AttestationAck,",
+          "prefix": "      at,\n      basis: \"ack\",\n      note,\n      ",
+          "suffix": "\n    });\n    await append(store, claim, attestat"
+        },
+        {
+          "kind": "text-position",
+          "start": 6328,
+          "end": 6371
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "28fecf721240c315",
+          "semanticHash": "3d346320e84bac3b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:13.774Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:13.774Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

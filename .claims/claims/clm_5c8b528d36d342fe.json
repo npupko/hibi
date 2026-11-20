@@ -1,0 +1,59 @@
+{
+  "id": "clm_5c8b528d36d342fe",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "| `by` | the actor |",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `by` | the actor |",
+        "prefix": "still $29\" }\n```\n\n| field | meaning |\n|---|---|\n",
+        "suffix": "\n| `at` | when, as an ISO 8601 instant |\n| `basi"
+      },
+      {
+        "kind": "text-position",
+        "start": 588,
+        "end": 608
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    by: Actor,\n    at: Instant,",
+          "prefix": "\nexport const Attestation = z\n  .strictObject({\n",
+          "suffix": "\n    basis: AttestationBasis,\n    note: z.string"
+        },
+        {
+          "kind": "text-position",
+          "start": 6998,
+          "end": 7029
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "7b84392c75546292",
+          "semanticHash": "3dfba55ac5536936"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:11.031Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:11.031Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

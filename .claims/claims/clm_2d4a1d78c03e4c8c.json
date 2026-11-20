@@ -1,0 +1,65 @@
+{
+  "id": "clm_2d4a1d78c03e4c8c",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "The located text is widened to whole numbers at its edges, so a quote `= 5` that now matches the start of `= 50` reads `= 50` and is caught.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The located text is widened to whole numbers at its edges, so a quote `= 5` that now matches the start of `= 50` reads `= 50` and is caught.",
+        "prefix": "xt differ from the numbers in the stored quote. ",
+        "suffix": "\n\n## The resolution cascade\n\nEach side is resolv"
+      },
+      {
+        "kind": "text-position",
+        "start": 2675,
+        "end": 2815
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (digit(start)) while (digit(start - 1)) start--;",
+          "prefix": "start = region.start;\n  let end = region.end;\n  ",
+          "suffix": "\n  if (digit(end - 1)) {\n    for (;;) {\n      if"
+        },
+        {
+          "kind": "text-position",
+          "start": 3836,
+          "end": 3887
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "787c1d04025204c1",
+          "semanticHash": "5664d4100bf7fe46"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.086Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.086Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

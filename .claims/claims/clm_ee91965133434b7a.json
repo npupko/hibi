@@ -1,0 +1,117 @@
+{
+  "id": "clm_ee91965133434b7a",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- Errors: a missing key, a 401 or 403, and exhausted retries are `JudgeUnavailable`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- Errors: a missing key, a 401 or 403, and exhausted retries are `JudgeUnavailable`.",
+        "prefix": "t most 8 requests are in flight in the process.\n",
+        "suffix": " A 4xx other than 401, 403, 408, and 429 (400, 4"
+      },
+      {
+        "kind": "text-position",
+        "start": 31993,
+        "end": 32077
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`${API_KEY_ENV} is not set; the judge cannot answer.`",
+          "prefix": "\"\") {\n      throw new JudgeUnavailable(\n        ",
+          "suffix": ",\n      );\n    }\n    await acquire();\n    try {\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 4639,
+          "end": 4692
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "741052939c553a2d",
+          "semanticHash": "b4b501a53d3995ae"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (status === 401 || status === 403) {\n        throw new JudgeUnavailable(",
+          "prefix": "ext);\n\n      const { status } = response;\n      ",
+          "suffix": "\n          `TypeSafe rejected the API key (HTTP "
+        },
+        {
+          "kind": "text-position",
+          "start": 6039,
+          "end": 6114
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "5e035afb54ecc6d2",
+          "semanticHash": "458ce72adb3163ee"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "401"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "throw new JudgeUnavailable(\n      `TypeSafe did not answer after ${MAX_RETRIES + 1} attempts: ${lastFailure}`,",
+          "prefix": "retryAfter ?? this.backoffMs(retry));\n    }\n    ",
+          "suffix": "\n    );\n  }\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 6658,
+          "end": 6768
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "throw_statement",
+          "structuralHash": "5c4f08bf6cc705e6",
+          "semanticHash": "531501c1a344b07b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:50.728Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:50.728Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

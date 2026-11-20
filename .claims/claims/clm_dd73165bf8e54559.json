@@ -1,0 +1,82 @@
+{
+  "id": "clm_dd73165bf8e54559",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The store keys documents and sides by the normalized form, and JSON output echoes it.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The store keys documents and sides by the normalized form, and JSON output echoes it.",
+        "prefix": "ormalized (`api:./src/x.ts` is `api:src/x.ts`). ",
+        "suffix": "\n\nAll store records are strict:\n unknown fields "
+      },
+      {
+        "kind": "text-position",
+        "start": 14302,
+        "end": 14387
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const docPath = this.norm(call.docPath);",
+          "prefix": ".t,\n      file: this.norm(t.file),\n    }));\n    ",
+          "suffix": "\n    const docContent = await this.readAnchored("
+        },
+        {
+          "kind": "text-position",
+          "start": 13853,
+          "end": 13893
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "1b8dea25d41bf625",
+          "semanticHash": "b05c2b266263cce4"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/commands/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "extra.doc = normalizePath(engine.store.anchorRoot, doc);",
+          "prefix": "les = files;\n  }\n  if (doc !== undefined) {\n    ",
+          "suffix": "\n  }\n  const value = projectCheckReport(report, "
+        },
+        {
+          "kind": "text-position",
+          "start": 2143,
+          "end": 2199
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "513e2ba8eb18cc13",
+          "semanticHash": "6b6222ec53e69c9d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:36.664Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:36.664Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

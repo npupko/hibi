@@ -1,0 +1,117 @@
+{
+  "id": "clm_239f6fbf4f264431",
+  "documentId": "doc_d11450458251d04c",
+  "kind": "code",
+  "sentence": "**No key, no silent pass.** Without `TYPESAFE_API_KEY`, or when the judge fails, a judgment the cache cannot answer is `pending`, a warning.",
+  "doc": {
+    "file": "docs/index.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**No key, no silent pass.** Without `TYPESAFE_API_KEY`, or when the judge fails, a judgment the cache cannot answer is `pending`, a warning.",
+        "prefix": "e that fires is a reason label in the output.\n- ",
+        "suffix": "\n\n## Start here\n\n<CardGroup cols={2}>\n  <Card ti"
+      },
+      {
+        "kind": "text-position",
+        "start": 2833,
+        "end": 2973
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (this.apiKey === \"\") {\n      throw new JudgeUnavailable(",
+          "prefix": "emOneRequest): Promise<SystemOneResponse> {\n    ",
+          "suffix": "\n        `${API_KEY_ENV} is not set; the judge c"
+        },
+        {
+          "kind": "text-position",
+          "start": 4571,
+          "end": 4630
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "39962782a2c4e252",
+          "semanticHash": "f808db5ef220e6a1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeUnavailable) return `judge unavailable: ${e.message}`;",
+          "prefix": "ailureLabel(e: unknown): string | undefined {\n  ",
+          "suffix": "\n  if (e instanceof JudgeError) return `judge er"
+        },
+        {
+          "kind": "text-position",
+          "start": 3661,
+          "end": 3737
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "e16196633fc6e5f4"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const WARN_JUDGE: ReadonlySet<JudgeState> = new Set<JudgeState>([\n  \"review\",\n  \"pending\",\n]);",
+          "prefix": "idenceState>([\n  \"moved\",\n  \"unavailable\",\n]);\n\n",
+          "suffix": "\n\nfunction isGatingAnchor(state: EvidenceState |"
+        },
+        {
+          "kind": "text-position",
+          "start": 1612,
+          "end": 1706
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "a25feaf2555f5c2e",
+          "semanticHash": "a622cd3b1cc59123"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"review\",\"pending\",]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:34.276Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:34.276Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

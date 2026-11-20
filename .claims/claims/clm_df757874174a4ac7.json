@@ -1,0 +1,88 @@
+{
+  "id": "clm_df757874174a4ac7",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Regular expressions, boundary rules, and unit tables are in `src/engine/values.ts` (`VALUE_RULES`) and are checked by `test/values.test.ts`; a port must pass those tests.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Regular expressions, boundary rules, and unit tables are in `src/engine/values.ts` (`VALUE_RULES`) and are checked by `test/values.test.ts`; a port must pass those tests.",
+        "prefix": "ling fractional zeros (`1,299.50` is `1299.5`). ",
+        "suffix": "\n\nA value's **group** is its kind plus its unit:"
+      },
+      {
+        "kind": "text-position",
+        "start": 41575,
+        "end": 41745
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const VALUE_RULES: readonly ValueRule[] = [",
+          "prefix": "Each row has a test in test/values.test.ts.\n */\n",
+          "suffix": "\n  {\n    // 2026-10-22, also the date part of 20"
+        },
+        {
+          "kind": "text-position",
+          "start": 5939,
+          "end": 5989
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "d8ec5ac7c65d11df",
+          "semanticHash": "f5d4949c99593aa1"
+        }
+      ]
+    },
+    {
+      "file": "test/values.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "test(\"every row of VALUE_RULES has an example here\", () => {",
+          "prefix": "tractValues: one test per table row\", () => {\n  ",
+          "suffix": "\n    expect(Object.keys(ROWS).sort()).toEqual(\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 3282,
+          "end": 3342
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "67eb10061e4dbb48",
+          "semanticHash": "0ffc499aa8994b83"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"every row of VALUE_RULES has an example here\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:04.468Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:04.468Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

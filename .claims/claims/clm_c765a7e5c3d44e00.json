@@ -1,0 +1,65 @@
+{
+  "id": "clm_c765a7e5c3d44e00",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `never` | never; the JSON still reports everything |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `never` | never; the JSON still reports everything |",
+        "prefix": "efault) |\n| `warn` | a verdict gates or warns |\n",
+        "suffix": "\n\n## Remediation\n\nA verdict that needs action ca"
+      },
+      {
+        "kind": "text-position",
+        "start": 4721,
+        "end": 4775
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (failOn === \"never\") return 0;",
+          "prefix": "arn: boolean },\n  failOn: FailOn,\n): number {\n  ",
+          "suffix": "\n  if (flags.gating) return 2;\n  if (flags.warn "
+        },
+        {
+          "kind": "text-position",
+          "start": 22198,
+          "end": 22231
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "a99c4a1102d2b389",
+          "semanticHash": "8bfe4f8a60d046b3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"never\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:13.207Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:13.207Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

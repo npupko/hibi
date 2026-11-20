@@ -1,0 +1,52 @@
+{
+  "id": "clm_47f9b817e8df4196",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "The source lives in [`plugins/hibi-cli`](plugins/hibi-cli).",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The source lives in [`plugins/hibi-cli`](plugins/hibi-cli).",
+        "prefix": " or let Claude load it when you ask about hibi. ",
+        "suffix": "\n\n## Develop\n\n`bun install`, `bun run build:gram"
+      },
+      {
+        "kind": "text-position",
+        "start": 8262,
+        "end": 8321
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": ".claude-plugin/marketplace.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"source\": \"./plugins/hibi-cli\",",
+          "prefix": "ugins\": [\n    {\n      \"name\": \"hibi-cli\",\n      ",
+          "suffix": "\n      \"description\": \"Teaches agents to operate"
+        },
+        {
+          "kind": "text-position",
+          "start": 152,
+          "end": 183
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:24.988Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:24.988Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

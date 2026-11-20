@@ -1,0 +1,59 @@
+{
+  "id": "clm_ba385dbc5c6b44d3",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "Code picks candidate pairs.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Code picks candidate pairs.",
+        "prefix": "`list`, and `audit`.\n\nThe pass has three steps. ",
+        "suffix": " The [judge](/judge) answers each new pair once."
+      },
+      {
+        "kind": "text-position",
+        "start": 489,
+        "end": 516
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const pairs = pairClaims(opts.claims).filter(",
+          "prefix": "ore.judgeCache();\n  const scope = opts.scope;\n  ",
+          "suffix": "\n    (p) => scope === undefined || scope.has(p.a"
+        },
+        {
+          "kind": "text-position",
+          "start": 10134,
+          "end": 10179
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "63fd7602739aa7f1",
+          "semanticHash": "596016bdbc16f539"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:24.103Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:24.103Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

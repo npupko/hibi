@@ -1,0 +1,88 @@
+{
+  "id": "clm_9bd0779e58324e12",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A `range` is `L<a>:L<b>` (inclusive 1-based lines) or `<a>:<b>` (character offsets).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `range` is `L<a>:L<b>` (inclusive 1-based lines) or `<a>:<b>` (character offsets).",
+        "prefix": "y one of `docQuote` and `docRange` is required. ",
+        "suffix": " Each span in `code` and `ref` has `file` and ex"
+      },
+      {
+        "kind": "text-position",
+        "start": 58972,
+        "end": 59056
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return isLine ? { startLine: a, endLine: b } : { start: a, end: b };",
+          "prefix": "ger bounds, got ${JSON.stringify(raw)}`);\n  }\n  ",
+          "suffix": "\n}\n\nfunction isObject(x: unknown): x is Record<s"
+        },
+        {
+          "kind": "text-position",
+          "start": 3221,
+          "end": 3289
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "891207975fd425de",
+          "semanticHash": "8e7ba157fa2cd442"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const end =\n      lineStartOffset(lines, spec.endLine) +\n      (lines[spec.endLine - 1] ?? \"\").length;",
+          "prefix": "t = lineStartOffset(lines, spec.startLine);\n    ",
+          "suffix": "\n    return { start, end: Math.max(start, end) }"
+        },
+        {
+          "kind": "text-position",
+          "start": 11949,
+          "end": 12051
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f24ecbd8dcd3719e",
+          "semanticHash": "64d0d28dc346c55e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:33.734Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:33.734Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

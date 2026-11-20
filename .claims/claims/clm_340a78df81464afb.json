@@ -1,0 +1,52 @@
+{
+  "id": "clm_340a78df81464afb",
+  "documentId": "doc_d068824e08521674",
+  "kind": "reference",
+  "sentence": "Hibi runs no verifiers and no resolvers, and its only network call is the judge API; an agent collects evidence and submits it.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi runs no verifiers and no resolvers, and its only network call is the judge API; an agent collects evidence and submits it.",
+        "prefix": "ther, and which sentences nothing could verify. ",
+        "suffix": "\n\nA claim has one of three kinds:\n\n| kind | wher"
+      },
+      {
+        "kind": "text-position",
+        "start": 1494,
+        "end": 1621
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**Hibi runs no verifiers and no resolvers.** Its only network call is the judge API. Its only subprocess is `git`. It writes nothing into documents except the tombstone `archive` leaves at an archived document's path, and the instruction line `init --instructions` appends to the named file. Before it writes the tombstone, `archive` copies the document to `archive/<path>` under the repository root. Apart from those writes and the store under `.claims/`, it only reads. An agent collects evidence and submits it.",
+          "prefix": "ry. JSON is the contract.\n\n## 2. Principles\n\n1. ",
+          "suffix": "\n2. **Same tree, same verdicts.** Deterministic "
+        },
+        {
+          "kind": "text-position",
+          "start": 1307,
+          "end": 1821
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.819Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.819Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

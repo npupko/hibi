@@ -1,0 +1,88 @@
+{
+  "id": "clm_ac17779026e54de9",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The rule fires only after\n `same_subject` reaches the threshold and the Noul did not force `unrelated`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The rule fires only after\n `same_subject` reaches the threshold and the Noul did not force `unrelated`.",
+        "prefix": "p counts, the unitless `number` group included. ",
+        "suffix": " It yields a conflict finding with probability 1"
+      },
+      {
+        "kind": "text-position",
+        "start": 37156,
+        "end": 37259
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.forced === \"same_subject\") {",
+          "prefix": "ictResult,\n  threshold: number,\n): Decision {\n  ",
+          "suffix": "\n    return {\n      outcome: \"unrelated\",\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 5163,
+          "end": 5197
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "f4f4bff94484ae70",
+          "semanticHash": "2adac563100fe73c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"same_subject\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.sameSubject >= threshold) {",
+          "prefix": "me_subject=${f2(r.sameSubject)})`,\n    };\n  }\n  ",
+          "suffix": "\n    // Numeric rule (SPEC 8.5): only after the "
+        },
+        {
+          "kind": "text-position",
+          "start": 5326,
+          "end": 5359
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "0066bf3e3fb41485",
+          "semanticHash": "bdbbb688c0c03105"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "retired",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:18.530Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:18.530Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

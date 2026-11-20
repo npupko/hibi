@@ -1,0 +1,88 @@
+{
+  "id": "clm_2c0c2ea6243a40ea",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| document | a text file registered in the store |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| document | a text file registered in the store |",
+        "prefix": "\n## 3. Vocabulary\n\n| term | meaning |\n|---|---|\n",
+        "suffix": "\n| region | a unit the splitter produces from a "
+      },
+      {
+        "kind": "text-position",
+        "start": 2850,
+        "end": 2900
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const Document = z",
+          "prefix": "──────────────────────────────────────────────\n\n",
+          "suffix": "\n  .strictObject({\n    id: DocumentId,\n    path:"
+        },
+        {
+          "kind": "text-position",
+          "start": 8686,
+          "end": 8711
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "d6d4e94a5c4276ce",
+          "semanticHash": "8474156a90dca578"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "lifecycle: DocumentLifecycle.default(\"active\"),",
+          "prefix": "{\n    id: DocumentId,\n    path: z.string(),\n    ",
+          "suffix": "\n    supersededBy: DocumentId.optional(),\n    cr"
+        },
+        {
+          "kind": "text-position",
+          "start": 8776,
+          "end": 8823
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "6551225e2881068f",
+          "semanticHash": "6b8b8a402aa69086"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"active\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:55.906Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:55.906Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

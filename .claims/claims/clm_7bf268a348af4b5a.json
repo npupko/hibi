@@ -1,0 +1,52 @@
+{
+  "id": "clm_7bf268a348af4b5a",
+  "documentId": "doc_d11450458251d04c",
+  "kind": "reference",
+  "sentence": "Hibi reports which claims are stale, which documents cannot be trusted right now, which sentences contradict each other, and which sentences nothing could verify.",
+  "doc": {
+    "file": "docs/index.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi reports which claims are stale, which documents cannot be trusted right now, which sentences contradict each other, and which sentences nothing could verify.",
+        "prefix": "page, a process note in a knowledge repository. ",
+        "suffix": "\n\nHibi runs no verifiers and no resolvers. Its o"
+      },
+      {
+        "kind": "text-position",
+        "start": 544,
+        "end": 706
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "It tells an agent or a person which claims are stale, which documents cannot be trusted right now, which sentences contradict each other, and which sentences can never be verified and should be rewritten or removed.",
+          "prefix": "s in documents that assert something checkable. ",
+          "suffix": "\n\nDocuments can be anything: a README, `CLAUDE.m"
+        },
+        {
+          "kind": "text-position",
+          "start": 648,
+          "end": 863
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:33.653Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:33.653Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

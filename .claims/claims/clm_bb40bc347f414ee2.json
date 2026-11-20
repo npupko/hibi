@@ -1,0 +1,59 @@
+{
+  "id": "clm_bb40bc347f414ee2",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Triage packs consecutive regions into chunks and closes a chunk before either budget would be exceeded.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Triage packs consecutive regions into chunks and closes a chunk before either budget would be exceeded.",
+        "prefix": "one question. The model limits are 64k and 32k. ",
+        "suffix": " Each request's state holds `doc` plus only that"
+      },
+      {
+        "kind": "text-position",
+        "start": 32827,
+        "end": 32930
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (!fits(state + cost.state, questions + cost.questions, next)) {\n      chunks.push(current);",
+          "prefix": " = Math.max(largest, cost.largestQuestion);\n    ",
+          "suffix": "\n      current = [];\n      state = 0;\n      ques"
+        },
+        {
+          "kind": "text-position",
+          "start": 4337,
+          "end": 4431
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "ee62fbf877814d26",
+          "semanticHash": "b19caaf1bc0fbbea"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:51.276Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:51.276Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

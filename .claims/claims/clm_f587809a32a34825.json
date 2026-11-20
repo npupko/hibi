@@ -1,0 +1,94 @@
+{
+  "id": "clm_f587809a32a34825",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A side that does not locate is refused unless a new span is given for it.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A side that does not locate is refused unless a new span is given for it.",
+        "prefix": "stored selectors and the baseline is rewritten. ",
+        "suffix": " `--doc` moves the claim to another document and"
+      },
+      {
+        "kind": "text-position",
+        "start": 65544,
+        "end": 65617
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (before.doc.state === \"orphaned\" || !before.doc.region) {",
+          "prefix": ".docContent, input.docSpec);\n    } else {\n      ",
+          "suffix": "\n        throw orphanError(claim.id, \"doc\", docF"
+        },
+        {
+          "kind": "text-position",
+          "start": 10458,
+          "end": 10518
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "3a7260b0c54eafd5",
+          "semanticHash": "b05e5d22ac186c70"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"orphaned\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "throw orphanError(claimId, \"evidence\", bundle.file, kind);",
+          "prefix": "ined || content === null || !side.region) {\n    ",
+          "suffix": "\n  }\n  return buildSelectorBundle(bundle.file, c"
+        },
+        {
+          "kind": "text-position",
+          "start": 7837,
+          "end": 7895
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "throw_statement",
+          "structuralHash": "aedcb3b856b040d7",
+          "semanticHash": "0d300f77e62d40f7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "retired",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:20.412Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:20.412Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

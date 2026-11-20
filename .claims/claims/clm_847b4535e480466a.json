@@ -1,0 +1,59 @@
+{
+  "id": "clm_847b4535e480466a",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "| `owner` | actor to contact on expiry |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `owner` | actor to contact on expiry |",
+        "prefix": "tl` | ISO 8601 (`P90D`); required on attested |\n",
+        "suffix": "\n| `by` | required (here or `--by`); use `agent:"
+      },
+      {
+        "kind": "text-position",
+        "start": 3988,
+        "end": 4028
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "The actor to contact when the claim expires",
+          "prefix": "\n        placeholder: \"<actor>\",\n        help: \"",
+          "suffix": ": human:<id>, agent:<name>, or process:<name>.\","
+        },
+        {
+          "kind": "text-position",
+          "start": 8847,
+          "end": 8890
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "475d45d386f89b05"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:32.845Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:32.845Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

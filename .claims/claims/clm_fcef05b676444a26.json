@@ -1,0 +1,52 @@
+{
+  "id": "clm_fcef05b676444a26",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "reference",
+  "sentence": "**Before trusting a document**, run `hibi check --doc <file>` and do not act on a sentence whose verdict gates.",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**Before trusting a document**, run `hibi check --doc <file>` and do not act on a sentence whose verdict gates.",
+        "prefix": "t loop described in [Workflows](/workflows):\n\n- ",
+        "suffix": "\n- **For a new document**, run `hibi audit --doc"
+      },
+      {
+        "kind": "text-position",
+        "start": 1851,
+        "end": 1962
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**a. Before trusting a doc:** `hibi check --doc <path>`. Exit 2: a claim in it gates; do not rely on its gating sentences.",
+          "prefix": "side it or their alias directory.\n\n## The loop\n\n",
+          "suffix": " Exit 1 with `no claims are registered for <path"
+        },
+        {
+          "kind": "text-position",
+          "start": 2469,
+          "end": 2591
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:25:22.912Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:25:22.912Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

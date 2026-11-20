@@ -1,0 +1,114 @@
+{
+  "id": "clm_d7e2f7b4576f482e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A `pending` item writes nothing; its reason is `judge unavailable: <message>` or `judge error: <message>` (section 7.3).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `pending` item writes nothing; its reason is `judge unavailable: <message>` or `judge error: <message>` (section 7.3).",
+        "prefix": "on is appended when the outcome is `supported`. ",
+        "suffix": " Result: `{ results: [{ claimId, judge, relation"
+      },
+      {
+        "kind": "text-position",
+        "start": 68062,
+        "end": 68182
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (a.kind === \"pending\") {",
+          "prefix": "tries()) {\n    const a = asked[i] as Asked;\n    ",
+          "suffix": "\n      summary.pending += 1;\n      results.push("
+        },
+        {
+          "kind": "text-position",
+          "start": 11643,
+          "end": 11670
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "410a3025a4039ca7",
+          "semanticHash": "ce15ee090ac454a9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  if (e instanceof JudgeUnavailable) return `judge unavailable: ${e.message}`;\n  if (e instanceof JudgeError) return `judge error: ${e.message}`;",
+          "prefix": "eFailureLabel(e: unknown): string | undefined {\n",
+          "suffix": "\n  return undefined;\n}\n\n/**\n * The longest text "
+        },
+        {
+          "kind": "text-position",
+          "start": 3659,
+          "end": 3804
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "7c946e4124e18f0c",
+          "semanticHash": "a3cb9bbf54755dbb"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.869Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:42.357Z",
+      "basis": "ack",
+      "note": "one is the reference-claim pending reason, the other the evidence-item pending reasons; 7.3 is a section number",
+      "ack": {
+        "pairId": "clm_51c81b14e80548f5:clm_d7e2f7b4576f482e",
+        "sentenceHashes": [
+          "8dfd3dc512dbcbf3b5235c7b200d0704777e7e85b8e40c6ab3964c7321e15c82",
+          "6d5d824f5d6f80b8a308defe408d585f3d8780196237c7a4be299a481a7292f2"
+        ]
+      }
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:42.531Z",
+      "basis": "ack",
+      "note": "reference-claim pending causes vs evidence-item pending reasons (the 32,000 limit is a validation error there); 7.3 is a section number",
+      "ack": {
+        "pairId": "clm_9f136d632eeb41a2:clm_d7e2f7b4576f482e",
+        "sentenceHashes": [
+          "68590b40d49f9903d884d9e79d80be95c46a6e7952804067143f8447b09d3563",
+          "6d5d824f5d6f80b8a308defe408d585f3d8780196237c7a4be299a481a7292f2"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.869Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

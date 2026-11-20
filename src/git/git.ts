@@ -1,6 +1,6 @@
 /**
  * Advisory git access. git is used only to scope `check --since` and to fill
- * the recorded ref, never to compute a verdict. `check` is fully offline.
+ * the recorded ref; never to pick an actor and never to compute a verdict.
  */
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";

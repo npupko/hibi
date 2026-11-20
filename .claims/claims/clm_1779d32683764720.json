@@ -1,0 +1,59 @@
+{
+  "id": "clm_1779d32683764720",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "7. A table separator row (`|---|:---:|`) is not a region.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "7. A table separator row (`|---|:---:|`) is not a region.",
+        "prefix": " a new piece; so does the line after a heading.\n",
+        "suffix": "\n8. A heading is one region and is never split, "
+      },
+      {
+        "kind": "text-position",
+        "start": 50215,
+        "end": 50272
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (TABLE_SEPARATOR.test(first)) return;",
+          "prefix": "const first = text.slice(start, nl).trim();\n    ",
+          "suffix": "\n    out.push({ start, end, kind: pieceKind(firs"
+        },
+        {
+          "kind": "text-position",
+          "start": 6975,
+          "end": 7015
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "b2e9223915173af6",
+          "semanticHash": "bad71b08f9c4429f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:06.908Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:06.908Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

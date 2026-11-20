@@ -1,0 +1,163 @@
+{
+  "id": "clm_95ee9d4f54524ea6",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- Unknown keys are rejected in the item, in spans, in `sources[]`, in `procedure`, and in `steps[]`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- Unknown keys are rejected in the item, in spans, in `sources[]`, in `procedure`, and in `steps[]`.",
+        "prefix": " enforcement `suggested`; otherwise `enforced`.\n",
+        "suffix": " `sources[].resource`, `procedure.instructions`,"
+      },
+      {
+        "kind": "text-position",
+        "start": 59703,
+        "end": 59803
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "unknownKeys(raw, RECORD_ITEM_KEYS, \"\", errors);",
+          "prefix": "aw)) return { errors: [\"is not an object\"] };\n  ",
+          "suffix": "\n\n  if (!nonEmptyString(raw.doc)) errors.push(\"d"
+        },
+        {
+          "kind": "text-position",
+          "start": 7898,
+          "end": 7945
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "45b9141767d6bc04",
+          "semanticHash": "a47e3855b0c798d8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "unknownKeys(raw, SPAN_KEYS, `${where}: `, errors);",
+          "prefix": "ndefined;\n  }\n  const before = errors.length;\n  ",
+          "suffix": "\n  if (!nonEmptyString(raw.file)) {\n    errors.p"
+        },
+        {
+          "kind": "text-position",
+          "start": 4192,
+          "end": 4242
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "96eccdad5030e18e",
+          "semanticHash": "b9b86b2516dd2385"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "unknownKeys(s, SOURCE_KEYS, `${where}: `, errors);",
+          "prefix": ", resource, title? }`);\n      return;\n    }\n    ",
+          "suffix": "\n    if (!nonEmptyString(s.resource)) {\n      er"
+        },
+        {
+          "kind": "text-position",
+          "start": 5545,
+          "end": 5595
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "96eccdad5030e18e",
+          "semanticHash": "eee3d3c6d3f5290b"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "unknownKeys(raw, PROCEDURE_KEYS, \"procedure: \", errors);",
+          "prefix": "ctions, steps? }\");\n    return undefined;\n  }\n  ",
+          "suffix": "\n  if (!nonEmptyString(raw.instructions)) {\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 6315,
+          "end": 6371
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "6d093120553bf662",
+          "semanticHash": "1b1f44891d130bbf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"procedure: \""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "unknownKeys(st, STEP_KEYS, `${where}: `, errors);",
+          "prefix": "mand, stdin? }`);\n        return;\n      }\n      ",
+          "suffix": "\n      for (const k of [\"id\", \"command\"] as cons"
+        },
+        {
+          "kind": "text-position",
+          "start": 6983,
+          "end": 7032
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "96eccdad5030e18e",
+          "semanticHash": "115be08c69c85f59"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:34.139Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:34.139Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_956fc843da7f434a",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "A covered row names its claim.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A covered row names its claim.",
+        "prefix": ", heading, list item, table row, fenced block). ",
+        "suffix": " An uncovered row has a kind from the judge's tr"
+      },
+      {
+        "kind": "text-position",
+        "start": 2228,
+        "end": 2258
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ ...base, claimId: claim.id, duplicateOf: duplicateOf(claim.id) },",
+          "prefix": "id);\n    if (claim) {\n      return row(\n        ",
+          "suffix": "\n        { kind: claim.kind },\n      );\n    }\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 11050,
+          "end": 11117
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "62bb9eac135657cb",
+          "semanticHash": "d0c25c389f08d26a"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:38.124Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:38.124Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

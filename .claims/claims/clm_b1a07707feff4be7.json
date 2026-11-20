@@ -1,0 +1,65 @@
+{
+  "id": "clm_b1a07707feff4be7",
+  "documentId": "doc_c5adefb4274c6931",
+  "kind": "code",
+  "sentence": "Found 1 gating, 0 warning across 2 documents.  exit 2",
+  "doc": {
+    "file": "docs/quickstart.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Found 1 gating, 0 warning across 2 documents.  exit 2",
+        "prefix": "b4a49  (Update the sentence, then reanchor: …)\n\n",
+        "suffix": "\n```\n\nFix the sentence (or the code), then run `"
+      },
+      {
+        "kind": "text-position",
+        "start": 7485,
+        "end": 7538
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return `${style.dim(\"Found\")} ${parts.join(\", \")} ${style.dim(`across ${docs}.`)}  ${exit}`;",
+          "prefix": "Count} document${docCount === 1 ? \"\" : \"s\"}`;\n  ",
+          "suffix": "\n}\n\nfunction worstOf(suspects: SuspectClaim[]): "
+        },
+        {
+          "kind": "text-position",
+          "start": 4302,
+          "end": 4394
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "9c714f510c2468a8",
+          "semanticHash": "075da948ab5dac1c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Found\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:30.488Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:30.488Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

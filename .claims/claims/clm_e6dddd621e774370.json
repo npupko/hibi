@@ -1,0 +1,123 @@
+{
+  "id": "clm_e6dddd621e774370",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `attest <claim-id>` | `--by <actor>` (required), `--note <text>`, `--ack conflict:<claim-id>\\|review` | vouch, or acknowledge a finding |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `attest <claim-id>` | `--by <actor>` (required), `--note <text>`, `--ack conflict:<claim-id>\\|review` | vouch, or acknowledge a finding |",
+        "prefix": "y`) | submit evidence for an `attested` claim |\n",
+        "suffix": "\n| `schema` | `--name <Name>` | print a JSON Sch"
+      },
+      {
+        "kind": "text-position",
+        "start": 56486,
+        "end": 56625
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"The attesting actor: human:<id>, agent:<name>, or process:<name>.\",\n        required: true,",
+          "prefix": "tring\",\n        placeholder: \"<actor>\",\n        ",
+          "suffix": "\n      },\n      {\n        name: \"note\",\n        "
+        },
+        {
+          "kind": "text-position",
+          "start": 19954,
+          "end": 20052
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "15154156d14c03d8",
+          "semanticHash": "6a51f0e9a23ba933"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"The attesting actor: human:<id>, agent:<name>, or process:<name>.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"What was checked, or why the finding is acceptable. Required with --ack.\",",
+          "prefix": "string\",\n        placeholder: \"<text>\",\n        ",
+          "suffix": "\n      },\n      {\n        name: \"ack\",\n        t"
+        },
+        {
+          "kind": "text-position",
+          "start": 20155,
+          "end": 20236
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "7cb0c123641bea0a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"What was checked, or why the finding is acceptable. Required with --ack.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Acknowledge a finding: conflict:<claim-id> or review.\",",
+          "prefix": "ing\",\n        placeholder: \"<finding>\",\n        ",
+          "suffix": "\n      },\n    ],\n    examples: [\n      \"hibi att"
+        },
+        {
+          "kind": "text-position",
+          "start": 20341,
+          "end": 20403
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "a45281ad884eca02"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Acknowledge a finding: conflict:<claim-id> or review.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:56.861Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:56.861Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

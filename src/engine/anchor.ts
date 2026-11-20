@@ -1,18 +1,13 @@
 /**
- * Anchor construction at record time. The anchor is bidirectional: a doc-side
- * bundle (the documented sentence) plus code-side bundles (the code it
- * describes). Each bundle is the baseline snapshot for its side: text-quote
- * (exact + prefix/suffix), text-position, and, with an analyzer, the ast-node
- * fingerprint and the in-span literal value.
+ * Selector construction at record time. A claim has a doc bundle (the
+ * documented sentence) plus evidence bundles (the code or document span that
+ * backs it). Each bundle is the baseline snapshot for its span: text-quote
+ * (exact + prefix/suffix), text-position, and, for code with an analyzer, the
+ * ast-node fingerprint and the in-span literal value.
  */
 
 import { TEXT_QUOTE_CONTEXT } from "../algo/params.ts";
-import type {
-  Anchor,
-  Region,
-  Selector,
-  SelectorBundle,
-} from "../core/model.ts";
+import type { Region, Selector, SelectorBundle } from "../core/model.ts";
 
 /** Record-time tree-sitter seam (implemented by `src/ast/analyzer.ts`). */
 export interface AnchorAnalyzer {
@@ -75,36 +70,4 @@ export function buildSelectorBundle(
   }
 
   return { file, selectors };
-}
-
-/** Build a coarse bundle for a file or glob pattern (navigational, never drift). */
-export function buildCoarseBundle(pattern: string): SelectorBundle {
-  return { file: pattern, selectors: [{ kind: "coarse", pattern }] };
-}
-
-/** True when every selector in the bundle is coarse. */
-export function isCoarseBundle(bundle: SelectorBundle): boolean {
-  return bundle.selectors.every((s) => s.kind === "coarse");
-}
-
-/**
- * Does a coarse pattern cover `path`? Exact file, a directory ancestor on a
- * `/` boundary, or a glob match.
- */
-export function coarseCovers(pattern: string, path: string): boolean {
-  if (pattern === path) return true;
-  const dir = pattern.endsWith("/") ? pattern : `${pattern}/`;
-  if (path.startsWith(dir)) return true;
-  try {
-    return new Bun.Glob(pattern).match(path);
-  } catch {
-    return false;
-  }
-}
-
-export function composeAnchor(
-  doc: SelectorBundle,
-  code: SelectorBundle[] = [],
-): Anchor {
-  return { doc, code };
 }

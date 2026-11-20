@@ -1,0 +1,94 @@
+{
+  "id": "clm_5e964256a66f4a1e",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `changed`, `orphaned`, or `ambiguous` on either side | gate | gate |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `changed`, `orphaned`, or `ambiguous` on either side | gate | gate |",
+        "prefix": "ition | `check` | `check --doc` |\n|---|---|---|\n",
+        "suffix": "\n| `judge: refuted` (at or above `judge.threshol"
+      },
+      {
+        "kind": "text-position",
+        "start": 3298,
+        "end": 3368
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (isGatingAnchor(v.doc) || isGatingAnchor(v.evidence)) gates = true;",
+          "prefix": "];\n  let gates = false;\n  let warns = false;\n\n  ",
+          "suffix": "\n  if (isWarnAnchor(v.doc) || isWarnAnchor(v.evi"
+        },
+        {
+          "kind": "text-position",
+          "start": 3038,
+          "end": 3108
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "b1a7b17fe3209c3c",
+          "semanticHash": "5fc554112083c57a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const GATING_ANCHOR: ReadonlySet<EvidenceState> = new Set<EvidenceState>([\n  \"changed\",\n  \"orphaned\",\n  \"ambiguous\",\n]);",
+          "prefix": "es. */\nexport type GateMode = \"store\" | \"doc\";\n\n",
+          "suffix": "\n\nconst WARN_ANCHOR: ReadonlySet<EvidenceState> "
+        },
+        {
+          "kind": "text-position",
+          "start": 1384,
+          "end": 1504
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "8706f11a57165105",
+          "semanticHash": "64372cbc388d8456"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"changed\",\"orphaned\",\"ambiguous\",]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:12.037Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:12.037Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

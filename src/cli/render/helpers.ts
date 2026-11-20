@@ -1,13 +1,14 @@
 /**
  * Shared join/derivation helpers for the human renderers. The `CheckReport`
  * carries verdicts + per-document rollups but not the authored facets (`owner`,
- * `ref`, `ttl`) — those live on the `Assertion` (§5). These helpers bridge that
- * gap with data the CLI shell already has in hand, and never touch the verdict.
+ * `ref`, `ttl`, `sentence`); those live on the `Claim`. These helpers bridge
+ * that gap with data the CLI shell already has in hand, and never touch the
+ * verdict.
  */
 
 import { readFileSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
-import type { Assertion, Proposition, Verdict } from "../../core/model.ts";
+import type { Claim, Verdict } from "../../core/model.ts";
 
 /** A throw-free synchronous file reader rooted at the anchor root. */
 export type FileRead = (rel: string) => string | null;
@@ -38,50 +39,33 @@ export function lineOfOffset(content: string, offset: number): number {
 }
 
 /**
- * The code anchor `path:line` for a verdict, or just the file when the line is
- * unknown. Pairs the first located `codeRegion` (char offsets) with the
- * assertion's first code bundle file and converts the offset to a line.
+ * The evidence anchor `path:line` for a verdict, or just the file when the
+ * line is unknown. Pairs the first located evidence region (char offsets) with
+ * the claim's first evidence bundle file and converts the offset to a line.
  */
-export function codeAnchor(
+export function evidenceAnchor(
   verdict: Verdict,
-  assertion: Assertion | undefined,
+  claim: Claim | undefined,
   read: (rel: string) => string | null,
 ): string | null {
-  const file = assertion?.anchor.code[0]?.file;
+  const file = claim?.evidence[0]?.file;
   if (!file) return null;
-  const region = verdict.evidence.codeRegions[0];
+  const region = verdict.detail.evidenceRegions[0];
   if (!region) return file;
   const content = read(file);
   if (content === null) return file;
   return `${file}:${lineOfOffset(content, region.start)}`;
 }
 
-/**
- * Freshness crumb for a claim: the short verified `ref` plus its time state.
- * There is no stored `verifiedAt` (§5), so true relative age is a nice-to-have;
- * the ref + `expired`/`ttl` state is the deterministic, always-available signal.
- */
-export function freshness(
-  verdict: Verdict,
-  assertion: Assertion | undefined,
-): string {
+/** Freshness crumb for a claim: the short recorded `ref` plus its time state. */
+export function freshness(verdict: Verdict, claim: Claim | undefined): string {
   const parts: string[] = [];
-  const ref = assertion?.ref;
+  const ref = claim?.ref;
   if (ref && ref !== "WORKTREE") parts.push(`ref ${ref.slice(0, 7)}`);
   else if (ref === "WORKTREE") parts.push("worktree");
   if (verdict.expired) parts.push("expired");
-  else if (assertion?.ttl) parts.push(`ttl ${assertion.ttl}`);
+  else if (claim?.ttl) parts.push(`ttl ${claim.ttl}`);
   return parts.join(", ") || "—";
-}
-
-/** The documented sentence for a verdict (the non-authoritative cache, §5/§18-B). */
-export function docSentence(
-  verdict: Verdict,
-  propsById: Map<string, Proposition>,
-): string {
-  return (
-    propsById.get(verdict.propositionId)?.textCache ?? "(unknown proposition)"
-  );
 }
 
 /** Collapse a string to a single line, trimmed and capped for terminal display. */

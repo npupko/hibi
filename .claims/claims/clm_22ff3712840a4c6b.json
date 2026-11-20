@@ -1,0 +1,88 @@
+{
+  "id": "clm_22ff3712840a4c6b",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "`--ack conflict:<otherId>` or `--ack review` acknowledges a finding; it needs `--note` and never resets ttl.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--ack conflict:<otherId>` or `--ack review` acknowledges a finding; it needs `--note` and never resets ttl.",
+        "prefix": "lse`. Never vouch as `human:`; ask the `owner`. ",
+        "suffix": " `--ack review` fails when there is no current s"
+      },
+      {
+        "kind": "text-position",
+        "start": 5255,
+        "end": 5363
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "an ack needs --note saying why the finding is acceptable.",
+          "prefix": "te === undefined) {\n    throw new Error(\n      \"",
+          "suffix": "\",\n    );\n  }\n\n  if (ack.kind === \"review\") {\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 5950,
+          "end": 6007
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "69fe9a9489d42ebe"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { claimIds: [claim.id], attestation, countsTowardTtl: false };",
+          "prefix": "   await append(store, claim, attestation);\n    ",
+          "suffix": "\n  }\n\n  if (ack.otherClaimId === claim.id) {\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 6429,
+          "end": 6498
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "4476ec2ef1b9db74",
+          "semanticHash": "3e21f31444225554"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[claim.id]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:33.405Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:33.405Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

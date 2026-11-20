@@ -1,0 +1,180 @@
+{
+  "id": "clm_f0513d9530e74273",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "```json\n{ \"key\": \"<sha256 hex>\",\n  \"model\": \"jev-1.14.0\",\n  \"judgment\": \"triage | supports | conflict\",\n  \"subject\": { \"claimId\": \"clm_…\", \"pairId\": \"clm_a:clm_b\", \"docId\": \"doc_…\" },\n  \"request\": { /* exact state and questions sent */ },\n  \"answers\": { /* exact System One answers returned */ },\n  \"evidence\": { \"hash\": \"…\", \"source\": \"…\", \"summary\": \"…\", \"by\": \"agent:opus\", \"at\": \"…\",\n                \"values\": [ { \"kind\": \"money\", \"normalized\": \"29\", \"unit\": \"USD\" } ] },\n  \"at\": \"…\" }\n```",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```json\n{ \"key\": \"<sha256 hex>\",\n  \"model\": \"jev-1.14.0\",\n  \"judgment\": \"triage | supports | conflict\",\n  \"subject\": { \"claimId\": \"clm_…\", \"pairId\": \"clm_a:clm_b\", \"docId\": \"doc_…\" },\n  \"request\": { /* exact state and questions sent */ },\n  \"answers\": { /* exact System One answers returned */ },\n  \"evidence\": { \"hash\": \"…\", \"source\": \"…\", \"summary\": \"…\", \"by\": \"agent:opus\", \"at\": \"…\",\n                \"values\": [ { \"kind\": \"money\", \"normalized\": \"29\", \"unit\": \"USD\" } ] },\n  \"at\": \"…\" }\n```",
+        "prefix": " `coarse` selector.\n\n### 6.4 Judge cache entry\n\n",
+        "suffix": "\n\n- **Key.** The key is the sha256 hex of `${mod"
+      },
+      {
+        "kind": "text-position",
+        "start": 17259,
+        "end": 17752
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "key: z.string().regex(/^[0-9a-f]{64}$/),\n    model: z.string(),\n    judgment: Judgment,\n    subject: JudgeSubject,",
+          "prefix": "model id and the canonical request JSON. */\n    ",
+          "suffix": "\n    /** The exact state and questions sent. */\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 13748,
+          "end": 13862
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "4a75b9fab74845ae",
+          "semanticHash": "51ca11db78fd3479"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    evidence: CachedEvidence.optional(),\n    at: Instant,",
+          "prefix": "bilities returned. */\n    answers: z.unknown(),\n",
+          "suffix": "\n  })\n  .meta({ id: \"JudgeCacheEntry\" });\nexport"
+        },
+        {
+          "kind": "text-position",
+          "start": 14007,
+          "end": 14064
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "4a75b9fab74845ae",
+          "semanticHash": "51ca11db78fd3479"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const Judgment = z.enum([\"triage\", \"supports\", \"conflict\"]);",
+          "prefix": "──────────────────────────────────────────────\n\n",
+          "suffix": "\nexport type Judgment = z.infer<typeof Judgment>"
+        },
+        {
+          "kind": "text-position",
+          "start": 12188,
+          "end": 12255
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "245292834183a927",
+          "semanticHash": "12b69f8cb3d2a272"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"triage\",\"supports\",\"conflict\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  claimId: z.string().optional(),\n  /** `clm_a:clm_b` for a contradiction pair. */\n  pairId: z.string().optional(),\n  docId: z.string().optional(),",
+          "prefix": "*/\nexport const JudgeSubject = z.strictObject({\n",
+          "suffix": "\n});\nexport type JudgeSubject = z.infer<typeof J"
+        },
+        {
+          "kind": "text-position",
+          "start": 12436,
+          "end": 12583
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "3bca454d0080b6af",
+          "semanticHash": "69c3b70b27796859"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  hash: z.string(),\n  source: z.string(),\n  summary: z.string(),\n  by: Actor,\n  at: Instant,",
+          "prefix": "\nexport const CachedEvidence = z.strictObject({\n",
+          "suffix": "\n  /**\n   * The numbers, money, versions, and da"
+        },
+        {
+          "kind": "text-position",
+          "start": 13191,
+          "end": 13283
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "16128665db4ccd40",
+          "semanticHash": "1126371cb8858c84"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "values: z.array(ExtractedValue).optional(),",
+          "prefix": "e rule (SPEC 8.5) without the raw text.\n   */\n  ",
+          "suffix": "\n});\nexport type CachedEvidence = z.infer<typeof"
+        },
+        {
+          "kind": "text-position",
+          "start": 13439,
+          "end": 13482
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "eb868092b40bebea",
+          "semanticHash": "00652f3b67010ad0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:34.618Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:34.618Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

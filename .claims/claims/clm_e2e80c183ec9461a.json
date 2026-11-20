@@ -1,0 +1,116 @@
+{
+  "id": "clm_e2e80c183ec9461a",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "```\n.claims/\n  .gitignore                 # judge/\n  config.json\n  documents/<doc_id>.json\n  claims/<claim_id>.json\n  judge/<sha256>.json        # cached judge verdicts; local, not committed\n```",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```\n.claims/\n  .gitignore                 # judge/\n  config.json\n  documents/<doc_id>.json\n  claims/<claim_id>.json\n  judge/<sha256>.json        # cached judge verdicts; local, not committed\n```",
+        "prefix": "emove <dir>, run `hibi init`, and re-record.``\n\n",
+        "suffix": "\n\nIds are `doc_` and `clm_` followed by 16 lower"
+      },
+      {
+        "kind": "text-position",
+        "start": 13228,
+        "end": 13422
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const SUBDIRS = {",
+          "prefix": " === \"ENOENT\") return null;\n    throw e;\n  }\n}\n\n",
+          "suffix": "\n  documents: \"documents\",\n  claims: \"claims\",\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 1100,
+          "end": 1117
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "85516d8c0977c6f0",
+          "semanticHash": "0c7d68f9ca9628a4"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/cache.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "join(this.dir, `${parsed.key}.json`),",
+          "prefix": " recursive: true });\n    await writeFile(\n      ",
+          "suffix": "\n      `${JSON.stringify(parsed, null, 2)}\\n`,\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 2796,
+          "end": 2833
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "0febe6a36813fec1",
+          "semanticHash": "170d8d6b4bbdfc84"
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const gitignore = join(s.dir, \".gitignore\");",
+          "prefix": "missing; an existing file is left as it is.\n    ",
+          "suffix": "\n    if (!(await exists(gitignore))) {\n      awa"
+        },
+        {
+          "kind": "text-position",
+          "start": 3340,
+          "end": 3384
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "99fa2327edbdb6f1",
+          "semanticHash": "f3bd128174b6c4f9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".gitignore\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:36.264Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:57.602Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:36.264Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

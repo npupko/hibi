@@ -1,0 +1,81 @@
+{
+  "id": "clm_0dc1cc0ba4304d94",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "code",
+  "sentence": "The analyzer imports the wasm files from `grammars/` and embeds them in the build.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The analyzer imports the wasm files from `grammars/` and embeds them in the build.",
+        "prefix": "k runs Biome on staged files plus a typecheck.\n\n",
+        "suffix": " The files are committed; rerun `bun run build:g"
+      },
+      {
+        "kind": "text-position",
+        "start": 1031,
+        "end": 1113
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/ast/analyzer.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "import tsWasm from \"../../grammars/tree-sitter-typescript.wasm\" with {",
+          "prefix": "rs/tree-sitter-tsx.wasm\" with { type: \"file\" };\n",
+          "suffix": "\n  type: \"file\",\n};\nimport type { AstAnalysis, A"
+        },
+        {
+          "kind": "text-position",
+          "start": 931,
+          "end": 1001
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "import_statement",
+          "structuralHash": "78f64cd519940e4d",
+          "semanticHash": "4ee5a7603e061103"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"../../grammars/tree-sitter-typescript.wasm\""
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"build\": \"bun run build:grammars && bun run build:schemas && bun run build:cli-reference && bun build --compile src/cli/index.ts --outfile dist/hibi\",",
+          "prefix": "e\": \"bun run scripts/gen-cli-reference.ts\",\n    ",
+          "suffix": "\n    \"test\": \"bun test\",\n    \"lint\": \"biome lint"
+        },
+        {
+          "kind": "text-position",
+          "start": 1112,
+          "end": 1262
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:28.596Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:28.596Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

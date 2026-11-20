@@ -1,0 +1,82 @@
+{
+  "id": "clm_fd001aa47063477b",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "`hibi audit` sets `duplicateOf` on a covered row to the claim its claim most likely duplicates (the highest probability; ties go to the smaller claim id).",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi audit` sets `duplicateOf` on a covered row to the claim its claim most likely duplicates (the highest probability; ties go to the smaller claim id).",
+        "prefix": "the pass's reason label, or `same sentence`).\n- ",
+        "suffix": "\n\nDecide whether to keep both sentences, merge t"
+      },
+      {
+        "kind": "text-position",
+        "start": 6835,
+        "end": 6989
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(d.probability === best.probability && d.duplicateOf < best.duplicateOf)",
+          "prefix": "      d.probability > best.probability ||\n      ",
+          "suffix": "\n    ) {\n      best = d;\n    }\n  }\n  return best"
+        },
+        {
+          "kind": "text-position",
+          "start": 14661,
+          "end": 14733
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "parenthesized_expression",
+          "structuralHash": "e2cf80b1483c42af",
+          "semanticHash": "114657610c69795f"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ ...base, claimId: claim.id, duplicateOf: duplicateOf(claim.id) },",
+          "prefix": "id);\n    if (claim) {\n      return row(\n        ",
+          "suffix": "\n        { kind: claim.kind },\n      );\n    }\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 11050,
+          "end": 11117
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "62bb9eac135657cb",
+          "semanticHash": "d0c25c389f08d26a"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:26.913Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:26.913Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

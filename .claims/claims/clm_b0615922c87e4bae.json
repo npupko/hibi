@@ -1,0 +1,65 @@
+{
+  "id": "clm_b0615922c87e4bae",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "hibi check --since origin/main  # what did this change invalidate?",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "hibi check --since origin/main  # what did this change invalidate?",
+        "prefix": "nt be trusted now? (exit 1 if it has no claims)\n",
+        "suffix": "\nhibi list --state pending       # the worklist:"
+      },
+      {
+        "kind": "text-position",
+        "start": 3769,
+        "end": 3835
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Check only the claims touching a file changed since this git ref.\",",
+          "prefix": "  type: \"string\",\n    placeholder: \"<ref>\",\n    ",
+          "suffix": "\n  },\n  {\n    name: \"doc\",\n    type: \"string\",\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 4949,
+          "end": 5023
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "1f1bdffbe5839ed2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Check only the claims touching a file changed since this git ref.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:27:53.710Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:27:53.710Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

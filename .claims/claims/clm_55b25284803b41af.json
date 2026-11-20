@@ -1,0 +1,198 @@
+{
+  "id": "clm_55b25284803b41af",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Without `TYPESAFE_API_KEY`, or when the API cannot be reached, every judgment the cache cannot answer is `pending`.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Without `TYPESAFE_API_KEY`, or when the API cannot be reached, every judgment the cache cannot answer is `pending`.",
+        "prefix": "s.\n\n## Without a key\n\nThere is no offline flag. ",
+        "suffix": " Nothing else changes.\n\n| command | effect |\n|--"
+      },
+      {
+        "kind": "text-position",
+        "start": 14063,
+        "end": 14178
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (this.apiKey === \"\") {",
+          "prefix": "emOneRequest): Promise<SystemOneResponse> {\n    ",
+          "suffix": "\n      throw new JudgeUnavailable(\n        `${AP"
+        },
+        {
+          "kind": "text-position",
+          "start": 4571,
+          "end": 4596
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "39962782a2c4e252",
+          "semanticHash": "f808db5ef220e6a1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`TypeSafe did not answer after ${MAX_RETRIES + 1} attempts: ${lastFailure}`,",
+          "prefix": "));\n    }\n    throw new JudgeUnavailable(\n      ",
+          "suffix": "\n    );\n  }\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 6692,
+          "end": 6768
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "8777c81154815b8d",
+          "semanticHash": "b51aaf11ecba5561"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"pending\", reasons: [label] };",
+          "prefix": "l(e);\n    if (label === undefined) throw e;\n    ",
+          "suffix": "\n  }\n  await input.cache.put({\n    key,\n    mode"
+        },
+        {
+          "kind": "text-position",
+          "start": 11618,
+          "end": 11664
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "4e167621b94fec45",
+          "semanticHash": "b1b2b8dff7d09013"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pending.push(pair.pairId);",
+          "prefix": "      if (label === undefined) throw e;\n        ",
+          "suffix": "\n        outcomes[index] = {\n          pairId: p"
+        },
+        {
+          "kind": "text-position",
+          "start": 11062,
+          "end": 11088
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "7426f1729a85649a",
+          "semanticHash": "c573501e918cfa02"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { kind: \"pending\", label };",
+          "prefix": "      if (label === undefined) throw e;\n        ",
+          "suffix": "\n      }\n    }),\n  );\n\n  // Write, in item order"
+        },
+        {
+          "kind": "text-position",
+          "start": 11314,
+          "end": 11348
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "19a769ffac90f206",
+          "semanticHash": "d08de9f68490fea0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const region of chunk) pending.set(region.id, label);",
+          "prefix": "    if (label === undefined) throw e;\n          ",
+          "suffix": "\n          return [];\n        }\n        answered"
+        },
+        {
+          "kind": "text-position",
+          "start": 8869,
+          "end": 8927
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "0b360b80342f7dd3",
+          "semanticHash": "8a3b8339aa402de4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:41.626Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:41.626Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

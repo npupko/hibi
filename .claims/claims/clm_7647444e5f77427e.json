@@ -1,0 +1,65 @@
+{
+  "id": "clm_7647444e5f77427e",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "code",
+  "sentence": "Hibi covers all three, with one claim kind each: `code`, `reference`, and `attested` (see [Claims](/claims)).",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi covers all three, with one claim kind each: `code`, `reference`, and `attested` (see [Claims](/claims)).",
+        "prefix": "n be detected by reading the repository's code. ",
+        "suffix": " It also finds sentences that contradict each ot"
+      },
+      {
+        "kind": "text-position",
+        "start": 997,
+        "end": 1106
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ClaimKind = z.enum([\"code\", \"reference\", \"attested\"]);",
+          "prefix": "* The three recordable claim kinds (SPEC 4). */\n",
+          "suffix": "\nexport type ClaimKind = z.infer<typeof ClaimKin"
+        },
+        {
+          "kind": "text-position",
+          "start": 2080,
+          "end": 2147
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "245292834183a927",
+          "semanticHash": "f94df24c41b11e73"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"code\",\"reference\",\"attested\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:50.961Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:50.961Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

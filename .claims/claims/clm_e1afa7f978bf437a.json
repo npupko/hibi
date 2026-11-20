@@ -1,0 +1,59 @@
+{
+  "id": "clm_e1afa7f978bf437a",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "`byKind` counts covered and uncovered rows together.",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`byKind` counts covered and uncovered rows together.",
+        "prefix": "ot, so `--doc ./README.md` reports `README.md`. ",
+        "suffix": " `summary.requests` counts triage requests the j"
+      },
+      {
+        "kind": "text-position",
+        "start": 6991,
+        "end": 7043
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const row of rows) byKind[row.kind]++;",
+          "prefix": "])) as Record<\n    AuditKind,\n    number\n  >;\n  ",
+          "suffix": "\n  return {\n    doc: docPath,\n    summary: {\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 11533,
+          "end": 11576
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "4a297085c3cb0f77",
+          "semanticHash": "efe6e16274de8377"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:25.683Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:25.683Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

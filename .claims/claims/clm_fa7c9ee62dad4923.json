@@ -1,0 +1,59 @@
+{
+  "id": "clm_fa7c9ee62dad4923",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "Verdicts are computed at check time and never stored.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Verdicts are computed at check time and never stored.",
+        "prefix": "nflicts), and prints one **verdict** per claim. ",
+        "suffix": " Only judge answers are cached.\n\n```sh\nhibi chec"
+      },
+      {
+        "kind": "text-position",
+        "start": 441,
+        "end": 494
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Verdict (computed at check time, never stored)",
+          "prefix": "Entry = z.infer<typeof JudgeCacheEntry>;\n\n// ── ",
+          "suffix": " ───────────────────────────\n\n/** A char span in"
+        },
+        {
+          "kind": "text-position",
+          "start": 14176,
+          "end": 14222
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "8309184cad6bc964"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:10.564Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:10.564Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,105 @@
+{
+  "id": "clm_bb97cbaca7914217",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The stored `request.state.evidence` is replaced by `sha256:<hash>`, while the key is computed over the request as sent, so the stored request cannot reproduce the key.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The stored `request.state.evidence` is replaced by `sha256:<hash>`, while the key is computed over the request as sent, so the stored request cannot reproduce the key.",
+        "prefix": "submitted with `hibi evidence` is never stored. ",
+        "suffix": " The `evidence` block keeps the hash, source, su"
+      },
+      {
+        "kind": "text-position",
+        "start": 18855,
+        "end": 19022
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence: `sha256:${hash}`,",
+          "prefix": "equest.state as Record<string, unknown>),\n      ",
+          "suffix": "\n    },\n  };\n}\n\ninterface Planned {\n  item: Evid"
+        },
+        {
+          "kind": "text-position",
+          "start": 8913,
+          "end": 8940
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "2f8a75a8609e7b56",
+          "semanticHash": "f966e5e75e23e851"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const key = cache.key(model, request);",
+          "prefix": "vidence,\n      source: item.source,\n    });\n    ",
+          "suffix": "\n    planned.push({\n      item,\n      claim,\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 10243,
+          "end": 10281
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "9e47f5f690b2f9a5",
+          "semanticHash": "30a5a123239ace23"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "request: storedSupportsRequest(p.request, p.hash),",
+          "prefix": "      subject: { claimId: p.claim.id },\n        ",
+          "suffix": "\n        answers: a.answers,\n        evidence: b"
+        },
+        {
+          "kind": "text-position",
+          "start": 12470,
+          "end": 12520
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "afa4284aa9be6da8",
+          "semanticHash": "147a4203c6f83d80"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:58.355Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:58.355Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

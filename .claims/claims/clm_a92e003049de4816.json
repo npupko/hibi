@@ -1,0 +1,88 @@
+{
+  "id": "clm_a92e003049de4816",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "| `refuted` | nothing is attested; the next `check` gates the claim (fix the sentence or the source of truth).",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `refuted` | nothing is attested; the next `check` gates the claim (fix the sentence or the source of truth).",
+        "prefix": "; ttl restarts; the claim leaves the worklist |\n",
+        "suffix": " Evidence holding a different money amount, unit"
+      },
+      {
+        "kind": "text-position",
+        "start": 10599,
+        "end": 10709
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "outcome = cachedSupportsOutcome(newest, threshold, c);",
+          "prefix": "ies);\n      if (newest !== undefined) {\n        ",
+          "suffix": "\n      }\n    }\n\n    const ack =\n      outcome?.s"
+        },
+        {
+          "kind": "text-position",
+          "start": 16677,
+          "end": 16731
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "c49da9b2b50d0969",
+          "semanticHash": "c654c055c110a81b"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"refuted\") gates = true;",
+          "prefix": "c) || isWarnAnchor(v.evidence)) warns = true;\n  ",
+          "suffix": "\n  if (v.judge !== undefined && WARN_JUDGE.has(v"
+        },
+        {
+          "kind": "text-position",
+          "start": 3180,
+          "end": 3220
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "045e3f715206f391",
+          "semanticHash": "c5efdf039031fded"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"refuted\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:09.305Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:09.305Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

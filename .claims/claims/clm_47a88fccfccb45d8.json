@@ -1,0 +1,59 @@
+{
+  "id": "clm_47a88fccfccb45d8",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A `reanchor` command for a side that reads `moved` is plain `hibi reanchor <id>`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `reanchor` command for a side that reads `moved` is plain `hibi reanchor <id>`.",
+        "prefix": "sentence>`, `<file>`, `<quote>`) are filled in. ",
+        "suffix": " For a side that reads `changed` or `ambiguous` "
+      },
+      {
+        "kind": "text-position",
+        "start": 64192,
+        "end": 64273
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    command: reanchorCmd(id),\n  };",
+          "prefix": "nale: \"the span moved with its content intact\",\n",
+          "suffix": "\n}\n\nfunction reanchorTighten(id: string, flags: "
+        },
+        {
+          "kind": "text-position",
+          "start": 5504,
+          "end": 5538
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "81696ac30bf5bee9",
+          "semanticHash": "597462571f9cb61d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:49.572Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:49.572Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

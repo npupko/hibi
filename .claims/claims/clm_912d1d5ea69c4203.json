@@ -1,0 +1,59 @@
+{
+  "id": "clm_912d1d5ea69c4203",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "After the human vouch, `check --doc docs/process/releases.md` exits 0 for this walkthrough, and the claim's `list` row shows the new `expiresAt`.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "After the human vouch, `check --doc docs/process/releases.md` exits 0 for this walkthrough, and the claim's `list` row shows the new `expiresAt`.",
+        "prefix": "tsTowardTtl\": true, \"next\": \"hibi check\" }\n```\n\n",
+        "suffix": " An agent never runs this with a `human:` actor."
+      },
+      {
+        "kind": "text-position",
+        "start": 17616,
+        "end": 17761
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return addDuration(new Date(a.at), claim.ttl);",
+          "prefix": "im);\n  if (a === undefined) return undefined;\n  ",
+          "suffix": "\n}\n\n/** True when `ttl` is set and `now >= at(co"
+        },
+        {
+          "kind": "text-position",
+          "start": 2782,
+          "end": 2828
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "1251213afea49519",
+          "semanticHash": "f6f6e12028ffc9c0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:10.681Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:10.681Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

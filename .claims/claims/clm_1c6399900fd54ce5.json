@@ -1,0 +1,88 @@
+{
+  "id": "clm_1c6399900fd54ce5",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Re-recording or reanchoring either claim to a different sentence ends the suppression, and the pair is judged again; the cached verdict answers unless the request bytes changed.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Re-recording or reanchoring either claim to a different sentence ends the suppression, and the pair is judged again; the cached verdict answers unless the request bytes changed.",
+        "prefix": "he doc anchor `unchanged` does not end the ack. ",
+        "suffix": " The ack never resets ttl.\n\n## 10. Audit\n\n`audit"
+      },
+      {
+        "kind": "text-position",
+        "start": 48912,
+        "end": 49089
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ack.sentenceHashes[1] === hashes[1]",
+          "prefix": " ack.sentenceHashes[0] === hashes[0] &&\n        ",
+          "suffix": "\n      ) {\n        return true;\n      }\n    }\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 8529,
+          "end": 8564
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "5860afbc714c43ea",
+          "semanticHash": "04bdc04a9a8c5f09"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hit = await cache.get(key);",
+          "prefix": "ext,\n    );\n    let result: ConflictResult;\n    ",
+          "suffix": "\n    if (hit !== undefined) {\n      result = map"
+        },
+        {
+          "kind": "text-position",
+          "start": 10674,
+          "end": 10707
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "da6c759bb2291049",
+          "semanticHash": "832019563cd84a64"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:15.382Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:15.382Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

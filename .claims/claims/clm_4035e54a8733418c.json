@@ -1,0 +1,158 @@
+{
+  "id": "clm_4035e54a8733418c",
+  "documentId": "doc_5be5c5b2d98e3a89",
+  "kind": "code",
+  "sentence": "```\nplugins/hibi-cli/\n├── .claude-plugin/plugin.json\n└── skills/\n    └── hibi/\n        ├── SKILL.md                     # the skill (auto-discovered on install)\n        ├── references/cli-reference.md  # generated from src/cli/options.ts\n        ├── references/cookbook.md       # eight worked recipes with JSON\n        └── assets/hibi-ci.yml           # drop-in GitHub Actions workflow\n```",
+  "doc": {
+    "file": "plugins/hibi-cli/README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```\nplugins/hibi-cli/\n├── .claude-plugin/plugin.json\n└── skills/\n    └── hibi/\n        ├── SKILL.md                     # the skill (auto-discovered on install)\n        ├── references/cli-reference.md  # generated from src/cli/options.ts\n        ├── references/cookbook.md       # eight worked recipes with JSON\n        └── assets/hibi-ci.yml           # drop-in GitHub Actions workflow\n```",
+        "prefix": "nstalled** tab of `/plugin`.\n\n## What's inside\n\n",
+        "suffix": "\n\nClaude loads the skill when you ask whether a "
+      },
+      {
+        "kind": "text-position",
+        "start": 1129,
+        "end": 1519
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/.claude-plugin/plugin.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"name\": \"hibi-cli\",",
+          "prefix": "{\n  ",
+          "suffix": "\n  \"description\": \"Operate the hibi CLI: audit d"
+        },
+        {
+          "kind": "text-position",
+          "start": 4,
+          "end": 23
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: hibi",
+          "prefix": "---\n",
+          "suffix": "\ndescription: >-\n  Operate hibi, the CLI that tr"
+        },
+        {
+          "kind": "text-position",
+          "start": 4,
+          "end": 14
+        }
+      ]
+    },
+    {
+      "file": "scripts/gen-cli-reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"cli-reference.md\",",
+          "prefix": "kills\",\n      \"hibi\",\n      \"references\",\n      ",
+          "suffix": "\n    ),\n    frontmatter: \"# hibi CLI reference\\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 881,
+          "end": 900
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "c11c370cccf04d09"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"cli-reference.md\""
+        }
+      ]
+    },
+    {
+      "file": "scripts/gen-cli-reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "} from \"../src/cli/options.ts\";",
+          "prefix": "mmandSpec,\n  GLOBAL_OPTIONS,\n  type OptionSpec,\n",
+          "suffix": "\nimport { MODEL_VERSION } from \"../src/core/mode"
+        },
+        {
+          "kind": "text-position",
+          "start": 409,
+          "end": 440
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "import_statement",
+          "structuralHash": "b48e0a7efb69f670",
+          "semanticHash": "225e47528ea300bc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"../src/cli/options.ts\""
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Eight recipes.",
+          "prefix": "# hibi cookbook\n\n",
+          "suffix": " Each gives the situation, the commands, the JSO"
+        },
+        {
+          "kind": "text-position",
+          "start": 17,
+          "end": 31
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/assets/hibi-ci.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "# Drop this into .github/workflows/hibi.yml",
+          "prefix": "",
+          "suffix": "\n#\n# Fails the build when a recorded document se"
+        },
+        {
+          "kind": "text-position",
+          "start": 0,
+          "end": 43
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:29:31.467Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:29:31.467Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

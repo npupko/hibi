@@ -1,0 +1,114 @@
+{
+  "id": "clm_b9250efd02db4804",
+  "documentId": "doc_5be5c5b2d98e3a89",
+  "kind": "code",
+  "sentence": "The skill pre-approves `hibi check`, `hibi list`, `hibi audit`, and their `bunx @npupko/hibi` forms; they write nothing except judge cache entries.",
+  "doc": {
+    "file": "plugins/hibi-cli/README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The skill pre-approves `hibi check`, `hibi list`, `hibi audit`, and their `bunx @npupko/hibi` forms; they write nothing except judge cache entries.",
+        "prefix": "`. You can also invoke it as `/hibi-cli:hibi`.\n\n",
+        "suffix": " Mutating verbs prompt for permission. The judge"
+      },
+      {
+        "kind": "text-position",
+        "start": 1818,
+        "end": 1965
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Bash(hibi check:*), Bash(hibi list:*), Bash(hibi audit:*),",
+          "prefix": "g about claims or .claims/.\nallowed-tools: >-\n  ",
+          "suffix": "\n  Bash(bunx @npupko/hibi check:*), Bash(bunx @n"
+        },
+        {
+          "kind": "text-position",
+          "start": 437,
+          "end": 495
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Bash(bunx @npupko/hibi audit:*)",
+          "prefix": "ibi check:*), Bash(bunx @npupko/hibi list:*),\n  ",
+          "suffix": "\n---\n\n# hibi\n\nA claim is one document region (se"
+        },
+        {
+          "kind": "text-position",
+          "start": 565,
+          "end": 596
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Writes nothing but judge cache entries.",
+          "prefix": " the worklist: claims an agent should re-check. ",
+          "suffix": " --since scopes the verdicts to claims touching "
+        },
+        {
+          "kind": "text-position",
+          "start": 10503,
+          "end": 10542
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "2565d59b20024bae"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const { report, pass } = await this.checkWithPass({ ref: opts.ref });",
+          "prefix": ": string } = {},\n  ): Promise<ListResult> {\n    ",
+          "suffix": "\n    return toListRows({\n      report,\n      cla"
+        },
+        {
+          "kind": "text-position",
+          "start": 27570,
+          "end": 27639
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "602f4761c2a6dd60",
+          "semanticHash": "00bd2077c2f13c1f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:29:33.469Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:29:33.469Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

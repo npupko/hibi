@@ -1,8 +1,9 @@
 {
-  "version": "v3",
-  "nonce": "d0ef46a6",
-  "pristine": [
-    "docs/cli-reference.mdx",
-    "plugins/hibi-cli/skills/hibi/references/cli-reference.md"
-  ]
+  "version": "v4",
+  "repos": {},
+  "judge": {
+    "model": "jev-1.14.0",
+    "threshold": 0.8
+  },
+  "ignore": []
 }

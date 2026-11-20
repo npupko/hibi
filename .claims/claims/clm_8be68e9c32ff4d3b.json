@@ -1,0 +1,88 @@
+{
+  "id": "clm_8be68e9c32ff4d3b",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "There are no topics and no configuration.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "There are no topics and no configuration.",
+        "prefix": "ms in the same document pair by the same rules. ",
+        "suffix": "\n\n- **Content tokens.** A token is a case-folded"
+      },
+      {
+        "kind": "text-position",
+        "start": 44308,
+        "end": 44349
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "/** Overrides `RARE_SHARE`; for tests. */",
+          "prefix": " string;\n}\n\nexport interface PairingOptions {\n  ",
+          "suffix": "\n  rareShare?: number;\n  /** Overrides `RARE_MIN"
+        },
+        {
+          "kind": "text-position",
+          "start": 3498,
+          "end": 3539
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "c0ee9c4e5c128d84"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ignore: z.array(z.string()).default([]),",
+          "prefix": " `audit` refuses; nothing else reads it. */\n    ",
+          "suffix": "\n  })\n  .meta({ id: \"Config\" });\nexport type Con"
+        },
+        {
+          "kind": "text-position",
+          "start": 11987,
+          "end": 12027
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "4e9da358970d851e",
+          "semanticHash": "60c6a07f44206969"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:40.250Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:40.250Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

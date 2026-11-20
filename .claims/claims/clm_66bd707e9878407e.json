@@ -1,0 +1,88 @@
+{
+  "id": "clm_66bd707e9878407e",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "`ttl` is required on `attested` claims and optional on `code` and `reference` claims.",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`ttl` is required on `attested` claims and optional on `code` and `reference` claims.",
+        "prefix": "es, and seconds add a fixed number of seconds.\n\n",
+        "suffix": " There is no store-wide default.\n\n`hibi list` sh"
+      },
+      {
+        "kind": "text-position",
+        "start": 3051,
+        "end": 3136
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ttl: Duration.optional(),",
+          "prefix": "default(null),\n    owner: Actor.optional(),\n    ",
+          "suffix": "\n    enforcement: Enforcement.default(\"enforced\""
+        },
+        {
+          "kind": "text-position",
+          "start": 9550,
+          "end": 9575
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1510bc52887893f3",
+          "semanticHash": "529364b7b5c88dcc"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "message: \"an attested claim requires a ttl\",",
+          "prefix": "e: \"custom\",\n          path: [\"ttl\"],\n          ",
+          "suffix": "\n        });\n      }\n    }\n  })\n  .meta({ id: \"C"
+        },
+        {
+          "kind": "text-position",
+          "start": 10605,
+          "end": 10649
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "8455d8587023ce38"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"an attested claim requires a ttl\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:12.746Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:12.746Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

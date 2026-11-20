@@ -1,0 +1,72 @@
+{
+  "id": "clm_ee36cc6ac1bc4e78",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "If no claim is registered for the document, `check --doc` exits 1 with `no claims are registered for <path>; run hibi audit --doc <path>`: hibi knows nothing about the file, which is different from the file being clean.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "If no claim is registered for the document, `check --doc` exits 1 with `no claims are registered for <path>; run hibi audit --doc <path>`: hibi knows nothing about the file, which is different from the file being clean.",
+        "prefix": " gates. In a whole-store `check` it only warns. ",
+        "suffix": " Run `audit` on it (section 3).\n\nThe contradicti"
+      },
+      {
+        "kind": "text-position",
+        "start": 1028,
+        "end": 1247
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`no claims are registered for ${doc}; run hibi audit --doc ${doc}`,",
+          "prefix": "if (!live) {\n        throw new Error(\n          ",
+          "suffix": "\n        );\n      }\n      onlyFiles = scope.file"
+        },
+        {
+          "kind": "text-position",
+          "start": 12932,
+          "end": 12999
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "1249b007122c9694",
+          "semanticHash": "d6a9d9f48dc91234"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:37.588Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:42.122Z",
+      "basis": "ack",
+      "note": "different cases of check --doc: exit 0 when nothing gates, exit 1 when no claims are registered",
+      "ack": {
+        "pairId": "clm_3584b77a2fc44396:clm_ee36cc6ac1bc4e78",
+        "sentenceHashes": [
+          "037d9a876ac2081197a26196688a3546e634f201b73f9d9b2e45ee0f133f42d4",
+          "914c91dd011fe17d43bbcf7e3f82034322bcd1382f5fb5e695c1933f7dd09ad2"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:37.588Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

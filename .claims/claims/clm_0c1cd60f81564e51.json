@@ -1,0 +1,94 @@
+{
+  "id": "clm_0c1cd60f81564e51",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "| semantic hash differs, structural hash equal | `identifiers or literals renamed` | `ast` |",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| semantic hash differs, structural hash equal | `identifiers or literals renamed` | `ast` |",
+        "prefix": "ffers | ``value changed (was `5`)`` | `value` |\n",
+        "suffix": "\n| both hashes differ | `restructured` | `ast` |"
+      },
+      {
+        "kind": "text-position",
+        "start": 5119,
+        "end": 5211
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "analysis.structuralHash === astSel.structuralHash\n        ? \"identifiers or literals renamed\"",
+          "prefix": "!== astSel.semanticHash) {\n    astLabel =\n      ",
+          "suffix": "\n        : \"restructured\";\n  }\n\n  // In-span lit"
+        },
+        {
+          "kind": "text-position",
+          "start": 7032,
+          "end": 7125
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "9996b67a7e7404a3",
+          "semanticHash": "f3e93157b863d29a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"identifiers or literals renamed\""
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "kind: \"ast\",",
+          "prefix": "dence.push({\n        path: bundle.file,\n        ",
+          "suffix": "\n        detail: astLabel,\n      });\n    }\n    i"
+        },
+        {
+          "kind": "text-position",
+          "start": 8299,
+          "end": 8311
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "51cf171c0e477743"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"ast\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.492Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.492Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_299d7f75856841dc",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `document` | the claim's document path |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `document` | the claim's document path |",
+        "prefix": "|\n| `claimId`, `sentence`, `kind` | the claim |\n",
+        "suffix": "\n| `procedure` | `{ instructions, steps? }` or `"
+      },
+      {
+        "kind": "text-position",
+        "start": 7838,
+        "end": 7880
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "document: c.doc.file,",
+          "prefix": "ence: c.sentence,\n        kind: c.kind,\n        ",
+          "suffix": "\n        procedure: c.procedure,\n        sources"
+        },
+        {
+          "kind": "text-position",
+          "start": 18524,
+          "end": 18545
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "5ee06eb33a910fa7",
+          "semanticHash": "e700bb86b65df324"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:16.004Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:16.004Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

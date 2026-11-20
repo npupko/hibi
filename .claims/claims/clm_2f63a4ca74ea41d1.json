@@ -1,0 +1,59 @@
+{
+  "id": "clm_2f63a4ca74ea41d1",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The judge is not asked about covered regions.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The judge is not asked about covered regions.",
+        "prefix": "ated doc span of a live claim on that document. ",
+        "suffix": "\n\nOutput:\n\n```json\n{ \"doc\": \"docs/pricing.md\",\n "
+      },
+      {
+        "kind": "text-position",
+        "start": 51241,
+        "end": 51286
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const uncovered = regions.filter((r) => !coveredBy.has(r.id));",
+          "prefix": "hit) coveredBy.set(region.id, hit.claim);\n  }\n  ",
+          "suffix": "\n  const { results, pending, answered } = await "
+        },
+        {
+          "kind": "text-position",
+          "start": 10556,
+          "end": 10618
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "e4f54d9e7a794e37",
+          "semanticHash": "6ada28d7d5e40f60"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.161Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.161Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

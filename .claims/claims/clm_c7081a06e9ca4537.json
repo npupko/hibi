@@ -1,0 +1,82 @@
+{
+  "id": "clm_c7081a06e9ca4537",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 55 | every `record` result item, single and batch, is `{ id, kind, doc, evidence, enforcement, updated, existingClaims, warnings? }`; a batch is `{ batch: true, count, updated, results }`, where `updated` counts items updated in place |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 55 | every `record` result item, single and batch, is `{ id, kind, doc, evidence, enforcement, updated, existingClaims, warnings? }`; a batch is `{ batch: true, count, updated, results }`, where `updated` counts items updated in place |",
+        "prefix": "luded; `schema --name` prints the bare schema |\n",
+        "suffix": "\n| 56 | `supersede` never reads the `--from` fil"
+      },
+      {
+        "kind": "text-position",
+        "start": 86233,
+        "end": 86471
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/commands/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "existingClaims: r.existingClaims,",
+          "prefix": ".claim.enforcement,\n    updated: r.updated,\n    ",
+          "suffix": "\n    ...(r.warnings.length > 0 ? { warnings: r.w"
+        },
+        {
+          "kind": "text-position",
+          "start": 3456,
+          "end": 3489
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "08401242a57f5494"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/commands/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "updated: results.filter((r) => r.updated).length,",
+          "prefix": "e,\n          count: summaries.length,\n          ",
+          "suffix": "\n          results: summaries,\n        },\n      "
+        },
+        {
+          "kind": "text-position",
+          "start": 5988,
+          "end": 6037
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "54b5d2d68458af47",
+          "semanticHash": "f419f1758c9d279f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:04.567Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:04.567Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

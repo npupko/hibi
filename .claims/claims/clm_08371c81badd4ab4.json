@@ -1,0 +1,59 @@
+{
+  "id": "clm_08371c81badd4ab4",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Claims in the same document pair by the same rules.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Claims in the same document pair by the same rules.",
+        "prefix": "live claims form a pair when either rule holds. ",
+        "suffix": " There are no topics and no configuration.\n\n- **"
+      },
+      {
+        "kind": "text-position",
+        "start": 44256,
+        "end": 44307
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function pairClaims(claims: Claim[], opts: PairingOptions = {}): Pair[] {",
+          "prefix": "rn Math.max(min, Math.min(shareCount, max));\n}\n\n",
+          "suffix": "\n  const live = claims\n    .filter((c) => c.enfo"
+        },
+        {
+          "kind": "text-position",
+          "start": 4725,
+          "end": 4805
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "cafe97338b741c02",
+          "semanticHash": "753512fb0a41f008"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:40.227Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:40.227Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "clm_aeb9741270e742ab",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "Claims in the same document pair by the same rules.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Claims in the same document pair by the same rules.",
+        "prefix": " and not in a fixed list of English stop words. ",
+        "suffix": " There are no topics and nothing to configure.\n\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 1227,
+        "end": 1278
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function pairClaims(claims: Claim[], opts: PairingOptions = {}): Pair[] {",
+          "prefix": "rn Math.max(min, Math.min(shareCount, max));\n}\n\n",
+          "suffix": "\n  const live = claims\n    .filter((c) => c.enfo"
+        },
+        {
+          "kind": "text-position",
+          "start": 4725,
+          "end": 4805
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "cafe97338b741c02",
+          "semanticHash": "753512fb0a41f008"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const [t, list] of postings) {",
+          "prefix": "\n  const candidates: [number, number][] = [];\n  ",
+          "suffix": "\n    const viaRare = isRare(t);\n    for (let x ="
+        },
+        {
+          "kind": "text-position",
+          "start": 5816,
+          "end": 5851
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "1722b2dc9f7dd2d4",
+          "semanticHash": "841ebf743faf6cc1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:24.449Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:24.449Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,111 @@
+{
+  "id": "clm_d678a7a36dab4855",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 3 | any repo layout; optional cross-repo aliases; missing sibling is `unavailable`, non-gating |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 3 | any repo layout; optional cross-repo aliases; missing sibling is `unavailable`, non-gating |",
+        "prefix": "e cached by canonical request; never re-asked |\n",
+        "suffix": "\n| 4 | audit triages regions with the judge; aut"
+      },
+      {
+        "kind": "text-position",
+        "start": 79090,
+        "end": 79188
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "repos: z.record(z.string(), z.string()).default({}),",
+          "prefix": " a path relative to the repository root. */\n    ",
+          "suffix": "\n    judge: JudgeConfig,\n    /** Globs of docume"
+        },
+        {
+          "kind": "text-position",
+          "start": 11836,
+          "end": 11888
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "8ff51f3b3d25cc20",
+          "semanticHash": "34424941f228a982"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `sibling repo \"${split.alias}\" is not checked out at ${dir}`,",
+          "prefix": "vailable: true,\n      alias: split.alias,\n      ",
+          "suffix": "\n    };\n  }\n  return { path: posix.join(dir, spl"
+        },
+        {
+          "kind": "text-position",
+          "start": 3929,
+          "end": 3998
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "814784ed387c58ab",
+          "semanticHash": "92c7f17901c036df"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"unavailable\",",
+          "prefix": "eState> = new Set<EvidenceState>([\n  \"moved\",\n  ",
+          "suffix": "\n]);\n\nconst WARN_JUDGE: ReadonlySet<JudgeState> "
+        },
+        {
+          "kind": "text-position",
+          "start": 1592,
+          "end": 1606
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "c832dc910f8ec5b8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unavailable\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:18.793Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:18.793Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

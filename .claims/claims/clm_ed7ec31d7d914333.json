@@ -1,0 +1,82 @@
+{
+  "id": "clm_ed7ec31d7d914333",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "`hibi list --state conflict` lists every live claim with a `conflict` or `review` finding.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi list --state conflict` lists every live claim with a `conflict` or `review` finding.",
+        "prefix": "flict check is pending has `conflict:pending`.\n\n",
+        "suffix": "\n\n## Duplicates\n\nA `duplicate` outcome never gat"
+      },
+      {
+        "kind": "text-position",
+        "start": 6381,
+        "end": 6471
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const inConflict = new Set(input.pass.findings.map((f) => f.claimId));",
+          "prefix": "input.report.worklist.map((w) => w.claimId));\n  ",
+          "suffix": "\n  const duplicates =\n    state === \"duplicate\"\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 4642,
+          "end": 4712
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "cdda4cf958565377",
+          "semanticHash": "7f82cd70501ff570"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return live && inConflict.has(claim.id);",
+          "prefix": "claim, now);\n        case \"conflict\":\n          ",
+          "suffix": "\n        case \"duplicate\":\n          return live"
+        },
+        {
+          "kind": "text-position",
+          "start": 5705,
+          "end": 5745
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "1c372251ecb3a4bd",
+          "semanticHash": "15e72239491c98ab"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:26.693Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:26.693Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

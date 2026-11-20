@@ -1,0 +1,123 @@
+{
+  "id": "clm_0f1060667db54b74",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `date` | `2026-10-22`, `October 22, 2026` | `2026-10-22` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `date` | `2026-10-22`, `October 22, 2026` | `2026-10-22` |",
+        "prefix": "\n| kind | examples | normalized |\n|---|---|---|\n",
+        "suffix": "\n| `version` | `v1.2.3`, `1.2.3`, `version 1.2` "
+      },
+      {
+        "kind": "text-position",
+        "start": 10801,
+        "end": 10861
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"iso-date\",",
+          "prefix": " also the date part of 2026-10-22T09:12:00Z\n    ",
+          "suffix": "\n    kind: \"date\",\n    pattern: re(\n      String"
+        },
+        {
+          "kind": "text-position",
+          "start": 6060,
+          "end": 6077
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "3ee768c6230236cd"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"iso-date\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"month-day-year\",",
+          "prefix": ",\n  {\n    // October 22, 2026 / Oct 22 2026\n    ",
+          "suffix": "\n    kind: \"date\",\n    pattern: re(\n      String"
+        },
+        {
+          "kind": "text-position",
+          "start": 6499,
+          "end": 6522
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "8ef04d9f4fffab68"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"month-day-year\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return `${String(y).padStart(4, \"0\")}-${String(m).padStart(2, \"0\")}-${String(d).padStart(2, \"0\")}`;",
+          "prefix": " 1 || m > 12 || d < 1 || d > 31) return null;\n  ",
+          "suffix": "\n}\n\nfunction group(m: RegExpExecArray, i: number"
+        },
+        {
+          "kind": "text-position",
+          "start": 5551,
+          "end": 5650
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "a49f227ebd27013a",
+          "semanticHash": "044c88f757da643f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:39.554Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:39.554Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

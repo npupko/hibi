@@ -1,0 +1,88 @@
+{
+  "id": "clm_b97d0d2402454e0b",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`side` (`doc` or `evidence`) appears under `--path`, which keeps claims whose doc or evidence side names the path.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`side` (`doc` or `evidence`) appears under `--path`, which keeps claims whose doc or evidence side names the path.",
+        "prefix": "s null without a ttl or a counting attestation. ",
+        "suffix": " `duplicates` (`{ claimId, why }`) appears under"
+      },
+      {
+        "kind": "text-position",
+        "start": 66179,
+        "end": 66293
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  if (c.doc.file === path) return \"doc\";\n  if (c.evidence.some((b) => b.file === path)) return \"evidence\";",
+          "prefix": "th: string,\n): \"doc\" | \"evidence\" | undefined {\n",
+          "suffix": "\n  return undefined;\n}\n\nfunction rowState(v: Ver"
+        },
+        {
+          "kind": "text-position",
+          "start": 3037,
+          "end": 3143
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "9359d0f0a803853f",
+          "semanticHash": "fc2a4b14d915b056"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"doc\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "side = matchedSide(claim, input.path);",
+          "prefix": "ined;\n    if (input.path !== undefined) {\n      ",
+          "suffix": "\n      if (!side) continue;\n    }\n\n    const mat"
+        },
+        {
+          "kind": "text-position",
+          "start": 5260,
+          "end": 5298
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "d9392c69899a920f",
+          "semanticHash": "67e9053d83f86733"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:35.955Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:35.955Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

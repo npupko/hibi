@@ -1,0 +1,59 @@
+{
+  "id": "clm_fa5b58e1e87245c7",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "The other claim carries the mirror finding.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The other claim carries the mirror finding.",
+        "prefix": "vidence, or have a human attest\" ] }\n  ]\n}\n```\n\n",
+        "suffix": " A claim that conflicts with several others gets"
+      },
+      {
+        "kind": "text-position",
+        "start": 13399,
+        "end": 13442
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "otherClaimId: other.id,",
+          "prefix": "g = {\n            claimId: self.id,\n            ",
+          "suffix": "\n            pairId: pair.pairId,\n            pr"
+        },
+        {
+          "kind": "text-position",
+          "start": 12261,
+          "end": 12284
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "cce6180ac210e615"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:09.857Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:09.857Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

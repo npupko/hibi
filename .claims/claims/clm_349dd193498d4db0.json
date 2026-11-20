@@ -1,0 +1,105 @@
+{
+  "id": "clm_349dd193498d4db0",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`existingClaims` lists claims on other documents with the same normalized sentence.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`existingClaims` lists claims on other documents with the same normalized sentence.",
+        "prefix": "ame document and sentence was updated in place. ",
+        "suffix": " The batch's `updated` counts the items updated "
+      },
+      {
+        "kind": "text-position",
+        "start": 61467,
+        "end": 61550
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const sharing = all.filter((c) => sameSentence(c.sentence, sentence));",
+          "prefix": "place.\n  const all = await store.allClaims();\n  ",
+          "suffix": "\n  const existing = sharing.find((c) => c.docume"
+        },
+        {
+          "kind": "text-position",
+          "start": 7050,
+          "end": 7120
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "444aad29928345e2",
+          "semanticHash": "2982539b12030e36"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".filter((c) => c.id !== existing.id)",
+          "prefix": "ed: true,\n      existingClaims: sharing\n        ",
+          "suffix": "\n        .map((c) => c.id),\n      warnings,\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 7930,
+          "end": 7966
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "20a7492328fb9223",
+          "semanticHash": "9db15afebf4fac81"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return normalizeText(a) === normalizeText(b);",
+          "prefix": "sameSentence(a: string, b: string): boolean {\n  ",
+          "suffix": "\n}\n\n/** Build the evidence bundles for a claim k"
+        },
+        {
+          "kind": "text-position",
+          "start": 3369,
+          "end": 3414
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "38dfb5eb571ef530",
+          "semanticHash": "bd618b805953a816"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:07.567Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:07.567Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

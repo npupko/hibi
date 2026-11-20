@@ -1,0 +1,128 @@
+{
+  "id": "clm_abc9fea0e8094dc0",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**Remediation commands.** Every `command` in a remediation action runs as written once its placeholders (`<actor>`, `<you>`, `<why>`, `<text>`, `<where>`, `<name>`, `<what you checked>`, `<one line>`, `<new sentence",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**Remediation commands.** Every `command` in a remediation action runs as written once its placeholders (`<actor>`, `<you>`, `<why>`, `<text>`, `<where>`, `<name>`, `<what you checked>`, `<one line>`, `<new sentence",
+        "prefix": "enders the per-document table in human output.\n\n",
+        "suffix": ">`, `<file>`, `<quote>`) are filled in. A `reanc"
+      },
+      {
+        "kind": "text-position",
+        "start": 63937,
+        "end": 64152
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`echo '[{\"claimId\":\"${id}\",\"evidence\":\"<text>\",\"source\":\"<where>\",\"summary\":\"<one line>\"}]' | hibi evidence --from-file - --by agent:<name>`",
+          "prefix": "\n\nconst evidenceCmd = (id: string): string =>\n  ",
+          "suffix": ";\n\nfunction submitEvidence(id: string, why: stri"
+        },
+        {
+          "kind": "text-position",
+          "start": 7076,
+          "end": 7216
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "45d070aa4137959b",
+          "semanticHash": "9eda7b6da4e08f16"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "command: `hibi attest ${id} --by <actor> --ack review --note \"<why>\"`,",
+          "prefix": ", record why; an ack never resets the ttl\",\n    ",
+          "suffix": "\n  };\n}\n\nfunction ackConflict(id: string, other:"
+        },
+        {
+          "kind": "text-position",
+          "start": 8092,
+          "end": 8162
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "787e166f87e46da5",
+          "semanticHash": "a59d723dfd06f3bd"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "command: `hibi attest ${id} --by human:<you> --note \"<what you checked>\"`,",
+          "prefix": "ts the ttl; an agent vouch does not count\",\n    ",
+          "suffix": "\n  };\n}\n\nfunction ackReview(id: string): Remedia"
+        },
+        {
+          "kind": "text-position",
+          "start": 7778,
+          "end": 7852
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "787e166f87e46da5",
+          "semanticHash": "3c7d722ef67f10b9"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const retireCmd = (id: string): string => `hibi retire ${id}`;",
+          "prefix": "\"\"): string =>\n  `hibi reanchor ${id}${flags}`;\n",
+          "suffix": "\n\nfunction updateThenReanchor(id: string, flags:"
+        },
+        {
+          "kind": "text-position",
+          "start": 4036,
+          "end": 4098
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "0e81ddf89427db42",
+          "semanticHash": "b80acf778ae427c8"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:07.810Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:07.810Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,23 +1,23 @@
 /**
  * Render a `CheckReport` for a human (rich and compact views). Diagnostics are
- * grouped by document; each suspect claim gets a status, the quoted sentence,
- * a `path:line` code anchor, owner, freshness, and a `help` line. Clean
- * documents collapse to a count.
+ * grouped by document; each suspect claim gets its status tags (anchor
+ * states, `judge:<state>`, `conflict:<other id>`, `expired`), the quoted
+ * sentence, a `path:line` evidence anchor, owner, freshness, and a `help`
+ * line. `--explain` adds every reason label. Clean documents collapse to a
+ * count. The worklist follows the documents.
  */
 
-import { isWarnVerdict } from "../../core/gating.ts";
 import type { Remediation } from "../../core/model.ts";
 import { topAction } from "../../core/remediation.ts";
-import type {
-  Assertion,
-  CheckReport,
-  DocumentReport,
-  Proposition,
-  Verdict,
-} from "../../index.ts";
 import {
-  codeAnchor,
-  docSentence,
+  type CheckVerdict,
+  orderStatuses,
+  verdictStatuses,
+  type WorklistItem,
+} from "../../engine/check.ts";
+import type { CheckReport, Claim, DocumentReport } from "../../index.ts";
+import {
+  evidenceAnchor,
   type FileRead,
   freshness,
   oneLine,
@@ -34,8 +34,7 @@ import {
 
 export interface CheckRenderContext {
   report: CheckReport;
-  assertionsById: Map<string, Assertion>;
-  propsById: Map<string, Proposition>;
+  claimsById: Map<string, Claim>;
   read: FileRead;
   style: Style;
   mode: OutputMode;
@@ -46,46 +45,67 @@ export interface CheckRenderContext {
 interface SuspectClaim {
   status: string;
   severity: Severity;
-  assertion: Assertion | undefined;
-  verdict: Verdict | undefined;
-  propositionId: string;
+  claim: Claim | undefined;
+  verdict: CheckVerdict | undefined;
+  claimId: string;
+}
+
+/** A contradiction-pass warning label: the pending-pairs count or a review finding. */
+const PENDING_PAIR = /^conflict checks pending: \d+$/;
+const REVIEW_PAIR = /^possible conflict with clm_[0-9a-f]+: /;
+
+/**
+ * The status column: every tag of the verdict, most severe first, with the
+ * other claim named on each conflict (`conflict:<id>`). The contradiction
+ * pass's warnings (`conflict:pending`, `conflict:review`) are read from the
+ * verdict's reasons, and `suspectStatus` (the engine's most severe tag for
+ * the claim) is added when the verdict alone does not show it, so a warning
+ * claim never prints as `unchanged`.
+ */
+export function statusTags(
+  v: CheckVerdict,
+  lcTags: string[] = [],
+  suspectStatus?: string,
+): string {
+  const own = [...verdictStatuses(v), ...lcTags];
+  if (v.reasons.some((r) => REVIEW_PAIR.test(r))) own.push("conflict:review");
+  if (v.reasons.some((r) => PENDING_PAIR.test(r))) own.push("conflict:pending");
+  if (suspectStatus !== undefined && !own.includes(suspectStatus)) {
+    own.push(suspectStatus);
+  }
+  const tags = orderStatuses(own).flatMap((t) =>
+    t === "conflict" ? v.conflicts.map((c) => `conflict:${c.claimId}`) : [t],
+  );
+  return tags.join(" ") || "unchanged";
 }
 
 function suspectsFor(
   doc: DocumentReport,
-  docVerdicts: Verdict[],
+  docVerdicts: CheckVerdict[],
   ctx: CheckRenderContext,
 ): SuspectClaim[] {
-  // Propositions are deduplicated across documents by fingerprint, so the
-  // lookup must stay inside this document's own verdicts.
-  const verdictsByProp = new Map<string, Verdict>();
-  for (const v of docVerdicts) {
-    if (!verdictsByProp.has(v.propositionId))
-      verdictsByProp.set(v.propositionId, v);
-  }
+  const verdictsById = new Map(docVerdicts.map((v) => [v.claimId, v]));
+  const lcTags = doc.lifecycle === "active" ? [] : [doc.lifecycle];
   return doc.suspect.map((s) => {
-    const verdict = verdictsByProp.get(s.propositionId);
-    const assertion = verdict
-      ? ctx.assertionsById.get(verdict.assertionId)
-      : undefined;
-    const enforcement = assertion?.enforcement ?? "suggested";
+    const verdict = verdictsById.get(s.claimId);
+    const claim = ctx.claimsById.get(s.claimId);
     const severity: Severity = verdict?.gates
       ? "gating"
-      : verdict && isWarnVerdict(verdict, enforcement)
+      : verdict?.warns
         ? "warn"
         : "neutral";
     return {
-      status: s.status,
+      status: verdict ? statusTags(verdict, lcTags, s.status) : s.status,
       severity,
-      assertion,
+      claim,
       verdict,
-      propositionId: s.propositionId,
+      claimId: s.claimId,
     };
   });
 }
 
 function claimLabel(claim: SuspectClaim): string {
-  return claim.assertion?.id ?? claim.propositionId;
+  return claim.claimId;
 }
 
 function leadLine(ctx: CheckRenderContext): string {
@@ -99,13 +119,14 @@ function leadLine(ctx: CheckRenderContext): string {
 
 function footer(ctx: CheckRenderContext): string {
   const { style, report } = ctx;
-  const { gating, warning } = report.summary;
+  const { gating, warning, worklist } = report.summary;
   const docCount = report.documents.length;
   const parts: string[] = [];
   parts.push(gating > 0 ? style.red(`${gating} gating`) : `${gating} gating`);
   parts.push(
     warning > 0 ? style.yellow(`${warning} warning`) : `${warning} warning`,
   );
+  if (worklist > 0) parts.push(`${worklist} in worklist`);
   const exit =
     report.exitCode === 0
       ? style.green("exit 0")
@@ -149,24 +170,28 @@ function richBlock(claim: SuspectClaim, ctx: CheckRenderContext): string[] {
   const lines: string[] = [];
   lines.push(`  ${sym} ${status}   ${style.cyan(claimLabel(claim))}`);
   if (claim.verdict) {
-    const sentence = oneLine(docSentence(claim.verdict, ctx.propsById));
+    const sentence = oneLine(claim.claim?.sentence ?? "");
     lines.push(`     ${style.dim(`"${sentence}"`)}`);
-    const anchor = codeAnchor(claim.verdict, claim.assertion, ctx.read);
+    const anchor = evidenceAnchor(claim.verdict, claim.claim, ctx.read);
     const facets: string[] = [];
     if (anchor) facets.push(anchor);
-    if (claim.assertion?.owner && claim.assertion.owner !== "unknown")
-      facets.push(`owner ${claim.assertion.owner}`);
-    facets.push(freshness(claim.verdict, claim.assertion));
+    if (claim.claim?.owner) facets.push(`owner ${claim.claim.owner}`);
+    facets.push(freshness(claim.verdict, claim.claim));
     if (facets.length) lines.push(`     ${style.dim(facets.join("   "))}`);
-    const reasons = [
-      ...new Set(
-        claim.verdict.evidence.changedEvidence
-          .map((c) => c.detail)
-          .filter((r): r is string => Boolean(r)),
-      ),
-    ];
-    if (reasons.length)
-      lines.push(`     ${style.dim(`reason: ${reasons.join("; ")}`)}`);
+    if (mode.explain) {
+      for (const r of claim.verdict.reasons)
+        lines.push(`     ${style.dim(`reason: ${r}`)}`);
+    } else {
+      const reasons = [
+        ...new Set(
+          claim.verdict.detail.changes
+            .map((c) => c.detail)
+            .filter((r): r is string => Boolean(r)),
+        ),
+      ];
+      if (reasons.length)
+        lines.push(`     ${style.dim(`reason: ${reasons.join("; ")}`)}`);
+    }
   }
   if (mode.hints) {
     const help =
@@ -204,19 +229,58 @@ function compactLine(claim: SuspectClaim, ctx: CheckRenderContext): string {
   )(severitySymbol(claim.severity, mode.unicode));
   const status = severityColor(claim.severity, style)(claim.status.padEnd(16));
   const anchor = claim.verdict
-    ? (codeAnchor(claim.verdict, claim.assertion, ctx.read) ?? "")
+    ? (evidenceAnchor(claim.verdict, claim.claim, ctx.read) ?? "")
     : "";
   const sentence = claim.verdict
-    ? oneLine(docSentence(claim.verdict, ctx.propsById), 40)
+    ? oneLine(claim.claim?.sentence ?? "", 40)
     : "";
   return `  ${sym} ${status} ${style.cyan(claimLabel(claim).padEnd(18))} ${style.dim(anchor)}   ${style.dim(`"${sentence}"`)}`;
+}
+
+function worklistLines(item: WorklistItem, ctx: CheckRenderContext): string[] {
+  const { style, mode } = ctx;
+  const head = `  ${style.yellow(item.reason.padEnd(13))} ${style.cyan(item.claimId)}   ${style.dim(item.document)}`;
+  if (mode.kind === "compact") {
+    return [`${head}   ${style.dim(`"${oneLine(item.sentence, 40)}"`)}`];
+  }
+  const lines = [head, `     ${style.dim(`"${oneLine(item.sentence)}"`)}`];
+  const facets: string[] = [`kind ${item.kind}`];
+  if (item.owner) facets.push(`owner ${item.owner}`);
+  if (item.sources.length > 0)
+    facets.push(
+      `sources ${item.sources.map((s) => s.id ?? s.resource).join(", ")}`,
+    );
+  lines.push(`     ${style.dim(facets.join("   "))}`);
+  if (item.procedure)
+    lines.push(
+      `     ${style.dim(`procedure: ${oneLine(item.procedure.instructions)}`)}`,
+    );
+  if (item.lastEvidence) {
+    const e = item.lastEvidence;
+    lines.push(
+      `     ${style.dim(`last evidence: ${oneLine(e.summary, 48)} (${e.source}, ${e.by}, ${e.at})`)}`,
+    );
+  }
+  return lines;
+}
+
+function worklistSection(ctx: CheckRenderContext): string[] {
+  const items = ctx.report.worklist;
+  if (items.length === 0) return [];
+  const out = [ctx.style.bold(`Worklist (${items.length})`)];
+  for (const item of items) {
+    out.push(...worklistLines(item, ctx));
+    if (ctx.mode.kind !== "compact") out.push("");
+  }
+  if (ctx.mode.kind === "compact") out.push("");
+  return out;
 }
 
 export function renderCheck(ctx: CheckRenderContext): string {
   const { report, mode } = ctx;
   const compact = mode.kind === "compact";
 
-  const verdictsByDoc = new Map<string, Verdict[]>();
+  const verdictsByDoc = new Map<string, CheckVerdict[]>();
   for (const v of report.verdicts) {
     const list = verdictsByDoc.get(v.documentId) ?? [];
     list.push(v);
@@ -240,7 +304,7 @@ export function renderCheck(ctx: CheckRenderContext): string {
   const enriched = report.documents.map((doc) => {
     const docVerdicts = verdictsByDoc.get(doc.id) ?? [];
     const total = docVerdicts.filter(
-      (v) => ctx.assertionsById.get(v.assertionId)?.enforcement !== "retired",
+      (v) => ctx.claimsById.get(v.claimId)?.enforcement !== "retired",
     ).length;
     const suspects = suspectsFor(doc, docVerdicts, ctx);
     return { doc, total, suspects };
@@ -264,6 +328,7 @@ export function renderCheck(ctx: CheckRenderContext): string {
   }
 
   if (out[out.length - 1] !== "") out.push("");
+  out.push(...worklistSection(ctx));
   out.push(footer(ctx));
   return `${out.join("\n")}\n`;
 }

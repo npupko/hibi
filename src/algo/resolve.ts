@@ -12,22 +12,26 @@
  *
  * Position is a tiebreaker only. Both AST hashes are kept as reason labels:
  * structural equal and semantic different is "identifiers or literals renamed";
- * both different is "restructured". Freshness is computed from the stored
- * anchor and the current files alone; `check` never reads git.
+ * both different is "restructured". Resolution is computed from the stored
+ * selectors and the current files alone; `check` never reads git.
  */
 
-import { computeGates } from "../core/gating.ts";
+import { type GateMode, gateVerdict } from "../core/gating.ts";
 import {
   type AnchorState,
-  type Assertion,
-  type ChangedEvidence,
-  COARSE_SELECTOR_KINDS,
+  type Claim,
+  type ConflictFinding,
+  DEFAULT_JUDGE_THRESHOLD,
+  type EvidenceState,
+  type JudgeState,
   type Region,
   type Selector,
   type SelectorBundle,
+  type SpanChange,
   type Verdict,
 } from "../core/model.ts";
 import { remediationFor } from "../core/remediation.ts";
+import { expiryLabel } from "../engine/expiry.ts";
 import { localizeTextQuote, regionText } from "./localize.ts";
 import { collapseWhitespace, textSimilarity } from "./normalize.ts";
 import { MOVE_AWARENESS_CHARS, SAME_TEXT_SIMILARITY } from "./params.ts";
@@ -52,16 +56,19 @@ export interface AstAnalyzer {
   ): string | null;
 }
 
-/** Current content of every file an anchor points into (null = missing). */
+/** Current content of every file a claim's spans point into (null = missing). */
 export interface ResolveFiles {
   doc: string | null;
-  code: ReadonlyMap<string, string | null>;
+  evidence: ReadonlyMap<string, string | null>;
+  /**
+   * Evidence files in a sibling repo that is not checked out (SPEC 4.1), with
+   * the reason label. Those sides resolve `unavailable`.
+   */
+  unavailable?: ReadonlyMap<string, string>;
 }
 
 export interface ResolveOptions {
   ast?: AstAnalyzer;
-  /** Current time for ttl evaluation; defaults to Date.now(). */
-  now?: number;
 }
 
 const STATE_RANK: Record<AnchorState, number> = {
@@ -77,10 +84,15 @@ export interface SideResult {
   region: Region | null;
   /** Normalized similarity of the located text to the stored quote (0 when not found). */
   similarity: number;
-  notes: string[];
-  changedEvidence: ChangedEvidence[];
+  reasons: string[];
+  changedEvidence: SpanChange[];
   /** The live text at the located region. */
   liveText: string | null;
+  /**
+   * On a `changed` side: the located text widened to whole words and whole
+   * numbers at its edges, the quote a remediation command passes to `reanchor`.
+   */
+  liveQuote?: string;
 }
 
 function bySelectorKind(selectors: Selector[]) {
@@ -94,6 +106,38 @@ function numbers(s: string): string {
   return (s.match(/\d+(?:\.\d+)?/g) ?? []).join(",");
 }
 
+/**
+ * The located text widened to whole numbers at its edges, so a quote `= 5`
+ * that now matches the start of `= 50` reads `= 50`.
+ */
+function withWholeNumbers(text: string, region: Region): string {
+  const digit = (i: number) => /\d/.test(text[i] ?? "");
+  let start = region.start;
+  let end = region.end;
+  if (digit(start)) while (digit(start - 1)) start--;
+  if (digit(end - 1)) {
+    for (;;) {
+      if (digit(end)) end++;
+      else if (text[end] === "." && digit(end + 1)) end += 2;
+      else break;
+    }
+  }
+  return text.slice(start, end);
+}
+
+/**
+ * The located text widened to whole words and whole numbers at its edges,
+ * so a fuzzy match that ends inside `attempts` reads `attempts`.
+ */
+function withWholeWords(text: string, region: Region): string {
+  const word = (i: number) => /\w/.test(text[i] ?? "");
+  let start = region.start;
+  let end = region.end;
+  if (word(start)) while (word(start - 1)) start--;
+  if (word(end - 1)) while (word(end)) end++;
+  return withWholeNumbers(text, { start, end });
+}
+
 /** Resolve one anchor side against its current file text. */
 export function resolveSide(
   bundle: SelectorBundle,
@@ -105,24 +149,10 @@ export function resolveSide(
       state: "orphaned",
       region: null,
       similarity: 0,
-      notes: [`file not found: ${bundle.file}`],
+      reasons: [`file not found: ${bundle.file}`],
       changedEvidence: [
         { path: bundle.file, kind: "text", detail: "file missing" },
       ],
-      liveText: null,
-    };
-  }
-
-  const coarseOnly = bundle.selectors.every((s) =>
-    (COARSE_SELECTOR_KINDS as readonly string[]).includes(s.kind),
-  );
-  if (coarseOnly) {
-    return {
-      state: "unchanged",
-      region: null,
-      similarity: 1,
-      notes: ["coarse anchor: navigational, never drift"],
-      changedEvidence: [],
       liveText: null,
     };
   }
@@ -143,7 +173,7 @@ export function resolveSide(
       state: "orphaned",
       region: null,
       similarity: 0,
-      notes: ["no text-quote selector"],
+      reasons: ["no text-quote selector"],
       changedEvidence: [],
       liveText: null,
     };
@@ -156,7 +186,7 @@ export function resolveSide(
       state: "orphaned",
       region: null,
       similarity: 0,
-      notes: ["quote not found"],
+      reasons: ["quote not found"],
       changedEvidence: [
         { path: bundle.file, kind: "text", detail: "documented span orphaned" },
       ],
@@ -166,39 +196,43 @@ export function resolveSide(
   const region = located.region;
   const liveText = regionText(currentText, region);
   const similarity = textSimilarity(liveText, tq.exact);
-  const notes: string[] = [];
-  const changedEvidence: ChangedEvidence[] = [];
+  const reasons: string[] = [];
+  const changedEvidence: SpanChange[] = [];
 
   // 6. Several equally good matches.
   if (located.ambiguous) {
-    notes.push("quote matched in several places equally well");
+    reasons.push("quote matched in several places equally well");
     return {
       state: "ambiguous",
       region,
       similarity,
-      notes,
+      reasons,
       changedEvidence,
       liveText,
     };
   }
 
-  // AST reason label (code side, analyzer present).
+  // AST and value checks run only when the analyzer can parse the span: the
+  // analyzer is on and a grammar for the language is loaded.
+  const language = astSel?.language ?? valSel?.language;
+  const analysis =
+    language !== undefined && opts.ast
+      ? opts.ast.analyze(currentText, language, region)
+      : null;
+  const structural = analysis !== null;
+
+  // AST reason label (code side).
   let astLabel: string | undefined;
-  if (astSel && opts.ast) {
-    const analysis = opts.ast.analyze(currentText, astSel.language, region);
-    if (analysis) {
-      if (analysis.semanticHash !== astSel.semanticHash) {
-        astLabel =
-          analysis.structuralHash === astSel.structuralHash
-            ? "identifiers or literals renamed"
-            : "restructured";
-      }
-    }
+  if (astSel && analysis && analysis.semanticHash !== astSel.semanticHash) {
+    astLabel =
+      analysis.structuralHash === astSel.structuralHash
+        ? "identifiers or literals renamed"
+        : "restructured";
   }
 
-  // In-span literal check (code side, analyzer present).
+  // In-span literal check (code side).
   let valueLabel: string | undefined;
-  if (valSel && opts.ast) {
+  if (valSel && structural && opts.ast) {
     const extracted = opts.ast.extractValue(
       currentText,
       valSel.language,
@@ -213,9 +247,13 @@ export function resolveSide(
     }
   }
 
-  // Prose: a numeric token changed inside the span.
+  // Prose, or code without structural checks (--no-ast, or no grammar for
+  // the language): a numeric token changed inside the span.
   let numberLabel: string | undefined;
-  if (!astSel && !valSel && numbers(liveText) !== numbers(tq.exact)) {
+  if (
+    !structural &&
+    numbers(withWholeNumbers(currentText, region)) !== numbers(tq.exact)
+  ) {
     numberLabel = "a number in the sentence changed";
   }
 
@@ -245,26 +283,27 @@ export function resolveSide(
           `text changed (${Math.round(similarity * 100)}% similar)`,
       });
     }
-    for (const c of changedEvidence) if (c.detail) notes.push(c.detail);
+    for (const c of changedEvidence) if (c.detail) reasons.push(c.detail);
     return {
       state: "changed",
       region,
       similarity,
-      notes,
+      reasons,
       changedEvidence,
       liveText,
+      liveQuote: withWholeWords(currentText, region),
     };
   }
 
   // 2 and 3. Unchanged or moved.
   const delta = tp ? Math.abs(region.start - tp.start) : 0;
   if (delta > MOVE_AWARENESS_CHARS) {
-    notes.push(`span moved ${delta} chars`);
+    reasons.push(`span moved ${delta} chars`);
     return {
       state: "moved",
       region,
       similarity,
-      notes,
+      reasons,
       changedEvidence,
       liveText,
     };
@@ -273,114 +312,264 @@ export function resolveSide(
     state: "unchanged",
     region,
     similarity,
-    notes,
+    reasons,
     changedEvidence,
     liveText,
   };
 }
 
-/** TTL expiry. A datetime with no timezone suffix is read as UTC. */
-function parseTtl(
-  ttl: string,
-  now: number,
-): { expired: boolean; invalid: boolean } {
-  const normalized =
-    ttl.includes("T") && !/(Z|[+-]\d{2}:?\d{2})$/i.test(ttl) ? `${ttl}Z` : ttl;
-  const at = Date.parse(normalized);
-  if (Number.isNaN(at)) return { expired: true, invalid: true };
-  return { expired: at <= now, invalid: false };
-}
-
 export interface SidesResult {
   doc: SideResult;
-  /** Index-aligned with `assertion.anchor.code`. */
-  code: SideResult[];
+  /** Index-aligned with `claim.evidence`. */
+  evidence: SideResult[];
 }
 
-/** Resolve every side once. The doc side resolves first. */
+/** Resolve every span once. The doc span resolves first. */
 export function resolveSides(
-  assertion: Assertion,
+  claim: Pick<Claim, "doc" | "evidence">,
   files: ResolveFiles,
   opts: ResolveOptions = {},
 ): SidesResult {
-  const anchor = assertion.anchor;
-  const doc = resolveSide(anchor.doc, files.doc, opts);
-  const code = anchor.code.map((bundle) =>
-    resolveSide(bundle, files.code.get(bundle.file) ?? null, opts),
+  const doc = resolveSide(claim.doc, files.doc, opts);
+  const evidence = claim.evidence.map((bundle) =>
+    resolveSide(bundle, files.evidence.get(bundle.file) ?? null, opts),
   );
-  return { doc, code };
+  return { doc, evidence };
 }
 
-/** Worst state over the code-side bundles. */
-export function worstCodeState(code: SideResult[]): AnchorState {
+/** Worst state over the evidence spans. */
+export function worstState(sides: SideResult[]): AnchorState {
   let state: AnchorState = "unchanged";
-  for (const side of code) {
+  for (const side of sides) {
     if (STATE_RANK[side.state] > STATE_RANK[state]) state = side.state;
   }
   return state;
 }
 
-/** Resolve a single assertion against the current working tree. */
-export function resolveAssertion(
-  assertion: Assertion,
+// ── Claim level ──────────────────────────────────────────────────────────────
+
+/** An evidence side: an anchor result, or `unavailable` when its repo is not checked out. */
+export type EvidenceSide =
+  | SideResult
+  | (Omit<SideResult, "state"> & { state: "unavailable" });
+
+export interface ClaimSides {
+  doc: SideResult;
+  /** Index-aligned with `claim.evidence`. */
+  evidence: EvidenceSide[];
+}
+
+/** `unavailable` ranks above `moved` and below the gating states. */
+const EVIDENCE_RANK: Record<EvidenceState, number> = {
+  orphaned: 5,
+  ambiguous: 4,
+  changed: 3,
+  unavailable: 2,
+  moved: 1,
+  unchanged: 0,
+};
+
+/** Resolve the doc span and every evidence span, marking sibling-repo sides `unavailable`. */
+export function resolveClaimSides(
+  claim: Pick<Claim, "doc" | "evidence">,
   files: ResolveFiles,
   opts: ResolveOptions = {},
-): Verdict {
-  const now = opts.now ?? Date.now();
-  const sides = resolveSides(assertion, files, opts);
-  const code = worstCodeState(sides.code);
-  // The reported similarity describes the side that decided the verdict, so a
-  // `doc:changed` claim never reports an untouched code side's 1.0.
-  const primary = [sides.doc, ...sides.code].reduce((worst, side) =>
+): ClaimSides {
+  const doc = resolveSide(claim.doc, files.doc, opts);
+  const evidence = claim.evidence.map((bundle): EvidenceSide => {
+    const label = files.unavailable?.get(bundle.file);
+    if (label !== undefined) {
+      return {
+        state: "unavailable",
+        region: null,
+        similarity: 0,
+        reasons: [label],
+        changedEvidence: [],
+        liveText: null,
+      };
+    }
+    return resolveSide(bundle, files.evidence.get(bundle.file) ?? null, opts);
+  });
+  return { doc, evidence };
+}
+
+/** Worst state over evidence sides that may include `unavailable`. */
+export function worstEvidenceState(sides: EvidenceSide[]): EvidenceState {
+  let state: EvidenceState = "unchanged";
+  for (const side of sides) {
+    if (EVIDENCE_RANK[side.state] > EVIDENCE_RANK[state]) state = side.state;
+  }
+  return state;
+}
+
+/** What later passes found about a claim: the judge axis and the contradiction pass. */
+export interface ClaimFindings {
+  judge?: JudgeState;
+  conflicts?: ConflictFinding[];
+  /** Warn-only findings, each a reason label (a conflict in review, a pending pair). */
+  warnings?: string[];
+  /** Reason labels from those passes (judge outcome, why the judge was not asked). */
+  reasons?: string[];
+  /** A `review` verdict an `ack` attestation names; it stays `review` and no longer warns. */
+  reviewAcknowledged?: boolean;
+}
+
+export interface ResolveClaimOptions extends ResolveOptions, ClaimFindings {
+  /** Clock for expiry. Default: now. */
+  now?: Date;
+  /** `doc` for `check --doc`, where `expired` gates. Default `store`. */
+  mode?: GateMode;
+  /** `config.judge.threshold`. */
+  threshold?: number;
+}
+
+/** The per-claim result of `check`. */
+export type ClaimVerdict = Verdict;
+
+/**
+ * The evidence spans a remediation command re-anchors, in stored order, when
+ * the worst side reads `changed` or `ambiguous`: a `changed` side's located
+ * whole-word text, null for an `ambiguous` side, the stored quote otherwise.
+ */
+function evidenceSpansFor(
+  claim: Claim,
+  sides: ClaimSides,
+  worst: EvidenceState | undefined,
+): { file: string; quote: string | null }[] | undefined {
+  if (worst !== "changed" && worst !== "ambiguous") return undefined;
+  return claim.evidence.map((bundle, i) => {
+    const side = sides.evidence[i];
+    if (side?.state === "changed")
+      return { file: bundle.file, quote: side.liveQuote ?? null };
+    if (side?.state === "ambiguous") return { file: bundle.file, quote: null };
+    const tq = bundle.selectors.find((s) => s.kind === "text-quote");
+    return {
+      file: bundle.file,
+      quote: tq?.kind === "text-quote" ? tq.exact : null,
+    };
+  });
+}
+
+/** Build the verdict for resolved sides plus the later passes' findings. */
+export function assembleVerdict(
+  claim: Claim,
+  sides: ClaimSides,
+  opts: ResolveClaimOptions = {},
+): ClaimVerdict {
+  const evidence =
+    sides.evidence.length > 0 ? worstEvidenceState(sides.evidence) : undefined;
+  // The reported similarity describes the located side that decided the
+  // verdict, so a `doc:changed` claim never reports an untouched evidence
+  // side's 1.0, and an unavailable side reports nothing.
+  const located = [
+    sides.doc,
+    ...sides.evidence.filter((s): s is SideResult => s.state !== "unavailable"),
+  ];
+  const primary = located.reduce((worst, side) =>
     STATE_RANK[side.state] > STATE_RANK[worst.state] ? side : worst,
   );
 
-  const ttl =
-    assertion.ttl !== undefined ? parseTtl(assertion.ttl, now) : undefined;
-  const expired = ttl?.expired ?? false;
-
-  const gates = computeGates(
-    { doc: sides.doc.state, code, expired },
-    assertion.enforcement,
+  const now = opts.now ?? new Date();
+  const expiry = expiryLabel(claim, now);
+  const expired = expiry !== undefined;
+  const conflicts = opts.conflicts ?? [];
+  const gatingJudge =
+    opts.judge === "review" && opts.reviewAcknowledged ? undefined : opts.judge;
+  const gate = gateVerdict(
+    {
+      doc: sides.doc.state,
+      evidence,
+      judge: gatingJudge,
+      expired,
+      conflicts,
+      warnings: opts.warnings,
+    },
+    claim.enforcement,
+    { mode: opts.mode, threshold: opts.threshold ?? DEFAULT_JUDGE_THRESHOLD },
   );
 
-  const notes = [
-    ...sides.doc.notes.map((n) => `doc: ${n}`),
-    ...sides.code.flatMap((s) => s.notes.map((n) => `code: ${n}`)),
-    ttl?.invalid
-      ? `unparseable ttl "${assertion.ttl}": treated as expired (fix or clear the ttl)`
-      : "",
-  ].filter(Boolean);
+  const reasons = [
+    ...sides.doc.reasons.map((n) => `doc: ${n}`),
+    ...sides.evidence.flatMap((s) => s.reasons.map((n) => `evidence: ${n}`)),
+    ...(expiry !== undefined ? [expiry] : []),
+    ...(opts.reasons ?? []),
+    ...gate.reasons,
+  ];
 
-  const changedEvidence = [
+  const changes = [
     ...sides.doc.changedEvidence,
-    ...sides.code.flatMap((s) => s.changedEvidence),
+    ...sides.evidence.flatMap((s) => s.changedEvidence),
   ];
 
   return {
-    assertionId: assertion.id,
-    propositionId: assertion.propositionId,
-    documentId: assertion.documentId,
+    claimId: claim.id,
+    documentId: claim.documentId,
+    kind: claim.kind,
     doc: sides.doc.state,
-    code,
-    behavior: undefined,
+    ...(evidence !== undefined ? { evidence } : {}),
+    ...(opts.judge !== undefined ? { judge: opts.judge } : {}),
     expired,
-    gates,
+    conflicts,
+    gates: gate.gates,
+    warns: gate.warns,
     remediation: remediationFor({
-      assertionId: assertion.id,
+      claimId: claim.id,
+      kind: claim.kind,
       doc: sides.doc.state,
-      code,
+      evidence,
+      judge: gatingJudge,
       expired,
+      conflicts,
+      docText: sides.doc.liveQuote,
+      evidenceSpans: evidenceSpansFor(claim, sides, evidence),
     }),
-    evidence: {
+    detail: {
       docRegion: sides.doc.region ?? undefined,
-      codeRegions: sides.code
+      evidenceRegions: sides.evidence
         .map((s) => s.region)
         .filter((r): r is Region => r !== null),
       similarity: primary.similarity,
-      changedEvidence,
+      changes,
     },
-    notes,
-    advisories: [],
+    reasons,
   };
+}
+
+/** The single reason label of a retired claim's verdict. */
+export const RETIRED_REASON = "retired claim: never gates or warns";
+
+/**
+ * The verdict of a retired claim: its spans are not resolved, so `doc` (and
+ * `evidence`, when the claim has an evidence side) read `retired`, and the
+ * only reason is `RETIRED_REASON`. It never gates or warns.
+ */
+export function retiredVerdict(claim: Claim): ClaimVerdict {
+  return {
+    claimId: claim.id,
+    documentId: claim.documentId,
+    kind: claim.kind,
+    doc: "retired",
+    ...(claim.evidence.length > 0 ? { evidence: "retired" as const } : {}),
+    expired: false,
+    conflicts: [],
+    gates: false,
+    warns: false,
+    remediation: null,
+    detail: { evidenceRegions: [], changes: [] },
+    reasons: [RETIRED_REASON],
+  };
+}
+
+/**
+ * Resolve a single claim against the current working tree: anchors, expiry
+ * (SPEC 5 counting rule), and gating with whatever judge and conflict
+ * findings the caller passes. The `evidence` axis is absent when the claim
+ * has no evidence span; `judge` is absent unless passed.
+ */
+export function resolveClaim(
+  claim: Claim,
+  files: ResolveFiles,
+  opts: ResolveClaimOptions = {},
+): ClaimVerdict {
+  return assembleVerdict(claim, resolveClaimSides(claim, files, opts), opts);
 }

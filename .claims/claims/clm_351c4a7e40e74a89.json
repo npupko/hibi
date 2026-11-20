@@ -1,0 +1,82 @@
+{
+  "id": "clm_351c4a7e40e74a89",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "`--ack review` is an error when the claim has no current `supports` verdict: run `hibi check` first for a `reference` claim, or submit evidence for an `attested` claim.",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--ack review` is an error when the claim has no current `supports` verdict: run `hibi check` first for a `reference` claim, or submit evidence for an `attested` claim.",
+        "prefix": "cache entry, so newer evidence needs a new ack. ",
+        "suffix": " An `ack` on a conflict is written to both claim"
+      },
+      {
+        "kind": "text-position",
+        "start": 5758,
+        "end": 5926
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "has no supports verdict for its current text; run \\`hibi check\\` first.",
+          "prefix": "{\n    throw new Error(\n      `claim ${claim.id} ",
+          "suffix": "`,\n    );\n  }\n  return key;\n}\n\nasync function ap"
+        },
+        {
+          "kind": "text-position",
+          "start": 4792,
+          "end": 4863
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "f616807424de018d",
+          "semanticHash": "e4ed85590590a097"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "has no supports verdict to acknowledge; submit evidence with \\`hibi evidence\\` first.",
+          "prefix": " {\n    throw new Error(\n      `claim ${claimId} ",
+          "suffix": "`,\n    );\n  }\n  return newest.key;\n}\n\n/**\n * The"
+        },
+        {
+          "kind": "text-position",
+          "start": 3727,
+          "end": 3812
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "517dd8342c7db35d",
+          "semanticHash": "708bf0c16b888db4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:13.988Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:13.988Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

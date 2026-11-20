@@ -1,0 +1,84 @@
+{
+  "id": "clm_84b23d4b8f9e4eb9",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "[MIT](LICENSE) © Nick Pupko",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "[MIT](LICENSE) © Nick Pupko",
+        "prefix": "es per [SECURITY.md](SECURITY.md).\n\n## License\n\n",
+        "suffix": "\n\n---\n\nThe design contract is [`design/SPEC.md`]"
+      },
+      {
+        "kind": "text-position",
+        "start": 8829,
+        "end": 8856
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "LICENSE",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "MIT License",
+          "prefix": "",
+          "suffix": "\n\nCopyright (c) 2026 Nick Pupko\n\nPermission is h"
+        },
+        {
+          "kind": "text-position",
+          "start": 0,
+          "end": 11
+        }
+      ]
+    },
+    {
+      "file": "LICENSE",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Copyright (c) 2026 Nick Pupko",
+          "prefix": "MIT License\n\n",
+          "suffix": "\n\nPermission is hereby granted, free of charge, "
+        },
+        {
+          "kind": "text-position",
+          "start": 13,
+          "end": 42
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"license\": \"MIT\",",
+          "prefix": "nstruction files from silently going stale.\",\n  ",
+          "suffix": "\n  \"author\": \"Nick Pupko <lazynick7@gmail.com>\","
+        },
+        {
+          "kind": "text-position",
+          "start": 189,
+          "end": 206
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:25.395Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:25.395Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

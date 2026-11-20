@@ -1,0 +1,59 @@
+{
+  "id": "clm_d565138ed2444fcd",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "The `jq` filter keeps `attested` items only, because `hibi evidence` accepts attested claims only and rejects a batch naming a `code` or `reference` claim, which can also carry a procedure.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The `jq` filter keeps `attested` items only, because `hibi evidence` accepts attested claims only and rejects a batch naming a `code` or `reference` claim, which can also carry a procedure.",
+        "prefix": "ps `check` at exit 0 so the workflow continues. ",
+        "suffix": " `submit` skips an empty array because `hibi evi"
+      },
+      {
+        "kind": "text-position",
+        "start": 9438,
+        "end": 9627
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence applies to attested claims",
+          "prefix": "    `claim ${claimId} is a ${claim.kind} claim; ",
+          "suffix": ", and reference claims are judged from the refer"
+        },
+        {
+          "kind": "text-position",
+          "start": 6934,
+          "end": 6969
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "887766a2fbcbc5a5"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:43.838Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:43.838Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

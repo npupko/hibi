@@ -1,0 +1,123 @@
+{
+  "id": "clm_2e76825b25f24fab",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`never-checked`: an `attested` claim with a `procedure` or at least one `sources` entry, and no `supports` cache entry.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`never-checked`: an `attested` claim with a `procedure` or at least one `sources` entry, and no `supports` cache entry.",
+        "prefix": "ested` claim whose judge state is `pending`.\n4. ",
+        "suffix": " These are the claims an agent can collect evide"
+      },
+      {
+        "kind": "text-position",
+        "start": 28785,
+        "end": 28904
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const checkable = claim.procedure !== null || claim.sources.length > 0;",
+          "prefix": " if (v.judge === \"pending\") return \"pending\";\n  ",
+          "suffix": "\n  if (claim.kind === \"attested\" && checkable &&"
+        },
+        {
+          "kind": "text-position",
+          "start": 12881,
+          "end": 12952
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f9a8c8f5c83617f9",
+          "semanticHash": "50a564d3fb95b2fa"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (claim.kind === \"attested\" && checkable && !hasSupports)",
+          "prefix": "ocedure !== null || claim.sources.length > 0;\n  ",
+          "suffix": "\n    return \"never-checked\";\n  return undefined;"
+        },
+        {
+          "kind": "text-position",
+          "start": 12955,
+          "end": 13014
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "dea848eeec870d1c",
+          "semanticHash": "f1c69407699d1574"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"attested\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "worklistReason(c, v, ack !== undefined, entries.length > 0)",
+          "prefix": "=== \"active\";\n    const reason = active\n      ? ",
+          "suffix": "\n      : undefined;\n    if (reason !== undefined"
+        },
+        {
+          "kind": "text-position",
+          "start": 18140,
+          "end": 18199
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "dc37bae92a979bdf",
+          "semanticHash": "1dc25623d593b152"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:49.485Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:49.485Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

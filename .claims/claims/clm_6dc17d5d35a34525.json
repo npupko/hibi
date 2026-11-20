@@ -1,0 +1,88 @@
+{
+  "id": "clm_6dc17d5d35a34525",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "On an existing store it adds `.claims/.gitignore` when the file is missing.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "On an existing store it adds `.claims/.gitignore` when the file is missing.",
+        "prefix": "ies, and does not overwrite an existing config. ",
+        "suffix": " It never edits the repository's own `.gitignore"
+      },
+      {
+        "kind": "text-position",
+        "start": 57554,
+        "end": 57629
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const gitignore = join(s.dir, \".gitignore\");",
+          "prefix": "missing; an existing file is left as it is.\n    ",
+          "suffix": "\n    if (!(await exists(gitignore))) {\n      awa"
+        },
+        {
+          "kind": "text-position",
+          "start": 3340,
+          "end": 3384
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "99fa2327edbdb6f1",
+          "semanticHash": "f3bd128174b6c4f9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".gitignore\""
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await writeFile(gitignore, `${SUBDIRS.judge}/\\n`);",
+          "prefix": "\");\n    if (!(await exists(gitignore))) {\n      ",
+          "suffix": "\n    }\n    return s;\n  }\n\n  /**\n   * Open an exi"
+        },
+        {
+          "kind": "text-position",
+          "start": 3429,
+          "end": 3479
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "3173e9bc5ec04bb4",
+          "semanticHash": "df0de62e936b77fb"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:07.225Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:07.225Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_ddc05c4a2ab340d3",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The `--code-file` spans given replace all of a `code` claim's spans, in flag order; `--ref-file` with `--ref-quote` or `--ref-range` replaces a `reference` claim's span.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The `--code-file` spans given replace all of a `code` claim's spans, in flag order; `--ref-file` with `--ref-quote` or `--ref-range` replaces a `reference` claim's span.",
+        "prefix": "nt and requires `--doc-quote` or `--doc-range`. ",
+        "suffix": " A flag for the wrong kind is an error: `claim <"
+      },
+      {
+        "kind": "text-position",
+        "start": 70725,
+        "end": 70894
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence = input.evidence.map((t, i) => {",
+          "prefix": "exactly one evidence span.`,\n      );\n    }\n    ",
+          "suffix": "\n      const reason = contents.unavailable?.get("
+        },
+        {
+          "kind": "text-position",
+          "start": 14427,
+          "end": 14468
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "4ba7a634c1e53e2f",
+          "semanticHash": "bf0ea795d3eb40fa"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:28:04.249Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:28:04.249Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

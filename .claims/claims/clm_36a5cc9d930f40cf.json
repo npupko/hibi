@@ -1,0 +1,88 @@
+{
+  "id": "clm_36a5cc9d930f40cf",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "In `check` JSON, every live claim on a non-active document appears in that document's `suspect[]` with the lifecycle as its status when nothing worse applies.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "In `check` JSON, every live claim on a non-active document appears in that document's `suspect[]` with the lifecycle as its status when nothing worse applies.",
+        "prefix": "m still resolves, still gates, and still warns. ",
+        "suffix": " Claims on a non-active document are left out of"
+      },
+      {
+        "kind": "text-position",
+        "start": 2115,
+        "end": 2273
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return v.gates || v.warns || docHasLifecycle;",
+          "prefix": "nforcement === \"retired\") return false;\n        ",
+          "suffix": "\n      })\n      .map((v) => ({\n        claimId: "
+        },
+        {
+          "kind": "text-position",
+          "start": 20621,
+          "end": 20666
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "b2d4036e33e52231",
+          "semanticHash": "a625ecb41b8222d1"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "status: firstStatus([...(statusTags.get(v.claimId) ?? []), ...lcTags]),",
+          "prefix": "p((v) => ({\n        claimId: v.claimId,\n        ",
+          "suffix": "\n      }))\n      .sort((a, b) =>\n        a.claim"
+        },
+        {
+          "kind": "text-position",
+          "start": 20733,
+          "end": 20804
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "8463116121bbc36d",
+          "semanticHash": "7157e8abf6adb743"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[...(statusTags.get(v.claimId)??[]),...lcTags]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.527Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.527Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

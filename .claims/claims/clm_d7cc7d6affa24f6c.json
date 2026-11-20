@@ -1,0 +1,105 @@
+{
+  "id": "clm_d7cc7d6affa24f6c",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `supports` | `hibi check`, `hibi list` | for a `reference` claim, when no cached verdict exists for the current sentence, context, and referenced text |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `supports` | `hibi check`, `hibi list` | for a `reference` claim, when no cached verdict exists for the current sentence, context, and referenced text |",
+        "prefix": "hibi audit` | for the regions no claim covers |\n",
+        "suffix": "\n| `supports` | `hibi evidence` | for each submi"
+      },
+      {
+        "kind": "text-position",
+        "start": 1641,
+        "end": 1795
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "outcome = await judgeReference({",
+          "prefix": ": ${judgeable.reason}`);\n      } else {\n        ",
+          "suffix": "\n          claim: c,\n          ...judgeable.text"
+        },
+        {
+          "kind": "text-position",
+          "start": 16344,
+          "end": 16376
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "4456183343bcac43",
+          "semanticHash": "2b94d5ee4907ef93"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const hit = await input.cache.get(key);",
+          "prefix": "input.model,\n    input.claim,\n    texts,\n  );\n  ",
+          "suffix": "\n  const values = {\n    sentence: storedValues(t"
+        },
+        {
+          "kind": "text-position",
+          "start": 10628,
+          "end": 10667
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "0a01a23beaaed80b",
+          "semanticHash": "f2dfadff43b98632"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "response = await input.judge.supports({",
+          "prefix": "ted<ReturnType<Judge[\"supports\"]>>;\n  try {\n    ",
+          "suffix": "\n      sentence: texts.sentence,\n      context: "
+        },
+        {
+          "kind": "text-position",
+          "start": 11249,
+          "end": 11288
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "a8847d61f52f7876",
+          "semanticHash": "45dbb3a2c9eba2bb"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:34.874Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:34.874Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

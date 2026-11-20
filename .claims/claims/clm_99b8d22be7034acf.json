@@ -1,0 +1,105 @@
+{
+  "id": "clm_99b8d22be7034acf",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "A gating conflict adds a `reconcile` action to the claim's [remediation menu](/verdicts), naming the other claims, and one `ack` action per other claim with the command `hibi attest <id> --by <actor> --ack conflict:<other-id> --note \"<why>\"`.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A gating conflict adds a `reconcile` action to the claim's [remediation menu](/verdicts), naming the other claims, and one `ack` action per other claim with the command `hibi attest <id> --by <actor> --ack conflict:<other-id> --note \"<why>\"`.",
+        "prefix": "s every value group, unitless numbers included. ",
+        "suffix": "\n\nIn `documents[].suspect[]`, a claim whose most"
+      },
+      {
+        "kind": "text-position",
+        "start": 5952,
+        "end": 6194
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reconcileConflict(others),",
+          "prefix": "ommended: \"reconcile\",\n      actions: [\n        ",
+          "suffix": "\n        ...others.map((other) => ackConflict(id"
+        },
+        {
+          "kind": "text-position",
+          "start": 10743,
+          "end": 10769
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "d0b5adbf8c9d167a",
+          "semanticHash": "1c29257a78b02a0b"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...others.map((other) => ackConflict(id, other)),",
+          "prefix": "s: [\n        reconcileConflict(others),\n        ",
+          "suffix": "\n      ],\n    });\n  }\n  // `hibi evidence` accep"
+        },
+        {
+          "kind": "text-position",
+          "start": 10778,
+          "end": 10827
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "9997139e1cfaefdb",
+          "semanticHash": "0f1f0c03c31b9bf0"
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "command: `hibi attest ${id} --by <actor> --ack conflict:${other} --note \"<why>\"`,",
+          "prefix": "n to both claims and never resets the ttl\",\n    ",
+          "suffix": "\n  };\n}\n\nfunction reconcileConflict(others: stri"
+        },
+        {
+          "kind": "text-position",
+          "start": 8452,
+          "end": 8533
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "26545f0f45cdbf2d",
+          "semanticHash": "94e0898eb5433d58"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:26.587Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:26.587Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

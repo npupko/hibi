@@ -1,0 +1,65 @@
+{
+  "id": "clm_67cd58f1151242b5",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "Otherwise it exits 0.",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Otherwise it exits 0.",
+        "prefix": "ow has kind `code`, `reference`, or `attested`. ",
+        "suffix": " `unsure`, `unverifiable`, and `pending` rows do"
+      },
+      {
+        "kind": "text-position",
+        "start": 8526,
+        "end": 8547
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return opts.failUncovered && report.rows.some(isUncoveredRecordable) ? 2 : 0;",
+          "prefix": " { failUncovered?: boolean } = {},\n): 0 | 2 {\n  ",
+          "suffix": "\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 12319,
+          "end": 12396
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "ed4a641f01f9b379",
+          "semanticHash": "f2d065fbc74439a6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:26.053Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:26.053Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_91391e3f31a74b87",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A retired claim cannot be attested.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A retired claim cannot be attested.",
+        "prefix": "to both claims; it must name a different claim. ",
+        "suffix": " Result: `{ claimIds, attestation, countsTowardT"
+      },
+      {
+        "kind": "text-position",
+        "start": 69063,
+        "end": 69098
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "throw new Error(`claim ${id} is retired; nothing to attest.`);",
+          "prefix": ");\n  if (claim.enforcement === \"retired\") {\n    ",
+          "suffix": "\n  }\n  return claim;\n}\n\n/** The key of the claim"
+        },
+        {
+          "kind": "text-position",
+          "start": 3297,
+          "end": 3359
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "throw_statement",
+          "structuralHash": "14b9d4e21d090bdf",
+          "semanticHash": "8a3864065f7c4eba"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:20.341Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:20.341Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

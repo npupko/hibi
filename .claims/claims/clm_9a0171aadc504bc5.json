@@ -1,0 +1,123 @@
+{
+  "id": "clm_9a0171aadc504bc5",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Per region: a Choice `kind` over `factual_claim / instruction / opinion / narrative`, and a Choice `evidenceKind` over `code / other_doc / external / nothing` (read only when `kind` is `factual_claim`).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Per region: a Choice `kind` over `factual_claim / instruction / opinion / narrative`, and a Choice `evidenceKind` over `code / other_doc / external / nothing` (read only when `kind` is `factual_claim`).",
+        "prefix": "}, regions: [{id, kind, text, headingPath}] }`. ",
+        "suffix": " There is no third question. A region is `code` "
+      },
+      {
+        "kind": "text-position",
+        "start": 33594,
+        "end": 33796
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const TRIAGE_KINDS: TriageKind[] = [\n  \"factual_claim\",\n  \"instruction\",\n  \"opinion\",\n  \"narrative\",\n];",
+          "prefix": "----------------------------------------------\n\n",
+          "suffix": "\nconst EVIDENCE_KINDS: EvidenceKind[] = [\n  \"cod"
+        },
+        {
+          "kind": "text-position",
+          "start": 2185,
+          "end": 2288
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f63be6dff58096b4",
+          "semanticHash": "25c2a23bbb2fbbd3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"factual_claim\",\"instruction\",\"opinion\",\"narrative\",]"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const EVIDENCE_KINDS: EvidenceKind[] = [\n  \"code\",\n  \"other_doc\",\n  \"external\",\n  \"nothing\",\n];",
+          "prefix": "  \"instruction\",\n  \"opinion\",\n  \"narrative\",\n];\n",
+          "suffix": "\nconst CONFLICT_RELATIONS: ConflictRelation[] = "
+        },
+        {
+          "kind": "text-position",
+          "start": 2289,
+          "end": 2384
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f63be6dff58096b4",
+          "semanticHash": "9e560c5e687f9e62"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"code\",\"other_doc\",\"external\",\"nothing\",]"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (kind.choice === \"factual_claim\") {",
+          "prefix": "eConfidence(kind.probabilities),\n      };\n      ",
+          "suffix": "\n        if (isCodeByConstruction(region)) {\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 12803,
+          "end": 12841
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "e19d3ca1b26d5a54",
+          "semanticHash": "cf808c783b49a6da"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"factual_claim\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:51.508Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:51.508Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

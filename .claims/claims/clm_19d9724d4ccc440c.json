@@ -1,0 +1,65 @@
+{
+  "id": "clm_19d9724d4ccc440c",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "An aliased path keeps its prefix and has its relative part normalized: `api:./src/x.ts` is `api:src/x.ts`.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An aliased path keeps its prefix and has its relative part normalized: `api:./src/x.ts` is `api:src/x.ts`.",
+        "prefix": "ute path to the same file all name `README.md`. ",
+        "suffix": " JSON output echoes the normalized form.\n\n## Rec"
+      },
+      {
+        "kind": "text-position",
+        "start": 5866,
+        "end": 5972
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/fs.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const rel = posix.normalize(split.relative.replaceAll(\"\\\\\", \"/\"));\n    return `${split.alias}:${rel}`;",
+          "prefix": "splitAlias(p);\n  if (split !== undefined) {\n    ",
+          "suffix": "\n  }\n  const rel = isAbsolute(p)\n    ? relative("
+        },
+        {
+          "kind": "text-position",
+          "start": 1020,
+          "end": 1122
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "f5c7655ddd4f0b3b",
+          "semanticHash": "963521bafa55e5cf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\\\\\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:03.757Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:03.757Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

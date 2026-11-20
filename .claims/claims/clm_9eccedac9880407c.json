@@ -1,0 +1,52 @@
+{
+  "id": "clm_9eccedac9880407c",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `addresses` | Noul: does the evidence speak to what the claim asserts, either way |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `addresses` | Noul: does the evidence speak to what the claim asserts, either way |",
+        "prefix": " as `supports`, `refutes`, `does_not_address` |\n",
+        "suffix": "\n\n`claim_context` is the heading path above the "
+      },
+      {
+        "kind": "text-position",
+        "start": 7175,
+        "end": 7260
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/questions/supports.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"instructions\": \"Does `evidence` address what `claim` asserts, either confirming it or contradicting it?\",",
+          "prefix": "\n    \"addresses\": {\n      \"type\": \"noul\",\n      ",
+          "suffix": "\n      \"criteria\": {\n        \"true\": \"`evidence`"
+        },
+        {
+          "kind": "text-position",
+          "start": 1075,
+          "end": 1181
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:37.857Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:37.857Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

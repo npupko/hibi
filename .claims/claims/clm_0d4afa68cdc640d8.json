@@ -1,0 +1,88 @@
+{
+  "id": "clm_0d4afa68cdc640d8",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Evidence whose request is already in the judge cache and whose cached verdict is `supports` appends an evidence attestation the same way; the judge is not asked again.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Evidence whose request is already in the judge cache and whose cached verdict is `supports` appends an evidence attestation the same way; the judge is not asked again.",
+        "prefix": "e hash and takes the agent's summary as `note`. ",
+        "suffix": "\n- `basis: ack` acknowledges a finding and requi"
+      },
+      {
+        "kind": "text-position",
+        "start": 9032,
+        "end": 9199
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { kind: \"cached\", entry: p.hit, result: decode(p.hit.answers) };",
+          "prefix": " Promise<Asked> => {\n      if (p.hit) {\n        ",
+          "suffix": "\n      }\n      try {\n        const response = aw"
+        },
+        {
+          "kind": "text-position",
+          "start": 10733,
+          "end": 10804
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "127d300b335e8057",
+          "semanticHash": "9c94902fb317c9c7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"cached\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const outcome = supportsOutcome(a.result, threshold, {",
+          "prefix": "e: block,\n        at: now,\n      });\n    }\n\n    ",
+          "suffix": "\n      sentence: storedValues(p.claim.sentence),"
+        },
+        {
+          "kind": "text-position",
+          "start": 12612,
+          "end": 12666
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "eb179eb67aef9018",
+          "semanticHash": "e44cafbf118ba3e3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:35.076Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:35.076Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,94 @@
+{
+  "id": "clm_90c570b1a6b141f7",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A claim that is not retired is a `suspect` of its document when it gates or warns, or when the document is superseded or archived.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A claim that is not retired is a `suspect` of its document when it gates or warns, or when the document is superseded or archived.",
+        "prefix": "expired` or in the per-document summary counts. ",
+        "suffix": " Its `status` is its most severe tag, in this or"
+      },
+      {
+        "kind": "text-position",
+        "start": 63363,
+        "end": 63493
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "      .filter((v) => {\n        const enforcement = enforcementById.get(v.claimId) ?? \"suggested\";\n        if (enforcement === \"retired\") return false;\n        return v.gates || v.warns || docHasLifecycle;\n      })",
+          "prefix": "gth > 0;\n    const suspect: SuspectEntry[] = dv\n",
+          "suffix": "\n      .map((v) => ({\n        claimId: v.claimId"
+        },
+        {
+          "kind": "text-position",
+          "start": 20462,
+          "end": 20675
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "57a8fef7a6c3b264",
+          "semanticHash": "ee96e5ffecf96311"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"suggested\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return doc.lifecycle === \"active\" ? [] : [doc.lifecycle];",
+          "prefix": "tion lifecycleTags(doc: Document): string[] {\n  ",
+          "suffix": "\n}\n\n/** Newest-last `supports` cache entries per"
+        },
+        {
+          "kind": "text-position",
+          "start": 11637,
+          "end": 11694
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "4deb7443adaa7d31",
+          "semanticHash": "b8cbe9a90d617621"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"active\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:35.610Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:35.610Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

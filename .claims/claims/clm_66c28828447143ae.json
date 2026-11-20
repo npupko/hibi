@@ -1,0 +1,59 @@
+{
+  "id": "clm_66c28828447143ae",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `reason` | `expired`, `review`, `pending`, or `never-checked` |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `reason` | `expired`, `review`, `pending`, or `never-checked` |",
+        "prefix": "the newest judged evidence, when there is any |\n",
+        "suffix": "\n\n## Full output\n\n`hibi check` with no API key, "
+      },
+      {
+        "kind": "text-position",
+        "start": 8130,
+        "end": 8195
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const WORKLIST_REASONS = [",
+          "prefix": "ng: number;\n    scope: \"store\" | \"doc\";\n  };\n}\n\n",
+          "suffix": "\n  \"expired\",\n  \"review\",\n  \"pending\",\n  \"never-"
+        },
+        {
+          "kind": "text-position",
+          "start": 7804,
+          "end": 7837
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "6f5ffa48c8907260",
+          "semanticHash": "3f7093499c421730"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:16.423Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:16.423Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

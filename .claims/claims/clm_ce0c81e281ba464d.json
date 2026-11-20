@@ -1,0 +1,59 @@
+{
+  "id": "clm_ce0c81e281ba464d",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "When the same request is submitted again, the entry is rewritten with the new `evidence` block,",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "When the same request is submitted again, the entry is rewritten with the new `evidence` block,",
+        "prefix": "e referenced text is committed repository text. ",
+        "suffix": " whose `at` is the time of the new submission.\n-"
+      },
+      {
+        "kind": "text-position",
+        "start": 19217,
+        "end": 19312
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await cache.put({ ...a.entry, evidence: block });",
+          "prefix": "es,\n    };\n    if (a.kind === \"cached\") {\n      ",
+          "suffix": "\n    } else {\n      summary.requests += 1;\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 12230,
+          "end": 12279
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "8c22017a11c732eb",
+          "semanticHash": "d8744e0eda129fb6"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:58.423Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:58.423Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

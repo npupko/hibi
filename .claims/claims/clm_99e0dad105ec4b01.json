@@ -1,0 +1,88 @@
+{
+  "id": "clm_99e0dad105ec4b01",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- **At check time**, a side whose alias is not defined in `config.repos` resolves to `unavailable` with the reason label `repo alias \"x\" is not defined in .claims/config.json repos`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **At check time**, a side whose alias is not defined in `config.repos` resolves to `unavailable` with the reason label `repo alias \"x\" is not defined in .claims/config.json repos`.",
+        "prefix": "./x.ts`) has the label `path escapes its root`.\n",
+        "suffix": " A side whose alias is defined but whose directo"
+      },
+      {
+        "kind": "text-position",
+        "start": 5225,
+        "end": 5407
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `repo alias \"${split.alias}\" is not defined in .claims/config.json repos`,",
+          "prefix": "vailable: true,\n      alias: split.alias,\n      ",
+          "suffix": "\n    };\n  }\n  const abs = isAbsolute(dir) ? dir "
+        },
+        {
+          "kind": "text-position",
+          "start": 3505,
+          "end": 3587
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "021711a692bccafd",
+          "semanticHash": "cf76037513a84ef8"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (\"unavailable\" in resolved) unavailable.set(f, resolved.reason);",
+          "prefix": " resolved = resolveFile(config, f, root);\n      ",
+          "suffix": "\n      else evidence.set(f, await readFileText(r"
+        },
+        {
+          "kind": "text-position",
+          "start": 15686,
+          "end": 15753
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "abc5dad2114c5099",
+          "semanticHash": "301a5daaee8c540b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unavailable\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:59.960Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:59.960Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

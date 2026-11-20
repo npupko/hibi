@@ -1,0 +1,88 @@
+{
+  "id": "clm_b827932556a64d92",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 46 | on `conflict` the value rule also needs the judge's `contradicts` at or above 0.5, for every value group: a bare value difference between two sentences about the same subject often describes different situations, such as exit codes of different commands or section numbers |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 46 | on `conflict` the value rule also needs the judge's `contradicts` at or above 0.5, for every value group: a bare value difference between two sentences about the same subject often describes different situations, such as exit codes of different commands or section numbers |",
+        "prefix": "e covers code spans without structural checks |\n",
+        "suffix": "\n| 47 | a conflict ack hashes the claims' stored"
+      },
+      {
+        "kind": "text-position",
+        "start": 84237,
+        "end": 84518
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.sameSubject >= threshold && r.contradicts >= CONTRADICTS_FLOOR) {",
+          "prefix": "me_subject=${f2(r.sameSubject)})`,\n    };\n  }\n  ",
+          "suffix": "\n    // Numeric rule (SPEC 8.5): only after the "
+        },
+        {
+          "kind": "text-position",
+          "start": 5692,
+          "end": 5763
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "9f7b5a7ff61764e3",
+          "semanticHash": "40a2f24fa63ae4bf"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const CONTRADICTS_FLOOR = 0.5;",
+          "prefix": "value rule does not fire either (SPEC 8.5).\n */\n",
+          "suffix": "\n\n/** One side of a contradiction: a finding on "
+        },
+        {
+          "kind": "text-position",
+          "start": 2899,
+          "end": 2936
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "6d0a83cf6b919187"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.5"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T09:36:12.579Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T09:36:12.579Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

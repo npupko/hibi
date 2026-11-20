@@ -1,0 +1,93 @@
+{
+  "id": "clm_9b4b4728ead4450f",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "A pair the judge could not answer is not a finding: each claim warns with one reason, `conflict checks pending: <n>`, counting its pending pairs, and `summary.conflictPass.pending` counts the pairs.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A pair the judge could not answer is not a finding: each claim warns with one reason, `conflict checks pending: <n>`, counting its pending pairs, and `summary.conflictPass.pending` counts the pairs.",
+        "prefix": "aim. `hibi list --state conflict` returns both. ",
+        "suffix": " Once the judge says both sentences share a subj"
+      },
+      {
+        "kind": "text-position",
+        "start": 13568,
+        "end": 13766
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`conflict checks pending: ${pendingPairs}`",
+          "prefix": "}: ${f.reason}`),\n      ...(pendingPairs > 0 ? [",
+          "suffix": "] : []),\n    ];\n    const findings: ClaimFinding"
+        },
+        {
+          "kind": "text-position",
+          "start": 17283,
+          "end": 17325
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "68f1f1bb13edeef0",
+          "semanticHash": "e1f3d85fb6fe6e9a"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pending: pass?.pending.length ?? 0,",
+          "prefix": "? 0,\n      requests: pass?.requests ?? 0,\n      ",
+          "suffix": "\n      scope: pass?.scope ?? \"store\",\n    },\n  }"
+        },
+        {
+          "kind": "text-position",
+          "start": 21663,
+          "end": 21698
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "38726dc43bb0e132",
+          "semanticHash": "c883c519d51ce216"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:10.040Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:04.714Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:10.040Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

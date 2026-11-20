@@ -1,0 +1,65 @@
+{
+  "id": "clm_17da025cfafd42a6",
+  "documentId": "doc_c5adefb4274c6931",
+  "kind": "code",
+  "sentence": "Fix the sentence (or the code), then run `hibi reanchor clm_b87be1a1752b4a49` to store the new baseline.",
+  "doc": {
+    "file": "docs/quickstart.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Fix the sentence (or the code), then run `hibi reanchor clm_b87be1a1752b4a49` to store the new baseline.",
+        "prefix": "ing, 0 warning across 2 documents.  exit 2\n```\n\n",
+        "suffix": "\n\n## Next\n\n<CardGroup cols={2}>\n  <Card title=\"W"
+      },
+      {
+        "kind": "text-position",
+        "start": 7544,
+        "end": 7648
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "title: \"Update the sentence, then reanchor\",",
+          "prefix": "Action {\n  return {\n    id: \"update-claim\",\n    ",
+          "suffix": "\n    rationale:\n      \"the evidence changed; if "
+        },
+        {
+          "kind": "text-position",
+          "start": 4215,
+          "end": 4259
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "c759f60debc97d5a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Update the sentence, then reanchor\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:30.541Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:30.541Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

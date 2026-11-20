@@ -1,0 +1,123 @@
+{
+  "id": "clm_ceeff85c9aaa4086",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- Every item is validated before anything is written, and every problem is reported as one line, prefixed `item <i>:` for `--from-file`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- Every item is validated before anything is written, and every problem is reported as one line, prefixed `item <i>:` for `--from-file`.",
+        "prefix": "[].id` and `command` must be non-empty strings.\n",
+        "suffix": " The batch is all or nothing for claims: if any "
+      },
+      {
+        "kind": "text-position",
+        "start": 59910,
+        "end": 60046
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const where = prefix ? `item ${i}: ` : \"\";",
+          "prefix": "  const r = parseRecordItem(item, context);\n    ",
+          "suffix": "\n    for (const e of r.errors) errors.push(`${wh"
+        },
+        {
+          "kind": "text-position",
+          "start": 12102,
+          "end": 12144
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "93187dfeb2576f82",
+          "semanticHash": "2d2586cedb67da34"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (errors.length > 0) throw new RecordValidationError(errors);",
+          "prefix": "`);\n    if (r.call) calls.push(r.call);\n  });\n  ",
+          "suffix": "\n  return calls;\n}\n\n/** One `--source <id>=<reso"
+        },
+        {
+          "kind": "text-position",
+          "start": 12248,
+          "end": 12311
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "14bb8ec45882d810",
+          "semanticHash": "8649930ff083d50c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/commands/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "calls = parseRecordItems(items, { ref, defaultBy }, fromFile !== undefined);",
+          "prefix": "m];\n  }\n\n  let calls: RecordCall[];\n  try {\n    ",
+          "suffix": "\n  } catch (e) {\n    if (e instanceof RecordVali"
+        },
+        {
+          "kind": "text-position",
+          "start": 4997,
+          "end": 5073
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "772fe60f13ca397a",
+          "semanticHash": "999b53f1db5165b7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:34.212Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:34.212Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

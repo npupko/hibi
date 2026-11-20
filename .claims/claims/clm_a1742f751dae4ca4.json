@@ -1,0 +1,59 @@
+{
+  "id": "clm_a1742f751dae4ca4",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`sentenceHashes` holds the sentence hashes of the two claims in `pairId` order.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`sentenceHashes` holds the sentence hashes of the two claims in `pairId` order.",
+        "prefix": " is the two claim ids, sorted, joined with `:`. ",
+        "suffix": " The same attestation is written to both claims."
+      },
+      {
+        "kind": "text-position",
+        "start": 9402,
+        "end": 9481
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sentenceHash(first.sentence),\n        sentenceHash(second.sentence),",
+          "prefix": ":${second.id}`,\n      sentenceHashes: [\n        ",
+          "suffix": "\n      ],\n    } satisfies AttestationAck,\n  });\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 6976,
+          "end": 7044
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "a4b6ced0297c6bf1",
+          "semanticHash": "222e4a65beb264dc"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:35.132Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:35.132Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

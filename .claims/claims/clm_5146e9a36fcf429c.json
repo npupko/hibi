@@ -1,0 +1,123 @@
+{
+  "id": "clm_5146e9a36fcf429c",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "hibi check                      # every claim\nhibi check --doc CLAUDE.md      # the claims on one document; expired gates here\nhibi check --since origin/main  # the claims touching a file changed since the ref",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "hibi check                      # every claim\nhibi check --doc CLAUDE.md      # the claims on one document; expired gates here\nhibi check --since origin/main  # the claims touching a file changed since the ref",
+        "prefix": "r stored. Only judge answers are cached.\n\n```sh\n",
+        "suffix": "\n```\n\n`check` writes nothing except new judge ca"
+      },
+      {
+        "kind": "text-position",
+        "start": 533,
+        "end": 742
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Check only the claims touching a file changed since this git ref.\",",
+          "prefix": "  type: \"string\",\n    placeholder: \"<ref>\",\n    ",
+          "suffix": "\n  },\n  {\n    name: \"doc\",\n    type: \"string\",\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 4949,
+          "end": 5023
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "1f1bdffbe5839ed2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Check only the claims touching a file changed since this git ref.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Check only the claims on this document.\",",
+          "prefix": " type: \"string\",\n    placeholder: \"<path>\",\n    ",
+          "suffix": "\n  },\n  {\n    name: \"overview\",\n    type: \"boole"
+        },
+        {
+          "kind": "text-position",
+          "start": 5101,
+          "end": 5149
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "b3e7608069743504"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Check only the claims on this document.\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons.push(\"expired gates under check --doc\");",
+          "prefix": "if (mode === \"doc\") {\n      gates = true;\n      ",
+          "suffix": "\n    } else {\n      warns = true;\n      reasons."
+        },
+        {
+          "kind": "text-position",
+          "start": 3872,
+          "end": 3920
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "ab93fd8725166832",
+          "semanticHash": "392e6307e84f22f4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"expired gates under check --doc\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:10.699Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:10.699Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

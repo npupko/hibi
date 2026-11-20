@@ -1,0 +1,65 @@
+{
+  "id": "clm_1536d0064004483e",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "- a `vouch` whose actor starts with `human:`.",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- a `vouch` whose actor starts with `human:`.",
+        "prefix": "ount:\n\n- any attestation with basis `evidence`;\n",
+        "suffix": "\n\nAn `agent:` or `process:` vouch is recorded an"
+      },
+      {
+        "kind": "text-position",
+        "start": 2183,
+        "end": 2228
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return a.basis === \"vouch\" && a.by.startsWith(\"human:\");",
+          "prefix": " {\n  if (a.basis === \"evidence\") return true;\n  ",
+          "suffix": "\n}\n\n/**\n * The newest counting attestation, or u"
+        },
+        {
+          "kind": "text-position",
+          "start": 649,
+          "end": 705
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "f5a90e37e56fc368",
+          "semanticHash": "e13e9b92ec8f5bcc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"vouch\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:12.208Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:12.208Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

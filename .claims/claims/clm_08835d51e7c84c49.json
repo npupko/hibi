@@ -1,0 +1,52 @@
+{
+  "id": "clm_08835d51e7c84c49",
+  "documentId": "doc_d11450458251d04c",
+  "kind": "reference",
+  "sentence": "Hibi (日々, \"day after day\") tracks **claims**: sentences in documents that assert something checkable.",
+  "doc": {
+    "file": "docs/index.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi (日々, \"day after day\") tracks **claims**: sentences in documents that assert something checkable.",
+        "prefix": " before it trusts the file.\"\nicon: \"house\"\n---\n\n",
+        "suffix": " The documents can be anything: a README, `CLAUD"
+      },
+      {
+        "kind": "text-position",
+        "start": 322,
+        "end": 423
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Hibi tracks **claims**: sentences in documents that assert something checkable.",
+          "prefix": "pesafe-research-2026-10-22.md`.\n\n## 1. Purpose\n\n",
+          "suffix": " It tells an agent or a person which claims are "
+        },
+        {
+          "kind": "text-position",
+          "start": 568,
+          "end": 647
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:33.583Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:33.583Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

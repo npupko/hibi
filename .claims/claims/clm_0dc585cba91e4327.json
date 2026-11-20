@@ -1,0 +1,65 @@
+{
+  "id": "clm_0dc585cba91e4327",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| review | `evidence leans supports, confidence 0.55 below threshold 0.8` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| review | `evidence leans supports, confidence 0.55 below threshold 0.8` |",
+        "prefix": "e | `value differs: numbers differ: 29 vs 39` |\n",
+        "suffix": "\n| review | `evidence did not address the senten"
+      },
+      {
+        "kind": "text-position",
+        "start": 9922,
+        "end": 9997
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons: [`evidence leans ${verb}, confidence ${c} below threshold ${t}`],",
+          "prefix": "\n    };\n  }\n  return {\n    state: \"review\",\n    ",
+          "suffix": "\n  };\n}\n\n/** `source matches declared source \"<i"
+        },
+        {
+          "kind": "text-position",
+          "start": 4472,
+          "end": 4546
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "84e679a09f03869b",
+          "semanticHash": "da08da2c5582e0e3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[`evidenceleans${verb},confidence${c}belowthreshold${t}`]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:38.967Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:38.967Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,78 @@
+{
+  "id": "clm_d64e32c4e9f54d45",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "A `contradictory` relation with `contradicts` below 0.5 is a review case, not a finding.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `contradictory` relation with `contradicts` below 0.5 is a review case, not a finding.",
+        "prefix": "lation is `unrelated` whatever the Choice said. ",
+        "suffix": " The full decision table is on [Conflicts](/conf"
+      },
+      {
+        "kind": "text-position",
+        "start": 8167,
+        "end": 8255
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "CONTRADICTS_FLOOR = 0.5",
+          "prefix": "es not fire either (SPEC 8.5).\n */\nexport const ",
+          "suffix": ";\n\n/** One side of a contradiction: a finding on"
+        },
+        {
+          "kind": "text-position",
+          "start": 2912,
+          "end": 2935
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "755a2672e8586c50"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.5"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.934Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:21:45.949Z",
+      "basis": "ack",
+      "note": "value rule read the decision row number 63 as a value; both say contradicts below 0.5 is review, not a finding",
+      "ack": {
+        "pairId": "clm_73837318b2eb4ef6:clm_d64e32c4e9f54d45",
+        "sentenceHashes": [
+          "ea92d9b0ec77d652a7ec1d2b4749054ee121aa2a2f5f6f982e2e5b904b036d55",
+          "f3dd4d044660908769fed6809fcb9f966fa636c75db3989becfb0c75e08dd30d"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.934Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

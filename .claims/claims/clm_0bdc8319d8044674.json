@@ -1,0 +1,65 @@
+{
+  "id": "clm_0bdc8319d8044674",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "An uncovered row has a kind from the judge's triage: `code`, `reference`, `attested`, `unverifiable`, `not-a-claim`, `unsure`, or `pending`.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An uncovered row has a kind from the judge's triage: `code`, `reference`, `attested`, `unverifiable`, `not-a-claim`, `unsure`, or `pending`.",
+        "prefix": ", fenced block). A covered row names its claim. ",
+        "suffix": " See [Audit](/audit).\n\nFor each uncovered `code`"
+      },
+      {
+        "kind": "text-position",
+        "start": 2259,
+        "end": 2399
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const AUDIT_KINDS: readonly AuditKind[] = [\n  \"code\",\n  \"reference\",\n  \"attested\",\n  \"unverifiable\",\n  \"not-a-claim\",\n  \"unsure\",\n  \"pending\",\n];",
+          "prefix": "\n  | \"not-a-claim\"\n  | \"unsure\"\n  | \"pending\";\n\n",
+          "suffix": "\n\nexport interface AuditProbabilities {\n  kind: "
+        },
+        {
+          "kind": "text-position",
+          "start": 3556,
+          "end": 3708
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "a63850a73c972435",
+          "semanticHash": "8c024fc8154875f4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"code\",\"reference\",\"attested\",\"unverifiable\",\"not-a-claim\",\"unsure\",\"pending\",]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:38.181Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:38.181Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

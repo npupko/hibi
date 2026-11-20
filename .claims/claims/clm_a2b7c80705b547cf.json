@@ -1,0 +1,82 @@
+{
+  "id": "clm_a2b7c80705b547cf",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "| the directory exists | resolved like any other side | |",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| the directory exists | resolved like any other side | |",
+        "prefix": "ituation | state | reason label |\n|---|---|---|\n",
+        "suffix": "\n| the directory does not exist | `unavailable` "
+      },
+      {
+        "kind": "text-position",
+        "start": 6509,
+        "end": 6566
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { path: posix.join(dir, split.relative) };",
+          "prefix": "s}\" is not checked out at ${dir}`,\n    };\n  }\n  ",
+          "suffix": "\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 4012,
+          "end": 4061
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "94635b1f9c899d63",
+          "semanticHash": "751c7bca3abfad31"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "else evidence.set(f, await readFileText(resolved.path));",
+          "prefix": "ved) unavailable.set(f, resolved.reason);\n      ",
+          "suffix": "\n    }\n    const docText = await readFileText(c."
+        },
+        {
+          "kind": "text-position",
+          "start": 15760,
+          "end": 15816
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "else_clause",
+          "structuralHash": "1faec82fc4211737",
+          "semanticHash": "d3ca98ca388cd9c8"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.902Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.902Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

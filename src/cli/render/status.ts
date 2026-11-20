@@ -1,17 +1,11 @@
 /**
  * The repo-wide overview table for `check --overview`: every tracked document
  * with its worst status, claim counts, owner, verification ref, and
- * lifecycle, plus a footer with the store version and duplicate count.
+ * lifecycle, plus a footer with the store version.
  */
 
-import { isWarnVerdict } from "../../core/gating.ts";
-import { liveFingerprintCounts } from "../../engine/list.ts";
-import type {
-  Assertion,
-  CheckReport,
-  Proposition,
-  Verdict,
-} from "../../index.ts";
+import type { CheckVerdict } from "../../engine/check.ts";
+import type { CheckReport, Claim } from "../../index.ts";
 import type { OutputMode } from "./mode.ts";
 import type { Style } from "./style.ts";
 import {
@@ -25,28 +19,17 @@ import { renderTable } from "./table.ts";
 
 export interface OverviewContext {
   report: CheckReport;
-  assertions: Assertion[];
-  propositions: Proposition[];
+  claims: Claim[];
   storeVersion: string;
   style: Style;
   mode: OutputMode;
 }
 
-/** Fingerprints asserted by more than one live claim. */
-export function duplicateCount(
-  assertions: Assertion[],
-  propositions: Proposition[],
-): number {
-  return [...liveFingerprintCounts(assertions, propositions).values()].filter(
-    (n) => n > 1,
-  ).length;
-}
-
 export function renderOverview(ctx: OverviewContext): string {
-  const { report, assertions, style, mode } = ctx;
+  const { report, claims, style, mode } = ctx;
 
-  const assertById = new Map(assertions.map((a) => [a.id, a]));
-  const verdictsByDoc = new Map<string, Verdict[]>();
+  const claimById = new Map(claims.map((c) => [c.id, c]));
+  const verdictsByDoc = new Map<string, CheckVerdict[]>();
   for (const v of report.verdicts) {
     const list = verdictsByDoc.get(v.documentId) ?? [];
     list.push(v);
@@ -54,12 +37,11 @@ export function renderOverview(ctx: OverviewContext): string {
   }
   const ownersByDoc = new Map<string, Set<string>>();
   const refsByDoc = new Map<string, Set<string>>();
-  for (const a of assertions) {
+  for (const a of claims) {
     if (!ownersByDoc.has(a.documentId))
       ownersByDoc.set(a.documentId, new Set());
     if (!refsByDoc.has(a.documentId)) refsByDoc.set(a.documentId, new Set());
-    if (a.owner && a.owner !== "unknown")
-      ownersByDoc.get(a.documentId)?.add(a.owner);
+    if (a.owner) ownersByDoc.get(a.documentId)?.add(a.owner);
     if (a.ref) refsByDoc.get(a.documentId)?.add(a.ref);
   }
 
@@ -70,10 +52,10 @@ export function renderOverview(ctx: OverviewContext): string {
     let warn = 0;
     let retired = 0;
     for (const v of verdicts) {
-      const enf = assertById.get(v.assertionId)?.enforcement ?? "suggested";
+      const enf = claimById.get(v.claimId)?.enforcement ?? "suggested";
       if (enf === "retired") retired += 1;
       else if (v.gates) gating += 1;
-      else if (isWarnVerdict(v, enf)) warn += 1;
+      else if (v.warns) warn += 1;
     }
     const clean = verdicts.length - gating - warn - retired;
 
@@ -96,7 +78,7 @@ export function renderOverview(ctx: OverviewContext): string {
     const refs = [...(refsByDoc.get(doc.id) ?? [])].filter(
       (r) => r !== "WORKTREE",
     );
-    const verified =
+    const ref =
       refs.length === 0
         ? "—"
         : refs.length === 1
@@ -112,7 +94,7 @@ export function renderOverview(ctx: OverviewContext): string {
         doc.path,
         counts,
         owner ?? "—",
-        verified,
+        ref,
         doc.lifecycle,
       ],
     });
@@ -151,14 +133,9 @@ export function renderOverview(ctx: OverviewContext): string {
     report.exitCode === 0
       ? style.green("exit 0")
       : style.bold(`exit ${report.exitCode}`);
-  const dupes = duplicateCount(ctx.assertions, ctx.propositions);
   out.push(
     `${style.dim("Tracking")} ${rows.length} document${rows.length === 1 ? "" : "s"}${style.dim(",")} ${gating > 0 ? style.red(`${gating} gating`) : `${gating} gating`}${style.dim(",")} ${warning > 0 ? style.yellow(`${warning} warning`) : `${warning} warning`}${style.dim(`, ${retired} retired.`)}  ${exit}`,
   );
-  out.push(
-    style.dim(
-      `Store ${ctx.storeVersion}, ${dupes} duplicate proposition${dupes === 1 ? "" : "s"}.`,
-    ),
-  );
+  out.push(style.dim(`Store ${ctx.storeVersion}.`));
   return `${out.join("\n")}\n`;
 }

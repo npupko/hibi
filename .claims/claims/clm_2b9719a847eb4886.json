@@ -1,0 +1,133 @@
+{
+  "id": "clm_2b9719a847eb4886",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "code",
+  "sentence": "| `src/core/model.ts` (Zod) | `schemas/*.v4.json` | `bun run build:schemas` |",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `src/core/model.ts` (Zod) | `schemas/*.v4.json` | `bun run build:schemas` |",
+        "prefix": "\n| Source | Generated | Command |\n|---|---|---|\n",
+        "suffix": "\n| `src/cli/options.ts` (the per-command option "
+      },
+      {
+        "kind": "text-position",
+        "start": 1870,
+        "end": 1947
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "scripts/gen-schemas.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "import { MODEL_VERSION, SCHEMAS } from \"../src/core/model.ts\";",
+          "prefix": "n } from \"node:path\";\nimport * as z from \"zod\";\n",
+          "suffix": "\n\nconst OUT_DIR = join(import.meta.dir, \"..\", \"s"
+        },
+        {
+          "kind": "text-position",
+          "start": 345,
+          "end": 407
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "import_statement",
+          "structuralHash": "99ae1211f182c14e",
+          "semanticHash": "4fb100c103250a9a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"../src/core/model.ts\""
+        }
+      ]
+    },
+    {
+      "file": "scripts/gen-schemas.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const file = join(outDir, `${name}.${MODEL_VERSION}.json`);",
+          "prefix": "t-2020-12\",\n      reused: \"inline\",\n    });\n    ",
+          "suffix": "\n    await writeFile(file, `${JSON.stringify(jso"
+        },
+        {
+          "kind": "text-position",
+          "start": 1174,
+          "end": 1233
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "d010c40620db9681",
+          "semanticHash": "67523824d0a74cf9"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const MODEL_VERSION = \"v4\" as const;",
+          "prefix": "to generated artifacts and the store config. */\n",
+          "suffix": "\n\n/** The judge model id `init` writes into a ne"
+        },
+        {
+          "kind": "text-position",
+          "start": 371,
+          "end": 414
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "801c60d23359fea8",
+          "semanticHash": "c562b40a10e21856"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"v4\""
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"build:schemas\": \"bun run scripts/gen-schemas.ts\",",
+          "prefix": "mmars\": \"bun run scripts/copy-grammars.ts\",\n    ",
+          "suffix": "\n    \"build:cli-reference\": \"bun run scripts/gen"
+        },
+        {
+          "kind": "text-position",
+          "start": 990,
+          "end": 1040
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:31.479Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:31.479Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_a122a7b1376048f3",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "A live claim (not retired) on a `superseded` or `archived` document is **stranded**.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A live claim (not retired) on a `superseded` or `archived` document is **stranded**.",
+        "prefix": "archive/`, with a tombstone at the old path. |\n\n",
+        "suffix": " List them with:\n\n```sh\nhibi list --state strand"
+      },
+      {
+        "kind": "text-position",
+        "start": 1912,
+        "end": 1996
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return live && lifecycle !== \"active\";",
+          "prefix": "\"suggested\";\n        case \"stranded\":\n          ",
+          "suffix": "\n      }\n    })();\n    if (!matches) continue;\n\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 5936,
+          "end": 5974
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "d3c223d7d48159ee",
+          "semanticHash": "de29e6873dbf14f2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"active\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.438Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.438Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

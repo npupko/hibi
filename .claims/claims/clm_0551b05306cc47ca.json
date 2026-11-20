@@ -1,0 +1,128 @@
+{
+  "id": "clm_0551b05306cc47ca",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**check.** JSON fields: `ref`, `exitCode`, `summary`, `verdicts`, `worklist`, `documents`, plus `since` and `changedFiles` under `--since`, and `doc` (the normalized path) under `--doc`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**check.** JSON fields: `ref`, `exitCode`, `summary`, `verdicts`, `worklist`, `documents`, plus `since` and `changedFiles` under `--since`, and `doc` (the normalized path) under `--doc`.",
+        "prefix": "s `updated` counts the items updated in place.\n\n",
+        "suffix": " `--since` scopes verdicts to claims touching a "
+      },
+      {
+        "kind": "text-position",
+        "start": 61609,
+        "end": 61795
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/json.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ref: report.ref,\n    ...extra,\n    exitCode: report.exitCode,",
+          "prefix": "ng, unknown> {\n  return envelope(\"check\", {\n    ",
+          "suffix": "\n    summary: report.summary,\n    verdicts: repo"
+        },
+        {
+          "kind": "text-position",
+          "start": 2166,
+          "end": 2227
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "2a3e4f5f4362805f",
+          "semanticHash": "c3a24dd44f838118"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/json.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "worklist: report.worklist,\n    documents: report.documents,",
+          "prefix": "rdicts.map((v) => projectVerdict(v, opts)),\n    ",
+          "suffix": "\n  });\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 2328,
+          "end": 2387
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "2a3e4f5f4362805f",
+          "semanticHash": "c3a24dd44f838118"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/commands/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "extra.changedFiles = files;",
+          "prefix": "e !== undefined) {\n    extra.since = since;\n    ",
+          "suffix": "\n  }\n  if (doc !== undefined) {\n    extra.doc = "
+        },
+        {
+          "kind": "text-position",
+          "start": 2080,
+          "end": 2107
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "ee625fb97c501e91",
+          "semanticHash": "8775f0d97c9d6ad5"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/commands/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "extra.doc = normalizePath(engine.store.anchorRoot, doc);",
+          "prefix": "les = files;\n  }\n  if (doc !== undefined) {\n    ",
+          "suffix": "\n  }\n  const value = projectCheckReport(report, "
+        },
+        {
+          "kind": "text-position",
+          "start": 2143,
+          "end": 2199
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "513e2ba8eb18cc13",
+          "semanticHash": "6b6222ec53e69c9d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:34.629Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:34.629Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

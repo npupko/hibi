@@ -1,0 +1,59 @@
+{
+  "id": "clm_f83c5e03c36041bd",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "If the located start is within 4 characters of the stored position, the side is `unchanged`; further away, it is `moved`.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "If the located start is within 4 characters of the stored position, the side is `unchanged`; further away, it is `moved`.",
+        "prefix": " or moved\">\n    Otherwise the text is the same. ",
+        "suffix": "\n  </Step>\n</Steps>\n\nPosition is only a bias dur"
+      },
+      {
+        "kind": "text-position",
+        "start": 4182,
+        "end": 4303
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (delta > MOVE_AWARENESS_CHARS) {",
+          "prefix": "= tp ? Math.abs(region.start - tp.start) : 0;\n  ",
+          "suffix": "\n    reasons.push(`span moved ${delta} chars`);\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 8954,
+          "end": 8989
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "8a4a881549111bba",
+          "semanticHash": "3d68770d6a0de176"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.313Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.313Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

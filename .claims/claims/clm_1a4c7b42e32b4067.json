@@ -1,0 +1,52 @@
+{
+  "id": "clm_1a4c7b42e32b4067",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "reference",
+  "sentence": "Re-recording a fixture response means updating the expected values in `test/judge-jev.test.ts`; say so in the PR.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Re-recording a fixture response means updating the expected values in `test/judge-jev.test.ts`; say so in the PR.",
+        "prefix": "s audit --doc README.md`, `check`, `evidence`). ",
+        "suffix": "\n\n## Commit conventions\n\nHibi uses [Conventional"
+      },
+      {
+        "kind": "text-position",
+        "start": 4767,
+        "end": 4880
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "test/fixtures/judge/README.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`test/judge-jev.test.ts` asserts values derived from it, so re-recording requires updating those expected values.",
+          "prefix": "mented shape (https://docs.typesafe.ai/api.md). ",
+          "suffix": "\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 1088,
+          "end": 1201
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:42.277Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:42.277Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

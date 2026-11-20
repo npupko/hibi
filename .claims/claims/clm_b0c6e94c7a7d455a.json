@@ -1,0 +1,82 @@
+{
+  "id": "clm_b0c6e94c7a7d455a",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "Each code span stores text selectors and, for supported languages, an AST fingerprint and the literal inside the span.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each code span stores text selectors and, for supported languages, an AST fingerprint and the literal inside the span.",
+        "prefix": ":\n\n- A `code` claim has one or more code spans. ",
+        "suffix": "\n- A `reference` claim has exactly one span in a"
+      },
+      {
+        "kind": "text-position",
+        "start": 1532,
+        "end": 1650
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/anchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (opts.language && opts.analyzer) {",
+          "prefix": " { kind: \"text-position\", start, end },\n  ];\n\n  ",
+          "suffix": "\n    const { astNode, value } = opts.analyzer.re"
+        },
+        {
+          "kind": "text-position",
+          "start": 2060,
+          "end": 2097
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "f6b1fe86a4b11086",
+          "semanticHash": "637d7340b53a7c55"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/anchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (astNode) selectors.push(astNode);\n    if (value) selectors.push(value);",
+          "prefix": "opts.language,\n      { start, end },\n    );\n    ",
+          "suffix": "\n  }\n\n  return { file, selectors };\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 2229,
+          "end": 2304
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "09797bfb052f0f69",
+          "semanticHash": "ebf37e87b3cc6d1b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:01.911Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:01.911Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

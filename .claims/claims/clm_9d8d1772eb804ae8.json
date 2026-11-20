@@ -1,0 +1,59 @@
+{
+  "id": "clm_9d8d1772eb804ae8",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "- expiry from attestations and ttl;",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- expiry from attestations and ttl;",
+        "prefix": "chor resolution of every doc and evidence span;\n",
+        "suffix": "\n- every judge verdict already in `.claims/judge"
+      },
+      {
+        "kind": "text-position",
+        "start": 2598,
+        "end": 2633
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function isExpired(",
+          "prefix": "`, or when there is no counting attestation. */\n",
+          "suffix": "\n  claim: Pick<Claim, \"ttl\" | \"attestations\">,\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 2937,
+          "end": 2963
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "c66ea4865b937742",
+          "semanticHash": "c62e2d5fdcb6127d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:42.739Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:42.739Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

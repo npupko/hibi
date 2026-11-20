@@ -1,0 +1,88 @@
+{
+  "id": "clm_89d4fd9757684b3f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "1. In a `.md` or `.mdx` file whose first line is `---`, everything through the next `---` line is frontmatter and is skipped.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "1. In a `.md` or `.mdx` file whose first line is `---`, everything through the next `---` line is frontmatter and is skipped.",
+        "prefix": "**Regions.** The splitter follows these rules:\n\n",
+        "suffix": " Without a closing line there is no frontmatter."
+      },
+      {
+        "kind": "text-position",
+        "start": 49528,
+        "end": 49653
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (first < 0 || text.slice(0, first).trimEnd() !== \"---\") return 0;",
+          "prefix": "return 0;\n  const first = text.indexOf(\"\\n\");\n  ",
+          "suffix": "\n  let cursor = first + 1;\n  while (cursor <= te"
+        },
+        {
+          "kind": "text-position",
+          "start": 4945,
+          "end": 5013
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "9f746a7febb9172f",
+          "semanticHash": "ba816718f1bcc2dd"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const block of splitBlocks(text, frontmatterEnd(text, path))) {",
+          "prefix": "=== \"\\n\") line++;\n    }\n    return line;\n  };\n  ",
+          "suffix": "\n    for (const piece of splitPieces(text, block"
+        },
+        {
+          "kind": "text-position",
+          "start": 10021,
+          "end": 10089
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "1c09dce5c4b36117",
+          "semanticHash": "f9b06ccd76fb4335"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:06.592Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:06.592Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

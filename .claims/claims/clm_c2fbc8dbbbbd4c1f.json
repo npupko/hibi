@@ -1,0 +1,88 @@
+{
+  "id": "clm_c2fbc8dbbbbd4c1f",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Values are compared only within the same kind and unit (a group).",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Values are compared only within the same kind and unit (a group).",
+        "prefix": "trailing `.0` parts, so `v1.2` equals `1.2.0`.\n\n",
+        "suffix": " A group differs when both texts have values in "
+      },
+      {
+        "kind": "text-position",
+        "start": 11405,
+        "end": 11470
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return v.unit === undefined ? v.kind : `${v.kind} ${v.unit}`;",
+          "prefix": "xport function valueGroup(v: Value): string {\n  ",
+          "suffix": "\n}\n\n/**\n * The form two values are compared in. "
+        },
+        {
+          "kind": "text-position",
+          "start": 11269,
+          "end": 11330
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "dfab2e6805d65a88",
+          "semanticHash": "17c4a0aa9157cd90"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".filter((k) => gb.has(k) && !excluded.has(k))",
+          "prefix": "ude ?? []);\n  const shared = [...ga.keys()]\n    ",
+          "suffix": "\n    .sort((x, y) => {\n      const kx = KIND_ORD"
+        },
+        {
+          "kind": "text-position",
+          "start": 13951,
+          "end": 13996
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "db4649aa62bd3574",
+          "semanticHash": "5c8ff405644fb419"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:39.951Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:39.951Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

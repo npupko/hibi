@@ -1,0 +1,65 @@
+{
+  "id": "clm_5756d568882f4d22",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| Noul with probability `p` | `abs(2p - 1)` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| Noul with probability `p` | `abs(2p - 1)` |",
+        "prefix": "ith `n` options | `(p_max - 1/n) / (1 - 1/n)` |\n",
+        "suffix": "\n\nWith three options, confidence 0.8 means the t"
+      },
+      {
+        "kind": "text-position",
+        "start": 8528,
+        "end": 8573
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Math.abs(2 * p - 1)",
+          "prefix": "on noulConfidence(p: number): number {\n  return ",
+          "suffix": ";\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 4669,
+          "end": 4688
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "6d15d75acee6b450",
+          "semanticHash": "21845ca03ffc10d6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.957Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.957Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

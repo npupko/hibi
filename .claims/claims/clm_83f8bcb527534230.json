@@ -1,0 +1,98 @@
+{
+  "id": "clm_83f8bcb527534230",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "6. CLI: new and changed verbs, option tables, generated reference. Done.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "6. CLI: new and changed verbs, option tables, generated reference. Done.",
+        "prefix": "5. `audit` on top of the region splitter. Done.\n",
+        "suffix": "\n7. Plugin skill rewritten from this document. `"
+      },
+      {
+        "kind": "text-position",
+        "start": 76723,
+        "end": 76795
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "The CLI's option tables: one table per command plus the global options.",
+          "prefix": "/**\n * ",
+          "suffix": "\n * Everything that describes a flag lives here "
+        },
+        {
+          "kind": "text-position",
+          "start": 7,
+          "end": 78
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "72d2ae9e4e434fb4"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const COMMANDS: CommandSpec[] = [",
+          "prefix": "ng also fails; never: always exit 0.\",\n  },\n];\n\n",
+          "suffix": "\n  {\n    name: \"init\",\n    summary: \"Create the "
+        },
+        {
+          "kind": "text-position",
+          "start": 5500,
+          "end": 5540
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "459c86cb31668b91",
+          "semanticHash": "a192e44be8bfb2ed"
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"build:cli-reference\": \"bun run scripts/gen-cli-reference.ts\",",
+          "prefix": "schemas\": \"bun run scripts/gen-schemas.ts\",\n    ",
+          "suffix": "\n    \"build\": \"bun run build:grammars && bun run"
+        },
+        {
+          "kind": "text-position",
+          "start": 1045,
+          "end": 1107
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:18.377Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:18.377Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

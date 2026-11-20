@@ -1,0 +1,88 @@
+{
+  "id": "clm_d082c894670145f6",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "| `note` | free text; required on an `ack` |",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `note` | free text; required on an `ack` |",
+        "prefix": "t |\n| `basis` | `vouch`, `evidence`, or `ack` |\n",
+        "suffix": "\n| `evidenceHash` | on an `evidence` attestation"
+      },
+      {
+        "kind": "text-position",
+        "start": 693,
+        "end": 737
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "note: z.string().optional(),\n    evidenceHash",
+          "prefix": "  at: Instant,\n    basis: AttestationBasis,\n    ",
+          "suffix": ": z.string().optional(),\n    ack: AttestationAck"
+        },
+        {
+          "kind": "text-position",
+          "start": 7063,
+          "end": 7108
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "7b84392c75546292",
+          "semanticHash": "3dfba55ac5536936"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"an ack needs --note saying why the finding is acceptable.\",",
+          "prefix": "ote === undefined) {\n    throw new Error(\n      ",
+          "suffix": "\n    );\n  }\n\n  if (ack.kind === \"review\") {\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 5949,
+          "end": 6009
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "54306559a2d1f05a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"an ack needs --note saying why the finding is acceptable.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:11.259Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:11.259Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

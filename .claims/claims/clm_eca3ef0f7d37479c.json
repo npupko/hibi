@@ -1,0 +1,87 @@
+{
+  "id": "clm_eca3ef0f7d37479c",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "- **Any text format.** Markdown, plain text, AsciiDoc, and instruction files work without a per-format parser.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **Any text format.** Markdown, plain text, AsciiDoc, and instruction files work without a per-format parser.",
+        "prefix": "a human.** An agent cannot vouch a claim fresh.\n",
+        "suffix": "\n\n## Use it with Claude Code\n\nHibi ships a [Clau"
+      },
+      {
+        "kind": "text-position",
+        "start": 7729,
+        "end": 7839
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function splitRegions(text: string, path?: string): DocRegion[] {",
+          "prefix": "wn path holds\n * its ancestors, not itself.\n */\n",
+          "suffix": "\n  const out: DocRegion[] = [];\n  const stack: {"
+        },
+        {
+          "kind": "text-position",
+          "start": 9654,
+          "end": 9726
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "6a7401233a675655",
+          "semanticHash": "ecd61a1a54003254"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const doc = buildSelectorBundle(input.docPath, docContent, docRegion);",
+          "prefix": "yRun) await store.putDocument(document);\n  }\n\n  ",
+          "suffix": "\n  const vouch = {\n    by: input.by,\n    at: now"
+        },
+        {
+          "kind": "text-position",
+          "start": 6765,
+          "end": 6835
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "38f1dc0bee5d76a9",
+          "semanticHash": "5d620624aa0acb47"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:24.450Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:05.102Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:24.450Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

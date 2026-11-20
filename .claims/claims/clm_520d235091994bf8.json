@@ -1,0 +1,65 @@
+{
+  "id": "clm_520d235091994bf8",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| retries | 2, so at most 3 attempts |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| retries | 2, so at most 3 attempts |",
+        "prefix": "des 529), plus connection errors and timeouts |\n",
+        "suffix": "\n| backoff | 500 ms doubled up to 5 s, minus up "
+      },
+      {
+        "kind": "text-position",
+        "start": 3297,
+        "end": 3335
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "MAX_RETRIES = 2",
+          "prefix": "SE_URL_ENV = \"TYPESAFE_BASE_URL\";\n\nexport const ",
+          "suffix": ";\nexport const BACKOFF_INITIAL_MS = 500;\nexport "
+        },
+        {
+          "kind": "text-position",
+          "start": 620,
+          "end": 635
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "63dc9619455b0342"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.887Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.887Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

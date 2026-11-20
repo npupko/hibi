@@ -1,0 +1,110 @@
+{
+  "id": "clm_8198396e49454d04",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "hibi never edits a sentence, fetches a source, or runs a procedure step; `archive` replaces a whole document with a tombstone.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "hibi never edits a sentence, fetches a source, or runs a procedure step; `archive` replaces a whole document with a tombstone.",
+        "prefix": "m, table row) that asserts something checkable. ",
+        "suffix": "\n\n## Vocabulary\n\n| kind | evidence side | stale "
+      },
+      {
+        "kind": "text-position",
+        "start": 708,
+        "end": 834
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Never dereferenced.",
+          "prefix": "nter to where a claim's truth lives (SPEC 4.3). ",
+          "suffix": " */\nexport const Source = z\n  .strictObject({\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 7794,
+          "end": 7813
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "dded549a248480ba"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "a hint, never run by hibi",
+          "prefix": "peof Source>;\n\n/** One Lobster-compatible step: ",
+          "suffix": " (SPEC 4.2). */\nexport const ProcedureStep = z.s"
+        },
+        {
+          "kind": "text-position",
+          "start": 8068,
+          "end": 8093
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "4bde29d13db28ed3"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await writeFile(abs, tombstone(docPath, successorPath));",
+          "prefix": "\");\n      await writeFile(dest, content);\n      ",
+          "suffix": "\n    }\n    archivedTo = relDest;\n  }\n\n  doc.life"
+        },
+        {
+          "kind": "text-position",
+          "start": 2252,
+          "end": 2308
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "454d0d8fcb895a74",
+          "semanticHash": "0894b8c2d2026289"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:31.986Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:04.632Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:31.986Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

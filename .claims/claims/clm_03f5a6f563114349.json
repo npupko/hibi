@@ -1,0 +1,59 @@
+{
+  "id": "clm_03f5a6f563114349",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "Each claim has a **doc side**: the sentence, located in its document by selectors.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each claim has a **doc side**: the sentence, located in its document by selectors.",
+        "prefix": "e, or heading). See [Audit](/audit).\n\n## Sides\n\n",
+        "suffix": " The text of the doc span is the claim's `senten"
+      },
+      {
+        "kind": "text-position",
+        "start": 1274,
+        "end": 1356
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "doc: SelectorBundle,",
+          "prefix": "ClaimKind,\n    sentence: z.string().min(1),\n    ",
+          "suffix": "\n    evidence: z.array(SelectorBundle).default(["
+        },
+        {
+          "kind": "text-position",
+          "start": 9352,
+          "end": 9372
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "032aa2864040c879",
+          "semanticHash": "71b05ab194d977eb"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:01.708Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:01.708Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

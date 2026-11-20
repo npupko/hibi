@@ -1,0 +1,59 @@
+{
+  "id": "clm_1c34d01744844255",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "`hibi evidence` accepts `attested` claims only; a `reference` claim is judged from the referenced document.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi evidence` accepts `attested` claims only; a `reference` claim is judged from the referenced document.",
+        "prefix": " nothing; an item's own `by` overrides `--by`). ",
+        "suffix": " Paths are stored as POSIX paths relative to the"
+      },
+      {
+        "kind": "text-position",
+        "start": 4603,
+        "end": 4710
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence applies to attested claims, and reference claims are judged from the referenced document",
+          "prefix": "    `claim ${claimId} is a ${claim.kind} claim; ",
+          "suffix": "`,\n      );\n    }\n  }\n  const evidence = str(\"ev"
+        },
+        {
+          "kind": "text-position",
+          "start": 6934,
+          "end": 7031
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "887766a2fbcbc5a5"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.762Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.762Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

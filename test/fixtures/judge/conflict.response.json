@@ -1,0 +1,27 @@
+{
+  "model": "jev-1.13.0",
+  "answers": {
+    "same_subject": {
+      "type": "noul",
+      "noul": 0.74
+    },
+    "relation": {
+      "type": "choice",
+      "choice": "contradictory",
+      "confidence": 0.92,
+      "probabilities": {
+        "consistent": 0.05,
+        "contradictory": 0.95,
+        "unrelated": 0.0
+      }
+    },
+    "contradicts": {
+      "type": "noul",
+      "noul": 0.65
+    }
+  },
+  "usage": {
+    "input_tokens": 769,
+    "output_tokens": 82
+  }
+}

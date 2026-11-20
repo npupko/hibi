@@ -1,0 +1,82 @@
+{
+  "id": "clm_120aaea16c1a4173",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "Every side's labels appear in the verdict's `reasons[]`, prefixed `doc: ` or `evidence: `.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Every side's labels appear in the verdict's `reasons[]`, prefixed `doc: ` or `evidence: `.",
+        "prefix": "able`, `moved`, `unchanged`.\n\n## Reason labels\n\n",
+        "suffix": " A `changed` or `orphaned` side also adds entrie"
+      },
+      {
+        "kind": "text-position",
+        "start": 4643,
+        "end": 4733
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...sides.doc.reasons.map((n) => `doc: ${n}`),",
+          "prefix": "UDGE_THRESHOLD },\n  );\n\n  const reasons = [\n    ",
+          "suffix": "\n    ...sides.evidence.flatMap((s) => s.reasons."
+        },
+        {
+          "kind": "text-position",
+          "start": 14916,
+          "end": 14961
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "a2920b1bdac32116",
+          "semanticHash": "8eed3c1f7b23fcf7"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...sides.evidence.flatMap((s) => s.reasons.map((n) => `evidence: ${n}`)),",
+          "prefix": ".sides.doc.reasons.map((n) => `doc: ${n}`),\n    ",
+          "suffix": "\n    ...(expiry !== undefined ? [expiry] : []),\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 14966,
+          "end": 15039
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "1cf2d809bd6d783b",
+          "semanticHash": "5e4d3516412510e3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.402Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.402Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

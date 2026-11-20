@@ -1,0 +1,65 @@
+{
+  "id": "clm_e0283abe7e394a36",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Nothing is written when no side was relocated.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Nothing is written when no side was relocated.",
+        "prefix": "ide was relocated; the error lists each reason. ",
+        "suffix": " The doc and ref span flags and `--doc` may each"
+      },
+      {
+        "kind": "text-position",
+        "start": 70018,
+        "end": 70064
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const write = !input.dryRun && (input.docOnly || relocated > 0);",
+          "prefix": "ways writes: the claim moves to the new file.\n  ",
+          "suffix": "\n  if (write) await store.putClaim(next);\n\n  if "
+        },
+        {
+          "kind": "text-position",
+          "start": 15583,
+          "end": 15647
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "d208202d750c9ce1",
+          "semanticHash": "868f8ae03eb7b9ab"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:51.410Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:51.410Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

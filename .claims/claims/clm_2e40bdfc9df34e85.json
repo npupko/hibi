@@ -1,0 +1,111 @@
+{
+  "id": "clm_2e40bdfc9df34e85",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "```\nsummary: { total, gating, warning, clean, retired,\n           doc: {unchanged, moved, changed, ambiguous, orphaned},\n           evidence: {…the five, unavailable},     claims with no evidence side are not counted\n           judge: {supported, refuted, review, pending},   claims with no judge state are not counted\n           expired, conflicts, worklist,\n           conflictPass: { pairs, requests, pending, scope: \"store\" | \"doc\" } }\nverdicts[]: { claimId, documentId, kind, doc, evidence?, judge?, expired, conflicts, gates, warns,\n              changed?, remediation?, reasons, detail? }\ndocuments[]: { id, path, lifecycle, suspect: [{ claimId, status }] }\n```",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```\nsummary: { total, gating, warning, clean, retired,\n           doc: {unchanged, moved, changed, ambiguous, orphaned},\n           evidence: {…the five, unavailable},     claims with no evidence side are not counted\n           judge: {supported, refuted, review, pending},   claims with no judge state are not counted\n           expired, conflicts, worklist,\n           conflictPass: { pairs, requests, pending, scope: \"store\" | \"doc\" } }\nverdicts[]: { claimId, documentId, kind, doc, evidence?, judge?, expired, conflicts, gates, warns,\n              changed?, remediation?, reasons, detail? }\ndocuments[]: { id, path, lifecycle, suspect: [{ claimId, status }] }\n```",
+        "prefix": "rror. `check` writes only judge cache entries.\n\n",
+        "suffix": "\n\n`changed` is a one-line summary of the first s"
+      },
+      {
+        "kind": "text-position",
+        "start": 62334,
+        "end": 63002
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export interface DocumentReport {\n  id: string;\n  path: string;\n  lifecycle: DocumentLifecycle;\n  suspect: SuspectEntry[];\n}\n\nexport interface CheckSummary {\n  total: number;\n  gating: number;\n  warning: number;\n  clean: number;\n  /** Retired claims are listed but never clean, gating, or warning. */\n  retired: number;\n  doc: Record<AnchorState, number>;\n  /** Claims with no evidence span are not counted here. */\n  evidence: Record<EvidenceState, number>;\n  /** Claims with no judge state are not counted here. */\n  judge: Record<JudgeState, number>;\n  expired: number;\n  /** Claims with at least one conflict finding. */\n  conflicts: number;\n  worklist: number;\n  /**\n   * The contradiction pass: pairs judged, judge calls answered, pairs pending,\n   * and whether it judged every pair (`store`) or only pairs with a claim in\n   * the scoped document (`doc`).\n   */\n  conflictPass: {\n    pairs: number;\n    requests: number;\n    pending: number;\n    scope: \"store\" | \"doc\";\n  };\n}",
+          "prefix": "Entry {\n  claimId: string;\n  status: string;\n}\n\n",
+          "suffix": "\n\nexport const WORKLIST_REASONS = [\n  \"expired\","
+        },
+        {
+          "kind": "text-position",
+          "start": 6818,
+          "end": 7802
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "program",
+          "structuralHash": "00b2365d4d07aadc",
+          "semanticHash": "8cd6ab4a54f31563"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"store\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "/** Worst state over the evidence spans, or `retired`; absent when the claim has none. */",
+          "prefix": " not resolved. */\n    doc: VerdictDocState,\n    ",
+          "suffix": "\n    evidence: VerdictEvidenceState.optional(),\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 16433,
+          "end": 16522
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "dd4a059addcdc735"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/json.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (c) out.changed =",
+          "prefix": " = v.warns;\n\n  const c = v.detail.changes[0];\n  ",
+          "suffix": " `${c.path} ${c.kind}${c.detail ? `: ${c.detail}"
+        },
+        {
+          "kind": "text-position",
+          "start": 1630,
+          "end": 1650
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "708ee05acf98225c",
+          "semanticHash": "31d5834de962459b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:35.548Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:35.548Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

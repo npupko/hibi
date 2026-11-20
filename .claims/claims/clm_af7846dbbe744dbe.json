@@ -1,0 +1,65 @@
+{
+  "id": "clm_af7846dbbe744dbe",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "| `--format human` | the terminal report, if you prefer it in logs |",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `--format human` | the terminal report, if you prefer it in logs |",
+        "prefix": "ct: located regions, span changes, similarity |\n",
+        "suffix": "\n\n## Next\n\n<CardGroup cols={2}>\n  <Card title=\"V"
+      },
+      {
+        "kind": "text-position",
+        "start": 5003,
+        "end": 5071
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/mode.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "case \"human\":\n      return \"rich\";",
+          "prefix": " \"json-pretty\":\n      return \"json-pretty\";\n    ",
+          "suffix": "\n    case \"compact\":\n      return \"compact\";\n  }"
+        },
+        {
+          "kind": "text-position",
+          "start": 1199,
+          "end": 1233
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "switch_case",
+          "structuralHash": "3dae5b0fbe3f7668",
+          "semanticHash": "14a99d8c5495207b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"human\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:43.539Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:43.539Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

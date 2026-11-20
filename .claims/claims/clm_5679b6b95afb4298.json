@@ -1,0 +1,65 @@
+{
+  "id": "clm_5679b6b95afb4298",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "| `unsure` on `evidenceKind` | `unsure: evidence kind` |",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `unsure` on `evidenceKind` | `unsure: evidence kind` |",
+        "prefix": "nsure` on `kind` | `unsure: read it yourself` |\n",
+        "suffix": "\n| `pending` | `pending: judge unavailable`, or "
+      },
+      {
+        "kind": "text-position",
+        "start": 7559,
+        "end": 7615
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "? \"unsure: evidence kind\"",
+          "prefix": "   return row.unsure === \"evidenceKind\"\n        ",
+          "suffix": "\n        : \"unsure: read it yourself\";\n    case "
+        },
+        {
+          "kind": "text-position",
+          "start": 1385,
+          "end": 1410
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "8a6d1ef56ed890e2",
+          "semanticHash": "930cccc7a6a0b51b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unsure: evidence kind\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:25.936Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:25.936Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

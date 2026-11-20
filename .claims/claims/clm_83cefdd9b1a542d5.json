@@ -1,0 +1,88 @@
+{
+  "id": "clm_83cefdd9b1a542d5",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "Paths are normalized relative to the current directory (or `--cwd`); evidence files must stay inside it or their alias directory.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Paths are normalized relative to the current directory (or `--cwd`); evidence files must stay inside it or their alias directory.",
+        "prefix": " and gitignored; commit the rest of `.claims/`. ",
+        "suffix": "\n\n## The loop\n\n**a. Before trusting a doc:** `hi"
+      },
+      {
+        "kind": "text-position",
+        "start": 2325,
+        "end": 2454
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const anchorRoot = str(values.cwd) ?? process.cwd();",
+          "prefix": "ibi ${cmd} --help\\``,\n      mode,\n    );\n  }\n\n  ",
+          "suffix": "\n  const noAst = Boolean(values[\"no-ast\"]);\n  co"
+        },
+        {
+          "kind": "text-position",
+          "start": 5301,
+          "end": 5353
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f9294c500b3c5c6d",
+          "semanticHash": "e00a8a5f36c0fafd"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ESCAPES_ROOT = \"path escapes its root\";",
+          "prefix": "label for an evidence path outside its root. */\n",
+          "suffix": "\n\n/** True when `abs` is `root` or inside it. Bo"
+        },
+        {
+          "kind": "text-position",
+          "start": 1211,
+          "end": 1263
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "7b5c177b0ac8f0d6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"path escapes its root\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:32.317Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:32.317Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

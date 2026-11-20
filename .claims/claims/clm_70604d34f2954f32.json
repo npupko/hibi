@@ -1,0 +1,163 @@
+{
+  "id": "clm_70604d34f2954f32",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- **Content tokens.** A token is a case-folded run of Unicode letters, at least 3 letters long, not in the fixed English stop-word list (`STOP_WORDS` in `src/engine/pairing.ts`).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **Content tokens.** A token is a case-folded run of Unicode letters, at least 3 letters long, not in the fixed English stop-word list (`STOP_WORDS` in `src/engine/pairing.ts`).",
+        "prefix": "les. There are no topics and no configuration.\n\n",
+        "suffix": " Digits do not make tokens.\n- **Rare-token rule."
+      },
+      {
+        "kind": "text-position",
+        "start": 44351,
+        "end": 44529
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const TOKEN = /\\p{L}+/gu;",
+          "prefix": "MS`; for tests. */\n  rareMaxClaims?: number;\n}\n\n",
+          "suffix": "\n\n/** The content tokens of a sentence, deduplic"
+        },
+        {
+          "kind": "text-position",
+          "start": 3715,
+          "end": 3740
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "eeee81a79ad72e63",
+          "semanticHash": "e693d129ecd446d2"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const m of text.toLowerCase().matchAll(TOKEN)) {",
+          "prefix": "ring): string[] {\n  const out: string[] = [];\n  ",
+          "suffix": "\n    const t = m[0];\n    if ([...t].length < MIN"
+        },
+        {
+          "kind": "text-position",
+          "start": 3913,
+          "end": 3966
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "298eb0530c038b8b",
+          "semanticHash": "23a8c2ef59726706"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if ([...t].length < MIN_TOKEN_LETTERS || STOP_WORDS.has(t)) continue;",
+          "prefix": "se().matchAll(TOKEN)) {\n    const t = m[0];\n    ",
+          "suffix": "\n    if (!out.includes(t)) out.push(t);\n  }\n  re"
+        },
+        {
+          "kind": "text-position",
+          "start": 3991,
+          "end": 4060
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "58712cf32db41e97",
+          "semanticHash": "ebf2f61d64166266"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[...t]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const MIN_TOKEN_LETTERS = 3;",
+          "prefix": "t token, in letters, that counts as content. */\n",
+          "suffix": "\n\n/** Fixed English stop words removed before pa"
+        },
+        {
+          "kind": "text-position",
+          "start": 1801,
+          "end": 1836
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "9f5c2fe89cc42d2b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "3"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const STOP_WORDS: ReadonlySet<string> = new Set([",
+          "prefix": "p words removed before pairing. Case-folded. */\n",
+          "suffix": "\n  \"about\",\n  \"above\",\n  \"after\",\n  \"again\",\n  \""
+        },
+        {
+          "kind": "text-position",
+          "start": 1907,
+          "end": 1963
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "f42f68a629dae861",
+          "semanticHash": "a086fd96258bd612"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:40.271Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:40.271Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

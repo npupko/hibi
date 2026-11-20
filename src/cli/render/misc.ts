@@ -6,13 +6,13 @@
 
 import type {
   ArchiveResult,
-  CoverageResult,
+  BulkReanchorResult,
   ListResult,
-  ListSeverity,
   ReanchorResult,
   ReanchorSuggestResult,
   RecordResult,
   RetireResult,
+  RowState,
   SupersedeResult,
 } from "../../index.ts";
 import { oneLine } from "./helpers.ts";
@@ -48,11 +48,21 @@ function warningLines(
 }
 
 export function renderInit(
-  result: { store: string; nonce: string; version: string },
+  result: {
+    store: string;
+    version: string;
+    instructions?: { file: string; appended: boolean };
+  },
   style: Style,
   mode: OutputMode,
 ): string {
-  return `${ok(style, mode)} initialized claim store  ${style.bold(result.store)}  ${style.dim(`(nonce ${result.nonce}, ${result.version})`)}\n`;
+  let out = `${ok(style, mode)} initialized claim store  ${style.bold(result.store)}  ${style.dim(`(${result.version})`)}\n`;
+  if (result.instructions) {
+    out += result.instructions.appended
+      ? `${ok(style, mode)} added the hibi check line to ${style.bold(result.instructions.file)}\n`
+      : `  ${style.dim(`${result.instructions.file} already has the hibi check line`)}\n`;
+  }
+  return out;
 }
 
 export function renderRecord(
@@ -60,16 +70,14 @@ export function renderRecord(
   style: Style,
   mode: OutputMode,
 ): string {
-  const a = result.assertion;
+  const c = result.claim;
   const doc = result.document.path;
-  const code = a.anchor.code[0]?.file;
-  const sides = code ? `${doc} ${arrow(mode)} ${code}` : doc;
-  const deduped = result.dedupedProposition ? style.dim(" (deduped)") : "";
-  const facets = [a.enforcement, a.verified ? "verified" : ""]
-    .filter(Boolean)
-    .join(", ");
-  let out = `${ok(style, mode)} recorded  ${style.cyan(a.id)}   ${sides}  ${style.dim(`(${facets})`)}${deduped}\n`;
-  if (a.enforcement === "suggested") {
+  const evidence = c.evidence[0]?.file;
+  const sides = evidence ? `${doc} ${arrow(mode)} ${evidence}` : doc;
+  const updated = result.updated ? style.dim(" (updated)") : "";
+  const facets = [c.kind, c.enforcement].join(", ");
+  let out = `${ok(style, mode)} recorded  ${style.cyan(c.id)}   ${sides}  ${style.dim(`(${facets})`)}${updated}\n`;
+  if (c.enforcement === "suggested") {
     out += `  ${warn(style, mode)} ${style.dim("suggested: this claim never gates")}\n`;
   }
   if (result.existingClaims.length > 0) {
@@ -86,7 +94,7 @@ export function renderReanchor(
 ): string {
   const verb = dryRun ? "would reanchor" : "reanchored";
   const lines = [
-    `${ok(style, mode)} ${verb}  ${style.cyan(result.assertion.id)}   ${style.dim(`doc:${result.doc}  code:${result.code}`)}${dryTag(style, dryRun)}`,
+    `${ok(style, mode)} ${verb}  ${style.cyan(result.claim.id)}   ${style.dim(`doc:${result.doc}${result.evidence !== undefined ? `  evidence:${result.evidence}` : ""}`)}${dryTag(style, dryRun)}`,
   ];
   const side = (
     label: string,
@@ -108,12 +116,42 @@ export function renderReanchor(
       lines.push(`    ${style.dim("after: ")} "${oneLine(a.quote)}"`);
     }
   };
-  side("doc ", result.before.doc, result.after.doc);
-  result.after.code.forEach((a, i) => {
-    const b = result.before.code[i] ?? a;
-    side("code", b, a);
+  side("doc     ", result.before.doc, result.after.doc);
+  result.after.evidence.forEach((a, i) => {
+    const b = result.before.evidence[i] ?? a;
+    side("evidence", b, a);
   });
+  for (const k of result.kept) {
+    lines.push(`  ${warn(style, mode)} ${k.file} left as stored: ${k.reason}`);
+  }
   return `${lines.join("\n")}\n${warningLines(result.warnings, style, mode)}`;
+}
+
+/** `reanchor --moved`: one line per claim with a side relocated or kept. */
+export function renderReanchorMoved(
+  result: BulkReanchorResult,
+  style: Style,
+  mode: OutputMode,
+  dryRun = false,
+): string {
+  const verb = dryRun ? "would relocate" : "relocated";
+  const n = result.relocated;
+  const lines = [
+    `${ok(style, mode)} reanchor --moved  ${verb} ${n} side${n === 1 ? "" : "s"} on ${result.claims.filter((c) => c.relocated.length > 0).length} claim(s)${dryTag(style, dryRun)}`,
+  ];
+  for (const c of result.claims) {
+    const moved = c.relocated.map((r) => `${r.side} ${r.file}`).join(", ");
+    const kept = c.kept.map((k) => k.reason).join("; ");
+    const parts = [
+      ...(moved ? [`${verb} ${moved}`] : []),
+      ...(kept ? [`kept ${kept}`] : []),
+    ];
+    const mark = c.kept.length > 0 ? warn(style, mode) : ok(style, mode);
+    lines.push(
+      `  ${mark} ${style.cyan(c.id)}  ${parts.join(style.dim(" | "))}`,
+    );
+  }
+  return `${lines.join("\n")}\n`;
 }
 
 export function renderReanchorSuggest(
@@ -128,27 +166,8 @@ export function renderReanchorSuggest(
   }
   const lines = result.candidates.map((c) => {
     const sim = `${Math.round(c.similarity * 100)}%`;
-    return `  ${style.green(sim.padStart(4))}  ${style.dim(c.side.padEnd(4))} ${style.bold(c.file)} ${style.dim(`[${c.start}-${c.end}]`)}  ${style.dim(`"${oneLine(c.snippet)}"`)}`;
+    return `  ${style.green(sim.padStart(4))}  ${style.dim(c.side.padEnd(8))} ${style.bold(c.file)} ${style.dim(`[${c.start}-${c.end}]`)}  ${style.dim(`"${oneLine(c.snippet)}"`)}`;
   });
-  return `${head}\n${lines.join("\n")}\n`;
-}
-
-export function renderCoverage(
-  doc: string,
-  result: CoverageResult,
-  style: Style,
-  mode: OutputMode,
-): string {
-  const { regions, covered, uncovered, coverageRatio } = result.summary;
-  const pct = Math.round(coverageRatio * 100);
-  const head = `${ok(style, mode)} ${style.bold(doc)}  ${style.dim(`${covered}/${regions} regions backed by a claim (${pct}%)`)}`;
-  if (uncovered === 0) return `${head}\n`;
-  const lines = result.regions
-    .filter((r) => !r.covered)
-    .map(
-      (r) =>
-        `  ${style.yellow(mode.unicode ? "○" : "o")} ${style.dim(`[${r.range.start}-${r.range.end}]`)} ${style.dim(`"${r.preview}"`)}`,
-    );
   return `${head}\n${lines.join("\n")}\n`;
 }
 
@@ -198,10 +217,11 @@ export function renderRetire(
 ): string {
   const note = result.alreadyRetired ? style.dim(" (already retired)") : "";
   const verb = dryRun && !result.alreadyRetired ? "would retire" : "retired";
-  return `${ok(style, mode)} ${verb}  ${style.cyan(result.assertion.id)}${note}${dryTag(style, dryRun)}\n`;
+  return `${ok(style, mode)} ${verb}  ${style.cyan(result.claim.id)}${note}${dryTag(style, dryRun)}\n`;
 }
 
-function listSeverity(s: ListSeverity): Severity {
+function rowSeverity(s: RowState): Severity {
+  if (s === "retired") return "neutral";
   return s === "warning" ? "warn" : s;
 }
 
@@ -219,26 +239,22 @@ export function renderList(
     return `${out.join("\n")}\n`;
   }
   const rows = result.claims.map((r) => [
-    badge(
-      r.status === "retired" ? "neutral" : listSeverity(r.severity),
-      mode.unicode,
-      style,
-    ),
-    r.status,
+    badge(rowSeverity(r.state), mode.unicode, style),
+    r.state,
     r.claimId,
-    r.documentPath ?? "—",
-    r.codePath ?? "—",
-    r.recommended ?? "—",
+    r.kind,
+    r.expiresAt ?? "—",
+    r.owner ?? "—",
   ]);
   out.push(
     ...renderTable(
       [
         { header: "" },
-        { header: "Status" },
+        { header: "State" },
         { header: "Claim" },
-        { header: "Document", max: 32 },
-        { header: "Code", max: 32 },
-        { header: "Action" },
+        { header: "Kind" },
+        { header: "Expires" },
+        { header: "Owner", max: 32 },
       ],
       rows,
       { unicode: mode.unicode, indent: "  " },
@@ -247,8 +263,11 @@ export function renderList(
   out.push("");
   for (const r of result.claims) {
     out.push(
-      `  ${style.cyan(r.claimId)}  ${style.dim(`"${oneLine(r.text)}"`)}`,
+      `  ${style.cyan(r.claimId)}  ${style.dim(`"${oneLine(r.sentence)}"`)}`,
     );
+    for (const d of r.duplicates ?? []) {
+      out.push(`    ${style.dim(`duplicates ${d.claimId}: ${d.why}`)}`);
+    }
   }
   out.push("");
   const n = result.count;

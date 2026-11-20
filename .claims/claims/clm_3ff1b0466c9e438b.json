@@ -1,0 +1,59 @@
+{
+  "id": "clm_3ff1b0466c9e438b",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "| conflict | rewrite the wrong sentence, or ack |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| conflict | rewrite the wrong sentence, or ack |",
+        "prefix": "d` | fix sentence or evidence; never reanchor |\n",
+        "suffix": "\n| `expired` | submit evidence (attested), or as"
+      },
+      {
+        "kind": "text-position",
+        "start": 6373,
+        "end": 6422
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...others.map((other) => ackConflict(id, other)),",
+          "prefix": "s: [\n        reconcileConflict(others),\n        ",
+          "suffix": "\n      ],\n    });\n  }\n  // `hibi evidence` accep"
+        },
+        {
+          "kind": "text-position",
+          "start": 10778,
+          "end": 10827
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "9997139e1cfaefdb",
+          "semanticHash": "0f1f0c03c31b9bf0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:33.784Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:33.784Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

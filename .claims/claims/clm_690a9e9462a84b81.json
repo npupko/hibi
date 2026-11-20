@@ -1,0 +1,94 @@
+{
+  "id": "clm_690a9e9462a84b81",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "There is no offline flag.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "There is no offline flag.",
+        "prefix": "ding: <n>`, section 7.4). Nothing else changes. ",
+        "suffix": "\n- An answer the judge gave but hibi cannot use "
+      },
+      {
+        "kind": "text-position",
+        "start": 25082,
+        "end": 25107
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"When to exit 2: gating (default); warn: any warning also fails; never: always exit 0.\",\n  },\n];",
+          "prefix": "alues: FAIL_ON,\n    placeholder: \"<level>\",\n    ",
+          "suffix": "\n\nexport const COMMANDS: CommandSpec[] = [\n  {\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 5396,
+          "end": 5498
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "3281f74d6ac39314",
+          "semanticHash": "f52935aa4e165e12"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"When to exit 2: gating (default); warn: any warning also fails; never: always exit 0.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ name: \"help\", type: \"boolean\", help: \"Print this help and exit.\" },\n];",
+          "prefix": "kip tree-sitter; text resolution only.\",\n  },\n  ",
+          "suffix": "\n\nconst DOC_SPAN: OptionSpec[] = [\n  {\n    name:"
+        },
+        {
+          "kind": "text-position",
+          "start": 2824,
+          "end": 2896
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "array",
+          "structuralHash": "57b19ce8d510b82b",
+          "semanticHash": "33fda2f11a786fc3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"help\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:47.390Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:47.390Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

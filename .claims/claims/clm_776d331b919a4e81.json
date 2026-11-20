@@ -1,0 +1,82 @@
+{
+  "id": "clm_776d331b919a4e81",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "A code span in any other language gets `text-quote` and `text-position` only, with no warning.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A code span in any other language gets `text-quote` and `text-position` only, with no warning.",
+        "prefix": "st | `.rs` |\n| Go | `.go` |\n| Java | `.java` |\n\n",
+        "suffix": " `--no-ast` skips tree-sitter entirely: no `ast-"
+      },
+      {
+        "kind": "text-position",
+        "start": 2165,
+        "end": 2259
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/anchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (opts.language && opts.analyzer) {",
+          "prefix": " { kind: \"text-position\", start, end },\n  ];\n\n  ",
+          "suffix": "\n    const { astNode, value } = opts.analyzer.re"
+        },
+        {
+          "kind": "text-position",
+          "start": 2060,
+          "end": 2097
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "f6b1fe86a4b11086",
+          "semanticHash": "637d7340b53a7c55"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/lang.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return BY_EXT[extname(path).toLowerCase()];",
+          "prefix": "geForFile(path: string): string | undefined {\n  ",
+          "suffix": "\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 505,
+          "end": 548
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "e16792a0fc74588e",
+          "semanticHash": "54c71f8c6647f40c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.024Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.024Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

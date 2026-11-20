@@ -1,0 +1,94 @@
+{
+  "id": "clm_e095c70e01b44f18",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Versions are compared after dropping a leading `v` and trailing `.0` parts, so `v1.2` equals `1.2.0`.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Versions are compared after dropping a leading `v` and trailing `.0` parts, so `v1.2` equals `1.2.0`.",
+        "prefix": "$5m` is five million dollars, not five minutes. ",
+        "suffix": "\n\nValues are compared only within the same kind "
+      },
+      {
+        "kind": "text-position",
+        "start": 11302,
+        "end": 11403
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const text = v.normalized.replace(/^v/i, \"\");",
+          "prefix": "f (v.kind !== \"version\") return v.normalized;\n  ",
+          "suffix": "\n  const dash = text.indexOf(\"-\");\n  const relea"
+        },
+        {
+          "kind": "text-position",
+          "start": 11668,
+          "end": 11713
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "2c09f343a6820c33",
+          "semanticHash": "6ecf8f7d25312f0e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "while (parts.length > 1 && /^0+$/.test(parts.at(-1) ?? \"\")) parts.pop();",
+          "prefix": "ce(dash);\n  const parts = release.split(\".\");\n  ",
+          "suffix": "\n  return `${parts.join(\".\")}${pre}`;\n}\n\n/** Per"
+        },
+        {
+          "kind": "text-position",
+          "start": 11891,
+          "end": 11963
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "while_statement",
+          "structuralHash": "9dce839dd2427046",
+          "semanticHash": "c147410a89534f64"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:39.888Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:39.888Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

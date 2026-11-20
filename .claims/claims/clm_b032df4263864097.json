@@ -1,0 +1,59 @@
+{
+  "id": "clm_b032df4263864097",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "| same text at a new offset | `span moved N chars` | none |",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| same text at a new offset | `span moved N chars` | none |",
+        "prefix": "atched in several places equally well` | none |\n",
+        "suffix": "\n\n## The constants\n\nAll resolution constants liv"
+      },
+      {
+        "kind": "text-position",
+        "start": 5614,
+        "end": 5673
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons.push(`span moved ${delta} chars`);",
+          "prefix": " : 0;\n  if (delta > MOVE_AWARENESS_CHARS) {\n    ",
+          "suffix": "\n    return {\n      state: \"moved\",\n      region"
+        },
+        {
+          "kind": "text-position",
+          "start": 8994,
+          "end": 9036
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "418e165936bd8a56",
+          "semanticHash": "751e0f85604d3a45"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.733Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.733Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

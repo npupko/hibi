@@ -1,0 +1,94 @@
+{
+  "id": "clm_ad80945710ce4cb6",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The audit also names two region classes that are never recorded: `unverifiable` (a stated fact nothing could confirm) and `not-a-claim` (instruction, opinion, narrative, heading).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The audit also names two region classes that are never recorded: `unverifiable` (a stated fact nothing could confirm) and `not-a-claim` (instruction, opinion, narrative, heading).",
+        "prefix": "tion; or submitted evidence judged `refutes` |\n\n",
+        "suffix": " It reports two further row kinds, `unsure` and "
+      },
+      {
+        "kind": "text-position",
+        "start": 4152,
+        "end": 4331
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  | \"unverifiable\"\n  | \"not-a-claim\"",
+          "prefix": "ons.ts\";\n\nexport type AuditKind =\n  | ClaimKind\n",
+          "suffix": "\n  | \"unsure\"\n  | \"pending\";\n\nexport const AUDIT"
+        },
+        {
+          "kind": "text-position",
+          "start": 3490,
+          "end": 3526
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "union_type",
+          "structuralHash": "2dd3209e506a41b3",
+          "semanticHash": "8e96c63e385a755e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unverifiable\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ClaimKind = z.enum([\"code\", \"reference\", \"attested\"]);",
+          "prefix": "* The three recordable claim kinds (SPEC 4). */\n",
+          "suffix": "\nexport type ClaimKind = z.infer<typeof ClaimKin"
+        },
+        {
+          "kind": "text-position",
+          "start": 2080,
+          "end": 2147
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "245292834183a927",
+          "semanticHash": "f94df24c41b11e73"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"code\",\"reference\",\"attested\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:59.701Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:59.701Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

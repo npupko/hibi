@@ -1,0 +1,88 @@
+{
+  "id": "clm_11b8c5a0fe7c4879",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The file is `judge/<key>.json`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The file is `judge/<key>.json`.",
+        "prefix": "ge.model` and `request` is the request as sent. ",
+        "suffix": " `canonicalJson` sorts object keys by UTF-16 cod"
+      },
+      {
+        "kind": "text-position",
+        "start": 17909,
+        "end": 17940
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/cache.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "join(this.dir, `${parsed.key}.json`),",
+          "prefix": " recursive: true });\n    await writeFile(\n      ",
+          "suffix": "\n      `${JSON.stringify(parsed, null, 2)}\\n`,\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 2796,
+          "end": 2833
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "0febe6a36813fec1",
+          "semanticHash": "170d8d6b4bbdfc84"
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  judge: \"judge\",",
+          "prefix": "{\n  documents: \"documents\",\n  claims: \"claims\",\n",
+          "suffix": "\n} as const;\n\n/**\n * Where a store lives and wha"
+        },
+        {
+          "kind": "text-position",
+          "start": 1164,
+          "end": 1181
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "c927c4d119444c65"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"judge\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:34.666Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:34.666Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

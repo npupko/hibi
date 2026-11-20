@@ -1,0 +1,59 @@
+{
+  "id": "clm_bb7640721ae24af8",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**On `conflict`**, every group counts, the unitless `number` group included.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**On `conflict`**, every group counts, the unitless `number` group included.",
+        "prefix": " live referenced text for a `reference` claim.\n\n",
+        "suffix": " The rule fires only when `same_subject` reaches"
+      },
+      {
+        "kind": "text-position",
+        "start": 43107,
+        "end": 43183
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const values = compareValues(extractValues(a), extractValues(b));",
+          "prefix": "ften\n    // describes different situations.\n    ",
+          "suffix": "\n    if (values.differs && values.label !== unde"
+        },
+        {
+          "kind": "text-position",
+          "start": 5952,
+          "end": 6017
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "56cb08a4d0c4db1d",
+          "semanticHash": "80c594a6af113811"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:18.515Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:18.515Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

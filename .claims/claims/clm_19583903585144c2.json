@@ -1,0 +1,88 @@
+{
+  "id": "clm_19583903585144c2",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "6. A marker stays with its text, so `## 1. Install` is one heading region and `1. Install Bun.` is one list-item region.",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "6. A marker stays with its text, so `## 1. Install` is one heading region and `1. Install Bun.` is one list-item region.",
+        "prefix": "m, blockquote, or table row starts a new piece.\n",
+        "suffix": "\n7. A table separator row such as `|---|---|` is"
+      },
+      {
+        "kind": "text-position",
+        "start": 1798,
+        "end": 1918
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (piece.kind === \"fenced\" || piece.kind === \"heading\") {",
+          "prefix": "ntences(text: string, piece: Piece): Span[] {\n  ",
+          "suffix": "\n    const whole = tight(text, piece.start, piec"
+        },
+        {
+          "kind": "text-position",
+          "start": 8023,
+          "end": 8081
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "8d41dfc61c6996b9",
+          "semanticHash": "2cdf2a5b11c048aa"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"fenced\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (m.index < markerEnd) continue;",
+          "prefix": "(const m of slice.matchAll(SENTENCE_END)) {\n    ",
+          "suffix": "\n    if (code.some((c) => m.index >= c.start && "
+        },
+        {
+          "kind": "text-position",
+          "start": 8565,
+          "end": 8599
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "1744a43843af8b2e",
+          "semanticHash": "b0784a45ede85fec"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:43.383Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:43.383Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

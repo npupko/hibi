@@ -1,0 +1,65 @@
+{
+  "id": "clm_758409ad1e824b03",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "`code` and `reference` claims also have **evidence sides** in `evidence[]`:",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`code` and `reference` claims also have **evidence sides** in `evidence[]`:",
+        "prefix": "ext of the doc span is the claim's `sentence`.\n\n",
+        "suffix": "\n\n- A `code` claim has one or more code spans. E"
+      },
+      {
+        "kind": "text-position",
+        "start": 1410,
+        "end": 1485
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence: z.array(SelectorBundle).default([]),",
+          "prefix": "z.string().min(1),\n    doc: SelectorBundle,\n    ",
+          "suffix": "\n    sources: z.array(Source).default([]),\n    p"
+        },
+        {
+          "kind": "text-position",
+          "start": 9377,
+          "end": 9423
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1393ec7729f6c1cb",
+          "semanticHash": "e679fe26d68f059a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:01.809Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:01.809Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

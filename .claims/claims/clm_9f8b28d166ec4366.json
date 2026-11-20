@@ -1,0 +1,65 @@
+{
+  "id": "clm_9f8b28d166ec4366",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Without a new span, `reanchor` keeps an evidence side whose sibling repo is not checked out unchanged and reports the warning `evidence side <file> kept unchanged: <reason>`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Without a new span, `reanchor` keeps an evidence side whose sibling repo is not checked out unchanged and reports the warning `evidence side <file> kept unchanged: <reason>`.",
+        "prefix": "efused when the claim has no stored span there. ",
+        "suffix": "\n\nWithout aliases, nothing changes.\n\n### 4.2 Pro"
+      },
+      {
+        "kind": "text-position",
+        "start": 6429,
+        "end": 6603
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`evidence side ${bundle.file} kept unchanged: ${side.reasons.join(\"; \")}`,",
+          "prefix": "e === \"unavailable\") {\n    warnings.push(\n      ",
+          "suffix": "\n    );\n    return { bundle, relocated: false };"
+        },
+        {
+          "kind": "text-position",
+          "start": 10106,
+          "end": 10180
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "15206616c1e3e21f",
+          "semanticHash": "335183d9904e91c0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"; \""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:00.192Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:00.192Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

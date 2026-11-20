@@ -1,0 +1,59 @@
+{
+  "id": "clm_819cec484d774167",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "There are no per-judgment thresholds and no review band.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "There are no per-judgment thresholds and no review band.",
+        "prefix": "`, default `0.8`. It applies to every judgment. ",
+        "suffix": "\n\n| judgment | gates | review (warns) | clean |\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 8741,
+        "end": 8797
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const JudgeConfig = z.strictObject({",
+          "prefix": "t JUDGE_MODEL_PATTERN = /^jev-\\d+\\.\\d+\\.\\d+$/;\n\n",
+          "suffix": "\n  /** A pinned, versioned model id; never an al"
+        },
+        {
+          "kind": "text-position",
+          "start": 10976,
+          "end": 11019
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "3edd7f55edff2721",
+          "semanticHash": "13c112f9eea1bbcb"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:38.401Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:38.401Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

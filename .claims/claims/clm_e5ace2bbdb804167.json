@@ -1,0 +1,88 @@
+{
+  "id": "clm_e5ace2bbdb804167",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`remediation` is dropped under `--no-hints`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`remediation` is dropped under `--no-hints`.",
+        "prefix": "is a one-line summary of the first span change. ",
+        "suffix": " `detail` appears only under `--explain`. `retir"
+      },
+      {
+        "kind": "text-position",
+        "start": 63062,
+        "end": 63106
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/json.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (opts.hints) out.remediation = v.remediation;",
+          "prefix": "{c.kind}${c.detail ? `: ${c.detail}` : \"\"}`;\n\n  ",
+          "suffix": "\n  out.reasons = v.reasons;\n\n  if (opts.explain)"
+        },
+        {
+          "kind": "text-position",
+          "start": 1711,
+          "end": 1759
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "b55bc6f78ae7eddc",
+          "semanticHash": "1f98a9c45c439fdd"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/mode.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.noHints) return false;",
+          "prefix": "ord<string, string | undefined>,\n): boolean {\n  ",
+          "suffix": "\n  if (env.HIBI_ADVICE === \"0\") return false;\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 2177,
+          "end": 2209
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "71e8e1ecc832aef4",
+          "semanticHash": "80170dbbce62da12"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "false",
+          "value": "false"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:35.585Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:35.585Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

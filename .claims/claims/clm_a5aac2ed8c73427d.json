@@ -1,0 +1,65 @@
+{
+  "id": "clm_a5aac2ed8c73427d",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "A `code` claim has one or more code spans.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `code` claim has one or more code spans.",
+        "prefix": "lso have **evidence sides** in `evidence[]`:\n\n- ",
+        "suffix": " Each code span stores text selectors and, for s"
+      },
+      {
+        "kind": "text-position",
+        "start": 1489,
+        "end": 1531
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"a code claim needs at least one evidence span\"",
+          "prefix": "\",\n        path: [\"evidence\"],\n        message: ",
+          "suffix": ",\n      });\n    }\n    if (c.kind === \"reference\""
+        },
+        {
+          "kind": "text-position",
+          "start": 9993,
+          "end": 10040
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "22a92623a985fb20"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"a code claim needs at least one evidence span\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:01.861Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:01.861Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

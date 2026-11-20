@@ -1,0 +1,105 @@
+{
+  "id": "clm_a9e17b5bbcb847ac",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `evidence` | for submitted evidence: `hash`, `source`, `summary`, `by`, `at`, `values` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `evidence` | for submitted evidence: `hash`, `source`, `summary`, `by`, `at`, `values` |",
+        "prefix": "nt |\n| `answers` | the probabilities returned |\n",
+        "suffix": "\n| `at` | when it was written |\n\nRaw evidence te"
+      },
+      {
+        "kind": "text-position",
+        "start": 13355,
+        "end": 13445
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const CachedEvidence = z.strictObject({",
+          "prefix": "t was asked about. Raw text is never stored. */\n",
+          "suffix": "\n  hash: z.string(),\n  source: z.string(),\n  sum"
+        },
+        {
+          "kind": "text-position",
+          "start": 13144,
+          "end": 13190
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "7fbbaefb23c90737",
+          "semanticHash": "af73988aa055cc63"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "values: z.array(ExtractedValue).optional(),",
+          "prefix": "e rule (SPEC 8.5) without the raw text.\n   */\n  ",
+          "suffix": "\n});\nexport type CachedEvidence = z.infer<typeof"
+        },
+        {
+          "kind": "text-position",
+          "start": 13439,
+          "end": 13482
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "eb868092b40bebea",
+          "semanticHash": "00652f3b67010ad0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const block = {",
+          "prefix": "enceValues = storedValues(p.item.evidence);\n    ",
+          "suffix": "\n      hash: p.hash,\n      source: p.item.source"
+        },
+        {
+          "kind": "text-position",
+          "start": 12024,
+          "end": 12039
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "a9b5d3914738f7c5",
+          "semanticHash": "aedc239998b57e6b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:40.948Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:40.948Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

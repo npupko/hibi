@@ -1,0 +1,52 @@
+{
+  "id": "clm_85b1778341374f78",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "reference",
+  "sentence": "The fixture responses were recorded from live System One calls; see `test/fixtures/judge/README.md`.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The fixture responses were recorded from live System One calls; see `test/fixtures/judge/README.md`.",
+        "prefix": "ched verdict for that judgment is asked again.\n\n",
+        "suffix": " `test/e2e.test.ts` runs the whole CLI loop agai"
+      },
+      {
+        "kind": "text-position",
+        "start": 4361,
+        "end": 4461
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "test/fixtures/judge/README.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "The `supports` and `conflict` responses were recorded from live System One calls on 2026-10-23 (model `jev-1.13.0`), and the `triage` response on 2026-10-23 (model `jev-1.14.0`), after the triage questions were rewritten. Each was recorded by POSTing the matching `*.request.json` file in this directory unchanged.",
+          "prefix": "# Judge fixtures\n\n",
+          "suffix": "\n\nTo re-record, POST each request file to `https"
+        },
+        {
+          "kind": "text-position",
+          "start": 18,
+          "end": 332
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:40.818Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:40.818Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

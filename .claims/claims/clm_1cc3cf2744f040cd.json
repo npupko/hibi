@@ -1,0 +1,82 @@
+{
+  "id": "clm_1cc3cf2744f040cd",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "\"ack\": { \"pairId\": \"clm_a…:clm_b…\", \"sentenceHashes\": [\"…\", \"…\"] }",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "\"ack\": { \"pairId\": \"clm_a…:clm_b…\", \"sentenceHashes\": [\"…\", \"…\"] }",
+        "prefix": " \"note\": \"the FAQ describes the annual plan\",\n  ",
+        "suffix": "\n}\n```\n\nThe ack is pinned to the hash of each no"
+      },
+      {
+        "kind": "text-position",
+        "start": 7576,
+        "end": 7642
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pairId: `${first.id}:${second.id}`,",
+          "prefix": "t,\n    basis: \"ack\",\n    note,\n    ack: {\n      ",
+          "suffix": "\n      sentenceHashes: [\n        sentenceHash(fi"
+        },
+        {
+          "kind": "text-position",
+          "start": 6908,
+          "end": 6943
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "896d8e63688740e5",
+          "semanticHash": "1e27eb9b85b8c2ea"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sentenceHashes: [",
+          "prefix": "      pairId: `${first.id}:${second.id}`,\n      ",
+          "suffix": "\n        sentenceHash(first.sentence),\n        s"
+        },
+        {
+          "kind": "text-position",
+          "start": 6950,
+          "end": 6967
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "5dc2513354ce59aa",
+          "semanticHash": "ad730928d479117f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:27.054Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:27.054Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

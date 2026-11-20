@@ -1,0 +1,65 @@
+{
+  "id": "clm_a879e186209446ef",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "| Rust | `.rs` |",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| Rust | `.rs` |",
+        "prefix": "X | `.tsx`, `.jsx` |\n| Python | `.py`, `.pyi` |\n",
+        "suffix": "\n| Go | `.go` |\n| Java | `.java` |\n\nA code span "
+      },
+      {
+        "kind": "text-position",
+        "start": 2113,
+        "end": 2129
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/lang.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\".rs\": \"rust\",",
+          "prefix": "ript\",\n  \".py\": \"python\",\n  \".pyi\": \"python\",\n  ",
+          "suffix": "\n  \".go\": \"go\",\n  \".java\": \"java\",\n};\n\nexport fu"
+        },
+        {
+          "kind": "text-position",
+          "start": 382,
+          "end": 396
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "af5da0359bc343ec",
+          "semanticHash": "a078a7cf6a80ccfe"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\".rs\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:25.971Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:25.971Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

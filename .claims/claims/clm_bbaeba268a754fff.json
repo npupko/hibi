@@ -1,0 +1,146 @@
+{
+  "id": "clm_bbaeba268a754fff",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "CI without the secret still gates on anchors, cached verdicts, and cached conflicts, and on expiry under `check --doc`.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "CI without the secret still gates on anchors, cached verdicts, and cached conflicts, and on expiry under `check --doc`.",
+        "prefix": " |\n\nCached verdicts keep working without a key. ",
+        "suffix": "\n\n## Cost and latency\n\n<Warning>\n  The research "
+      },
+      {
+        "kind": "text-position",
+        "start": 14669,
+        "end": 14788
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (isGatingAnchor(v.doc) || isGatingAnchor(v.evidence)) gates = true;",
+          "prefix": "];\n  let gates = false;\n  let warns = false;\n\n  ",
+          "suffix": "\n  if (isWarnAnchor(v.doc) || isWarnAnchor(v.evi"
+        },
+        {
+          "kind": "text-position",
+          "start": 3038,
+          "end": 3108
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "b1a7b17fe3209c3c",
+          "semanticHash": "5fc554112083c57a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"refuted\") gates = true;",
+          "prefix": "c) || isWarnAnchor(v.evidence)) warns = true;\n  ",
+          "suffix": "\n  if (v.judge !== undefined && WARN_JUDGE.has(v"
+        },
+        {
+          "kind": "text-position",
+          "start": 3180,
+          "end": 3220
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "045e3f715206f391",
+          "semanticHash": "c5efdf039031fded"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"refuted\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (c.probability >= threshold) {",
+          "prefix": "ue;\n\n  for (const c of v.conflicts ?? []) {\n    ",
+          "suffix": "\n      gates = true;\n      reasons.push(\n       "
+        },
+        {
+          "kind": "text-position",
+          "start": 3335,
+          "end": 3368
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "228bf496610c4c91",
+          "semanticHash": "a636709b6f002d4f"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons.push(\"expired gates under check --doc\");",
+          "prefix": "if (mode === \"doc\") {\n      gates = true;\n      ",
+          "suffix": "\n    } else {\n      warns = true;\n      reasons."
+        },
+        {
+          "kind": "text-position",
+          "start": 3872,
+          "end": 3920
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "ab93fd8725166832",
+          "semanticHash": "392e6307e84f22f4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"expired gates under check --doc\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:42.153Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:42.153Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

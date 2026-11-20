@@ -1,0 +1,175 @@
+{
+  "id": "clm_ebb10eee2b7942cc",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `check` | `--since <ref>`, `--doc <path>`, `--overview`, `--fail-on gating\\|warn\\|never` | sections 7 and 9 |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `check` | `--since <ref>`, `--doc <path>`, `--overview`, `--fail-on gating\\|warn\\|never` | sections 7 and 9 |",
+        "prefix": "rd one claim from flags, or a batch from JSON |\n",
+        "suffix": "\n| `list` | `--state all\\|gating\\|warning\\|clean"
+      },
+      {
+        "kind": "text-position",
+        "start": 55174,
+        "end": 55285
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Check only the claims touching a file changed since this git ref.\",",
+          "prefix": "  type: \"string\",\n    placeholder: \"<ref>\",\n    ",
+          "suffix": "\n  },\n  {\n    name: \"doc\",\n    type: \"string\",\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 4949,
+          "end": 5023
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "1f1bdffbe5839ed2"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Check only the claims touching a file changed since this git ref.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Check only the claims on this document.\",",
+          "prefix": " type: \"string\",\n    placeholder: \"<path>\",\n    ",
+          "suffix": "\n  },\n  {\n    name: \"overview\",\n    type: \"boole"
+        },
+        {
+          "kind": "text-position",
+          "start": 5101,
+          "end": 5149
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "b3e7608069743504"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Check only the claims on this document.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"overview\",",
+          "prefix": "nly the claims on this document.\",\n  },\n  {\n    ",
+          "suffix": "\n    type: \"boolean\",\n    help: \"Render the per-"
+        },
+        {
+          "kind": "text-position",
+          "start": 5163,
+          "end": 5180
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "8eabb6619a1247c6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"overview\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const FAIL_ON = [\"gating\", \"warn\", \"never\"] as const;",
+          "prefix": "e>([\n  \"refuted\",\n  \"review\",\n  \"pending\",\n]);\n\n",
+          "suffix": "\nexport type FailOn = (typeof FAIL_ON)[number];\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 5912,
+          "end": 5972
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "4507c84336a4f9ab",
+          "semanticHash": "678400bbae86082d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"gating\",\"warn\",\"never\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "options: CHECK_OPTIONS,",
+          "prefix": "tore check) exit 0 unless --fail-on warn.\",\n    ",
+          "suffix": "\n    examples: [\n      \"hibi check\",\n      \"hibi"
+        },
+        {
+          "kind": "text-position",
+          "start": 10962,
+          "end": 10985
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "032aa2864040c879",
+          "semanticHash": "f6bf6d797b120b6f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:56.568Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:56.568Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

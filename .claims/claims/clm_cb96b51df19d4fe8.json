@@ -1,0 +1,123 @@
+{
+  "id": "clm_cb96b51df19d4fe8",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 15 | `expired` warns in whole-store `check`, gates in `check --doc`; no grace window |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 15 | `expired` warns in whole-store `check`, gates in `check --doc`; no grace window |",
+        "prefix": "opics; pair in code, gate with `same_subject` |\n",
+        "suffix": "\n| 16 | one threshold at 0.8 confidence; three-w"
+      },
+      {
+        "kind": "text-position",
+        "start": 80070,
+        "end": 80158
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons.push(\"expired gates under check --doc\");",
+          "prefix": "if (mode === \"doc\") {\n      gates = true;\n      ",
+          "suffix": "\n    } else {\n      warns = true;\n      reasons."
+        },
+        {
+          "kind": "text-position",
+          "start": 3872,
+          "end": 3920
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "ab93fd8725166832",
+          "semanticHash": "392e6307e84f22f4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"expired gates under check --doc\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"expired warns in a whole-store check and gates under check --doc\",",
+          "prefix": "      warns = true;\n      reasons.push(\n        ",
+          "suffix": "\n      );\n    }\n  }\n\n  if (enforcement !== \"enfo"
+        },
+        {
+          "kind": "text-position",
+          "start": 3982,
+          "end": 4049
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "f77333882f40c4e5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"expired warns in a whole-store check and gates under check --doc\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return until === undefined || now.getTime() >= until.getTime();",
+          "prefix": "turn false;\n  const until = expiresAt(claim);\n  ",
+          "suffix": "\n}\n\n/** The reason label for an expired claim; u"
+        },
+        {
+          "kind": "text-position",
+          "start": 3117,
+          "end": 3180
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "867b922ccbb69f9a",
+          "semanticHash": "6ffdc47e748aea77"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:23.177Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:23.177Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

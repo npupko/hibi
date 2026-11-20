@@ -1,0 +1,94 @@
+{
+  "id": "clm_ece6c1fa372540de",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "\"countsTowardTtl\": true, \"next\": \"hibi check\" }",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "\"countsTowardTtl\": true, \"next\": \"hibi check\" }",
+        "prefix": "dar: last three releases were on Tuesdays\" },\n  ",
+        "suffix": "\n```\n\nAfter the human vouch, `check --doc docs/p"
+      },
+      {
+        "kind": "text-position",
+        "start": 17563,
+        "end": 17610
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "countsTowardTtl: by.startsWith(\"human:\"),",
+          "prefix": " claimIds: [claim.id],\n      attestation,\n      ",
+          "suffix": "\n    };\n  }\n\n  if (note === undefined) {\n    thr"
+        },
+        {
+          "kind": "text-position",
+          "start": 5840,
+          "end": 5881
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "6551225e2881068f",
+          "semanticHash": "072111ebfca3b905"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"human:\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/commands/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await emit(mode, envelope(\"attest\", { ...result }, \"hibi check\"), () =>",
+          "prefix": "d ? undefined : parseAck(ackValue),\n    });\n    ",
+          "suffix": "\n      renderAttest(result, style, mode),\n    );"
+        },
+        {
+          "kind": "text-position",
+          "start": 773,
+          "end": 844
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "fabadd5c19019647",
+          "semanticHash": "8583e018ea5a6328"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"attest\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:10.617Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:10.617Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

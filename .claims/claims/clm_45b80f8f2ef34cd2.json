@@ -1,0 +1,94 @@
+{
+  "id": "clm_45b80f8f2ef34cd2",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "| never checked (`attested` with a `procedure` or `sources`, no evidence yet) | submitting evidence | nothing else; a vouch does not create a judge verdict |",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| never checked (`attested` with a `procedure` or `sources`, no evidence yet) | submitting evidence | nothing else; a vouch does not create a judge verdict |",
+        "prefix": " --by human:<id> --note \"<what you checked>\"` |\n",
+        "suffix": "\n| `judge: refuted` | submitting newer evidence "
+      },
+      {
+        "kind": "text-position",
+        "start": 4531,
+        "end": 4688
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (claim.kind === \"attested\" && checkable && !hasSupports)",
+          "prefix": "ocedure !== null || claim.sources.length > 0;\n  ",
+          "suffix": "\n    return \"never-checked\";\n  return undefined;"
+        },
+        {
+          "kind": "text-position",
+          "start": 12955,
+          "end": 13014
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "dea848eeec870d1c",
+          "semanticHash": "f1c69407699d1574"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"attested\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "? worklistReason(c, v, ack !== undefined, entries.length > 0)",
+          "prefix": ") === \"active\";\n    const reason = active\n      ",
+          "suffix": "\n      : undefined;\n    if (reason !== undefined"
+        },
+        {
+          "kind": "text-position",
+          "start": 18138,
+          "end": 18199
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "746a8811615e546d",
+          "semanticHash": "0020749d9368897b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:13.294Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:13.294Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

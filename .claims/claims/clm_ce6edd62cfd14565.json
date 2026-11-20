@@ -1,0 +1,65 @@
+{
+  "id": "clm_ce6edd62cfd14565",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`attest` without `--ack` appends a vouch.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`attest` without `--ack` appends a vouch.",
+        "prefix": "ed in the same document (section 11, `record`). ",
+        "suffix": "\n- `basis: evidence` means the judge returned `s"
+      },
+      {
+        "kind": "text-position",
+        "start": 8682,
+        "end": 8723
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const attestation = Attestation.parse({ by, at, basis: \"vouch\", note });",
+          "prefix": "tore, claimId);\n\n  if (ack === undefined) {\n    ",
+          "suffix": "\n    await append(store, claim, attestation);\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 5656,
+          "end": 5728
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "70e432337e30f3c5",
+          "semanticHash": "7d46052865a8c43a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"vouch\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:35.026Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:35.026Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

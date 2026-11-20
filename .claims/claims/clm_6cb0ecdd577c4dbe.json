@@ -1,0 +1,65 @@
+{
+  "id": "clm_6cb0ecdd577c4dbe",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "{ \"id\": \"doc_504a75fb91854951\", \"path\": \"docs/pricing.md\", \"lifecycle\": \"active\", \"createdAt\": \"2026-10-22T18:16:02.977Z\" }",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "{ \"id\": \"doc_504a75fb91854951\", \"path\": \"docs/pricing.md\", \"lifecycle\": \"active\", \"createdAt\": \"2026-10-22T18:16:02.977Z\" }",
+        "prefix": "does not read it |\n\nA document record:\n\n```json\n",
+        "suffix": "\n```\n\nA superseded document also has `superseded"
+      },
+      {
+        "kind": "text-position",
+        "start": 9767,
+        "end": 9890
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "path: z.string(),\n    lifecycle: DocumentLifecycle.default(\"active\"),\n    supersededBy: DocumentId.optional(),\n    createdAt: Instant,",
+          "prefix": "t = z\n  .strictObject({\n    id: DocumentId,\n    ",
+          "suffix": "\n  })\n  .meta({ id: \"Document\" });\nexport type D"
+        },
+        {
+          "kind": "text-position",
+          "start": 8754,
+          "end": 8888
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "e9464936d833fb2e",
+          "semanticHash": "f17125d988c009be"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"active\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:04.994Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:04.994Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

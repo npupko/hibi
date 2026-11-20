@@ -1,0 +1,117 @@
+{
+  "id": "clm_1d162683b7ae4234",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "\"reasons\": [\"evidence: value changed (was `5`)\", \"evidence: identifiers or literals renamed\"]",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "\"reasons\": [\"evidence: value changed (was `5`)\", \"evidence: identifiers or literals renamed\"]",
+        "prefix": "ibi retire clm_b87be1a1752b4a49\" }\n    ]\n  },\n  ",
+        "suffix": "\n}\n```\n\n| top-level key | meaning |\n|---|---|\n| "
+      },
+      {
+        "kind": "text-position",
+        "start": 12142,
+        "end": 12235
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "valueLabel = `value changed (was \\`${valSel.value}\\`)`;",
+          "prefix": " collapseWhitespace(valSel.value)\n    ) {\n      ",
+          "suffix": "\n    }\n  }\n\n  // Prose, or code without structur"
+        },
+        {
+          "kind": "text-position",
+          "start": 7532,
+          "end": 7587
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "fc6076fa09966cc9",
+          "semanticHash": "afe61e5030abd1f6"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "? \"identifiers or literals renamed\"",
+          "prefix": "tructuralHash === astSel.structuralHash\n        ",
+          "suffix": "\n        : \"restructured\";\n  }\n\n  // In-span lit"
+        },
+        {
+          "kind": "text-position",
+          "start": 7090,
+          "end": 7125
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "9996b67a7e7404a3",
+          "semanticHash": "f3e93157b863d29a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"identifiers or literals renamed\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "title: \"Update the sentence, then reanchor\",",
+          "prefix": "Action {\n  return {\n    id: \"update-claim\",\n    ",
+          "suffix": "\n    rationale:\n      \"the evidence changed; if "
+        },
+        {
+          "kind": "text-position",
+          "start": 4215,
+          "end": 4259
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "c759f60debc97d5a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Update the sentence, then reanchor\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:16.599Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:16.599Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

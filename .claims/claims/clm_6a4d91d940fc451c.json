@@ -1,0 +1,117 @@
+{
+  "id": "clm_6a4d91d940fc451c",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `documents[].suspect[]` | per claim that gates or warns, and per unretired claim on a superseded or archived document, its most severe status tag, such as `evidence:changed`, `judge:pending`, `conflict`, `conflict:review`, `conflict:pending`, `expired`, `superseded`; never `unchanged` |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `documents[].suspect[]` | per claim that gates or warns, and per unretired claim on a superseded or archived document, its most severe status tag, such as `evidence:changed`, `judge:pending`, `conflict`, `conflict:review`, `conflict:pending`, `expired`, `superseded`; never `unchanged` |",
+        "prefix": "y pairs with a claim in the `--doc` document) |\n",
+        "suffix": "\n\n`--explain` adds `detail` to each verdict: `do"
+      },
+      {
+        "kind": "text-position",
+        "start": 12840,
+        "end": 13129
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return v.gates || v.warns || docHasLifecycle;",
+          "prefix": "nforcement === \"retired\") return false;\n        ",
+          "suffix": "\n      })\n      .map((v) => ({\n        claimId: "
+        },
+        {
+          "kind": "text-position",
+          "start": 20625,
+          "end": 20670
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "b2d4036e33e52231",
+          "semanticHash": "a625ecb41b8222d1"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "status: firstStatus([...(statusTags.get(v.claimId) ?? []), ...lcTags]),",
+          "prefix": "p((v) => ({\n        claimId: v.claimId,\n        ",
+          "suffix": "\n      }))\n      .sort((a, b) =>\n        a.claim"
+        },
+        {
+          "kind": "text-position",
+          "start": 20737,
+          "end": 20808
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "8463116121bbc36d",
+          "semanticHash": "7157e8abf6adb743"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[...(statusTags.get(v.claimId)??[]),...lcTags]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const REPORTABLE_STATE: ReadonlySet<string> = new Set<EvidenceState>([\n  \"orphaned\",\n  \"ambiguous\",\n  \"changed\",\n  \"moved\",\n  \"unavailable\",\n]);",
+          "prefix": "unavailable\",\n  \"superseded\",\n  \"archived\",\n];\n\n",
+          "suffix": "\n\nconst REPORTABLE_JUDGE: ReadonlySet<JudgeState"
+        },
+        {
+          "kind": "text-position",
+          "start": 5651,
+          "end": 5795
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "2a6d5dc95c93fb3c",
+          "semanticHash": "dbe447898a1a571f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"orphaned\",\"ambiguous\",\"changed\",\"moved\",\"unavailable\",]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:17.113Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:17.113Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

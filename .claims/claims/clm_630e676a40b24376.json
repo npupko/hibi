@@ -1,0 +1,82 @@
+{
+  "id": "clm_630e676a40b24376",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "4. Contradiction pass with code pairing and the numeric rule. Done.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "4. Contradiction pass with code pairing and the numeric rule. Done.",
+        "prefix": "ection 7, expiry counting rule, worklist. Done.\n",
+        "suffix": "\n5. `audit` on top of the region splitter. Done."
+      },
+      {
+        "kind": "text-position",
+        "start": 76607,
+        "end": 76674
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const pairs = pairClaims(opts.claims).filter(",
+          "prefix": "ore.judgeCache();\n  const scope = opts.scope;\n  ",
+          "suffix": "\n    (p) => scope === undefined || scope.has(p.a"
+        },
+        {
+          "kind": "text-position",
+          "start": 10134,
+          "end": 10179
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "63fd7602739aa7f1",
+          "semanticHash": "596016bdbc16f539"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "// Numeric rule (SPEC 8.5): only after the judge says same subject ",
+          "prefix": "ld && r.contradicts >= CONTRADICTS_FLOOR) {\n    ",
+          "suffix": "and\n    // `contradicts` reaches its floor; a ba"
+        },
+        {
+          "kind": "text-position",
+          "start": 5768,
+          "end": 5835
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "d0f71d300ab5c858"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:18.291Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:18.291Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

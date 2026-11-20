@@ -7,28 +7,50 @@
  * for in-process consumers; the CLI is a sibling shell over the same core, so
  * the verdicts and JSON shapes are identical by construction.
  *
- * Git is a host concern: the library never resolves a ref. A pure consumer
- * gets the defaults (`owner: "unknown"`, `ref: "WORKTREE"`); the CLI resolves
- * git first and passes the values in.
+ * Git is a host concern: the library never resolves a ref or a git user. A
+ * pure consumer passes `by` and gets `ref: "WORKTREE"`; the CLI resolves git
+ * first and passes the values in.
  */
 
 import { readFile } from "node:fs/promises";
 import { isAbsolute, join, relative } from "node:path";
-import type { AstAnalyzer } from "./algo/resolve.ts";
+import { type AstAnalyzer, resolveClaimSides } from "./algo/resolve.ts";
+import { documentIdForPath } from "./core/ids.ts";
+import type {
+  Claim,
+  ClaimKind,
+  Config,
+  Enforcement,
+  Procedure,
+  Source,
+} from "./core/model.ts";
 import type { AnchorAnalyzer } from "./engine/anchor.ts";
-import { isCoarseBundle } from "./engine/anchor.ts";
 import { type ArchiveResult, archiveDocument } from "./engine/archive.ts";
+import {
+  type AckTarget,
+  type AttestResult,
+  attestClaim,
+} from "./engine/attest.ts";
+import { type AuditReport, runAudit } from "./engine/audit.ts";
 import {
   type CheckOptions,
   type CheckReport,
   type FailOn,
   runCheck,
-  stripEngineOwned,
 } from "./engine/check.ts";
-import { type CoverageResult, coverage } from "./engine/coverage.ts";
+import {
+  type ConflictPassResult,
+  duplicateOf,
+  runConflictPass,
+} from "./engine/conflict.ts";
+import { claimContext } from "./engine/context.ts";
+import { type EvidenceReport, submitEvidence } from "./engine/evidence.ts";
 import { languageForFile } from "./engine/lang.ts";
 import { type ListResult, type ListState, toListRows } from "./engine/list.ts";
 import {
+  type BulkReanchorClaim,
+  type BulkReanchorResult,
+  keptSide,
   type ReanchorCandidate,
   type ReanchorInput,
   type ReanchorResult,
@@ -37,13 +59,20 @@ import {
   suggestForBundle,
 } from "./engine/reanchor.ts";
 import {
-  type CodeTarget,
+  type EvidenceTarget,
   type RecordContents,
   type RecordInput,
   type RecordResult,
   type RegionSpec,
   recordClaim,
 } from "./engine/record.ts";
+import { referenceTexts } from "./engine/reference.ts";
+import {
+  assertAliasKnown,
+  isAliasedFile,
+  type ResolvedFile,
+  resolveFile,
+} from "./engine/repos.ts";
 import { type RetireResult, retire } from "./engine/retire.ts";
 import { documentScope } from "./engine/status.ts";
 import {
@@ -51,20 +80,32 @@ import {
   type SupersedeResult,
   supersede,
 } from "./engine/supersede.ts";
-import { CommandRunnerResolver } from "./resolver/builtin/command-runner.ts";
-import { DriftResolver, ResolverRegistry } from "./resolver/registry.ts";
+import { normalizePath } from "./fs.ts";
+import { TypeSafeHttp } from "./judge/http.ts";
+import { JevJudge } from "./judge/jev.ts";
+import type { Judge } from "./judge/types.ts";
 import { ClaimStore, type StoreLocation } from "./store/store.ts";
 
 export type { AstAnalyzer } from "./algo/resolve.ts";
-export {
-  computeGates,
-  isGatingAnchor,
-  isWarnAnchor,
-  isWarnVerdict,
-} from "./core/gating.ts";
+export { gateVerdict } from "./core/gating.ts";
 export * from "./core/model.ts";
 export type { AnchorAnalyzer } from "./engine/anchor.ts";
 export type { ArchiveResult } from "./engine/archive.ts";
+export {
+  type AckTarget,
+  type AttestResult,
+  parseAck,
+} from "./engine/attest.ts";
+export {
+  AUDIT_KINDS,
+  type AuditInput,
+  type AuditKind,
+  type AuditReport,
+  type AuditRow,
+  type AuditSummary,
+  auditExitCode,
+  runAudit,
+} from "./engine/audit.ts";
 export {
   type CheckOptions,
   type CheckReport,
@@ -76,21 +117,29 @@ export {
   type SuspectEntry as CheckSuspectEntry,
 } from "./engine/check.ts";
 export {
-  type CoverageInput,
-  type CoverageRegion,
-  type CoverageResult,
-  type CoverageSummary,
-  coverage as docCoverage,
-} from "./engine/coverage.ts";
+  type ConflictPassResult,
+  conflictReviewsFor,
+  conflictsFor,
+  duplicateOf,
+} from "./engine/conflict.ts";
 export {
+  type EvidenceItem,
+  type EvidenceReport,
+  type EvidenceResult,
+  EvidenceValidationError,
+} from "./engine/evidence.ts";
+export {
+  type DuplicateRef,
   LIST_STATES,
   type ListResult,
   type ListRow,
-  type ListSeverity,
   type ListState,
-  toListRows,
+  type RowState,
 } from "./engine/list.ts";
 export {
+  type BulkReanchorClaim,
+  type BulkReanchorResult,
+  type KeptSide,
   type ReanchorCandidate,
   type ReanchorInput,
   type ReanchorResult,
@@ -98,20 +147,47 @@ export {
   reanchor as reanchorClaim,
 } from "./engine/reanchor.ts";
 export {
-  type CodeTarget,
   documentIdForPath,
+  type EvidenceTarget,
   type RecordContents,
   type RecordInput,
   type RecordResult,
   type RegionSpec,
   resolveRegion,
 } from "./engine/record.ts";
+export { type DocRegion, splitRegions } from "./engine/regions.ts";
 export { type RetireResult, retire as retireClaim } from "./engine/retire.ts";
 export {
   isLiveClaimOn,
   type SupersedeInput,
   type SupersedeResult,
 } from "./engine/supersede.ts";
+export { normalizePath } from "./fs.ts";
+export {
+  cacheKey,
+  canonicalJson,
+  JudgeCache,
+} from "./judge/cache.ts";
+export {
+  type ConflictRelation,
+  type ConflictResult,
+  type ConflictSide,
+  choiceConfidence,
+  type EvidenceKind,
+  type Judge,
+  JudgeError,
+  type JudgeResponse,
+  JudgeUnavailable,
+  MAX_EVIDENCE_CHARS,
+  noulConfidence,
+  type Region as JudgeRegion,
+  type RegionKind,
+  type SupportsInput,
+  type SupportsRelation,
+  type SupportsResult,
+  type TriageKind,
+  type TriageResult,
+} from "./judge/types.ts";
 export { ClaimStore, STORE_DIR, type StoreLocation } from "./store/store.ts";
 
 // ── Shared engine wiring ──
@@ -137,58 +213,72 @@ export async function loadAnalyzer(): Promise<Analyzer | undefined> {
   return analyzerPromise;
 }
 
-async function buildRegistry(
-  store: ClaimStore,
-  analyzer?: AstAnalyzer,
-  opts: { runVerifiers?: boolean; verifierTimeoutMs?: number } = {},
-): Promise<ResolverRegistry> {
-  const registry = new ResolverRegistry();
-  registry.runVerifiers = opts.runVerifiers ?? false;
-  registry.register(new DriftResolver(analyzer));
-  registry.register(
-    new CommandRunnerResolver(store.anchorRoot, opts.verifierTimeoutMs),
-  );
-  await registry.loadFromManifest(store);
-  return registry;
-}
-
 export interface EngineOptions {
   /** Skip the tree-sitter analyzer; text drift still runs. */
   noAst?: boolean;
+  /**
+   * The judge for `check`, `audit`, and `evidence`. Default: Jev over HTTP
+   * with `config.judge.model`; without `TYPESAFE_API_KEY` every judgment the
+   * cache cannot answer is `pending`.
+   */
+  judge?: Judge;
 }
 
-/** A `record` call: the doc span plus zero or more code targets. */
+/** A `record` call: the doc span plus the evidence its kind needs. */
 export interface RecordCall {
   docPath: string;
   docQuote?: string;
   docRange?: RegionSpec;
-  code?: CodeTarget[];
-  /** The author confirmed the code backs the sentence. Default false. */
-  verified?: boolean;
-  /** Default `"unknown"`. */
+  kind: ClaimKind;
+  /**
+   * Code spans for `code`, one document span for `reference`, none for
+   * `attested`. A file may be aliased (`api:src/x.ts`); the alias must be in
+   * `config.repos` and checked out.
+   */
+  evidence?: EvidenceTarget[];
+  sources?: Source[];
+  procedure?: Procedure | null;
+  /** The actor on the initial `vouch` attestation, e.g. `human:alice@example.com`. */
+  by: string;
   owner?: string;
   /** Default `"WORKTREE"`; the CLI passes git HEAD. */
   ref?: string;
+  /** ISO 8601 duration, e.g. `P90D`. Required on `attested`. */
   ttl?: string;
-  /** Default `enforced`; `suggested` is advisory. */
-  enforcement?: "enforced" | "suggested";
-  verifiers?: RecordInput["verifiers"];
-  attrs?: Record<string, unknown>;
+  /** Default `enforced`; `suggested` never gates. */
+  enforcement?: Extract<Enforcement, "enforced" | "suggested">;
+}
+
+/** The outcome of `recordBatch`: every result, or the failures and nothing kept. */
+export interface RecordBatchResult {
+  results: RecordResult[];
+  failures: { index: number; message: string }[];
 }
 
 export interface CheckCall {
-  write?: boolean;
   failOn?: FailOn;
   onlyFiles?: Iterable<string>;
-  /** Scope to one document: its file plus the code files its claims pin. */
+  /** Scope to one document: its file plus the evidence files its claims pin. */
   doc?: string;
   ref?: string;
-  /** Execute declared verifiers (repo-committed commands). Default false. */
-  runVerifiers?: boolean;
-  verifierTimeoutMs?: number;
 }
 
 const SKIP_DIRS = new Set(["node_modules", ".git", ".claims", "dist"]);
+
+/** Why `record` or `reanchor` refuses an evidence file it cannot read. */
+function recordRefusal(
+  file: string,
+  resolved: Extract<ResolvedFile, { unavailable: true }>,
+): Error {
+  if (resolved.escapes) {
+    return new Error(
+      `${file}: ${resolved.reason}; an evidence file must be inside ${resolved.alias === undefined ? "the anchor root" : `the directory of repo alias "${resolved.alias}"`}.`,
+    );
+  }
+  return new Error(
+    `${resolved.reason}; a claim is recorded against text on disk, so check out the sibling repo first.`,
+  );
+}
 
 export class Engine {
   private constructor(
@@ -205,9 +295,17 @@ export class Engine {
 
   static async init(
     location: string | StoreLocation,
-    options: EngineOptions & { nonce?: string } = {},
+    options: EngineOptions = {},
   ): Promise<Engine> {
-    return new Engine(await ClaimStore.init(location, options.nonce), options);
+    return new Engine(await ClaimStore.init(location), options);
+  }
+
+  /** The one judge factory: the injected judge, else Jev over HTTP with the configured model. */
+  private judgeFor(config: Config): Judge {
+    return (
+      this.options.judge ??
+      new JevJudge({ model: config.judge.model, http: new TypeSafeHttp() })
+    );
   }
 
   /** The analyzer with the grammars for `files` loaded, or undefined under `noAst`. */
@@ -231,128 +329,346 @@ export class Engine {
     }
   }
 
-  /** Read a document with hibi's own banner stripped, the coordinate space anchors use. */
-  private async readDoc(rel: string): Promise<string | null> {
-    const raw = await this.readAnchored(rel);
-    if (raw === null) return null;
-    const nonce = (await this.store.config()).nonce;
-    return stripEngineOwned(raw, rel, nonce);
-  }
-
-  /** Verify every claim against the working tree. Banners are stamped only when `write` is set. */
-  async check(opts: CheckCall = {}): Promise<CheckReport> {
-    const assertions = await this.store.allAssertions();
-    const codeFiles = assertions.flatMap((a) =>
-      a.anchor.code.filter((b) => !isCoarseBundle(b)).map((b) => b.file),
-    );
-    const analyzer = await this.analyzerFor(codeFiles);
-    const registry = await buildRegistry(this.store, analyzer, {
-      runVerifiers: opts.runVerifiers ?? false,
-      verifierTimeoutMs: opts.verifierTimeoutMs,
-    });
-    try {
-      let onlyFiles = opts.onlyFiles ? new Set(opts.onlyFiles) : undefined;
-      let onlyDocument: string | undefined;
-      if (opts.doc !== undefined) {
-        const scope = await documentScope(this.store, opts.doc);
-        onlyFiles = scope.files;
-        onlyDocument = scope.documentId;
+  /**
+   * The `claim_context` function for a set of claims (SPEC 8.3): each claim's
+   * heading path and paragraph, read from its document's current text. A
+   * claim whose document is missing gets its sentence alone.
+   */
+  private async contextFor(claims: Claim[]): Promise<(claim: Claim) => string> {
+    const texts = new Map<string, string | null>();
+    for (const c of claims) {
+      if (!texts.has(c.doc.file)) {
+        texts.set(c.doc.file, await this.readAnchored(c.doc.file));
       }
-      const options: CheckOptions = {
-        ast: analyzer,
-        registry,
-        write: opts.write ?? false,
-        failOn: opts.failOn,
-        onlyFiles,
-        onlyDocument,
-        ref: opts.ref,
-      };
-      return await runCheck(this.store, options);
-    } finally {
-      registry.dispose();
     }
+    return (claim) => {
+      const text = texts.get(claim.doc.file) ?? null;
+      return text === null ? claim.sentence : claimContext(text, claim);
+    };
   }
 
-  /** Record a claim. The doc span's text is the claim; code targets pin the code it describes. */
-  async record(call: RecordCall): Promise<RecordResult> {
-    const code = call.code ?? [];
-    const docContent = await this.readDoc(call.docPath);
-    const codeContents: Record<string, string | null> = {};
-    for (const target of code) {
-      if (target.coarse) continue;
-      if (target.file in codeContents) continue;
-      codeContents[target.file] = await this.readAnchored(target.file);
-    }
-    const analyzer = await this.analyzerFor(
-      code.filter((t) => !t.coarse).map((t) => t.file),
+  /**
+   * The contradiction and duplicate pass (SPEC 9) over the live claims of
+   * active documents. Cached pairs cost no judge call. With `documentId`,
+   * only pairs with at least one claim on that document are judged
+   * (`check --doc`, `audit`); pairing still sees every live claim.
+   */
+  async conflictPass(documentId?: string): Promise<ConflictPassResult> {
+    const config = await this.store.config();
+    const active = new Set(
+      (await this.store.allDocuments())
+        .filter((d) => d.lifecycle === "active")
+        .map((d) => d.id),
     );
-    const contents: RecordContents = { docContent, codeContents };
+    const claims = (await this.store.allClaims()).filter(
+      (c) => c.enforcement !== "retired" && active.has(c.documentId),
+    );
+    const scope =
+      documentId === undefined
+        ? undefined
+        : new Set(
+            claims.filter((c) => c.documentId === documentId).map((c) => c.id),
+          );
+    return runConflictPass({
+      store: this.store,
+      judge: this.judgeFor(config),
+      claims,
+      context: await this.contextFor(claims),
+      threshold: config.judge.threshold,
+      scope,
+    });
+  }
+
+  /** A user-supplied path as the store keys it (`normalizePath`). */
+  private norm(p: string): string {
+    return normalizePath(this.store.anchorRoot, p);
+  }
+
+  /**
+   * Verify every claim against the working tree. `doc` scopes the verdicts to
+   * one document and the contradiction pass to the pairs with a claim in it;
+   * a document with no live claims is an error. Otherwise the pass runs over
+   * the whole store, and `onlyFiles` scopes only the verdicts. Writes nothing
+   * but judge cache entries.
+   */
+  async check(opts: CheckCall = {}): Promise<CheckReport> {
+    return (await this.checkWithPass(opts)).report;
+  }
+
+  private async checkWithPass(
+    opts: CheckCall,
+  ): Promise<{ report: CheckReport; pass: ConflictPassResult }> {
+    const config = await this.store.config();
+    const claims = await this.store.allClaims();
+    const evidenceFiles = claims.flatMap((c) => c.evidence.map((b) => b.file));
+    const analyzer = await this.analyzerFor(evidenceFiles);
+    let onlyFiles = opts.onlyFiles
+      ? new Set([...opts.onlyFiles].map((f) => this.norm(f)))
+      : undefined;
+    let onlyDocument: string | undefined;
+    if (opts.doc !== undefined) {
+      const doc = this.norm(opts.doc);
+      const scope = await documentScope(this.store, doc);
+      // Retired claims do not count: a document with only those is unregistered.
+      const live = claims.some(
+        (c) => c.documentId === scope.documentId && c.enforcement !== "retired",
+      );
+      if (!live) {
+        throw new Error(
+          `no claims are registered for ${doc}; run hibi audit --doc ${doc}`,
+        );
+      }
+      onlyFiles = scope.files;
+      onlyDocument = scope.documentId;
+    }
+    const pass = await this.conflictPass(onlyDocument);
+    const options: CheckOptions = {
+      ast: analyzer,
+      failOn: opts.failOn,
+      onlyFiles,
+      onlyDocument,
+      ref: opts.ref,
+      judge: this.judgeFor(config),
+      conflictPass: pass,
+    };
+    return { report: await runCheck(this.store, options), pass };
+  }
+
+  /**
+   * Record a claim. The doc span's text is the claim's sentence. `dryRun`
+   * validates the call against the files on disk and writes nothing.
+   */
+  async record(
+    call: RecordCall,
+    opts: { dryRun?: boolean } = {},
+  ): Promise<RecordResult> {
+    const config = await this.store.config();
+    const evidence = (call.evidence ?? []).map((t) => ({
+      ...t,
+      file: this.norm(t.file),
+    }));
+    const docPath = this.norm(call.docPath);
+    const docContent = await this.readAnchored(docPath);
+    const evidenceContents: Record<string, string | null> = {};
+    for (const target of evidence) {
+      if (target.file in evidenceContents) continue;
+      assertAliasKnown(config, target.file);
+      const resolved = resolveFile(config, target.file, this.store.anchorRoot);
+      if ("unavailable" in resolved) throw recordRefusal(target.file, resolved);
+      evidenceContents[target.file] = await this.readAnchored(resolved.path);
+    }
+    const analyzer =
+      call.kind === "code"
+        ? await this.analyzerFor(evidence.map((t) => t.file))
+        : undefined;
+    const contents: RecordContents = { docContent, evidenceContents };
     const input: RecordInput = {
-      docPath: call.docPath,
+      docPath,
       docSpec:
         call.docQuote !== undefined ? { quote: call.docQuote } : call.docRange,
-      verified: call.verified ?? false,
-      owner: call.owner ?? "unknown",
+      kind: call.kind,
+      evidence,
+      sources: call.sources,
+      procedure: call.procedure,
+      by: call.by,
+      owner: call.owner,
       ref: call.ref ?? "WORKTREE",
       ttl: call.ttl,
-      code,
       enforcement: call.enforcement,
-      verifiers: call.verifiers,
       analyzer,
-      attrs: call.attrs,
+      dryRun: opts.dryRun,
     };
     return recordClaim(this.store, contents, input);
   }
 
-  /** Doc-side coverage of a document. Throws when the document is missing on disk. */
-  async coverage(docPath: string): Promise<CoverageResult> {
-    const docContent = await this.readDoc(docPath);
-    if (docContent === null) {
-      throw new Error(`Document not found on disk: ${docPath}`);
+  /**
+   * Record a batch, all or nothing (SPEC 11, record). Every call is first
+   * validated against the files on disk, spans included, and any failure
+   * writes nothing. Then the calls are applied in order; if one fails, the
+   * writes this batch made are rolled back and records written by others
+   * are left alone. On failure `results` is empty and `failures` names each
+   * failing call by index.
+   */
+  async recordBatch(calls: RecordCall[]): Promise<RecordBatchResult> {
+    const failures: RecordBatchResult["failures"] = [];
+    for (const [index, call] of calls.entries()) {
+      try {
+        await this.record(call, { dryRun: true });
+      } catch (e) {
+        failures.push({ index, message: (e as Error).message });
+      }
     }
-    return coverage(this.store, docContent, { docPath });
+    if (failures.length > 0) return { results: [], failures };
+    const results: RecordResult[] = [];
+    try {
+      await this.store.withRollback(async () => {
+        for (const call of calls) results.push(await this.record(call));
+      });
+    } catch (e) {
+      return {
+        results: [],
+        failures: [{ index: results.length, message: (e as Error).message }],
+      };
+    }
+    return { results, failures: [] };
   }
 
-  /** Re-anchor an existing claim against current content. */
+  /**
+   * Audit a document (SPEC 10). Throws when the document is missing on disk
+   * or matches an ignore glob. A covered row's `duplicateOf` comes from the
+   * contradiction pass, run here on demand.
+   */
+  async audit(path: string): Promise<AuditReport> {
+    const docPath = this.norm(path);
+    const text = await this.readAnchored(docPath);
+    if (text === null) {
+      throw new Error(`Document not found on disk: ${docPath}`);
+    }
+    const config = await this.store.config();
+    const pass = await this.conflictPass(documentIdForPath(docPath));
+    return runAudit({
+      store: this.store,
+      judge: this.judgeFor(config),
+      docPath,
+      text,
+      claims: await this.store.allClaims(),
+      config,
+      duplicateOf: (id) => duplicateOf(pass, id),
+    });
+  }
+
+  /**
+   * Submit evidence an agent collected (`hibi evidence`): the judge answers
+   * `supports` for each item, with the claim's document context.
+   */
+  async evidence(items: unknown[]): Promise<EvidenceReport> {
+    const config = await this.store.config();
+    return submitEvidence({
+      store: this.store,
+      judge: this.judgeFor(config),
+      items,
+      context: await this.contextFor(await this.store.allClaims()),
+      config,
+    });
+  }
+
+  /** Vouch for a claim, or acknowledge a `review` or `conflict` finding (`hibi attest`). */
+  async attest(
+    claimId: string,
+    opts: { by: string; note?: string; ack?: AckTarget },
+  ): Promise<AttestResult> {
+    const claim = await this.store.getClaim(claimId);
+    let reference: Parameters<typeof attestClaim>[0]["reference"];
+    if (claim?.kind === "reference" && opts.ack?.kind === "review") {
+      // The verdict `check` judges now: same sides, same request.
+      const config = await this.store.config();
+      const docText = await this.readAnchored(claim.doc.file);
+      const evidence = new Map<string, string | null>();
+      const unavailable = new Map<string, string>();
+      for (const b of claim.evidence) {
+        const r = resolveFile(config, b.file, this.store.anchorRoot);
+        if ("unavailable" in r) unavailable.set(b.file, r.reason);
+        else evidence.set(b.file, await this.readAnchored(r.path));
+      }
+      const sides = resolveClaimSides(claim, {
+        doc: docText,
+        evidence,
+        unavailable,
+      });
+      reference = {
+        model: this.judgeFor(config).model,
+        current: referenceTexts(claim, sides, docText),
+      };
+    }
+    return attestClaim({ store: this.store, claimId, ...opts, reference });
+  }
+
+  /**
+   * Re-anchor an existing claim against current content. `evidence` replaces
+   * a `code` claim's spans; `reference` replaces a `reference` claim's span.
+   * An evidence side in a sibling repo that is not checked out keeps its
+   * stored bundle, with a warning.
+   */
   async reanchor(
     claimId: string,
     opts: {
       doc?: string;
       docQuote?: string;
       docRange?: RegionSpec;
-      code?: CodeTarget[];
+      evidence?: EvidenceTarget[];
+      reference?: EvidenceTarget;
+      /** Move the doc side only; evidence spans, their baselines, and `ref` stay as stored. */
+      docOnly?: boolean;
       ref?: string;
       dryRun?: boolean;
     } = {},
   ): Promise<ReanchorResult> {
-    const assertion = await this.store.getAssertion(claimId);
-    if (!assertion) throw new Error(`No claim ${claimId} in the store.`);
-    const document = await this.store.getDocument(assertion.documentId);
+    const claim = await this.store.getClaim(claimId);
+    if (!claim) throw new Error(`No claim ${claimId} in the store.`);
+    if (opts.evidence !== undefined && claim.kind !== "code") {
+      throw new Error(
+        `claim ${claim.id} is a ${claim.kind} claim; --code-file, --code-quote, and --code-range are for code claims${claim.kind === "reference" ? "; pass --ref-file with --ref-quote or --ref-range" : ""}.`,
+      );
+    }
+    if (opts.reference !== undefined && claim.kind !== "reference") {
+      throw new Error(
+        `claim ${claim.id} is a ${claim.kind} claim; --ref-file, --ref-quote, and --ref-range are for reference claims.`,
+      );
+    }
+    const document = await this.store.getDocument(claim.documentId);
 
-    const docFile = opts.doc ?? (assertion.anchor.doc.file || document?.path);
-    const docContent = docFile ? await this.readDoc(docFile) : null;
-    if (opts.doc !== undefined && docContent === null) {
-      throw new Error(`Document not found on disk: ${opts.doc}`);
+    const newDoc = opts.doc === undefined ? undefined : this.norm(opts.doc);
+    const docFile = newDoc ?? (claim.doc.file || document?.path);
+    const docContent = docFile ? await this.readAnchored(docFile) : null;
+    if (newDoc !== undefined && docContent === null) {
+      throw new Error(`Document not found on disk: ${newDoc}`);
     }
-    const codeContents: Record<string, string | null> = {};
-    for (const bundle of assertion.anchor.code) {
-      if (bundle.file in codeContents) continue;
-      codeContents[bundle.file] = await this.readAnchored(bundle.file);
+    const config = await this.store.config();
+    const targets = (
+      opts.reference !== undefined ? [opts.reference] : opts.evidence
+    )?.map((t) => ({ ...t, file: this.norm(t.file) }));
+    const evidenceContents: Record<string, string | null> = {};
+    const unavailable = new Map<string, string>();
+    if (targets === undefined) {
+      for (const bundle of claim.evidence) {
+        if (bundle.file in evidenceContents) continue;
+        const r = resolveFile(config, bundle.file, this.store.anchorRoot);
+        if ("unavailable" in r) {
+          unavailable.set(bundle.file, r.reason);
+          evidenceContents[bundle.file] = null;
+        } else {
+          evidenceContents[bundle.file] = await this.readAnchored(r.path);
+        }
+      }
     }
-    for (const target of opts.code ?? []) {
-      if (target.coarse) continue;
-      if (target.file in codeContents) continue;
-      codeContents[target.file] = await this.readAnchored(target.file);
+    for (const target of targets ?? []) {
+      if (target.file in evidenceContents) continue;
+      assertAliasKnown(config, target.file);
+      const r = resolveFile(config, target.file, this.store.anchorRoot);
+      if ("unavailable" in r) {
+        // A sibling repo that is not checked out: the stored span for that
+        // file is kept as stored (see `reanchor`).
+        if (r.escapes) throw recordRefusal(target.file, r);
+        unavailable.set(target.file, r.reason);
+        evidenceContents[target.file] = null;
+        continue;
+      }
+      evidenceContents[target.file] = await this.readAnchored(r.path);
     }
-    const analyzer = await this.analyzerFor(Object.keys(codeContents));
+    const analyzer = await this.analyzerFor(Object.keys(evidenceContents));
 
-    const contents: RecordContents = { docContent, codeContents };
+    const contents: RecordContents = {
+      docContent,
+      evidenceContents,
+      unavailable,
+    };
     const input: ReanchorInput = {
       claimId,
-      docPath: opts.doc,
+      docPath: newDoc,
       docSpec:
         opts.docQuote !== undefined ? { quote: opts.docQuote } : opts.docRange,
-      code: opts.code,
+      evidence: targets,
+      docOnly: opts.docOnly,
       ref: opts.ref,
       analyzer,
       dryRun: opts.dryRun,
@@ -361,29 +677,76 @@ export class Engine {
   }
 
   /**
+   * `reanchor --moved`: plain `reanchor` on every live claim, or on the live
+   * claims of one document (`doc`). Only sides that read `moved` are rebuilt;
+   * `changed`, `ambiguous` and `orphaned` sides are kept as stored and listed.
+   * A claim whose document file is missing keeps its doc side (`orphaned`).
+   * Claims with nothing rebuilt or kept are not listed.
+   */
+  async reanchorMoved(
+    opts: { doc?: string; ref?: string; dryRun?: boolean } = {},
+  ): Promise<BulkReanchorResult> {
+    let claims = (await this.store.allClaims()).filter(
+      (c) => c.enforcement !== "retired",
+    );
+    if (opts.doc !== undefined) {
+      const doc = this.norm(opts.doc);
+      const documentId = documentIdForPath(doc);
+      claims = claims.filter((c) => c.documentId === documentId);
+      if (claims.length === 0) {
+        throw new Error(
+          `no claims are registered for ${doc}; run hibi audit --doc ${doc}`,
+        );
+      }
+    }
+    claims.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    const out: BulkReanchorClaim[] = [];
+    let relocated = 0;
+    for (const c of claims) {
+      if ((await this.readAnchored(c.doc.file)) === null) {
+        out.push({
+          id: c.id,
+          relocated: [],
+          kept: [keptSide("doc", c.doc.file, "orphaned", c.kind)],
+        });
+        continue;
+      }
+      const r = await this.reanchor(c.id, {
+        ref: opts.ref,
+        dryRun: opts.dryRun,
+      });
+      if (r.relocated === 0 && r.kept.length === 0) continue;
+      relocated += r.relocated;
+      out.push({ id: c.id, relocated: r.relocatedSides, kept: r.kept });
+    }
+    return { relocated, claims: out };
+  }
+
+  /**
    * Candidate locations for a claim's stored quotes: the doc quote across every
-   * registered document, and each code quote across files of the same language.
-   * Read-only.
+   * registered document, and each evidence quote across files of the same
+   * extension (and language, for code) in this repository. An evidence side
+   * in a sibling repo (`alias:path`) gets no candidates. Read-only.
    */
   async reanchorSuggest(claimId: string): Promise<ReanchorSuggestResult> {
-    const assertion = await this.store.getAssertion(claimId);
-    if (!assertion) throw new Error(`No claim ${claimId} in the store.`);
+    const claim = await this.store.getClaim(claimId);
+    if (!claim) throw new Error(`No claim ${claimId} in the store.`);
     const docs: { path: string; content: string }[] = [];
     for (const d of await this.store.allDocuments()) {
-      const content = await this.readDoc(d.path);
+      const content = await this.readAnchored(d.path);
       if (content === null) continue;
       docs.push({ path: d.path, content });
     }
     const candidates: ReanchorCandidate[] = suggestForBundle(
       "doc",
-      assertion.anchor.doc,
+      claim.doc,
       docs,
     );
-    for (const bundle of assertion.anchor.code) {
-      if (isCoarseBundle(bundle)) continue;
+    for (const bundle of claim.evidence) {
+      if (isAliasedFile(bundle.file)) continue;
       const language = languageForFile(bundle.file);
       const files = await this.sameLanguageFiles(language, bundle.file);
-      candidates.push(...suggestForBundle("code", bundle, files));
+      candidates.push(...suggestForBundle("evidence", bundle, files));
     }
     return { action: "reanchor-suggest", claimId, candidates };
   }
@@ -419,10 +782,10 @@ export class Engine {
     return supersede(
       this.store,
       {
-        readDoc: (rel) => this.readDoc(rel),
-        reanchor: (id, o) => this.reanchor(id, o),
+        readDoc: (rel) => this.readAnchored(rel),
+        moveDoc: (id, o) => this.reanchor(id, { ...o, docOnly: true }),
       },
-      input,
+      { ...input, from: this.norm(input.from), to: this.norm(input.to) },
     );
   }
 
@@ -432,7 +795,12 @@ export class Engine {
     successorPath?: string,
     opts: { dryRun?: boolean } = {},
   ): Promise<ArchiveResult> {
-    return archiveDocument(this.store, docPath, successorPath, opts);
+    return archiveDocument(
+      this.store,
+      this.norm(docPath),
+      successorPath === undefined ? undefined : this.norm(successorPath),
+      opts,
+    );
   }
 
   /** Withdraw a claim: enforcement → `retired`. Idempotent. */
@@ -443,24 +811,20 @@ export class Engine {
     return retire(this.store, claimId, opts);
   }
 
-  /** Triage rows from a live check, filtered by state and path. */
+  /** One row per claim from a live check, filtered by state and path. */
   async list(
-    opts: {
-      state?: ListState;
-      path?: string;
-      ref?: string;
-      hints?: boolean;
-    } = {},
+    opts: { state?: ListState; path?: string; ref?: string } = {},
   ): Promise<ListResult> {
-    const report = await this.check({ write: false, ref: opts.ref });
-    const [assertions, propositions] = await Promise.all([
-      this.store.allAssertions(),
-      this.store.allPropositions(),
-    ]);
-    return toListRows(report, assertions, propositions, report.documents, {
+    const { report, pass } = await this.checkWithPass({ ref: opts.ref });
+    return toListRows({
+      report,
+      claims: await this.store.allClaims(),
+      pass,
+      lifecycle: new Map(
+        (await this.store.allDocuments()).map((d) => [d.id, d.lifecycle]),
+      ),
       state: opts.state ?? "all",
-      path: opts.path,
-      hints: opts.hints ?? true,
+      path: opts.path === undefined ? undefined : this.norm(opts.path),
     });
   }
 }

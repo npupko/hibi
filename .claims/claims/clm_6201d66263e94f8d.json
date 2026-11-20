@@ -1,0 +1,59 @@
+{
+  "id": "clm_6201d66263e94f8d",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "If there is no exact occurrence, run a bitap fuzzy match biased toward the stored position.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "If there is no exact occurrence, run a bitap fuzzy match biased toward the stored position.",
+        "prefix": "by how well the stored prefix and suffix match. ",
+        "suffix": " The match is accepted only when its edit distan"
+      },
+      {
+        "kind": "text-position",
+        "start": 3088,
+        "end": 3179
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/localize.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const region = fuzzyLocate(text, tq, bias);",
+          "prefix": "    ambiguous,\n      how: \"exact\",\n    };\n  }\n  ",
+          "suffix": "\n  if (!region) return { region: null, ambiguous"
+        },
+        {
+          "kind": "text-position",
+          "start": 6766,
+          "end": 6809
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "6aebac216400799c",
+          "semanticHash": "0bd59ddc16b2c4d0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.181Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.181Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

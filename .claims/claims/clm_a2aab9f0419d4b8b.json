@@ -1,0 +1,59 @@
+{
+  "id": "clm_a2aab9f0419d4b8b",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "Recording is never automatic.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Recording is never automatic.",
+        "prefix": " row, decide the evidence and record the claim. ",
+        "suffix": " Send a batch:\n\n```sh\necho '[\n  {\"doc\":\"README.m"
+      },
+      {
+        "kind": "text-position",
+        "start": 2523,
+        "end": 2552
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Recording is never automatic.",
+          "prefix": "udges only pairs with a claim in this document. ",
+          "suffix": "\",\n    options: [\n      {\n        name: \"doc\",\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 12735,
+          "end": 12764
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "f484cfe735fab88d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:38.236Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:38.236Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_b4594ed58fe14960",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`HIBI_ASCII=1` selects ASCII symbols.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`HIBI_ASCII=1` selects ASCII symbols.",
+        "prefix": "`--no-ast`, `--help`. Unknown flags are errors. ",
+        "suffix": "\n\n| verb | flags | role |\n|---|---|---|\n| `init`"
+      },
+      {
+        "kind": "text-position",
+        "start": 54431,
+        "end": 54468
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/render/mode.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (env.HIBI_ASCII === \"1\") return false;",
+          "prefix": "ecord<string, string | undefined>): boolean {\n  ",
+          "suffix": "\n  const locale = env.LC_ALL || env.LC_CTYPE || "
+        },
+        {
+          "kind": "text-position",
+          "start": 1898,
+          "end": 1939
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "4710c4b7bbf43707",
+          "semanticHash": "c753d3f7fdcd4839"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"1\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:56.493Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:56.493Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

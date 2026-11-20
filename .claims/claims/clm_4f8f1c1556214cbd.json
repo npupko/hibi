@@ -1,0 +1,82 @@
+{
+  "id": "clm_4f8f1c1556214cbd",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "| `clean` | anything else, including `contradictory` with `same_subject` below the threshold | `contradictory, same_subject=0.40 below threshold 0.80`, `unrelated (confidence=0.80, same_subject=0.40)` |",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `clean` | anything else, including `contradictory` with `same_subject` below the threshold | `contradictory, same_subject=0.40 below threshold 0.80`, `unrelated (confidence=0.80, same_subject=0.40)` |",
+        "prefix": "sistent and same subject (same_subject=0.95)` |\n",
+        "suffix": "\n| `acked` | a `conflict` or `review` that an ac"
+      },
+      {
+        "kind": "text-position",
+        "start": 4179,
+        "end": 4381
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `contradictory, same_subject=${f2(r.sameSubject)} below threshold ${f2(threshold)}`,",
+          "prefix": "     return {\n        outcome: \"clean\",\n        ",
+          "suffix": "\n      };\n    }\n    if (r.confidence < threshold"
+        },
+        {
+          "kind": "text-position",
+          "start": 6463,
+          "end": 6555
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "453c24b1bf22b001",
+          "semanticHash": "92546be632cdb7e7"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `${r.relation} (confidence=${f2(r.confidence)}, same_subject=${f2(r.sameSubject)})`,",
+          "prefix": "    };\n  }\n  return {\n    outcome: \"clean\",\n    ",
+          "suffix": "\n  };\n}\n\ninterface PairAck {\n  pairId: string;\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 7486,
+          "end": 7578
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "a29a16e5b92e3f4f",
+          "semanticHash": "974ba04ffc7a69e6"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:25.999Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:25.999Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

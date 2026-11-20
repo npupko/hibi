@@ -1,0 +1,88 @@
+{
+  "id": "clm_9639a337131749fe",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Submitted evidence has the same limit, enforced as a validation error (section 11).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Submitted evidence has the same limit, enforced as a validation error (section 11).",
+        "prefix": "han 32,000 characters`; the judge is not asked. ",
+        "suffix": "\n\n### 7.4 Gating\n\n| condition | effect in `check"
+      },
+      {
+        "kind": "text-position",
+        "start": 25780,
+        "end": 25863
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "} else if (evidence.length > MAX_EVIDENCE_CHARS) {",
+          "prefix": "{\n      errors.push(`\"evidence\" is empty`);\n    ",
+          "suffix": "\n      errors.push(\n        `\"evidence\" is ${evi"
+        },
+        {
+          "kind": "text-position",
+          "start": 7201,
+          "end": 7251
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "e86411bed4a2c247",
+          "semanticHash": "23cd8b0f8aca91c7"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "MAX_EVIDENCE_CHARS = 32_000",
+          "prefix": "DGET`\n * in src/judge/jev.ts).\n */\nexport const ",
+          "suffix": ";\n\n/** Choice confidence per the TypeSafe docs: "
+        },
+        {
+          "kind": "text-position",
+          "start": 4185,
+          "end": 4212
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "93110d923bb52349"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "32_000"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:47.623Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:47.623Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

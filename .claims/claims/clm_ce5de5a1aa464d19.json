@@ -1,0 +1,88 @@
+{
+  "id": "clm_ce5de5a1aa464d19",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "Numbers, money, versions, and dates are compared in code.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Numbers, money, versions, and dates are compared in code.",
+        "prefix": "ond run asks nothing and cannot flip a verdict. ",
+        "suffix": " One threshold, `judge.threshold` in `.claims/co"
+      },
+      {
+        "kind": "text-position",
+        "start": 6872,
+        "end": 6929
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export type ValueKind = \"number\" | \"version\" | \"date\" | \"money\";",
+          "prefix": "fute. On `conflict` every\n * group counts.\n */\n\n",
+          "suffix": "\n\nexport interface Value {\n  kind: ValueKind;\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 2142,
+          "end": 2206
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "c95677f6f206c607",
+          "semanticHash": "f0827720baaa7eed"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"number\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function compareValues(",
+          "prefix": ", `dates differ: 2026-10-01 vs 2026-11-01`.\n */\n",
+          "suffix": "\n  a: Value[],\n  b: Value[],\n  opts: CompareOpti"
+        },
+        {
+          "kind": "text-position",
+          "start": 13689,
+          "end": 13719
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b0934bb6e494928f",
+          "semanticHash": "d231a6372ef27e23"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:24.142Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:24.142Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "clm_c71267d72e734809",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It runs the contradiction pass for `duplicateOf` over the pairs with a claim in the document only (section 9).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It runs the contradiction pass for `duplicateOf` over the pairs with a claim in the document only (section 9).",
+        "prefix": "that does not exist or matches `config.ignore`. ",
+        "suffix": "\n\n**Regions.** The splitter follows these rules:"
+      },
+      {
+        "kind": "text-position",
+        "start": 49368,
+        "end": 49478
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const pass = await this.conflictPass(documentIdForPath(docPath));",
+          "prefix": "  const config = await this.store.config();\n    ",
+          "suffix": "\n    return runAudit({\n      store: this.store,\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 16775,
+          "end": 16840
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "91176f82ab9c4c0b",
+          "semanticHash": "264775baaf96a6eb"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "duplicateOf: (id) => duplicateOf(pass, id),",
+          "prefix": "ait this.store.allClaims(),\n      config,\n      ",
+          "suffix": "\n    });\n  }\n\n  /**\n   * Submit evidence an agen"
+        },
+        {
+          "kind": "text-position",
+          "start": 17015,
+          "end": 17058
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "014d0d128efa3dbc",
+          "semanticHash": "ee0d90586267c5bd"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:18.873Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:18.873Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

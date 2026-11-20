@@ -1,0 +1,65 @@
+{
+  "id": "clm_d84652b6bc43469d",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Tokens are estimated at 4 characters per token.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Tokens are estimated at 4 characters per token.",
+        "prefix": "tate plus any one question (model limit 32k) |\n\n",
+        "suffix": " `triage` splits a long document into several re"
+      },
+      {
+        "kind": "text-position",
+        "start": 3735,
+        "end": 3782
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "CHARS_PER_TOKEN = 4",
+          "prefix": "conservative for English prose. */\nexport const ",
+          "suffix": ";\n\n/** Per-request budget for state plus questio"
+        },
+        {
+          "kind": "text-position",
+          "start": 1791,
+          "end": 1810
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "7b977e5c4fdfe428"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.913Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.913Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_2f09e871fbb14b0b",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "`hibi check` has one exit-code contract, so it works anywhere a non-zero exit blocks: a CI job, a git hook, or an agent's session hook.",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi check` has one exit-code contract, so it works anywhere a non-zero exit blocks: a CI job, a git hook, or an agent's session hook.",
+        "prefix": "hooks, and audit as a gate.\"\nicon: \"robot\"\n---\n\n",
+        "suffix": "\n\n| exit | meaning |\n|---|---|\n| `0` | clean, or"
+      },
+      {
+        "kind": "text-position",
+        "start": 243,
+        "end": 378
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function computeExitCode(",
+          "prefix": "ning is exit 2 only under `--fail-on warn`.\n */\n",
+          "suffix": "\n  flags: { gating: boolean; warn: boolean },\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 22088,
+          "end": 22120
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "1fdd427fda4527a4",
+          "semanticHash": "59fe1b9640983b54"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:42.088Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:42.088Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,52 @@
+{
+  "id": "clm_c914274095fc4d13",
+  "documentId": "doc_d068824e08521674",
+  "kind": "reference",
+  "sentence": "It reports which claims are stale, which documents cannot be trusted right now, which sentences contradict each other, and which sentences nothing could verify.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It reports which claims are stale, which documents cannot be trusted right now, which sentences contradict each other, and which sentences nothing could verify.",
+        "prefix": "README, `CLAUDE.md`, an ADR, or a pricing page. ",
+        "suffix": " Hibi runs no verifiers and no resolvers, and it"
+      },
+      {
+        "kind": "text-position",
+        "start": 1333,
+        "end": 1493
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "It tells an agent or a person which claims are stale, which documents cannot be trusted right now, which sentences contradict each other, and which sentences can never be verified and should be rewritten or removed.",
+          "prefix": "s in documents that assert something checkable. ",
+          "suffix": "\n\nDocuments can be anything: a README, `CLAUDE.m"
+        },
+        {
+          "kind": "text-position",
+          "start": 648,
+          "end": 863
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:22.671Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:22.671Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

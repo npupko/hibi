@@ -1,0 +1,88 @@
+{
+  "id": "clm_3fb471a17f714cf5",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**conflict.** State: `{ a: {text, doc, context}, b: {text, doc, context} }`, with `a` the claim with the smaller id.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**conflict.** State: `{ a: {text, doc, context}, b: {text, doc, context} }`, with `a` the claim with the smaller id.",
+        "prefix": "herwise `confidence` is the Choice confidence.\n\n",
+        "suffix": " Noul `same_subject`, Choice `relation` over `co"
+      },
+      {
+        "kind": "text-position",
+        "start": 35290,
+        "end": 35406
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "a: { text: a.text, doc: a.doc, context: a.context },\n      b: { text: b.text, doc: b.doc, context: b.context },",
+          "prefix": "uest {\n  return {\n    model,\n    state: {\n      ",
+          "suffix": "\n    },\n    questions: conflictFile.questions,\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 11546,
+          "end": 11657
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "f1667b48ab0f0a4a",
+          "semanticHash": "7dbfc17cc250fc60"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pair.a.id < pair.b.id ? [pair.a, pair.b] : [pair.b, pair.a];",
+          "prefix": "; key: string } {\n  const [first, second] =\n    ",
+          "suffix": "\n  const a = side(first, context);\n  const b = s"
+        },
+        {
+          "kind": "text-position",
+          "start": 9082,
+          "end": 9142
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "0b0bbff3da7511a8",
+          "semanticHash": "c75ec2368be5ff53"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[pair.a,pair.b]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:52.260Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:52.260Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

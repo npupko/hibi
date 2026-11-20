@@ -1,0 +1,134 @@
+{
+  "id": "clm_136966ded4d84cd0",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 45 | tree-sitter grammars are embedded in the binary; `--no-ast` skips them; other languages get text selectors only, and the numeric-token rule covers code spans without structural checks |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 45 | tree-sitter grammars are embedded in the binary; `--no-ast` skips them; other languages get text selectors only, and the numeric-token rule covers code spans without structural checks |",
+        "prefix": "and `expired` applies to any claim with a ttl |\n",
+        "suffix": "\n| 46 | on `conflict` the value rule also needs "
+      },
+      {
+        "kind": "text-position",
+        "start": 84044,
+        "end": 84236
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/ast/analyzer.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "wasm, embedded so the compiled binary stays offline, and loaded lazily per",
+          "prefix": "r` seams. Grammars are the official prebuilt\n * ",
+          "suffix": "\n * language: `load(languages)` must be awaited "
+        },
+        {
+          "kind": "text-position",
+          "start": 163,
+          "end": 237
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "f56c6d1534f0c4c4"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (this.options.noAst) return undefined;",
+          "prefix": "ring>,\n  ): Promise<Analyzer | undefined> {\n    ",
+          "suffix": "\n    const analyzer = await loadAnalyzer();\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 9070,
+          "end": 9111
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "93908398f53bedcb",
+          "semanticHash": "52e161ce8b484d2c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "language: target.language ?? languageForFile(target.file),",
+          "prefix": "undle(target.file, content, region, {\n          ",
+          "suffix": "\n          analyzer,\n        })\n      : buildSel"
+        },
+        {
+          "kind": "text-position",
+          "start": 4706,
+          "end": 4764
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "99420cbcd89616b0",
+          "semanticHash": "bf81c5fd88d51ebf"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "// Prose, or code without structural checks (--no-ast, or no grammar for",
+          "prefix": "hanged (was \\`${valSel.value}\\`)`;\n    }\n  }\n\n  ",
+          "suffix": "\n  // the language): a numeric token changed ins"
+        },
+        {
+          "kind": "text-position",
+          "start": 7601,
+          "end": 7673
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "2a2a52990b071907"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:24.638Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:24.638Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

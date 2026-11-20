@@ -1,0 +1,88 @@
+{
+  "id": "clm_4252104a8b9040bb",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "For submitted evidence, the extracted values are stored in the cache entry, so `check` applies the rule without the raw text.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "For submitted evidence, the extracted values are stored in the cache entry, so `check` applies the rule without the raw text.",
+        "prefix": "use `versions differ: …` and `dates differ: …`. ",
+        "suffix": "\n\n## The cache\n\nEvery answer is written to `.cla"
+      },
+      {
+        "kind": "text-position",
+        "start": 12563,
+        "end": 12688
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "values: evidenceValues,",
+          "prefix": "mary,\n      by: p.item.by,\n      at: now,\n      ",
+          "suffix": "\n    };\n    if (a.kind === \"cached\") {\n      awa"
+        },
+        {
+          "kind": "text-position",
+          "start": 12162,
+          "end": 12185
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "032aa2864040c879",
+          "semanticHash": "470e867df32980d9"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence: entry.evidence.values ?? [],",
+          "prefix": "ntence: storedValues(claim.sentence),\n          ",
+          "suffix": "\n        }\n      : undefined,\n  );\n  const sourc"
+        },
+        {
+          "kind": "text-position",
+          "start": 6616,
+          "end": 6654
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "47b44ed38f568311",
+          "semanticHash": "2eddb68ae3abee9b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:40.391Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:40.391Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

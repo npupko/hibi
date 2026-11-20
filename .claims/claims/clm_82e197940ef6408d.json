@@ -1,0 +1,65 @@
+{
+  "id": "clm_82e197940ef6408d",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| a side `moved` | `reanchor` |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| a side `moved` | `reanchor` |",
+        "prefix": " | `ack`, `evidence` (`attested` claims only) |\n",
+        "suffix": "\n\nEach action has `id`, `title`, `rationale`, an"
+      },
+      {
+        "kind": "text-position",
+        "start": 5770,
+        "end": 5801
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sections.push({ recommended: \"reanchor\", actions: [reanchorMoved(id)] });",
+          "prefix": "oc === \"moved\" || v.evidence === \"moved\") {\n    ",
+          "suffix": "\n  }\n\n  const first = sections[0];\n  if (first ="
+        },
+        {
+          "kind": "text-position",
+          "start": 11774,
+          "end": 11847
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "127b506d3726817b",
+          "semanticHash": "e80ca73444e90539"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"reanchor\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:14.306Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:14.306Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

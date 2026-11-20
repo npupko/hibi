@@ -1,0 +1,152 @@
+{
+  "id": "clm_ba508a6e09de408b",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `summary.conflictPass` | `{ pairs, requests, pending, scope }`: pairs judged, judge requests answered in this run, pairs still pending, and `store` (every pair) or `doc` (only pairs with a claim in the `--doc` document) |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `summary.conflictPass` | `{ pairs, requests, pending, scope }`: pairs judged, judge requests answered in this run, pairs still pending, and `store` (every pair) or `doc` (only pairs with a claim in the `--doc` document) |",
+        "prefix": " the number of verdicts with `doc: \"retired\"` |\n",
+        "suffix": "\n| `documents[].suspect[]` | per claim that gate"
+      },
+      {
+        "kind": "text-position",
+        "start": 12616,
+        "end": 12839
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pairs: pass?.pairs.length ?? 0,",
+          "prefix": "ist: worklist.length,\n    conflictPass: {\n      ",
+          "suffix": "\n      requests: pass?.requests ?? 0,\n      pend"
+        },
+        {
+          "kind": "text-position",
+          "start": 21588,
+          "end": 21619
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "38726dc43bb0e132",
+          "semanticHash": "439dfa11f440cb7c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "requests: pass?.requests ?? 0,",
+          "prefix": ": {\n      pairs: pass?.pairs.length ?? 0,\n      ",
+          "suffix": "\n      pending: pass?.pending.length ?? 0,\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 21626,
+          "end": 21656
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "5ca2aba8fe86bfd7",
+          "semanticHash": "dd8072b6c9e29e8e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pending: pass?.pending.length ?? 0,",
+          "prefix": "? 0,\n      requests: pass?.requests ?? 0,\n      ",
+          "suffix": "\n      scope: pass?.scope ?? \"store\",\n    },\n  }"
+        },
+        {
+          "kind": "text-position",
+          "start": 21663,
+          "end": 21698
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "38726dc43bb0e132",
+          "semanticHash": "c883c519d51ce216"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "scope: pass?.scope ?? \"store\",",
+          "prefix": "      pending: pass?.pending.length ?? 0,\n      ",
+          "suffix": "\n    },\n  };\n\n  return {\n    ref,\n    verdicts,\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 21705,
+          "end": 21735
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "7938293577610804",
+          "semanticHash": "006128e0c024e8a7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"store\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:17.025Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:17.025Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

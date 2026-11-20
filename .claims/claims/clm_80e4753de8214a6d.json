@@ -1,0 +1,52 @@
+{
+  "id": "clm_80e4753de8214a6d",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `contradicts` | Noul: does `b` assert something that cannot be true if `a` is true |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `contradicts` | Noul: does `b` assert something that cannot be true if `a` is true |",
+        "prefix": "er `consistent`, `contradictory`, `unrelated` |\n",
+        "suffix": "\n\nCode rules: when `same_subject` is below 0.3, "
+      },
+      {
+        "kind": "text-position",
+        "start": 7979,
+        "end": 8065
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/questions/conflict.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"instructions\": \"Does `b.text` assert something that cannot be true if `a.text` is true?\",",
+          "prefix": "   \"contradicts\": {\n      \"type\": \"noul\",\n      ",
+          "suffix": "\n      \"criteria\": {\n        \"true\": \"Incompatib"
+        },
+        {
+          "kind": "text-position",
+          "start": 1835,
+          "end": 1925
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:38.155Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:38.155Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

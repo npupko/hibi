@@ -1,0 +1,65 @@
+{
+  "id": "clm_c3d27244e61249cc",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "A second call changes nothing and reports `alreadyRetired: true`.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A second call changes nothing and reports `alreadyRetired: true`.",
+        "prefix": "in `.claims/claims/`; do not delete it by hand. ",
+        "suffix": "\n\n```json\n{ \"ok\": true, \"action\": \"retire\", \"sch"
+      },
+      {
+        "kind": "text-position",
+        "start": 1054,
+        "end": 1119
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/retire.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { claim, alreadyRetired: true };",
+          "prefix": ");\n  if (claim.enforcement === \"retired\") {\n    ",
+          "suffix": "\n  }\n  const next: Claim = { ...claim, enforceme"
+        },
+        {
+          "kind": "text-position",
+          "start": 1051,
+          "end": 1090
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "9d53b564b03ff244",
+          "semanticHash": "515ecd13135f5ab6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.223Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.223Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

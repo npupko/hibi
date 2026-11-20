@@ -1,0 +1,176 @@
+---
+title: "Audit: Which Sentences in a Document Need a Claim"
+sidebarTitle: "Audit"
+description: "hibi audit splits a document into regions and reports, per region, the claim that covers it or what kind of claim it could be. It never records anything."
+icon: "list-check"
+---
+
+`hibi audit --doc <path>` answers one question for one document: which regions are already covered by a claim, and what should happen to the rest. It splits the document into regions, matches them to existing claims, and asks the [judge](/judge) to triage the regions nothing covers.
+
+```sh
+hibi audit --doc README.md
+hibi audit --doc docs/pricing.md --fail-uncovered
+```
+
+Recording is never automatic. The agent or person reads the rows, picks the anchors and sources, and calls `hibi record`.
+
+## Regions
+
+The splitter in `src/engine/regions.ts` turns any text file into an ordered list of regions. It does not parse a specific format.
+
+| region kind | produced by |
+|---|---|
+| `fenced` | a block fenced by three backticks or three tildes, kept whole even with blank lines inside |
+| `heading` | a line starting with 1 to 6 `#` and a space |
+| `list-item` | a line starting with `-`, `*`, `+`, or `1.` / `1)` and a space |
+| `table-row` | a line starting with a pipe character |
+| `sentence` | prose, including blockquotes |
+
+The rules, in order:
+
+1. A `---` frontmatter block at the start of a `.md` or `.mdx` file is skipped and is neither a region nor judge context.
+2. Blank lines separate blocks.
+3. A line that is only a JSX tag, such as `<Card ...>`, `</Card>`, or `<Tabs>`, separates blocks and is not a region.
+4. A thematic break line (only `---`, `***`, or `___`) separates blocks and is not a region.
+5. Inside a block, a line that opens a heading, list item, blockquote, or table row starts a new piece.
+6. A marker stays with its text, so `## 1. Install` is one heading region and `1. Install Bun.` is one list-item region.
+7. A table separator row such as `|---|---|` is not a region.
+8. Each piece except a fenced block or a heading splits after `.`, `!`, or `?` (optionally followed by a closing quote, parenthesis, or bracket) when whitespace follows.
+9. A split never falls inside an inline code span.
+10. In a table row, a split never falls where only whitespace and `|` follow to the end of the row.
+
+Each region has an id `r<index>`, its 1-based line, and its heading path (the Markdown headings above it).
+
+## Covered and uncovered
+
+A region is **covered** when the located doc span of a live claim on this document overlaps it. A covered row takes the claim's kind and id. The judge is not asked about covered regions.
+
+Every other region is **uncovered** and goes to `triage`. Answers are cached in `.claims/judge/`, so a second audit of unchanged text makes no requests.
+
+A document that matches a glob in `ignore` in `.claims/config.json` is refused.
+
+## Triage mapping
+
+`triage` returns a statement kind and, for factual claims, where evidence would be found. The row kind follows:
+
+| triage `kind` | triage `evidenceKind` | row `kind` | meaning |
+|---|---|---|---|
+| `factual_claim` | `code` | `code` | record it as a `code` claim |
+| `factual_claim` | `other_doc` | `reference` | record it as a `reference` claim |
+| `factual_claim` | `external` | `attested` | record it as an `attested` claim with a ttl |
+| `factual_claim` | `nothing` | `unverifiable` | nothing could confirm it |
+| `instruction`, `opinion`, `narrative` | | `not-a-claim` | nothing to track |
+
+A region with a fenced block, an inline code span holding a path or a command, or a file path in prose is not asked the evidence question; when triage calls it a factual claim, its evidence kind is `code` by construction.
+
+The decision is taken only when the confidence of the `kind` Choice is at or above `judge.threshold`, and, for a factual claim, the confidence of the `evidenceKind` Choice is too. Otherwise the row is `unsure`.
+
+| row `kind` | when |
+|---|---|
+| `unsure` | a Choice fell below `judge.threshold`; `unsure` names which one (`kind` is checked first, then `evidenceKind`) |
+| `pending` | the judge could not answer: no `TYPESAFE_API_KEY`, the API was unreachable, or its answer could not be used (a judge error); only the rows of the failed request are `pending`, and the audit still exits 0 |
+
+## Row shape
+
+```json
+{
+  "region": { "id": "r3", "line": 7, "kind": "sentence", "text": "It is fast." },
+  "claimId": null,
+  "kind": "unsure",
+  "unsure": "kind",
+  "probabilities": {
+    "kind": { "factual_claim": 0.4, "instruction": 0.05, "opinion": 0.5, "narrative": 0.05 }
+  },
+  "duplicateOf": null
+}
+```
+
+| field | present | meaning |
+|---|---|---|
+| `region` | always | `id`, `line`, `kind` (region kind), `text` |
+| `claimId` | always | the covering claim, or `null` |
+| `kind` | always | `code`, `reference`, `attested`, `unverifiable`, `not-a-claim`, `unsure`, or `pending` |
+| `probability` | decided uncovered rows | the judge's probability for the triage kind it picked |
+| `unsure` | `unsure` rows | `kind` or `evidenceKind` |
+| `probabilities` | `unsure` rows | the `kind` distribution, plus the `evidenceKind` distribution when the top kind is `factual_claim` |
+| `reason` | `pending` rows | `judge unavailable: <message>` or `judge error: <message>` |
+| `duplicateOf` | always | for a covered row, the claim its claim most likely duplicates (from the [contradiction pass](/conflicts)); otherwise `null` |
+
+The contradiction pass that `audit` runs judges only the pairs with at least one claim in this document; pairing still sees every live claim in the store.
+
+Covered rows and `pending` rows carry neither `probability` nor `probabilities`.
+
+## Full output
+
+```json
+{
+  "ok": true,
+  "action": "audit",
+  "schemaVersion": "v4",
+  "doc": "README.md",
+  "summary": {
+    "regions": 4,
+    "covered": 2,
+    "uncovered": 2,
+    "byKind": {
+      "code": 1, "reference": 1, "attested": 0, "unverifiable": 0,
+      "not-a-claim": 1, "unsure": 1, "pending": 0
+    },
+    "requests": 1
+  },
+  "rows": [
+    { "region": { "id": "r0", "line": 1, "kind": "heading", "text": "# Demo" },
+      "claimId": null, "kind": "not-a-claim", "probability": 0.94, "duplicateOf": null },
+    { "region": { "id": "r1", "line": 3, "kind": "sentence", "text": "Retries are capped at 5 attempts." },
+      "claimId": "clm_b87be1a1752b4a49", "kind": "code", "duplicateOf": null },
+    { "region": { "id": "r2", "line": 5, "kind": "sentence", "text": "Refunds are issued within two weeks of a request." },
+      "claimId": "clm_ed3e7d37f89b41b8", "kind": "reference", "duplicateOf": null },
+    { "region": { "id": "r3", "line": 7, "kind": "sentence", "text": "It is fast." },
+      "claimId": null, "kind": "unsure", "unsure": "kind",
+      "probabilities": { "kind": { "factual_claim": 0.4, "instruction": 0.05, "opinion": 0.5, "narrative": 0.05 } },
+      "duplicateOf": null }
+  ]
+}
+```
+
+`doc` is the path normalized to a POSIX path relative to the anchor root, so `--doc ./README.md` reports `README.md`. `byKind` counts covered and uncovered rows together. `summary.requests` counts triage requests the judge answered in this run; cache hits are not counted.
+
+## The to-do line
+
+The JSON carries `kind` and no advice. The human output prints one to-do per row from a fixed mapping (`adviceFor` in `src/cli/render/audit.ts`):
+
+| row | to-do |
+|---|---|
+| covered | none |
+| uncovered `code`, `reference`, `attested` | `record` |
+| `unverifiable` | `rewrite as an attributed opinion, or remove` |
+| `not-a-claim` | none |
+| `unsure` on `kind` | `unsure: read it yourself` |
+| `unsure` on `evidenceKind` | `unsure: evidence kind` |
+| `pending` | `pending: judge unavailable`, or `pending: judge error` when the judge answered with something hibi could not use (from the row's `reason`) |
+
+```
+README.md
+  L1  not-a-claim   0.94  "# Demo"
+  L3  code            —   clm_b87be1a1752b4a49  "Retries are capped at 5 attempts."
+  L5  reference       —   clm_ed3e7d37f89b41b8  "Refunds are issued within two weeks of a request."
+  L7  unsure          —   unsure: read it yourself  "It is fast."
+4 regions, 2 covered, 2 uncovered; code 1, reference 1, not-a-claim 1, unsure 1; 0 judge requests
+```
+
+An `unverifiable` sentence states a fact that no evidence could settle, such as "This design will scale for years." Rewrite it so a person is named as holding the view ("We expect this design to scale"), or remove it.
+
+## `--fail-uncovered`
+
+With `--fail-uncovered`, `audit` exits 2 when any uncovered row has kind `code`, `reference`, or `attested`. Otherwise it exits 0. `unsure`, `unverifiable`, and `pending` rows do not count, so without a key the flag fails only on rows whose triage answer is already cached. Use it to hold a document, such as a plan, until every checkable sentence is backed by a claim.
+
+## Next
+
+<CardGroup cols={2}>
+  <Card title="Claims" icon="file-lines" href="/claims">
+    The three kinds and how to record each one.
+  </Card>
+  <Card title="Judge" icon="gavel" href="/judge">
+    The `triage` questions and the threshold.
+  </Card>
+</CardGroup>

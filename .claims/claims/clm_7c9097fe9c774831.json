@@ -1,0 +1,88 @@
+{
+  "id": "clm_7c9097fe9c774831",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- `code` is required, with at least one span, for kind `code`, and invalid for other kinds.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `code` is required, with at least one span, for kind `code`, and invalid for other kinds.",
+        "prefix": " `file` and exactly one of `quote` and `range`.\n",
+        "suffix": " `ref` is required for kind `reference` and inva"
+      },
+      {
+        "kind": "text-position",
+        "start": 59138,
+        "end": 59229
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"kind code needs code: [{ file, quote | range }] with at least one span\",",
+          "prefix": "code.length === 0) {\n      errors.push(\n        ",
+          "suffix": "\n      );\n    } else {\n      raw.code.forEach((c"
+        },
+        {
+          "kind": "text-position",
+          "start": 9363,
+          "end": 9436
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "2db7d4d5199bbae6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"kind code needs code: [{ file, quote | range }] with at least one span\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(`code is only for kind code (kind is ${k})`);",
+          "prefix": "fined && k !== undefined && k !== \"code\") {\n    ",
+          "suffix": "\n  }\n  if (raw.ref !== undefined && k !== undefi"
+        },
+        {
+          "kind": "text-position",
+          "start": 9050,
+          "end": 9107
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "418e165936bd8a56",
+          "semanticHash": "b68e05c3d8504bd4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:33.786Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:33.786Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

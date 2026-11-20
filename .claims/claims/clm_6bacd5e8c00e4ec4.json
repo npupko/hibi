@@ -1,0 +1,65 @@
+{
+  "id": "clm_6bacd5e8c00e4ec4",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "A claim of any kind with a ttl and nothing counting is `expired`.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A claim of any kind with a ttl and nothing counting is `expired`.",
+        "prefix": "Agent and process vouches and acks never count. ",
+        "suffix": "\n\n`check` lists a `worklist`: claims that are `e"
+      },
+      {
+        "kind": "text-position",
+        "start": 1679,
+        "end": 1744
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "until === undefined ||",
+          "prefix": "lse;\n  const until = expiresAt(claim);\n  return ",
+          "suffix": " now.getTime() >= until.getTime();\n}\n\n/** The re"
+        },
+        {
+          "kind": "text-position",
+          "start": 3124,
+          "end": 3146
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "b2083f0e32b02737",
+          "semanticHash": "6dfb52f61830537d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.841Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.841Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

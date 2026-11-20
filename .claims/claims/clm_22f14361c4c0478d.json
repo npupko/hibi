@@ -1,0 +1,88 @@
+{
+  "id": "clm_22f14361c4c0478d",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- `text-position`: `start` and `end` character offsets (UTF-16 code units) at record time.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `text-position`: `start` and `end` character offsets (UTF-16 code units) at record time.",
+        "prefix": "suffix` of up to 48 characters of context each.\n",
+        "suffix": "\n- `ast-node` (code only, optional): language, n"
+      },
+      {
+        "kind": "text-position",
+        "start": 16745,
+        "end": 16835
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "/** `text-position`: char offsets at record time. A locate bias and a move tiebreaker. */",
+          "prefix": "ult(\"\"),\n  suffix: z.string().default(\"\"),\n});\n\n",
+          "suffix": "\nexport const TextPositionSelector = z.strictObj"
+        },
+        {
+          "kind": "text-position",
+          "start": 4155,
+          "end": 4244
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "b67aac3a33228226"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/anchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ kind: \"text-position\", start, end },",
+          "prefix": "ind: \"text-quote\", exact, prefix, suffix },\n    ",
+          "suffix": "\n  ];\n\n  if (opts.language && opts.analyzer) {\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 2013,
+          "end": 2051
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "4c9c19f1d3254ffa",
+          "semanticHash": "dd607dad42065f26"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"text-position\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:58.883Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:58.883Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

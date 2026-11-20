@@ -1,0 +1,82 @@
+{
+  "id": "clm_715ec6d8e55b445a",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Jev is the only shipped implementation.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Jev is the only shipped implementation.",
+        "prefix": "ns/*.json` and are loaded, not written in code. ",
+        "suffix": "\n\nA fake implementation serves tests. It is scri"
+      },
+      {
+        "kind": "text-position",
+        "start": 31004,
+        "end": 31043
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export class JevJudge implements Judge {",
+          "prefix": "*/\n  model: string;\n  http: SystemOneClient;\n}\n\n",
+          "suffix": "\n  readonly model: string;\n  private readonly ht"
+        },
+        {
+          "kind": "text-position",
+          "start": 15179,
+          "end": 15219
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b61a61fec950341a",
+          "semanticHash": "6b1dc4d8e3b3df4c"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "new JevJudge({ model: config.judge.model, http: new TypeSafeHttp() })",
+          "prefix": "\n    return (\n      this.options.judge ??\n      ",
+          "suffix": "\n    );\n  }\n\n  /** The analyzer with the grammar"
+        },
+        {
+          "kind": "text-position",
+          "start": 8801,
+          "end": 8870
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "new_expression",
+          "structuralHash": "f4417c67a3382f17",
+          "semanticHash": "3e5c4fe2cd1bdd4f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:50.116Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:50.116Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

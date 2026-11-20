@@ -1,0 +1,88 @@
+{
+  "id": "clm_ab92433dda3d4bbe",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "A path that is not a registered document (one with no record in `.claims/documents/`) is an error, and nothing is written.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A path that is not a registered document (one with no record in `.claims/documents/`) is an error, and nothing is written.",
+        "prefix": "ent is registered but its file was not on disk. ",
+        "suffix": " To withdraw a document that has no successor, a"
+      },
+      {
+        "kind": "text-position",
+        "start": 4798,
+        "end": 4920
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const doc: Document | undefined = await store.getDocument(id);",
+          "prefix": "oot;\n  const id = documentIdForPath(docPath);\n  ",
+          "suffix": "\n  if (doc === undefined) {\n    throw new Error("
+        },
+        {
+          "kind": "text-position",
+          "start": 1464,
+          "end": 1526
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "4421ff3220387fdf",
+          "semanticHash": "4ccdd58e87a807e7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/archive.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "is not a registered document; nothing to archive",
+          "prefix": "fined) {\n    throw new Error(\n      `${docPath} ",
+          "suffix": " (a document is registered when a claim is recor"
+        },
+        {
+          "kind": "text-position",
+          "start": 1593,
+          "end": 1641
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "731990e61b1ab574"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.075Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.075Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

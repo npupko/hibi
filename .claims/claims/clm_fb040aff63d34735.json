@@ -1,0 +1,94 @@
+{
+  "id": "clm_fb040aff63d34735",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "```json\n{ \"id\": \"doc_…\", \"path\": \"docs/pricing.md\", \"lifecycle\": \"active | superseded | archived\",\n  \"supersededBy\": \"doc_…\", \"createdAt\": \"…\" }\n```",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```json\n{ \"id\": \"doc_…\", \"path\": \"docs/pricing.md\", \"lifecycle\": \"active | superseded | archived\",\n  \"supersededBy\": \"doc_…\", \"createdAt\": \"…\" }\n```",
+        "prefix": "erwrites an existing config.\n\n### 6.2 Document\n\n",
+        "suffix": "\n\nA document is created the first time a claim i"
+      },
+      {
+        "kind": "text-position",
+        "start": 15312,
+        "end": 15460
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const DocumentLifecycle = z.enum([\"active\", \"superseded\", \"archived\"]);",
+          "prefix": "<typeof ClaimKind>;\n\n/** Document lifecycle. */\n",
+          "suffix": "\nexport type DocumentLifecycle = z.infer<typeof "
+        },
+        {
+          "kind": "text-position",
+          "start": 2227,
+          "end": 2305
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "245292834183a927",
+          "semanticHash": "cd4cb16af839bae3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"active\",\"superseded\",\"archived\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    id: DocumentId,\n    path: z.string(),\n    lifecycle: DocumentLifecycle.default(\"active\"),\n    supersededBy: DocumentId.optional(),\n    createdAt: Instant,",
+          "prefix": "──\n\nexport const Document = z\n  .strictObject({\n",
+          "suffix": "\n  })\n  .meta({ id: \"Document\" });\nexport type D"
+        },
+        {
+          "kind": "text-position",
+          "start": 8730,
+          "end": 8888
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "e9464936d833fb2e",
+          "semanticHash": "f17125d988c009be"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"active\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:58.760Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:58.760Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

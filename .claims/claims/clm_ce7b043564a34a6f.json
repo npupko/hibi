@@ -1,0 +1,65 @@
+{
+  "id": "clm_ce7b043564a34a6f",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "Hibi does not infer it.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi does not infer it.",
+        "prefix": "nd. You choose it with `--kind` at record time. ",
+        "suffix": "\n\n| kind | evidence side | what makes it stale |"
+      },
+      {
+        "kind": "text-position",
+        "start": 581,
+        "end": 604
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`kind must be one of ${ClaimKind.options.join(\", \")} (got ${JSON.stringify(raw.kind)})`,",
+          "prefix": ";\n  if (!kind.success) {\n    errors.push(\n      ",
+          "suffix": "\n    );\n  }\n  const k = kind.success ? kind.data"
+        },
+        {
+          "kind": "text-position",
+          "start": 8787,
+          "end": 8875
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "2237e2094001c316",
+          "semanticHash": "3477af73941dcd58"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\", \""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:01.493Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:01.493Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

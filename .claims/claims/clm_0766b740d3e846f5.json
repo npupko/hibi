@@ -1,0 +1,88 @@
+{
+  "id": "clm_0766b740d3e846f5",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "\"expired gates under check --doc\",",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "\"expired gates under check --doc\",",
+        "prefix": "ample.com at 2026-10-22T18:21:46.275Z\",\n        ",
+        "suffix": "\n        \"worklist: expired; re-check the claim "
+      },
+      {
+        "kind": "text-position",
+        "start": 15821,
+        "end": 15855
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"expired gates under check --doc\"",
+          "prefix": "\"doc\") {\n      gates = true;\n      reasons.push(",
+          "suffix": ");\n    } else {\n      warns = true;\n      reason"
+        },
+        {
+          "kind": "text-position",
+          "start": 3885,
+          "end": 3918
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "e7ad771d1d90cbac"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"expired gates under check --doc\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`expired: ttl ${claim.ttl} ran out at ${until}, counted from the ${a.basis} by ${a.by} at ${a.at}`",
+          "prefix": "til = expiresAt(claim)?.toISOString();\n  return ",
+          "suffix": ";\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 3668,
+          "end": 3766
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "5ce3c2f3278f64da",
+          "semanticHash": "099d7bc58ae31d7e"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:10.396Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:10.396Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

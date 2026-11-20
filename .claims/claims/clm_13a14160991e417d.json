@@ -1,0 +1,116 @@
+{
+  "id": "clm_13a14160991e417d",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The sentence, the quote, the hashes, the evidence side, the attestations, and `ref` never change.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The sentence, the quote, the hashes, the evidence side, the attestations, and `ref` never change.",
+        "prefix": " otherwise every selector stays byte-identical. ",
+        "suffix": " A sentence edited before `supersede` still show"
+      },
+      {
+        "kind": "text-position",
+        "start": 73263,
+        "end": 73360
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    sentence = claim.sentence;\n  } else {",
+          "prefix": "aim.doc.selectors, contents.docContent),\n    };\n",
+          "suffix": "\n    if (\n      input.docPath !== undefined &&\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 12769,
+          "end": 12810
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "61a02e709166c439",
+          "semanticHash": "622ec5a858f26789"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  if (input.docOnly) {\n    evidence = claim.evidence;",
+          "prefix": "vidence side.\n  let evidence: SelectorBundle[];\n",
+          "suffix": "\n  } else if (input.evidence !== undefined) {\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 13958,
+          "end": 14011
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "44799af40c3d83c4",
+          "semanticHash": "154e092b5aa51a37"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "input.docOnly || relocated === 0 ? claim.ref : (input.ref ?? claim.ref),",
+          "prefix": "   doc: docBundle,\n    evidence,\n    ref:\n      ",
+          "suffix": "\n  };\n  // `supersede` (docOnly) always writes: "
+        },
+        {
+          "kind": "text-position",
+          "start": 15428,
+          "end": 15500
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "9026e3963acc6d53",
+          "semanticHash": "cdeaa24621d2a227"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:02.919Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:22:55.580Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:02.919Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

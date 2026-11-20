@@ -1,0 +1,59 @@
+{
+  "id": "clm_eda96a546ce14119",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A document record the batch created is kept, because documents are keyed by path and another writer may already use its id.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A document record the batch created is kept, because documents are keyed by path and another writer may already use its id.",
+        "prefix": "iles it overwrote get their previous text back. ",
+        "suffix": " A file that another writer changed again after "
+      },
+      {
+        "kind": "text-position",
+        "start": 60228,
+        "end": 60351
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (dirname(path) === documentsDir) continue;",
+          "prefix": "nce its id, so a created one is kept.\n          ",
+          "suffix": "\n          await rm(path, { force: true });\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 7842,
+          "end": 7887
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "2d45a9285794feaa",
+          "semanticHash": "5ffbe8f4502b7fec"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:05:26.945Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:05:26.945Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "clm_6d3f7bf45c3947c1",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The contradiction pass judges every pair for a whole-store or `--since` check, and only the pairs with a claim in the document under `--doc` (section 9).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The contradiction pass judges every pair for a whole-store or `--since` check, and only the pairs with a claim in the document under `--doc` (section 9).",
+        "prefix": "e git ref; `--doc` scopes them to one document. ",
+        "suffix": " `check --doc` on a path with no registered clai"
+      },
+      {
+        "kind": "text-position",
+        "start": 61912,
+        "end": 62065
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const pass = await this.conflictPass(onlyDocument);",
+          "prefix": "     onlyDocument = scope.documentId;\n    }\n    ",
+          "suffix": "\n    const options: CheckOptions = {\n      ast: "
+        },
+        {
+          "kind": "text-position",
+          "start": 13099,
+          "end": 13150
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "d4d9a8eab0ba334e",
+          "semanticHash": "c663ae201949e4ad"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "claims.filter((c) => c.documentId === documentId).map((c) => c.id),",
+          "prefix": "     ? undefined\n        : new Set(\n            ",
+          "suffix": "\n          );\n    return runConflictPass({\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 11098,
+          "end": 11165
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "35bfb4bcd6c08e13",
+          "semanticHash": "5165dcc222cfe570"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:34.705Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:34.705Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

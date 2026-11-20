@@ -1,0 +1,203 @@
+{
+  "id": "clm_2c29eabdb1434cbd",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It never aborts a run and never exits `1`: it maps to `pending` for a `reference` claim and for an `evidence` item, both with the reason `judge error: <message>`; to `pending` rows for the audit chunk, with the same `reason`; and to a `pending` conflict pair (the pair's reason in `pairs[]` carries the label; on the claim it is counted in `conflict checks pending: <n>`, section 7.4).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It never aborts a run and never exits `1`: it maps to `pending` for a `reference` claim and for an `evidence` item, both with the reason `judge error: <message>`; to `pending` rows for the audit chunk, with the same `reason`; and to a `pending` conflict pair (the pair's reason in `pairs[]` carries the label; on the claim it is counted in `conflict checks pending: <n>`, section 7.4).",
+        "prefix": " hibi cannot use is `JudgeError` (section 8.2). ",
+        "suffix": " Nothing is cached for it.\n- A `reference` claim"
+      },
+      {
+        "kind": "text-position",
+        "start": 25186,
+        "end": 25571
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeError) return `judge error: ${e.message}`;",
+          "prefix": "le) return `judge unavailable: ${e.message}`;\n  ",
+          "suffix": "\n  return undefined;\n}\n\n/**\n * The longest text "
+        },
+        {
+          "kind": "text-position",
+          "start": 3740,
+          "end": 3804
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "d2206c1328e3b3de"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"pending\", reasons: [label] };",
+          "prefix": "l(e);\n    if (label === undefined) throw e;\n    ",
+          "suffix": "\n  }\n  await input.cache.put({\n    key,\n    mode"
+        },
+        {
+          "kind": "text-position",
+          "start": 11618,
+          "end": 11664
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "4e167621b94fec45",
+          "semanticHash": "b1b2b8dff7d09013"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { kind: \"pending\", label };",
+          "prefix": "      if (label === undefined) throw e;\n        ",
+          "suffix": "\n      }\n    }),\n  );\n\n  // Write, in item order"
+        },
+        {
+          "kind": "text-position",
+          "start": 11314,
+          "end": 11348
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "19a769ffac90f206",
+          "semanticHash": "d08de9f68490fea0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const region of chunk) pending.set(region.id, label);",
+          "prefix": "    if (label === undefined) throw e;\n          ",
+          "suffix": "\n          return [];\n        }\n        answered"
+        },
+        {
+          "kind": "text-position",
+          "start": 8869,
+          "end": 8927
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "0b360b80342f7dd3",
+          "semanticHash": "8a3b8339aa402de4"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "outcome: \"pending\",\n          reason: label,",
+          "prefix": "pair.pairId,\n          why: pair.why,\n          ",
+          "suffix": "\n        };\n        return;\n      }\n      reques"
+        },
+        {
+          "kind": "text-position",
+          "start": 11183,
+          "end": 11227
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "b5b0769beb280252",
+          "semanticHash": "a75a27212cf8a858"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...(pendingPairs > 0 ? [`conflict checks pending: ${pendingPairs}`] : []),",
+          "prefix": "onflict with ${f.claimId}: ${f.reason}`),\n      ",
+          "suffix": "\n    ];\n    const findings: ClaimFindings = {\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 17259,
+          "end": 17333
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "6c2108a1064853f1",
+          "semanticHash": "fb32884413c11222"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:47.492Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:56.756Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:47.492Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

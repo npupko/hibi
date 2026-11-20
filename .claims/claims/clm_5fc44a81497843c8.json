@@ -1,0 +1,151 @@
+{
+  "id": "clm_5fc44a81497843c8",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 56 | `supersede` never reads the `--from` file and moves every live claim on it to `--to` (`documentId`, `doc.file`); it rebuilds only the `text-position` `start` and `end` when the stored quote occurs verbatim exactly once in `--to`, and otherwise leaves every selector byte-identical; the sentence, quote, hashes, evidence side, attestations, and `ref` never change; `relocated[]` reports each claim's post-move anchor states, a sentence missing from `--to` reads `orphaned` and gates, and `misses[]` holds only moves that failed with an error |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 56 | `supersede` never reads the `--from` file and moves every live claim on it to `--to` (`documentId`, `doc.file`); it rebuilds only the `text-position` `start` and `end` when the stored quote occurs verbatim exactly once in `--to`, and otherwise leaves every selector byte-identical; the sentence, quote, hashes, evidence side, attestations, and `ref` never change; `relocated[]` reports each claim's post-move anchor states, a sentence missing from `--to` reads `orphaned` and gates, and `misses[]` holds only moves that failed with an error |",
+        "prefix": "where `updated` counts items updated in place |\n",
+        "suffix": "\n| 57 | an expired `code` or `reference` claim's"
+      },
+      {
+        "kind": "text-position",
+        "start": 86472,
+        "end": 87021
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "moveDoc: (id, o) => this.reanchor(id, { ...o, docOnly: true }),",
+          "prefix": "adDoc: (rel) => this.readAnchored(rel),\n        ",
+          "suffix": "\n      },\n      { ...input, from: this.norm(inpu"
+        },
+        {
+          "kind": "text-position",
+          "start": 26626,
+          "end": 26689
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "7b73a256f9fdee4d",
+          "semanticHash": "8738d681857ff33f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (at < 0 || content.indexOf(quote.exact, at + 1) >= 0) return selectors;",
+          "prefix": "s;\n  const at = content.indexOf(quote.exact);\n  ",
+          "suffix": "\n  return selectors.map((s) =>\n    s.kind === \"t"
+        },
+        {
+          "kind": "text-position",
+          "start": 11306,
+          "end": 11380
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "d9180d7e246ba38c",
+          "semanticHash": "a6c298089dafb812"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "input.docOnly || relocated === 0 ? claim.ref : (input.ref ?? claim.ref),",
+          "prefix": "   doc: docBundle,\n    evidence,\n    ref:\n      ",
+          "suffix": "\n  };\n  // `supersede` (docOnly) always writes: "
+        },
+        {
+          "kind": "text-position",
+          "start": 15428,
+          "end": 15500
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "9026e3963acc6d53",
+          "semanticHash": "cdeaa24621d2a227"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "misses.push({ claimId: claim.id, reason: (e as Error).message });",
+          "prefix": "ence } : {}),\n      });\n    } catch (e) {\n      ",
+          "suffix": "\n    }\n  }\n\n  oldDoc.lifecycle = \"superseded\";\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 3997,
+          "end": 4062
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "749158be7aafd735",
+          "semanticHash": "3c81ddd925c31689"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:04.657Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:22:55.845Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:04.657Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

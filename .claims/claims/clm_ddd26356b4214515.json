@@ -1,0 +1,123 @@
+{
+  "id": "clm_ddd26356b4214515",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `retire <claim-id>` | `--dry-run` | withdraw; idempotent |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `retire <claim-id>` | `--dry-run` | withdraw; idempotent |",
+        "prefix": "hat reads `moved`, optionally on one document |\n",
+        "suffix": "\n| `supersede` | `--from <path>`, `--to <path>` "
+      },
+      {
+        "kind": "text-position",
+        "start": 55950,
+        "end": 56010
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "summary: \"Withdraw a claim so it no longer gates. Idempotent.\",",
+          "prefix": "mpts\"',\n    ],\n  },\n  {\n    name: \"retire\",\n    ",
+          "suffix": "\n    positional: {\n      name: \"claim-id\",\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 15910,
+          "end": 15973
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "32ff309bc64a1d78"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Withdraw a claim so it no longer gates. Idempotent.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "options: [DRY_RUN],",
+          "prefix": "m to retire.\",\n      required: true,\n    },\n    ",
+          "suffix": "\n    examples: [\"hibi retire clm_1a2b3c4d5e6f7a8"
+        },
+        {
+          "kind": "text-position",
+          "start": 16085,
+          "end": 16104
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "cd4de9ccd783bf10",
+          "semanticHash": "ddec869c13d6312c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[DRY_RUN]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/retire.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { claim, alreadyRetired: true };",
+          "prefix": ");\n  if (claim.enforcement === \"retired\") {\n    ",
+          "suffix": "\n  }\n  const next: Claim = { ...claim, enforceme"
+        },
+        {
+          "kind": "text-position",
+          "start": 1051,
+          "end": 1090
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "9d53b564b03ff244",
+          "semanticHash": "515ecd13135f5ab6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:56.657Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:56.657Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

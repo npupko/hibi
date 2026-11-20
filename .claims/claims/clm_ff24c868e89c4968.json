@@ -1,0 +1,59 @@
+{
+  "id": "clm_ff24c868e89c4968",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "Claims belong to the document they quote.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Claims belong to the document they quote.",
+        "prefix": "s correct.\n\n## Deleting or renaming a document\n\n",
+        "suffix": " Move them in the same change as the prose:\n\n1. "
+      },
+      {
+        "kind": "text-position",
+        "start": 8434,
+        "end": 8475
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    documentId: DocumentId,\n    kind: ClaimKind,",
+          "prefix": "st Claim = z\n  .strictObject({\n    id: ClaimId,\n",
+          "suffix": "\n    sentence: z.string().min(1),\n    doc: Selec"
+        },
+        {
+          "kind": "text-position",
+          "start": 9266,
+          "end": 9314
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "c9d78f1987063c4a",
+          "semanticHash": "07fb3bfde49ccf46"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:27:27.701Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:27:27.701Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

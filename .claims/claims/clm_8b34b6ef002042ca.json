@@ -1,0 +1,94 @@
+{
+  "id": "clm_8b34b6ef002042ca",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "`hibi init` writes `{ \"model\": \"jev-1.14.0\", \"threshold\": 0.8 }`.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi init` writes `{ \"model\": \"jev-1.14.0\", \"threshold\": 0.8 }`.",
+        "prefix": "| `judge.threshold` in `.claims/config.json` |\n\n",
+        "suffix": " The model id must be a pinned version of the fo"
+      },
+      {
+        "kind": "text-position",
+        "start": 2582,
+        "end": 2647
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "DEFAULT_JUDGE_MODEL = \"jev-1.14.0\"",
+          "prefix": "ites into a new store's config. */\nexport const ",
+          "suffix": ";\n/** The judge threshold `init` writes into a n"
+        },
+        {
+          "kind": "text-position",
+          "start": 496,
+          "end": 530
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "8bec3950d5682efb",
+          "semanticHash": "8036c0f849791fc9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"jev-1.14.0\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "DEFAULT_JUDGE_THRESHOLD = 0.8",
+          "prefix": " new store's config (SPEC 8.4). */\nexport const ",
+          "suffix": ";\n\n// ── Ids and actors ────────────────────────"
+        },
+        {
+          "kind": "text-position",
+          "start": 624,
+          "end": 653
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "a56b92b9befadadb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.8"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.943Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.943Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

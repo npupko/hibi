@@ -1,0 +1,105 @@
+{
+  "id": "clm_4c4f8946761a4eae",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "It moves every live claim on `--from` to `--to`, setting `documentId` and `doc.file`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "It moves every live claim on `--from` to `--to`, setting `documentId` and `doc.file`.",
+        "prefix": "yet. `supersede` never reads the `--from` file. ",
+        "suffix": " For each claim, when the stored `text-quote` `e"
+      },
+      {
+        "kind": "text-position",
+        "start": 72981,
+        "end": 73066
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const live = await liveClaimsOn(store, oldDoc.id);",
+          "prefix": "move that fails is a miss and stays stranded.\n  ",
+          "suffix": "\n  const relocated: RelocatedClaim[] = [];\n  con"
+        },
+        {
+          "kind": "text-position",
+          "start": 3525,
+          "end": 3575
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "59508193a44d26ff",
+          "semanticHash": "a769cbe5b85678bb"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const documentId = input.docPath",
+          "prefix": "}\n\n  const relocated = relocatedSides.length;\n  ",
+          "suffix": "\n    ? documentIdForPath(input.docPath)\n    : cl"
+        },
+        {
+          "kind": "text-position",
+          "start": 15214,
+          "end": 15246
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f5d620a6fd2441c3",
+          "semanticHash": "307252af3e16b030"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "file: docFile,\n      selectors: repositionDoc(claim.doc.selectors, contents.docContent),",
+          "prefix": "he hashes never change.\n    docBundle = {\n      ",
+          "suffix": "\n    };\n    sentence = claim.sentence;\n  } else "
+        },
+        {
+          "kind": "text-position",
+          "start": 12673,
+          "end": 12761
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "764395c4c4a801e4",
+          "semanticHash": "39291e8309279914"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:02.751Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:02.751Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

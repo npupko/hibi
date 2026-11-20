@@ -1,0 +1,139 @@
+{
+  "id": "clm_0753dd669f5f4aeb",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "9. Every other piece is split at `.`, `!`, or `?` (optionally followed by a closing quote, parenthesis, or bracket) when whitespace follows, except: never inside an inline code span (a backtick run up to the next run of the same length, which may cross lines); never inside a list marker and the whitespace after it, so `1. Blank lines separate blocks.` is one `list-item` region; and in a table row, never when only whitespace and `|` follow to the end of the row.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "9. Every other piece is split at `.`, `!`, or `?` (optionally followed by a closing quote, parenthesis, or bracket) when whitespace follows, except: never inside an inline code span (a backtick run up to the next run of the same length, which may cross lines); never inside a list marker and the whitespace after it, so `1. Blank lines separate blocks.` is one `list-item` region; and in a table row, never when only whitespace and `|` follow to the end of the row.",
+        "prefix": "it, so `## 1. Install` is one `heading` region.\n",
+        "suffix": "\n\nA region's kind is `heading`, `list-item`, `ta"
+      },
+      {
+        "kind": "text-position",
+        "start": 50364,
+        "end": 50829
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const SENTENCE_END = /[.!?][\"')\\]]?(?=\\s)/g;",
+          "prefix": "tional closing quote/paren, then whitespace. */\n",
+          "suffix": "\n\n/**\n * Segment `text` into blocks on blank-lin"
+        },
+        {
+          "kind": "text-position",
+          "start": 3187,
+          "end": 3231
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "eeee81a79ad72e63",
+          "semanticHash": "72aee686484d3b06"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (code.some((c) => m.index >= c.start && m.index < c.end)) continue;",
+          "prefix": ")) {\n    if (m.index < markerEnd) continue;\n    ",
+          "suffix": "\n    const cut = m.index + m[0].length;\n    // A"
+        },
+        {
+          "kind": "text-position",
+          "start": 8604,
+          "end": 8674
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "a06d4df23539b95a",
+          "semanticHash": "16decee16da0e6a0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (m.index < markerEnd) continue;",
+          "prefix": "(const m of slice.matchAll(SENTENCE_END)) {\n    ",
+          "suffix": "\n    if (code.some((c) => m.index >= c.start && "
+        },
+        {
+          "kind": "text-position",
+          "start": 8565,
+          "end": 8599
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "1744a43843af8b2e",
+          "semanticHash": "b0784a45ede85fec"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (piece.kind === \"table-row\" && /^[\\s|]*$/.test(slice.slice(cut))) {",
+          "prefix": "ng pipe stays with the row's last sentence.\n    ",
+          "suffix": "\n      continue;\n    }\n    const r = tight(text,"
+        },
+        {
+          "kind": "text-position",
+          "start": 8788,
+          "end": 8858
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "dac576cb8a739af9",
+          "semanticHash": "3cabbe718fd5049f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"table-row\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:18.952Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:56.500Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:18.952Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

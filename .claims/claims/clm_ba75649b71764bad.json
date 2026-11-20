@@ -1,0 +1,151 @@
+{
+  "id": "clm_ba75649b71764bad",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Results are decoded from it at read time by the same code that decodes a live response, so a cached and a live answer are read identically and a changed threshold applies without asking again.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Results are decoded from it at read time by the same code that decodes a live response, so a cached and a live answer are read identically and a changed threshold applies without asking again.",
+        "prefix": "nswers` is the raw System One `answers` object. ",
+        "suffix": "\n- **Evidence.** Raw evidence text submitted wit"
+      },
+      {
+        "kind": "text-position",
+        "start": 18580,
+        "end": 18772
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "mapSupportsAnswers(hit.answers as Record<string, Answer>),",
+          "prefix": "d) {\n    const outcome = supportsOutcome(\n      ",
+          "suffix": "\n      input.threshold,\n      values,\n    );\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 10856,
+          "end": 10914
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "9575f945e10bc49b",
+          "semanticHash": "35670d23e2af00d0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "mapSupportsAnswers(response.answers as Record<string, Answer>),",
+          "prefix": "\n  });\n  return {\n    ...supportsOutcome(\n      ",
+          "suffix": "\n      input.threshold,\n      values,\n    ),\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 11939,
+          "end": 12002
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "9575f945e10bc49b",
+          "semanticHash": "9138e608fa3a5dbc"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "mapSupportsAnswers(entry.answers as Record<string, Answer>),",
+          "prefix": "utcome {\n  const outcome = supportsOutcome(\n    ",
+          "suffix": "\n    threshold,\n    entry.evidence !== undefined"
+        },
+        {
+          "kind": "text-position",
+          "start": 6437,
+          "end": 6497
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "9575f945e10bc49b",
+          "semanticHash": "4ea4ce627c507b10"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "result = mapConflictAnswers(hit.answers as Record<string, Answer>);",
+          "prefix": "he.get(key);\n    if (hit !== undefined) {\n      ",
+          "suffix": "\n    } else {\n      let response: Awaited<Return"
+        },
+        {
+          "kind": "text-position",
+          "start": 10743,
+          "end": 10810
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "d1d92bfa93ddbd83",
+          "semanticHash": "737d900469e4e288"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "result = mapConflictAnswers(response.answers as Record<string, Answer>);",
+          "prefix": "),\n      };\n      await cache.put(entry);\n      ",
+          "suffix": "\n    }\n\n    const decision = decidePair(\n      p"
+        },
+        {
+          "kind": "text-position",
+          "start": 11571,
+          "end": 11643
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "d1d92bfa93ddbd83",
+          "semanticHash": "112ae2299836516f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:58.294Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:58.294Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

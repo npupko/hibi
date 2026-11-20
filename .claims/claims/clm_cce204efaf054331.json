@@ -1,0 +1,65 @@
+{
+  "id": "clm_cce204efaf054331",
+  "documentId": "doc_c5adefb4274c6931",
+  "kind": "code",
+  "sentence": "The judge needs a TypeSafe API key.",
+  "doc": {
+    "file": "docs/quickstart.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The judge needs a TypeSafe API key.",
+        "prefix": "elp    # or run it once without installing\n```\n\n",
+        "suffix": " Without one, everything except judge calls work"
+      },
+      {
+        "kind": "text-position",
+        "start": 1022,
+        "end": 1057
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const API_KEY_ENV = \"TYPESAFE_API_KEY\";",
+          "prefix": "t DEFAULT_BASE_URL = \"https://api.typesafe.ai\";\n",
+          "suffix": "\nexport const BASE_URL_ENV = \"TYPESAFE_BASE_URL\""
+        },
+        {
+          "kind": "text-position",
+          "start": 510,
+          "end": 556
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "6bd5c62b51857bf7"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"TYPESAFE_API_KEY\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:28.897Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:28.897Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

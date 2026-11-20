@@ -1,0 +1,59 @@
+{
+  "id": "clm_5db3c2e0aa1f4bad",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- **Rare-token rule.** The claims share a rare token.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **Rare-token rule.** The claims share a rare token.",
+        "prefix": "engine/pairing.ts`). Digits do not make tokens.\n",
+        "suffix": " A token is rare when it appears in fewer than `"
+      },
+      {
+        "kind": "text-position",
+        "start": 44557,
+        "end": 44610
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const rare = shared.filter(isRare);",
+          "prefix": " as Set<string>)].filter((t) => tb.has(t));\n    ",
+          "suffix": "\n    const parts: string[] = [];\n    if (rare.le"
+        },
+        {
+          "kind": "text-position",
+          "start": 6539,
+          "end": 6574
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "430540f217ccb185",
+          "semanticHash": "d6c57bb475cdb3ef"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:40.311Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:40.311Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

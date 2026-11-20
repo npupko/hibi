@@ -1,0 +1,59 @@
+{
+  "id": "clm_6f2b98c2e3594b23",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "A superseded document also has `supersededBy`.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A superseded document also has `supersededBy`.",
+        "prefix": " \"createdAt\": \"2026-10-22T18:16:02.977Z\" }\n```\n\n",
+        "suffix": "\n\n## A full claim\n\nA `code` claim as stored, aft"
+      },
+      {
+        "kind": "text-position",
+        "start": 9896,
+        "end": 9942
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "oldDoc.supersededBy = newDoc.id;",
+          "prefix": "    }\n  }\n\n  oldDoc.lifecycle = \"superseded\";\n  ",
+          "suffix": "\n  if (!dryRun) {\n    await store.putDocument(ne"
+        },
+        {
+          "kind": "text-position",
+          "start": 4111,
+          "end": 4143
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "56fd354f1bf6c5ad",
+          "semanticHash": "d24d5a7486beb224"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:05.033Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:05.033Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_dc681d89befd4cb0",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "`--by agent:nightly` applies to every item without a `by` key.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--by agent:nightly` applies to every item without a `by` key.",
+        "prefix": "i evidence` rejects an empty batch with exit 1. ",
+        "suffix": " Run it with `lobster run hibi-worklist.lobster`"
+      },
+      {
+        "kind": "text-position",
+        "start": 9718,
+        "end": 9780
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/commands/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "isItem(item) && !(\"by\" in item) ? { ...item, by } : item,",
+          "prefix": "   }\n  }\n  const items = raws.map((item) =>\n    ",
+          "suffix": "\n  );\n  try {\n    const report = await engine.ev"
+        },
+        {
+          "kind": "text-position",
+          "start": 1694,
+          "end": 1751
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "16d381518f365e91",
+          "semanticHash": "bec0ce7639e250db"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"by\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:08.792Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:08.792Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

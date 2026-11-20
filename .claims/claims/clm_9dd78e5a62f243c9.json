@@ -1,0 +1,82 @@
+{
+  "id": "clm_9dd78e5a62f243c9",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "\"errors\": [\"item 0: unknown repo alias",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "\"errors\": [\"item 0: unknown repo alias",
+        "prefix": "repos\\\" in .claims/config.json (known: api)\",\n  ",
+        "suffix": " \\\"web\\\" in web:src/x.ts; add it to \\\"repos\\\" in"
+      },
+      {
+        "kind": "text-position",
+        "start": 18930,
+        "end": 18968
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`unknown repo alias \"${split.alias}\" in ${file};",
+          "prefix": ".keys(config.repos);\n    throw new Error(\n      ",
+          "suffix": " add it to \"repos\" in .claims/config.json${known"
+        },
+        {
+          "kind": "text-position",
+          "start": 2377,
+          "end": 2425
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "6b44e4b2feddf7ff",
+          "semanticHash": "207162f3d8bbd932"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "nothing was recorded.",
+          "prefix": "ngth} problem${errors.length === 1 ? \"\" : \"s\"}; ",
+          "suffix": "\\n${errors.map((e) => `  ${e}`).join(\"\\n\")}`,\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 2279,
+          "end": 2300
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "83f901eafccd17b9"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:11.342Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:11.342Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

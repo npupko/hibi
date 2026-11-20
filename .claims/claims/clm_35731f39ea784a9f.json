@@ -1,0 +1,65 @@
+{
+  "id": "clm_35731f39ea784a9f",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `warn` | a verdict gates or warns |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `warn` | a verdict gates or warns |",
+        "prefix": "-|\n| `gating` | a verdict gates (the default) |\n",
+        "suffix": "\n| `never` | never; the JSON still reports every"
+      },
+      {
+        "kind": "text-position",
+        "start": 4683,
+        "end": 4720
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.warn && failOn === \"warn\") return 2;",
+          "prefix": "ver\") return 0;\n  if (flags.gating) return 2;\n  ",
+          "suffix": "\n  return 0;\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 22264,
+          "end": 22310
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "bccaa0a62493fb72",
+          "semanticHash": "a278e5457df0d7f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"warn\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:13.120Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:13.120Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

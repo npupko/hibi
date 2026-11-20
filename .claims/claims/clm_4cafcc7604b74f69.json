@@ -1,0 +1,82 @@
+{
+  "id": "clm_4cafcc7604b74f69",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "- Without span flags, each side is located through its stored selectors.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- Without span flags, each side is located through its stored selectors.",
+        "prefix": "shes the claim's `sentence` from the doc span.\n\n",
+        "suffix": "\n- A side that resolves `orphaned` is refused un"
+      },
+      {
+        "kind": "text-position",
+        "start": 5346,
+        "end": 5418
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "docRegion = before.doc.region;",
+          "prefix": ".id, \"doc\", docFile, claim.kind);\n      }\n      ",
+          "suffix": "\n    }\n    warnings.push(...validateDocQuote(con"
+        },
+        {
+          "kind": "text-position",
+          "start": 10598,
+          "end": 10628
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "56bf39dbabebbf87",
+          "semanticHash": "965fa7fbc28af0d8"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence = claim.evidence.map((bundle, i) =>",
+          "prefix": "ontents, input.analyzer),\n    );\n  } else {\n    ",
+          "suffix": "\n      relocateEvidenceBundle(\n        claim.kin"
+        },
+        {
+          "kind": "text-position",
+          "start": 11505,
+          "end": 11549
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "554892097ce5daae",
+          "semanticHash": "0b3ebe05dbe74fde"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "retired",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.230Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.230Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

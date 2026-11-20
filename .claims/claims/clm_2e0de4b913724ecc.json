@@ -1,0 +1,65 @@
+{
+  "id": "clm_2e0de4b913724ecc",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `completions <shell>` | none | zsh, bash, or fish |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `completions <shell>` | none | zsh, bash, or fish |",
+        "prefix": "` | print a JSON Schema, or the list of names |\n",
+        "suffix": "\n| `version` | none | print version and schema v"
+      },
+      {
+        "kind": "text-position",
+        "start": 56701,
+        "end": 56754
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "values: [\"zsh\", \"bash\", \"fish\"],",
+          "prefix": "h, bash, or fish.\",\n      required: true,\n      ",
+          "suffix": "\n    },\n    options: [],\n    examples: [\"hibi co"
+        },
+        {
+          "kind": "text-position",
+          "start": 21352,
+          "end": 21384
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "cc9a0633a6dafef9",
+          "semanticHash": "19721ac52a807646"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"zsh\",\"bash\",\"fish\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:56.908Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:56.908Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

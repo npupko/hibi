@@ -1,0 +1,203 @@
+{
+  "id": "clm_fcc41e3580f14cad",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "An unreachable judge or an answer hibi cannot use (a 4xx other than 401, 403, 408, and 429, a body that is not JSON) makes the judgment `pending`, which warns.",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An unreachable judge or an answer hibi cannot use (a 4xx other than 401, 403, 408, and 429, a body that is not JSON) makes the judgment `pending`, which warns.",
+        "prefix": "d claims |\n\nA judge failure is never an exit 1. ",
+        "suffix": "\n\n## GitHub Action\n\nThe repository is a composit"
+      },
+      {
+        "kind": "text-position",
+        "start": 831,
+        "end": 990
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "throw new JudgeError(`TypeSafe returned HTTP ${status}: ${text}`);",
+          "prefix": " the request is wrong, not the service.\n        ",
+          "suffix": "\n      }\n      lastFailure = `HTTP ${status}: ${"
+        },
+        {
+          "kind": "text-position",
+          "start": 6347,
+          "end": 6413
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "throw_statement",
+          "structuralHash": "5e7091e61f388ec5",
+          "semanticHash": "e88771fe6458d624"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return status === 408 || status === 429 || (status >= 500 && status <= 599);",
+          "prefix": " isRetryableStatus(status: number): boolean {\n  ",
+          "suffix": "\n}\n\n/**\n * Parses `retry-after` (seconds or HTTP"
+        },
+        {
+          "kind": "text-position",
+          "start": 2301,
+          "end": 2377
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "1a55bd3ff4928c36",
+          "semanticHash": "03adb57329923a5e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "408"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`TypeSafe returned a body that is not JSON",
+          "prefix": "  } catch (e) {\n    throw new JudgeError(\n      ",
+          "suffix": " (${(e as Error).message}): ${text.slice(0, 200)"
+        },
+        {
+          "kind": "text-position",
+          "start": 3192,
+          "end": 3234
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "3aa5028e59e3bede",
+          "semanticHash": "711efe439965a743"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/http.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`TypeSafe did not answer after ${MAX_RETRIES + 1} attempts: ${lastFailure}`,",
+          "prefix": "));\n    }\n    throw new JudgeUnavailable(\n      ",
+          "suffix": "\n    );\n  }\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 6692,
+          "end": 6768
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "8777c81154815b8d",
+          "semanticHash": "b51aaf11ecba5561"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"pending\", reasons: [label] };",
+          "prefix": "l(e);\n    if (label === undefined) throw e;\n    ",
+          "suffix": "\n  }\n  await input.cache.put({\n    key,\n    mode"
+        },
+        {
+          "kind": "text-position",
+          "start": 11618,
+          "end": 11664
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "4e167621b94fec45",
+          "semanticHash": "b1b2b8dff7d09013"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge !== undefined && WARN_JUDGE.has(v.judge)) warns = true;",
+          "prefix": "e;\n  if (v.judge === \"refuted\") gates = true;\n  ",
+          "suffix": "\n\n  for (const c of v.conflicts ?? []) {\n    if "
+        },
+        {
+          "kind": "text-position",
+          "start": 3223,
+          "end": 3290
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6f8b74a4d58a3d1a",
+          "semanticHash": "2ee335600addd146"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:42.344Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:05.178Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:42.344Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

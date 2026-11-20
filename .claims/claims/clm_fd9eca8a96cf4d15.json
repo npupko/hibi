@@ -1,0 +1,65 @@
+{
+  "id": "clm_fd9eca8a96cf4d15",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| exit code 3, tamper detection, `--fail-on tamper` | already gone in v3; stay gone |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| exit code 3, tamper detection, `--fail-on tamper` | already gone in v3; stay gone |",
+        "prefix": "store upgrade code | no compatibility with v3 |\n",
+        "suffix": "\n| coarse selector | navigation only, nobody use"
+      },
+      {
+        "kind": "text-position",
+        "start": 75742,
+        "end": 75827
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const FAIL_ON = [\"gating\", \"warn\", \"never\"] as const;",
+          "prefix": "e>([\n  \"refuted\",\n  \"review\",\n  \"pending\",\n]);\n\n",
+          "suffix": "\nexport type FailOn = (typeof FAIL_ON)[number];\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 5912,
+          "end": 5972
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "4507c84336a4f9ab",
+          "semanticHash": "678400bbae86082d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"gating\",\"warn\",\"never\"]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:13.600Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:13.600Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

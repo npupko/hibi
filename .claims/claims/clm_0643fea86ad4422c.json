@@ -1,0 +1,81 @@
+{
+  "id": "clm_0643fea86ad4422c",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "code",
+  "sentence": "Hibi (日々) is an agent-facing CLI that tracks checkable sentences in documents and reports which ones are stale.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi (日々) is an agent-facing CLI that tracks checkable sentences in documents and reports which ones are stale.",
+        "prefix": "# Contributing to Hibi\n\n",
+        "suffix": " Contributions of any size are welcome, from a t"
+      },
+      {
+        "kind": "text-position",
+        "start": 24,
+        "end": 135
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"description\": \"A deterministic, agent-facing CLI that keeps documentation and AI-agent-instruction files from silently going stale.\",",
+          "prefix": "\"name\": \"@npupko/hibi\",\n  \"version\": \"0.6.0\",\n  ",
+          "suffix": "\n  \"license\": \"MIT\",\n  \"author\": \"Nick Pupko <la"
+        },
+        {
+          "kind": "text-position",
+          "start": 52,
+          "end": 186
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"hibi: track the checkable sentences in documents and report which are stale\",",
+          "prefix": ") => c.name.length)) + 2;\n  const lines = [\n    ",
+          "suffix": "\n    \"\",\n    \"Usage: hibi <command> [options]\",\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 26306,
+          "end": 26384
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "0c52a9543f4e5d4b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"hibi: track the checkable sentences in documents and report which are stale\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:25.474Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:25.474Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

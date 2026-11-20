@@ -1,0 +1,88 @@
+{
+  "id": "clm_9a2cc3b67e01494b",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "A `process:` actor can submit evidence, and judged evidence counts toward the ttl.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A `process:` actor can submit evidence, and judged evidence counts toward the ttl.",
+        "prefix": " an agent that reads `procedure.instructions`.\n\n",
+        "suffix": " A `process:` or `agent:` vouch does not.\n\n## Th"
+      },
+      {
+        "kind": "text-position",
+        "start": 7244,
+        "end": 7326
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ACTOR_PATTERN = /^(human|agent|process):.+$/;",
+          "prefix": ":<id>`, `agent:<name>`, or `process:<name>`. */\n",
+          "suffix": "\nexport const Actor = z.string().regex(ACTOR_PAT"
+        },
+        {
+          "kind": "text-position",
+          "start": 1052,
+          "end": 1110
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b879b2ad137802b7",
+          "semanticHash": "63e9cd8b98c3091c"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (a.basis === \"evidence\") return true;",
+          "prefix": "rt function counts(a: Attestation): boolean {\n  ",
+          "suffix": "\n  return a.basis === \"vouch\" && a.by.startsWith"
+        },
+        {
+          "kind": "text-position",
+          "start": 606,
+          "end": 646
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "2b86e5c896c53ef4",
+          "semanticHash": "64443608661256fc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:39.342Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:39.342Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

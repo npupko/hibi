@@ -1,0 +1,94 @@
+{
+  "id": "clm_901c66418bb84d5b",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "An ack stops that finding from warning or gating.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An ack stops that finding from warning or gating.",
+        "prefix": "--note \"the FAQ describes the annual plan\"\n```\n\n",
+        "suffix": " It never resets the ttl. A conflict ack is reco"
+      },
+      {
+        "kind": "text-position",
+        "start": 8274,
+        "end": 8323
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "opts.judge === \"review\" && opts.reviewAcknowledged ? undefined : opts.judge;",
+          "prefix": "opts.conflicts ?? [];\n  const gatingJudge =\n    ",
+          "suffix": "\n  const gate = gateVerdict(\n    {\n      doc: si"
+        },
+        {
+          "kind": "text-position",
+          "start": 14533,
+          "end": 14609
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "d2e4b4fffa3ad218",
+          "semanticHash": "b21fbcd5f8ecd1c6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"review\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "outcome = \"acked\";",
+          "prefix": " \"review\") {\n      if (isAcked(pair)) {\n        ",
+          "suffix": "\n        reason = `acknowledged: ${decision.reas"
+        },
+        {
+          "kind": "text-position",
+          "start": 11971,
+          "end": 11989
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "1341ae31d79aa8fc",
+          "semanticHash": "1ccf76d39fa738e9"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"acked\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:39.719Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:39.719Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

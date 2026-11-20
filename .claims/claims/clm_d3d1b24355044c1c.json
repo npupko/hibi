@@ -1,0 +1,70 @@
+{
+  "id": "clm_d3d1b24355044c1c",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "attested",
+  "sentence": "The published site deploys through the Mintlify GitHub App on a push to the default branch.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The published site deploys through the Mintlify GitHub App on a push to the default branch.",
+        "prefix": "  # validate internal links before pushing\n```\n\n",
+        "suffix": " The dashboard's content directory is set to `do"
+      },
+      {
+        "kind": "text-position",
+        "start": 2745,
+        "end": 2836
+      }
+    ]
+  },
+  "evidence": [],
+  "sources": [
+    {
+      "id": "github-check-runs",
+      "resource": "https://api.github.com/repos/npupko/hibi/commits/main/check-runs",
+      "title": "GitHub check runs on the default branch"
+    },
+    {
+      "id": "mintlify-github",
+      "resource": "https://www.mintlify.com/docs/deploy/github.md",
+      "title": "Mintlify docs: GitHub"
+    }
+  ],
+  "procedure": {
+    "instructions": "Report the repository's default branch and, for the latest commits on it, whether a 'Mintlify Deployment' check run from the 'mintlify' GitHub App appears and its conclusion.",
+    "steps": [
+      {
+        "id": "branch",
+        "command": "gh api repos/npupko/hibi --jq .default_branch"
+      },
+      {
+        "id": "commits",
+        "command": "gh api 'repos/npupko/hibi/commits?sha=main&per_page=10' --jq '.[].sha'"
+      },
+      {
+        "id": "checks",
+        "command": "gh api repos/npupko/hibi/commits/<sha>/check-runs --jq '.check_runs[] | select(.app.slug==\"mintlify\") | [.name, .conclusion, .output.title] | @tsv'"
+      }
+    ]
+  },
+  "ttl": "P90D",
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:32:33.912Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:32:49.268Z",
+      "basis": "evidence",
+      "note": "Mintlify GitHub App posts Mintlify Deployment check runs on pushes to main (default branch); deployments succeed",
+      "evidenceHash": "f4c39140e9c87ae24497c675c5468a7115a9d14fcb4f83796708552ce618d7d6"
+    }
+  ],
+  "createdAt": "2026-10-23T08:32:33.912Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

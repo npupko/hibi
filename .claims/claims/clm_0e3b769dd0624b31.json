@@ -1,0 +1,65 @@
+{
+  "id": "clm_0e3b769dd0624b31",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "{\n  \"region\": { \"id\": \"r3\", \"line\": 7, \"kind\": \"sentence\", \"text\": \"It is fast.\" },\n  \"claimId\": null,\n  \"kind\": \"unsure\",\n  \"unsure\": \"kind\",\n  \"probabilities\": {\n    \"kind\": { \"factual_claim\": 0.4, \"instruction\": 0.05, \"opinion\": 0.5, \"narrative\": 0.05 }\n  },\n  \"duplicateOf\": null\n}",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "{\n  \"region\": { \"id\": \"r3\", \"line\": 7, \"kind\": \"sentence\", \"text\": \"It is fast.\" },\n  \"claimId\": null,\n  \"kind\": \"unsure\",\n  \"unsure\": \"kind\",\n  \"probabilities\": {\n    \"kind\": { \"factual_claim\": 0.4, \"instruction\": 0.05, \"opinion\": 0.5, \"narrative\": 0.05 }\n  },\n  \"duplicateOf\": null\n}",
+        "prefix": "he audit still exits 0 |\n\n## Row shape\n\n```json\n",
+        "suffix": "\n```\n\n| field | present | meaning |\n|---|---|---"
+      },
+      {
+        "kind": "text-position",
+        "start": 4310,
+        "end": 4595
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export interface AuditRow {\n  region: { id: string; line: number; kind: RegionKind; text: string };\n  claimId: string | null;\n  kind: AuditKind;\n  probability?: number;\n  probabilities?: AuditProbabilities;\n  /** On an `unsure` row: the Choice whose confidence fell below `judge.threshold`. */\n  unsure?: \"kind\" | \"evidenceKind\";\n  /** On a `pending` row: `judge unavailable: <message>` or `judge error: <message>`. */\n  reason?: string;\n  duplicateOf: string | null;\n}",
+          "prefix": "evidenceKind?: Record<EvidenceKind, number>;\n}\n\n",
+          "suffix": "\n\nexport interface AuditSummary {\n  regions: num"
+        },
+        {
+          "kind": "text-position",
+          "start": 3834,
+          "end": 4303
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "51f383b87cdcf9be",
+          "semanticHash": "b4af6f3a688a50f6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:41.708Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:41.708Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

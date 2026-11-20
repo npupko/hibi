@@ -1,0 +1,94 @@
+{
+  "id": "clm_15f690d206a34671",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Tests are TypeScript against them.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Tests are TypeScript against them.",
+        "prefix": "uestion files, and the recorded judge fixtures. ",
+        "suffix": " The implementation language is replaceable.\n\n##"
+      },
+      {
+        "kind": "text-position",
+        "start": 2723,
+        "end": 2757
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "test/judge-jev.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const FIXTURES = join(import.meta.dir, \"fixtures\", \"judge\");",
+          "prefix": "SupportsInput,\n} from \"../src/judge/types.ts\";\n\n",
+          "suffix": "\nconst MODEL = \"jev-1.13.0\";\n/** The triage fixt"
+        },
+        {
+          "kind": "text-position",
+          "start": 696,
+          "end": 756
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "278527a88c0982d9",
+          "semanticHash": "fbb01395b670f261"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"fixtures\""
+        }
+      ]
+    },
+    {
+      "file": "test/judge-jev.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "describe(\"request shapes match the fixtures\", () => {",
+          "prefix": "egion[\"kind\"], text, headingPath: [\"Doc\"] };\n}\n\n",
+          "suffix": "\n  test(\"triage\", async () => {\n    const inputs"
+        },
+        {
+          "kind": "text-position",
+          "start": 3149,
+          "end": 3202
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "49bd192fa744af55",
+          "semanticHash": "067766496eca2acf"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"request shapes match the fixtures\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:23.970Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:23.970Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

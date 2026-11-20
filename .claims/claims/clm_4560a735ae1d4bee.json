@@ -1,0 +1,134 @@
+{
+  "id": "clm_4560a735ae1d4bee",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "Every path a command takes (`--doc`, `--code-file`, `--ref-file`, `--path`, `--from`, `--to`, `--successor`, and the same keys in JSON input) is normalized to a POSIX path relative to the anchor root (the current directory, or `--cwd`).",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Every path a command takes (`--doc`, `--code-file`, `--ref-file`, `--path`, `--from`, `--to`, `--successor`, and the same keys in JSON input) is normalized to a POSIX path relative to the anchor root (the current directory, or `--cwd`).",
+        "prefix": "n `evidence: path escapes its root`.\n\n## Paths\n\n",
+        "suffix": " `./README.md`, `README.md`, and an absolute pat"
+      },
+      {
+        "kind": "text-position",
+        "start": 5541,
+        "end": 5777
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return normalizePath(this.store.anchorRoot, p);",
+          "prefix": "h`). */\n  private norm(p: string): string {\n    ",
+          "suffix": "\n  }\n\n  /**\n   * Verify every claim against the "
+        },
+        {
+          "kind": "text-position",
+          "start": 11506,
+          "end": 11553
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "3d6ec06db677013d",
+          "semanticHash": "056ecf59a96c2e10"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Anchor root the paths resolve against. Default: the current directory.",
+          "prefix": " \"string\",\n    placeholder: \"<dir>\",\n    help: \"",
+          "suffix": "\",\n  },\n  {\n    name: \"store-dir\",\n    type: \"st"
+        },
+        {
+          "kind": "text-position",
+          "start": 2502,
+          "end": 2572
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "60b1ff62b7c9b930"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ ...input, from: this.norm(input.from), to: this.norm(input.to) },",
+          "prefix": "or(id, { ...o, docOnly: true }),\n      },\n      ",
+          "suffix": "\n    );\n  }\n\n  /** Move an obsolete document out"
+        },
+        {
+          "kind": "text-position",
+          "start": 26705,
+          "end": 26772
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "c86f1a5c1ce9cbe4",
+          "semanticHash": "cc9f1e479e19f5f7"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "successorPath === undefined ? undefined : this.norm(successorPath),",
+          "prefix": "    this.store,\n      this.norm(docPath),\n      ",
+          "suffix": "\n      opts,\n    );\n  }\n\n  /** Withdraw a claim:"
+        },
+        {
+          "kind": "text-position",
+          "start": 27074,
+          "end": 27141
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "a0418b2b4c3d1ad5",
+          "semanticHash": "98a5788b61a0dfae"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:03.667Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:03.667Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

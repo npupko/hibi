@@ -1,0 +1,65 @@
+{
+  "id": "clm_408b41e50f364f50",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "Code rule: when `addresses` is below 0.3, the relation is `does_not_address` whatever the Choice said.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Code rule: when `addresses` is below 0.3, the relation is `does_not_address` whatever the Choice said.",
+        "prefix": "d span and `evidence_source` is its file path.\n\n",
+        "suffix": "\n\n### conflict\n\n| | |\n|---|---|\n| state | `a: { "
+      },
+      {
+        "kind": "text-position",
+        "start": 7637,
+        "end": 7739
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ADDRESSES_FLOOR = 0.3",
+          "prefix": "s\"` and the Noul's confidence.\n */\nexport const ",
+          "suffix": ";\n\n/**\n * conflict: when the `same_subject` Noul"
+        },
+        {
+          "kind": "text-position",
+          "start": 1407,
+          "end": 1428
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "d75a83237d804836"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.924Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.924Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

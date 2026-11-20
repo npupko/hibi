@@ -1,0 +1,65 @@
+{
+  "id": "clm_8489111963404294",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "Claims on a non-active document are left out of the worklist, so no agent is asked to collect evidence for them.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Claims on a non-active document are left out of the worklist, so no agent is asked to collect evidence for them.",
+        "prefix": "cycle as its status when nothing worse applies. ",
+        "suffix": "\n\n### `supersede`\n\n```sh\nhibi supersede --from <"
+      },
+      {
+        "kind": "text-position",
+        "start": 2274,
+        "end": 2386
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const active = (lifecycleById.get(c.documentId) ?? \"active\") === \"active\";",
+          "prefix": "pending\");\n    statusTags.set(c.id, tags);\n\n    ",
+          "suffix": "\n    const reason = active\n      ? worklistReaso"
+        },
+        {
+          "kind": "text-position",
+          "start": 18031,
+          "end": 18105
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "9836dde2c3063ea4",
+          "semanticHash": "2f62e18d6ee81425"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"active\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.564Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.564Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

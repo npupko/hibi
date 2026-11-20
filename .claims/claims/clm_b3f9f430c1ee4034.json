@@ -1,0 +1,52 @@
+{
+  "id": "clm_b3f9f430c1ee4034",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "reference",
+  "sentence": "A claim is `expired` when it has a `ttl` and either the newest counting attestation plus `ttl` is in the past, or it has no counting attestation.",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A claim is `expired` when it has a `ttl` and either the newest counting attestation plus `ttl` is in the past, or it has no counting attestation.",
+        "prefix": "o `ttl` or no counting attestation.\n\n## Expiry\n\n",
+        "suffix": "\n\n| command | effect of `expired` |\n|---|---|\n| "
+      },
+      {
+        "kind": "text-position",
+        "start": 3309,
+        "end": 3454
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "A claim with a `ttl` and no counting attestation is expired. Otherwise it expires at the counting attestation's `at` plus the `ttl`, and is expired when now is at or after that instant.",
+          "prefix": "onal elsewhere. There is no store-wide default. ",
+          "suffix": " Years and months add calendar units in UTC and "
+        },
+        {
+          "kind": "text-position",
+          "start": 11926,
+          "end": 12111
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:58.023Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:58.023Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

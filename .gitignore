@@ -4,5 +4,3 @@ dist/
 .DS_Store
 .claude/
 
-# ADR-003 evidence: regenerable per-sentence dump (1.7MB) — see anchor-survival-experiment.md
-design/evidence/ADR-003/results.json

@@ -1,0 +1,88 @@
+{
+  "id": "clm_617f86e8d8854e73",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "| `id` | no | a short name evidence can refer to |",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `id` | no | a short name evidence can refer to |",
+        "prefix": "oard name, a person, a file in another system |\n",
+        "suffix": "\n| `title` | no | a label for people |\n\nHibi nev"
+      },
+      {
+        "kind": "text-position",
+        "start": 2467,
+        "end": 2517
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "id: z.string().optional(),\n    resource",
+          "prefix": "/\nexport const Source = z\n  .strictObject({\n    ",
+          "suffix": ": z.string().min(1),\n    title: z.string().optio"
+        },
+        {
+          "kind": "text-position",
+          "start": 7863,
+          "end": 7902
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "80fa26a381f07b84",
+          "semanticHash": "45ae82f01bcae5e9"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (s.id !== undefined && s.id === source) {",
+          "prefix": "efined {\n  for (const s of claim.sources) {\n    ",
+          "suffix": "\n      return `source matches declared source \"$"
+        },
+        {
+          "kind": "text-position",
+          "start": 4813,
+          "end": 4857
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "93f2ce9ca85e5688",
+          "semanticHash": "a4aadeefe928a48d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:02.280Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:02.280Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,94 @@
+{
+  "id": "clm_b910c84323df4a58",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `conflicts` non-empty | gate | gate |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `conflicts` non-empty | gate | gate |",
+        "prefix": "ate | gate |\n| `judge: refuted` | gate | gate |\n",
+        "suffix": "\n| `expired` | warn | gate |\n| `moved` or `unava"
+      },
+      {
+        "kind": "text-position",
+        "start": 26072,
+        "end": 26111
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (c.probability >= threshold) {\n      gates = true;",
+          "prefix": "ue;\n\n  for (const c of v.conflicts ?? []) {\n    ",
+          "suffix": "\n      reasons.push(\n        `conflicts with ${c"
+        },
+        {
+          "kind": "text-position",
+          "start": 3335,
+          "end": 3388
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "228bf496610c4c91",
+          "semanticHash": "a636709b6f002d4f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".filter((f) => f.claimId === claimId && f.review !== true)",
+          "prefix": "ason: string }[] {\n  return result.findings\n    ",
+          "suffix": "\n    .map((f) => ({\n      claimId: f.otherClaimI"
+        },
+        {
+          "kind": "text-position",
+          "start": 13583,
+          "end": 13641
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "1c56978d49b7b748",
+          "semanticHash": "0eaf68b7ba08c5a3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:48.045Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:48.045Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_c143d762948d461c",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- `basis: vouch` is a bare statement.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `basis: vouch` is a bare statement.",
+        "prefix": "configuration; an item with neither is refused.\n",
+        "suffix": " `record` appends a vouch by the recording actor"
+      },
+      {
+        "kind": "text-position",
+        "start": 8463,
+        "end": 8500
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const attestation = Attestation.parse({ by, at, basis: \"vouch\", note });",
+          "prefix": "tore, claimId);\n\n  if (ack === undefined) {\n    ",
+          "suffix": "\n    await append(store, claim, attestation);\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 5656,
+          "end": 5728
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "70e432337e30f3c5",
+          "semanticHash": "7d46052865a8c43a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"vouch\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:34.974Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:34.974Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

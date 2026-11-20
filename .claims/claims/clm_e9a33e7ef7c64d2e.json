@@ -1,0 +1,52 @@
+{
+  "id": "clm_e9a33e7ef7c64d2e",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "reference",
+  "sentence": "| a separate layer of normalized statements | duplicates come from sentence text and the contradiction pass; `supersede` moves every live claim by document and uses the stored quote only to fix its position |",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| a separate layer of normalized statements | duplicates come from sentence text and the contradiction pass; `supersede` moves every live claim by document and uses the stored quote only to fix its position |",
+        "prefix": "he judge interface is the one extension point |\n",
+        "suffix": "\n| topics | pairing for the contradiction pass i"
+      },
+      {
+        "kind": "text-position",
+        "start": 5588,
+        "end": 5796
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "| propositions | duplicate detection comes from sentence text and the conflict pass; supersede moves every live claim by document and uses the stored quote only to rebuild its text position |",
+          "prefix": "extension point; no resolver was ever shipped |\n",
+          "suffix": "\n| topics | pairing in code needs none; a mainta"
+        },
+        {
+          "kind": "text-position",
+          "start": 75339,
+          "end": 75530
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:52.136Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:52.136Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

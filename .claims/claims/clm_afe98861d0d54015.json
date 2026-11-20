@@ -1,0 +1,65 @@
+{
+  "id": "clm_afe98861d0d54015",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "hibi list --state duplicate   # duplicate candidates and claims with the same sentence",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "hibi list --state duplicate   # duplicate candidates and claims with the same sentence",
+        "prefix": " with a contradiction finding, gating or review\n",
+        "suffix": "\n```\n\nReconcile a contradiction by rewriting whi"
+      },
+      {
+        "kind": "text-position",
+        "start": 5855,
+        "end": 5941
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (other !== id) add(id, { claimId: other, why: \"same sentence\" });",
+          "prefix": "ids) {\n      for (const other of ids) {\n        ",
+          "suffix": "\n      }\n    }\n  }\n  return out;\n}\n\nexport funct"
+        },
+        {
+          "kind": "text-position",
+          "start": 4256,
+          "end": 4324
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "337f07018ed126d0",
+          "semanticHash": "0d44bdad5bd6dbf4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"same sentence\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:39.125Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:39.125Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

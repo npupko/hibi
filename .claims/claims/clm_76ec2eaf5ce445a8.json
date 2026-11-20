@@ -1,0 +1,128 @@
+{
+  "id": "clm_76ec2eaf5ce445a8",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "This holds for every command, including `check`, `list`, and a `--from-file` input that cannot be read or is not valid JSON.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "This holds for every command, including `check`, `list`, and a `--from-file` input that cannot be read or is not valid JSON.",
+        "prefix": "ists one problem per line for a rejected batch. ",
+        "suffix": "\n\n**init.** Creates `.claims/` with `config.json"
+      },
+      {
+        "kind": "text-position",
+        "start": 57239,
+        "end": 57363
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/shared.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "async function fail(\n  message: string,\n  mode: OutputMode,\n  errors?: string[],\n): Promise<never> {",
+          "prefix": "e line each) also goes into the JSON. */\nexport ",
+          "suffix": "\n  if (isHuman(mode)) {\n    await printErr(`${ma"
+        },
+        {
+          "kind": "text-position",
+          "start": 3170,
+          "end": 3270
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "function_declaration",
+          "structuralHash": "176173364db379e8",
+          "semanticHash": "8baacb5b22ac7a8f"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/commands/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return fail(`record --from-file: ${(e as Error).message}`, mode);",
+          "prefix": "r).message})`);\n      }\n    } catch (e) {\n      ",
+          "suffix": "\n    }\n    if (!Array.isArray(parsed)) {\n      r"
+        },
+        {
+          "kind": "text-position",
+          "start": 4478,
+          "end": 4543
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "295f3326a0b8a080",
+          "semanticHash": "9986b16f60f2b5b2"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/commands/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return fail(`evidence --from-file: ${(e as Error).message}`, mode);",
+          "prefix": "s Error).message})`);\n    }\n  } catch (e) {\n    ",
+          "suffix": "\n  }\n  const isItem = (item: unknown): item is R"
+        },
+        {
+          "kind": "text-position",
+          "start": 909,
+          "end": 976
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "295f3326a0b8a080",
+          "semanticHash": "c9ed908986e7b1c7"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/shared.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "throw new Error(`--from-file ${fromFile}: no such file`);",
+          "prefix": "tring }).code;\n    if (code === \"ENOENT\")\n      ",
+          "suffix": "\n    throw e;\n  }\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 4158,
+          "end": 4215
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "throw_statement",
+          "structuralHash": "14b9d4e21d090bdf",
+          "semanticHash": "e1eff46913816897"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:57.095Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:57.095Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

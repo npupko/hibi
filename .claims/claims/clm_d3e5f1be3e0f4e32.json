@@ -1,0 +1,65 @@
+{
+  "id": "clm_d3e5f1be3e0f4e32",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "Run without `TYPESAFE_API_KEY`, the worklist also holds the reference claim, as `pending`:",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Run without `TYPESAFE_API_KEY`, the worklist also holds the reference claim, as `pending`:",
+        "prefix": " by an agent and an agent vouch does not count. ",
+        "suffix": "\n\n```json\n\"worklist\": [\n  { \"claimId\": \"clm_517b"
+      },
+      {
+        "kind": "text-position",
+        "start": 6425,
+        "end": 6515
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"pending\") return \"pending\";",
+          "prefix": "= \"review\" && !acknowledged) return \"review\";\n  ",
+          "suffix": "\n  const checkable = claim.procedure !== null ||"
+        },
+        {
+          "kind": "text-position",
+          "start": 12834,
+          "end": 12878
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "ccc54664337229f7",
+          "semanticHash": "9584d1ccbcf8b14d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:08.042Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:08.042Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

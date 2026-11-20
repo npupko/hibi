@@ -1,0 +1,72 @@
+{
+  "id": "clm_97bec6a5d29b4510",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- A `pending` row means the judge was unavailable or its answer for the region's chunk could not be used (section 7.3); every region of that chunk is `pending`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- A `pending` row means the judge was unavailable or its answer for the region's chunk could not be used (section 7.3); every region of that chunk is `pending`.",
+        "prefix": "s present when the top kind is `factual_claim`.\n",
+        "suffix": " It has neither `probability` nor `probabilities"
+      },
+      {
+        "kind": "text-position",
+        "start": 52735,
+        "end": 52895
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const region of chunk) pending.set(region.id, label);",
+          "prefix": "    if (label === undefined) throw e;\n          ",
+          "suffix": "\n          return [];\n        }\n        answered"
+        },
+        {
+          "kind": "text-position",
+          "start": 8869,
+          "end": 8927
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "0b360b80342f7dd3",
+          "semanticHash": "8a3b8339aa402de4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:19.440Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:42.009Z",
+      "basis": "ack",
+      "note": "same rule for pending audit rows; 7.3 is a section number, not a value",
+      "ack": {
+        "pairId": "clm_133a908e90d44b7c:clm_97bec6a5d29b4510",
+        "sentenceHashes": [
+          "208216eeb7fd743a4fd807cc94aa8b215452d85cd3b3319f9810819ffa6f78e6",
+          "4b0abab8d44140014ee379c8281ce246ec02c94fe2ff19a2676e003449d671a6"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:19.440Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

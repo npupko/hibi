@@ -1,0 +1,94 @@
+{
+  "id": "clm_dbd61285e20f488e",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "`--format human|compact|json|json-pretty` or `--json` overrides.",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--format human|compact|json|json-pretty` or `--json` overrides.",
+        "prefix": "t\n\nHuman output on a terminal, JSON when piped. ",
+        "suffix": " `--overview` renders a per-document table in hu"
+      },
+      {
+        "kind": "text-position",
+        "start": 13848,
+        "end": 13912
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const FORMATS = [\"human\", \"compact\", \"json\", \"json-pretty\"] as const;",
+          "prefix": "e>`; exit 2 means a sentence in it is stale.\";\n\n",
+          "suffix": "\nexport type Format = (typeof FORMATS)[number];\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 1520,
+          "end": 1596
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "924c9484f053f2fd",
+          "semanticHash": "6787d4cb3e806e98"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"human\",\"compact\",\"json\",\"json-pretty\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/mode.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.json) return \"json\";",
+          "prefix": "  case \"compact\":\n      return \"compact\";\n  }\n  ",
+          "suffix": "\n  return isTTY ? \"rich\" : \"json\";\n}\n\nfunction r"
+        },
+        {
+          "kind": "text-position",
+          "start": 1284,
+          "end": 1314
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "c6e2ae1864093512",
+          "semanticHash": "402516fc3eda6f2f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"json\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:17.828Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:17.828Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

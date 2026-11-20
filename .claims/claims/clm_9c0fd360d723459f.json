@@ -1,0 +1,65 @@
+{
+  "id": "clm_9c0fd360d723459f",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "| `claimId` | always | the covering claim, or `null` |",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `claimId` | always | the covering claim, or `null` |",
+        "prefix": " | `id`, `line`, `kind` (region kind), `text` |\n",
+        "suffix": "\n| `kind` | always | `code`, `reference`, `attes"
+      },
+      {
+        "kind": "text-position",
+        "start": 4712,
+        "end": 4766
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "claimId: string | null;",
+          "prefix": "ne: number; kind: RegionKind; text: string };\n  ",
+          "suffix": "\n  kind: AuditKind;\n  probability?: number;\n  pr"
+        },
+        {
+          "kind": "text-position",
+          "start": 3936,
+          "end": 3959
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "property_signature",
+          "structuralHash": "a0b9ca93f677e2e8",
+          "semanticHash": "5015a958c1f2c62a"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:25.376Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:25.376Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

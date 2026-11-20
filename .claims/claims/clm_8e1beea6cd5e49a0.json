@@ -1,0 +1,111 @@
+{
+  "id": "clm_8e1beea6cd5e49a0",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "Each verdict has two booleans and a list of labels:",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each verdict has two booleans and a list of labels:",
+        "prefix": " them fails the run.\n\n## gates, warns, reasons\n\n",
+        "suffix": "\n\n| field | meaning |\n|---|---|\n| `gates` | the "
+      },
+      {
+        "kind": "text-position",
+        "start": 2682,
+        "end": 2733
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "gates: z.boolean(),",
+          "prefix": "icts: z.array(ConflictFinding).default([]),\n    ",
+          "suffix": "\n    /** True when the verdict warns and does no"
+        },
+        {
+          "kind": "text-position",
+          "start": 16731,
+          "end": 16750
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1510bc52887893f3",
+          "semanticHash": "2b3d975908b4503f"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "warns: z.boolean(),",
+          "prefix": "nd does not gate (SPEC 7.4); never both. */\n    ",
+          "suffix": "\n    remediation: Remediation.nullable().default"
+        },
+        {
+          "kind": "text-position",
+          "start": 16836,
+          "end": 16855
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1510bc52887893f3",
+          "semanticHash": "4675e9d7794eb317"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons: z.array(z.string()).default([]),\n  })\n  .meta({ id: \"Verdict\" });",
+          "prefix": "iry, judge, conflicts, and gating rules. */\n    ",
+          "suffix": "\nexport type Verdict = z.infer<typeof Verdict>;\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 17026,
+          "end": 17100
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "5399574175d1cd97",
+          "semanticHash": "efa57a69116b998d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:11.701Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:11.701Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

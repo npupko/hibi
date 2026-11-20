@@ -1,0 +1,169 @@
+{
+  "id": "clm_4388dff07bc24b26",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "code",
+  "sentence": "Use `state` for axis values, `enforced` (not `confirmed`), `retire` for claims and `archive` for documents, `stranded` for a live claim on a superseded or archived document, `suggested` for the advisory enforcement, and the actor forms `human:`, `agent:`, `process:`.",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Use `state` for axis values, `enforced` (not `confirmed`), `retire` for claims and `archive` for documents, `stranded` for a live claim on a superseded or archived document, `suggested` for the advisory enforcement, and the actor forms `human:`, `agent:`, `process:`.",
+        "prefix": "ill: plain prose, short sentences, no metaphor. ",
+        "suffix": " Every flag and JSON key in the docs must exist "
+      },
+      {
+        "kind": "text-position",
+        "start": 3172,
+        "end": 3439
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const Enforcement = z.enum([\"enforced\", \"suggested\", \"retired\"]);",
+          "prefix": "record --suggest`); `retired` is withdrawn.\n */\n",
+          "suffix": "\nexport type Enforcement = z.infer<typeof Enforc"
+        },
+        {
+          "kind": "text-position",
+          "start": 1901,
+          "end": 1973
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "245292834183a927",
+          "semanticHash": "ed0e560d49a440c4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"enforced\",\"suggested\",\"retired\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "stranded (live on a superseded or archived doc)",
+          "prefix": "ate candidate or the same sentence); suggested; ",
+          "suffix": ".\",\n      },\n      {\n        name: \"path\",\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 11621,
+          "end": 11668
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "ae68e08c60039c9e"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"retire\",",
+          "prefix": "are capped at 5 attempts\"',\n    ],\n  },\n  {\n    ",
+          "suffix": "\n    summary: \"Withdraw a claim so it no longer "
+        },
+        {
+          "kind": "text-position",
+          "start": 15890,
+          "end": 15905
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "f0c0236a2c1b4336"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retire\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"archive\",",
+          "prefix": " design-v1.md --to design-v2.md\"],\n  },\n  {\n    ",
+          "suffix": "\n    summary:\n      \"Move an obsolete document t"
+        },
+        {
+          "kind": "text-position",
+          "start": 16947,
+          "end": 16963
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "aff3b9f1383c4431"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"archive\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ACTOR_PATTERN = /^(human|agent|process):.+$/;",
+          "prefix": ":<id>`, `agent:<name>`, or `process:<name>`. */\n",
+          "suffix": "\nexport const Actor = z.string().regex(ACTOR_PAT"
+        },
+        {
+          "kind": "text-position",
+          "start": 1052,
+          "end": 1110
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b879b2ad137802b7",
+          "semanticHash": "63e9cd8b98c3091c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:35.879Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:35.879Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

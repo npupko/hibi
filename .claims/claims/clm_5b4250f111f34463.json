@@ -1,0 +1,82 @@
+{
+  "id": "clm_5b4250f111f34463",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| attestation | a record that someone or something stood behind the claim at a time, with a basis |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| attestation | a record that someone or something stood behind the claim at a time, with a basis |",
+        "prefix": " | the selectors that locate a span in a file |\n",
+        "suffix": "\n| verdict | the computed state of a claim at ch"
+      },
+      {
+        "kind": "text-position",
+        "start": 3315,
+        "end": 3414
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "One append-only record that an actor stood behind the claim at a time.",
+          "prefix": "onAck = z.infer<typeof AttestationAck>;\n\n/**\n * ",
+          "suffix": "\n * `ack` is set exactly when `basis` is `ack`.\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 6829,
+          "end": 6899
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "46072978ba191b8e"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "basis: AttestationBasis,",
+          "prefix": "ictObject({\n    by: Actor,\n    at: Instant,\n    ",
+          "suffix": "\n    note: z.string().optional(),\n    evidenceHa"
+        },
+        {
+          "kind": "text-position",
+          "start": 7034,
+          "end": 7058
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "032aa2864040c879",
+          "semanticHash": "bc645d426fdb111b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:59.617Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:59.617Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,52 @@
+{
+  "id": "clm_d8f73de38d9f4164",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "CI restores `.claims/judge/` with an `actions/cache` step keyed on the store, since the cache is not committed.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "CI restores `.claims/judge/` with an `actions/cache` step keyed on the store, since the cache is not committed.",
+        "prefix": "nd without it they are `pending` and only warn. ",
+        "suffix": " Tune nothing until fixtures exist for the failu"
+      },
+      {
+        "kind": "text-position",
+        "start": 78330,
+        "end": 78441
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": ".github/workflows/ci.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "        uses: actions/cache@v4\n        with:\n          path: .claims/judge\n          key: hibi-judge-${{ hashFiles('.claims/claims/**') }}",
+          "prefix": "im files.\n      - name: Restore the judge cache\n",
+          "suffix": "\n          restore-keys: hibi-judge-\n      # Dog"
+        },
+        {
+          "kind": "text-position",
+          "start": 1699,
+          "end": 1837
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:07:06.693Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:07:06.693Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

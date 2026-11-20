@@ -1,0 +1,65 @@
+{
+  "id": "clm_03eb4217f0154154",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| anchor | the selectors that locate a span in a file |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| anchor | the selectors that locate a span in a file |",
+        "prefix": "other document, or a pointer plus a procedure |\n",
+        "suffix": "\n| attestation | a record that someone or someth"
+      },
+      {
+        "kind": "text-position",
+        "start": 3259,
+        "end": 3314
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "selectors: z.array(Selector).min(1),",
+          "prefix": "= z\n  .strictObject({\n    file: z.string(),\n    ",
+          "suffix": "\n  })\n  .meta({ id: \"SelectorBundle\" });\nexport "
+        },
+        {
+          "kind": "text-position",
+          "start": 5582,
+          "end": 5618
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "b48831a5ce0160e6",
+          "semanticHash": "9be6eac15a77e1c0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:59.606Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:59.606Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

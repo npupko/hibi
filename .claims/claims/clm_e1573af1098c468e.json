@@ -1,0 +1,88 @@
+{
+  "id": "clm_e1573af1098c468e",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "A pair whose sentences and context have not changed is not asked again.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A pair whose sentences and context have not changed is not asked again.",
+        "prefix": "ed under the hash of the model and the request. ",
+        "suffix": " At most 8 pairs are asked at a time.\n\n`check` r"
+      },
+      {
+        "kind": "text-position",
+        "start": 2173,
+        "end": 2244
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (hit !== undefined) {",
+          "prefix": "sult;\n    const hit = await cache.get(key);\n    ",
+          "suffix": "\n      result = mapConflictAnswers(hit.answers a"
+        },
+        {
+          "kind": "text-position",
+          "start": 10712,
+          "end": 10736
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "4a1d02a65e16fc7c",
+          "semanticHash": "9cbcf244678aaadb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "result = mapConflictAnswers(hit.answers as Record<string, Answer>);",
+          "prefix": "he.get(key);\n    if (hit !== undefined) {\n      ",
+          "suffix": "\n    } else {\n      let response: Awaited<Return"
+        },
+        {
+          "kind": "text-position",
+          "start": 10743,
+          "end": 10810
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "d1d92bfa93ddbd83",
+          "semanticHash": "737d900469e4e288"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:24.955Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:24.955Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

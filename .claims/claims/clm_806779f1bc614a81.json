@@ -1,0 +1,82 @@
+{
+  "id": "clm_806779f1bc614a81",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`misses[]` holds only claims whose move failed with an error, and `strandedClaims` lists the live claims left on `--from`, which is normally none.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`misses[]` holds only claims whose move failed with an error, and `strandedClaims` lists the live claims left on `--from`, which is normally none.",
+        "prefix": " cascade (section 7.1), so it may read `moved`. ",
+        "suffix": "\n\n**archive.** `--doc` must be a registered docu"
+      },
+      {
+        "kind": "text-position",
+        "start": 73986,
+        "end": 74132
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "misses.push({ claimId: claim.id, reason: (e as Error).message });",
+          "prefix": "ence } : {}),\n      });\n    } catch (e) {\n      ",
+          "suffix": "\n    }\n  }\n\n  oldDoc.lifecycle = \"superseded\";\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 3997,
+          "end": 4062
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "749158be7aafd735",
+          "semanticHash": "3c81ddd925c31689"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ": (await liveClaimsOn(store, oldDoc.id)).map((a) => a.id);",
+          "prefix": "= dryRun\n    ? misses.map((m) => m.claimId)\n    ",
+          "suffix": "\n  return { newDoc, oldDoc, relocated, misses, s"
+        },
+        {
+          "kind": "text-position",
+          "start": 4311,
+          "end": 4369
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "901e5768d9a8538b",
+          "semanticHash": "285975c0ea59b753"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:03.328Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:03.328Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

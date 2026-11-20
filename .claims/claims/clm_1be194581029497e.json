@@ -1,0 +1,65 @@
+{
+  "id": "clm_1be194581029497e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The result is `{ state, path?, count, claims }`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The result is `{ state, path?, count, claims }`.",
+        "prefix": "mId, why }`) appears under `--state duplicate`. ",
+        "suffix": " Rows sort gating, warning, clean, retired.\n\n| `"
+      },
+      {
+        "kind": "text-position",
+        "start": 66363,
+        "end": 66411
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  return {\n    state,\n    ...(input.path !== undefined ? { path: input.path } : {}),\n    count: rows.length,\n    claims: rows,\n  };",
+          "prefix": "sort((a, b) => rank[a.state] - rank[b.state]);\n\n",
+          "suffix": "\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 6696,
+          "end": 6827
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "1350e33600dede81",
+          "semanticHash": "62513744efcf76a8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:35.974Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:35.974Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

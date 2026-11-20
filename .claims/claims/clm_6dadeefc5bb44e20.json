@@ -1,0 +1,57 @@
+{
+  "id": "clm_6dadeefc5bb44e20",
+  "documentId": "doc_5be5c5b2d98e3a89",
+  "kind": "attested",
+  "sentence": "To pull the latest version after the repo changes, run `claude plugin update hibi-cli@hibi` in your shell, or select **Update now** on the plugin in the **Installed** tab of `/plugin`.",
+  "doc": {
+    "file": "plugins/hibi-cli/README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "To pull the latest version after the repo changes, run `claude plugin update hibi-cli@hibi` in your shell, or select **Update now** on the plugin in the **Installed** tab of `/plugin`.",
+        "prefix": " npupko/hibi\n/plugin install hibi-cli@hibi\n```\n\n",
+        "suffix": "\n\n## What's inside\n\n```\nplugins/hibi-cli/\n├── .c"
+      },
+      {
+        "kind": "text-position",
+        "start": 925,
+        "end": 1109
+      }
+    ]
+  },
+  "evidence": [],
+  "sources": [
+    {
+      "id": "cc-discover-plugins",
+      "resource": "https://code.claude.com/docs/en/discover-plugins.md",
+      "title": "Claude Code docs: Discover and install plugins"
+    }
+  ],
+  "procedure": {
+    "instructions": "Read the 'Update plugins now' section of the Claude Code plugin docs and report the commands or UI steps that update one installed plugin from a marketplace.",
+    "steps": [
+      {
+        "id": "fetch",
+        "command": "curl -sL https://code.claude.com/docs/en/discover-plugins.md"
+      }
+    ]
+  },
+  "ttl": "P180D",
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:29:46.327Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:29:57.897Z",
+      "basis": "evidence",
+      "note": "Claude Code docs: update one plugin with claude plugin update <plugin>@<marketplace> or Update now on the Installed tab of /plugin",
+      "evidenceHash": "c4b1b443b6ebee3b71b3cff6d0f8763355b672aa75f09ae25b64e53e57dc079d"
+    }
+  ],
+  "createdAt": "2026-10-23T08:29:46.327Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

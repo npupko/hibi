@@ -1,0 +1,59 @@
+{
+  "id": "clm_f2cf7f52836b4f13",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "`--from` must already be registered; otherwise the command fails with `document <path> is not registered`.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`--from` must already be registered; otherwise the command fails with `document <path> is not registered`.",
+        "prefix": "s:\n\n1. Registers `--to` in the store if needed. ",
+        "suffix": "\n2. Moves every live claim on `--from` to `--to`"
+      },
+      {
+        "kind": "text-position",
+        "start": 2525,
+        "end": 2631
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "throw new Error(`document ${input.from} is not registered`);",
+          "prefix": "input.from));\n  if (oldDoc === undefined) {\n    ",
+          "suffix": "\n  }\n  const newDoc = await upsertDocument(store"
+        },
+        {
+          "kind": "text-position",
+          "start": 3100,
+          "end": 3160
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "throw_statement",
+          "structuralHash": "92cc050f943b367b",
+          "semanticHash": "02d400a8d9995367"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:07.817Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:47:07.817Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,132 @@
+{
+  "id": "clm_dc99500a09224d01",
+  "documentId": "doc_5ce37ed11e046b85",
+  "kind": "code",
+  "sentence": "```sh\nbun test            # run the full test suite\nbunx tsc --noEmit   # typecheck\nbun run lint        # Biome lint\nbun run format      # Biome format (writes changes in place)\nbun run check:biome # Biome check (lint + format, read-only)\nbun run cli -- …    # run the in-tree CLI (bun run src/cli/index.ts …)\nbun run build       # grammars, schemas, CLI reference, then dist/hibi\n```",
+  "doc": {
+    "file": "CONTRIBUTING.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```sh\nbun test            # run the full test suite\nbunx tsc --noEmit   # typecheck\nbun run lint        # Biome lint\nbun run format      # Biome format (writes changes in place)\nbun run check:biome # Biome check (lint + format, read-only)\nbun run cli -- …    # run the in-tree CLI (bun run src/cli/index.ts …)\nbun run build       # grammars, schemas, CLI reference, then dist/hibi\n```",
+        "prefix": " a `tree-sitter-*` dependency.\n\n## Development\n\n",
+        "suffix": "\n\nCI runs `biome ci .`, so keep `bun run check:b"
+      },
+      {
+        "kind": "text-position",
+        "start": 1232,
+        "end": 1616
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"test\": \"bun test\",",
+          "prefix": "pile src/cli/index.ts --outfile dist/hibi\",\n    ",
+          "suffix": "\n    \"lint\": \"biome lint .\",\n    \"format\": \"biom"
+        },
+        {
+          "kind": "text-position",
+          "start": 1267,
+          "end": 1286
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"lint\": \"biome lint .\",",
+          "prefix": "outfile dist/hibi\",\n    \"test\": \"bun test\",\n    ",
+          "suffix": "\n    \"format\": \"biome format --write .\",\n    \"ch"
+        },
+        {
+          "kind": "text-position",
+          "start": 1291,
+          "end": 1314
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"format\": \"biome format --write .\",",
+          "prefix": "t\": \"bun test\",\n    \"lint\": \"biome lint .\",\n    ",
+          "suffix": "\n    \"check:biome\": \"biome check .\",\n    \"cli\": "
+        },
+        {
+          "kind": "text-position",
+          "start": 1319,
+          "end": 1354
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"check:biome\": \"biome check .\",",
+          "prefix": ".\",\n    \"format\": \"biome format --write .\",\n    ",
+          "suffix": "\n    \"cli\": \"bun run src/cli/index.ts\",\n    \"pre"
+        },
+        {
+          "kind": "text-position",
+          "start": 1359,
+          "end": 1390
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"cli\": \"bun run src/cli/index.ts\",",
+          "prefix": "ite .\",\n    \"check:biome\": \"biome check .\",\n    ",
+          "suffix": "\n    \"prepare\": \"lefthook install\"\n  },\n  \"depen"
+        },
+        {
+          "kind": "text-position",
+          "start": 1395,
+          "end": 1429
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"build\": \"bun run build:grammars && bun run build:schemas && bun run build:cli-reference && bun build --compile src/cli/index.ts --outfile dist/hibi\",",
+          "prefix": "e\": \"bun run scripts/gen-cli-reference.ts\",\n    ",
+          "suffix": "\n    \"test\": \"bun test\",\n    \"lint\": \"biome lint"
+        },
+        {
+          "kind": "text-position",
+          "start": 1112,
+          "end": 1262
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:31:29.841Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:31:29.841Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

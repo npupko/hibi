@@ -1,0 +1,59 @@
+{
+  "id": "clm_3656d6c7e0f841ad",
+  "documentId": "doc_d11450458251d04c",
+  "kind": "code",
+  "sentence": "Periodically, `hibi check` lists a worklist of claims to re-check; the agent follows each claim's procedure, collects what it observed, and submits it with `hibi evidence`.",
+  "doc": {
+    "file": "docs/index.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Periodically, `hibi check` lists a worklist of claims to re-check; the agent follows each claim's procedure, collects what it observed, and submits it with `hibi evidence`.",
+        "prefix": "in` names the sentences the change invalidated. ",
+        "suffix": " The judge decides whether the evidence supports"
+      },
+      {
+        "kind": "text-position",
+        "start": 1862,
+        "end": 2034
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "lists the worklist: claims an agent should re-check",
+          "prefix": "t is pending), runs the contradiction pass, and ",
+          "suffix": ". Writes nothing but judge cache entries. --sinc"
+        },
+        {
+          "kind": "text-position",
+          "start": 10450,
+          "end": 10501
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "2565d59b20024bae"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:33.999Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:33.999Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

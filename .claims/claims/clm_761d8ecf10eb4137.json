@@ -1,0 +1,68 @@
+{
+  "id": "clm_761d8ecf10eb4137",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "Details are in [CONTRIBUTING.md](CONTRIBUTING.md).",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Details are in [CONTRIBUTING.md](CONTRIBUTING.md).",
+        "prefix": "writes a single-file executable to `dist/hibi`. ",
+        "suffix": "\n\n## Contributing\n\nIssues and pull requests are "
+      },
+      {
+        "kind": "text-position",
+        "start": 8494,
+        "end": 8544
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "CONTRIBUTING.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "## Getting started",
+          "prefix": "API_KEY` is only needed to try the real judge.\n\n",
+          "suffix": "\n\n```sh\ngit clone https://github.com/npupko/hibi"
+        },
+        {
+          "kind": "text-position",
+          "start": 645,
+          "end": 663
+        }
+      ]
+    },
+    {
+      "file": "CONTRIBUTING.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "## Development",
+          "prefix": "` after updating a `tree-sitter-*` dependency.\n\n",
+          "suffix": "\n\n```sh\nbun test            # run the full test "
+        },
+        {
+          "kind": "text-position",
+          "start": 1216,
+          "end": 1230
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:25.211Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:25.211Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

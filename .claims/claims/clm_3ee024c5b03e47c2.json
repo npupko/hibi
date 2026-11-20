@@ -1,0 +1,68 @@
+{
+  "id": "clm_3ee024c5b03e47c2",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "The repo doubles as a plugin marketplace:",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The repo doubles as a plugin marketplace:",
+        "prefix": "record, work the worklist, and submit evidence. ",
+        "suffix": "\n\n```\n/plugin marketplace add npupko/hibi\n/plugi"
+      },
+      {
+        "kind": "text-position",
+        "start": 8066,
+        "end": 8107
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": ".claude-plugin/marketplace.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"name\": \"hibi\",",
+          "prefix": "{\n  ",
+          "suffix": "\n  \"owner\": {\n    \"name\": \"Nick Pupko\",\n    \"ema"
+        },
+        {
+          "kind": "text-position",
+          "start": 4,
+          "end": 19
+        }
+      ]
+    },
+    {
+      "file": ".claude-plugin/marketplace.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"source\": \"./plugins/hibi-cli\",",
+          "prefix": "ugins\": [\n    {\n      \"name\": \"hibi-cli\",\n      ",
+          "suffix": "\n      \"description\": \"Teaches agents to operate"
+        },
+        {
+          "kind": "text-position",
+          "start": 152,
+          "end": 183
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:24.658Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:24.658Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

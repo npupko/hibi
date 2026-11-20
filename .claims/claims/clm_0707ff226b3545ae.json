@@ -1,0 +1,87 @@
+{
+  "id": "clm_0707ff226b3545ae",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "| `changed`, `orphaned`, `ambiguous`, `moved` | re-verifying, then `hibi reanchor <id>` | the same |",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `changed`, `orphaned`, `ambiguous`, `moved` | re-verifying, then `hibi reanchor <id>` | the same |",
+        "prefix": "<why>\"`, or rewriting one sentence | the same |\n",
+        "suffix": "\n\nAn agent cannot reset a ttl by vouching. `hibi"
+      },
+      {
+        "kind": "text-position",
+        "start": 5086,
+        "end": 5186
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const before = resolveClaimSides(claim, files, { ast: input.analyzer });",
+          "prefix": "edSide[] = [];\n\n  // Resolve every span once.\n  ",
+          "suffix": "\n\n  // Doc side.\n  const docFile = input.docPath"
+        },
+        {
+          "kind": "text-position",
+          "start": 11966,
+          "end": 12038
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "5a6b0a6825b161e4",
+          "semanticHash": "7647fd08457b7043"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "docBundle = buildSelectorBundle(docFile, contents.docContent, docRegion);",
+          "prefix": "docContent, docRegion, docFile),\n      );\n      ",
+          "suffix": "\n      sentence = regionText(contents.docContent"
+        },
+        {
+          "kind": "text-position",
+          "start": 13624,
+          "end": 13697
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "5ccc0d8308e3a6c8",
+          "semanticHash": "8e2dec4a6da5b3db"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:13.574Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:45:26.155Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:13.574Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

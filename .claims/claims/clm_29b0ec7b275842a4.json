@@ -1,0 +1,65 @@
+{
+  "id": "clm_29b0ec7b275842a4",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A path that resolves outside it (`../other/x.ts`, `api:../../x.ts`) has the label `path escapes its root`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A path that resolves outside it (`../other/x.ts`, `api:../../x.ts`) has the label `path escapes its root`.",
+        "prefix": "n path, the alias directory for an aliased one. ",
+        "suffix": "\n- **At check time**, a side whose alias is not "
+      },
+      {
+        "kind": "text-position",
+        "start": 5118,
+        "end": 5224
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ESCAPES_ROOT = \"path escapes its root\";",
+          "prefix": "label for an evidence path outside its root. */\n",
+          "suffix": "\n\n/** True when `abs` is `root` or inside it. Bo"
+        },
+        {
+          "kind": "text-position",
+          "start": 1211,
+          "end": 1263
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "7b5c177b0ac8f0d6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"path escapes its root\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:59.950Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:59.950Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

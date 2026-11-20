@@ -1,0 +1,94 @@
+{
+  "id": "clm_58b04258decc4a1e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `audit` | `--doc <path>` (required), `--fail-uncovered` | section 10 |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `audit` | `--doc <path>` (required), `--fail-uncovered` | section 10 |",
+        "prefix": "ath <path>`, `--ids-only` | one row per claim |\n",
+        "suffix": "\n| `reanchor <claim-id>`, `reanchor --moved` | `"
+      },
+      {
+        "kind": "text-position",
+        "start": 55448,
+        "end": 55520
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"The document to audit.\",\n        required: true,",
+          "prefix": "string\",\n        placeholder: \"<path>\",\n        ",
+          "suffix": "\n      },\n      {\n        name: \"fail-uncovered\""
+        },
+        {
+          "kind": "text-position",
+          "start": 12874,
+          "end": 12929
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "15154156d14c03d8",
+          "semanticHash": "c6139461a945b226"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"The document to audit.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"fail-uncovered\",",
+          "prefix": "       required: true,\n      },\n      {\n        ",
+          "suffix": "\n        type: \"boolean\",\n        help: \"Exit 2 "
+        },
+        {
+          "kind": "text-position",
+          "start": 12955,
+          "end": 12978
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "478ad6f4b3c2296f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"fail-uncovered\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:56.616Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:56.616Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

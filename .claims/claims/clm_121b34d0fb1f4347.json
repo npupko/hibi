@@ -1,0 +1,59 @@
+{
+  "id": "clm_121b34d0fb1f4347",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "| `process:<name>` | `process:nightly-cron` | a script, a CI job, a workflow runner |",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `process:<name>` | `process:nightly-cron` | a script, a CI job, a workflow runner |",
+        "prefix": "agent:<name>` | `agent:opus` | a coding agent |\n",
+        "suffix": "\n\nAn actor is required on `record`, `attest`, an"
+      },
+      {
+        "kind": "text-position",
+        "start": 1088,
+        "end": 1173
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const ACTOR_PATTERN = /^(human|agent|process):.+$/;",
+          "prefix": ":<id>`, `agent:<name>`, or `process:<name>`. */\n",
+          "suffix": "\nexport const Actor = z.string().regex(ACTOR_PAT"
+        },
+        {
+          "kind": "text-position",
+          "start": 1052,
+          "end": 1110
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b879b2ad137802b7",
+          "semanticHash": "63e9cd8b98c3091c"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:11.615Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:11.615Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

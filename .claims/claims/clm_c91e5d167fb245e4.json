@@ -1,0 +1,116 @@
+{
+  "id": "clm_c91e5d167fb245e4",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "Hibi ships a [Claude Code](https://claude.com/claude-code) skill that teaches coding agents the loop: check a document before trusting it, audit and record, work the worklist, and submit evidence.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Hibi ships a [Claude Code](https://claude.com/claude-code) skill that teaches coding agents the loop: check a document before trusting it, audit and record, work the worklist, and submit evidence.",
+        "prefix": "per-format parser.\n\n## Use it with Claude Code\n\n",
+        "suffix": " The repo doubles as a plugin marketplace:\n\n```\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 7869,
+        "end": 8065
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**a. Before trusting a doc:** `hibi check --doc <path>`.",
+          "prefix": "side it or their alias directory.\n\n## The loop\n\n",
+          "suffix": " Exit 2: a claim in it gates; do not rely on its"
+        },
+        {
+          "kind": "text-position",
+          "start": 2469,
+          "end": 2525
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**c. Audit:** `hibi audit --doc <path>`, one row per region.",
+          "prefix": "ce origin/main`. Fix prose in the same change.\n\n",
+          "suffix": " `claimId` set: covered. Else `kind`: `code`/`re"
+        },
+        {
+          "kind": "text-position",
+          "start": 2742,
+          "end": 2802
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**d. Record** (stdin array, all or nothing):",
+          "prefix": "answer. Never record an `unverifiable` region.\n\n",
+          "suffix": "\n\n```sh\nhibi record --from-file - <<'EOF'\n[{\"doc"
+        },
+        {
+          "kind": "text-position",
+          "start": 3072,
+          "end": 3116
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**e. Worklist:**",
+          "prefix": "gent-recorded claims with a ttl start expired.\n\n",
+          "suffix": " `hibi check --json` → `worklist[]: {claimId, se"
+        },
+        {
+          "kind": "text-position",
+          "start": 4269,
+          "end": 4285
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "hibi evidence --from-file - --by agent:claude <<'EOF'",
+          "prefix": "ure.instructions` with your tools, then:\n\n```sh\n",
+          "suffix": "\n[{\"claimId\":\"clm_…\",\"evidence\":\"Pro plan: $29.0"
+        },
+        {
+          "kind": "text-position",
+          "start": 4471,
+          "end": 4524
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:24.559Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:24.559Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

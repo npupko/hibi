@@ -1,0 +1,88 @@
+{
+  "id": "clm_e2730eb171494a82",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "When a rule would have fired on a `suggested` claim its reasons say `suggested claim: never gates or warns`; a `retired` claim always has that one reason, `retired claim: never gates or warns` (section 7.2).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "When a rule would have fired on a `suggested` claim its reasons say `suggested claim: never gates or warns`; a `retired` claim always has that one reason, `retired claim: never gates or warns` (section 7.2).",
+        "prefix": "ested` or `retired` claim never gates or warns. ",
+        "suffix": "\n\nExit codes: `0` clean or warnings only; `2` ga"
+      },
+      {
+        "kind": "text-position",
+        "start": 27494,
+        "end": 27701
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons.push(`${enforcement} claim: never gates or warns`);",
+          "prefix": "= \"enforced\") {\n    if (gates || warns) {\n      ",
+          "suffix": "\n    }\n    return { gates: false, warns: false, "
+        },
+        {
+          "kind": "text-position",
+          "start": 4138,
+          "end": 4197
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "0d4c05c5526a9656",
+          "semanticHash": "a952933e63526c0c"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const RETIRED_REASON = \"retired claim: never gates or warns\";",
+          "prefix": "e reason label of a retired claim's verdict. */\n",
+          "suffix": "\n\n/**\n * The verdict of a retired claim: its spa"
+        },
+        {
+          "kind": "text-position",
+          "start": 16180,
+          "end": 16248
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "b09532aa4f8b21b8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired claim: never gates or warns\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:48.807Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:48.807Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

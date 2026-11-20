@@ -1,0 +1,140 @@
+{
+  "id": "clm_58a3030c1e2d4ccf",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`pending` means the judge gave no usable answer: it was unreachable (`JudgeUnavailable`), its answer could not be used (`JudgeError`), or the referenced span is longer than 32,000 characters (section 7.3, decision 37).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`pending` means the judge gave no usable answer: it was unreachable (`JudgeUnavailable`), its answer could not be used (`JudgeError`), or the referenced span is longer than 32,000 characters (section 7.3, decision 37).",
+        "prefix": "ew`, and is not cleared. It does not reset ttl. ",
+        "suffix": "\n\nIn a `check`, judge labels are prefixed `judge"
+      },
+      {
+        "kind": "text-position",
+        "start": 39280,
+        "end": 39498
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const MAX_EVIDENCE_CHARS = 32_000;",
+          "prefix": "TION_TOKEN_BUDGET`\n * in src/judge/jev.ts).\n */\n",
+          "suffix": "\n\n/** Choice confidence per the TypeSafe docs: ("
+        },
+        {
+          "kind": "text-position",
+          "start": 4172,
+          "end": 4213
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "f5cddc0940ac801f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "32_000"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"pending\", reasons: [REFERENCE_TOO_LONG] };",
+          "prefix": "ferencedText.length > MAX_EVIDENCE_CHARS) {\n    ",
+          "suffix": "\n  }\n  const { request, key } = referenceSupport"
+        },
+        {
+          "kind": "text-position",
+          "start": 10437,
+          "end": 10496
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "4e167621b94fec45",
+          "semanticHash": "70ac2501d85f9ef8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeUnavailable) return `judge unavailable: ${e.message}`;",
+          "prefix": "ailureLabel(e: unknown): string | undefined {\n  ",
+          "suffix": "\n  if (e instanceof JudgeError) return `judge er"
+        },
+        {
+          "kind": "text-position",
+          "start": 3661,
+          "end": 3737
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "e16196633fc6e5f4"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeError) return `judge error: ${e.message}`;",
+          "prefix": "le) return `judge unavailable: ${e.message}`;\n  ",
+          "suffix": "\n  return undefined;\n}\n\n/**\n * The longest text "
+        },
+        {
+          "kind": "text-position",
+          "start": 3740,
+          "end": 3804
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "d2206c1328e3b3de"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:06.259Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:06.259Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,59 @@
+{
+  "id": "clm_7dbe4fe5d2ec4dcb",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "`misses` lists only claims whose move failed with an error, so it is normally empty.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`misses` lists only claims whose move failed with an error, so it is normally empty.",
+        "prefix": "d by the normal resolver and may read `moved`.\n\n",
+        "suffix": " `strandedClaims` lists the live claims still on"
+      },
+      {
+        "kind": "text-position",
+        "start": 3724,
+        "end": 3808
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/supersede.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "misses.push({ claimId: claim.id, reason: (e as Error).message });",
+          "prefix": "ence } : {}),\n      });\n    } catch (e) {\n      ",
+          "suffix": "\n    }\n  }\n\n  oldDoc.lifecycle = \"superseded\";\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 3997,
+          "end": 4062
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "749158be7aafd735",
+          "semanticHash": "3c81ddd925c31689"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:41.980Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:41.980Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

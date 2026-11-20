@@ -1,0 +1,88 @@
+{
+  "id": "clm_6e2034ce7c1c4812",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `keyword-version` | version | `version 1.2`, `release 3.10`, `ver 2.1` | the number | none |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `keyword-version` | version | `version 1.2`, `release 3.10`, `ver 2.1` | the number | none |",
+        "prefix": "rts, optional pre-release | as written | none |\n",
+        "suffix": "\n| `currency-sign` | money | `$29`, `€ 5`, `£1,2"
+      },
+      {
+        "kind": "text-position",
+        "start": 40525,
+        "end": 40619
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"keyword-version\",",
+          "prefix": " is a version only after one of these words\n    ",
+          "suffix": "\n    kind: \"version\",\n    pattern: re(\n      Str"
+        },
+        {
+          "kind": "text-position",
+          "start": 7577,
+          "end": 7601
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "e8450e2bd149b9ab"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"keyword-version\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\\b(?:version|release|ver)\\s+(\\d+\\.\\d+)",
+          "prefix": "d: \"version\",\n    pattern: re(\n      String.raw`",
+          "suffix": "${END}`,\n      \"giu\",\n    ),\n    read: (m) => ({"
+        },
+        {
+          "kind": "text-position",
+          "start": 7657,
+          "end": 7695
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "053b293a7f519c5c",
+          "semanticHash": "6f816e3e79d2f982"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:04.215Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:04.215Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_3a138bf5169c4a1d",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "| `sources` | `[{ id?, resource, title? }]` |",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `sources` | `[{ id?, resource, title? }]` |",
+        "prefix": "nce`: `{ file, quote \\| range }`, exactly one |\n",
+        "suffix": "\n| `procedure` | `{ instructions, steps? }` |\n| "
+      },
+      {
+        "kind": "text-position",
+        "start": 7580,
+        "end": 7625
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(\"sources must be an array of { id?, resource, title? }\");",
+          "prefix": " | undefined {\n  if (!Array.isArray(raw)) {\n    ",
+          "suffix": "\n    return undefined;\n  }\n  const out: Source[]"
+        },
+        {
+          "kind": "text-position",
+          "start": 5237,
+          "end": 5306
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "ab93fd8725166832",
+          "semanticHash": "aed9808ad5086515"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"sources must be an array of { id?, resource, title? }\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:04.158Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:04.158Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

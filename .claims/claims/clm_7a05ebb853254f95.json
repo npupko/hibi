@@ -1,0 +1,94 @@
+{
+  "id": "clm_7a05ebb853254f95",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "Under `--doc`, the contradiction pass judges only pairs with a claim in this document (`summary.conflictPass.scope: \"doc\"`); a finding may still name a claim in another document.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Under `--doc`, the contradiction pass judges only pairs with a claim in this document (`summary.conflictPass.scope: \"doc\"`); a finding may still name a claim in another document.",
+        "prefix": "ument and the JSON echoes `\"doc\": \"CLAUDE.md\"`. ",
+        "suffix": "\n\n**Act**: do not follow the 30-minute rule. Rea"
+      },
+      {
+        "kind": "text-position",
+        "start": 24447,
+        "end": 24625
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(p) => scope === undefined || scope.has(p.a.id) || scope.has(p.b.id),",
+          "prefix": "nst pairs = pairClaims(opts.claims).filter(\n    ",
+          "suffix": "\n  );\n  const outcomes: PairOutcome[] = new Arra"
+        },
+        {
+          "kind": "text-position",
+          "start": 10184,
+          "end": 10253
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "arrow_function",
+          "structuralHash": "4f3a84c5cb8ee830",
+          "semanticHash": "8a15d44f8d06194e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "scope: scope === undefined ? \"store\" : \"doc\",",
+          "prefix": "duplicateOf)),\n    pending: pending.sort(),\n    ",
+          "suffix": "\n    requests,\n    pairs: outcomes,\n  };\n}\n\n/**\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 13169,
+          "end": 13214
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "1ffc0abe52dc31be",
+          "semanticHash": "416a388726ec1f48"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:12.900Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:12.900Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

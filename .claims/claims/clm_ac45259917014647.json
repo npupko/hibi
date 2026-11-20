@@ -1,0 +1,65 @@
+{
+  "id": "clm_ac45259917014647",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "hibi audit --doc README.md           # one row per region: covered, or what kind of claim it could be",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "hibi audit --doc README.md           # one row per region: covered, or what kind of claim it could be",
+        "prefix": "reate .claims/; add the check line to AGENTS.md\n",
+        "suffix": "\n\n# Record a claim of each kind\nhibi record --do"
+      },
+      {
+        "kind": "text-position",
+        "start": 2790,
+        "end": 2891
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"One row per region of a document: the claim that covers it, or the judge's triage kind.\",",
+          "prefix": "\n  },\n  {\n    name: \"audit\",\n    summary:\n      ",
+          "suffix": "\n    description:\n      \"Splits the document int"
+        },
+        {
+          "kind": "text-position",
+          "start": 12181,
+          "end": 12271
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "03613a6e8488233b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"One row per region of a document: the claim that covers it, or the judge's triage kind.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:27:53.460Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:27:53.460Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

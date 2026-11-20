@@ -1,0 +1,123 @@
+{
+  "id": "clm_347149a5cfc54f5d",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "{\n  \"version\": \"v4\",\n  \"repos\": {},\n  \"judge\": { \"model\": \"jev-1.14.0\", \"threshold\": 0.8 },\n  \"ignore\": []\n}",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "{\n  \"version\": \"v4\",\n  \"repos\": {},\n  \"judge\": { \"model\": \"jev-1.14.0\", \"threshold\": 0.8 },\n  \"ignore\": []\n}",
+        "prefix": "config.json` as `hibi init` writes it:\n\n```json\n",
+        "suffix": "\n```\n\n| key | meaning |\n|---|---|\n| `repos` | cr"
+      },
+      {
+        "kind": "text-position",
+        "start": 9299,
+        "end": 9407
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    return {\n      version: MODEL_VERSION,\n      repos: {},\n      judge: { model: DEFAULT_JUDGE_MODEL, threshold: DEFAULT_JUDGE_THRESHOLD },\n      ignore: [],\n    };",
+          "prefix": "tten out. */\n  static defaultConfig(): Config {\n",
+          "suffix": "\n  }\n\n  /**\n   * Initialize a store; idempotent,"
+        },
+        {
+          "kind": "text-position",
+          "start": 2253,
+          "end": 2418
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "99a82101758ff485",
+          "semanticHash": "e33491221ea13f82"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[]"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const DEFAULT_JUDGE_MODEL = \"jev-1.14.0\";",
+          "prefix": " id `init` writes into a new store's config. */\n",
+          "suffix": "\n/** The judge threshold `init` writes into a ne"
+        },
+        {
+          "kind": "text-position",
+          "start": 483,
+          "end": 531
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "ed522dcef3812b34",
+          "semanticHash": "a500cd48e31eda71"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"jev-1.14.0\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const DEFAULT_JUDGE_THRESHOLD = 0.8;",
+          "prefix": "writes into a new store's config (SPEC 8.4). */\n",
+          "suffix": "\n\n// ── Ids and actors ─────────────────────────"
+        },
+        {
+          "kind": "text-position",
+          "start": 611,
+          "end": 654
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "8b80be36452d0afc"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.8"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:04.780Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:04.780Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

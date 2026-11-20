@@ -1,0 +1,75 @@
+{
+  "id": "clm_0f2791e7583b4f92",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Each triage question names its region twice: by the `regions[i]` path and by the region's `id` (`{{id}}` in `triage.json`).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each triage question names its region twice: by the `regions[i]` path and by the region's `id` (`{{id}}` in `triage.json`).",
+        "prefix": "nd `regions[i]` paths index within the request. ",
+        "suffix": " With the index path alone, the model loses the "
+      },
+      {
+        "kind": "text-position",
+        "start": 33062,
+        "end": 33185
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".replaceAll(triageFile.idPlaceholder, region.id),",
+          "prefix": "eplaceAll(triageFile.placeholder, `${i}`)\n      ",
+          "suffix": "\n  ) as Questions;\n  if (isCodeByConstruction(re"
+        },
+        {
+          "kind": "text-position",
+          "start": 7811,
+          "end": 7860
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "cf1ef0a11ea82590",
+          "semanticHash": "bdba85d20b45c7d3"
+        }
+      ]
+    },
+    {
+      "file": "src/judge/questions/triage.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"idPlaceholder\": \"{{id}}\",",
+          "prefix": "e the region.\"\n  },\n  \"placeholder\": \"{{i}}\",\n  ",
+          "suffix": "\n  \"questions\": {\n    \"kind_{{i}}\": {\n      \"typ"
+        },
+        {
+          "kind": "text-position",
+          "start": 360,
+          "end": 386
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:48.799Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:48.799Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

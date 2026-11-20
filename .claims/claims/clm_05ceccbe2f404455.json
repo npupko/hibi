@@ -1,0 +1,123 @@
+{
+  "id": "clm_05ceccbe2f404455",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "| `pending` | the judge could not answer (no key, network down, or an answer it could not use), or a referenced span is over 32,000 characters | set `TYPESAFE_API_KEY` and run `check` again; for `judge error: …`, read the message |",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `pending` | the judge could not answer (no key, network down, or an answer it could not use), or a referenced span is over 32,000 characters | set `TYPESAFE_API_KEY` and run `check` again; for `judge error: …`, read the message |",
+        "prefix": " directly (`attested` claims), or acknowledge |\n",
+        "suffix": "\n\nAn `attested` claim with no `procedure` and no"
+      },
+      {
+        "kind": "text-position",
+        "start": 4596,
+        "end": 4827
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"pending\") return \"pending\";",
+          "prefix": "= \"review\" && !acknowledged) return \"review\";\n  ",
+          "suffix": "\n  const checkable = claim.procedure !== null ||"
+        },
+        {
+          "kind": "text-position",
+          "start": 12834,
+          "end": 12878
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "ccc54664337229f7",
+          "semanticHash": "9584d1ccbcf8b14d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (texts.referencedText.length > MAX_EVIDENCE_CHARS) {\n    return { state: \"pending\", reasons: [REFERENCE_TOO_LONG] };",
+          "prefix": "   referencedText: input.referencedText,\n  };\n  ",
+          "suffix": "\n  }\n  const { request, key } = referenceSupport"
+        },
+        {
+          "kind": "text-position",
+          "start": 10377,
+          "end": 10496
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "731bdfe70f238d4b",
+          "semanticHash": "6e86656060220ca6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const MAX_EVIDENCE_CHARS = 32_000;",
+          "prefix": "TION_TOKEN_BUDGET`\n * in src/judge/jev.ts).\n */\n",
+          "suffix": "\n\n/** Choice confidence per the TypeSafe docs: ("
+        },
+        {
+          "kind": "text-position",
+          "start": 4172,
+          "end": 4213
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "f5cddc0940ac801f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "32_000"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:38.683Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:38.683Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

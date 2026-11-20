@@ -1,0 +1,55 @@
+{
+  "triage": {
+    "doc": { "path": "README.md" },
+    "regions": [
+      {
+        "id": "r0",
+        "kind": "heading",
+        "text": "Caching",
+        "headingPath": ["hibi"]
+      },
+      {
+        "id": "r1",
+        "kind": "sentence",
+        "text": "hibi stores its cache in .hibi/cache.json.",
+        "headingPath": ["hibi", "Caching"]
+      },
+      {
+        "id": "r2",
+        "kind": "sentence",
+        "text": "Support replies to every issue within two business days.",
+        "headingPath": ["hibi", "Caching"]
+      },
+      {
+        "id": "r3",
+        "kind": "list-item",
+        "text": "Run `hibi check --doc README.md` before committing.",
+        "headingPath": ["hibi", "Caching"]
+      },
+      {
+        "id": "r4",
+        "kind": "sentence",
+        "text": "We think a local cache is the simplest design.",
+        "headingPath": ["hibi", "Caching"]
+      }
+    ]
+  },
+  "supports": {
+    "sentence": "The CLI exits with code 2 when a claim is stale.",
+    "context": "hibi > Exit codes",
+    "evidence": "if (report.stale.length > 0) process.exit(2);",
+    "source": "src/cli/check.ts:88-88"
+  },
+  "conflict": {
+    "a": {
+      "text": "The cache lives in .hibi/cache.json.",
+      "doc": "README.md",
+      "context": "hibi > Caching"
+    },
+    "b": {
+      "text": "hibi writes its cache to ~/.cache/hibi.",
+      "doc": "docs/internals.md",
+      "context": "Internals > Storage"
+    }
+  }
+}

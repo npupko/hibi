@@ -1,13 +1,23 @@
 /**
  * `reanchor`: re-point an existing claim at its current location.
  *
- * Both sides re-resolve against the current working tree and the stored
- * baseline is rewritten so a `moved`/`changed` claim settles back to
- * `unchanged`. Explicit replacement spans (`docSpec` / `code[]`) override;
- * otherwise each side re-localizes through its existing selectors.
+ * Every span re-resolves against the current working tree. An explicit
+ * replacement span (`docSpec` / `evidence[]`) is stored as given. Without
+ * one, a side that reads `moved` is rebuilt at its new location, a side that
+ * reads `unchanged` is kept, and a side that reads `changed`, `ambiguous` or
+ * `orphaned` is kept as stored and listed in `kept` with a reason naming the
+ * flag to pass. The claim's `sentence` is refreshed from a rebuilt doc span. With `docOnly`
+ * (`supersede`) the claim moves to the new file (`documentId` and the doc
+ * side's file); the text-position selector is rebuilt only when the stored
+ * quote occurs verbatim exactly once there. The sentence, the quote, the
+ * hashes, evidence bundles, their baselines, and `ref` stay as stored.
  *
- * Safety: a side that resolves `orphaned` and has no explicit replacement is
- * refused; an empty span is never stored. The result carries the before and
+ * Safety: an empty span is never stored; nothing is written when no side
+ * was rebuilt. An evidence side in a sibling repo
+ * that is not checked out keeps its stored bundle unchanged, with a warning;
+ * an explicit span (`--code-file`) in such a repo keeps the stored bundle for
+ * that file and is listed in `kept` with the reason `evidence: repository
+ * <alias> not checked out; kept as stored`. The result carries the before and
  * after quotes per side so the caller can see what moved.
  */
 
@@ -15,37 +25,32 @@ import { fuzzyLocate, regionText } from "../algo/localize.ts";
 import { textSimilarity } from "../algo/normalize.ts";
 import {
   type AstAnalyzer,
+  type EvidenceSide,
   type ResolveFiles,
-  resolveSides,
-  type SideResult,
-  worstCodeState,
+  resolveClaimSides,
+  worstEvidenceState,
 } from "../algo/resolve.ts";
-import { newId, propositionFingerprint } from "../core/ids.ts";
 import type {
   AnchorState,
-  Assertion,
-  Proposition,
+  Claim,
+  ClaimKind,
+  EvidenceState,
   Region,
   SelectorBundle,
 } from "../core/model.ts";
 import type { ClaimStore } from "../store/store.ts";
-import {
-  type AnchorAnalyzer,
-  buildCoarseBundle,
-  buildSelectorBundle,
-  composeAnchor,
-  isCoarseBundle,
-} from "./anchor.ts";
+import { type AnchorAnalyzer, buildSelectorBundle } from "./anchor.ts";
 import { languageForFile } from "./lang.ts";
 import {
-  type CodeTarget,
   documentIdForPath,
+  type EvidenceTarget,
   newDocument,
   type RecordContents,
   type RegionSpec,
   resolveRegion,
   validateDocQuote,
 } from "./record.ts";
+import { splitAlias } from "./repos.ts";
 
 export interface ReanchorInput {
   claimId: string;
@@ -53,12 +58,20 @@ export interface ReanchorInput {
   docSpec?: RegionSpec;
   /** Re-home the doc anchor to a different file (requires `docSpec`). */
   docPath?: string;
-  /** Replacement code-side targets; omit to re-localize the existing bundles. */
-  code?: CodeTarget[];
+  /** Replacement evidence targets; omit to re-localize the existing bundles. */
+  evidence?: EvidenceTarget[];
+  /**
+   * Move the doc side only (`supersede`): the evidence bundles, their
+   * baselines, and `ref` stay as stored, so a changed evidence side stays
+   * changed.
+   */
+  docOnly?: boolean;
   /** The ref to stamp (the caller resolves git HEAD). */
   ref?: string;
   analyzer?: AnchorAnalyzer & AstAnalyzer;
   dryRun?: boolean;
+  /** Clock for a newly created document's `createdAt`. Default: now. */
+  now?: Date;
 }
 
 export interface SideQuote {
@@ -66,18 +79,58 @@ export interface SideQuote {
   quote: string;
 }
 
+/** A side `reanchor` rebuilt. */
+export interface RelocatedSide {
+  side: "doc" | "evidence";
+  file: string;
+}
+
+/** A side `reanchor` left as stored, and why. */
+export interface KeptSide {
+  side: "doc" | "evidence";
+  file: string;
+  /** `unavailable` for an explicit span in a sibling repo that is not checked out. */
+  state: EvidenceState;
+  /** e.g. `doc: changed; pass --doc-quote to re-anchor`. */
+  reason: string;
+}
+
 export interface ReanchorResult {
-  assertion: Assertion;
+  claim: Claim;
+  /** Number of sides rebuilt (explicit spans and `moved` sides). */
+  relocated: number;
+  /** The sides rebuilt, in order: the doc side first, then evidence sides. */
+  relocatedSides: RelocatedSide[];
+  /** Sides that needed relocating but were left as stored. */
+  kept: KeptSide[];
   doc: AnchorState;
-  code: AnchorState;
-  before: { doc: SideQuote; code: SideQuote[] };
-  after: { doc: SideQuote; code: SideQuote[] };
+  /** Absent when the claim has no evidence span. */
+  evidence?: EvidenceState;
+  before: { doc: SideQuote; evidence: SideQuote[] };
+  after: { doc: SideQuote; evidence: SideQuote[] };
   warnings: string[];
+}
+
+/** One claim in a bulk `reanchor --moved` result. */
+export interface BulkReanchorClaim {
+  id: string;
+  relocated: RelocatedSide[];
+  kept: KeptSide[];
+}
+
+/**
+ * `reanchor --moved`: plain `reanchor` over every live claim (optionally one
+ * document's). `relocated` counts the sides rebuilt across all claims;
+ * `claims` lists each claim with a side rebuilt or kept, in id order.
+ */
+export interface BulkReanchorResult {
+  relocated: number;
+  claims: BulkReanchorClaim[];
 }
 
 /** One candidate location for `reanchor --suggest`. */
 export interface ReanchorCandidate {
-  side: "doc" | "code";
+  side: "doc" | "evidence";
   file: string;
   start: number;
   end: number;
@@ -111,7 +164,7 @@ function sideQuote(bundle: SelectorBundle): SideQuote {
  * are dropped and the rest sort by similarity, then path, then offset.
  */
 export function suggestForBundle(
-  side: "doc" | "code",
+  side: "doc" | "evidence",
   bundle: SelectorBundle,
   files: { path: string; content: string }[],
 ): ReanchorCandidate[] {
@@ -155,56 +208,156 @@ export function suggestForBundle(
 function toResolveFiles(contents: RecordContents): ResolveFiles {
   return {
     doc: contents.docContent,
-    code: new Map(Object.entries(contents.codeContents)),
+    evidence: new Map(Object.entries(contents.evidenceContents)),
+    unavailable: contents.unavailable,
   };
 }
 
-function orphanError(id: string, side: string, file: string): Error {
-  return new Error(
-    `claim ${id}: the ${side} span in ${file} was not found (orphaned). Pass an explicit new span for that side (${side === "doc" ? "--doc-quote/--doc-range" : "--code-file with --code-quote/--code-range"}), run --suggest to find candidates, or retire the claim.`,
-  );
+export function keptSide(
+  side: "doc" | "evidence",
+  file: string,
+  state: AnchorState,
+  kind: ClaimKind,
+): KeptSide {
+  const flag =
+    side === "doc"
+      ? "--doc-quote"
+      : kind === "reference"
+        ? "--ref-quote"
+        : "--code-quote";
+  return {
+    side,
+    file,
+    state,
+    reason: `${side}: ${state}; pass ${flag} to re-anchor`,
+  };
 }
 
-/** Rebuild one code bundle from an explicit replacement target. */
+/** The structural language of an evidence file: code claims only. */
+function evidenceLanguage(
+  kind: ClaimKind,
+  file: string,
+  override?: string,
+): string | undefined {
+  return kind === "code" ? (override ?? languageForFile(file)) : undefined;
+}
+
+/**
+ * An explicit evidence target in a sibling repo that is not checked out: the
+ * stored bundle for the same file is kept as stored (the one at the same
+ * index when it names that file, else the first that does). Throws when the
+ * claim has no stored span in that file.
+ */
+function keepUnavailableTarget(
+  claim: Claim,
+  index: number,
+  target: EvidenceTarget,
+  reason: string,
+  kept: KeptSide[],
+): SelectorBundle {
+  const atIndex = claim.evidence[index];
+  const stored =
+    atIndex?.file === target.file
+      ? atIndex
+      : claim.evidence.find((b) => b.file === target.file);
+  if (stored === undefined) {
+    throw new Error(
+      `${reason}; ${target.file} is not a stored span of claim ${claim.id}, so check out the sibling repo first.`,
+    );
+  }
+  const alias = splitAlias(target.file)?.alias ?? target.file;
+  kept.push({
+    side: "evidence",
+    file: target.file,
+    state: "unavailable",
+    reason: `evidence: repository ${alias} not checked out; kept as stored`,
+  });
+  return stored;
+}
+
+/** Rebuild one evidence bundle from an explicit replacement target. */
 function bundleFromTarget(
-  target: CodeTarget,
+  kind: ClaimKind,
+  target: EvidenceTarget,
   contents: RecordContents,
   analyzer: AnchorAnalyzer | undefined,
 ): SelectorBundle {
-  if (target.coarse) return buildCoarseBundle(target.file);
   if (!target.region) {
     throw new Error(
-      `code target ${target.file} has no span; pass --code-quote or --code-range`,
+      `evidence target ${target.file} has no span; pass ${kind === "reference" ? "--ref-quote or --ref-range" : "--code-quote or --code-range"}`,
     );
   }
-  const content = contents.codeContents[target.file];
+  const content = contents.evidenceContents[target.file];
   if (content === undefined || content === null) {
-    throw new Error(`Code file not found on disk: ${target.file}`);
+    throw new Error(`Evidence file not found on disk: ${target.file}`);
   }
   const region = resolveRegion(content, target.region);
   return buildSelectorBundle(target.file, content, region, {
-    language: target.language ?? languageForFile(target.file),
+    language: evidenceLanguage(kind, target.file, target.language),
     analyzer,
   });
 }
 
-/** Re-localize an existing code bundle in place from its resolved side result. */
-function relocateCodeBundle(
+/**
+ * Plain `reanchor` on one existing evidence bundle: rebuilt when it reads
+ * `moved`, kept when it reads `unchanged`, kept with a warning when
+ * `unavailable` (sibling repo not checked out), and kept with a `kept` entry
+ * when it reads `changed`, `ambiguous` or `orphaned`.
+ */
+function relocateEvidenceBundle(
+  kind: ClaimKind,
   bundle: SelectorBundle,
   contents: RecordContents,
-  side: SideResult,
+  side: EvidenceSide,
   analyzer: AnchorAnalyzer | undefined,
-  claimId: string,
-): SelectorBundle {
-  if (isCoarseBundle(bundle)) return bundle;
-  const content = contents.codeContents[bundle.file];
-  if (content === undefined || content === null || !side.region) {
-    throw orphanError(claimId, "code", bundle.file);
+  warnings: string[],
+  kept: KeptSide[],
+): { bundle: SelectorBundle; relocated: boolean } {
+  if (side.state === "unavailable") {
+    warnings.push(
+      `evidence side ${bundle.file} kept unchanged: ${side.reasons.join("; ")}`,
+    );
+    return { bundle, relocated: false };
   }
-  return buildSelectorBundle(bundle.file, content, side.region, {
-    language: languageForFile(bundle.file),
-    analyzer,
-  });
+  if (side.state === "unchanged") return { bundle, relocated: false };
+  const content = contents.evidenceContents[bundle.file];
+  if (
+    side.state !== "moved" ||
+    content === undefined ||
+    content === null ||
+    !side.region
+  ) {
+    kept.push(keptSide("evidence", bundle.file, side.state, kind));
+    return { bundle, relocated: false };
+  }
+  return {
+    bundle: buildSelectorBundle(bundle.file, content, side.region, {
+      language: evidenceLanguage(kind, bundle.file),
+      analyzer,
+    }),
+    relocated: true,
+  };
+}
+
+/**
+ * The doc selectors for `supersede` in a new file: the text-position selector
+ * moved to the stored quote's only verbatim occurrence, or the selectors
+ * unchanged when the quote occurs zero or several times.
+ */
+function repositionDoc(
+  selectors: SelectorBundle["selectors"],
+  content: string,
+): SelectorBundle["selectors"] {
+  const quote = selectors.find((s) => s.kind === "text-quote");
+  if (quote?.kind !== "text-quote" || quote.exact.length === 0)
+    return selectors;
+  const at = content.indexOf(quote.exact);
+  if (at < 0 || content.indexOf(quote.exact, at + 1) >= 0) return selectors;
+  return selectors.map((s) =>
+    s.kind === "text-position"
+      ? { ...s, start: at, end: at + quote.exact.length }
+      : s,
+  );
 }
 
 export async function reanchor(
@@ -212,124 +365,152 @@ export async function reanchor(
   contents: RecordContents,
   input: ReanchorInput,
 ): Promise<ReanchorResult> {
-  const assertion = await store.getAssertion(input.claimId);
-  if (!assertion) throw new Error(`No claim ${input.claimId} in the store.`);
-  const proposition = await store.getProposition(assertion.propositionId);
-  if (!proposition) {
-    throw new Error(
-      `Proposition ${assertion.propositionId} missing for claim ${input.claimId}.`,
-    );
-  }
+  const claim = await store.getClaim(input.claimId);
+  if (!claim) throw new Error(`No claim ${input.claimId} in the store.`);
 
   const files = toResolveFiles(contents);
   const warnings: string[] = [];
+  const kept: KeptSide[] = [];
+  const relocatedSides: RelocatedSide[] = [];
 
-  // Resolve every side once.
-  const before = resolveSides(assertion, files, { ast: input.analyzer });
+  // Resolve every span once.
+  const before = resolveClaimSides(claim, files, { ast: input.analyzer });
 
   // Doc side.
-  const docFile = input.docPath ?? assertion.anchor.doc.file;
+  const docFile = input.docPath ?? claim.doc.file;
   if (contents.docContent === null) {
     throw new Error(`Document not found on disk: ${docFile}`);
   }
-  if (
-    input.docPath !== undefined &&
-    input.docPath !== assertion.anchor.doc.file &&
-    !input.docSpec
-  ) {
-    throw new Error(
-      `relocating claim ${assertion.id} to ${input.docPath} requires an explicit doc span (--doc-quote/--doc-range); the existing selectors describe the old file.`,
-    );
-  }
-  let docRegion: Region;
-  if (input.docSpec) {
-    docRegion = resolveRegion(contents.docContent, input.docSpec);
+  let docBundle: SelectorBundle;
+  let sentence: string;
+  if (input.docOnly) {
+    // `supersede`: the claim moves to the new file. When the stored quote
+    // occurs verbatim exactly once there, the text-position selector is
+    // rebuilt at that occurrence; otherwise every selector stays as stored,
+    // so the next check reports `changed`, `ambiguous`, or `orphaned`. The
+    // sentence, the quote, and the hashes never change.
+    docBundle = {
+      file: docFile,
+      selectors: repositionDoc(claim.doc.selectors, contents.docContent),
+    };
+    sentence = claim.sentence;
   } else {
-    if (before.doc.state === "orphaned" || !before.doc.region) {
-      throw orphanError(assertion.id, "doc", docFile);
+    if (
+      input.docPath !== undefined &&
+      input.docPath !== claim.doc.file &&
+      !input.docSpec
+    ) {
+      throw new Error(
+        `relocating claim ${claim.id} to ${input.docPath} requires an explicit doc span (--doc-quote/--doc-range); the existing selectors describe the old file.`,
+      );
     }
-    docRegion = before.doc.region;
+    let docRegion: Region | undefined;
+    if (input.docSpec) {
+      docRegion = resolveRegion(contents.docContent, input.docSpec);
+    } else if (before.doc.state === "moved" && before.doc.region) {
+      docRegion = before.doc.region;
+    } else if (before.doc.state !== "unchanged") {
+      kept.push(keptSide("doc", docFile, before.doc.state, claim.kind));
+    }
+    if (docRegion) {
+      warnings.push(
+        ...validateDocQuote(contents.docContent, docRegion, docFile),
+      );
+      docBundle = buildSelectorBundle(docFile, contents.docContent, docRegion);
+      sentence = regionText(contents.docContent, docRegion);
+      relocatedSides.push({ side: "doc", file: docFile });
+    } else {
+      docBundle = claim.doc;
+      sentence = claim.sentence;
+    }
   }
-  warnings.push(...validateDocQuote(contents.docContent, docRegion, docFile));
-  const docBundle = buildSelectorBundle(
-    docFile,
-    contents.docContent,
-    docRegion,
-  );
-  const confirmed = regionText(contents.docContent, docRegion);
 
-  // Code side.
-  let codeBundles: SelectorBundle[];
-  if (input.code !== undefined) {
-    codeBundles = input.code.map((t) =>
-      bundleFromTarget(t, contents, input.analyzer),
-    );
+  // Evidence side.
+  let evidence: SelectorBundle[];
+  if (input.docOnly) {
+    evidence = claim.evidence;
+  } else if (input.evidence !== undefined) {
+    if (claim.kind === "attested" && input.evidence.length > 0) {
+      throw new Error(
+        `claim ${claim.id} is attested and has no evidence spans.`,
+      );
+    }
+    if (claim.kind === "reference" && input.evidence.length !== 1) {
+      throw new Error(
+        `claim ${claim.id} is a reference claim and needs exactly one evidence span.`,
+      );
+    }
+    evidence = input.evidence.map((t, i) => {
+      const reason = contents.unavailable?.get(t.file);
+      if (reason !== undefined) {
+        return keepUnavailableTarget(claim, i, t, reason, kept);
+      }
+      relocatedSides.push({ side: "evidence", file: t.file });
+      return bundleFromTarget(claim.kind, t, contents, input.analyzer);
+    });
   } else {
-    codeBundles = assertion.anchor.code.map((bundle, i) =>
-      relocateCodeBundle(
+    evidence = claim.evidence.map((bundle, i) => {
+      const r = relocateEvidenceBundle(
+        claim.kind,
         bundle,
         contents,
-        before.code[i] as SideResult,
+        before.evidence[i] as EvidenceSide,
         input.analyzer,
-        assertion.id,
-      ),
-    );
+        warnings,
+        kept,
+      );
+      if (r.relocated)
+        relocatedSides.push({ side: "evidence", file: bundle.file });
+      return r.bundle;
+    });
   }
 
+  const relocated = relocatedSides.length;
   const documentId = input.docPath
     ? documentIdForPath(input.docPath)
-    : assertion.documentId;
+    : claim.documentId;
 
-  // Proposition refresh, split-on-write when shared.
-  const newFingerprint = propositionFingerprint(confirmed);
-  const shared = (await store.allAssertions()).some(
-    (x) => x.propositionId === proposition.id && x.id !== assertion.id,
-  );
-  let propositionId = assertion.propositionId;
-  if (shared && newFingerprint !== proposition.fingerprint) {
-    const fresh: Proposition = {
-      id: newId("prop"),
-      textCache: confirmed,
-      fingerprint: newFingerprint,
-    };
-    propositionId = fresh.id;
-    if (!input.dryRun) await store.putProposition(fresh);
-  } else {
-    proposition.textCache = confirmed;
-    proposition.fingerprint = newFingerprint;
-    if (!input.dryRun) await store.putProposition(proposition);
-  }
-
-  const next: Assertion = {
-    ...assertion,
+  const next: Claim = {
+    ...claim,
     documentId,
-    propositionId,
-    anchor: composeAnchor(docBundle, codeBundles),
-    ref: input.ref ?? assertion.ref,
+    sentence,
+    doc: docBundle,
+    evidence,
+    ref:
+      input.docOnly || relocated === 0 ? claim.ref : (input.ref ?? claim.ref),
   };
-  if (!input.dryRun) await store.putAssertion(next);
+  // `supersede` (docOnly) always writes: the claim moves to the new file.
+  const write = !input.dryRun && (input.docOnly || relocated > 0);
+  if (write) await store.putClaim(next);
 
-  if (!input.dryRun && input.docPath && documentId !== assertion.documentId) {
+  if (write && input.docPath && documentId !== claim.documentId) {
     const existing = await store.getDocument(documentId);
     if (!existing) {
-      await store.putDocument(newDocument(documentId, input.docPath));
+      await store.putDocument(
+        newDocument(documentId, input.docPath, input.now ?? new Date()),
+      );
     } else if (existing.lifecycle !== "active") {
       await store.putDocument({ ...existing, lifecycle: "active" });
     }
   }
 
-  const after = resolveSides(next, files, { ast: input.analyzer });
+  const after = resolveClaimSides(next, files, { ast: input.analyzer });
   return {
-    assertion: next,
+    claim: next,
+    relocated,
+    relocatedSides,
+    kept,
     doc: after.doc.state,
-    code: worstCodeState(after.code),
+    ...(after.evidence.length > 0
+      ? { evidence: worstEvidenceState(after.evidence) }
+      : {}),
     before: {
-      doc: sideQuote(assertion.anchor.doc),
-      code: assertion.anchor.code.map(sideQuote),
+      doc: sideQuote(claim.doc),
+      evidence: claim.evidence.map(sideQuote),
     },
     after: {
-      doc: sideQuote(next.anchor.doc),
-      code: next.anchor.code.map(sideQuote),
+      doc: sideQuote(next.doc),
+      evidence: next.evidence.map(sideQuote),
     },
     warnings,
   };

@@ -1,0 +1,320 @@
+{
+  "id": "clm_7bf25fb3271346a5",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `record` | `--doc <path>`, `--doc-quote <text>` or `--doc-range <range>`, `--kind code\\|reference\\|attested`, `--code-file <path>` (repeatable) with `--code-quote <text>` or `--code-range <range>`, `--ref-file <path>` with `--ref-quote <text>` or `--ref-range <range>`, `--source <id>=<resource>` (repeatable), `--instructions <text>`, `--suggest`, `--ttl <duration>`, `--owner <actor>`, `--by <actor>` (required unless every item has `by`), `--from-file <path\\|->` | record one claim from flags, or a batch from JSON |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `record` | `--doc <path>`, `--doc-quote <text>` or `--doc-range <range>`, `--kind code\\|reference\\|attested`, `--code-file <path>` (repeatable) with `--code-quote <text>` or `--code-range <range>`, `--ref-file <path>` with `--ref-quote <text>` or `--ref-range <range>`, `--source <id>=<resource>` (repeatable), `--instructions <text>`, `--suggest`, `--ttl <duration>`, `--owner <actor>`, `--by <actor>` (required unless every item has `by`), `--from-file <path\\|->` | record one claim from flags, or a batch from JSON |",
+        "prefix": " append one line to an agent instruction file |\n",
+        "suffix": "\n| `check` | `--since <ref>`, `--doc <path>`, `-"
+      },
+      {
+        "kind": "text-position",
+        "start": 54652,
+        "end": 55173
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind code --code-file <path> (--code-quote <text> | --code-range L1:L9) [options]\",",
+          "prefix": "e batch is all or nothing.\",\n    usage: [\n      ",
+          "suffix": "\n      \"hibi record --doc <path> (--doc-quote <t"
+        },
+        {
+          "kind": "text-position",
+          "start": 7057,
+          "end": 7209
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "1f8bc829a5d797e8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind code --code-file <path> (--code-quote <text> | --code-range L1:L9) [options]\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind reference --ref-file <path> (--ref-quote <text> | --ref-range L1:L3) [options]\",",
+          "prefix": " <text> | --code-range L1:L9) [options]\",\n      ",
+          "suffix": "\n      \"hibi record --doc <path> (--doc-quote <t"
+        },
+        {
+          "kind": "text-position",
+          "start": 7216,
+          "end": 7370
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "8cff7f6d5d450284"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind reference --ref-file <path> (--ref-quote <text> | --ref-range L1:L3) [options]\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...codeSpan(true),",
+          "prefix": "        help: \"The claim kind.\",\n      },\n      ",
+          "suffix": "\n      ...REF_SPAN,\n      {\n        name: \"sourc"
+        },
+        {
+          "kind": "text-position",
+          "start": 7947,
+          "end": 7965
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "2d0c5ef4b37db05b",
+          "semanticHash": "14b1e7e1b82762ca"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "true",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "placeholder: \"<id>=<resource>\",",
+          "prefix": "name: \"source\",\n        type: \"string\",\n        ",
+          "suffix": "\n        multiple: true,\n        help: \"A pointe"
+        },
+        {
+          "kind": "text-position",
+          "start": 8049,
+          "end": 8080
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "efa921a104cc16bb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"<id>=<resource>\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"How an agent re-checks an attested claim (the procedure; steps only via --from-file).\",",
+          "prefix": "string\",\n        placeholder: \"<text>\",\n        ",
+          "suffix": "\n      },\n      {\n        name: \"suggest\",\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 8308,
+          "end": 8402
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "fc348c719209d872"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"How an agent re-checks an attested claim (the procedure; steps only via --from-file).\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Record an advisory claim that never gates.\",",
+          "prefix": "me: \"suggest\",\n        type: \"boolean\",\n        ",
+          "suffix": "\n      },\n      {\n        name: \"ttl\",\n        t"
+        },
+        {
+          "kind": "text-position",
+          "start": 8478,
+          "end": 8529
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "ee8e4fa18df9756b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Record an advisory claim that never gates.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"ISO 8601 duration after which the claim needs re-checking, e.g. P90D. Required on attested.\",",
+          "prefix": "ng\",\n        placeholder: \"<duration>\",\n        ",
+          "suffix": "\n      },\n      {\n        name: \"owner\",\n       "
+        },
+        {
+          "kind": "text-position",
+          "start": 8635,
+          "end": 8735
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "c18af7b678e58594"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"ISO 8601 duration after which the claim needs re-checking, e.g. P90D. Required on attested.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"The actor to contact when the claim expires: human:<id>, agent:<name>, or process:<name>.\",",
+          "prefix": "tring\",\n        placeholder: \"<actor>\",\n        ",
+          "suffix": "\n      },\n      {\n        name: \"by\",\n        ty"
+        },
+        {
+          "kind": "text-position",
+          "start": 8840,
+          "end": 8938
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "07ab477e99cb374f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"The actor to contact when the claim expires: human:<id>, agent:<name>, or process:<name>.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Required, here or as each item's by; with --from-file it is the default for items without by.",
+          "prefix": "m: human:<id>, agent:<name>, or process:<name>. ",
+          "suffix": "\",\n      },\n      {\n        name: \"from-file\",\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 9126,
+          "end": 9219
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "174480d74c4f88fd"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Record a JSON array of claim items (- reads stdin). All or nothing; no other record flags except --by.\",",
+          "prefix": "ring\",\n        placeholder: \"<path|->\",\n        ",
+          "suffix": "\n      },\n    ],\n    examples: [\n      'hibi rec"
+        },
+        {
+          "kind": "text-position",
+          "start": 9331,
+          "end": 9442
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "7472c7d42049a8fb"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Record a JSON array of claim items (- reads stdin). All or nothing; no other record flags except --by.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:56.531Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:56.531Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

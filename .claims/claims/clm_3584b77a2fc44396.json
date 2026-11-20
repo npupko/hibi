@@ -1,0 +1,78 @@
+{
+  "id": "clm_3584b77a2fc44396",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "| `0` | no claim on the document gates | use the document; read any warnings in `reasons[]` |",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `0` | no claim on the document gates | use the document; read any warnings in `reasons[]` |",
+        "prefix": "\n\n| exit | meaning | what to do |\n|---|---|---|\n",
+        "suffix": "\n| `2` | at least one claim gates | do not act o"
+      },
+      {
+        "kind": "text-position",
+        "start": 644,
+        "end": 737
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (flags.gating) return 2;\n  if (flags.warn && failOn === \"warn\") return 2;\n  return 0;",
+          "prefix": " number {\n  if (failOn === \"never\") return 0;\n  ",
+          "suffix": "\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 22234,
+          "end": 22322
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "209eb8cb13351b96",
+          "semanticHash": "9b35ff63587956db"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:37.301Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:42.122Z",
+      "basis": "ack",
+      "note": "different cases of check --doc: exit 0 when nothing gates, exit 1 when no claims are registered",
+      "ack": {
+        "pairId": "clm_3584b77a2fc44396:clm_ee36cc6ac1bc4e78",
+        "sentenceHashes": [
+          "037d9a876ac2081197a26196688a3546e634f201b73f9d9b2e45ee0f133f42d4",
+          "914c91dd011fe17d43bbcf7e3f82034322bcd1382f5fb5e695c1933f7dd09ad2"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:37.301Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,123 @@
+{
+  "id": "clm_58025a428cb0468e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 44 | `never-checked` lists only `attested` claims with a `procedure` or `sources`; a pure vouch claim is listed only when expired (amended by 48), and `expired` applies to any claim with a ttl |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 44 | `never-checked` lists only `attested` claims with a `procedure` or `sources`; a pure vouch claim is listed only when expired (amended by 48), and `expired` applies to any claim with a ttl |",
+        "prefix": "e only the pairs with a claim in the document |\n",
+        "suffix": "\n| 45 | tree-sitter grammars are embedded in the"
+      },
+      {
+        "kind": "text-position",
+        "start": 83847,
+        "end": 84043
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const checkable = claim.procedure !== null || claim.sources.length > 0;",
+          "prefix": " if (v.judge === \"pending\") return \"pending\";\n  ",
+          "suffix": "\n  if (claim.kind === \"attested\" && checkable &&"
+        },
+        {
+          "kind": "text-position",
+          "start": 12881,
+          "end": 12952
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f9a8c8f5c83617f9",
+          "semanticHash": "50a564d3fb95b2fa"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (claim.kind === \"attested\" && checkable && !hasSupports)",
+          "prefix": "ocedure !== null || claim.sources.length > 0;\n  ",
+          "suffix": "\n    return \"never-checked\";\n  return undefined;"
+        },
+        {
+          "kind": "text-position",
+          "start": 12955,
+          "end": 13014
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "dea848eeec870d1c",
+          "semanticHash": "f1c69407699d1574"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"attested\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.expired) return \"expired\";",
+          "prefix": ".enforcement === \"retired\") return undefined;\n  ",
+          "suffix": "\n  if (claim.kind === \"code\") return undefined;\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 12690,
+          "end": 12722
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "c6e2ae1864093512",
+          "semanticHash": "8f947346d730a3d5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"expired\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:03.819Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:03.819Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,81 @@
+{
+  "id": "clm_cf045bbf7e7047bc",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A Noul `addresses` accompanies it.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A Noul `addresses` accompanies it.",
+        "prefix": "aps to `supports / refutes / does_not_address`. ",
+        "suffix": " Code rule: if `addresses < 0.3`, the result is "
+      },
+      {
+        "kind": "text-position",
+        "start": 34960,
+        "end": 34994
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/questions/supports.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"addresses\": {\n      \"type\": \"noul\",",
+          "prefix": "e claim asserts, either way\"\n      }\n    },\n    ",
+          "suffix": "\n      \"instructions\": \"Does `evidence` address "
+        },
+        {
+          "kind": "text-position",
+          "start": 1032,
+          "end": 1068
+        }
+      ]
+    },
+    {
+      "file": "src/judge/jev.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const addresses = noul(answers, \"addresses\");",
+          "prefix": "s[names[option] as SupportsRelation] = p;\n  }\n  ",
+          "suffix": "\n  if (addresses < ADDRESSES_FLOOR) {\n    return"
+        },
+        {
+          "kind": "text-position",
+          "start": 13818,
+          "end": 13863
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "f708808201995795",
+          "semanticHash": "254d3655f7e253c6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"addresses\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:52.141Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:52.141Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

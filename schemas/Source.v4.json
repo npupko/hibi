@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/Source",
+  "$defs": {
+    "Source": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "resource": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "resource"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,94 @@
+{
+  "id": "clm_27740eddfd764712",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "| `changed` | fix the sentence if wrong, then run the remediation `reanchor` command (it names the new span) |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `changed` | fix the sentence if wrong, then run the remediation `reanchor` command (it names the new span) |",
+        "prefix": "ts `<…>` placeholders.\n\n| flag | do |\n|---|---|\n",
+        "suffix": "\n| `orphaned` | `hibi reanchor <id> --suggest`, "
+      },
+      {
+        "kind": "text-position",
+        "start": 6022,
+        "end": 6132
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"the prose changed; confirm the evidence still backs it, then run the command\",",
+          "prefix": " evidence, then reanchor\",\n    rationale:\n      ",
+          "suffix": "\n    command: reanchorCmd(id, flags),\n  };\n}\n\nfu"
+        },
+        {
+          "kind": "text-position",
+          "start": 4617,
+          "end": 4696
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string",
+          "structuralHash": "19cf82e6c268509f",
+          "semanticHash": "647a817481275065"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"the prose changed; confirm the evidence still backs it, then run the command\""
+        }
+      ]
+    },
+    {
+      "file": "src/core/remediation.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "parts.push(valueFlag(\"doc-quote\", text));",
+          "prefix": "& v.docText ? v.docText : \"<new sentence>\";\n    ",
+          "suffix": "\n  }\n  if (v.evidence === \"changed\" || v.evidenc"
+        },
+        {
+          "kind": "text-position",
+          "start": 3172,
+          "end": 3213
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "2ec879b5d311506a",
+          "semanticHash": "7a0c5349c98b66c4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"doc-quote\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:33.678Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:33.678Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

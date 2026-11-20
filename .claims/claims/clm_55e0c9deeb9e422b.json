@@ -1,0 +1,88 @@
+{
+  "id": "clm_55e0c9deeb9e422b",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A quote that occurs more than once in `--to` is resolved by the normal cascade (section 7.1), so it may read `moved`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A quote that occurs more than once in `--to` is resolved by the normal cascade (section 7.1), so it may read `moved`.",
+        "prefix": "at is not in `--to` reads `orphaned` and gates. ",
+        "suffix": " `misses[]` holds only claims whose move failed "
+      },
+      {
+        "kind": "text-position",
+        "start": 73868,
+        "end": 73985
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (at < 0 || content.indexOf(quote.exact, at + 1) >= 0) return selectors;",
+          "prefix": "s;\n  const at = content.indexOf(quote.exact);\n  ",
+          "suffix": "\n  return selectors.map((s) =>\n    s.kind === \"t"
+        },
+        {
+          "kind": "text-position",
+          "start": 11306,
+          "end": 11380
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "d9180d7e246ba38c",
+          "semanticHash": "a6c298089dafb812"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const located = localizeTextQuote(currentText, tq, tp);",
+          "prefix": "  liveText: null,\n    };\n  }\n\n  // 1. Locate.\n  ",
+          "suffix": "\n  if (!located.region) {\n    return {\n      sta"
+        },
+        {
+          "kind": "text-position",
+          "start": 5667,
+          "end": 5722
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "6aebac216400799c",
+          "semanticHash": "2bffff06c6df47d0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:03.244Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:03.244Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

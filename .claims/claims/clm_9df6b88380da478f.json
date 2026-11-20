@@ -1,0 +1,82 @@
+{
+  "id": "clm_9df6b88380da478f",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "`ref` is the git HEAD the claim was recorded or last reanchored against.",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`ref` is the git HEAD the claim was recorded or last reanchored against.",
+        "prefix": "nd usually `owner`, `sources`, and `procedure`. ",
+        "suffix": " `hibi schema --name Claim` prints the JSON Sche"
+      },
+      {
+        "kind": "text-position",
+        "start": 11320,
+        "end": 11392
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "The git HEAD the claim was last recorded or reanchored against.",
+          "prefix": "n).default([]),\n    createdAt: Instant,\n    /** ",
+          "suffix": " */\n    ref: z.string(),\n  })\n  .superRefine((c,"
+        },
+        {
+          "kind": "text-position",
+          "start": 9710,
+          "end": 9773
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "62318260dc4dfe01"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/commands/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const ref = await currentRef(anchorRoot);\n  const defaultBy",
+          "prefix": "kens } = args;\n  const engine = await open();\n  ",
+          "suffix": " = str(values.by);\n  const fromFile = str(values"
+        },
+        {
+          "kind": "text-position",
+          "start": 3784,
+          "end": 3843
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "974ad89548d91341",
+          "semanticHash": "64364197aa759ae6"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:05.112Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:05.112Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

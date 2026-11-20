@@ -1,0 +1,65 @@
+{
+  "id": "clm_28dffd2c1af9417e",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A claim with no entry has no judge state.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A claim with no entry has no judge state.",
+        "prefix": " a newest cache entry uses this one definition. ",
+        "suffix": "\n- `evidence` verb: once per request key `(model"
+      },
+      {
+        "kind": "text-position",
+        "start": 24311,
+        "end": 24352
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (newest !== undefined) {\n        outcome = cachedSupportsOutcome(newest, threshold, c);\n ",
+          "prefix": "  const newest = newestSupports(entries);\n      ",
+          "suffix": "     }\n    }\n\n    const ack =\n      outcome?.sta"
+        },
+        {
+          "kind": "text-position",
+          "start": 16641,
+          "end": 16733
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "ec1b41d542b4b7b1",
+          "semanticHash": "6d928f5bcae0ec42"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:41.982Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:41.982Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

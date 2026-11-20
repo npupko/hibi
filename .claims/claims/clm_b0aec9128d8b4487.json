@@ -1,0 +1,65 @@
+{
+  "id": "clm_b0aec9128d8b4487",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| Choice with `n` options | `(p_max - 1/n) / (1 - 1/n)` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| Choice with `n` options | `(p_max - 1/n) / (1 - 1/n)` |",
+        "prefix": "e docs:\n\n| answer type | confidence |\n|---|---|\n",
+        "suffix": "\n| Noul with probability `p` | `abs(2p - 1)` |\n\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 8470,
+        "end": 8527
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(pMax - 1 / n) / (1 - 1 / n)",
+          "prefix": "1;\n  const pMax = Math.max(...values);\n  return ",
+          "suffix": ";\n}\n\n/** Noul confidence per the TypeSafe docs: "
+        },
+        {
+          "kind": "text-position",
+          "start": 4519,
+          "end": 4547
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "40f992c64764ee30",
+          "semanticHash": "b583fe18f7f33db0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.953Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.953Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

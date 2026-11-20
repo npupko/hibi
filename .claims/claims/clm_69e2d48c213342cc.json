@@ -1,0 +1,94 @@
+{
+  "id": "clm_69e2d48c213342cc",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "| `review` | below threshold or `does_not_address`; collect evidence that addresses the sentence directly, or `hibi attest <id> --by <actor> --ack review --note \"<why>\"` |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `review` | below threshold or `does_not_address`; collect evidence that addresses the sentence directly, or `hibi attest <id> --by <actor> --ack review --note \"<why>\"` |",
+        "prefix": "less numbers in the evidence are not compared |\n",
+        "suffix": "\n| `pending` | no key, no network, or a judge er"
+      },
+      {
+        "kind": "text-position",
+        "start": 10957,
+        "end": 11128
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reasons: [`evidence leans ${verb}, confidence ${c} below threshold ${t}`],",
+          "prefix": "\n    };\n  }\n  return {\n    state: \"review\",\n    ",
+          "suffix": "\n  };\n}\n\n/** `source matches declared source \"<i"
+        },
+        {
+          "kind": "text-position",
+          "start": 4472,
+          "end": 4546
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "84e679a09f03869b",
+          "semanticHash": "da08da2c5582e0e3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[`evidenceleans${verb},confidence${c}belowthreshold${t}`]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ": \"evidence did not address the sentence\",",
+          "prefix": "(addresses=${fmt(result.addresses)})`\n          ",
+          "suffix": "\n      ],\n    };\n  }\n  if (values !== undefined)"
+        },
+        {
+          "kind": "text-position",
+          "start": 3661,
+          "end": 3703
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "b738c3add7879bda",
+          "semanticHash": "37620105fe08d5a0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence did not address the sentence\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:09.434Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:09.434Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

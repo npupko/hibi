@@ -1,0 +1,65 @@
+{
+  "id": "clm_766ff517c18e46ef",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "`hibi evidence` refuses an evidence text longer than 32,000 characters.",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi evidence` refuses an evidence text longer than 32,000 characters.",
+        "prefix": "y the document path and only their own regions. ",
+        "suffix": " A `reference` claim whose referenced span is lo"
+      },
+      {
+        "kind": "text-position",
+        "start": 3899,
+        "end": 3970
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "MAX_EVIDENCE_CHARS = 32_000",
+          "prefix": "DGET`\n * in src/judge/jev.ts).\n */\nexport const ",
+          "suffix": ";\n\n/** Choice confidence per the TypeSafe docs: "
+        },
+        {
+          "kind": "text-position",
+          "start": 4185,
+          "end": 4212
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "93110d923bb52349"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "32_000"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.917Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.917Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

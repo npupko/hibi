@@ -1,0 +1,94 @@
+{
+  "id": "clm_eefccbe406024f95",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 58 | retired claims are not counted in `expired` or in the per-document summary counts |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 58 | retired claims are not counted in `expired` or in the per-document summary counts |",
+        "prefix": " `hibi evidence` takes `attested` claims only |\n",
+        "suffix": "\n| 59 | the splitter skips frontmatter (only wit"
+      },
+      {
+        "kind": "text-position",
+        "start": 87202,
+        "end": 87292
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "retiredCount += 1;",
+          "prefix": "erdicts) {\n    if (v.doc === \"retired\") {\n      ",
+          "suffix": "\n      continue;\n    }\n    docHist[v.doc] += 1;\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 19395,
+          "end": 19413
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "augmented_assignment_expression",
+          "structuralHash": "e7009dd9996ed9e0",
+          "semanticHash": "aa837d9bd06cd573"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/status.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (enf === \"retired\") retired += 1;",
+          "prefix": "t(v.claimId)?.enforcement ?? \"suggested\";\n      ",
+          "suffix": "\n      else if (v.gates) gating += 1;\n      else"
+        },
+        {
+          "kind": "text-position",
+          "start": 1836,
+          "end": 1872
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "422c3ffb3dda2746",
+          "semanticHash": "7f10221a69d050b8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"retired\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:04.826Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:04.826Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

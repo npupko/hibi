@@ -1,0 +1,52 @@
+{
+  "id": "clm_7fbf0def3adc4bcb",
+  "documentId": "doc_d068824e08521674",
+  "kind": "reference",
+  "sentence": "Every rule that fires is a reason label in the output.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Every rule that fires is a reason label in the output.",
+        "prefix": "ms/config.json`, decides when a judgment gates. ",
+        "suffix": "\n\nAttestations are append-only and name an actor"
+      },
+      {
+        "kind": "text-position",
+        "start": 7020,
+        "end": 7074
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Every automatic rule appears as a reason label in the report.",
+          "prefix": ".\n5. **One knob per concept, no hidden rules.** ",
+          "suffix": "\n6. **Contracts are data.** Contracts are JSON: "
+        },
+        {
+          "kind": "text-position",
+          "start": 2497,
+          "end": 2558
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:24.224Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:24.224Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

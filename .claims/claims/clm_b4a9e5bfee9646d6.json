@@ -1,0 +1,123 @@
+{
+  "id": "clm_b4a9e5bfee9646d6",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The requests are the exact bodies the adapter sends.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The requests are the exact bodies the adapter sends.",
+        "prefix": "-1.14.0` (see `test/fixtures/judge/README.md`). ",
+        "suffix": "\n\n## 14. Decisions log\n\n| # | decision |\n|---|--"
+      },
+      {
+        "kind": "text-position",
+        "start": 78722,
+        "end": 78774
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "test/judge-jev.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const expected = await fixture<SystemOneRequest>(\"supports.request.json\");",
+          "prefix": "uts = await fixture<Inputs>(\"inputs.json\");\n    ",
+          "suffix": "\n    const response = await fixture<SystemOneRes"
+        },
+        {
+          "kind": "text-position",
+          "start": 5282,
+          "end": 5356
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "40942c46954dbc0c",
+          "semanticHash": "7f0b3d4d0957d5d6"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"supports.request.json\""
+        }
+      ]
+    },
+    {
+      "file": "test/judge-jev.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const expected = await fixture<SystemOneRequest>(\"triage.request.json\");",
+          "prefix": "uts = await fixture<Inputs>(\"inputs.json\");\n    ",
+          "suffix": "\n    const response = await fixture<SystemOneRes"
+        },
+        {
+          "kind": "text-position",
+          "start": 3295,
+          "end": 3367
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "40942c46954dbc0c",
+          "semanticHash": "e6acc4611705613f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"triage.request.json\""
+        }
+      ]
+    },
+    {
+      "file": "test/judge-jev.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const expected = await fixture<SystemOneRequest>(\"conflict.request.json\");",
+          "prefix": "uts = await fixture<Inputs>(\"inputs.json\");\n    ",
+          "suffix": "\n    const response = await fixture<SystemOneRes"
+        },
+        {
+          "kind": "text-position",
+          "start": 6103,
+          "end": 6177
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "40942c46954dbc0c",
+          "semanticHash": "cf6654a75110fdfe"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"conflict.request.json\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:55:03.570Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:55:03.570Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

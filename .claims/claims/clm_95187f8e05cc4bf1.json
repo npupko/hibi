@@ -1,0 +1,68 @@
+{
+  "id": "clm_95187f8e05cc4bf1",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "An `unverifiable` sentence states a fact that no evidence could settle, such as \"This design will scale for years.\"",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "An `unverifiable` sentence states a fact that no evidence could settle, such as \"This design will scale for years.\"",
+        "prefix": " not-a-claim 1, unsure 1; 0 judge requests\n```\n\n",
+        "suffix": " Rewrite it so a person is named as holding the "
+      },
+      {
+        "kind": "text-position",
+        "start": 8175,
+        "end": 8290
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/questions/triage.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "No evidence could settle it",
+          "prefix": ",\n        \"nothing\": {\n          \"definition\": \"",
+          "suffix": ": a prediction, an intention, or a vague stateme"
+        },
+        {
+          "kind": "text-position",
+          "start": 6528,
+          "end": 6555
+        }
+      ]
+    },
+    {
+      "file": "src/judge/questions/triage.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"This design will scale for years.\",",
+          "prefix": " by someone (external)\",\n          \"examples\": [",
+          "suffix": " \"It is fast.\"]\n        }\n      }\n    }\n  }\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 6833,
+          "end": 6869
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:26.023Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:26.023Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

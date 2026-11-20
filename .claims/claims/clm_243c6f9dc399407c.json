@@ -1,0 +1,117 @@
+{
+  "id": "clm_243c6f9dc399407c",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "{ \"file\": \"src/retry.ts\", \"selectors\": [ { \"kind\": \"text-quote\", … }, { \"kind\": \"text-position\", … } ] }",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "{ \"file\": \"src/retry.ts\", \"selectors\": [ { \"kind\": \"text-quote\", … }, { \"kind\": \"text-position\", … } ] }",
+        "prefix": "nt at the same span in different ways.\n\n```json\n",
+        "suffix": "\n```\n\nThe store holds the selectors, not a copy "
+      },
+      {
+        "kind": "text-position",
+        "start": 692,
+        "end": 796
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/anchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { file, selectors };",
+          "prefix": ");\n    if (value) selectors.push(value);\n  }\n\n  ",
+          "suffix": "\n}\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 2312,
+          "end": 2339
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "c657a64f65d85ebc",
+          "semanticHash": "457603a72d4f9ace"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/anchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ kind: \"text-quote\", exact, prefix, suffix },",
+          "prefix": "T),\n  );\n\n  const selectors: Selector[] = [\n    ",
+          "suffix": "\n    { kind: \"text-position\", start, end },\n  ];"
+        },
+        {
+          "kind": "text-position",
+          "start": 1962,
+          "end": 2008
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "e139858fccd3a68d",
+          "semanticHash": "2f77820015696811"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"text-quote\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/anchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ kind: \"text-position\", start, end },",
+          "prefix": "ind: \"text-quote\", exact, prefix, suffix },\n    ",
+          "suffix": "\n  ];\n\n  if (opts.language && opts.analyzer) {\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 2013,
+          "end": 2051
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "4c9c19f1d3254ffa",
+          "semanticHash": "dd607dad42065f26"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"text-position\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:41.385Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:41.385Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

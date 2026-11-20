@@ -1,0 +1,52 @@
+{
+  "id": "clm_c6fd8d63ad6c4997",
+  "documentId": "doc_e62a4b11677dbed7",
+  "kind": "reference",
+  "sentence": "Never rewrite a sentence to silence a flag.",
+  "doc": {
+    "file": "docs/claude-code.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Never rewrite a sentence to silence a flag.",
+        "prefix": "uch does (see [Attestations](/attestations)).\n- ",
+        "suffix": "\n- Never delete a file under `.claims/`; run `hi"
+      },
+      {
+        "kind": "text-position",
+        "start": 3285,
+        "end": 3328
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Never rewrite a sentence to silence a flag.",
+          "prefix": "submit evidence (attested), or ask the owner |\n\n",
+          "suffix": " Never delete a `.claims/` file; use `hibi retir"
+        },
+        {
+          "kind": "text-position",
+          "start": 6485,
+          "end": 6528
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:25:23.558Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:25:23.558Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

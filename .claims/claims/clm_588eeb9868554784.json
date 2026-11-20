@@ -1,0 +1,123 @@
+{
+  "id": "clm_588eeb9868554784",
+  "documentId": "doc_88a90eff6155c712",
+  "kind": "code",
+  "sentence": "`check` lists a `worklist`: claims that are `expired`; reference or attested claims in `review` or `pending`; attested claims with a `procedure` or `sources` and no judged evidence (`never-checked`).",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`check` lists a `worklist`: claims that are `expired`; reference or attested claims in `review` or `pending`; attested claims with a `procedure` or `sources` and no judged evidence (`never-checked`).",
+        "prefix": " with a ttl and nothing counting is `expired`.\n\n",
+        "suffix": " `list --state pending` is the same set.\n\n## Inv"
+      },
+      {
+        "kind": "text-position",
+        "start": 1746,
+        "end": 1945
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.expired) return \"expired\";",
+          "prefix": ".enforcement === \"retired\") return undefined;\n  ",
+          "suffix": "\n  if (claim.kind === \"code\") return undefined;\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 12690,
+          "end": 12722
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "c6e2ae1864093512",
+          "semanticHash": "8f947346d730a3d5"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"expired\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (claim.kind === \"code\") return undefined;",
+          "prefix": "undefined;\n  if (v.expired) return \"expired\";\n  ",
+          "suffix": "\n  if (v.judge === \"review\" && !acknowledged) re"
+        },
+        {
+          "kind": "text-position",
+          "start": 12725,
+          "end": 12769
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "02b693156b190a82",
+          "semanticHash": "90b4c04fa24c36f8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"code\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "claim.procedure !== null || claim.sources.length > 0",
+          "prefix": "pending\") return \"pending\";\n  const checkable = ",
+          "suffix": ";\n  if (claim.kind === \"attested\" && checkable &"
+        },
+        {
+          "kind": "text-position",
+          "start": 12899,
+          "end": 12951
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "6627a81838885bc0",
+          "semanticHash": "c8631bf7a3c4e29f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.843Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.843Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

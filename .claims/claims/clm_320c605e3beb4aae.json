@@ -1,0 +1,82 @@
+{
+  "id": "clm_320c605e3beb4aae",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "A stranded claim still resolves, still gates, and still warns.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A stranded claim still resolves, still gates, and still warns.",
+        "prefix": "em with:\n\n```sh\nhibi list --state stranded\n```\n\n",
+        "suffix": " In `check` JSON, every live claim on a non-acti"
+      },
+      {
+        "kind": "text-position",
+        "start": 2052,
+        "end": 2114
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const sides = resolveClaimSides(c, files, { ast: options.ast });",
+          "prefix": " = { doc: docText, evidence, unavailable };\n    ",
+          "suffix": "\n\n    const entries = supports.get(c.id) ?? [];\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 15938,
+          "end": 16002
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "5a6b0a6825b161e4",
+          "semanticHash": "175383615483a86b"
+        }
+      ]
+    },
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export function gateVerdict(",
+          "prefix": "/** Apply the SPEC 7.4 table to one verdict. */\n",
+          "suffix": "\n  v: VerdictDimensions,\n  enforcement: Enforcem"
+        },
+        {
+          "kind": "text-position",
+          "start": 2738,
+          "end": 2766
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "8a901711d993acec",
+          "semanticHash": "d9fbc0bb7473a0ac"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.490Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.490Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

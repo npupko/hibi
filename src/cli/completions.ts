@@ -7,7 +7,7 @@ import { COMMANDS, GLOBAL_OPTIONS, optionsFor } from "./options.ts";
 
 export type Shell = "zsh" | "bash" | "fish";
 
-const VERBS = COMMANDS.filter((c) => !c.aliasOf).map((c) => c.name);
+const VERBS = COMMANDS.map((c) => c.name);
 const GLOBAL_FLAGS = GLOBAL_OPTIONS.map((o) => `--${o.name}`);
 
 function flagsFor(verb: string): string[] {

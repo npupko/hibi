@@ -1,0 +1,117 @@
+{
+  "id": "clm_e8c0fbe20dc94a54",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `judge` | `supported`, `refuted`, `review`, `pending` | when a judgment applies: `reference` claims, and `attested` claims with judged evidence |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `judge` | `supported`, `refuted`, `review`, `pending` | when a judgment applies: `reference` claims, and `attested` claims with judged evidence |",
+        "prefix": "has evidence sides; the worst state over them |\n",
+        "suffix": "\n| `expired` | boolean | always; see [Attestatio"
+      },
+      {
+        "kind": "text-position",
+        "start": 1533,
+        "end": 1680
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const JudgeState = z.enum([\"supported\", \"refuted\", \"review\", \"pending\"]);",
+          "prefix": "\n/** The judge axis of a verdict (SPEC 7.2). */\n",
+          "suffix": "\nexport type JudgeState = z.infer<typeof JudgeSt"
+        },
+        {
+          "kind": "text-position",
+          "start": 3691,
+          "end": 3771
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "c512d014b389f925",
+          "semanticHash": "3bb5e3144f937c77"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"supported\",\"refuted\",\"review\",\"pending\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (c.kind === \"reference\") {",
+          "prefix": "d;\n    const findingReasons: string[] = [];\n    ",
+          "suffix": "\n      const judgeable = referenceTexts(c, sides"
+        },
+        {
+          "kind": "text-position",
+          "start": 16138,
+          "end": 16167
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "7444c9e4b957f1c4",
+          "semanticHash": "dfc6709a90419a7e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"reference\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "outcome = cachedSupportsOutcome(newest, threshold, c);",
+          "prefix": "ies);\n      if (newest !== undefined) {\n        ",
+          "suffix": "\n      }\n    }\n\n    const ack =\n      outcome?.s"
+        },
+        {
+          "kind": "text-position",
+          "start": 16677,
+          "end": 16731
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "c49da9b2b50d0969",
+          "semanticHash": "c654c055c110a81b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:11.155Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:11.155Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

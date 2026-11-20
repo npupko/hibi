@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/Attestation",
+  "$defs": {
+    "Attestation": {
+      "type": "object",
+      "properties": {
+        "by": {
+          "$ref": "#/$defs/Actor"
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        },
+        "basis": {
+          "type": "string",
+          "enum": [
+            "vouch",
+            "evidence",
+            "ack"
+          ]
+        },
+        "note": {
+          "type": "string"
+        },
+        "evidenceHash": {
+          "type": "string"
+        },
+        "ack": {
+          "anyOf": [
+            {
+              "type": "object",
+              "properties": {
+                "pairId": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sentenceHashes": {
+                  "type": "array",
+                  "prefixItems": [
+                    {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  ],
+                  "items": false,
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "required": [
+                "pairId",
+                "sentenceHashes"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "judgeKey": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "judgeKey"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": [
+        "by",
+        "at",
+        "basis"
+      ],
+      "additionalProperties": false
+    },
+    "Actor": {
+      "type": "string",
+      "pattern": "^(human|agent|process):.+$"
+    }
+  }
+}

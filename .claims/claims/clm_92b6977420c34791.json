@@ -1,0 +1,65 @@
+{
+  "id": "clm_92b6977420c34791",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "`hibi retire` withdraws a claim that no longer applies.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi retire` withdraws a claim that no longer applies.",
+        "prefix": "ding the code, and never delete the claim file; ",
+        "suffix": "\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 25162,
+        "end": 25217
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "summary: \"Withdraw a claim so it no longer gates. Idempotent.\",",
+          "prefix": "mpts\"',\n    ],\n  },\n  {\n    name: \"retire\",\n    ",
+          "suffix": "\n    positional: {\n      name: \"claim-id\",\n     "
+        },
+        {
+          "kind": "text-position",
+          "start": 15910,
+          "end": 15973
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "32ff309bc64a1d78"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Withdraw a claim so it no longer gates. Idempotent.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:13.025Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:13.025Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

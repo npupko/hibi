@@ -1,0 +1,117 @@
+{
+  "id": "clm_32c76540a0094e4e",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "an evidence file outside its root: the anchor root, or the alias directory for an aliased file (`path escapes its root`);",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "an evidence file outside its root: the anchor root, or the alias directory for an aliased file (`path escapes its root`);",
+        "prefix": "an evidence file that does not exist on disk;\n- ",
+        "suffix": "\n- an alias that `config.repos` does not define."
+      },
+      {
+        "kind": "text-position",
+        "start": 7906,
+        "end": 8027
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`${file}: ${resolved.reason}; an evidence file must be inside ${resolved.alias === undefined ? \"the anchor root\" : `the directory of repo alias \"${resolved.alias}\"`}.`,",
+          "prefix": "resolved.escapes) {\n    return new Error(\n      ",
+          "suffix": "\n    );\n  }\n  return new Error(\n    `${resolved."
+        },
+        {
+          "kind": "text-position",
+          "start": 7798,
+          "end": 7966
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "8f4f2bb90929d884",
+          "semanticHash": "af70c74ca32856d3"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (\"unavailable\" in resolved) throw recordRefusal(target.file, resolved);",
+          "prefix": "fig, target.file, this.store.anchorRoot);\n      ",
+          "suffix": "\n      evidenceContents[target.file] = await thi"
+        },
+        {
+          "kind": "text-position",
+          "start": 14236,
+          "end": 14310
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "8a90e38518edf8fe",
+          "semanticHash": "9f626a575f6fb13b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"unavailable\""
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (r.escapes) throw recordRefusal(target.file, r);",
+          "prefix": "ile is kept as stored (see `reanchor`).\n        ",
+          "suffix": "\n        unavailable.set(target.file, r.reason);"
+        },
+        {
+          "kind": "text-position",
+          "start": 21717,
+          "end": 21768
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6d8a2996e5436b57",
+          "semanticHash": "a407905eb543e65a"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:27.166Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:27.166Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

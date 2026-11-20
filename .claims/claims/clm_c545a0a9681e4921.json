@@ -1,0 +1,59 @@
+{
+  "id": "clm_c545a0a9681e4921",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "hibi runs none of these steps; the workflow does.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "hibi runs none of these steps; the workflow does.",
+        "prefix": "rklist.lobster`) that a scheduler runs nightly. ",
+        "suffix": " `claude -p` is one possible agent; any agent th"
+      },
+      {
+        "kind": "text-position",
+        "start": 8290,
+        "end": 8339
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "a hint, never run by hibi",
+          "prefix": "peof Source>;\n\n/** One Lobster-compatible step: ",
+          "suffix": " (SPEC 4.2). */\nexport const ProcedureStep = z.s"
+        },
+        {
+          "kind": "text-position",
+          "start": 8068,
+          "end": 8093
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "4bde29d13db28ed3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:08.607Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:08.607Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

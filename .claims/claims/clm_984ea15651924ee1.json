@@ -1,0 +1,65 @@
+{
+  "id": "clm_984ea15651924ee1",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `judge: refuted` | gate | gate |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `judge: refuted` | gate | gate |",
+        "prefix": " on either side, enforced claim | gate | gate |\n",
+        "suffix": "\n| `conflicts` non-empty | gate | gate |\n| `expi"
+      },
+      {
+        "kind": "text-position",
+        "start": 26037,
+        "end": 26071
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/gating.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"refuted\") gates = true;",
+          "prefix": "c) || isWarnAnchor(v.evidence)) warns = true;\n  ",
+          "suffix": "\n  if (v.judge !== undefined && WARN_JUDGE.has(v"
+        },
+        {
+          "kind": "text-position",
+          "start": 3180,
+          "end": 3220
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "045e3f715206f391",
+          "semanticHash": "c5efdf039031fded"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"refuted\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:47.993Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:47.993Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

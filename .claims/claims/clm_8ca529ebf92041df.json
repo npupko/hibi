@@ -1,0 +1,65 @@
+{
+  "id": "clm_8ca529ebf92041df",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "`hibi list --path api:src/limits.ts` finds the claims anchored there.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`hibi list --path api:src/limits.ts` finds the claims anchored there.",
+        "prefix": "); it exits 0 when another side was relocated.\n\n",
+        "suffix": " `check --since <ref>` diffs only the knowledge "
+      },
+      {
+        "kind": "text-position",
+        "start": 20378,
+        "end": 20447
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/list.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (c.evidence.some((b) => b.file === path)) return \"evidence\";",
+          "prefix": "ed {\n  if (c.doc.file === path) return \"doc\";\n  ",
+          "suffix": "\n  return undefined;\n}\n\nfunction rowState(v: Ver"
+        },
+        {
+          "kind": "text-position",
+          "start": 3080,
+          "end": 3143
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "c96451cfbf0aea08",
+          "semanticHash": "a1d46c1ede904701"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:11.838Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:11.838Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

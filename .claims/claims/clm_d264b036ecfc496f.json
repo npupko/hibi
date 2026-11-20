@@ -1,0 +1,82 @@
+{
+  "id": "clm_d264b036ecfc496f",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| judge | the model-backed interface with three judgments; Jev is the shipped implementation |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| judge | the model-backed interface with three judgments; Jev is the shipped implementation |",
+        "prefix": "k time; never stored except for judge results |\n",
+        "suffix": "\n\n## 4. Claim kinds\n\n| kind | evidence side | wh"
+      },
+      {
+        "kind": "text-position",
+        "start": 3512,
+        "end": 3606
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "  triage(\n    doc: { path: string },\n    regions: Region[],\n  ): Promise<JudgeResponse<TriageResult[]>>;\n  supports(input: SupportsInput): Promise<JudgeResponse<SupportsResult>>;\n  conflict(",
+          "prefix": "udge answers with. */\n  readonly model: string;\n",
+          "suffix": "\n    a: ConflictSide,\n    b: ConflictSide,\n  ): "
+        },
+        {
+          "kind": "text-position",
+          "start": 2491,
+          "end": 2681
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "interface_body",
+          "structuralHash": "f01b4eef5df2d24e",
+          "semanticHash": "69e884279d07368c"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "new JevJudge({ model: config.judge.model, http: new TypeSafeHttp() })",
+          "prefix": "\n    return (\n      this.options.judge ??\n      ",
+          "suffix": "\n    );\n  }\n\n  /** The analyzer with the grammar"
+        },
+        {
+          "kind": "text-position",
+          "start": 8801,
+          "end": 8870
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "new_expression",
+          "structuralHash": "f4417c67a3382f17",
+          "semanticHash": "3e5c4fe2cd1bdd4f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:59.647Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:59.647Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,117 @@
+{
+  "id": "clm_8c3c028bf03e46ed",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`record` appends a vouch by the recording actor when it creates a claim, and appends another each time the same sentence is re-recorded in the same document (section 11, `record`).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`record` appends a vouch by the recording actor when it creates a claim, and appends another each time the same sentence is re-recorded in the same document (section 11, `record`).",
+        "prefix": " refused.\n- `basis: vouch` is a bare statement. ",
+        "suffix": " `attest` without `--ack` appends a vouch.\n- `ba"
+      },
+      {
+        "kind": "text-position",
+        "start": 8501,
+        "end": 8681
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "attestations: [vouch],",
+          "prefix": " { ttl: input.ttl } : {}),\n    enforcement,\n    ",
+          "suffix": "\n    createdAt: now.toISOString(),\n    ref: inpu"
+        },
+        {
+          "kind": "text-position",
+          "start": 8360,
+          "end": 8382
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "cd4de9ccd783bf10",
+          "semanticHash": "c5c6667dd66e5787"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[vouch]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const existing = sharing.find((c) => c.documentId === docId);",
+          "prefix": "r((c) => sameSentence(c.sentence, sentence));\n  ",
+          "suffix": "\n  if (existing) {\n    const updated: Claim = {\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 7123,
+          "end": 7184
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "db7e90d39d1a884c",
+          "semanticHash": "179c15bc0e04b1f7"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "attestations: [...existing.attestations, vouch],",
+          "prefix": "!== undefined ? { ttl: input.ttl } : {}),\n      ",
+          "suffix": "\n    };\n    if (!input.dryRun) await store.putCl"
+        },
+        {
+          "kind": "text-position",
+          "start": 7710,
+          "end": 7758
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "428e1da5423f8c15",
+          "semanticHash": "128ac582d858f455"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[...existing.attestations,vouch]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:35.000Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:35.000Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

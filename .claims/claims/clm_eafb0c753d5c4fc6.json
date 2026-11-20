@@ -1,0 +1,59 @@
+{
+  "id": "clm_eafb0c753d5c4fc6",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "| the alias was removed from config | `unavailable` | `repo alias \"api\" is not defined in .claims/config.json repos` |",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| the alias was removed from config | `unavailable` | `repo alias \"api\" is not defined in .claims/config.json repos` |",
+        "prefix": "ling repo \"api\" is not checked out at ../api` |\n",
+        "suffix": "\n| the path resolves outside the alias directory"
+      },
+      {
+        "kind": "text-position",
+        "start": 6668,
+        "end": 6786
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/repos.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "reason: `repo alias \"${split.alias}\" is not defined in .claims/config.json repos`,",
+          "prefix": "vailable: true,\n      alias: split.alias,\n      ",
+          "suffix": "\n    };\n  }\n  const abs = isAbsolute(dir) ? dir "
+        },
+        {
+          "kind": "text-position",
+          "start": 3505,
+          "end": 3587
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "021711a692bccafd",
+          "semanticHash": "cf76037513a84ef8"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.950Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.950Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

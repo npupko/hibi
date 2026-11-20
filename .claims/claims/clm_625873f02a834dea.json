@@ -1,0 +1,140 @@
+{
+  "id": "clm_625873f02a834dea",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Located, similarity at or above 0.9, no AST or value change, start within 4 chars: `unchanged`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Located, similarity at or above 0.9, no AST or value change, start within 4 chars: `unchanged`.",
+        "prefix": "n within `min(256, floor(len * 0.4))` edits.\n2. ",
+        "suffix": "\n3. Same, at a new offset: `moved`.\n4. Similarit"
+      },
+      {
+        "kind": "text-position",
+        "start": 20107,
+        "end": 20202
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/params.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const SAME_TEXT_SIMILARITY = 0.9;",
+          "prefix": "checks). Below it the\n * span is `changed`.\n */\n",
+          "suffix": "\n\n/** A same-text span whose start moved by more"
+        },
+        {
+          "kind": "text-position",
+          "start": 1363,
+          "end": 1403
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "2bc784cd54cc3953"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0.9"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/params.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const MOVE_AWARENESS_CHARS = 4;",
+          "prefix": "ved by more than this many chars is `moved`. */\n",
+          "suffix": "\n\n/**\n * Minimum quote length for multiple-match"
+        },
+        {
+          "kind": "text-position",
+          "start": 1488,
+          "end": 1526
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "58212d74dff0162f",
+          "semanticHash": "d8e8ba58143843b1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "4"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const sameText = similarity >= SAME_TEXT_SIMILARITY;",
+          "prefix": " the sentence changed\";\n  }\n\n  // 4. Changed.\n  ",
+          "suffix": "\n  if (!sameText || astLabel || valueLabel || nu"
+        },
+        {
+          "kind": "text-position",
+          "start": 7957,
+          "end": 8009
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "56b24f5585f4d9ac",
+          "semanticHash": "9df5223ff52d6d1c"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (delta > MOVE_AWARENESS_CHARS) {",
+          "prefix": "= tp ? Math.abs(region.start - tp.start) : 0;\n  ",
+          "suffix": "\n    reasons.push(`span moved ${delta} chars`);\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 8954,
+          "end": 8989
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "8a4a881549111bba",
+          "semanticHash": "3d68770d6a0de176"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.652Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.652Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

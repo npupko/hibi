@@ -1,0 +1,111 @@
+{
+  "id": "clm_ea2aa4167fce4130",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `evidence` | `--from-file <path\\|->` (required), `--by <actor>` (required unless every item has `by`) | submit evidence for an `attested` claim |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `evidence` | `--from-file <path\\|->` (required), `--by <actor>` (required unless every item has `by`) | submit evidence for an `attested` claim |",
+        "prefix": "that is not a registered document is an error |\n",
+        "suffix": "\n| `attest <claim-id>` | `--by <actor>` (require"
+      },
+      {
+        "kind": "text-position",
+        "start": 56338,
+        "end": 56485
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"JSON array of evidence items (- reads stdin). All or nothing.\",\n        required: true,",
+          "prefix": "ring\",\n        placeholder: \"<path|->\",\n        ",
+          "suffix": "\n      },\n      {\n        name: \"by\",\n        ty"
+        },
+        {
+          "kind": "text-position",
+          "start": 18521,
+          "end": 18615
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "15154156d14c03d8",
+          "semanticHash": "5ff61d400715f20c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"JSON array of evidence items (- reads stdin). All or nothing.\""
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "The actor submitting the evidence, for items without by: human:<id>, agent:<name>, or process:<name>. Required unless every item has by.",
+          "prefix": "\n        placeholder: \"<actor>\",\n        help: \"",
+          "suffix": "\",\n      },\n    ],\n    examples: [\n      'echo \\"
+        },
+        {
+          "kind": "text-position",
+          "start": 18724,
+          "end": 18860
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "22c6b7c32fb95df8"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "evidence applies to attested claims, and reference claims are judged from the referenced document",
+          "prefix": "    `claim ${claimId} is a ${claim.kind} claim; ",
+          "suffix": "`,\n      );\n    }\n  }\n  const evidence = str(\"ev"
+        },
+        {
+          "kind": "text-position",
+          "start": 6934,
+          "end": 7031
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "887766a2fbcbc5a5"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:56.837Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:56.837Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

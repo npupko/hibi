@@ -1,0 +1,65 @@
+{
+  "id": "clm_9f24ca44655e4ee9",
+  "documentId": "doc_25887c67cd18d901",
+  "kind": "code",
+  "sentence": "| `owner` | the actor to contact, or `null` |",
+  "doc": {
+    "file": "docs/verdicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `owner` | the actor to contact, or `null` |",
+        "prefix": "|\n| `sources` | `[{ id?, resource, title? }]` |\n",
+        "suffix": "\n| `lastEvidence` | `{ summary, source, at, by }"
+      },
+      {
+        "kind": "text-position",
+        "start": 7982,
+        "end": 8027
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "owner: c.owner ?? null,",
+          "prefix": ".procedure,\n        sources: c.sources,\n        ",
+          "suffix": "\n        ...(last !== undefined\n          ? {\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 18614,
+          "end": 18637
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "c3736af1d5e3eece",
+          "semanticHash": "ee1a23f132c43143"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:28:16.259Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:28:16.259Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

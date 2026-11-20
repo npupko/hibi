@@ -1,0 +1,82 @@
+{
+  "id": "clm_6778d6a3d9c14ded",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`duplicate` becomes a duplicate candidate on both claims, with the probability of `consistent`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`duplicate` becomes a duplicate candidate on both claims, with the probability of `consistent`.",
+        "prefix": " gates; a `review` finding warns (section 7.4). ",
+        "suffix": " `audit` reports the candidate with the highest "
+      },
+      {
+        "kind": "text-position",
+        "start": 47770,
+        "end": 47865
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "probability: r.probabilities.consistent,",
+          "prefix": "\n    return {\n      outcome: \"duplicate\",\n      ",
+          "suffix": "\n      reason: `consistent and same subject (sam"
+        },
+        {
+          "kind": "text-position",
+          "start": 7316,
+          "end": 7356
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "5ee06eb33a910fa7",
+          "semanticHash": "b934dd5534cd1a5e"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "duplicateOf: other.id,",
+          "prefix": "es.push({\n          claimId: self.id,\n          ",
+          "suffix": "\n          pairId: pair.pairId,\n          probab"
+        },
+        {
+          "kind": "text-position",
+          "start": 12758,
+          "end": 12780
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "630c932757d1c244"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:15.198Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:15.198Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

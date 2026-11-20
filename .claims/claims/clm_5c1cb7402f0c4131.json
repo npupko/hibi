@@ -1,0 +1,65 @@
+{
+  "id": "clm_5c1cb7402f0c4131",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "Blank lines separate blocks.",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Blank lines separate blocks.",
+        "prefix": "d and is neither a region nor judge context.\n2. ",
+        "suffix": "\n3. A line that is only a JSX tag, such as `<Car"
+      },
+      {
+        "kind": "text-position",
+        "start": 1454,
+        "end": 1482
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(trimmed.length === 0 ||",
+          "prefix": "onst boundary =\n      fenceChar === \"\" &&\n      ",
+          "suffix": "\n        TAG_LINE.test(trimmed) ||\n        THEMA"
+        },
+        {
+          "kind": "text-position",
+          "start": 4053,
+          "end": 4077
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "parenthesized_expression",
+          "structuralHash": "d9e8460f55ffcd27",
+          "semanticHash": "2eab80245e74a29e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:24.691Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:24.691Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

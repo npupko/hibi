@@ -1,0 +1,111 @@
+{
+  "id": "clm_c9f5f3afcc0e4c3c",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- **`evidence.values[]`** is optional: `{ kind, normalized, unit? }` for each number, money amount, version, and date found in the evidence text (section 8.5).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **`evidence.values[]`** is optional: `{ kind, normalized, unit? }` for each number, money amount, version, and date found in the evidence text (section 8.5).",
+        "prefix": ", whose `at` is the time of the new submission.\n",
+        "suffix": " It exists because the value rule compares the c"
+      },
+      {
+        "kind": "text-position",
+        "start": 19359,
+        "end": 19518
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "values: z.array(ExtractedValue).optional(),",
+          "prefix": "e rule (SPEC 8.5) without the raw text.\n   */\n  ",
+          "suffix": "\n});\nexport type CachedEvidence = z.infer<typeof"
+        },
+        {
+          "kind": "text-position",
+          "start": 13439,
+          "end": 13482
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "eb868092b40bebea",
+          "semanticHash": "00652f3b67010ad0"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "kind: z.enum([\"number\", \"version\", \"date\", \"money\"]),\n  normalized: z.string(),\n  unit: z.string().optional(),",
+          "prefix": "xport const ExtractedValue = z.strictObject({\n  ",
+          "suffix": "\n});\nexport type ExtractedValue = z.infer<typeof"
+        },
+        {
+          "kind": "text-position",
+          "start": 12883,
+          "end": 12993
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "4346a9c7bf67d24f",
+          "semanticHash": "034028895fae406f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[\"number\",\"version\",\"date\",\"money\"]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/evidence.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const evidenceValues = storedValues(p.item.evidence);",
+          "prefix": "hed: false,\n      });\n      continue;\n    }\n    ",
+          "suffix": "\n    const block = {\n      hash: p.hash,\n      s"
+        },
+        {
+          "kind": "text-position",
+          "start": 11966,
+          "end": 12019
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "9156776ec40601c5",
+          "semanticHash": "1a91b4dd4364f29e"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.371Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.371Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

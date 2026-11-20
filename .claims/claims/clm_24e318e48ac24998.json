@@ -1,0 +1,59 @@
+{
+  "id": "clm_24e318e48ac24998",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**reanchor.** A side given an explicit span (`--doc-quote` or `--doc-range`; `--code-file` or `--ref-file` with a quote or range) is stored at that span.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**reanchor.** A side given an explicit span (`--doc-quote` or `--doc-range`; `--code-file` or `--ref-file` with a quote or range) is stored at that span.",
+        "prefix": "sTowardTtl` is true only for a `human:` vouch.\n\n",
+        "suffix": " Without span flags for a side, `reanchor` reloc"
+      },
+      {
+        "kind": "text-position",
+        "start": 69263,
+        "end": 69416
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "      docRegion = resolveRegion(contents.docContent, input.docSpec);",
+          "prefix": "n: Region | undefined;\n    if (input.docSpec) {\n",
+          "suffix": "\n    } else if (before.doc.state === \"moved\" && "
+        },
+        {
+          "kind": "text-position",
+          "start": 13193,
+          "end": 13261
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "a4a6a9314696f7fc",
+          "semanticHash": "700883a01af596eb"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T15:19:51.152Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T15:19:51.152Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

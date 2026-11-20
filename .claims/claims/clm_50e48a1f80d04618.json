@@ -1,0 +1,105 @@
+{
+  "id": "clm_50e48a1f80d04618",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A flag for the wrong kind is an error: `claim <id> is a <kind> claim; --code-file, --code-quote, and --code-range are for code claims` (with a pointer to the `--ref-*` flags for a `reference` claim), and `…; --ref-file, --ref-quote, and --ref-range are for reference claims`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A flag for the wrong kind is an error: `claim <id> is a <kind> claim; --code-file, --code-quote, and --code-range are for code claims` (with a pointer to the `--ref-*` flags for a `reference` claim), and `…; --ref-file, --ref-quote, and --ref-range are for reference claims`.",
+        "prefix": "ref-range` replaces a `reference` claim's span. ",
+        "suffix": " An evidence side in a sibling repo that is not "
+      },
+      {
+        "kind": "text-position",
+        "start": 70895,
+        "end": 71170
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "--code-file, --code-quote, and --code-range are for code claims",
+          "prefix": "   `claim ${claim.id} is a ${claim.kind} claim; ",
+          "suffix": "${claim.kind === \"reference\" ? \"; pass --ref-fil"
+        },
+        {
+          "kind": "text-position",
+          "start": 19759,
+          "end": 19822
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "384773f0d43e3e39"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "; pass --ref-file with --ref-quote or --ref-range",
+          "prefix": " for code claims${claim.kind === \"reference\" ? \"",
+          "suffix": "\" : \"\"}.`,\n      );\n    }\n    if (opts.reference"
+        },
+        {
+          "kind": "text-position",
+          "start": 19854,
+          "end": 19903
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "d5f63e6b4ad6ff43"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "--ref-file, --ref-quote, and --ref-range are for reference claims.",
+          "prefix": "   `claim ${claim.id} is a ${claim.kind} claim; ",
+          "suffix": "`,\n      );\n    }\n    const document = await thi"
+        },
+        {
+          "kind": "text-position",
+          "start": 20075,
+          "end": 20141
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "afa6b1cc8b3551ce"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:20.741Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:20.741Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,114 @@
+{
+  "id": "clm_622629f398754686",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "`bun install`, `bun run build:grammars`, then `bun test` (the judge is a fake; no key needed).",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`bun install`, `bun run build:grammars`, then `bun test` (the judge is a fake; no key needed).",
+        "prefix": "gins/hibi-cli`](plugins/hibi-cli).\n\n## Develop\n\n",
+        "suffix": " `bun run build` writes a single-file executable"
+      },
+      {
+        "kind": "text-position",
+        "start": 8335,
+        "end": 8429
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"build:grammars\": \"bun run scripts/copy-grammars.ts\",",
+          "prefix": "\n    \"provenance\": true\n  },\n  \"scripts\": {\n    ",
+          "suffix": "\n    \"build:schemas\": \"bun run scripts/gen-schem"
+        },
+        {
+          "kind": "text-position",
+          "start": 932,
+          "end": 985
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"test\": \"bun test\",",
+          "prefix": "pile src/cli/index.ts --outfile dist/hibi\",\n    ",
+          "suffix": "\n    \"lint\": \"biome lint .\",\n    \"format\": \"biom"
+        },
+        {
+          "kind": "text-position",
+          "start": 1267,
+          "end": 1286
+        }
+      ]
+    },
+    {
+      "file": "test/judge-jev.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "test.skipIf(!process.env.TYPESAFE_API_KEY?.trim())(",
+          "prefix": "_FLIGHT);\n  });\n});\n\ndescribe(\"live\", () => {\n  ",
+          "suffix": "\n    \"triage on the fixture regions\",\n    async "
+        },
+        {
+          "kind": "text-position",
+          "start": 22109,
+          "end": 22160
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "0df7244e0f27a870",
+          "semanticHash": "3b2a83992dd24361"
+        }
+      ]
+    },
+    {
+      "file": "test/e2e.test.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "delete env.TYPESAFE_API_KEY;",
+          "prefix": "ng, string | undefined> = { ...process.env };\n  ",
+          "suffix": "\n  delete env.TYPESAFE_BASE_URL;\n  if (opts.judg"
+        },
+        {
+          "kind": "text-position",
+          "start": 5249,
+          "end": 5277
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "unary_expression",
+          "structuralHash": "1c9593a25f120cd9",
+          "semanticHash": "f9195c19b2b343d2"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:25.097Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:25.097Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

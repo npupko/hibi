@@ -1,0 +1,65 @@
+{
+  "id": "clm_b317e301827645a6",
+  "documentId": "doc_d11450458251d04c",
+  "kind": "code",
+  "sentence": "Only judged evidence or a human vouch resets a claim's ttl.",
+  "doc": {
+    "file": "docs/index.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Only judged evidence or a human vouch resets a claim's ttl.",
+        "prefix": "des whether the evidence supports the sentence. ",
+        "suffix": "\n\n## What hibi will and will not do\n\n- **Same tr"
+      },
+      {
+        "kind": "text-position",
+        "start": 2097,
+        "end": 2156
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (a.basis === \"evidence\") return true;\n  return a.basis === \"vouch\" && a.by.startsWith(\"human:\");",
+          "prefix": "rt function counts(a: Attestation): boolean {\n  ",
+          "suffix": "\n}\n\n/**\n * The newest counting attestation, or u"
+        },
+        {
+          "kind": "text-position",
+          "start": 606,
+          "end": 705
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "cdfebd9fbed0fa60",
+          "semanticHash": "657d6ca11f9a5631"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:34.058Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:34.058Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

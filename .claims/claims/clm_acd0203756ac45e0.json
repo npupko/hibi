@@ -1,0 +1,123 @@
+{
+  "id": "clm_acd0203756ac45e0",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| `duration-word` | number | `5 days`, `30 seconds`, `1 hour` | the number | singular unit word |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `duration-word` | number | `5 days`, `30 seconds`, `1 hour` | the number | singular unit word |",
+        "prefix": " | number | `5%`, `12.5 %` | the number | `%` |\n",
+        "suffix": "\n| `duration-short` | number | `90d`, `500ms`, `"
+      },
+      {
+        "kind": "text-position",
+        "start": 41013,
+        "end": 41110
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"duration-word\",",
+          "prefix": "\n  },\n  {\n    // 5 days, 1 hour, 30 seconds\n    ",
+          "suffix": "\n    kind: \"number\",\n    pattern: re(\n      Stri"
+        },
+        {
+          "kind": "text-position",
+          "start": 9131,
+          "end": 9153
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "3ddb6794e128e4a1"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"duration-word\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "unit: DURATION_WORDS[group(m, 2).toLowerCase()],",
+          "prefix": "normalized: normalizeNumber(group(m, 1)),\n      ",
+          "suffix": "\n    }),\n  },\n  {\n    // 90d, 500ms, 12h: the un"
+        },
+        {
+          "kind": "text-position",
+          "start": 9385,
+          "end": 9433
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "83bbc5f30312654c",
+          "semanticHash": "fb30af2b2326662c"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "days: \"day\",",
+          "prefix": "\",\n  hr: \"hour\",\n  hrs: \"hour\",\n  day: \"day\",\n  ",
+          "suffix": "\n  week: \"week\",\n  weeks: \"week\",\n  month: \"mont"
+        },
+        {
+          "kind": "text-position",
+          "start": 3893,
+          "end": 3905
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "aceea6a140f1d292"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"day\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:04.292Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:04.292Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

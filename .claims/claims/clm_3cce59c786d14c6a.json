@@ -1,0 +1,169 @@
+{
+  "id": "clm_3cce59c786d14c6a",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "1. Model and store v4 (`src/core/model.ts`, `schemas/*.v4.json`), judge cache, delete propositions, verifiers, resolvers, banner, upgrade code. Done.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "1. Model and store v4 (`src/core/model.ts`, `schemas/*.v4.json`), judge cache, delete propositions, verifiers, resolvers, banner, upgrade code. Done.",
+        "prefix": "res/`.\n\nOrder, all done on branch v4-redesign:\n\n",
+        "suffix": "\n2. Judge interface, fake implementation, questi"
+      },
+      {
+        "kind": "text-position",
+        "start": 76206,
+        "end": 76355
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const MODEL_VERSION = \"v4\" as const;",
+          "prefix": "to generated artifacts and the store config. */\n",
+          "suffix": "\n\n/** The judge model id `init` writes into a ne"
+        },
+        {
+          "kind": "text-position",
+          "start": 371,
+          "end": 414
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "801c60d23359fea8",
+          "semanticHash": "c562b40a10e21856"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"v4\""
+        }
+      ]
+    },
+    {
+      "file": "package.json",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "\"build:schemas\": \"bun run scripts/gen-schemas.ts\",",
+          "prefix": "mmars\": \"bun run scripts/copy-grammars.ts\",\n    ",
+          "suffix": "\n    \"build:cli-reference\": \"bun run scripts/gen"
+        },
+        {
+          "kind": "text-position",
+          "start": 990,
+          "end": 1040
+        }
+      ]
+    },
+    {
+      "file": "src/judge/cache.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export class JudgeCache {",
+          "prefix": " filter[k]) return false;\n  }\n  return true;\n}\n\n",
+          "suffix": "\n  constructor(readonly dir: string) {}\n\n  key(m"
+        },
+        {
+          "kind": "text-position",
+          "start": 2227,
+          "end": 2252
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "16518f9f60abab94",
+          "semanticHash": "d731d5b146c00b1f"
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const SUBDIRS = {\n  documents: \"documents\",\n  claims: \"claims\",\n  judge: \"judge\",\n} as const;",
+          "prefix": " === \"ENOENT\") return null;\n    throw e;\n  }\n}\n\n",
+          "suffix": "\n\n/**\n * Where a store lives and what its anchor"
+        },
+        {
+          "kind": "text-position",
+          "start": 1100,
+          "end": 1193
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "85516d8c0977c6f0",
+          "semanticHash": "0c7d68f9ca9628a4"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"documents\""
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "hibi ${MODEL_VERSION} has no upgrade path from it",
+          "prefix": "\n        `this claim store is version ${found}; ",
+          "suffix": ". Remove ${this.dir}, run \\`hibi init\\`, and re-"
+        },
+        {
+          "kind": "text-position",
+          "start": 4621,
+          "end": 4670
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "f13c15c4af6c3f60",
+          "semanticHash": "e7100302ce5005d3"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:13.722Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:42.183Z",
+      "basis": "ack",
+      "note": "v4 store is implemented and v3 stores are not upgraded; the versions name different stores",
+      "ack": {
+        "pairId": "clm_3cce59c786d14c6a:clm_a9e841de47534db9",
+        "sentenceHashes": [
+          "c9b3ee9014a0fa75302f87de98e2ff5ac1e1fe62b6f80b783ea0c1b823101d95",
+          "39b966d939b01b4cd7839682242f31106160d799f1cb850d46ed0a786d6a9c4c"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:13.722Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

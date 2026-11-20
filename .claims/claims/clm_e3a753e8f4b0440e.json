@@ -1,0 +1,88 @@
+{
+  "id": "clm_e3a753e8f4b0440e",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "Every answer is cached in `.claims/judge/` by model and exact request, so a second run asks nothing and cannot flip a verdict.",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Every answer is cached in `.claims/judge/` by model and exact request, so a second run asks nothing and cannot flip a verdict.",
+        "prefix": "contradict each other (the contradiction pass). ",
+        "suffix": " Numbers, money, versions, and dates are compare"
+      },
+      {
+        "kind": "text-position",
+        "start": 6745,
+        "end": 6871
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/cache.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`${model}\\n${canonicalJson(request)}`",
+          "prefix": "ing {\n  return createHash(\"sha256\")\n    .update(",
+          "suffix": ")\n    .digest(\"hex\");\n}\n\nfunction matches(subjec"
+        },
+        {
+          "kind": "text-position",
+          "start": 1934,
+          "end": 1971
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "1a2c1d4f694b2aeb",
+          "semanticHash": "321a28a187a0b5a3"
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "judge: \"judge\"",
+          "prefix": "  documents: \"documents\",\n  claims: \"claims\",\n  ",
+          "suffix": ",\n} as const;\n\n/**\n * Where a store lives and wh"
+        },
+        {
+          "kind": "text-position",
+          "start": 1166,
+          "end": 1180
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "c927c4d119444c65"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"judge\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-22T19:12:57.801Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-22T19:12:57.801Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

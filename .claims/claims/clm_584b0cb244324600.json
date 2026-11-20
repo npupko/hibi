@@ -1,0 +1,117 @@
+{
+  "id": "clm_584b0cb244324600",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "**Structural checks.** The AST and in-span literal checks in step 4 run on a code span only when tree-sitter can parse it: the analyzer is on and the file's language has a grammar.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "**Structural checks.** The AST and in-span literal checks in step 4 run on a code span only when tree-sitter can parse it: the analyzer is on and the file's language has a grammar.",
+        "prefix": " and a quote of at least 8 chars: `ambiguous`.\n\n",
+        "suffix": " The grammars for TypeScript (`.ts`, `.js`, `.mj"
+      },
+      {
+        "kind": "text-position",
+        "start": 20562,
+        "end": 20742
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    language !== undefined && opts.ast\n      ? opts.ast.analyze(currentText, language, region)\n      : null;\n  const structural = analysis !== null;",
+          "prefix": "anguage ?? valSel?.language;\n  const analysis =\n",
+          "suffix": "\n\n  // AST reason label (code side).\n  let astLa"
+        },
+        {
+          "kind": "text-position",
+          "start": 6713,
+          "end": 6861
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "95b6b5fb7678ce34",
+          "semanticHash": "981c255a9bb9000f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (valSel && structural && opts.ast) {",
+          "prefix": " side).\n  let valueLabel: string | undefined;\n  ",
+          "suffix": "\n    const extracted = opts.ast.extractValue(\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 7237,
+          "end": 7276
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "42389f6ce3aebb6e",
+          "semanticHash": "78195ef76023b51d"
+        }
+      ]
+    },
+    {
+      "file": "src/ast/analyzer.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    const parser = this.parsers.get(language);\n    if (!parser) return null;",
+          "prefix": "private parse(text: string, language: string) {\n",
+          "suffix": "\n    const tree = parser.parse(text);\n    return"
+        },
+        {
+          "kind": "text-position",
+          "start": 2648,
+          "end": 2724
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "a3bdf2cc5a565c50",
+          "semanticHash": "a726a094f5df2229"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "null",
+          "value": "null"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:00.837Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:00.837Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

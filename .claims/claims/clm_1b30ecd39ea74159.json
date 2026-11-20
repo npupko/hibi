@@ -1,0 +1,82 @@
+{
+  "id": "clm_1b30ecd39ea74159",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "A doc quote that occurs more than once is refused when the stored context cannot single out one occurrence, and recorded with a warning when it can.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A doc quote that occurs more than once is refused when the stored context cannot single out one occurrence, and recorded with a warning when it can.",
+        "prefix": "etry.ts` and `src/retry.ts` are the same file.\n\n",
+        "suffix": " Widen the span with `--doc-range` to avoid both"
+      },
+      {
+        "kind": "text-position",
+        "start": 8224,
+        "end": 8372
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "the surrounding context does not select a single occurrence",
+          "prefix": "c quote occurs ${count} times in ${docPath} and ",
+          "suffix": ". Record a wider span (--doc-range).`,\n    );\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 10129,
+          "end": 10188
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "f9c0d382877e4d2b"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "the stored context selects this occurrence",
+          "prefix": "`doc quote occurs ${count} times in ${docPath}; ",
+          "suffix": ". A wider span (--doc-range) would be more robus"
+        },
+        {
+          "kind": "text-position",
+          "start": 10301,
+          "end": 10343
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "e01ae88862c2b874"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:27.248Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:27.248Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

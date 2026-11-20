@@ -1,0 +1,59 @@
+{
+  "id": "clm_ef0227c515cb4aa7",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| `key` | the sha256 above |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `key` | the sha256 above |",
+        "prefix": "; see [CI](/ci).\n\n| field | content |\n|---|---|\n",
+        "suffix": "\n| `model` | the model id the response named |\n|"
+      },
+      {
+        "kind": "text-position",
+        "start": 13079,
+        "end": 13107
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "key: z.string().regex(/^[0-9a-f]{64}$/),",
+          "prefix": "model id and the canonical request JSON. */\n    ",
+          "suffix": "\n    model: z.string(),\n    judgment: Judgment,\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 13748,
+          "end": 13788
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "7d161a3ba7f153e4",
+          "semanticHash": "3ee289fad9dc30af"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:40.517Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:40.517Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

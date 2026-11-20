@@ -1,0 +1,88 @@
+{
+  "id": "clm_8b940a19d47c4094",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "Both sentences contain a value of the same kind and unit (for example both state an amount in USD), and they share any content token.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Both sentences contain a value of the same kind and unit (for example both state an amount in USD), and they share any content token.",
+        "prefix": "s.\n2. **Comparable values and a shared token.** ",
+        "suffix": "\n\nA content token is a run of letters, lowercase"
+      },
+      {
+        "kind": "text-position",
+        "start": 971,
+        "end": 1104
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(c) => new Set(extractValues(c.sentence).map(valueGroup)),",
+          "prefix": "entence)));\n  const valueGroups = live.map(\n    ",
+          "suffix": "\n  );\n  const hasValue = valueGroups.map((g) => "
+        },
+        {
+          "kind": "text-position",
+          "start": 5045,
+          "end": 5103
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "arrow_function",
+          "structuralHash": "ad0d8f47c7cec965",
+          "semanticHash": "5cf3d4030ce9e592"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/pairing.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (sameGroups.length > 0 && shared.length > 0) {",
+          "prefix": "ng>)].filter((g) =>\n      gj.has(g),\n    );\n    ",
+          "suffix": "\n      parts.push(\n        `both state ${sameGro"
+        },
+        {
+          "kind": "text-position",
+          "start": 6834,
+          "end": 6883
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "64ff36506f8f0ffc",
+          "semanticHash": "84a37c5accf66f80"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:24.337Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:24.337Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

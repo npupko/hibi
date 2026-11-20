@@ -1,0 +1,82 @@
+{
+  "id": "clm_dcdb868092844fc8",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "a doc quote shorter than 8 characters;",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "a doc quote shorter than 8 characters;",
+        "prefix": "time checks\n\n`record` and `reanchor` refuse:\n\n- ",
+        "suffix": "\n- a quote or range that does not occur in its f"
+      },
+      {
+        "kind": "text-position",
+        "start": 7738,
+        "end": 7776
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (quote.length < AMBIGUOUS_MIN_QUOTE_LENGTH) {",
+          "prefix": "const quote = regionText(docContent, region);\n  ",
+          "suffix": "\n    throw new Error(\n      `doc quote is shorte"
+        },
+        {
+          "kind": "text-position",
+          "start": 9016,
+          "end": 9064
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "5e3ca76348cea58f",
+          "semanticHash": "72ccf948aa7e78dc"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...validateDocQuote(contents.docContent, docRegion, docFile),",
+          "prefix": "  if (docRegion) {\n      warnings.push(\n        ",
+          "suffix": "\n      );\n      docBundle = buildSelectorBundle("
+        },
+        {
+          "kind": "text-position",
+          "start": 13547,
+          "end": 13608
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "9fd37beb08ec1bb4",
+          "semanticHash": "0f31310b7c09c3e8"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:27.093Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:27.093Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_fc13d4331c874860",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "The other claim of a judged pair may be on any document, so a `--doc` check still shows a conflict with a claim outside the document.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The other claim of a judged pair may be on any document, so a `--doc` check still shows a conflict with a claim outside the document.",
+        "prefix": " at least one claim in that document | `doc` |\n\n",
+        "suffix": " `check --since` scopes only the verdicts.\n\n## O"
+      },
+      {
+        "kind": "text-position",
+        "start": 2961,
+        "end": 3094
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "(p) => scope === undefined || scope.has(p.a.id) || scope.has(p.b.id),",
+          "prefix": "nst pairs = pairClaims(opts.claims).filter(\n    ",
+          "suffix": "\n  );\n  const outcomes: PairOutcome[] = new Arra"
+        },
+        {
+          "kind": "text-position",
+          "start": 10184,
+          "end": 10253
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "arrow_function",
+          "structuralHash": "4f3a84c5cb8ee830",
+          "semanticHash": "8a15d44f8d06194e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:25.529Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:25.529Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

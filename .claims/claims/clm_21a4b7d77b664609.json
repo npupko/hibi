@@ -1,0 +1,65 @@
+{
+  "id": "clm_21a4b7d77b664609",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- `ttl` is required for `attested`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `ttl` is required for `attested`.",
+        "prefix": "other kinds. Neither is allowed for `attested`.\n",
+        "suffix": " `owner` and `by` must be in actor form. An item"
+      },
+      {
+        "kind": "text-position",
+        "start": 59333,
+        "end": 59368
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "errors.push(\"kind attested needs a ttl, e.g. P90D\");",
+          "prefix": "  );\n    }\n  } else if (k === \"attested\") {\n    ",
+          "suffix": "\n  }\n  for (const key of [\"owner\", \"by\"] as cons"
+        },
+        {
+          "kind": "text-position",
+          "start": 10280,
+          "end": 10332
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "ab93fd8725166832",
+          "semanticHash": "950f37aa678bad34"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"kind attested needs a ttl, e.g. P90D\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:33.993Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:33.993Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

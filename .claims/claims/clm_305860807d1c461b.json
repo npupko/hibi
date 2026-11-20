@@ -1,0 +1,94 @@
+{
+  "id": "clm_305860807d1c461b",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "- `--dry-run` computes the result and writes nothing.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `--dry-run` computes the result and writes nothing.",
+        "prefix": "not be combined with span flags or `--dry-run`.\n",
+        "suffix": "\n\nReanchor only after you have re-read the sente"
+      },
+      {
+        "kind": "text-position",
+        "start": 8214,
+        "end": 8267
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const write = !input.dryRun && (input.docOnly || relocated > 0);",
+          "prefix": "ways writes: the claim moves to the new file.\n  ",
+          "suffix": "\n  if (write) await store.putClaim(next);\n\n  if "
+        },
+        {
+          "kind": "text-position",
+          "start": 15583,
+          "end": 15647
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "d208202d750c9ce1",
+          "semanticHash": "868f8ae03eb7b9ab"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Compute the result without writing the store or any document.\",",
+          "prefix": "pec = {\n  name: \"dry-run\",\n  type: \"boolean\",\n  ",
+          "suffix": "\n};\n\nconst CHECK_OPTIONS: OptionSpec[] = [\n  {\n "
+        },
+        {
+          "kind": "text-position",
+          "start": 4763,
+          "end": 4833
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "7d1f656ca3a810be"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Compute the result without writing the store or any document.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:29.493Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:29.493Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

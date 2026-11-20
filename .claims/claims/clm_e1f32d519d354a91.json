@@ -1,0 +1,88 @@
+{
+  "id": "clm_e1f32d519d354a91",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "Quotes shorter than 8 characters are exempt; their candidates are picked by position.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Quotes shorter than 8 characters are exempt; their candidates are picked by position.",
+        "prefix": "rence ties on context, the side is `ambiguous`. ",
+        "suffix": "\n  </Step>\n  <Step title=\"Changed\">\n    The side"
+      },
+      {
+        "kind": "text-position",
+        "start": 3591,
+        "end": 3676
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/localize.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (tq.exact.length < AMBIGUOUS_MIN_QUOTE_LENGTH) {",
+          "prefix": ";\n    if (!(best.score > second.score)) {\n      ",
+          "suffix": "\n        // Short quote: position breaks the tie"
+        },
+        {
+          "kind": "text-position",
+          "start": 6320,
+          "end": 6371
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "49d2537eed3b2f3e",
+          "semanticHash": "50d387aff44f0927"
+        }
+      ]
+    },
+    {
+      "file": "src/algo/params.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "AMBIGUOUS_MIN_QUOTE_LENGTH = 8",
+          "prefix": "re picked by position instead.\n */\nexport const ",
+          "suffix": ";\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 1702,
+          "end": 1732
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "variable_declarator",
+          "structuralHash": "de0dbd0a8e84411f",
+          "semanticHash": "9820350616af141e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "8"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.267Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.267Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,228 @@
+{
+  "id": "clm_ba5ea5653afc4a94",
+  "documentId": "doc_5be5c5b2d98e3a89",
+  "kind": "code",
+  "sentence": "The skill covers `init`, `audit --doc` to find what to record, `record` for `code`, `reference`, and `attested` claims, `check --doc` before trusting a document and `check --since` after a change, the worklist and `evidence` loop with the TypeSafe judge, `attest`, contradictions, expired claims, `reanchor` and `retire`, and CI.",
+  "doc": {
+    "file": "plugins/hibi-cli/README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The skill covers `init`, `audit --doc` to find what to record, `record` for `code`, `reference`, and `attested` claims, `check --doc` before trusting a document and `check --since` after a change, the worklist and `evidence` loop with the TypeSafe judge, `attest`, contradictions, expired claims, `reanchor` and `retire`, and CI.",
+        "prefix": "r something only an agent with tools can reach. ",
+        "suffix": "\n\n## Install\n\nFrom inside Claude Code:\n\n```\n/plu"
+      },
+      {
+        "kind": "text-position",
+        "start": 481,
+        "end": 810
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "## 1. Initialize a knowledge repo",
+          "prefix": "export const RATE_LIMIT_PER_MIN = 100;`).\n\n---\n\n",
+          "suffix": "\n\n**When**: a repo of docs (handbook, product, p"
+        },
+        {
+          "kind": "text-position",
+          "start": 546,
+          "end": 579
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**c. Audit:** `hibi audit --doc <path>`, one row per region.",
+          "prefix": "ce origin/main`. Fix prose in the same change.\n\n",
+          "suffix": " `claimId` set: covered. Else `kind`: `code`/`re"
+        },
+        {
+          "kind": "text-position",
+          "start": 2742,
+          "end": 2802
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**d. Record** (stdin array, all or nothing):",
+          "prefix": "answer. Never record an `unverifiable` region.\n\n",
+          "suffix": "\n\n```sh\nhibi record --from-file - <<'EOF'\n[{\"doc"
+        },
+        {
+          "kind": "text-position",
+          "start": 3072,
+          "end": 3116
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**a. Before trusting a doc:** `hibi check --doc <path>`.",
+          "prefix": "side it or their alias directory.\n\n## The loop\n\n",
+          "suffix": " Exit 2: a claim in it gates; do not rely on its"
+        },
+        {
+          "kind": "text-position",
+          "start": 2469,
+          "end": 2525
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**b. After a change:** `hibi check --since origin/main`.",
+          "prefix": "o claims are registered for <path>`: audit it.\n\n",
+          "suffix": " Fix prose in the same change.\n\n**c. Audit:** `h"
+        },
+        {
+          "kind": "text-position",
+          "start": 2654,
+          "end": 2710
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**e. Worklist:**",
+          "prefix": "gent-recorded claims with a ttl start expired.\n\n",
+          "suffix": " `hibi check --json` → `worklist[]: {claimId, se"
+        },
+        {
+          "kind": "text-position",
+          "start": 4269,
+          "end": 4285
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "**f. Attest:** `hibi attest <id> --by <actor> --note \"…\"`.",
+          "prefix": "; `pending` writes nothing. Exit 0 regardless.\n\n",
+          "suffix": " A `human:` vouch resets ttl; an agent vouch ret"
+        },
+        {
+          "kind": "text-position",
+          "start": 5076,
+          "end": 5134
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "## 4. Handle a contradiction",
+          "prefix": "ed after the `submit` step, for recipe 5.\n\n---\n\n",
+          "suffix": "\n\n**When**: `check` exits 2 with `conflicts[]` o"
+        },
+        {
+          "kind": "text-position",
+          "start": 11655,
+          "end": 11683
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "## 5. Handle an expired attested claim",
+          "prefix": "umbers match without checking the source.\n\n---\n\n",
+          "suffix": "\n\n**When**: an attested claim's ttl ran out. Set"
+        },
+        {
+          "kind": "text-position",
+          "start": 15220,
+          "end": 15258
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "| `changed` | fix the sentence if wrong, then run the remediation `reanchor` command (it names the new span) |",
+          "prefix": "ts `<…>` placeholders.\n\n| flag | do |\n|---|---|\n",
+          "suffix": "\n| `orphaned` | `hibi reanchor <id> --suggest`, "
+        },
+        {
+          "kind": "text-position",
+          "start": 6022,
+          "end": 6132
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Never delete a `.claims/` file; use `hibi retire <id>`.",
+          "prefix": " |\n\nNever rewrite a sentence to silence a flag. ",
+          "suffix": "\n\nRecipes: `references/cookbook.md`. CI: `assets"
+        },
+        {
+          "kind": "text-position",
+          "start": 6529,
+          "end": 6584
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/SKILL.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "CI: `assets/hibi-ci.yml`.",
+          "prefix": "tire <id>`.\n\nRecipes: `references/cookbook.md`. ",
+          "suffix": "\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 6621,
+          "end": 6646
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:29:30.128Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:29:30.128Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

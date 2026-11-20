@@ -1,0 +1,117 @@
+{
+  "id": "clm_e00be5bc9b3e4d91",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "code",
+  "sentence": "| `pending` | a `reference` or `attested` claim the judge could not answer: no key, no network, an unusable answer (`judge error: …` in the verdict's `reasons`), or a referenced span over 32,000 characters |",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `pending` | a `reference` or `attested` claim the judge could not answer: no key, no network, an unusable answer (`judge error: …` in the verdict's `reasons`), or a referenced span over 32,000 characters |",
+        "prefix": " judge state is `review` and not acknowledged |\n",
+        "suffix": "\n| `never-checked` | an `attested` claim with a "
+      },
+      {
+        "kind": "text-position",
+        "start": 7645,
+        "end": 7852
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"pending\") return \"pending\";",
+          "prefix": "= \"review\" && !acknowledged) return \"review\";\n  ",
+          "suffix": "\n  const checkable = claim.procedure !== null ||"
+        },
+        {
+          "kind": "text-position",
+          "start": 12834,
+          "end": 12878
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "ccc54664337229f7",
+          "semanticHash": "9584d1ccbcf8b14d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"pending\", reasons: [REFERENCE_TOO_LONG] };",
+          "prefix": "ferencedText.length > MAX_EVIDENCE_CHARS) {\n    ",
+          "suffix": "\n  }\n  const { request, key } = referenceSupport"
+        },
+        {
+          "kind": "text-position",
+          "start": 10437,
+          "end": 10496
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "4e167621b94fec45",
+          "semanticHash": "70ac2501d85f9ef8"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    },
+    {
+      "file": "src/judge/types.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (e instanceof JudgeError) return `judge error: ${e.message}`;",
+          "prefix": "le) return `judge unavailable: ${e.message}`;\n  ",
+          "suffix": "\n  return undefined;\n}\n\n/**\n * The longest text "
+        },
+        {
+          "kind": "text-position",
+          "start": 3740,
+          "end": 3804
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "6eda43c667c36fe3",
+          "semanticHash": "d2206c1328e3b3de"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:08.363Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:08.363Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

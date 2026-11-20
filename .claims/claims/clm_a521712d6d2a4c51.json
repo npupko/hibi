@@ -1,0 +1,82 @@
+{
+  "id": "clm_a521712d6d2a4c51",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "`check --since` scopes only the verdicts.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`check --since` scopes only the verdicts.",
+        "prefix": "s a conflict with a claim outside the document. ",
+        "suffix": "\n\n## Outcomes\n\nEvery pair ends with one outcome "
+      },
+      {
+        "kind": "text-position",
+        "start": 3095,
+        "end": 3136
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const pass = await this.conflictPass(onlyDocument);",
+          "prefix": "     onlyDocument = scope.documentId;\n    }\n    ",
+          "suffix": "\n    const options: CheckOptions = {\n      ast: "
+        },
+        {
+          "kind": "text-position",
+          "start": 13099,
+          "end": 13150
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "d4d9a8eab0ba334e",
+          "semanticHash": "c663ae201949e4ad"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (options.onlyFiles) {",
+          "prefix": "denceFiles = c.evidence.map((b) => b.file);\n    ",
+          "suffix": "\n      const touches =\n        options.onlyFiles"
+        },
+        {
+          "kind": "text-position",
+          "start": 15052,
+          "end": 15076
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "870037a9c37776b7",
+          "semanticHash": "e74694f1e11ad673"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:25.591Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:25.591Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,65 @@
+{
+  "id": "clm_6b87cf0f1b5447a8",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`pending`: a `reference` or `attested` claim whose judge state is `pending`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`pending`: a `reference` or `attested` claim whose judge state is `pending`.",
+        "prefix": "t names the key of that verdict (section 5).\n3. ",
+        "suffix": "\n4. `never-checked`: an `attested` claim with a "
+      },
+      {
+        "kind": "text-position",
+        "start": 28705,
+        "end": 28781
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (v.judge === \"pending\") return \"pending\";",
+          "prefix": "= \"review\" && !acknowledged) return \"review\";\n  ",
+          "suffix": "\n  const checkable = claim.procedure !== null ||"
+        },
+        {
+          "kind": "text-position",
+          "start": 12834,
+          "end": 12878
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "ccc54664337229f7",
+          "semanticHash": "9584d1ccbcf8b14d"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"pending\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:49.443Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:49.443Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

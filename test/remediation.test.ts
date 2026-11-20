@@ -1,20 +1,10 @@
 import { afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { join } from "node:path";
 import { getAnalyzer } from "../src/ast/analyzer.ts";
-import { hasBanner } from "../src/banner/banner.ts";
-import {
-  getFrontmatterStatus,
-  setFrontmatterStatus,
-  splitFrontmatter,
-} from "../src/banner/frontmatter.ts";
-import {
-  buildCoarseBundle,
-  coarseCovers,
-  composeAnchor,
-} from "../src/engine/anchor.ts";
 import { archiveDocument } from "../src/engine/archive.ts";
 import { runCheck } from "../src/engine/check.ts";
 import { matchedSide } from "../src/engine/list.ts";
+import { documentIdForPath, newDocument } from "../src/engine/record.ts";
 import { exists } from "../src/fs.ts";
 import { makeRepo, record, type TempRepo } from "./helpers.ts";
 
@@ -34,55 +24,18 @@ afterEach(async () => {
   repos = [];
 });
 
-describe("frontmatter helper (used only to strip a legacy hibi-status line)", () => {
-  test("setFrontmatterStatus only acts where frontmatter exists; round-trips", () => {
-    const withFm = "---\ntitle: Doc\n---\n\n# Body\n";
-    const set = setFrontmatterStatus(withFm, "code:changed");
-    expect(getFrontmatterStatus(set)).toBe("code:changed");
-    expect(splitFrontmatter(set).body).toBe("\n# Body\n");
-    const cleared = setFrontmatterStatus(set, null);
-    expect(getFrontmatterStatus(cleared)).toBeUndefined();
-    expect(cleared).toBe(withFm);
-
-    const noFm = "# Body only\n";
-    expect(setFrontmatterStatus(noFm, "code:changed")).toBe(noFm);
-  });
-
-  test("never clobbers an author's own status key", () => {
-    const t = "---\nstatus: published\n---\nbody\n";
-    const set = setFrontmatterStatus(t, "code:changed");
-    expect(set).toContain("status: published");
-    expect(getFrontmatterStatus(set)).toBe("code:changed");
-  });
-
-  test("check --write strips a legacy hibi-status line and never writes one", async () => {
-    const r = await repo();
-    await r.write("src/a.ts", "export const A = 1;\n");
-    await r.write(
-      "doc.md",
-      "---\ntitle: Doc\nhibi-status: code:changed\n---\n\n# Doc\n",
-    );
-    await record(r, {
-      doc: "doc.md",
-      text: "A is 1 here",
-      file: "src/a.ts",
-      quote: "A = 1",
-    });
-    await r.write("src/a.ts", "// gone\n");
-    const rep = await runCheck(r.store, { ast: analyzer, write: true });
-    const docReport = rep.documents.find((d) => d.path === "doc.md");
-    expect(docReport?.suspect.map((s) => s.status)).toEqual(["code:orphaned"]);
-    const doc = await r.read("doc.md");
-    expect(getFrontmatterStatus(doc)).toBeUndefined();
-    expect(doc.startsWith("---\ntitle: Doc\n---")).toBe(true);
-    expect(hasBanner(doc, "doc.md", "deadbeef")).toBe(true);
-  });
-});
+/** Register `path` as a document, as `record` does for its first claim. */
+async function register(r: TempRepo, path: string): Promise<void> {
+  await r.store.putDocument(
+    newDocument(documentIdForPath(path), path, new Date()),
+  );
+}
 
 describe("archival", () => {
   test("moves the doc out of the read path, writes a tombstone, sets lifecycle archived", async () => {
     const r = await repo();
     await r.write("old.md", "# Old policy\n\nOriginal content.\n");
+    await register(r, "old.md");
     const result = await archiveDocument(r.store, "old.md", "new.md");
     expect(result.document.lifecycle).toBe("archived");
     expect(result.archivedTo).toBe(join("archive", "old.md"));
@@ -100,66 +53,58 @@ describe("archival", () => {
   test("dry run neither moves the file nor writes the store", async () => {
     const r = await repo();
     await r.write("old.md", "# Old policy\n");
+    await register(r, "old.md");
     const result = await archiveDocument(r.store, "old.md", undefined, {
       dryRun: true,
     });
     expect(result.dryRun).toBe(true);
     expect(await r.read("old.md")).toBe("# Old policy\n");
     expect(await exists(join(r.root, "archive", "old.md"))).toBe(false);
-    expect(await r.store.getDocument(result.document.id)).toBeUndefined();
+    expect((await r.store.getDocument(result.document.id))?.lifecycle).toBe(
+      "active",
+    );
+  });
+
+  test("a path that is not a registered document is an error", async () => {
+    const r = await repo();
+    await r.write("old.md", "# Old policy\n");
+    await expect(archiveDocument(r.store, "old.md")).rejects.toThrow(
+      "old.md is not a registered document; nothing to archive (a document is registered when a claim is recorded on it, or by supersede or reanchor --doc).",
+    );
+    expect(await exists(join(r.root, "archive", "old.md"))).toBe(false);
+  });
+
+  test("a registered document whose file is gone is still archived", async () => {
+    const r = await repo();
+    await register(r, "gone.md");
+    const result = await archiveDocument(r.store, "gone.md");
+    expect(result.archivedTo).toBeNull();
+    expect((await r.store.getDocument(result.document.id))?.lifecycle).toBe(
+      "archived",
+    );
   });
 });
 
-describe("coarse code targets", () => {
-  test("a glob code-side anchor records as suggested with a coarse selector", async () => {
+describe("list --path", () => {
+  test("matchedSide names the side whose file equals the path", async () => {
     const r = await repo();
+    await r.write("src/auth/login.ts", "export const TOKEN_TTL = 3600;\n");
     await record(r, {
       doc: "arch.md",
-      text: "Decisions about the auth module",
-      file: "src/auth/**",
-      glob: "src/auth/**",
+      text: "Tokens live for an hour, 3600 seconds",
+      file: "src/auth/login.ts",
+      quote: "TOKEN_TTL = 3600",
     });
-    const a = (await r.store.allAssertions())[0];
-    if (a === undefined) throw new Error("expected a recorded assertion");
-    expect(a.enforcement).toBe("suggested");
-    expect(a.anchor.code.length).toBe(1);
-    expect(a.anchor.code[0]?.selectors).toEqual([
-      { kind: "coarse", pattern: "src/auth/**" },
-    ]);
-    expect(matchedSide(a, "src/auth/login.ts")).toBe("code");
+    const a = (await r.store.allClaims())[0];
+    if (a === undefined) throw new Error("expected a recorded claim");
+    expect(matchedSide(a, "src/auth/login.ts")).toBe("evidence");
     expect(matchedSide(a, "arch.md")).toBe("doc");
-    expect(matchedSide(a, "src/other.ts")).toBeUndefined();
-  });
-
-  test("buildCoarseBundle + composeAnchor: a swapped-in coarse code side still matches", async () => {
-    const r = await repo();
-    await record(r, {
-      doc: "arch.md",
-      text: "Decisions about the payments module",
-      file: "src/payments/**",
-      glob: "src/payments/**",
-    });
-    const a = (await r.store.allAssertions())[0];
-    if (a === undefined) throw new Error("expected a recorded assertion");
-    a.anchor = composeAnchor(a.anchor.doc, [
-      buildCoarseBundle("src/payments/**"),
-    ]);
-    await r.store.putAssertion(a);
-    const reloaded = await r.store.getAssertion(a.id);
-    if (reloaded === undefined) throw new Error("assertion did not persist");
-    expect(matchedSide(reloaded, "src/payments/charge.ts")).toBe("code");
-  });
-
-  test("a coarse path covers on a `/` boundary, not a bare prefix", () => {
-    expect(coarseCovers("src", "src/main.ts")).toBe(true);
-    expect(coarseCovers("src", "src2/main.ts")).toBe(false);
-    expect(coarseCovers("src/a.ts", "src/a.ts")).toBe(true);
-    expect(coarseCovers("src/**/*.ts", "src/x/y.ts")).toBe(true);
+    expect(matchedSide(a, "src/auth")).toBeUndefined();
   });
 });
 
 describe("moved-only verdict warns and exits 0", () => {
-  test("a position shift with intact content grades code moved (doc unchanged)", async () => {
+  test("a position shift with intact content grades evidence moved (doc unchanged)", async () => {
     const r = await repo();
     await r.write("src/a.ts", "export const MAX = 5;\n");
     await record(r, {
@@ -168,15 +113,15 @@ describe("moved-only verdict warns and exits 0", () => {
       file: "src/a.ts",
       quote: "MAX = 5",
     });
-    const a = (await r.store.allAssertions())[0];
-    if (a === undefined) throw new Error("expected a recorded assertion");
+    const a = (await r.store.allClaims())[0];
+    if (a === undefined) throw new Error("expected a recorded claim");
     expect(a.enforcement).toBe("enforced");
     await r.write(
       "src/a.ts",
       `${"// prologue line\n".repeat(3)}export const MAX = 5;\n`,
     );
     const rep = await runCheck(r.store, { ast: analyzer });
-    expect(rep.verdicts[0]?.code).toBe("moved");
+    expect(rep.verdicts[0]?.evidence).toBe("moved");
     expect(rep.verdicts[0]?.doc).toBe("unchanged");
     expect(rep.verdicts[0]?.gates).toBe(false);
     expect(rep.summary.warning).toBe(1);
@@ -198,14 +143,14 @@ describe("remediation menus on live verdicts", () => {
       file: "src/retry.ts",
       quote: "MAX_ATTEMPTS = 5",
     });
-    return { r, id: rec.assertion.id };
+    return { r, id: rec.claim.id };
   }
 
-  test("code changed: recommended update-claim with [update-claim, reanchor, retire]", async () => {
+  test("evidence changed: recommended update-claim with [update-claim, reanchor, retire]", async () => {
     const { r, id } = await seeded();
     await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
     const v = (await runCheck(r.store, { ast: analyzer })).verdicts[0];
-    expect(v?.code).toBe("changed");
+    expect(v?.evidence).toBe("changed");
     expect(v?.doc).toBe("unchanged");
     expect(v?.remediation?.recommended).toBe("update-claim");
     expect(v?.remediation?.actions.map((a) => a.id)).toEqual([
@@ -213,21 +158,26 @@ describe("remediation menus on live verdicts", () => {
       "reanchor",
       "retire",
     ]);
-    expect(v?.remediation?.actions[0]?.command).toBe(`hibi reanchor ${id}`);
+    expect(v?.remediation?.actions[0]?.command).toBe(
+      `hibi reanchor ${id} --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 50"`,
+    );
   });
 
   test("doc changed: recommended reverify-doc", async () => {
-    const { r } = await seeded();
+    const { r, id } = await seeded();
     await r.write("README.md", "# Doc\n\nRetries are capped at 7 attempts.\n");
     const v = (await runCheck(r.store, { ast: analyzer })).verdicts[0];
     expect(v?.doc).toBe("changed");
-    expect(v?.code).toBe("unchanged");
+    expect(v?.evidence).toBe("unchanged");
     expect(v?.remediation?.recommended).toBe("reverify-doc");
     expect(v?.remediation?.actions.map((a) => a.id)).toEqual([
       "reverify-doc",
       "reanchor",
       "retire",
     ]);
+    expect(v?.remediation?.actions[0]?.command).toBe(
+      `hibi reanchor ${id} --doc-quote "Retries are capped at 7 attempts"`,
+    );
   });
 
   test("both changed: recommended reconcile", async () => {
@@ -236,7 +186,7 @@ describe("remediation menus on live verdicts", () => {
     await r.write("src/retry.ts", "export const MAX_ATTEMPTS = 50;\n");
     const v = (await runCheck(r.store, { ast: analyzer })).verdicts[0];
     expect(v?.doc).toBe("changed");
-    expect(v?.code).toBe("changed");
+    expect(v?.evidence).toBe("changed");
     expect(v?.remediation?.recommended).toBe("reconcile");
     expect(v?.remediation?.actions.map((a) => a.id)).toEqual([
       "reconcile",
@@ -249,13 +199,22 @@ describe("remediation menus on live verdicts", () => {
     const { r, id } = await seeded();
     await r.write("src/retry.ts", "export const OTHER = 1;\n");
     const v = (await runCheck(r.store, { ast: analyzer })).verdicts[0];
-    expect(v?.code).toBe("orphaned");
+    expect(v?.evidence).toBe("orphaned");
     expect(v?.remediation?.recommended).toBe("reanchor");
     const ids = v?.remediation?.actions.map((a) => a.id) ?? [];
     expect(ids).toContain("retire");
     expect(ids).toContain("supersede");
     expect(v?.remediation?.actions[0]?.command).toBe(
       `hibi reanchor ${id} --suggest`,
+    );
+  });
+});
+
+describe("B.7 archive error text", () => {
+  test("B.7: the unregistered-document error names every way a document is registered", async () => {
+    const r = await repo();
+    await expect(archiveDocument(r.store, "nope.md")).rejects.toThrow(
+      "nope.md is not a registered document; nothing to archive (a document is registered when a claim is recorded on it, or by supersede or reanchor --doc).",
     );
   });
 });

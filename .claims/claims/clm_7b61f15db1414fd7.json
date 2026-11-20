@@ -1,0 +1,82 @@
+{
+  "id": "clm_7b61f15db1414fd7",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Code extracts values from text with a fixed table of rules, applied in this order; a match overlapping text an earlier rule took is skipped, so `$29` is one money value and not also the number `29`:",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Code extracts values from text with a fixed table of rules, applied in this order; a match overlapping text an earlier rule took is skipped, so `$29` is one money value and not also the number `29`:",
+        "prefix": "cts` probability is at least 0.5 (decision 46). ",
+        "suffix": "\n\n| rule | kind | matches | normalized | unit |\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 39898,
+        "end": 40096
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "for (const rule of VALUE_RULES) {",
+          "prefix": "  taken.some(([ts, te]) => s < te && ts < e);\n  ",
+          "suffix": "\n    rule.pattern.lastIndex = 0;\n    for (const "
+        },
+        {
+          "kind": "text-position",
+          "start": 10269,
+          "end": 10302
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "for_in_statement",
+          "structuralHash": "371e20953b3ebd13",
+          "semanticHash": "fda75e4f579066f6"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/values.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (overlaps(start, end)) continue;",
+          "prefix": "x;\n      const end = start + m[0].length;\n      ",
+          "suffix": "\n      const read = rule.read(m);\n      if (read"
+        },
+        {
+          "kind": "text-position",
+          "start": 10460,
+          "end": 10495
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "2611a33ddcecd3b6",
+          "semanticHash": "5e14ca35c85b9c18"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:17:32.003Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:17:32.003Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

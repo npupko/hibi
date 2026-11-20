@@ -1,0 +1,59 @@
+{
+  "id": "clm_8bd5f863cd254da8",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "```json\n{ \"by\": \"human:alice@example.com\", \"at\": \"2026-10-22T09:12:00Z\", \"basis\": \"vouch\", \"note\": \"checked Stripe, still $29\" }\n```",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```json\n{ \"by\": \"human:alice@example.com\", \"at\": \"2026-10-22T09:12:00Z\", \"basis\": \"vouch\", \"note\": \"checked Stripe, still $29\" }\n```",
+        "prefix": "ions[]`. Hibi never edits or removes an entry.\n\n",
+        "suffix": "\n\n| field | meaning |\n|---|---|\n| `by` | the act"
+      },
+      {
+        "kind": "text-position",
+        "start": 424,
+        "end": 556
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "    by: Actor,\n    at: Instant,\n    basis: AttestationBasis,\n    note: z.string().optional(),",
+          "prefix": "\nexport const Attestation = z\n  .strictObject({\n",
+          "suffix": "\n    evidenceHash: z.string().optional(),\n    ac"
+        },
+        {
+          "kind": "text-position",
+          "start": 6998,
+          "end": 7091
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "7b84392c75546292",
+          "semanticHash": "3dfba55ac5536936"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:10.957Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:10.957Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

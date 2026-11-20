@@ -1,0 +1,65 @@
+{
+  "id": "clm_b6b35e87d30c4ffe",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "Only a `human:` vouch or judged evidence resets the ttl.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Only a `human:` vouch or judged evidence resets the ttl.",
+        "prefix": "ple.com --note 'checked Stripe, still $29'\n```\n\n",
+        "suffix": " The result's `countsTowardTtl` says whether the"
+      },
+      {
+        "kind": "text-position",
+        "start": 7821,
+        "end": 7877
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/expiry.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (a.basis === \"evidence\") return true;\n  return a.basis === \"vouch\" && a.by.startsWith(\"human:\");",
+          "prefix": "rt function counts(a: Attestation): boolean {\n  ",
+          "suffix": "\n}\n\n/**\n * The newest counting attestation, or u"
+        },
+        {
+          "kind": "text-position",
+          "start": 606,
+          "end": 705
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "cdfebd9fbed0fa60",
+          "semanticHash": "657d6ca11f9a5631"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"evidence\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:39.611Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:39.611Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

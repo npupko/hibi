@@ -1,0 +1,65 @@
+{
+  "id": "clm_b47fc16306b04f4e",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "```sh\nhibi audit --doc plan.md --fail-uncovered\n```",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```sh\nhibi audit --doc plan.md --fail-uncovered\n```",
+        "prefix": "or warn under any setting.\n\n## Audit as a gate\n\n",
+        "suffix": "\n\nExits 2 while any uncovered region of the docu"
+      },
+      {
+        "kind": "text-position",
+        "start": 3861,
+        "end": 3912
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "name: \"fail-uncovered\",",
+          "prefix": "       required: true,\n      },\n      {\n        ",
+          "suffix": "\n        type: \"boolean\",\n        help: \"Exit 2 "
+        },
+        {
+          "kind": "text-position",
+          "start": 12955,
+          "end": 12978
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "478ad6f4b3c2296f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"fail-uncovered\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:43.202Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:43.202Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

@@ -1,0 +1,94 @@
+{
+  "id": "clm_25e1980732b14358",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "| 32 | the value rule beats the Choice on `supports`, and on `conflict` it replaces the relation outcome, including a duplicate |",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| 32 | the value rule beats the Choice on `supports`, and on `conflict` it replaces the relation outcome, including a duplicate |",
+        "prefix": "ecode path for live, cached, and fake answers |\n",
+        "suffix": "\n| 33 | the cache key is computed over the reque"
+      },
+      {
+        "kind": "text-position",
+        "start": 81996,
+        "end": 82125
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/reference.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { state: \"refuted\", reasons: [`value differs: ${cmp.label}`] };",
+          "prefix": "cmp.differs && cmp.label !== undefined) {\n      ",
+          "suffix": "\n    }\n  }\n  const verb = result.relation;\n  if "
+        },
+        {
+          "kind": "text-position",
+          "start": 4096,
+          "end": 4166
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "f49ce7ee24e466fc",
+          "semanticHash": "c628178ea96bcff0"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"refuted\""
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { outcome: \"conflict\", probability: 1, reason: values.label };",
+          "prefix": ".differs && values.label !== undefined) {\n      ",
+          "suffix": "\n    }\n  }\n  const pContra = r.probabilities.con"
+        },
+        {
+          "kind": "text-position",
+          "start": 6080,
+          "end": 6149
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "a4e20b200fce563b",
+          "semanticHash": "7d930ffade48333b"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"conflict\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:23.955Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:23.955Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

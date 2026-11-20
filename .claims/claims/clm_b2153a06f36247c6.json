@@ -1,0 +1,59 @@
+{
+  "id": "clm_b2153a06f36247c6",
+  "documentId": "doc_84263e2579006d07",
+  "kind": "code",
+  "sentence": "There is no weighted score.",
+  "doc": {
+    "file": "docs/anchors.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "There is no weighted score.",
+        "prefix": "e\n\nEach side is resolved by an ordered cascade. ",
+        "suffix": "\n\n<Steps>\n  <Step title=\"Locate the quote\">\n    "
+      },
+      {
+        "kind": "text-position",
+        "start": 2889,
+        "end": 2916
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/algo/resolve.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "Anchor resolution: an ordered cascade per side, no weighted fusion.",
+          "prefix": "/**\n * ",
+          "suffix": "\n *\n *   1. Locate the stored quote (exact occur"
+        },
+        {
+          "kind": "text-position",
+          "start": 7,
+          "end": 74
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "comment",
+          "structuralHash": "aab2824d98c50668",
+          "semanticHash": "a3c0dcc29884605d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:26.123Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:26.123Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

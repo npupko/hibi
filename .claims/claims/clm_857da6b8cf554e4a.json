@@ -1,0 +1,59 @@
+{
+  "id": "clm_857da6b8cf554e4a",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "7. A table separator row such as `|---|---|` is not a region.",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "7. A table separator row such as `|---|---|` is not a region.",
+        "prefix": " and `1. Install Bun.` is one list-item region.\n",
+        "suffix": "\n8. Each piece except a fenced block splits afte"
+      },
+      {
+        "kind": "text-position",
+        "start": 1919,
+        "end": 1980
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/regions.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (TABLE_SEPARATOR.test(first)) return;",
+          "prefix": "const first = text.slice(start, nl).trim();\n    ",
+          "suffix": "\n    out.push({ start, end, kind: pieceKind(firs"
+        },
+        {
+          "kind": "text-position",
+          "start": 6975,
+          "end": 7015
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "b2e9223915173af6",
+          "semanticHash": "bad71b08f9c4429f"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:54:43.467Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T13:54:43.467Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

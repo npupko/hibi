@@ -1,34 +1,44 @@
 /**
- * The committed claim store. Holds authored records (documents, propositions,
- * assertions with anchors), never computed verdicts. One file per record so
- * merges stay scoped.
+ * The committed claim store (SPEC 6). Holds authored records (documents and
+ * claims) and cached judge verdicts, never computed verdicts. One file per
+ * record so merges stay scoped.
  *
- * Layout (`.claims/` beside the docs):
- *   config.json                 — { version, nonce, instructionFiles?, pristine? }
- *   documents/<id>.json
- *   propositions/<id>.json
- *   claims/<assertionId>.json
+ * Layout (`.claims/` at the repository root):
+ *   config.json                 { version, repos, judge, ignore }
+ *   documents/<doc_id>.json
+ *   claims/<clm_id>.json
+ *   judge/<sha256>.json         cached judge verdicts (see src/judge/cache.ts)
  */
 
-import { randomUUID } from "node:crypto";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import {
-  Assertion,
+  Claim,
+  Config,
+  DEFAULT_JUDGE_MODEL,
+  DEFAULT_JUDGE_THRESHOLD,
   Document,
   MODEL_VERSION,
-  Proposition,
-  StoreConfig,
 } from "../core/model.ts";
 import { exists } from "../fs.ts";
-import { upgradeV2Store } from "./upgrade.ts";
+import { JudgeCache } from "../judge/cache.ts";
 
 export const STORE_DIR = ".claims";
 
+/** A file's text, or null when it does not exist. */
+async function readOrNull(path: string): Promise<string | null> {
+  try {
+    return await readFile(path, "utf8");
+  } catch (e) {
+    if ((e as { code?: string }).code === "ENOENT") return null;
+    throw e;
+  }
+}
+
 const SUBDIRS = {
   documents: "documents",
-  propositions: "propositions",
   claims: "claims",
+  judge: "judge",
 } as const;
 
 /**
@@ -61,39 +71,52 @@ function resolveLocation(location: string | StoreLocation): {
 export class ClaimStore {
   readonly anchorRoot: string;
   readonly dir: string;
-  /** Set when `open` upgraded a v2 store in place. */
-  upgradedFrom?: string;
 
   private constructor(loc: { anchorRoot: string; dir: string }) {
     this.anchorRoot = loc.anchorRoot;
     this.dir = loc.dir;
   }
 
-  /** A fresh per-repository banner nonce: 8 hex chars. */
-  static newNonce(): string {
-    return randomUUID().replace(/-/g, "").slice(0, 8);
+  /** The config a new store starts with. Every field is written out. */
+  static defaultConfig(): Config {
+    return {
+      version: MODEL_VERSION,
+      repos: {},
+      judge: { model: DEFAULT_JUDGE_MODEL, threshold: DEFAULT_JUDGE_THRESHOLD },
+      ignore: [],
+    };
   }
 
-  /** Initialize a store; idempotent, never clobbers an existing config. */
-  static async init(
-    location: string | StoreLocation,
-    nonce = ClaimStore.newNonce(),
-  ): Promise<ClaimStore> {
+  /**
+   * Initialize a store; idempotent, never clobbers an existing config. An
+   * existing store of another version is refused with the same message as
+   * `open`: there is no upgrade path.
+   */
+  static async init(location: string | StoreLocation): Promise<ClaimStore> {
     const s = new ClaimStore(resolveLocation(location));
+    const configPath = join(s.dir, "config.json");
+    if (await exists(configPath)) await s.assertVersion();
     await mkdir(s.dir, { recursive: true });
     for (const sub of Object.values(SUBDIRS))
       await mkdir(join(s.dir, sub), { recursive: true });
-    const configPath = join(s.dir, "config.json");
     if (!(await exists(configPath))) {
-      const config: StoreConfig = { version: MODEL_VERSION, nonce };
-      await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
+      await writeFile(
+        configPath,
+        `${JSON.stringify(ClaimStore.defaultConfig(), null, 2)}\n`,
+      );
+    }
+    // The judge cache is local (SPEC 6): `.claims/.gitignore` keeps it out of
+    // git. Written only when missing; an existing file is left as it is.
+    const gitignore = join(s.dir, ".gitignore");
+    if (!(await exists(gitignore))) {
+      await writeFile(gitignore, `${SUBDIRS.judge}/\n`);
     }
     return s;
   }
 
   /**
-   * Open an existing store. A v2 store is upgraded in place once; any other
-   * version skew is refused before a claim file is parsed.
+   * Open an existing store. A store of any version other than v4 is refused
+   * before a record is parsed; there is no upgrade path.
    */
   static async open(location: string | StoreLocation): Promise<ClaimStore> {
     const s = new ClaimStore(resolveLocation(location));
@@ -101,21 +124,28 @@ export class ClaimStore {
     if (!(await exists(configPath))) {
       throw new Error(`No claim store at ${s.dir}. Run \`hibi init\` first.`);
     }
-    const raw = JSON.parse(await readFile(configPath, "utf8")) as {
-      version?: string;
-    };
-    const found = raw.version ?? "unknown";
-    if (found === "v2") {
-      await upgradeV2Store(s.dir);
-      s.upgradedFrom = "v2";
-      return s;
-    }
-    if (found !== MODEL_VERSION) {
+    await s.assertVersion();
+    await s.config();
+    return s;
+  }
+
+  /** Throws the "no upgrade path" error when config.json is not a v4 store. */
+  private async assertVersion(): Promise<void> {
+    let raw: { version?: unknown };
+    try {
+      raw = JSON.parse(await readFile(join(this.dir, "config.json"), "utf8"));
+    } catch (e) {
       throw new Error(
-        `this store was written by hibi model ${found} and this binary requires ${MODEL_VERSION}. Re-run 'hibi init' and re-record, or use a matching hibi version.`,
+        `.claims/config.json is not valid JSON (${(e as Error).message}).`,
       );
     }
-    return s;
+    const found =
+      raw !== null && typeof raw.version === "string" ? raw.version : "unknown";
+    if (found !== MODEL_VERSION) {
+      throw new Error(
+        `this claim store is version ${found}; hibi ${MODEL_VERSION} has no upgrade path from it. Remove ${this.dir}, run \`hibi init\`, and re-record.`,
+      );
+    }
   }
 
   static async isInitialized(
@@ -124,15 +154,29 @@ export class ClaimStore {
     return exists(join(resolveLocation(location).dir, "config.json"));
   }
 
-  private configCache?: StoreConfig;
+  private configCache?: Config;
 
-  async config(): Promise<StoreConfig> {
+  async config(): Promise<Config> {
     if (this.configCache) return this.configCache;
     const raw = JSON.parse(
       await readFile(join(this.dir, "config.json"), "utf8"),
     );
-    this.configCache = StoreConfig.parse(raw);
+    const parsed = Config.safeParse(raw);
+    if (!parsed.success) {
+      const issue = parsed.error.issues[0];
+      const where = issue?.path.length ? issue.path.join(".") : "config";
+      const message = issue?.message ?? "invalid";
+      throw new Error(
+        `.claims/config.json is invalid: ${message.startsWith(where) ? message : `${where}: ${message}`}`,
+      );
+    }
+    this.configCache = parsed.data;
     return this.configCache;
+  }
+
+  /** The judge verdict cache at `<store>/judge/`. */
+  judgeCache(): JudgeCache {
+    return new JudgeCache(join(this.dir, SUBDIRS.judge));
   }
 
   // ── Documents ──
@@ -142,56 +186,71 @@ export class ClaimStore {
   async getDocument(id: string): Promise<Document | undefined> {
     return this.read(SUBDIRS.documents, id, Document);
   }
-  async deleteDocument(id: string): Promise<void> {
-    await rm(join(this.dir, SUBDIRS.documents, `${id}.json`), { force: true });
-  }
   async allDocuments(): Promise<Document[]> {
     return this.readAll(SUBDIRS.documents, Document);
   }
 
-  // ── Propositions ──
-  async putProposition(p: Proposition): Promise<void> {
-    await this.write(SUBDIRS.propositions, p.id, Proposition.parse(p));
+  // ── Claims ──
+  async putClaim(c: Claim): Promise<void> {
+    await this.write(SUBDIRS.claims, c.id, Claim.parse(c));
   }
-  async deleteProposition(id: string): Promise<void> {
-    await rm(join(this.dir, SUBDIRS.propositions, `${id}.json`), {
-      force: true,
-    });
+  async getClaim(id: string): Promise<Claim | undefined> {
+    return this.read(SUBDIRS.claims, id, Claim);
   }
-  async getProposition(id: string): Promise<Proposition | undefined> {
-    return this.read(SUBDIRS.propositions, id, Proposition);
-  }
-  async allPropositions(): Promise<Proposition[]> {
-    return this.readAll(SUBDIRS.propositions, Proposition);
-  }
-  async findPropositionByFingerprint(
-    fingerprint: string,
-  ): Promise<Proposition | undefined> {
-    const all = await this.allPropositions();
-    return all.find((p) => p.fingerprint === fingerprint);
+  async allClaims(): Promise<Claim[]> {
+    return this.readAll(SUBDIRS.claims, Claim);
   }
 
-  // ── Assertions (claims) ──
-  async putAssertion(a: Assertion): Promise<void> {
-    await this.write(SUBDIRS.claims, a.id, Assertion.parse(a));
-  }
-  async getAssertion(id: string): Promise<Assertion | undefined> {
-    return this.read(SUBDIRS.claims, id, Assertion);
-  }
-  async allAssertions(): Promise<Assertion[]> {
-    return this.readAll(SUBDIRS.claims, Assertion);
-  }
-  async deleteAssertion(id: string): Promise<void> {
-    await rm(join(this.dir, SUBDIRS.claims, `${id}.json`), { force: true });
+  // ── Rollback ──
+
+  /** Per record file written inside `withRollback`: its text before the first write (null: it did not exist) and after the last. */
+  private journal?: Map<string, { before: string | null; after: string }>;
+
+  /**
+   * Run `fn`; when it throws, undo the record writes it made through this
+   * store, then rethrow. A claim file it created is removed and a file it
+   * overwrote gets its previous text back. A document record it created is
+   * kept: documents are keyed by path and another writer may already
+   * reference its id. A file it did not write, such as
+   * a record another process wrote meanwhile, is not touched, and neither is
+   * a file that changed again after this store's last write to it.
+   */
+  async withRollback<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.journal) throw new Error("withRollback does not nest.");
+    const journal = new Map<string, { before: string | null; after: string }>();
+    this.journal = journal;
+    try {
+      return await fn();
+    } catch (e) {
+      const documentsDir = join(this.dir, SUBDIRS.documents);
+      for (const [path, { before, after }] of journal) {
+        if ((await readOrNull(path)) !== after) continue;
+        if (before === null) {
+          // A document record is keyed by its path and created once; another
+          // writer may already reference its id, so a created one is kept.
+          if (dirname(path) === documentsDir) continue;
+          await rm(path, { force: true });
+        } else await writeFile(path, before);
+      }
+      throw e;
+    } finally {
+      this.journal = undefined;
+    }
   }
 
   // ── private helpers ──
   private async write(sub: string, id: string, value: unknown): Promise<void> {
     await mkdir(join(this.dir, sub), { recursive: true });
-    await writeFile(
-      join(this.dir, sub, `${id}.json`),
-      `${JSON.stringify(value, null, 2)}\n`,
-    );
+    const path = join(this.dir, sub, `${id}.json`);
+    const text = `${JSON.stringify(value, null, 2)}\n`;
+    const noted = this.journal?.get(path);
+    const before = noted
+      ? noted.before
+      : this.journal
+        ? await readOrNull(path)
+        : null;
+    await writeFile(path, text);
+    this.journal?.set(path, { before, after: text });
   }
 
   private async read<T>(

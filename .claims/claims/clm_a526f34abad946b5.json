@@ -1,0 +1,65 @@
+{
+  "id": "clm_a526f34abad946b5",
+  "documentId": "doc_174d197a69bd33b6",
+  "kind": "code",
+  "sentence": "| `title` | no | a label for people |",
+  "doc": {
+    "file": "docs/claims.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `title` | no | a label for people |",
+        "prefix": "id` | no | a short name evidence can refer to |\n",
+        "suffix": "\n\nHibi never opens, fetches, or checks a `resour"
+      },
+      {
+        "kind": "text-position",
+        "start": 2518,
+        "end": 2555
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "title: z.string().optional(),\n  })\n  .meta({ id: \"Source\" });",
+          "prefix": "ptional(),\n    resource: z.string().min(1),\n    ",
+          "suffix": "\nexport type Source = z.infer<typeof Source>;\n\n/"
+        },
+        {
+          "kind": "text-position",
+          "start": 7927,
+          "end": 7988
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "a76b043550f38300",
+          "semanticHash": "6497fc4d99ccc931"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Source\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:22:02.332Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:22:02.332Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

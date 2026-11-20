@@ -1,0 +1,146 @@
+{
+  "id": "clm_a998e502d3a44220",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Recording a sentence already recorded on the same document updates that claim in place: kind, sentence, anchors, evidence, `ref`, and enforcement are replaced; `sources`, `procedure`, `owner`, and `ttl` are replaced when given; and a vouch is appended.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Recording a sentence already recorded on the same document updates that claim in place: kind, sentence, anchors, evidence, `ref`, and enforcement are replaced; `sources`, `procedure`, `owner`, and `ttl` are replaced when given; and a vouch is appended.",
+        "prefix": "im exists per normalized sentence per document. ",
+        "suffix": " `existingClaims` in the result lists claims on "
+      },
+      {
+        "kind": "text-position",
+        "start": 60787,
+        "end": 61039
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "kind,\n      sentence,\n      doc,\n      evidence,\n      ref: input.ref,",
+          "prefix": "nst updated: Claim = {\n      ...existing,\n      ",
+          "suffix": "\n      // The same value the per-kind span rules"
+        },
+        {
+          "kind": "text-position",
+          "start": 7257,
+          "end": 7327
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "a3f57a0cbbc75613",
+          "semanticHash": "5b93f2a9b50d1b22"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "enforcement,\n      ...(input.sources !== undefined ? { sources: input.sources } : {}),",
+          "prefix": "-kind span rules above validated against.\n      ",
+          "suffix": "\n      ...(input.procedure !== undefined ? { pro"
+        },
+        {
+          "kind": "text-position",
+          "start": 7407,
+          "end": 7493
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "a3f57a0cbbc75613",
+          "semanticHash": "5b93f2a9b50d1b22"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...(input.procedure !== undefined ? { procedure: input.procedure } : {}),",
+          "prefix": "fined ? { sources: input.sources } : {}),\n      ",
+          "suffix": "\n      ...(input.owner !== undefined ? { owner: "
+        },
+        {
+          "kind": "text-position",
+          "start": 7500,
+          "end": 7573
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "spread_element",
+          "structuralHash": "983ffe3d5ed69ae7",
+          "semanticHash": "5c514ad09ef234aa"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/record.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "...(input.owner !== undefined ? { owner: input.owner } : {}),\n      ...(input.ttl !== undefined ? { ttl: input.ttl } : {}),\n      attestations: [...existing.attestations, vouch],",
+          "prefix": "d ? { procedure: input.procedure } : {}),\n      ",
+          "suffix": "\n    };\n    if (!input.dryRun) await store.putCl"
+        },
+        {
+          "kind": "text-position",
+          "start": 7580,
+          "end": 7758
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "a3f57a0cbbc75613",
+          "semanticHash": "5b93f2a9b50d1b22"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "undefined",
+          "value": "undefined"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:34.555Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:34.555Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

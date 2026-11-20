@@ -1,0 +1,126 @@
+{
+  "id": "clm_c896fce1aa4e4c7e",
+  "documentId": "doc_a1c2b65e3574a8f2",
+  "kind": "code",
+  "sentence": "- **Cached verdicts.** Each answer is stored in `.claims/judge/` under the hash of the pinned model id and the canonical request. The same tree gives the same verdicts on every run that has the cache present. The cache is local and is not committed; CI restores it with a cache step.",
+  "doc": {
+    "file": "docs/design.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- **Cached verdicts.** Each answer is stored in `.claims/judge/` under the hash of the pinned model id and the canonical request. The same tree gives the same verdicts on every run that has the cache present. The cache is local and is not committed; CI restores it with a cache step.",
+        "prefix": " the judge rates `contradicts` at 0.5 or above.\n",
+        "suffix": "\n- **No key means pending.** Without `TYPESAFE_A"
+      },
+      {
+        "kind": "text-position",
+        "start": 4237,
+        "end": 4520
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/judge/cache.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".update(`${model}\\n${canonicalJson(request)}`)",
+          "prefix": "wn): string {\n  return createHash(\"sha256\")\n    ",
+          "suffix": "\n    .digest(\"hex\");\n}\n\nfunction matches(subject"
+        },
+        {
+          "kind": "text-position",
+          "start": 1926,
+          "end": 1972
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "b403664e628d2825",
+          "semanticHash": "10448a4ef18de84b"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const JUDGE_MODEL_PATTERN = /^jev-\\d+\\.\\d+\\.\\d+$/;",
+          "prefix": " such as `jev-1.14.0`; aliases are rejected. */\n",
+          "suffix": "\n\nexport const JudgeConfig = z.strictObject({\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 10917,
+          "end": 10974
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b879b2ad137802b7",
+          "semanticHash": "d09e7304a36ec3b1"
+        }
+      ]
+    },
+    {
+      "file": "src/store/store.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await writeFile(gitignore, `${SUBDIRS.judge}/\\n`);",
+          "prefix": "\");\n    if (!(await exists(gitignore))) {\n      ",
+          "suffix": "\n    }\n    return s;\n  }\n\n  /**\n   * Open an exi"
+        },
+        {
+          "kind": "text-position",
+          "start": 3429,
+          "end": 3479
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "await_expression",
+          "structuralHash": "3173e9bc5ec04bb4",
+          "semanticHash": "df0de62e936b77fb"
+        }
+      ]
+    },
+    {
+      "file": "plugins/hibi-cli/skills/hibi/assets/hibi-ci.yml",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "uses: actions/cache@v4",
+          "prefix": "\n\n      - name: Restore the judge cache\n        ",
+          "suffix": "\n        with:\n          path: .claims/judge # w"
+        },
+        {
+          "kind": "text-position",
+          "start": 1634,
+          "end": 1656
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:51.694Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:47:08.514Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:51.694Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

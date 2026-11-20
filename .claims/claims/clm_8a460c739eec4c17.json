@@ -1,0 +1,88 @@
+{
+  "id": "clm_8a460c739eec4c17",
+  "documentId": "doc_da671669435c5749",
+  "kind": "code",
+  "sentence": "| threshold | `judge.threshold` in `.claims/config.json` |",
+  "doc": {
+    "file": "docs/judge.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| threshold | `judge.threshold` in `.claims/config.json` |",
+        "prefix": "odel | `judge.model` in `.claims/config.json` |\n",
+        "suffix": "\n\n`hibi init` writes `{ \"model\": \"jev-1.14.0\", \""
+      },
+      {
+        "kind": "text-position",
+        "start": 2522,
+        "end": 2580
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const threshold = config.judge.threshold;",
+          "prefix": " const config: Config = await store.config();\n  ",
+          "suffix": "\n  // Cache keys use the judge's model; the conf"
+        },
+        {
+          "kind": "text-position",
+          "start": 13440,
+          "end": 13481
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "e163f29f0b06410c",
+          "semanticHash": "818a52178afbf025"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": ".number({ error: \"judge.threshold must be a number in [0, 1]\" })",
+          "prefix": "lean outcomes (SPEC 8.4). */\n  threshold: z\n    ",
+          "suffix": "\n    .min(0, { error: \"judge.threshold must be a"
+        },
+        {
+          "kind": "text-position",
+          "start": 11390,
+          "end": 11454
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "call_expression",
+          "structuralHash": "896bfeff5c530241",
+          "semanticHash": "9545a14d72f05198"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"judge.threshold must be a number in [0, 1]\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:35.478Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:35.478Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

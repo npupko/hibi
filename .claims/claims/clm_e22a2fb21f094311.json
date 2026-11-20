@@ -1,0 +1,105 @@
+{
+  "id": "clm_e22a2fb21f094311",
+  "documentId": "doc_f6b7b191b6554670",
+  "kind": "code",
+  "sentence": "| `duplicateOf` | always | for a covered row, the claim its claim most likely duplicates (from the [contradiction pass](/conflicts)); otherwise `null` |",
+  "doc": {
+    "file": "docs/audit.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "| `duplicateOf` | always | for a covered row, the claim its claim most likely duplicates (from the [contradiction pass](/conflicts)); otherwise `null` |",
+        "prefix": "lable: <message>` or `judge error: <message>` |\n",
+        "suffix": "\n\nThe contradiction pass that `audit` runs judge"
+      },
+      {
+        "kind": "text-position",
+        "start": 5259,
+        "end": 5411
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/audit.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "{ ...base, claimId: claim.id, duplicateOf: duplicateOf(claim.id) },",
+          "prefix": "id);\n    if (claim) {\n      return row(\n        ",
+          "suffix": "\n        { kind: claim.kind },\n      );\n    }\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 11050,
+          "end": 11117
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "object",
+          "structuralHash": "62bb9eac135657cb",
+          "semanticHash": "d0c25c389f08d26a"
+        }
+      ]
+    },
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "duplicateOf: (id) => duplicateOf(pass, id),",
+          "prefix": "ait this.store.allClaims(),\n      config,\n      ",
+          "suffix": "\n    });\n  }\n\n  /**\n   * Submit evidence an agen"
+        },
+        {
+          "kind": "text-position",
+          "start": 17015,
+          "end": 17058
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "014d0d128efa3dbc",
+          "semanticHash": "ee0d90586267c5bd"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "d.probability > best.probability ||",
+          "prefix": "continue;\n    if (\n      best === null ||\n      ",
+          "suffix": "\n      (d.probability === best.probability && d."
+        },
+        {
+          "kind": "text-position",
+          "start": 14619,
+          "end": 14654
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "binary_expression",
+          "structuralHash": "0016ae2b06c99dda",
+          "semanticHash": "2a90cb55865ad21d"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:25.549Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:25.549Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

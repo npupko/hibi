@@ -1,0 +1,59 @@
+{
+  "id": "clm_4ffc6388b4ba43a6",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "- `ack: { judgeKey }` acknowledges a `review` verdict.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- `ack: { judgeKey }` acknowledges a `review` verdict.",
+        "prefix": "e doc anchor `unchanged` does not end an ack.\n  ",
+        "suffix": " For an `attested` claim, `judgeKey` is the cach"
+      },
+      {
+        "kind": "text-position",
+        "start": 9907,
+        "end": 9961
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "ack: { judgeKey } satisfies AttestationAck,",
+          "prefix": "      at,\n      basis: \"ack\",\n      note,\n      ",
+          "suffix": "\n    });\n    await append(store, claim, attestat"
+        },
+        {
+          "kind": "text-position",
+          "start": 6328,
+          "end": 6371
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "28fecf721240c315",
+          "semanticHash": "3d346320e84bac3b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:35.410Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:35.410Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

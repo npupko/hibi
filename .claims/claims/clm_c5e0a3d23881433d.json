@@ -1,0 +1,51 @@
+{
+  "id": "clm_c5e0a3d23881433d",
+  "documentId": "doc_e5395ebf5c126ede",
+  "kind": "attested",
+  "sentence": "Run it with `lobster run hibi-worklist.lobster`.",
+  "doc": {
+    "file": "plugins/hibi-cli/skills/hibi/references/cookbook.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Run it with `lobster run hibi-worklist.lobster`.",
+        "prefix": "htly` applies to every item without a `by` key. ",
+        "suffix": "\n\nThe `submit` step returns:\n\n```json\n{ \"ok\": tr"
+      },
+      {
+        "kind": "text-position",
+        "start": 9781,
+        "end": 9829
+      }
+    ]
+  },
+  "evidence": [],
+  "sources": [
+    {
+      "id": "lobster-readme",
+      "resource": "https://github.com/openclaw/lobster",
+      "title": "openclaw/lobster README, Workflow files"
+    }
+  ],
+  "procedure": {
+    "instructions": "Open the openclaw/lobster README, section Workflow files, and report the command that runs a workflow file and the step keys that pass a prior step's stdout into a step."
+  },
+  "ttl": "P180D",
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:23.654Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:24:59.131Z",
+      "basis": "evidence",
+      "note": "openclaw/lobster README: `lobster run path/to/workflow.lobster` runs a workflow file",
+      "evidenceHash": "30362f01a3ddd81b750a0869897dde21f3167ea41ba1ed4c2ced2615598349a6"
+    }
+  ],
+  "createdAt": "2026-10-23T08:24:23.654Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

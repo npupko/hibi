@@ -1,0 +1,59 @@
+{
+  "id": "clm_d4e3650840944a9c",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "The pass returns one outcome with one reason label for every pair, in `pairs[]` as `{ pairId, why, outcome, reason }`.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The pass returns one outcome with one reason label for every pair, in `pairs[]` as `{ pairId, why, outcome, reason }`.",
+        "prefix": " stop the pass.\n\n### 9.3 Outcomes and findings\n\n",
+        "suffix": " The first matching row decides:\n\n| outcome | ru"
+      },
+      {
+        "kind": "text-position",
+        "start": 45751,
+        "end": 45869
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "outcomes[index] = { pairId: pair.pairId, why: pair.why, outcome, reason };",
+          "prefix": " decision.reason,\n        });\n      }\n    }\n    ",
+          "suffix": "\n  });\n\n  return {\n    findings: findings.sort(b"
+        },
+        {
+          "kind": "text-position",
+          "start": 12922,
+          "end": 12996
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "assignment_expression",
+          "structuralHash": "aaea520d0c36bffd",
+          "semanticHash": "fb6d12dfc346bd34"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:54.257Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:54.257Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

@@ -1,0 +1,82 @@
+{
+  "id": "clm_0d1ae3fe05194b51",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "```json\n{ \"ok\": true, \"action\": \"retire\", \"schemaVersion\": \"v4\",\n  \"id\": \"clm_…\", \"alreadyRetired\": false, \"next\": \"hibi check\" }\n```",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "```json\n{ \"ok\": true, \"action\": \"retire\", \"schemaVersion\": \"v4\",\n  \"id\": \"clm_…\", \"alreadyRetired\": false, \"next\": \"hibi check\" }\n```",
+        "prefix": "es nothing and reports `alreadyRetired: true`.\n\n",
+        "suffix": "\n\nIn `check`, a retired claim is counted in `sum"
+      },
+      {
+        "kind": "text-position",
+        "start": 1121,
+        "end": 1254
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/commands/retire.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "alreadyRetired: result.alreadyRetired,",
+          "prefix": "     {\n          id: result.claim.id,\n          ",
+          "suffix": "\n          ...(dryRun ? { dryRun: true } : {}),\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 725,
+          "end": 763
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "20260ed63b2c25fb",
+          "semanticHash": "88ad81e7cd3a98ec"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/render/json.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "schemaVersion: SCHEMA_VERSION,",
+          "prefix": "own> {\n  return {\n    ok: true,\n    action,\n    ",
+          "suffix": "\n    ...payload,\n    ...(next !== undefined ? { "
+        },
+        {
+          "kind": "text-position",
+          "start": 1040,
+          "end": 1070
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "032aa2864040c879",
+          "semanticHash": "8d23a52210d48d56"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:19:28.257Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:19:28.257Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

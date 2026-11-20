@@ -1,0 +1,127 @@
+{
+  "id": "clm_798d35e6aa1a46e6",
+  "documentId": "doc_d068824e08521674",
+  "kind": "code",
+  "sentence": "hibi check --doc CLAUDE.md      # can this one document be trusted now? (exit 1 if it has no claims)",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "hibi check --doc CLAUDE.md      # can this one document be trusted now? (exit 1 if it has no claims)",
+        "prefix": "claim, the contradiction pass, and the worklist\n",
+        "suffix": "\nhibi check --since origin/main  # what did this"
+      },
+      {
+        "kind": "text-position",
+        "start": 3668,
+        "end": 3768
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/index.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "`no claims are registered for ${doc}; run hibi audit --doc ${doc}`,",
+          "prefix": "if (!live) {\n        throw new Error(\n          ",
+          "suffix": "\n        );\n      }\n      onlyFiles = scope.file"
+        },
+        {
+          "kind": "text-position",
+          "start": 12932,
+          "end": 12999
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "template_string",
+          "structuralHash": "1249b007122c9694",
+          "semanticHash": "d6a9d9f48dc91234"
+        }
+      ]
+    },
+    {
+      "file": "src/cli/options.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "help: \"Check only the claims on this document.\",",
+          "prefix": " type: \"string\",\n    placeholder: \"<path>\",\n    ",
+          "suffix": "\n  },\n  {\n    name: \"overview\",\n    type: \"boole"
+        },
+        {
+          "kind": "text-position",
+          "start": 5101,
+          "end": 5149
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "db852d244d5f4d80",
+          "semanticHash": "b3e7608069743504"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"Check only the claims on this document.\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:27:53.623Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:42.241Z",
+      "basis": "ack",
+      "note": "exit 2 for a stale sentence and exit 1 for a document with no claims are different cases",
+      "ack": {
+        "pairId": "clm_419dbf390a7841c1:clm_798d35e6aa1a46e6",
+        "sentenceHashes": [
+          "204735a786ff564fcd57774d3b459edc36e08ebbffb0f038558f13a4f75cf04d",
+          "2533dbc2df10aa8d6428cc7c7e4e89878193de9ee9ab6b227de57b95ce1303f7"
+        ]
+      }
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:42.300Z",
+      "basis": "ack",
+      "note": "exit 2 for a stale sentence and exit 1 for a document with no claims are different cases",
+      "ack": {
+        "pairId": "clm_488c5ffbe4b94510:clm_798d35e6aa1a46e6",
+        "sentenceHashes": [
+          "204735a786ff564fcd57774d3b459edc36e08ebbffb0f038558f13a4f75cf04d",
+          "2533dbc2df10aa8d6428cc7c7e4e89878193de9ee9ab6b227de57b95ce1303f7"
+        ]
+      }
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:42.414Z",
+      "basis": "ack",
+      "note": "exit 2 for a stale sentence and exit 1 for a document with no claims are different cases",
+      "ack": {
+        "pairId": "clm_52d305a9cca74e00:clm_798d35e6aa1a46e6",
+        "sentenceHashes": [
+          "1fc89afba828fbea240b5b8da8c05574c918a89e0033aa9c012c8a1c9fff9683",
+          "2533dbc2df10aa8d6428cc7c7e4e89878193de9ee9ab6b227de57b95ce1303f7"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:27:53.623Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

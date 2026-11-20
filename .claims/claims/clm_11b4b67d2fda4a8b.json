@@ -1,0 +1,95 @@
+{
+  "id": "clm_11b4b67d2fda4a8b",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "A scoped check (`--doc`, `--since`) lists only claims in scope.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A scoped check (`--doc`, `--since`) lists only claims in scope.",
+        "prefix": "3. `list --state pending` returns the same set. ",
+        "suffix": "\n\n## 8. Judge\n\n### 8.1 Interface\n\n```\ntriage(doc"
+      },
+      {
+        "kind": "text-position",
+        "start": 30046,
+        "end": 30109
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (options.onlyDocument && c.documentId !== options.onlyDocument) continue;",
+          "prefix": "Set<string>();\n\n  for (const c of claims) {\n    ",
+          "suffix": "\n    const evidenceFiles = c.evidence.map((b) =>"
+        },
+        {
+          "kind": "text-position",
+          "start": 14914,
+          "end": 14990
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "1a86f3c56712206b",
+          "semanticHash": "a63b37508d7ebfe0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (!touches) continue;",
+          "prefix": "s.some((f) => options.onlyFiles?.has(f));\n      ",
+          "suffix": "\n    }\n    evaluatedDocs.add(c.documentId);\n\n   "
+        },
+        {
+          "kind": "text-position",
+          "start": 15212,
+          "end": 15235
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "d67dd7ba544f0c4a",
+          "semanticHash": "8e2501a998036fb5"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:49.671Z",
+      "basis": "vouch"
+    },
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T13:51:41.894Z",
+      "basis": "ack",
+      "note": "one is about which claims the worklist lists in a scoped check, the other about conflict findings naming claims outside scope",
+      "ack": {
+        "pairId": "clm_11b4b67d2fda4a8b:clm_11e4cfe3545f4982",
+        "sentenceHashes": [
+          "17c64c14841cb2d289185b3a889d4cbc2c28cb34aa33fd8d1e438dbfcd166bc7",
+          "0acc056913b85f050dbb001eb3cb9c38d4c3021053bf2a173a8adfc63fb0508e"
+        ]
+      }
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:49.671Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

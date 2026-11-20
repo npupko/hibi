@@ -1,0 +1,65 @@
+{
+  "id": "clm_e68d79a1562d48c9",
+  "documentId": "doc_eced97fa3b1dfce0",
+  "kind": "code",
+  "sentence": "On `record --from-file`, each item may carry its own `by`, and `--by` is the default for items without one.",
+  "doc": {
+    "file": "docs/attestations.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "On `record --from-file`, each item may carry its own `by`, and `--by` is the default for items without one.",
+        "prefix": " `attest`, and `evidence`; there is no default. ",
+        "suffix": " On `evidence`, `--by` may be omitted when every"
+      },
+      {
+        "kind": "text-position",
+        "start": 1256,
+        "end": 1363
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/record-input.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const by = typeof raw.by === \"string\" ? raw.by : context.defaultBy;",
+          "prefix": "ot ${JSON.stringify(v)})`,\n      );\n    }\n  }\n  ",
+          "suffix": "\n  if (by === undefined) {\n    errors.push(\n    "
+        },
+        {
+          "kind": "text-position",
+          "start": 10626,
+          "end": 10693
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "0d9d1b676b99279b",
+          "semanticHash": "ccbbf218d0e3af3e"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "string",
+          "value": "\"string\""
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:11.731Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:11.731Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

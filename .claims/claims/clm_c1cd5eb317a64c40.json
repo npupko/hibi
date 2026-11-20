@@ -1,0 +1,82 @@
+{
+  "id": "clm_c1cd5eb317a64c40",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "`judge.model` must match `jev-<major>.<minor>.<patch>`; an alias such as `jev-latest` is rejected.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "`judge.model` must match `jev-<major>.<minor>.<patch>`; an alias such as `jev-latest` is rejected.",
+        "prefix": "0.8 },\n  \"ignore\": [\"docs/generated/**\"]\n}\n```\n\n",
+        "suffix": " `judge.threshold` is a number in [0, 1]. `repos"
+      },
+      {
+        "kind": "text-position",
+        "start": 14886,
+        "end": 14984
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "export const JUDGE_MODEL_PATTERN = /^jev-\\d+\\.\\d+\\.\\d+$/;",
+          "prefix": " such as `jev-1.14.0`; aliases are rejected. */\n",
+          "suffix": "\n\nexport const JudgeConfig = z.strictObject({\n  "
+        },
+        {
+          "kind": "text-position",
+          "start": 10917,
+          "end": 10974
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "export_statement",
+          "structuralHash": "b879b2ad137802b7",
+          "semanticHash": "d09e7304a36ec3b1"
+        }
+      ]
+    },
+    {
+      "file": "src/core/model.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "not a pinned versioned id; hibi needs one such as jev-1.14.0, not an alias like jev-latest",
+          "prefix": "   `judge.model ${JSON.stringify(iss.input)} is ",
+          "suffix": "`,\n  }),\n  /** Choice-confidence threshold for g"
+        },
+        {
+          "kind": "text-position",
+          "start": 11195,
+          "end": 11285
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "string_fragment",
+          "structuralHash": "27e708d35b85459b",
+          "semanticHash": "f235248e4f88b9e9"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:36.750Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:36.750Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

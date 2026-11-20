@@ -1,0 +1,59 @@
+{
+  "id": "clm_9ab326d3cad04a91",
+  "documentId": "doc_a5670d6387fe08ca",
+  "kind": "code",
+  "sentence": "The answer is cached under the hash of the model and the request.",
+  "doc": {
+    "file": "docs/conflicts.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The answer is cached under the hash of the model and the request.",
+        "prefix": "ext also includes the list's lead-in paragraph. ",
+        "suffix": " A pair whose sentences and context have not cha"
+      },
+      {
+        "kind": "text-position",
+        "start": 2107,
+        "end": 2172
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { a, b, request, key: cacheKey(model, request) };",
+          "prefix": " request = buildConflictRequest(model, a, b);\n  ",
+          "suffix": "\n}\n\nasync function pool<T>(\n  items: T[],\n  limi"
+        },
+        {
+          "kind": "text-position",
+          "start": 9267,
+          "end": 9323
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "d893f71c4841ec4e",
+          "semanticHash": "9a58df4babd50798"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:24.898Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:24.898Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

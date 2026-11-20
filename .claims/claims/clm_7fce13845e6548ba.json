@@ -1,0 +1,88 @@
+{
+  "id": "clm_7fce13845e6548ba",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "code",
+  "sentence": "Each pair runs `conflict` once, with sides in `pairId` order, each carrying its sentence, document path, and context (section 8.3).",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "Each pair runs `conflict` once, with sides in `pairId` order, each carrying its sentence, document path, and context (section 8.3).",
+        "prefix": ". Pairs are sorted by `pairId`.\n\n### 9.2 Judge\n\n",
+        "suffix": " The result is cached by the request key. At mos"
+      },
+      {
+        "kind": "text-position",
+        "start": 45368,
+        "end": 45499
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "pair.a.id < pair.b.id ? [pair.a, pair.b] : [pair.b, pair.a];",
+          "prefix": "; key: string } {\n  const [first, second] =\n    ",
+          "suffix": "\n  const a = side(first, context);\n  const b = s"
+        },
+        {
+          "kind": "text-position",
+          "start": 9082,
+          "end": 9142
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "ternary_expression",
+          "structuralHash": "0b0bbff3da7511a8",
+          "semanticHash": "c75ec2368be5ff53"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[pair.a,pair.b]"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/conflict.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "return { text: claim.sentence, doc: claim.doc.file, context: context(claim) };",
+          "prefix": "xt: (claim: Claim) => string): ConflictSide {\n  ",
+          "suffix": "\n}\n\n/** The exact request and cache key for a pa"
+        },
+        {
+          "kind": "text-position",
+          "start": 8714,
+          "end": 8792
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "return_statement",
+          "structuralHash": "feea801c9368425c",
+          "semanticHash": "48afc3b1f86414d4"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:18:54.166Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:18:54.166Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

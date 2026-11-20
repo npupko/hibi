@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "Hibi",
-  "description": "Catch documentation that no longer matches your code.",
+  "description": "Find the sentences in your documents that are no longer true: claims tied to code, other documents, or attestations, checked before an agent trusts a file.",
   "colors": {
     "primary": "#D6452F",
     "light": "#E97A66",
@@ -25,7 +25,16 @@
       },
       {
         "group": "Concepts",
-        "pages": ["verdicts", "anchors", "behavioral", "banners", "lifecycle"]
+        "pages": [
+          "claims",
+          "attestations",
+          "verdicts",
+          "anchors",
+          "judge",
+          "conflicts",
+          "audit",
+          "lifecycle"
+        ]
       },
       {
         "group": "Why Hibi",
@@ -34,10 +43,6 @@
       {
         "group": "Usage",
         "pages": ["cli-reference", "ci"]
-      },
-      {
-        "group": "Extend",
-        "pages": ["resolvers", "sdks"]
       },
       {
         "group": "Integrations",

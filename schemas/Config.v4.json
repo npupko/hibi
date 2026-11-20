@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/Config",
+  "$defs": {
+    "Config": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "const": "v4"
+        },
+        "repos": {
+          "default": {},
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "judge": {
+          "type": "object",
+          "properties": {
+            "model": {
+              "type": "string",
+              "pattern": "^jev-\\d+\\.\\d+\\.\\d+$"
+            },
+            "threshold": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "required": [
+            "model",
+            "threshold"
+          ],
+          "additionalProperties": false
+        },
+        "ignore": {
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "version",
+        "repos",
+        "judge",
+        "ignore"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

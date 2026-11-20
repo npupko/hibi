@@ -1,0 +1,94 @@
+{
+  "id": "clm_6210cffc67044bcd",
+  "documentId": "doc_6921472667ef1c18",
+  "kind": "code",
+  "sentence": "- The command exits 0 when at least one side was relocated or no side needed relocating. It exits 1 and writes nothing when a side needed relocating and no side was relocated.",
+  "doc": {
+    "file": "docs/lifecycle.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- The command exits 0 when at least one side was relocated or no side needed relocating. It exits 1 and writes nothing when a side needed relocating and no side was relocated.",
+        "prefix": "an edited or lost span went; pass the new span.\n",
+        "suffix": "\n- `--doc`, the doc span flags, and the ref span"
+      },
+      {
+        "kind": "text-position",
+        "start": 6035,
+        "end": 6210
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/cli/commands/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "if (result.relocated === 0 && reasons.length > 0) {",
+          "prefix": "reasons = result.kept.map((k) => k.reason);\n    ",
+          "suffix": "\n      return fail(\n        `claim ${result.clai"
+        },
+        {
+          "kind": "text-position",
+          "start": 5971,
+          "end": 6022
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "if_statement",
+          "structuralHash": "e9550f545374a393",
+          "semanticHash": "02a3152e0362f285"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/reanchor.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const write = !input.dryRun && (input.docOnly || relocated > 0);",
+          "prefix": "ways writes: the claim moves to the new file.\n  ",
+          "suffix": "\n  if (write) await store.putClaim(next);\n\n  if "
+        },
+        {
+          "kind": "text-position",
+          "start": 15583,
+          "end": 15647
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "d208202d750c9ce1",
+          "semanticHash": "868f8ae03eb7b9ab"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "number",
+          "value": "0"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude",
+      "at": "2026-10-23T14:28:03.329Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T14:28:03.329Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

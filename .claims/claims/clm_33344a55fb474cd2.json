@@ -1,0 +1,88 @@
+{
+  "id": "clm_33344a55fb474cd2",
+  "documentId": "doc_0b2d7eca04397933",
+  "kind": "code",
+  "sentence": "A conflict ack is recorded on both claims and lapses when either sentence changes.",
+  "doc": {
+    "file": "docs/workflows.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "A conflict ack is recorded on both claims and lapses when either sentence changes.",
+        "prefix": "rom warning or gating. It never resets the ttl. ",
+        "suffix": "\n\n## CI\n\nRun `hibi check` on every pull request "
+      },
+      {
+        "kind": "text-position",
+        "start": 8349,
+        "end": 8431
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "await append(store, first, attestation);\n  await append(store, second, attestation);",
+          "prefix": "     ],\n    } satisfies AttestationAck,\n  });\n  ",
+          "suffix": "\n  return {\n    claimIds: [first.id, second.id],"
+        },
+        {
+          "kind": "text-position",
+          "start": 7094,
+          "end": 7178
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "statement_block",
+          "structuralHash": "714706c39246893a",
+          "semanticHash": "eda4e51fc9a03521"
+        }
+      ]
+    },
+    {
+      "file": "src/engine/attest.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "sentenceHashes: [\n        sentenceHash(first.sentence),\n        sentenceHash(second.sentence),\n      ],",
+          "prefix": "      pairId: `${first.id}:${second.id}`,\n      ",
+          "suffix": "\n    } satisfies AttestationAck,\n  });\n  await a"
+        },
+        {
+          "kind": "text-position",
+          "start": 6950,
+          "end": 7053
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "pair",
+          "structuralHash": "5dc2513354ce59aa",
+          "semanticHash": "ad730928d479117f"
+        },
+        {
+          "kind": "value",
+          "language": "typescript",
+          "nodeKind": "array",
+          "value": "[sentenceHash(first.sentence),sentenceHash(second.sentence),]"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:23:39.837Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:23:39.837Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

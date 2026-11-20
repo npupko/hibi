@@ -5,8 +5,10 @@
  * reference (`scripts/gen-cli-reference.ts`) all read these tables.
  */
 
+import { ClaimKind } from "../core/model.ts";
 import { FAIL_ON } from "../engine/check.ts";
 import { LIST_STATES } from "../engine/list.ts";
+import { MAX_EVIDENCE_CHARS } from "../judge/types.ts";
 
 export interface OptionSpec {
   /** Long flag name without the leading dashes. */
@@ -37,11 +39,13 @@ export interface CommandSpec {
   positional?: PositionalSpec;
   options: OptionSpec[];
   examples?: string[];
-  /** A deprecated alias: help says so and the command maps onto `aliasOf`. */
-  aliasOf?: string;
   /** Extra usage lines for the help page. */
   usage?: string[];
 }
+
+/** The line `init --instructions` appends to an agent instruction file. */
+export const INSTRUCTIONS_LINE =
+  "Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.";
 
 export const FORMATS = ["human", "compact", "json", "json-pretty"] as const;
 export type Format = (typeof FORMATS)[number];
@@ -59,7 +63,7 @@ export const GLOBAL_OPTIONS: OptionSpec[] = [
   {
     name: "explain",
     type: "boolean",
-    help: "Add the evidence tail (regions, changedEvidence, similarity) to JSON verdicts and the full record result.",
+    help: "Add the detail tail (regions, changes, similarity) to JSON verdicts and the full record result.",
   },
   {
     name: "no-hints",
@@ -108,30 +112,54 @@ const DOC_SPAN: OptionSpec[] = [
   },
 ];
 
-const CODE_SPAN: OptionSpec[] = [
+/** Code span flags. `multiple` on `record`, where each --code-file opens a span. */
+function codeSpan(multiple: boolean): OptionSpec[] {
+  const m = multiple ? { multiple: true } : {};
+  return [
+    {
+      name: "code-file",
+      type: "string",
+      placeholder: "<path>",
+      help: multiple
+        ? "A code file the sentence describes (alias:path for a sibling repo). Repeat for several spans; each takes the --code-quote or --code-range that follows it."
+        : "The code file the sentence describes (alias:path for a sibling repo).",
+      ...m,
+    },
+    {
+      name: "code-quote",
+      type: "string",
+      placeholder: "<text>",
+      help: "The code span, verbatim. Quote the load-bearing token, e.g. the value.",
+      ...m,
+    },
+    {
+      name: "code-range",
+      type: "string",
+      placeholder: "L1:L9",
+      help: "Inclusive 1-based line range of the code span (or char offsets).",
+      ...m,
+    },
+  ];
+}
+
+const REF_SPAN: OptionSpec[] = [
   {
-    name: "code-file",
+    name: "ref-file",
     type: "string",
     placeholder: "<path>",
-    help: "The code file the sentence describes.",
+    help: "The document a reference claim points to (alias:path for a sibling repo).",
   },
   {
-    name: "code-quote",
+    name: "ref-quote",
     type: "string",
     placeholder: "<text>",
-    help: "The code span, verbatim. Quote the load-bearing token, e.g. the value.",
+    help: "The referenced span, verbatim.",
   },
   {
-    name: "code-range",
+    name: "ref-range",
     type: "string",
-    placeholder: "L1:L9",
-    help: "Inclusive 1-based line range of the code span (or char offsets).",
-  },
-  {
-    name: "glob",
-    type: "string",
-    placeholder: "<pattern>",
-    help: "A coarse file or glob edge instead of a precise code span. Navigation only, never graded as drift.",
+    placeholder: "L1:L3",
+    help: "Inclusive 1-based line range of the referenced span (or char offsets).",
   },
 ];
 
@@ -140,20 +168,6 @@ const DRY_RUN: OptionSpec = {
   type: "boolean",
   help: "Compute the result without writing the store or any document.",
 };
-
-const VERIFIER_OPTIONS: OptionSpec[] = [
-  {
-    name: "run-verifiers",
-    type: "boolean",
-    help: "Execute declared verifiers (repo-committed commands). Off by default.",
-  },
-  {
-    name: "verifier-timeout",
-    type: "string",
-    placeholder: "<seconds>",
-    help: "Per-verifier timeout in seconds. Default 120.",
-  },
-];
 
 const CHECK_OPTIONS: OptionSpec[] = [
   {
@@ -174,36 +188,41 @@ const CHECK_OPTIONS: OptionSpec[] = [
     help: "Render the per-document table instead of the per-claim report (human output).",
   },
   {
-    name: "write",
-    type: "boolean",
-    help: "Stamp a status banner into each suspect document and clear it from clean ones.",
-  },
-  {
     name: "fail-on",
     type: "string",
     values: FAIL_ON,
     placeholder: "<level>",
-    help: "When to exit 2: gating (default), warn (also on moved), never.",
+    help: "When to exit 2: gating (default); warn: any warning also fails; never: always exit 0.",
   },
-  ...VERIFIER_OPTIONS,
 ];
 
 export const COMMANDS: CommandSpec[] = [
   {
     name: "init",
-    summary: "Create the claim store (.claims/) with a per-repo banner nonce.",
-    options: [],
-    examples: ["hibi init"],
+    summary: "Create the claim store (.claims/) and its config.json.",
+    description:
+      "Writes config.json with the pinned judge model, the threshold, no repos, and no ignore globs. --instructions appends one line to an agent instruction file (created if missing), unless the line is already there.",
+    options: [
+      {
+        name: "instructions",
+        type: "string",
+        placeholder: "<path>",
+        help: `Append the line "${INSTRUCTIONS_LINE}" to this file, e.g. CLAUDE.md or AGENTS.md.`,
+      },
+    ],
+    examples: ["hibi init", "hibi init --instructions AGENTS.md"],
   },
   {
     name: "record",
     summary:
-      "Record a claim: a doc sentence anchored to the code it describes.",
+      "Record a claim: a document sentence, its kind, and where its truth can be observed.",
     description:
-      "The doc span's text is the claim. A new claim is enforced (it gates) unless --suggest is passed. Agents should send one JSON object per claim on stdin with --from-file -; keys mirror the flags in camelCase (doc, docQuote, docRange, codeFile, codeQuote, codeRange, glob, suggest, verified, verifier, ttl, owner).",
+      "The doc span's text is the claim's sentence. --kind is required: code (one or more code spans), reference (one span in another document), or attested (no span; a ttl, and optionally sources and a procedure). A new claim is enforced (it gates) unless --suggest is passed. It gets one vouch attestation by --by (or the item's by), which is required. Agents should send a JSON array on stdin with --from-file -; each item has doc, docQuote or docRange, kind, code: [{file, quote | range}], ref: {file, quote | range}, sources: [{id?, resource, title?}], procedure: {instructions, steps?}, ttl, owner, by, suggest. Every item is validated first and every problem is reported, one line each; the batch is all or nothing.",
     usage: [
-      "hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --code-file <path> (--code-quote <text> | --code-range L1:L9) [options]",
-      "hibi record --from-file <path|->",
+      "hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind code --code-file <path> (--code-quote <text> | --code-range L1:L9) [options]",
+      "hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind reference --ref-file <path> (--ref-quote <text> | --ref-range L1:L3) [options]",
+      "hibi record --doc <path> (--doc-quote <text> | --doc-range L1:L3) --kind attested --ttl <duration> [--source <id>=<resource>] [--instructions <text>] [options]",
+      "hibi record --from-file <path|-> [--by <actor>]",
     ],
     options: [
       {
@@ -213,46 +232,62 @@ export const COMMANDS: CommandSpec[] = [
         help: "The document making the claim.",
       },
       ...DOC_SPAN,
-      ...CODE_SPAN,
+      {
+        name: "kind",
+        type: "string",
+        values: ClaimKind.options,
+        placeholder: "<kind>",
+        help: "The claim kind.",
+      },
+      ...codeSpan(true),
+      ...REF_SPAN,
+      {
+        name: "source",
+        type: "string",
+        placeholder: "<id>=<resource>",
+        multiple: true,
+        help: "A pointer to where the claim's truth lives; never dereferenced. Repeatable.",
+      },
+      {
+        name: "instructions",
+        type: "string",
+        placeholder: "<text>",
+        help: "How an agent re-checks an attested claim (the procedure; steps only via --from-file).",
+      },
       {
         name: "suggest",
         type: "boolean",
-        help: "Record an advisory claim that never gates (allows a coarse or empty code side).",
-      },
-      {
-        name: "verified",
-        type: "boolean",
-        help: "Mark that you confirmed the code backs the sentence.",
-      },
-      {
-        name: "verifier",
-        type: "string",
-        placeholder: "kind:ref",
-        multiple: true,
-        help: 'A verifier, e.g. command:"bun test retry". Runs only under check --run-verifiers. Repeatable.',
+        help: "Record an advisory claim that never gates.",
       },
       {
         name: "ttl",
         type: "string",
-        placeholder: "<iso-8601>",
-        help: "Instant after which the claim is expired and gates.",
+        placeholder: "<duration>",
+        help: "ISO 8601 duration after which the claim needs re-checking, e.g. P90D. Required on attested.",
       },
       {
         name: "owner",
         type: "string",
-        placeholder: "<name>",
-        help: "Attribution recorded on the claim.",
+        placeholder: "<actor>",
+        help: "The actor to contact when the claim expires: human:<id>, agent:<name>, or process:<name>.",
+      },
+      {
+        name: "by",
+        type: "string",
+        placeholder: "<actor>",
+        help: "The actor vouching for the claim: human:<id>, agent:<name>, or process:<name>. Required, here or as each item's by; with --from-file it is the default for items without by.",
       },
       {
         name: "from-file",
         type: "string",
         placeholder: "<path|->",
-        help: "Record a JSON array of claim specs (- reads stdin). All or nothing.",
+        help: "Record a JSON array of claim items (- reads stdin). All or nothing; no other record flags except --by.",
       },
     ],
     examples: [
-      'hibi record --doc README.md --doc-quote "Retries are capped at 5 attempts" --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5"',
-      'echo \'[{"doc":"README.md","docQuote":"Retries are capped at 5 attempts","codeFile":"src/retry.ts","codeQuote":"MAX_ATTEMPTS = 5"}]\' | hibi record --from-file -',
+      'hibi record --doc README.md --doc-quote "Retries are capped at 5 attempts" --kind code --code-file src/retry.ts --code-quote "MAX_ATTEMPTS = 5" --by agent:opus',
+      "hibi record --doc docs/pricing.md --doc-quote 'Pro costs $29/month.' --kind attested --ttl P90D --source stripe=https://dashboard.stripe.com/products/prod_123 --instructions 'Open the Stripe dashboard and report the Pro monthly price.' --by human:alice@example.com",
+      'echo \'[{"doc":"README.md","docQuote":"Retries are capped at 5 attempts","kind":"code","code":[{"file":"src/retry.ts","quote":"MAX_ATTEMPTS = 5"}]}]\' | hibi record --from-file - --by agent:opus',
     ],
   },
   {
@@ -260,30 +295,14 @@ export const COMMANDS: CommandSpec[] = [
     summary:
       "Verify every claim against the working tree and exit 0 (clean), 2 (gating), or 1 (error).",
     description:
-      "Read-only unless --write. --since scopes to files changed since a git ref; --doc scopes to one document; --overview renders the per-document table. A moved span is a warning: it exits 0 unless --fail-on warn.",
+      "Resolves every span, consults the judge cache (asking the judge on a miss; without TYPESAFE_API_KEY the result is pending), runs the contradiction pass, and lists the worklist: claims an agent should re-check. Writes nothing but judge cache entries. --since scopes the verdicts to claims touching files changed since a git ref; --doc scopes them to one document, where expired also gates, and judges only the contradiction pairs with a claim in that document. --doc on a path with no registered claims (retired claims do not count) is an error (exit 1). Warnings (moved, review, pending, unavailable, expired in a whole-store check) exit 0 unless --fail-on warn.",
     options: CHECK_OPTIONS,
     examples: [
       "hibi check",
       "hibi check --since origin/main",
       "hibi check --doc CLAUDE.md",
-      "hibi check --write --fail-on warn",
+      "hibi check --fail-on warn",
     ],
-  },
-  {
-    name: "diff",
-    summary: "Deprecated alias for check --since <ref>.",
-    aliasOf: "check",
-    options: CHECK_OPTIONS.filter(
-      (o) => o.name !== "doc" && o.name !== "overview",
-    ),
-  },
-  {
-    name: "status",
-    summary: "Deprecated alias for check --doc <path> or check --overview.",
-    aliasOf: "check",
-    options: CHECK_OPTIONS.filter(
-      (o) => o.name === "doc" || o.name === "fail-on",
-    ),
   },
   {
     name: "list",
@@ -295,13 +314,13 @@ export const COMMANDS: CommandSpec[] = [
         type: "string",
         values: LIST_STATES,
         placeholder: "<state>",
-        help: "Filter: all (default), gating, warning, clean, orphaned, suggested, stranded (live on a superseded or archived doc), duplicate (sentence claimed more than once).",
+        help: "Filter: all (default); gating, warning, clean (the verdict); pending (the check worklist); expired (ttl ran out); conflict (a contradiction finding); duplicate (a duplicate candidate or the same sentence); suggested; stranded (live on a superseded or archived doc).",
       },
       {
         name: "path",
         type: "string",
         placeholder: "<path>",
-        help: "Only claims anchored to or covering this doc or code path (either side).",
+        help: "Only claims whose doc or evidence side names this path.",
       },
       {
         name: "ids-only",
@@ -312,60 +331,77 @@ export const COMMANDS: CommandSpec[] = [
     examples: [
       "hibi list --state gating",
       "hibi list --path src/auth.ts",
-      "hibi list --state orphaned --ids-only",
+      "hibi list --state pending --ids-only",
     ],
   },
   {
-    name: "coverage",
+    name: "audit",
     summary:
-      "Which sentences of a document are backed by a claim and which are not.",
+      "One row per region of a document: the claim that covers it, or the judge's triage kind.",
+    description:
+      "Splits the document into regions, matches them to live claims by the claim's doc anchor, and triages uncovered regions with the judge (cached). Kinds: code, reference, attested (record them), unverifiable (rewrite as an attributed opinion, or remove), not-a-claim, unsure (triage confidence below judge.threshold), pending (judge unavailable or its answer unusable). The contradiction pass judges only pairs with a claim in this document. Recording is never automatic.",
     options: [
       {
         name: "doc",
         type: "string",
         placeholder: "<path>",
-        help: "The document to measure.",
+        help: "The document to audit.",
         required: true,
       },
       {
         name: "fail-uncovered",
         type: "boolean",
-        help: "Exit 2 when any region is uncovered.",
+        help: "Exit 2 when any uncovered region is code, reference, or attested.",
       },
     ],
-    examples: ["hibi coverage --doc README.md"],
+    examples: [
+      "hibi audit --doc README.md",
+      "hibi audit --doc docs/pricing.md --fail-uncovered",
+    ],
   },
   {
     name: "reanchor",
     summary:
-      "Re-resolve a claim's spans and store the new baseline; or list candidate locations with --suggest.",
+      "Re-resolve a claim's spans and store the new baseline; relocate every moved side with --moved; or list candidate locations with --suggest.",
     description:
-      "Without span flags each side re-localizes through its stored selectors. A side that is not found is refused unless an explicit new span is given for it. --doc moves the claim to a different document (requires a doc span).",
+      "Without span flags only a side that reads moved is relocated; a side that reads changed, ambiguous, or orphaned is kept as stored and the result names the flag to pass (doc: changed; pass --doc-quote to re-anchor). Exit 1 when a side needed relocating and none was relocated. An evidence side in a sibling repo that is not checked out is kept as stored, with a warning; an explicit --code-file in such a repo keeps the stored span for that file (evidence: repository <alias> not checked out; kept as stored). --moved takes no claim id: it applies the same rule to every live claim in the store, or only to the claims of the document given with --doc, lists each claim with a side relocated or kept, and exits 0. The doc and ref flags may each be given once; a value starting with - takes the --flag=<value> form. --doc moves the claim to a different document (requires a doc span). --code-file is repeatable: each one opens a span that takes the --code-quote or --code-range after it, and the spans given replace all of a code claim's spans, in order. --ref-* flags replace a reference claim's span. The claim's sentence is refreshed from the new doc span.",
+    usage: [
+      "hibi reanchor <claim-id> [span flags] [--dry-run]",
+      "hibi reanchor <claim-id> --suggest",
+      "hibi reanchor --moved [--doc <path>] [--dry-run]",
+    ],
     positional: {
       name: "claim-id",
-      help: "The claim to reanchor.",
-      required: true,
+      help: "The claim to reanchor. Omitted with --moved.",
     },
     options: [
       {
         name: "doc",
         type: "string",
         placeholder: "<path>",
-        help: "Move the doc anchor to this document (with --doc-quote or --doc-range).",
+        help: "Move the doc anchor to this document (with --doc-quote or --doc-range). With --moved: only the claims of this document.",
       },
       ...DOC_SPAN,
-      ...CODE_SPAN,
+      ...codeSpan(true),
+      ...REF_SPAN,
       {
         name: "suggest",
         type: "boolean",
-        help: "Read-only: rank candidate locations for the stored doc and code quotes.",
+        help: "Read-only: rank candidate locations for the stored doc and evidence quotes.",
+      },
+      {
+        name: "moved",
+        type: "boolean",
+        help: "Relocate every live claim side that reads moved (no claim id); --doc restricts it to one document.",
       },
       DRY_RUN,
     ],
     examples: [
-      "hibi reanchor asrt_1a2b3c4d",
-      "hibi reanchor asrt_1a2b3c4d --suggest",
-      'hibi reanchor asrt_1a2b3c4d --doc docs/retry.md --doc-quote "Retries are capped at 5 attempts"',
+      "hibi reanchor clm_1a2b3c4d5e6f7a8b",
+      "hibi reanchor clm_1a2b3c4d5e6f7a8b --suggest",
+      "hibi reanchor --moved",
+      "hibi reanchor --moved --doc README.md --dry-run",
+      'hibi reanchor clm_1a2b3c4d5e6f7a8b --doc docs/retry.md --doc-quote "Retries are capped at 5 attempts"',
     ],
   },
   {
@@ -377,14 +413,14 @@ export const COMMANDS: CommandSpec[] = [
       required: true,
     },
     options: [DRY_RUN],
-    examples: ["hibi retire asrt_1a2b3c4d"],
+    examples: ["hibi retire clm_1a2b3c4d5e6f7a8b"],
   },
   {
     name: "supersede",
     summary:
       "Mark a document superseded by another and relocate its live claims to the successor.",
     description:
-      "A claim whose sentence appears verbatim in --to moves there (same id, code side, history). The rest are reported as misses for a manual reanchor or retire.",
+      "A claim whose sentence appears verbatim in --to moves there (same id, evidence, attestations). The rest are reported as misses for a manual reanchor or retire. The old document records supersededBy.",
     options: [
       {
         name: "from",
@@ -427,15 +463,77 @@ export const COMMANDS: CommandSpec[] = [
     examples: ["hibi archive --doc old.md --successor new.md"],
   },
   {
-    name: "schema",
+    name: "evidence",
     summary:
-      "Print the JSON Schema of a model or protocol type, or the list of names.",
+      "Submit evidence an agent collected; the judge decides whether it supports each claim.",
+    description: `Reads a JSON array (or one object) of {claimId, evidence, source, summary, by}; an item without by takes --by, which is required unless every item has by. Evidence applies to attested claims; a reference claim is judged from the referenced document. The whole batch is validated before the judge is asked; one bad item rejects it. A supports verdict at or above judge.threshold appends an evidence attestation, which resets the ttl. The verdict is cached by model, sentence, context, evidence, and source; raw evidence text is never stored. Without TYPESAFE_API_KEY or with the network down, an item is pending and nothing is written for it. Evidence is limited to ${MAX_EVIDENCE_CHARS} characters per item.`,
+    usage: ["hibi evidence --from-file <path|-> [--by <actor>]"],
+    options: [
+      {
+        name: "from-file",
+        type: "string",
+        placeholder: "<path|->",
+        help: "JSON array of evidence items (- reads stdin). All or nothing.",
+        required: true,
+      },
+      {
+        name: "by",
+        type: "string",
+        placeholder: "<actor>",
+        help: "The actor submitting the evidence, for items without by: human:<id>, agent:<name>, or process:<name>. Required unless every item has by.",
+      },
+    ],
+    examples: [
+      'echo \'[{"claimId":"clm_1a2b3c4d5e6f7a8b","evidence":"Pro plan: $29.00 / month","source":"stripe prices list --product prod_123","summary":"Stripe lists Pro at $29/month"}]\' | hibi evidence --from-file - --by agent:opus',
+    ],
+  },
+  {
+    name: "attest",
+    summary:
+      "Vouch for a claim, or acknowledge a review or conflict finding with a note.",
+    description:
+      "Without --ack this records a vouch. Only a human: vouch resets the ttl; an agent: or process: vouch is recorded and does not. --ack review acknowledges the claim's current supports verdict (for a reference claim, the one for its sentence and referenced span as they read now; for an attested claim, the newest); --ack conflict:<id> acknowledges a contradiction with another claim and records the ack on both. An ack needs --note and never resets the ttl.",
+    positional: {
+      name: "claim-id",
+      help: "The claim to attest.",
+      required: true,
+    },
+    options: [
+      {
+        name: "by",
+        type: "string",
+        placeholder: "<actor>",
+        help: "The attesting actor: human:<id>, agent:<name>, or process:<name>.",
+        required: true,
+      },
+      {
+        name: "note",
+        type: "string",
+        placeholder: "<text>",
+        help: "What was checked, or why the finding is acceptable. Required with --ack.",
+      },
+      {
+        name: "ack",
+        type: "string",
+        placeholder: "<finding>",
+        help: "Acknowledge a finding: conflict:<claim-id> or review.",
+      },
+    ],
+    examples: [
+      "hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --note 'checked Stripe, still $29'",
+      'hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --ack conflict:clm_9f8e7d6c5b4a3210 --note "different plans"',
+      'hibi attest clm_1a2b3c4d5e6f7a8b --by human:alice@example.com --ack review --note "the referenced page says the same in other words"',
+    ],
+  },
+  {
+    name: "schema",
+    summary: "Print the JSON Schema of a model type, or the list of names.",
     options: [
       {
         name: "name",
         type: "string",
         placeholder: "<Name>",
-        help: "A schema name, e.g. Assertion, Verdict, ResolveParams.",
+        help: "A schema name, e.g. Claim, Verdict, Config.",
       },
     ],
     examples: ["hibi schema", "hibi schema --name Verdict"],
@@ -484,6 +582,57 @@ export function parseArgsOptions(
   return out;
 }
 
+/** The span flags: a command takes one span per side. */
+const SPAN_FLAGS = new Set([
+  "doc-quote",
+  "doc-range",
+  "code-file",
+  "code-quote",
+  "code-range",
+  "ref-file",
+  "ref-quote",
+  "ref-range",
+]);
+
+/**
+ * The error for a single-value string flag given more than once, or
+ * undefined. `parseArgs` keeps only the last value, so a repeat is refused
+ * instead of dropped.
+ */
+export function repeatedFlag(
+  cmd: CommandSpec,
+  tokens: ReadonlyArray<{ kind: string; name?: string }>,
+): string | undefined {
+  const single = new Set(
+    optionsFor(cmd)
+      .filter((o) => o.type === "string" && !o.multiple)
+      .map((o) => o.name),
+  );
+  const seen = new Set<string>();
+  for (const t of tokens) {
+    if (t.kind !== "option" || t.name === undefined || !single.has(t.name))
+      continue;
+    if (seen.has(t.name)) {
+      const takes = SPAN_FLAGS.has(t.name)
+        ? "one span per side"
+        : `one --${t.name}`;
+      return `--${t.name} given twice; ${cmd.name} takes ${takes}`;
+    }
+    seen.add(t.name);
+  }
+  return undefined;
+}
+
+/**
+ * The error for a value flag with no value. A value that starts with "-" is
+ * read as a flag, so the message names the `--flag=<value>` form.
+ */
+export function missingValue(cmd: CommandSpec, flag: string): string {
+  const o = optionsFor(cmd).find((x) => `--${x.name}` === flag);
+  const ph = o?.placeholder ?? "<value>";
+  return `${flag} needs a value; for a value starting with "-" use ${flag}=${ph}`;
+}
+
 /**
  * Validate enum-valued options and required options after parsing. Returns
  * the first error message, or undefined.
@@ -527,11 +676,6 @@ function optionLines(options: OptionSpec[]): string[] {
 export function commandHelp(cmd: CommandSpec): string {
   const lines: string[] = [];
   lines.push(`hibi ${cmd.name}: ${cmd.summary}`);
-  if (cmd.aliasOf) {
-    lines.push(
-      `  This alias prints a deprecation notice and will be removed. Use \`hibi ${cmd.aliasOf}\`.`,
-    );
-  }
   if (cmd.description) lines.push("", cmd.description);
   lines.push("", "Usage:");
   if (cmd.usage) {
@@ -565,21 +709,20 @@ export function commandHelp(cmd: CommandSpec): string {
 
 /** The top-level `hibi --help` text. */
 export function usage(): string {
-  const shown = COMMANDS.filter((c) => !c.aliasOf);
-  const width = Math.max(...shown.map((c) => c.name.length)) + 2;
+  const width = Math.max(...COMMANDS.map((c) => c.name.length)) + 2;
   const lines = [
-    "hibi: deterministic doc/code claim tracking",
+    "hibi: track the checkable sentences in documents and report which are stale",
     "",
     "Usage: hibi <command> [options]",
     "       hibi <command> --help",
     "",
     "Commands:",
-    ...shown.map((c) => `  ${c.name.padEnd(width)}${c.summary}`),
+    ...COMMANDS.map((c) => `  ${c.name.padEnd(width)}${c.summary}`),
     "",
     "Global options:",
     ...optionLines(GLOBAL_OPTIONS),
     "",
-    "Exit codes: 0 clean · 2 gating (changed/orphaned/ambiguous/expired/refuted on an enforced claim, or moved under --fail-on warn) · 1 error",
+    "Exit codes: 0 clean or warnings only; 2 gating; 1 operational error (bad flag, no store, missing file, check --doc on a path with no registered claims)",
     "Env: HIBI_ASCII=1 for ASCII symbols · HIBI_ADVICE=0 to drop remediation hints",
   ];
   return `${lines.join("\n")}\n`;

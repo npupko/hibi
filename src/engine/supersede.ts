@@ -1,13 +1,17 @@
 /**
- * `supersede --from <old> --to <new>`: author the `supersedes` edge on the new
- * document, flip the old document to `superseded`, and relocate every live
- * claim whose documented sentence appears verbatim in the new document. The
- * claims that do not carry over are reported as misses, never dropped.
+ * `supersede --from <old> --to <new>`: set `supersededBy` on the old document,
+ * flip it to `superseded`, and move every live claim on the old document to
+ * the new one. A claim whose move fails is reported as a miss, never dropped.
+ * Relocation moves the claim to the new file (`documentId` and the doc
+ * side's file). When the stored quote occurs verbatim exactly once in the new
+ * file, the text-position selector is rebuilt there; otherwise the selectors
+ * stay as stored, so an edited sentence reads `changed`. The sentence, the
+ * quote, the hashes, evidence spans and their baselines never change, so a
+ * stale claim keeps gating. The `--from` document must already be registered;
+ * supersede never creates it.
  */
 
-import { regionText } from "../algo/localize.ts";
-import { resolveSide } from "../algo/resolve.ts";
-import type { Assertion, Document, Edge } from "../core/model.ts";
+import type { Claim, Document } from "../core/model.ts";
 import type { ClaimStore } from "../store/store.ts";
 import type { ReanchorResult } from "./reanchor.ts";
 import { documentIdForPath, newDocument } from "./record.ts";
@@ -16,38 +20,36 @@ export async function upsertDocument(
   store: ClaimStore,
   path: string,
   dryRun = false,
+  now: Date = new Date(),
 ): Promise<Document> {
   const id = documentIdForPath(path);
   let doc = await store.getDocument(id);
   if (!doc) {
-    doc = newDocument(id, path);
+    doc = newDocument(id, path, now);
     if (!dryRun) await store.putDocument(doc);
   }
   return doc;
 }
 
-function hasEdge(doc: Document, edge: Edge): boolean {
-  return doc.edges.some((e) => JSON.stringify(e) === JSON.stringify(edge));
-}
-
 /** A claim is live on a document when it names that document and is not retired. */
-export function isLiveClaimOn(a: Assertion, docId: string): boolean {
+export function isLiveClaimOn(a: Claim, docId: string): boolean {
   return a.documentId === docId && a.enforcement !== "retired";
 }
 
 async function liveClaimsOn(
   store: ClaimStore,
   docId: string,
-): Promise<Assertion[]> {
-  return (await store.allAssertions()).filter((a) => isLiveClaimOn(a, docId));
+): Promise<Claim[]> {
+  return (await store.allClaims()).filter((a) => isLiveClaimOn(a, docId));
 }
 
-/** The shell capabilities the lifecycle ops need: file reads and reanchoring. */
+/** The shell capabilities the lifecycle ops need: file reads and moving a claim's doc side. */
 export interface LifecycleDeps {
   readDoc(rel: string): Promise<string | null>;
-  reanchor(
+  /** Move the claim to `doc` (reanchor with `docOnly`). */
+  moveDoc(
     claimId: string,
-    opts: { doc: string; docQuote: string; ref?: string; dryRun?: boolean },
+    opts: { doc: string; dryRun?: boolean },
   ): Promise<ReanchorResult>;
 }
 
@@ -56,14 +58,13 @@ export interface SupersedeInput {
   from: string;
   /** The new (superseding) document path. */
   to: string;
-  ref?: string;
   dryRun?: boolean;
 }
 
 export interface RelocatedClaim {
   claimId: string;
   doc: string;
-  code: string;
+  evidence?: string;
 }
 
 export interface SupersedeResult {
@@ -74,28 +75,6 @@ export interface SupersedeResult {
   /** Live claim ids still on the old document after this op. */
   strandedClaims: string[];
   dryRun: boolean;
-}
-
-/** Each live claim's current sentence: the live span, else the cached text. */
-async function currentTexts(
-  store: ClaimStore,
-  live: Assertion[],
-  fromContent: string | null,
-): Promise<{ claimId: string; text: string }[]> {
-  return Promise.all(
-    live.map(async (a) => {
-      let text: string | undefined;
-      if (fromContent !== null) {
-        const located = resolveSide(a.anchor.doc, fromContent).region;
-        if (located) text = regionText(fromContent, located);
-      }
-      if (text === undefined) {
-        const prop = await store.getProposition(a.propositionId);
-        text = prop?.textCache ?? "";
-      }
-      return { claimId: a.id, text };
-    }),
-  );
 }
 
 export async function supersede(
@@ -111,39 +90,37 @@ export async function supersede(
     throw new Error(`Document not found on disk: ${input.to}`);
   }
   const dryRun = input.dryRun ?? false;
+  const oldDoc = await store.getDocument(documentIdForPath(input.from));
+  if (oldDoc === undefined) {
+    throw new Error(`document ${input.from} is not registered`);
+  }
   const newDoc = await upsertDocument(store, input.to, dryRun);
-  const oldDoc = await upsertDocument(store, input.from, dryRun);
 
-  // Relocate first, so the stranded report reflects what is left.
-  const fromContent = await deps.readDoc(input.from);
+  // Every live claim moves to the new document. Nothing is read from the
+  // old file: the stored quote alone decides whether the doc position is
+  // rebuilt (`repositionDoc` in reanchor.ts), so an edited sentence is never
+  // re-baselined. A move that fails is a miss and stays stranded.
   const live = await liveClaimsOn(store, oldDoc.id);
-  const texts = await currentTexts(store, live, fromContent);
   const relocated: RelocatedClaim[] = [];
   const misses: SupersedeResult["misses"] = [];
-  for (const { claimId, text } of texts) {
-    if (text.length === 0 || !toContent.includes(text)) {
-      misses.push({
-        claimId,
-        reason: `documented sentence not found in ${input.to}; reanchor with an explicit span or retire`,
-      });
-      continue;
-    }
+  for (const claim of live) {
     try {
-      const result = await deps.reanchor(claimId, {
+      const result = await deps.moveDoc(claim.id, {
         doc: input.to,
-        docQuote: text,
-        ref: input.ref,
         dryRun,
       });
-      relocated.push({ claimId, doc: result.doc, code: result.code });
+      relocated.push({
+        claimId: claim.id,
+        doc: result.doc,
+        ...(result.evidence !== undefined ? { evidence: result.evidence } : {}),
+      });
     } catch (e) {
-      misses.push({ claimId, reason: (e as Error).message });
+      misses.push({ claimId: claim.id, reason: (e as Error).message });
     }
   }
 
-  const forward: Edge = { type: "supersedes", target: oldDoc.id };
-  if (!hasEdge(newDoc, forward)) newDoc.edges.push(forward);
   oldDoc.lifecycle = "superseded";
+  oldDoc.supersededBy = newDoc.id;
   if (!dryRun) {
     await store.putDocument(newDoc);
     await store.putDocument(oldDoc);

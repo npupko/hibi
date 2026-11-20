@@ -1,0 +1,52 @@
+{
+  "id": "clm_00a71df12a8e48f7",
+  "documentId": "doc_d068824e08521674",
+  "kind": "reference",
+  "sentence": "The design contract is [`design/SPEC.md`](design/SPEC.md).",
+  "doc": {
+    "file": "README.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The design contract is [`design/SPEC.md`](design/SPEC.md).",
+        "prefix": "\n\n## License\n\n[MIT](LICENSE) © Nick Pupko\n\n---\n\n",
+        "suffix": "\n"
+      },
+      {
+        "kind": "text-position",
+        "start": 8863,
+        "end": 8921
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/SPEC.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "This document is the contract for the TypeScript implementation and for a later Rust port.",
+          "prefix": "2026-10-22 to 2026-10-23 on branch v4-redesign. ",
+          "suffix": " It replaced ADR-001 through ADR-004 and the his"
+        },
+        {
+          "kind": "text-position",
+          "start": 113,
+          "end": 203
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:26:25.468Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:26:25.468Z",
+  "ref": "1802f471999d5e7397cfbef64e88761bacd1a020"
+}

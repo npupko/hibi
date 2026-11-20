@@ -1,0 +1,59 @@
+{
+  "id": "clm_da1f1d1d9e5e419a",
+  "documentId": "doc_99ba19e2283fe892",
+  "kind": "code",
+  "sentence": "- anchor resolution of every doc and evidence span;",
+  "doc": {
+    "file": "docs/ci.mdx",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "- anchor resolution of every doc and evidence span;",
+        "prefix": "s without a key\n\nMost of `check` needs no key:\n\n",
+        "suffix": "\n- expiry from attestations and ttl;\n- every jud"
+      },
+      {
+        "kind": "text-position",
+        "start": 2546,
+        "end": 2597
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "src/engine/check.ts",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "const sides = resolveClaimSides(c, files, { ast: options.ast });",
+          "prefix": " = { doc: docText, evidence, unavailable };\n    ",
+          "suffix": "\n\n    const entries = supports.get(c.id) ?? [];\n"
+        },
+        {
+          "kind": "text-position",
+          "start": 15938,
+          "end": 16002
+        },
+        {
+          "kind": "ast-node",
+          "language": "typescript",
+          "nodeType": "lexical_declaration",
+          "structuralHash": "5a6b0a6825b161e4",
+          "semanticHash": "175383615483a86b"
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:21:42.697Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:21:42.697Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}

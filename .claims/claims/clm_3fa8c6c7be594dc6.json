@@ -1,0 +1,52 @@
+{
+  "id": "clm_3fa8c6c7be594dc6",
+  "documentId": "doc_02e774903d42ecc3",
+  "kind": "reference",
+  "sentence": "The model limits are 64k and 32k.",
+  "doc": {
+    "file": "design/SPEC.md",
+    "selectors": [
+      {
+        "kind": "text-quote",
+        "exact": "The model limits are 64k and 32k.",
+        "prefix": "24k tokens for the state plus any one question. ",
+        "suffix": " Triage packs consecutive regions into chunks an"
+      },
+      {
+        "kind": "text-position",
+        "start": 32793,
+        "end": 32826
+      }
+    ]
+  },
+  "evidence": [
+    {
+      "file": "design/evidence/typesafe-research-2026-10-22.md",
+      "selectors": [
+        {
+          "kind": "text-quote",
+          "exact": "- Context: 64k tokens per request (state + all questions), 32k per question (state + one question).",
+          "prefix": "tps://docs.typesafe.ai/api/errors.md, OpenAPI):\n",
+          "suffix": " `400` with `max_tokens_exceeded` when over. Lon"
+        },
+        {
+          "kind": "text-position",
+          "start": 21273,
+          "end": 21372
+        }
+      ]
+    }
+  ],
+  "sources": [],
+  "procedure": null,
+  "enforcement": "enforced",
+  "attestations": [
+    {
+      "by": "agent:claude-dogfood",
+      "at": "2026-10-23T08:20:51.225Z",
+      "basis": "vouch"
+    }
+  ],
+  "createdAt": "2026-10-23T08:20:51.225Z",
+  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+}
