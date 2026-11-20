@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Selector",
+  "description": "A selector (spec section 5.2). No key may be null.",
+  "type": "object",
+  "properties": {
+    "key": {
+      "description": "A unit key, for providers that address units by key.",
+      "type": "string",
+      "minLength": 1
+    },
+    "pos": {
+      "description": "Byte offset of the quote when it was recorded. A hint only.",
+      "type": "integer",
+      "format": "uint64",
+      "maximum": 9007199254740991,
+      "minimum": 0
+    },
+    "prefix": {
+      "description": "Up to 48 characters that preceded the quote.",
+      "type": "string"
+    },
+    "quote": {
+      "description": "Text that occurs in the unit.",
+      "type": "string",
+      "minLength": 1
+    },
+    "suffix": {
+      "description": "Up to 48 characters that followed the quote.",
+      "type": "string"
+    },
+    "symbol": {
+      "description": "Declaration path in a code resource.",
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

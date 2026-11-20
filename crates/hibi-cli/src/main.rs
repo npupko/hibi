@@ -1,3 +1,7 @@
 //! The `hibi` binary (spec section 15).
 
-fn main() {}
+use std::process::ExitCode;
+
+fn main() -> ExitCode {
+    hibi_cli::main()
+}

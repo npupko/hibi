@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ProviderResponse",
+  "type": "object",
+  "oneOf": [
+    {
+      "properties": {
+        "id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "result": {
+          "type": "object"
+        }
+      },
+      "not": {
+        "required": [
+          "error"
+        ]
+      },
+      "required": [
+        "id",
+        "result"
+      ]
+    },
+    {
+      "properties": {
+        "error": {
+          "$ref": "#/$defs/ProviderError"
+        },
+        "id": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        }
+      },
+      "not": {
+        "required": [
+          "result"
+        ]
+      },
+      "required": [
+        "id",
+        "error"
+      ]
+    }
+  ],
+  "$defs": {
+    "ProviderError": {
+      "description": "A provider error: `{\"code\", \"message\"}` (section 13.4).",
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ProviderErrorCode"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "ProviderErrorCode": {
+      "description": "Closed list of section 13.4. A reader treats an unknown code as internal.",
+      "type": "string",
+      "enum": [
+        "invalid_request",
+        "unknown_method",
+        "unsupported_protocol",
+        "invalid_locator",
+        "invalid_selector",
+        "not_found",
+        "not_text",
+        "too_large",
+        "repo_not_found",
+        "repo_not_allowed",
+        "unknown_unit",
+        "unavailable",
+        "internal"
+      ]
+    }
+  }
+}

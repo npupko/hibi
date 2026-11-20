@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Envelope",
+  "description": "The success envelope of section 15.1: `{\"ok\": true, \"command\": ...}`\nfollowed by the keys of the command's output (which include\n`warnings`).",
+  "type": "object",
+  "properties": {
+    "builtin": {
+      "$ref": "#/$defs/Builtin"
+    },
+    "check": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProviderCheck"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "command": {
+      "type": "string"
+    },
+    "ok": {
+      "description": "Always `true`.",
+      "type": "boolean"
+    },
+    "repos": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RepoReport"
+      }
+    },
+    "schemes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/SchemeReport"
+      }
+    },
+    "userConfig": {
+      "description": "The user-config location.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Warning"
+      }
+    }
+  },
+  "required": [
+    "ok",
+    "command",
+    "builtin",
+    "repos",
+    "schemes",
+    "userConfig",
+    "warnings"
+  ],
+  "$defs": {
+    "Builtin": {
+      "description": "`builtin` in the output of `providers`: what the file provider serves.\nThe caller fills it from the file provider's constants.",
+      "type": "object",
+      "properties": {
+        "classes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "profiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "schemes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "schemes",
+        "classes",
+        "profiles"
+      ]
+    },
+    "CaseResult": {
+      "description": "The outcome of one case.",
+      "type": "object",
+      "properties": {
+        "detail": {
+          "description": "Why the case failed or was skipped.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "ok": {
+          "description": "True when the case passed or was skipped.",
+          "type": "boolean"
+        },
+        "skipped": {
+          "description": "True when the provider lacks a capability the case requires.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "ok",
+        "skipped"
+      ]
+    },
+    "ProviderCheck": {
+      "description": "`check` in the output of `hibi providers --check <scheme>` (section\n15.3): the scheme and the outcome of the protocol cases.",
+      "type": "object",
+      "properties": {
+        "cases": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CaseResult"
+          }
+        },
+        "failed": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "hello": {
+          "description": "The first `hello` result the provider gave, or `null`."
+        },
+        "passed": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "scheme": {
+          "type": "string"
+        },
+        "skipped": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "scheme",
+        "passed",
+        "failed",
+        "skipped",
+        "cases"
+      ]
+    },
+    "RepoReport": {
+      "description": "One `[repos]` alias with the result of the checks of section 11.1.",
+      "type": "object",
+      "properties": {
+        "alias": {
+          "type": "string"
+        },
+        "error": {
+          "description": "`null`, `repo_not_found` or `repo_not_allowed`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "path": {
+          "description": "The directory from the user config, as written there.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "suggested": {
+          "description": "The value in `hibi.toml`.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "alias",
+        "suggested",
+        "path",
+        "error"
+      ]
+    },
+    "SchemeReport": {
+      "description": "One scheme of `hibi.toml` with its registration.",
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "registered": {
+          "type": "boolean"
+        },
+        "scheme": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "scheme",
+        "registered",
+        "command"
+      ]
+    },
+    "Warning": {
+      "description": "One entry of `warnings` in the JSON envelope (section 15.1).",
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/WarningCode"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "WarningCode": {
+      "description": "The closed warning-code list of section 15.1.",
+      "type": "string",
+      "enum": [
+        "orphan_record",
+        "unknown_replacement",
+        "cache_unavailable",
+        "git_too_old"
+      ]
+    }
+  }
+}

@@ -1,0 +1,407 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Envelope",
+  "description": "The success envelope of section 15.1: `{\"ok\": true, \"command\": ...}`\nfollowed by the keys of the command's output (which include\n`warnings`).",
+  "type": "object",
+  "properties": {
+    "command": {
+      "type": "string"
+    },
+    "ok": {
+      "description": "Always `true`.",
+      "type": "boolean"
+    }
+  },
+  "anyOf": [
+    {
+      "description": "Without an id: the selected claims, ordered by id.",
+      "type": "object",
+      "properties": {
+        "claims": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ListItem"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Warning"
+          }
+        }
+      },
+      "required": [
+        "claims",
+        "warnings"
+      ]
+    },
+    {
+      "description": "With an id: the stored records. `marks` and `retirements` are\nordered by `at`, then id.",
+      "type": "object",
+      "properties": {
+        "claim": {
+          "$ref": "#/$defs/Claim"
+        },
+        "marks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Mark"
+          }
+        },
+        "retirements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Retirement"
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Warning"
+          }
+        }
+      },
+      "required": [
+        "claim",
+        "marks",
+        "retirements",
+        "warnings"
+      ]
+    }
+  ],
+  "required": [
+    "ok",
+    "command"
+  ],
+  "$defs": {
+    "Anchor": {
+      "description": "An anchor: a locator plus a selector (section 5.3).",
+      "type": "object",
+      "properties": {
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "sel": {
+          "$ref": "#/$defs/Selector"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "loc",
+        "sel"
+      ]
+    },
+    "Claim": {
+      "description": "A claim (section 3.2). Immutable.",
+      "type": "object",
+      "properties": {
+        "evidence": {
+          "description": "May be empty. Order is significant.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Anchor"
+          }
+        },
+        "id": {
+          "$ref": "#/$defs/ClaimId"
+        },
+        "note": {
+          "description": "Never empty: an empty note is stored as `null`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "recheck": {
+          "description": "A duration in the grammar of section 9.4.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "statement": {
+          "description": "Non-empty, stored trimmed.",
+          "type": "string"
+        },
+        "subject": {
+          "$ref": "#/$defs/Anchor"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "statement",
+        "subject",
+        "evidence",
+        "recheck",
+        "note"
+      ]
+    },
+    "ClaimId": {
+      "type": "string",
+      "pattern": "^c1-[0-9a-hjkmnp-tv-z]{20}$"
+    },
+    "Fingerprint": {
+      "type": "string",
+      "pattern": "^b3:[a-z][a-z0-9-]*:[0-9a-f]{32,64}$"
+    },
+    "ListItem": {
+      "description": "One entry of `claims` in the output of `list`.",
+      "type": "object",
+      "properties": {
+        "evidence": {
+          "description": "The locator of each evidence anchor.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Locator"
+          }
+        },
+        "id": {
+          "$ref": "#/$defs/ClaimId"
+        },
+        "lastMarkedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "marks": {
+          "description": "The number of marks.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "recheck": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retired": {
+          "type": "boolean"
+        },
+        "statement": {
+          "type": "string"
+        },
+        "subject": {
+          "description": "The subject's locator.",
+          "$ref": "#/$defs/Locator"
+        }
+      },
+      "required": [
+        "id",
+        "statement",
+        "subject",
+        "evidence",
+        "recheck",
+        "note",
+        "marks",
+        "lastMarkedAt",
+        "retired"
+      ]
+    },
+    "Locator": {
+      "description": "file:<path>, repo:<alias>//<path>, or <scheme>:<opaque> (spec section 5.1)",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*:[^\\u0000-\\u001f\\u007f]+$"
+    },
+    "Mark": {
+      "description": "A mark (section 3.3). Append-only.",
+      "type": "object",
+      "properties": {
+        "at": {
+          "description": "When the check happened.",
+          "$ref": "#/$defs/Timestamp"
+        },
+        "by": {
+          "description": "Free text, kept for audit, never interpreted.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "claim": {
+          "description": "Full id of the claim.",
+          "$ref": "#/$defs/ClaimId"
+        },
+        "id": {
+          "$ref": "#/$defs/MarkId"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sides": {
+          "description": "One entry per side, index-aligned with the claim's sides.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/MarkSide"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "claim",
+        "at",
+        "by",
+        "sides",
+        "note"
+      ]
+    },
+    "MarkId": {
+      "type": "string",
+      "pattern": "^m1-[0-9a-hjkmnp-tv-z]{20}$"
+    },
+    "MarkSide": {
+      "description": "One side of a mark: the side's locator and its fingerprint at check time.",
+      "type": "object",
+      "properties": {
+        "fp": {
+          "$ref": "#/$defs/Fingerprint"
+        },
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "loc",
+        "fp"
+      ]
+    },
+    "Retirement": {
+      "description": "A retirement (section 3.4). Permanent.",
+      "type": "object",
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/RetirementId"
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "replacedBy": {
+          "description": "Full id of another claim.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClaimId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retires": {
+          "description": "Full id of the retired claim.",
+          "$ref": "#/$defs/ClaimId"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "retires",
+        "replacedBy",
+        "at",
+        "by",
+        "note"
+      ]
+    },
+    "RetirementId": {
+      "type": "string",
+      "pattern": "^r1-[0-9a-hjkmnp-tv-z]{20}$"
+    },
+    "Selector": {
+      "description": "A selector (spec section 5.2). No key may be null.",
+      "type": "object",
+      "properties": {
+        "key": {
+          "description": "A unit key, for providers that address units by key.",
+          "type": "string",
+          "minLength": 1
+        },
+        "pos": {
+          "description": "Byte offset of the quote when it was recorded. A hint only.",
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 9007199254740991,
+          "minimum": 0
+        },
+        "prefix": {
+          "description": "Up to 48 characters that preceded the quote.",
+          "type": "string"
+        },
+        "quote": {
+          "description": "Text that occurs in the unit.",
+          "type": "string",
+          "minLength": 1
+        },
+        "suffix": {
+          "description": "Up to 48 characters that followed the quote.",
+          "type": "string"
+        },
+        "symbol": {
+          "description": "Declaration path in a code resource.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "Timestamp": {
+      "description": "RFC 3339 in UTC with second precision and the Z suffix",
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "Warning": {
+      "description": "One entry of `warnings` in the JSON envelope (section 15.1).",
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/WarningCode"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "WarningCode": {
+      "description": "The closed warning-code list of section 15.1.",
+      "type": "string",
+      "enum": [
+        "orphan_record",
+        "unknown_replacement",
+        "cache_unavailable",
+        "git_too_old"
+      ]
+    }
+  }
+}

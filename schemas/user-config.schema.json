@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RawUserConfig",
+  "type": "object",
+  "properties": {
+    "providers": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/RawProvider"
+      }
+    },
+    "repo": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RawRepoEntry"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "RawProvider": {
+      "type": "object",
+      "properties": {
+        "command": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timeout_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "command"
+      ]
+    },
+    "RawRepoEntry": {
+      "type": "object",
+      "properties": {
+        "alias": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "root": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "root",
+        "alias",
+        "path"
+      ]
+    }
+  }
+}

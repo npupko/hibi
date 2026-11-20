@@ -1,0 +1,436 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Envelope",
+  "description": "The success envelope of section 15.1: `{\"ok\": true, \"command\": ...}`\nfollowed by the keys of the command's output (which include\n`warnings`).",
+  "type": "object",
+  "properties": {
+    "claims": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ClaimResult"
+      }
+    },
+    "command": {
+      "type": "string"
+    },
+    "ok": {
+      "description": "Always `true`.",
+      "type": "boolean"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Warning"
+      }
+    }
+  },
+  "required": [
+    "ok",
+    "command",
+    "claims",
+    "warnings"
+  ],
+  "$defs": {
+    "Anchor": {
+      "description": "An anchor: a locator plus a selector (section 5.3).",
+      "type": "object",
+      "properties": {
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "sel": {
+          "$ref": "#/$defs/Selector"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "loc",
+        "sel"
+      ]
+    },
+    "ClaimId": {
+      "type": "string",
+      "pattern": "^c1-[0-9a-hjkmnp-tv-z]{20}$"
+    },
+    "ClaimResult": {
+      "description": "One entry of `claims` in the output of `claim`.",
+      "type": "object",
+      "properties": {
+        "claim": {
+          "$ref": "#/$defs/ClaimView"
+        },
+        "created": {
+          "description": "`false` when the claim already existed and only received a mark.",
+          "type": "boolean"
+        },
+        "id": {
+          "$ref": "#/$defs/ClaimId"
+        },
+        "mark": {
+          "$ref": "#/$defs/MarkId"
+        }
+      },
+      "required": [
+        "id",
+        "created",
+        "mark",
+        "claim"
+      ]
+    },
+    "ClaimState": {
+      "description": "The state of a claim (section 9.3).",
+      "type": "string",
+      "enum": [
+        "fresh",
+        "stale",
+        "expired",
+        "retired"
+      ]
+    },
+    "ClaimView": {
+      "description": "ClaimView of section 15.2.",
+      "type": "object",
+      "properties": {
+        "expiresAt": {
+          "description": "`add(markedAt, recheck)` when the claim is `fresh` or `expired` and\n`recheck` is set.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "id": {
+          "$ref": "#/$defs/ClaimId"
+        },
+        "mark": {
+          "description": "Id of the reference mark (section 9.3).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MarkId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "markedAt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "next": {
+          "description": "One command line, or `null` (section 15.2).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "recheck": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sides": {
+          "description": "Empty for a retired claim.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Side"
+          }
+        },
+        "state": {
+          "$ref": "#/$defs/ClaimState"
+        },
+        "statement": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "statement",
+        "recheck",
+        "note",
+        "state",
+        "mark",
+        "markedAt",
+        "expiresAt",
+        "sides",
+        "next"
+      ]
+    },
+    "Fingerprint": {
+      "type": "string",
+      "pattern": "^b3:[a-z][a-z0-9-]*:[0-9a-f]{32,64}$"
+    },
+    "Locator": {
+      "description": "file:<path>, repo:<alias>//<path>, or <scheme>:<opaque> (spec section 5.1)",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*:[^\\u0000-\\u001f\\u007f]+$"
+    },
+    "MarkId": {
+      "type": "string",
+      "pattern": "^m1-[0-9a-hjkmnp-tv-z]{20}$"
+    },
+    "Reason": {
+      "description": "Why a side is not `same` (section 9.2). A closed list.",
+      "type": "string",
+      "enum": [
+        "scheme_not_declared",
+        "provider_not_registered",
+        "provider_failed",
+        "resource_not_found",
+        "not_text",
+        "too_large",
+        "repo_not_found",
+        "repo_not_allowed",
+        "provider_error",
+        "selector_not_found",
+        "several_units",
+        "no_mark",
+        "fingerprint_differs",
+        "profile_mismatch"
+      ]
+    },
+    "Role": {
+      "description": "`subject` for side 0, `evidence` for the others.",
+      "type": "string",
+      "enum": [
+        "subject",
+        "evidence"
+      ]
+    },
+    "Selector": {
+      "description": "A selector (spec section 5.2). No key may be null.",
+      "type": "object",
+      "properties": {
+        "key": {
+          "description": "A unit key, for providers that address units by key.",
+          "type": "string",
+          "minLength": 1
+        },
+        "pos": {
+          "description": "Byte offset of the quote when it was recorded. A hint only.",
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 9007199254740991,
+          "minimum": 0
+        },
+        "prefix": {
+          "description": "Up to 48 characters that preceded the quote.",
+          "type": "string"
+        },
+        "quote": {
+          "description": "Text that occurs in the unit.",
+          "type": "string",
+          "minLength": 1
+        },
+        "suffix": {
+          "description": "Up to 48 characters that followed the quote.",
+          "type": "string"
+        },
+        "symbol": {
+          "description": "Declaration path in a code resource.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "Side": {
+      "description": "Side of section 15.2.",
+      "type": "object",
+      "properties": {
+        "anchor": {
+          "description": "The anchor as stored.",
+          "$ref": "#/$defs/Anchor"
+        },
+        "approx": {
+          "type": "boolean"
+        },
+        "candidates": {
+          "description": "Present only when `state` is `ambiguous`.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "$ref": "#/$defs/UnitRef"
+          }
+        },
+        "fp": {
+          "description": "The current fingerprint.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Fingerprint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "index": {
+          "description": "0 for the subject.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "markedFp": {
+          "description": "The fingerprint in the reference mark.",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Fingerprint"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Reason"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
+        },
+        "state": {
+          "$ref": "#/$defs/SideState"
+        },
+        "text": {
+          "description": "The current unit text. Present only with `--detail`, and for an\napproximate side in the output of `mark` (cut to 240 characters).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/UnitRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "role",
+        "anchor",
+        "state",
+        "reason",
+        "approx",
+        "unit",
+        "fp",
+        "markedFp"
+      ]
+    },
+    "SideState": {
+      "description": "The state of one side (section 9.2).",
+      "type": "string",
+      "enum": [
+        "same",
+        "changed",
+        "missing",
+        "ambiguous",
+        "unavailable"
+      ]
+    },
+    "Timestamp": {
+      "description": "RFC 3339 in UTC with second precision and the Z suffix",
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "UnitRef": {
+      "description": "UnitRef of section 15.2. `label` is `null` when the provider gave none;\n`line` and `endLine` are `null` without a range.",
+      "type": "object",
+      "properties": {
+        "endLine": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        },
+        "key": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "kind",
+        "label",
+        "line",
+        "endLine"
+      ]
+    },
+    "Warning": {
+      "description": "One entry of `warnings` in the JSON envelope (section 15.1).",
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/WarningCode"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "WarningCode": {
+      "description": "The closed warning-code list of section 15.1.",
+      "type": "string",
+      "enum": [
+        "orphan_record",
+        "unknown_replacement",
+        "cache_unavailable",
+        "git_too_old"
+      ]
+    }
+  }
+}

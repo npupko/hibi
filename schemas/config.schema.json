@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "RawRepoConfig",
+  "type": "object",
+  "properties": {
+    "repos": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {}
+    },
+    "schemes": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/RawScheme"
+      }
+    },
+    "scope": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/RawScope"
+      }
+    },
+    "version": {
+      "type": "integer",
+      "format": "int64"
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "version"
+  ],
+  "$defs": {
+    "RawExclusion": {
+      "type": "object",
+      "properties": {
+        "reason": {
+          "type": "string"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "resource",
+        "reason"
+      ]
+    },
+    "RawScheme": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "RawScope": {
+      "type": "object",
+      "properties": {
+        "exclude": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/RawExclusion"
+          }
+        },
+        "kinds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "resource": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "resource",
+        "kinds"
+      ]
+    }
+  }
+}

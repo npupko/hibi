@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Request",
+  "description": "A request line: `{\"id\": <positive integer>, \"method\", \"params\"}`.",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "integer",
+      "format": "uint64",
+      "minimum": 0
+    },
+    "method": {
+      "type": "string"
+    },
+    "params": {
+      "default": null
+    }
+  },
+  "required": [
+    "id",
+    "method"
+  ]
+}

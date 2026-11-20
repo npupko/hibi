@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ConformanceCase",
+  "description": "One conformance case (section 13.6).",
+  "type": "object",
+  "properties": {
+    "end": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/End"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "fixture": {
+      "description": "A fixture file name, passed to the provider as `--fixture <dir>/<name>`.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "name": {
+      "type": "string"
+    },
+    "requires": {
+      "description": "Capabilities the case needs. Without them the case is skipped.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Capability"
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Step"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "steps"
+  ],
+  "$defs": {
+    "Capability": {
+      "description": "A `hello` capability a case can require.",
+      "type": "string",
+      "enum": [
+        "units",
+        "render",
+        "batch"
+      ]
+    },
+    "End": {
+      "description": "How a case ends.",
+      "oneOf": [
+        {
+          "description": "After standard input is closed the process exits with status 0\nwithin 2 seconds.",
+          "type": "string",
+          "const": "exit"
+        }
+      ]
+    },
+    "Outgoing": {
+      "description": "What a step writes: a request object that gets the next id, or a line\nwritten verbatim.",
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": true
+        },
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "Step": {
+      "description": "One request and the response it must get.",
+      "type": "object",
+      "properties": {
+        "expect": true,
+        "send": {
+          "$ref": "#/$defs/Outgoing"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "send",
+        "expect"
+      ]
+    }
+  }
+}

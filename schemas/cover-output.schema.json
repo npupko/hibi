@@ -1,0 +1,415 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Envelope",
+  "description": "The success envelope of section 15.1: `{\"ok\": true, \"command\": ...}`\nfollowed by the keys of the command's output (which include\n`warnings`).",
+  "type": "object",
+  "properties": {
+    "command": {
+      "type": "string"
+    },
+    "ok": {
+      "description": "Always `true`.",
+      "type": "boolean"
+    },
+    "scopes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ScopeReport"
+      }
+    },
+    "since": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SinceView"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "summary": {
+      "$ref": "#/$defs/CoverSummary"
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/Warning"
+      }
+    }
+  },
+  "required": [
+    "ok",
+    "command",
+    "since",
+    "summary",
+    "scopes",
+    "warnings"
+  ],
+  "$defs": {
+    "Anchor": {
+      "description": "An anchor: a locator plus a selector (section 5.3).",
+      "type": "object",
+      "properties": {
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "sel": {
+          "$ref": "#/$defs/Selector"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "loc",
+        "sel"
+      ]
+    },
+    "CoverItem": {
+      "description": "One uncovered unit in the output of `cover`.",
+      "type": "object",
+      "properties": {
+        "anchor": {
+          "description": "The unit's locator with its completed selector; can be passed to\n`claim --stdin`.",
+          "$ref": "#/$defs/Anchor"
+        },
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "text": {
+          "description": "The unit text cut to 240 characters; `null` when the provider did\nnot return the unit for its own completed selector.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unit": {
+          "$ref": "#/$defs/UnitRef"
+        }
+      },
+      "required": [
+        "loc",
+        "unit",
+        "text",
+        "anchor"
+      ]
+    },
+    "CoverSummary": {
+      "description": "`summary` in the output of `cover`: the sums over the listed scopes.",
+      "type": "object",
+      "properties": {
+        "covered": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "excluded": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "uncovered": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "units": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "units",
+        "covered",
+        "excluded",
+        "uncovered"
+      ]
+    },
+    "ExclusionReport": {
+      "description": "One exclusion of a scope with the number of units it excluded. A unit\nthat several exclusions match counts for the first in declaration order.",
+      "type": "object",
+      "properties": {
+        "matched": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "reason": {
+          "type": "string"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "resource",
+        "unit",
+        "reason",
+        "matched"
+      ]
+    },
+    "Locator": {
+      "description": "file:<path>, repo:<alias>//<path>, or <scheme>:<opaque> (spec section 5.1)",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*:[^\\u0000-\\u001f\\u007f]+$"
+    },
+    "Reason": {
+      "description": "Why a side is not `same` (section 9.2). A closed list.",
+      "type": "string",
+      "enum": [
+        "scheme_not_declared",
+        "provider_not_registered",
+        "provider_failed",
+        "resource_not_found",
+        "not_text",
+        "too_large",
+        "repo_not_found",
+        "repo_not_allowed",
+        "provider_error",
+        "selector_not_found",
+        "several_units",
+        "no_mark",
+        "fingerprint_differs",
+        "profile_mismatch"
+      ]
+    },
+    "ScopeReport": {
+      "description": "One scope in the output of `cover`.",
+      "type": "object",
+      "properties": {
+        "covered": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "excluded": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "exclusions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ExclusionReport"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CoverItem"
+          }
+        },
+        "kinds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "resource": {
+          "type": "string"
+        },
+        "skipped": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Skipped"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "truncated": {
+          "description": "True when `items` was cut to `--limit`.",
+          "type": "boolean"
+        },
+        "unavailable": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/UnavailableResource"
+          }
+        },
+        "uncovered": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "units": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "name",
+        "resource",
+        "kinds",
+        "units",
+        "covered",
+        "excluded",
+        "uncovered",
+        "truncated",
+        "skipped",
+        "items",
+        "exclusions",
+        "unavailable"
+      ]
+    },
+    "Selector": {
+      "description": "A selector (spec section 5.2). No key may be null.",
+      "type": "object",
+      "properties": {
+        "key": {
+          "description": "A unit key, for providers that address units by key.",
+          "type": "string",
+          "minLength": 1
+        },
+        "pos": {
+          "description": "Byte offset of the quote when it was recorded. A hint only.",
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 9007199254740991,
+          "minimum": 0
+        },
+        "prefix": {
+          "description": "Up to 48 characters that preceded the quote.",
+          "type": "string"
+        },
+        "quote": {
+          "description": "Text that occurs in the unit.",
+          "type": "string",
+          "minLength": 1
+        },
+        "suffix": {
+          "description": "Up to 48 characters that followed the quote.",
+          "type": "string"
+        },
+        "symbol": {
+          "description": "Declaration path in a code resource.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "SinceView": {
+      "description": "`since` in the output of `status` and `cover`.",
+      "type": "object",
+      "properties": {
+        "base": {
+          "description": "The base commit id.",
+          "type": "string"
+        },
+        "range": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "range",
+        "base"
+      ]
+    },
+    "Skipped": {
+      "description": "Why a scope was not evaluated.",
+      "oneOf": [
+        {
+          "description": "`--since` on a `repo:` or external scope (section 10.3).",
+          "type": "string",
+          "const": "since_unsupported"
+        }
+      ]
+    },
+    "UnavailableResource": {
+      "description": "A resource whose units cannot be listed, with the reason of section 9.2.\nFor a `repo:` scope whose alias is refused, `loc` is the scope's resource\npattern.",
+      "type": "object",
+      "properties": {
+        "loc": {
+          "type": "string"
+        },
+        "reason": {
+          "$ref": "#/$defs/Reason"
+        }
+      },
+      "required": [
+        "loc",
+        "reason"
+      ]
+    },
+    "UnitRef": {
+      "description": "UnitRef of section 15.2. `label` is `null` when the provider gave none;\n`line` and `endLine` are `null` without a range.",
+      "type": "object",
+      "properties": {
+        "endLine": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        },
+        "key": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "line": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "key",
+        "kind",
+        "label",
+        "line",
+        "endLine"
+      ]
+    },
+    "Warning": {
+      "description": "One entry of `warnings` in the JSON envelope (section 15.1).",
+      "type": "object",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/WarningCode"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ]
+    },
+    "WarningCode": {
+      "description": "The closed warning-code list of section 15.1.",
+      "type": "string",
+      "enum": [
+        "orphan_record",
+        "unknown_replacement",
+        "cache_unavailable",
+        "git_too_old"
+      ]
+    }
+  }
+}

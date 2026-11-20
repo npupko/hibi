@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ClaimStdin",
+  "description": "Standard input of `claim --stdin`: a non-empty array of claims.",
+  "type": "array",
+  "items": {
+    "$ref": "#/$defs/ClaimInput"
+  },
+  "minItems": 1,
+  "$defs": {
+    "Anchor": {
+      "description": "An anchor: a locator plus a selector (section 5.3).",
+      "type": "object",
+      "properties": {
+        "loc": {
+          "$ref": "#/$defs/Locator"
+        },
+        "sel": {
+          "$ref": "#/$defs/Selector"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "loc",
+        "sel"
+      ]
+    },
+    "AnchorInput": {
+      "description": "An anchor as a caller gives it: compact syntax (section 5.5) or the\nJSON object of section 5.3.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "$ref": "#/$defs/Anchor"
+        }
+      ]
+    },
+    "ClaimInput": {
+      "description": "One claim to create: the arguments of `hibi claim`, or one element of\nits standard-input array.",
+      "type": "object",
+      "properties": {
+        "by": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "evidence": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AnchorInput"
+          }
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "recheck": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null
+        },
+        "statement": {
+          "type": "string"
+        },
+        "subject": {
+          "$ref": "#/$defs/AnchorInput"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "statement",
+        "subject"
+      ]
+    },
+    "Locator": {
+      "description": "file:<path>, repo:<alias>//<path>, or <scheme>:<opaque> (spec section 5.1)",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*:[^\\u0000-\\u001f\\u007f]+$"
+    },
+    "Selector": {
+      "description": "A selector (spec section 5.2). No key may be null.",
+      "type": "object",
+      "properties": {
+        "key": {
+          "description": "A unit key, for providers that address units by key.",
+          "type": "string",
+          "minLength": 1
+        },
+        "pos": {
+          "description": "Byte offset of the quote when it was recorded. A hint only.",
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 9007199254740991,
+          "minimum": 0
+        },
+        "prefix": {
+          "description": "Up to 48 characters that preceded the quote.",
+          "type": "string"
+        },
+        "quote": {
+          "description": "Text that occurs in the unit.",
+          "type": "string",
+          "minLength": 1
+        },
+        "suffix": {
+          "description": "Up to 48 characters that followed the quote.",
+          "type": "string"
+        },
+        "symbol": {
+          "description": "Declaration path in a code resource.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Unit",
+  "description": "The unit object of section 13.3.",
+  "type": "object",
+  "properties": {
+    "approx": {
+      "description": "In `resolve`: found by approximation or fallback.",
+      "type": "boolean"
+    },
+    "fp": {
+      "$ref": "#/$defs/Fingerprint"
+    },
+    "key": {
+      "description": "Unique within the resource. Stable while the unit is the same unit.",
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "label": {
+      "description": "One line for people.",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "parent": {
+      "description": "Key of the enclosing unit. Absent on the wire means `null`.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "default": null
+    },
+    "range": {
+      "description": "Omitted when the resource is not text.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Range"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "refuse": {
+      "description": "In `resolve`: must not be used to create a claim or replace a side.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Refuse"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sel": {
+      "description": "A selector that, sent to `resolve` with the same `loc`, returns\nexactly this unit now.",
+      "$ref": "#/$defs/Selector"
+    },
+    "text": {
+      "description": "The unit's content. In `resolve` only.",
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "key",
+    "kind",
+    "fp",
+    "sel"
+  ],
+  "$defs": {
+    "Fingerprint": {
+      "type": "string",
+      "pattern": "^b3:[a-z][a-z0-9-]*:[0-9a-f]{32,64}$"
+    },
+    "Range": {
+      "description": "A unit's place in a text resource (section 4.2): UTF-8 byte offsets,\n`start` inclusive, `end` exclusive, 1-based lines.",
+      "type": "object",
+      "properties": {
+        "end": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "endLine": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "line": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "start": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "line",
+        "endLine"
+      ]
+    },
+    "Refuse": {
+      "description": "Why a resolution must not be used to create a claim or replace a side.",
+      "type": "string",
+      "enum": [
+        "quote_spans_units",
+        "quote_in_comment"
+      ]
+    },
+    "Selector": {
+      "description": "A selector (spec section 5.2). No key may be null.",
+      "type": "object",
+      "properties": {
+        "key": {
+          "description": "A unit key, for providers that address units by key.",
+          "type": "string",
+          "minLength": 1
+        },
+        "pos": {
+          "description": "Byte offset of the quote when it was recorded. A hint only.",
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 9007199254740991,
+          "minimum": 0
+        },
+        "prefix": {
+          "description": "Up to 48 characters that preceded the quote.",
+          "type": "string"
+        },
+        "quote": {
+          "description": "Text that occurs in the unit.",
+          "type": "string",
+          "minLength": 1
+        },
+        "suffix": {
+          "description": "Up to 48 characters that followed the quote.",
+          "type": "string"
+        },
+        "symbol": {
+          "description": "Declaration path in a code resource.",
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
