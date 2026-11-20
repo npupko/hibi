@@ -23,6 +23,7 @@ mod fingerprint;
 mod locate;
 mod prose;
 mod provider;
+mod resolve;
 mod text;
 mod units;
 
@@ -81,6 +82,7 @@ bindings! {
     file "ast-node.json" => ast_node_json, code::ast_node;
     file "ast-equivalence.json" => ast_equivalence_json, code::ast_equivalence;
     file "units-code.json" => units_code_json, units::units_code;
+    file "resolve.json" => resolve_json, resolve::resolve;
     dir "provider/protocol/" => provider_protocol_cases, provider::protocol;
     dir "provider/reference/" => provider_reference_cases, provider::reference;
 }

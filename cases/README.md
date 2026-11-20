@@ -271,6 +271,16 @@ extracted files (next section), use three more `origin` values.
 | `ids.json` | `{kind, body}`: a record type and a record body without `id` | `{canonical, blake3, id}`: the canonical body, the 64 hex digits of its BLAKE3 digest, and the id of SPEC section 3.5 |
 | `fingerprint.json` | `{profile: "prose-v1", text}` or `{profile: "ast-v1", class, stream}` | `{fingerprint}`: the string of SPEC section 8 |
 | `units-code.json` | `{fixture, path}`: a file under `fixtures/units/` and a path whose extension selects the class | `{class, units}`: the class after the parse-error fallback, and every unit in source order (start ascending, then end descending) as `{kind, symbol, key, parent, start, end, line, endLine}`. `endLine` is the line of the unit's last character. A content key (`statement`, `block`) is written `<kind>:*`, with `~n` for a duplicate, and matches any 12 lower-case hex digits there. |
+| `resolve.json` | `{path, fixture or text, sel}`: the locator path (its extension selects the class), the file's content from a file under `fixtures/resolve/` or inline (inline text keeps CR LF and a BOM byte for byte), and the selector. With neither `fixture` nor `text` the file does not exist. | `{units}`, every unit `resolve` returns in order as `{key, approx, refuse, sel}`, where `refuse` is `null` when absent and `sel` is the completed selector; or `{error}` with a provider error code. Content keys are written `<kind>:*` as in `units-code.json`. |
+
+The `resolve.json` expectations were derived by hand from SPEC section 6.7
+and the fixture text: which units, `approx`, `refuse`, and the span of the
+stored quote (the input quote's located span, or the unit's default quote).
+A script then cut the 48-character prefix and suffix and the byte `pos` from
+that span. Nothing was copied from the implementation's output. The test
+resolves each case through `FileProvider` on a temporary working tree, then
+again without a cache and twice through a cache, and requires the same
+answer every time (R40, R53).
 
 The `fingerprint.json` digests were computed with `@noble/hashes` 2.4.0
 under Bun, with NFC from `String.prototype.normalize` and the WS set of SPEC

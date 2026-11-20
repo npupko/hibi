@@ -1,0 +1,2056 @@
+[
+  {
+    "name": "rust: empty selector gives the file unit",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {}
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "file",
+          "approx": false,
+          "refuse": null,
+          "sel": {}
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: symbol alone gives the declaration with its default quote",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "retry"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:retry",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn retry(n: u32) -> u32 {",
+            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
+            "pos": 61,
+            "symbol": "retry"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: symbol of a struct",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "Cache"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "struct:Cache",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub struct Cache;",
+            "prefix": " // step(1); first\n    step(1);\n    step(1);\n}\n\n",
+            "suffix": "\n\nimpl Cache {\n    pub fn get(&self) -> u32 { 1 ",
+            "pos": 212,
+            "symbol": "Cache"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: symbol of an impl",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "impl Cache"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "impl:impl Cache",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "impl Cache {",
+            "prefix": "    step(1);\n    step(1);\n}\n\npub struct Cache;\n\n",
+            "suffix": "\n    pub fn get(&self) -> u32 { 1 }\n    pub fn p",
+            "pos": 231,
+            "symbol": "impl Cache"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: symbol and quote inside the declaration keep the quote",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "retry",
+        "quote": "n.min(limit)"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:retry",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "n.min(limit)",
+            "prefix": ") -> u32 {\n    let limit = MAX; // cap here\n    ",
+            "suffix": "\n}\n\npub fn twice() {\n    // step(1); first\n    s",
+            "pos": 128,
+            "symbol": "retry"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: symbol and a quote in a comment inside it: refused, default quote",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "retry",
+        "quote": "cap here"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:retry",
+          "approx": false,
+          "refuse": "quote_in_comment",
+          "sel": {
+            "quote": "pub fn retry(n: u32) -> u32 {",
+            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
+            "pos": 61,
+            "symbol": "retry"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: symbol and a fuzzy quote: not approx, default quote",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "retry",
+        "quote": "n.max(limit)"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:retry",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn retry(n: u32) -> u32 {",
+            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
+            "pos": 61,
+            "symbol": "retry"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: symbol and a missing quote: not approx, default quote",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "retry",
+        "quote": "totally absent words"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:retry",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn retry(n: u32) -> u32 {",
+            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
+            "pos": 61,
+            "symbol": "retry"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: symbol and a quote outside the declaration: located only inside it, missing there",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "retry",
+        "quote": "pub struct Cache;"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:retry",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn retry(n: u32) -> u32 {",
+            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
+            "pos": 61,
+            "symbol": "retry"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: method symbol and quote",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "Cache.get",
+        "quote": "-> u32 { 1 }"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:Cache.get",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "-> u32 { 1 }",
+            "prefix": "ruct Cache;\n\nimpl Cache {\n    pub fn get(&self) ",
+            "suffix": "\n    pub fn put(&self) -> u32 { 1 }\n}\n",
+            "pos": 266,
+            "symbol": "Cache.get"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: method symbol and a quote that ties in other units: located inside the method only",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "Cache.put",
+        "quote": "-> u32 { 1 }"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:Cache.put",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "-> u32 { 1 }",
+            "prefix": "n get(&self) -> u32 { 1 }\n    pub fn put(&self) ",
+            "suffix": "\n}\n",
+            "pos": 301,
+            "symbol": "Cache.put"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: symbol path: tied hits inside the unit, pick skips the hit in a comment",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "twice",
+        "quote": "step(1);"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:twice",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "step(1);",
+            "prefix": ")\n}\n\npub fn twice() {\n    // step(1); first\n    ",
+            "suffix": "\n    step(1);\n}\n\npub struct Cache;\n\nimpl Cache {",
+            "pos": 187,
+            "symbol": "twice"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: symbol path: pos is taken relative to the declaration (short quote, hit nearest pos)",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "twice",
+        "quote": "step(1)",
+        "pos": 187
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:twice",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "step(1)",
+            "prefix": ")\n}\n\npub fn twice() {\n    // step(1); first\n    ",
+            "suffix": ";\n    step(1);\n}\n\npub struct Cache;\n\nimpl Cache ",
+            "pos": 187,
+            "symbol": "twice"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: symbol path: pos picks the hit in a comment, refused",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "twice",
+        "quote": "step(1)",
+        "pos": 168
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:twice",
+          "approx": false,
+          "refuse": "quote_in_comment",
+          "sel": {
+            "quote": "pub fn twice() {",
+            "prefix": "et limit = MAX; // cap here\n    n.min(limit)\n}\n\n",
+            "suffix": "\n    // step(1); first\n    step(1);\n    step(1);",
+            "pos": 144,
+            "symbol": "twice"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: quote alone: tied hits in one unit, pick skips the comment",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "step(1);"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:twice",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "step(1);",
+            "prefix": ")\n}\n\npub fn twice() {\n    // step(1); first\n    ",
+            "suffix": "\n    step(1);\n}\n\npub struct Cache;\n\nimpl Cache {",
+            "pos": 187,
+            "symbol": "twice"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: quote alone inside a method",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "pub fn get(&self)"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:Cache.get",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn get(&self)",
+            "prefix": "step(1);\n}\n\npub struct Cache;\n\nimpl Cache {\n    ",
+            "suffix": " -> u32 { 1 }\n    pub fn put(&self) -> u32 { 1 }",
+            "pos": 248,
+            "symbol": "Cache.get"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: quote alone in a comment inside a function: refused",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "cap here"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:retry",
+          "approx": false,
+          "refuse": "quote_in_comment",
+          "sel": {
+            "quote": "pub fn retry(n: u32) -> u32 {",
+            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
+            "pos": 61,
+            "symbol": "retry"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: quote alone in a top-level comment: file unit, refused",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "Retry policy."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "file",
+          "approx": false,
+          "refuse": "quote_in_comment",
+          "sel": {}
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: quote alone in a doc comment: file unit, refused",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "Doc for retry."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "file",
+          "approx": false,
+          "refuse": "quote_in_comment",
+          "sel": {}
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: quote spanning two declarations: refused, default quote of the first",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "pub struct Cache;\n\nimpl Cache {"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "struct:Cache",
+          "approx": false,
+          "refuse": "quote_spans_units",
+          "sel": {
+            "quote": "pub struct Cache;",
+            "prefix": " // step(1); first\n    step(1);\n    step(1);\n}\n\n",
+            "suffix": "\n\nimpl Cache {\n    pub fn get(&self) -> u32 { 1 ",
+            "pos": 212,
+            "symbol": "Cache"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: fuzzy quote alone: approx, default quote",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "n.max(limit)"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:retry",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn retry(n: u32) -> u32 {",
+            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
+            "pos": 61,
+            "symbol": "retry"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: duplicate quote across units: ambiguous, default quotes",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "-> u32 { 1 }"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:Cache.get",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn get(&self) -> u32 { 1 }",
+            "prefix": "step(1);\n}\n\npub struct Cache;\n\nimpl Cache {\n    ",
+            "suffix": "\n    pub fn put(&self) -> u32 { 1 }\n}\n",
+            "pos": 248,
+            "symbol": "Cache.get"
+          }
+        },
+        {
+          "key": "method:Cache.put",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn put(&self) -> u32 { 1 }",
+            "prefix": " Cache {\n    pub fn get(&self) -> u32 { 1 }\n    ",
+            "suffix": "\n}\n",
+            "pos": 283,
+            "symbol": "Cache.put"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: short duplicate quote across units: the hit nearest pos 0",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "{ 1 }"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:Cache.get",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "{ 1 }",
+            "prefix": "che;\n\nimpl Cache {\n    pub fn get(&self) -> u32 ",
+            "suffix": "\n    pub fn put(&self) -> u32 { 1 }\n}\n",
+            "pos": 273,
+            "symbol": "Cache.get"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: short duplicate quote across units: the hit nearest pos",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "{ 1 }",
+        "pos": 308
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:Cache.put",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "{ 1 }",
+            "prefix": "self) -> u32 { 1 }\n    pub fn put(&self) -> u32 ",
+            "suffix": "\n}\n",
+            "pos": 308,
+            "symbol": "Cache.put"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: duplicate quote told apart by its stored suffix",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "-> u32 { 1 }",
+        "suffix": "\n}\n"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:Cache.put",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "-> u32 { 1 }",
+            "prefix": "n get(&self) -> u32 { 1 }\n    pub fn put(&self) ",
+            "suffix": "\n}\n",
+            "pos": 301,
+            "symbol": "Cache.put"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: renamed declaration: the symbol misses, the quote finds it, approx",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "retry_old",
+        "quote": "pub fn retry(n: u32)"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:retry",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn retry(n: u32)",
+            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "suffix": " -> u32 {\n    let limit = MAX; // cap here\n    n",
+            "pos": 61,
+            "symbol": "retry"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: renamed container: the member's path misses, the quote finds it, approx",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "OldCache.get",
+        "quote": "pub fn get(&self) -> u32 { 1 }"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:Cache.get",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn get(&self) -> u32 { 1 }",
+            "prefix": "step(1);\n}\n\npub struct Cache;\n\nimpl Cache {\n    ",
+            "suffix": "\n    pub fn put(&self) -> u32 { 1 }\n}\n",
+            "pos": 248,
+            "symbol": "Cache.get"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: missing symbol and missing quote: no unit",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "nope",
+        "quote": "totally absent words"
+      }
+    },
+    "expected": {
+      "units": []
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: missing symbol without quote: no unit",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "nope"
+      }
+    },
+    "expected": {
+      "units": []
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: missing quote: no unit",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "totally absent words"
+      }
+    },
+    "expected": {
+      "units": []
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "rust: selector with key: invalid_selector",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "key": "function:retry"
+      }
+    },
+    "expected": {
+      "error": "invalid_selector"
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript: symbol of overloads: every declaration, ambiguous",
+    "input": {
+      "path": "src/over.ts",
+      "fixture": "fixtures/resolve/over.ts",
+      "sel": {
+        "symbol": "f"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:f",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "export function f(a: string): void;",
+            "prefix": "",
+            "suffix": "\nexport function f(a: number): void;\nexport func",
+            "pos": 0,
+            "symbol": "f"
+          }
+        },
+        {
+          "key": "function:f~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "export function f(a: number): void;",
+            "prefix": "export function f(a: string): void;\n",
+            "suffix": "\nexport function f(a: any) {\n  return a;\n}\n\nfunc",
+            "pos": 36,
+            "symbol": "f"
+          }
+        },
+        {
+          "key": "function:f~3",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "export function f(a: any) {",
+            "prefix": "ing): void;\nexport function f(a: number): void;\n",
+            "suffix": "\n  return a;\n}\n\nfunction g(a /* first */, b) {\n ",
+            "pos": 72,
+            "symbol": "f"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript: overloads and a quote in one of them: that one, quote kept",
+    "input": {
+      "path": "src/over.ts",
+      "fixture": "fixtures/resolve/over.ts",
+      "sel": {
+        "symbol": "f",
+        "quote": "a: number"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:f~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "a: number",
+            "prefix": " function f(a: string): void;\nexport function f(",
+            "suffix": "): void;\nexport function f(a: any) {\n  return a;",
+            "pos": 54,
+            "symbol": "f"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript: overloads and a fuzzy quote in one of them: that one, approx",
+    "input": {
+      "path": "src/over.ts",
+      "fixture": "fixtures/resolve/over.ts",
+      "sel": {
+        "symbol": "f",
+        "quote": "a: numbr"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:f~2",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "export function f(a: number): void;",
+            "prefix": "export function f(a: string): void;\n",
+            "suffix": "\nexport function f(a: any) {\n  return a;\n}\n\nfunc",
+            "pos": 36,
+            "symbol": "f"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript: overloads and a missing quote: every declaration",
+    "input": {
+      "path": "src/over.ts",
+      "fixture": "fixtures/resolve/over.ts",
+      "sel": {
+        "symbol": "f",
+        "quote": "totally absent words"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:f",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "export function f(a: string): void;",
+            "prefix": "",
+            "suffix": "\nexport function f(a: number): void;\nexport func",
+            "pos": 0,
+            "symbol": "f"
+          }
+        },
+        {
+          "key": "function:f~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "export function f(a: number): void;",
+            "prefix": "export function f(a: string): void;\n",
+            "suffix": "\nexport function f(a: any) {\n  return a;\n}\n\nfunc",
+            "pos": 36,
+            "symbol": "f"
+          }
+        },
+        {
+          "key": "function:f~3",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "export function f(a: any) {",
+            "prefix": "ing): void;\nexport function f(a: number): void;\n",
+            "suffix": "\n  return a;\n}\n\nfunction g(a /* first */, b) {\n ",
+            "pos": 72,
+            "symbol": "f"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript: overloads and a repeated quote: the hit at the text start wins by its empty context",
+    "input": {
+      "path": "src/over.ts",
+      "fixture": "fixtures/resolve/over.ts",
+      "sel": {
+        "symbol": "f",
+        "quote": "export function f(a: "
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:f",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "export function f(a: ",
+            "prefix": "",
+            "suffix": "string): void;\nexport function f(a: number): voi",
+            "pos": 0,
+            "symbol": "f"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript: overloads and a quote that ties across them: every declaration",
+    "input": {
+      "path": "src/over.ts",
+      "fixture": "fixtures/resolve/over.ts",
+      "sel": {
+        "symbol": "f",
+        "quote": "function f(a: "
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:f",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "export function f(a: string): void;",
+            "prefix": "",
+            "suffix": "\nexport function f(a: number): void;\nexport func",
+            "pos": 0,
+            "symbol": "f"
+          }
+        },
+        {
+          "key": "function:f~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "export function f(a: number): void;",
+            "prefix": "export function f(a: string): void;\n",
+            "suffix": "\nexport function f(a: any) {\n  return a;\n}\n\nfunc",
+            "pos": 36,
+            "symbol": "f"
+          }
+        },
+        {
+          "key": "function:f~3",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "export function f(a: any) {",
+            "prefix": "ing): void;\nexport function f(a: number): void;\n",
+            "suffix": "\n  return a;\n}\n\nfunction g(a /* first */, b) {\n ",
+            "pos": 72,
+            "symbol": "f"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript: default quote stops before a comment on the first line",
+    "input": {
+      "path": "src/over.ts",
+      "fixture": "fixtures/resolve/over.ts",
+      "sel": {
+        "symbol": "g"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:g",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "function g(a",
+            "prefix": "oid;\nexport function f(a: any) {\n  return a;\n}\n\n",
+            "suffix": " /* first */, b) {\n  return a + b;\n}\n",
+            "pos": 115,
+            "symbol": "g"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript: symbol and a quote in a comment: refused",
+    "input": {
+      "path": "src/over.ts",
+      "fixture": "fixtures/resolve/over.ts",
+      "sel": {
+        "symbol": "g",
+        "quote": "first"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:g",
+          "approx": false,
+          "refuse": "quote_in_comment",
+          "sel": {
+            "quote": "function g(a",
+            "prefix": "oid;\nexport function f(a: any) {\n  return a;\n}\n\n",
+            "suffix": " /* first */, b) {\n  return a + b;\n}\n",
+            "pos": 115,
+            "symbol": "g"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript: quote in a comment: refused",
+    "input": {
+      "path": "src/over.ts",
+      "fixture": "fixtures/resolve/over.ts",
+      "sel": {
+        "quote": "first"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:g",
+          "approx": false,
+          "refuse": "quote_in_comment",
+          "sel": {
+            "quote": "function g(a",
+            "prefix": "oid;\nexport function f(a: any) {\n  return a;\n}\n\n",
+            "suffix": " /* first */, b) {\n  return a + b;\n}\n",
+            "pos": 115,
+            "symbol": "g"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript: quote overlapping a comment: refused",
+    "input": {
+      "path": "src/over.ts",
+      "fixture": "fixtures/resolve/over.ts",
+      "sel": {
+        "quote": "a /* fi"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:g",
+          "approx": false,
+          "refuse": "quote_in_comment",
+          "sel": {
+            "quote": "function g(a",
+            "prefix": "oid;\nexport function f(a: any) {\n  return a;\n}\n\n",
+            "suffix": " /* first */, b) {\n  return a + b;\n}\n",
+            "pos": 115,
+            "symbol": "g"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript: quote in a body",
+    "input": {
+      "path": "src/over.ts",
+      "fixture": "fixtures/resolve/over.ts",
+      "sel": {
+        "quote": "return a + b;"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:g",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "return a + b;",
+            "prefix": "  return a;\n}\n\nfunction g(a /* first */, b) {\n  ",
+            "suffix": "\n}\n",
+            "pos": 148,
+            "symbol": "g"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript: quote spanning two overloads: refused",
+    "input": {
+      "path": "src/over.ts",
+      "fixture": "fixtures/resolve/over.ts",
+      "sel": {
+        "quote": "void;\nexport function f(a: number)"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:f",
+          "approx": false,
+          "refuse": "quote_spans_units",
+          "sel": {
+            "quote": "export function f(a: string): void;",
+            "prefix": "",
+            "suffix": "\nexport function f(a: number): void;\nexport func",
+            "pos": 0,
+            "symbol": "f"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "python: a docstring is a string, not a comment",
+    "input": {
+      "path": "geo.py",
+      "fixture": "fixtures/resolve/geo.py",
+      "sel": {
+        "quote": "Area of a circle."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:area",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "Area of a circle.",
+            "prefix": "import math\n\ndef area(r):\n    \"\"\"",
+            "suffix": "\"\"\"\n    # pi times r squared\n    return math.pi ",
+            "pos": 33,
+            "symbol": "area"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "python: a # comment is refused",
+    "input": {
+      "path": "geo.py",
+      "fixture": "fixtures/resolve/geo.py",
+      "sel": {
+        "quote": "pi times r squared"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:area",
+          "approx": false,
+          "refuse": "quote_in_comment",
+          "sel": {
+            "quote": "def area(r):",
+            "prefix": "import math\n\n",
+            "suffix": "\n    \"\"\"Area of a circle.\"\"\"\n    # pi times r sq",
+            "pos": 13,
+            "symbol": "area"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "python: variable symbol",
+    "input": {
+      "path": "geo.py",
+      "fixture": "fixtures/resolve/geo.py",
+      "sel": {
+        "symbol": "RATE"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "variable:RATE",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "RATE = 0.5",
+            "prefix": " pi times r squared\n    return math.pi * r * r\n\n",
+            "suffix": "\n",
+            "pos": 107,
+            "symbol": "RATE"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "python: statement unit",
+    "input": {
+      "path": "geo.py",
+      "fixture": "fixtures/resolve/geo.py",
+      "sel": {
+        "quote": "import math"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "statement:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "import math",
+            "prefix": "",
+            "suffix": "\n\ndef area(r):\n    \"\"\"Area of a circle.\"\"\"\n    #",
+            "pos": 0
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "python with a syntax error: text fallback has no symbols: missed, the quote finds a block, approx",
+    "input": {
+      "path": "broken.py",
+      "fixture": "fixtures/resolve/broken.py",
+      "sel": {
+        "symbol": "f",
+        "quote": "pass"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "block:*",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "pass",
+            "prefix": "def f(:\n    ",
+            "suffix": "\n\nx = 1\n",
+            "pos": 12
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "python with a syntax error: text fallback: quote in the second block",
+    "input": {
+      "path": "broken.py",
+      "fixture": "fixtures/resolve/broken.py",
+      "sel": {
+        "quote": "x = 1"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "block:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "x = 1",
+            "prefix": "def f(:\n    pass\n\n",
+            "suffix": "\n",
+            "pos": 18
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: empty selector gives the file unit",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {}
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "file",
+          "approx": false,
+          "refuse": null,
+          "sel": {}
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: quote in a sentence",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "$29/month"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "$29/month",
+            "prefix": "--\ntitle: Pricing page\n---\n# Pricing\n\nPro costs ",
+            "suffix": ". Teams cost $99/month.\n\nSame sentence here. Oth",
+            "pos": 49
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: quote running past the end of a heading: refused",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "Pricing\n"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "heading:*",
+          "approx": false,
+          "refuse": "quote_spans_units",
+          "sel": {
+            "quote": "# Pricing",
+            "prefix": "---\ntitle: Pricing page\n---\n",
+            "suffix": "\n\nPro costs $29/month. Teams cost $99/month.\n\nSa",
+            "pos": 28
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: quote equal to a heading's text",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "# Pricing"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "heading:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "# Pricing",
+            "prefix": "---\ntitle: Pricing page\n---\n",
+            "suffix": "\n\nPro costs $29/month. Teams cost $99/month.\n\nSa",
+            "pos": 28
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: quote spanning two sentences: refused, default quote",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "month. Teams"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": "quote_spans_units",
+          "sel": {
+            "quote": "Pro costs $29/month.",
+            "prefix": "---\ntitle: Pricing page\n---\n# Pricing\n\n",
+            "suffix": " Teams cost $99/month.\n\nSame sentence here. Othe",
+            "pos": 39
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: fuzzy quote: approx, default quote",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "Pro costs $30/month."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "Pro costs $29/month.",
+            "prefix": "---\ntitle: Pricing page\n---\n# Pricing\n\n",
+            "suffix": " Teams cost $99/month.\n\nSame sentence here. Othe",
+            "pos": 39
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: identical sentences: ambiguous, default quotes",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "Same sentence here."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "Same sentence here.",
+            "prefix": "ng\n\nPro costs $29/month. Teams cost $99/month.\n\n",
+            "suffix": " Other words.\n\nSame sentence here. More words.\n\n",
+            "pos": 83
+          }
+        },
+        {
+          "key": "sentence:*~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "Same sentence here.",
+            "prefix": "t $99/month.\n\nSame sentence here. Other words.\n\n",
+            "suffix": " More words.\n\n- Free tier has 3 seats.\n",
+            "pos": 117
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: identical sentences told apart by the stored suffix",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "Same sentence here.",
+        "suffix": " More words.\n\n- Free tier has 3 seats.\n"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "Same sentence here.",
+            "prefix": "t $99/month.\n\nSame sentence here. Other words.\n\n",
+            "suffix": " More words.\n\n- Free tier has 3 seats.\n",
+            "pos": 117
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: identical sentences told apart by the stored prefix",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "Same sentence here.",
+        "prefix": "ng\n\nPro costs $29/month. Teams cost $99/month.\n\n"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "Same sentence here.",
+            "prefix": "ng\n\nPro costs $29/month. Teams cost $99/month.\n\n",
+            "suffix": " Other words.\n\nSame sentence here. More words.\n\n",
+            "pos": 83
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: short duplicate quote: the hit nearest pos 0",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "/month."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "/month.",
+            "prefix": "title: Pricing page\n---\n# Pricing\n\nPro costs $29",
+            "suffix": " Teams cost $99/month.\n\nSame sentence here. Othe",
+            "pos": 52
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: short duplicate quote: the hit nearest pos",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "/month.",
+        "pos": 74
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "/month.",
+            "prefix": "-\n# Pricing\n\nPro costs $29/month. Teams cost $99",
+            "suffix": "\n\nSame sentence here. Other words.\n\nSame sentenc",
+            "pos": 74
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: quote in the frontmatter: the file unit",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "title: Pricing"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "file",
+          "approx": false,
+          "refuse": null,
+          "sel": {}
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: list item with a full 48-character prefix",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "Free tier has 3 seats."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "list-item:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "Free tier has 3 seats.",
+            "prefix": "ther words.\n\nSame sentence here. More words.\n\n- ",
+            "suffix": "\n",
+            "pos": 152
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: a symbol on prose finds nothing",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "symbol": "Pricing"
+      }
+    },
+    "expected": {
+      "units": []
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: a symbol on prose with a quote: missed, approx, no symbol stored",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "symbol": "Pricing",
+        "quote": "$29/month"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "$29/month",
+            "prefix": "--\ntitle: Pricing page\n---\n# Pricing\n\nPro costs ",
+            "suffix": ". Teams cost $99/month.\n\nSame sentence here. Oth",
+            "pos": 49
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: missing quote",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "absent text entirely"
+      }
+    },
+    "expected": {
+      "units": []
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "markdown: selector with key: invalid_selector",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "key": "file"
+      }
+    },
+    "expected": {
+      "error": "invalid_selector"
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "text: quote in a block",
+    "input": {
+      "path": "conf/notes.cfg",
+      "fixture": "fixtures/resolve/notes.cfg",
+      "sel": {
+        "quote": "beta = 2"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "block:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "beta = 2",
+            "prefix": "alpha = 1\n",
+            "suffix": "\n\ngamma = 3\n",
+            "pos": 10
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "text: quote spanning two blocks: refused, default quote",
+    "input": {
+      "path": "conf/notes.cfg",
+      "fixture": "fixtures/resolve/notes.cfg",
+      "sel": {
+        "quote": "beta = 2\n\ngamma"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "block:*",
+          "approx": false,
+          "refuse": "quote_spans_units",
+          "sel": {
+            "quote": "alpha = 1",
+            "prefix": "",
+            "suffix": "\nbeta = 2\n\ngamma = 3\n",
+            "pos": 0
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "text: empty selector",
+    "input": {
+      "path": "conf/notes.cfg",
+      "fixture": "fixtures/resolve/notes.cfg",
+      "sel": {}
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "file",
+          "approx": false,
+          "refuse": null,
+          "sel": {}
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "text: a symbol finds nothing",
+    "input": {
+      "path": "conf/notes.cfg",
+      "fixture": "fixtures/resolve/notes.cfg",
+      "sel": {
+        "symbol": "alpha"
+      }
+    },
+    "expected": {
+      "units": []
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "decoding: CRLF becomes LF before units and selectors",
+    "input": {
+      "path": "crlf.md",
+      "text": "Hello world.\r\nSecond line here.\r\n",
+      "sel": {
+        "quote": "world."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "world.",
+            "prefix": "Hello ",
+            "suffix": "\nSecond line here.\n",
+            "pos": 6
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "decoding: a quote with CR LF is found fuzzily in the LF text",
+    "input": {
+      "path": "crlf.md",
+      "text": "Hello world.\r\nSecond line here.\r\n",
+      "sel": {
+        "quote": "world.\r\nSecond"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "Hello world.",
+            "prefix": "",
+            "suffix": "\nSecond line here.\n",
+            "pos": 0
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "decoding: a leading BOM belongs to the first unit",
+    "input": {
+      "path": "bom.md",
+      "text": "﻿Intro sentence. Next one.\n",
+      "sel": {
+        "quote": "Intro sentence. Next"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": "quote_spans_units",
+          "sel": {
+            "quote": "﻿Intro sentence.",
+            "prefix": "",
+            "suffix": " Next one.\n",
+            "pos": 0
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "decoding: a quote after a leading BOM",
+    "input": {
+      "path": "bom.md",
+      "text": "﻿Intro sentence. Next one.\n",
+      "sel": {
+        "quote": "Intro"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "Intro",
+            "prefix": "﻿",
+            "suffix": " sentence. Next one.\n",
+            "pos": 3
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "missing resource: not_found",
+    "input": {
+      "path": "docs/absent.md",
+      "sel": {
+        "quote": "anything"
+      }
+    },
+    "expected": {
+      "error": "not_found"
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
+    "name": "missing resource with the empty selector: not_found",
+    "input": {
+      "path": "docs/absent.md",
+      "sel": {}
+    },
+    "expected": {
+      "error": "not_found"
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  }
+]
