@@ -181,6 +181,23 @@ pub fn semantic_stream(node: Node<'_>, text: &str) -> Vec<String> {
     stream_walk(node, text, &HashSet::new()).0
 }
 
+#[cfg(test)]
+thread_local! {
+    /// Work done on this thread by stream walks (nodes visited) and unit
+    /// fingerprints (tokens hashed). Tests compare it across input sizes,
+    /// so that a complexity check does not depend on machine speed.
+    static WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+fn count_work(n: usize) {
+    WORK.with(|w| w.set(w.get() + n));
+}
+
+#[cfg(not(test))]
+#[inline(always)]
+fn count_work(_: usize) {}
+
 /// One step of [`stream_walk`]: emit a node, or close the token range of a
 /// marked node after all its descendants.
 enum Step<'t> {
@@ -206,7 +223,10 @@ fn stream_walk(
     let mut kept = Vec::new();
     while let Some(step) = stack.pop() {
         let n = match step {
-            Step::Enter(n) => n,
+            Step::Enter(n) => {
+                count_work(1);
+                n
+            }
             Step::Exit(id) => {
                 if let Some(r) = ranges.get_mut(&id) {
                     let r: &mut (usize, usize) = r;
@@ -871,12 +891,16 @@ fn code_units(root: Node<'_>, text: &str, class: Class) -> CodeFile {
         // nodes, which emit nothing, lie between them.
         let first = lead.first().unwrap_or(node);
         let fp = match (ranges.get(&first.id()), ranges.get(&node.id())) {
-            (Some(&(s, _)), Some(&(_, e))) => fingerprint::ast_v1(class.name(), &root_stream[s..e]),
+            (Some(&(s, _)), Some(&(_, e))) => {
+                count_work(e - s);
+                fingerprint::ast_v1(class.name(), &root_stream[s..e])
+            }
             _ => {
                 let mut stream = Vec::new();
                 for n in lead.iter().chain(std::iter::once(node)) {
                     stream.extend(semantic_stream(*n, text));
                 }
+                count_work(stream.len());
                 fingerprint::ast_v1(class.name(), &stream)
             }
         };
@@ -1160,19 +1184,37 @@ mod tests {
             .clone()
     }
 
-    /// Ruling on section 6.4 (MAX_CONTAINER_DEPTH): containers nested 4,000
-    /// deep give 32 declaration units, and the work stays bounded: one
-    /// stream walk of the root serves every unit. A debug build takes under
-    /// 1 s per input; without the depth limit the work is quadratic and
-    /// takes minutes, so the generous bound still catches it.
+    /// The units of `text` and the work counted while building them.
+    fn with_work(text: &str, class: Class) -> (CodeFile, usize) {
+        WORK.with(|w| w.set(0));
+        let f = code(text, class);
+        (f, WORK.with(|w| w.get()))
+    }
+
+    /// Doubling the input must at most about double the work: a linear
+    /// algorithm gives a ratio near 2, a quadratic one near 4. The bound 3
+    /// separates them without depending on machine speed or load.
+    fn assert_linear(small: usize, large: usize, what: &str) {
+        assert!(
+            large <= 3 * small,
+            "{what}: work grew from {small} to {large} when the input doubled"
+        );
+    }
+
+    /// Ruling on section 6.4 (MAX_CONTAINER_DEPTH): containers nested deep
+    /// give 32 declaration units, and the work (nodes walked plus tokens
+    /// fingerprinted) grows linearly with the depth.
     #[test]
     fn deep_container_nesting_is_bounded() {
-        const N: usize = 4000;
-        let ts = format!("{}{}", "namespace A {\n".repeat(N), "}\n".repeat(N));
-        let rs = format!("{}{}", "mod a {\n".repeat(N), "}\n".repeat(N));
-        for (class, text) in [(Class::Typescript, ts), (Class::Rust, rs)] {
-            let started = std::time::Instant::now();
-            let f = code(&text, class);
+        let ts = |n: usize| format!("{}{}", "namespace A {\n".repeat(n), "}\n".repeat(n));
+        let rs = |n: usize| format!("{}{}", "mod a {\n".repeat(n), "}\n".repeat(n));
+        for (class, make) in [
+            (Class::Typescript, &ts as &dyn Fn(usize) -> String),
+            (Class::Rust, &rs),
+        ] {
+            let (_, small) = with_work(&make(2000), class);
+            let (f, large) = with_work(&make(4000), class);
+            assert_linear(small, large, &format!("{class:?} nesting"));
             let decls = f.units.iter().filter(|u| u.symbol.is_some()).count();
             assert_eq!(decls, MAX_CONTAINER_DEPTH, "{class:?}");
             let deepest = f
@@ -1182,11 +1224,6 @@ mod tests {
                 .max_by_key(|s| s.len())
                 .unwrap();
             assert_eq!(deepest.split('.').count(), MAX_CONTAINER_DEPTH);
-            let took = started.elapsed();
-            assert!(
-                took < std::time::Duration::from_secs(10),
-                "{class:?} took {took:?}"
-            );
         }
     }
 
@@ -1248,16 +1285,16 @@ mod tests {
     /// itself, the container once).
     #[test]
     fn many_members_stay_linear() {
-        const N: usize = 5000;
-        let fields: String = (0..N).map(|i| format!("    f{i}: u8,\n")).collect();
-        let variants: String = (0..N).map(|i| format!("    V{i},\n")).collect();
-        let text = format!("struct S {{\n{fields}}}\nenum E {{\n{variants}}}\n");
-        let started = std::time::Instant::now();
-        let f = code(&text, Class::Rust);
-        assert_eq!(f.units.len(), 1 + 2 + 2 * N);
+        let make = |n: usize| {
+            let fields: String = (0..n).map(|i| format!("    f{i}: u8,\n")).collect();
+            let variants: String = (0..n).map(|i| format!("    V{i},\n")).collect();
+            format!("struct S {{\n{fields}}}\nenum E {{\n{variants}}}\n")
+        };
+        let (_, small) = with_work(&make(2500), Class::Rust);
+        let (f, large) = with_work(&make(5000), Class::Rust);
+        assert_eq!(f.units.len(), 1 + 2 + 2 * 5000);
         assert_eq!(unit_fp(&f, "field:S.f4999").profile(), "ast-v1");
-        let took = started.elapsed();
-        assert!(took < std::time::Duration::from_secs(10), "took {took:?}");
+        assert_linear(small, large, "members");
     }
 
     /// Ruling 2: leading attributes and decorators are part of the unit's

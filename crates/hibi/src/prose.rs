@@ -271,11 +271,13 @@ fn code_spans(p: &str) -> Vec<(usize, usize)> {
     let mut next_same = vec![None; runs.len()];
     let mut last_of_len: HashMap<usize, usize> = HashMap::new();
     for (r, &(s, e)) in runs.iter().enumerate().rev() {
+        count_work(1);
         next_same[r] = last_of_len.insert(e - s, r);
     }
     let mut spans = Vec::new();
     let mut r = 0;
     while r < runs.len() {
+        count_work(1);
         match next_same[r] {
             Some(q) => {
                 spans.push((runs[r].0, runs[q].1));
@@ -286,6 +288,23 @@ fn code_spans(p: &str) -> Vec<(usize, usize)> {
     }
     spans
 }
+
+#[cfg(test)]
+thread_local! {
+    /// Steps of the code-span pairing and of the code-span check, on this
+    /// thread. Tests compare it across input sizes, so that a complexity
+    /// check does not depend on machine speed.
+    static WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+fn count_work(n: usize) {
+    WORK.with(|w| w.set(w.get() + n));
+}
+
+#[cfg(not(test))]
+#[inline(always)]
+fn count_work(_: usize) {}
 
 /// Cut positions (relative to `p`) for a non-fenced, non-heading piece:
 /// after each `[.!?]["')\]]?` followed by a WS character, with the
@@ -321,8 +340,10 @@ fn sentence_cuts(p: &str, kind: ProseKind) -> Vec<usize> {
             _ => continue,
         };
         while spans.get(span).is_some_and(|&(_, e)| e <= i) {
+            count_work(1);
             span += 1;
         }
+        count_work(1);
         if spans.get(span).is_some_and(|&(s, _)| s <= i) {
             continue;
         }
@@ -452,44 +473,56 @@ pub fn split(text: &str, class: ProseClass) -> Vec<Region> {
 
 #[cfg(test)]
 mod tests {
-    use std::time::{Duration, Instant};
-
     use super::*;
 
-    /// A bound far above the linear cost in a debug build (under 0.1 s) and
-    /// below the former quadratic span check (9 s for the first input).
-    const BOUND: Duration = Duration::from_secs(5);
+    /// The result of `f` and the work counted while it ran.
+    fn with_work<T>(f: impl FnOnce() -> T) -> (T, usize) {
+        WORK.with(|w| w.set(0));
+        let out = f();
+        (out, WORK.with(|w| w.get()))
+    }
+
+    /// Doubling the input must at most about double the work: a linear
+    /// algorithm gives a ratio near 2, a quadratic one near 4. The bound 3
+    /// separates them without depending on machine speed or load.
+    fn assert_linear(small: usize, large: usize, what: &str) {
+        assert!(
+            large <= 3 * small,
+            "{what}: work grew from {small} to {large} when the input doubled"
+        );
+    }
 
     #[test]
     fn many_code_spans_each_followed_by_a_sentence_end_split_in_linear_time() {
-        let n = 50_000;
-        let text = "`a`. ".repeat(n);
-        let t0 = Instant::now();
-        let regions = split(&text, ProseClass::Prose);
-        let took = t0.elapsed();
-        assert_eq!(regions.len(), n);
-        assert!(
-            regions
-                .iter()
-                .all(|r| &text[r.start..r.end] == "`a`." && r.kind == ProseKind::Sentence)
-        );
-        assert!(took < BOUND, "{n} code spans took {took:?}");
+        let run = |n: usize| {
+            let text = "`a`. ".repeat(n);
+            let (regions, work) = with_work(|| split(&text, ProseClass::Prose));
+            assert_eq!(regions.len(), n);
+            assert!(
+                regions
+                    .iter()
+                    .all(|r| &text[r.start..r.end] == "`a`." && r.kind == ProseKind::Sentence)
+            );
+            work
+        };
+        assert_linear(run(10_000), run(20_000), "code-span check");
     }
 
     #[test]
     fn many_unpaired_backtick_runs_pair_in_linear_time() {
-        // Runs of 2..=1001 backticks have no partner; each used to scan every
-        // later run. 50,000 paired single backticks follow.
-        let mut text = String::new();
-        for len in 2..=1001 {
-            text.push_str(&"`".repeat(len));
-            text.push(' ');
-        }
-        text.push_str(&"`a`. ".repeat(50_000));
-        let t0 = Instant::now();
-        let spans = code_spans(&text);
-        let took = t0.elapsed();
-        assert_eq!(spans.len(), 50_000);
-        assert!(took < BOUND, "code spans took {took:?}");
+        // n runs of 2..=n+1 backticks have no partner (each used to scan every
+        // later run), followed by n paired single backticks.
+        let run = |n: usize| {
+            let mut text = String::new();
+            for len in 2..=n + 1 {
+                text.push_str(&"`".repeat(len));
+                text.push(' ');
+            }
+            text.push_str(&"`a`. ".repeat(n));
+            let (spans, work) = with_work(|| code_spans(&text));
+            assert_eq!(spans.len(), n);
+            work
+        };
+        assert_linear(run(500), run(1000), "code-span pairing");
     }
 }
