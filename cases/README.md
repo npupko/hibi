@@ -17,7 +17,7 @@ Every case has five keys:
 | `input` | the arguments, in the shape described per file below |
 | `expected` | the value v5 must produce |
 | `source` | the v4 test the case comes from (`test/<file> › <describe> › <test>`), or `computed: <v4 source file> <function>`. A `v5-adjusted` case appends `| v5-adjusted: <SPEC section>: <how the value was derived>`. |
-| `origin` | `copied`, `narrowed`, `computed` or `v5-adjusted` |
+| `origin` | `copied`, `narrowed`, `computed` or `v5-adjusted` for the cases extracted from v4; `rfc8785`, `independent` or `spec-derived` for cases added for v5 (see "Files added for v5" and "Cases added to extracted files") |
 
 | origin | meaning |
 |---|---|
@@ -256,13 +256,14 @@ This is the list from the extraction, with what v5 does now.
 
 ## Files added for v5 (SPEC section 16.3)
 
-These files were not extracted from v4. Their cases use two more `origin`
-values.
+These files were not extracted from v4. Their cases, and the cases added to
+extracted files (next section), use three more `origin` values.
 
 | origin | meaning |
 |---|---|
 | `rfc8785` | Input and expected value are taken from RFC 8785 itself. |
-| `independent` | `expected` was computed by implementations that share no code with the Rust crate: the npm packages `canonicalize` 5.1.0 (JCS) and `@noble/hashes` 2.4.0 (pure-JavaScript BLAKE3), with the 100-bit base32 step written bit by bit. |
+| `independent` | `expected` was computed by implementations that share no code with the Rust crate: the npm packages `canonicalize` 5.1.0 (JCS) and `@noble/hashes` 2.4.0 (pure-JavaScript BLAKE3), with the 100-bit base32 step written bit by bit, and, for `bitap.json`, the npm package `diff-match-patch` 1.0.5 under Bun 1.4.5. |
+| `spec-derived` | `expected` was derived by hand from the SPEC section that `source` names, and `source` gives the derivation step by step. |
 
 | File | `input` | `expected` |
 |---|---|---|
@@ -281,9 +282,37 @@ sources, SPEC section 6.4 and the grammars' `grammar.js` and
 `node-types.json`, without running a parser, and then compared with the
 implementation.
 
-The three `rfc8785` cases of `canon.json` are the primitive-types sample of
+The four `rfc8785` cases of `canon.json` are the primitive-types sample of
 RFC 8785 section 3.2.2 with the bytes of section 3.2.4, the sorting sample of
-section 3.2.3, and the number samples of appendix B (the NaN and Infinity
-rows are left out because they are not JSON). The record cases of
-`canon.json` are the records of `ids.json` written with indentation and keys
-in reverse order.
+section 3.2.3, the number samples of appendix B, and the appendix B row
+`43143ff3c1cb0959` (`1424953923781206.2`, "Round to even", note 4) as a case
+of its own. Every other appendix B row is in the number-samples case. The
+NaN and Infinity rows are left out because they are not JSON. The record
+cases of `canon.json` are the records of `ids.json` written with indentation
+and keys in reverse order.
+
+## Cases added to extracted files
+
+These cases pin steps of SPEC section 7 that no extracted case exercised.
+Each one was checked to fail when its step is changed.
+
+| file | cases | origin | step pinned |
+|---|---|---|---|
+| `fuzzy-locate.json` | `collapsed_end: the last index scanned is at + 2 * len(quote) + 15`, `collapsed_end: index at + 2 * len(quote) + 16 is not scanned` | `spec-derived` | the `collapsed_end` limit `at + 2 * len(quote) + 16` (section 7.2) |
+| `fuzzy-locate.json` | `prefix fallback matches the last 32 characters of the prefix` | `spec-derived` | the prefix fallback takes the last `MAX_BITS` characters (section 7.2) |
+| `fuzzy-locate.json` | `bias is clamped to len(text) - 1: a candidate exactly at the distance limit is found`, `bias is clamped to len(text) - 1: a candidate one past the distance limit is not found` | `spec-derived` | `bias = clamp(pos, 0, len(text) - 1)` (section 7.2) |
+| `bitap.json` | `equal exact matches at equal distance on both sides of loc: the left one wins` | `independent` | the left edge `max(1, 2 * loc - best)` after a match right of `loc` is inclusive (section 7.3) |
+| `bitap.json` | `the only exact occurrence is more than 40000 characters from loc: no match` | `independent` | the initial threshold is the minimum of the exact-match scores and `THRESHOLD`, never more (section 7.3) |
+
+The `spec-derived` values were also computed by section 7.2 written in
+JavaScript over `diff-match-patch` 1.0.5 `match_main`. Both agree. All text
+in these cases is in the BMP.
+
+Two steps of section 7.3 cannot be pinned by any case: moving `start` to
+`max(1, 2 * loc - best)`, and the initial threshold tightening from the
+exact matches. `diff-match-patch` marks both as speed-ups, and removing
+either one does not change `match_main`'s result. A comparison of
+`diff-match-patch` with a copy that lacks one or both steps found no
+difference on 300,000 random inputs. The cases above pin the boundaries of
+those steps instead: a `start` further right, or a threshold above
+`THRESHOLD`, changes the result.

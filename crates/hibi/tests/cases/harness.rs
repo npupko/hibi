@@ -20,9 +20,10 @@ pub struct Case {
     pub origin: String,
 }
 
-/// The values of `origin`: the four of cases/README.md, plus `rfc8785`
-/// (taken from RFC 8785) and `independent` (computed by an implementation
-/// that shares no code with this crate) for the files of section 16.3.
+/// The values of `origin` (cases/README.md): the four of the v4 extraction,
+/// plus `rfc8785` (taken from RFC 8785), `independent` (computed by an
+/// implementation that shares no code with this crate) and `spec-derived`
+/// (derived by hand from the spec, with the derivation in `source`).
 pub const ORIGINS: &[&str] = &[
     "copied",
     "narrowed",
@@ -30,6 +31,7 @@ pub const ORIGINS: &[&str] = &[
     "v5-adjusted",
     "rfc8785",
     "independent",
+    "spec-derived",
 ];
 
 /// The `cases/` directory of the repository.

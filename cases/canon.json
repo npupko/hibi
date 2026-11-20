@@ -193,5 +193,18 @@
     },
     "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
     "origin": "independent"
+  },
+  {
+    "name": "rfc8785: number serialization, round to even (appendix B, note 4)",
+    "input": {
+      "json": "[1424953923781206.2]",
+      "record": null
+    },
+    "expected": {
+      "canonical": "[1424953923781206.2]",
+      "utf8": "5b313432343935333932333738313230362e325d"
+    },
+    "source": "RFC 8785 appendix B: IEEE 754 hex 43143ff3c1cb0959, JSON representation 1424953923781206.2, comment \"Round to even (4)\"",
+    "origin": "rfc8785"
   }
 ]
