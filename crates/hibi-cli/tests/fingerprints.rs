@@ -1,5 +1,6 @@
 //! Fingerprints and freshness through the binary (spec sections 8 and 9;
-//! requirements R12 to R15 and R18, the plan's V4).
+//! requirements R12 to R15 and R18, the fourth verification item of the
+//! plan).
 
 mod support;
 

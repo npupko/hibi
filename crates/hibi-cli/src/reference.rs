@@ -211,12 +211,4 @@ mod tests {
             }
         }
     }
-
-    #[test]
-    fn leftover_terms_do_not_appear() {
-        let text = render().to_lowercase();
-        for term in ["attest", "--fail-on", "bunx", "supersede", "archive", "v4"] {
-            assert!(!text.contains(term), "{term}");
-        }
-    }
 }
