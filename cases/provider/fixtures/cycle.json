@@ -1,0 +1,20 @@
+{
+  "resources": {
+    "ref:cycle": {
+      "units": [
+        {
+          "key": "a",
+          "kind": "note",
+          "parent": "b",
+          "text": "Unit a."
+        },
+        {
+          "key": "b",
+          "kind": "note",
+          "parent": "a",
+          "text": "Unit b."
+        }
+      ]
+    }
+  }
+}

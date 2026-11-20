@@ -1,0 +1,44 @@
+{
+  "name": "render of an unknown key is unknown_unit",
+  "fixture": "notes.json",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "render",
+        "params": {
+          "loc": "ref:notes",
+          "unit": "n9"
+        }
+      },
+      "expect": {
+        "id": 2,
+        "error": {
+          "code": "unknown_unit",
+          "message": "<string>"
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

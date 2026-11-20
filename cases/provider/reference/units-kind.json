@@ -1,0 +1,69 @@
+{
+  "name": "units with kind lists only units of that kind",
+  "fixture": "notes.json",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "units",
+        "params": {
+          "loc": "ref:notes",
+          "kind": "task"
+        }
+      },
+      "expect": {
+        "id": 2,
+        "result": {
+          "units": [
+            {
+              "key": "t1",
+              "kind": "task",
+              "parent": null,
+              "label": "Document the retry cap.",
+              "fp": "<fingerprint>",
+              "sel": {
+                "key": "t1"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "units",
+        "params": {
+          "loc": "ref:notes",
+          "kind": "decision"
+        }
+      },
+      "expect": {
+        "id": 3,
+        "result": {
+          "units": []
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

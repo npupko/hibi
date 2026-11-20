@@ -1,0 +1,100 @@
+{
+  "name": "batch answers every inner request in order, errors included",
+  "requires": [
+    "batch"
+  ],
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "batch",
+        "params": {
+          "requests": [
+            {
+              "method": "hello",
+              "params": {
+                "protocol": [
+                  1
+                ],
+                "client": {
+                  "name": "conformance",
+                  "version": "0"
+                },
+                "root": "."
+              }
+            },
+            {
+              "method": "frobnicate",
+              "params": {}
+            },
+            {
+              "method": "resolve",
+              "params": {
+                "loc": "hibi-conformance-absent:no/such/resource",
+                "sel": {}
+              }
+            },
+            {
+              "method": "batch",
+              "params": {
+                "requests": []
+              }
+            }
+          ]
+        }
+      },
+      "expect": {
+        "id": 2,
+        "result": {
+          "responses": [
+            {
+              "error": {
+                "code": "invalid_request",
+                "message": "<string>"
+              }
+            },
+            {
+              "error": {
+                "code": "unknown_method",
+                "message": "<string>"
+              }
+            },
+            {
+              "error": {
+                "code": "<string>",
+                "message": "<string>"
+              }
+            },
+            {
+              "error": {
+                "code": "invalid_request",
+                "message": "<string>"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

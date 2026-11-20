@@ -1,0 +1,29 @@
+{
+  "resources": {
+    "ref:notes": {
+      "units": [
+        {
+          "key": "n1",
+          "kind": "note",
+          "parent": null,
+          "text": "Retries are capped at 5."
+        },
+        {
+          "key": "n2",
+          "kind": "note",
+          "parent": "n1",
+          "text": "The cap is configurable."
+        },
+        {
+          "key": "t1",
+          "kind": "task",
+          "parent": null,
+          "text": "Document the retry cap."
+        }
+      ]
+    },
+    "ref:empty": {
+      "units": []
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "name": "batch with no requests answers no responses",
+  "fixture": "notes.json",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "batch",
+        "params": {
+          "requests": []
+        }
+      },
+      "expect": {
+        "id": 2,
+        "result": {
+          "responses": []
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

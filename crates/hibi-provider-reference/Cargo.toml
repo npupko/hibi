@@ -16,6 +16,9 @@ serde.workspace = true
 serde_json.workspace = true
 
 [dev-dependencies]
+# The tests run the conformance cases and `CommandProvider` against this
+# binary; both need feature `command`.
+hibi = { workspace = true, features = ["command"] }
 tempfile.workspace = true
 
 [lints]

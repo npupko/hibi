@@ -1,0 +1,33 @@
+{
+  "name": "hello is answered with protocol 1 and the provider's description",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1,
+          "provider": {
+            "name": "<string>",
+            "version": "<string>"
+          },
+          "schemes": "<any>",
+          "selectors": "<any>"
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

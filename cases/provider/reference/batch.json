@@ -1,0 +1,206 @@
+{
+  "name": "batch answers resolve, units and render in order, with errors in place",
+  "fixture": "notes.json",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "batch",
+        "params": {
+          "requests": [
+            {
+              "method": "resolve",
+              "params": {
+                "loc": "ref:notes",
+                "sel": {
+                  "key": "n1"
+                }
+              }
+            },
+            {
+              "method": "resolve",
+              "params": {
+                "loc": "ref:absent",
+                "sel": {}
+              }
+            },
+            {
+              "method": "resolve",
+              "params": {
+                "loc": "ref:notes",
+                "sel": {
+                  "symbol": "s"
+                }
+              }
+            },
+            {
+              "method": "units",
+              "params": {
+                "loc": "ref:notes",
+                "kind": "task"
+              }
+            },
+            {
+              "method": "render",
+              "params": {
+                "loc": "ref:notes",
+                "unit": "n9"
+              }
+            },
+            {
+              "method": "render",
+              "params": {
+                "loc": "ref:notes",
+                "unit": "n2"
+              }
+            },
+            {
+              "method": "hello",
+              "params": {
+                "protocol": [
+                  1
+                ],
+                "client": {
+                  "name": "conformance",
+                  "version": "0"
+                },
+                "root": "."
+              }
+            },
+            {
+              "method": "frobnicate",
+              "params": {}
+            },
+            {
+              "method": "resolve",
+              "params": {
+                "loc": "ref:notes",
+                "sel": {
+                  "key": "n1",
+                  "bogus": 1
+                }
+              }
+            },
+            {
+              "method": "batch",
+              "params": {
+                "requests": []
+              }
+            }
+          ]
+        }
+      },
+      "expect": {
+        "id": 2,
+        "result": {
+          "responses": [
+            {
+              "result": {
+                "units": [
+                  {
+                    "key": "n1",
+                    "kind": "note",
+                    "parent": null,
+                    "label": "Retries are capped at 5.",
+                    "fp": "<fingerprint>",
+                    "sel": {
+                      "key": "n1"
+                    },
+                    "text": "Retries are capped at 5."
+                  }
+                ]
+              }
+            },
+            {
+              "error": {
+                "code": "not_found",
+                "message": "<string>"
+              }
+            },
+            {
+              "error": {
+                "code": "invalid_selector",
+                "message": "<string>"
+              }
+            },
+            {
+              "result": {
+                "units": [
+                  {
+                    "key": "t1",
+                    "kind": "task",
+                    "parent": null,
+                    "label": "Document the retry cap.",
+                    "fp": "<fingerprint>",
+                    "sel": {
+                      "key": "t1"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "error": {
+                "code": "unknown_unit",
+                "message": "<string>"
+              }
+            },
+            {
+              "result": {
+                "text": "The cap is configurable.",
+                "context": [
+                  "Retries are capped at 5."
+                ]
+              }
+            },
+            {
+              "error": {
+                "code": "invalid_request",
+                "message": "<string>"
+              }
+            },
+            {
+              "error": {
+                "code": "unknown_method",
+                "message": "<string>"
+              }
+            },
+            {
+              "error": {
+                "code": "invalid_request",
+                "message": "<string>"
+              }
+            },
+            {
+              "error": {
+                "code": "invalid_request",
+                "message": "<string>"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

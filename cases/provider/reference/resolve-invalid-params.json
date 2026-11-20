@@ -1,0 +1,114 @@
+{
+  "name": "malformed resolve params are invalid_request with the request's id",
+  "fixture": "notes.json",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "resolve",
+        "params": {
+          "loc": "ref:notes",
+          "sel": {
+            "key": "n1",
+            "bogus": 1
+          }
+        }
+      },
+      "expect": {
+        "id": 2,
+        "error": {
+          "code": "invalid_request",
+          "message": "<string>"
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "resolve",
+        "params": {
+          "loc": "ref:notes",
+          "sel": {
+            "key": null
+          }
+        }
+      },
+      "expect": {
+        "id": 3,
+        "error": {
+          "code": "invalid_request",
+          "message": "<string>"
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "resolve",
+        "params": {
+          "loc": "ref:notes",
+          "sel": {
+            "prefix": "x"
+          }
+        }
+      },
+      "expect": {
+        "id": 4,
+        "error": {
+          "code": "invalid_request",
+          "message": "<string>"
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "resolve",
+        "params": {
+          "loc": "not a locator",
+          "sel": {}
+        }
+      },
+      "expect": {
+        "id": 5,
+        "error": {
+          "code": "invalid_request",
+          "message": "<string>"
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "resolve",
+        "params": {
+          "loc": "ref:notes"
+        }
+      },
+      "expect": {
+        "id": 6,
+        "error": {
+          "code": "invalid_request",
+          "message": "<string>"
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

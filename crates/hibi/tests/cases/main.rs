@@ -22,6 +22,7 @@ mod duration;
 mod fingerprint;
 mod locate;
 mod prose;
+mod provider;
 mod text;
 mod units;
 
@@ -32,8 +33,6 @@ const PENDING: &[&str] = &[];
 
 enum Binding {
     File(&'static str),
-    // For the provider conformance directories (section 13.6), bound by a later unit.
-    #[allow(dead_code)]
     Dir(&'static str),
 }
 
@@ -82,6 +81,8 @@ bindings! {
     file "ast-node.json" => ast_node_json, code::ast_node;
     file "ast-equivalence.json" => ast_equivalence_json, code::ast_equivalence;
     file "units-code.json" => units_code_json, units::units_code;
+    dir "provider/protocol/" => provider_protocol_cases, provider::protocol;
+    dir "provider/reference/" => provider_reference_cases, provider::reference;
 }
 
 fn is_bound(file: &str) -> bool {

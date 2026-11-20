@@ -1,0 +1,43 @@
+{
+  "name": "resolve on a locator the provider cannot have is an error, not an empty list",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "result": {
+          "protocol": 1
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "resolve",
+        "params": {
+          "loc": "hibi-conformance-absent:no/such/resource",
+          "sel": {}
+        }
+      },
+      "expect": {
+        "id": 2,
+        "error": {
+          "code": "<string>",
+          "message": "<string>"
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}

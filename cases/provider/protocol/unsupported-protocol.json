@@ -1,0 +1,50 @@
+{
+  "name": "hello offering only an unknown protocol version is unsupported_protocol, and the provider keeps running",
+  "steps": [
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            99
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 1,
+        "error": {
+          "code": "unsupported_protocol",
+          "message": "<string>"
+        }
+      }
+    },
+    {
+      "send": {
+        "method": "hello",
+        "params": {
+          "protocol": [
+            1,
+            99
+          ],
+          "client": {
+            "name": "conformance",
+            "version": "0"
+          },
+          "root": "."
+        }
+      },
+      "expect": {
+        "id": 2,
+        "result": {
+          "protocol": 1
+        }
+      }
+    }
+  ],
+  "end": "exit"
+}
