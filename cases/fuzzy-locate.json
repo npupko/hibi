@@ -1,0 +1,170 @@
+[
+  {
+    "name": "short quote, candidate near the start",
+    "input": {
+      "text": "function retryWithBackoff(maxAttempts) {}",
+      "quote": {
+        "exact": "retryWithBackof",
+        "prefix": "",
+        "suffix": ""
+      },
+      "bias": 0,
+      "biasByte": 0
+    },
+    "expected": {
+      "found": true,
+      "start": 9,
+      "end": 24,
+      "startByte": 9,
+      "endByte": 24
+    },
+    "source": "test/algo.test.ts › text-quote localization › fuzzyLocate returns the region of the nearest fuzzy match (asserts 8 <= start <= 10)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "empty text",
+    "input": {
+      "text": "",
+      "quote": {
+        "exact": "abc",
+        "prefix": "",
+        "suffix": ""
+      },
+      "bias": 0,
+      "biasByte": 0
+    },
+    "expected": {
+      "found": false
+    },
+    "source": "computed: src/algo/localize.ts fuzzyLocate",
+    "origin": "computed"
+  },
+  {
+    "name": "short quote with extra whitespace in the text widens the end",
+    "input": {
+      "text": "x = 1;\nconst   MAX   =   5;\n",
+      "quote": {
+        "exact": "const MAX = 5;",
+        "prefix": "",
+        "suffix": ""
+      },
+      "bias": 7,
+      "biasByte": 7
+    },
+    "expected": {
+      "found": true,
+      "start": 7,
+      "end": 27,
+      "startByte": 7,
+      "endByte": 27
+    },
+    "source": "computed: src/algo/localize.ts fuzzyLocate",
+    "origin": "computed"
+  },
+  {
+    "name": "long quote: head fixes the start, suffix refines the end",
+    "input": {
+      "text": "prologue\nthe retry policy caps attempts at six and then gives up entirely\nepilogue",
+      "quote": {
+        "exact": "the retry policy caps attempts at five and then gives up entirely",
+        "prefix": "prologue\n",
+        "suffix": "\nepilogue"
+      },
+      "bias": 9,
+      "biasByte": 9
+    },
+    "expected": {
+      "found": true,
+      "start": 9,
+      "end": 74,
+      "startByte": 9,
+      "endByte": 74
+    },
+    "source": "computed: src/algo/localize.ts fuzzyLocate",
+    "origin": "computed"
+  },
+  {
+    "name": "long quote without suffix",
+    "input": {
+      "text": "prologue\nthe retry policy caps attempts at six and then gives up entirely\nepilogue",
+      "quote": {
+        "exact": "the retry policy caps attempts at five and then gives up entirely",
+        "prefix": "",
+        "suffix": ""
+      },
+      "bias": 9,
+      "biasByte": 9
+    },
+    "expected": {
+      "found": true,
+      "start": 9,
+      "end": 74,
+      "startByte": 9,
+      "endByte": 74
+    },
+    "source": "computed: src/algo/localize.ts fuzzyLocate",
+    "origin": "computed"
+  },
+  {
+    "name": "head not found: prefix fallback starts after the prefix",
+    "input": {
+      "text": "intro text here: completely different words follow now",
+      "quote": {
+        "exact": "zzzzzzzzzzzzzzzzzz",
+        "prefix": "intro text here: ",
+        "suffix": ""
+      },
+      "bias": 0,
+      "biasByte": 0
+    },
+    "expected": {
+      "found": true,
+      "start": 17,
+      "end": 35,
+      "startByte": 17,
+      "endByte": 35
+    },
+    "source": "computed: src/algo/localize.ts fuzzyLocate",
+    "origin": "computed"
+  },
+  {
+    "name": "nothing matches and no prefix",
+    "input": {
+      "text": "aaaaaaaaaaaa",
+      "quote": {
+        "exact": "zzzz",
+        "prefix": "",
+        "suffix": ""
+      },
+      "bias": 0,
+      "biasByte": 0
+    },
+    "expected": {
+      "found": false
+    },
+    "source": "computed: src/algo/localize.ts fuzzyLocate",
+    "origin": "computed"
+  },
+  {
+    "name": "bias past the end is clamped",
+    "input": {
+      "text": "abc retryWithBackof",
+      "quote": {
+        "exact": "retryWithBackoff",
+        "prefix": "",
+        "suffix": ""
+      },
+      "bias": 500,
+      "biasByte": 19
+    },
+    "expected": {
+      "found": true,
+      "start": 4,
+      "end": 19,
+      "startByte": 4,
+      "endByte": 19
+    },
+    "source": "computed: src/algo/localize.ts fuzzyLocate",
+    "origin": "computed"
+  }
+]

@@ -1,0 +1,4363 @@
+[
+  {
+    "name": "fixture document with every unit kind",
+    "input": {
+      "fixture": "fixtures/regions/pricing.md",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "heading",
+        "text": "# Pricing",
+        "start": 0,
+        "end": 9,
+        "startByte": 0,
+        "endByte": 9,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Pro costs $29/month.",
+        "start": 11,
+        "end": 31,
+        "startByte": 11,
+        "endByte": 31,
+        "line": 3,
+        "headingPath": [
+          "Pricing"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Teams get a discount!",
+        "start": 32,
+        "end": 53,
+        "startByte": 32,
+        "endByte": 53,
+        "line": 3,
+        "headingPath": [
+          "Pricing"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## Limits ##",
+        "start": 55,
+        "end": 67,
+        "startByte": 55,
+        "endByte": 67,
+        "line": 5,
+        "headingPath": [
+          "Pricing"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- The API allows 100 requests per minute.",
+        "start": 69,
+        "end": 110,
+        "startByte": 69,
+        "endByte": 110,
+        "line": 7,
+        "headingPath": [
+          "Pricing",
+          "Limits"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- Run `hibi check` first.",
+        "start": 111,
+        "end": 136,
+        "startByte": 111,
+        "endByte": 136,
+        "line": 8,
+        "headingPath": [
+          "Pricing",
+          "Limits"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "> Quoted line one.",
+        "start": 138,
+        "end": 156,
+        "startByte": 138,
+        "endByte": 156,
+        "line": 10,
+        "headingPath": [
+          "Pricing",
+          "Limits"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "| plan | price |",
+        "start": 158,
+        "end": 174,
+        "startByte": 158,
+        "endByte": 174,
+        "line": 12,
+        "headingPath": [
+          "Pricing",
+          "Limits"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```ts\nconst a = 1;\n\nconst b = 2;\n```",
+        "start": 193,
+        "end": 229,
+        "startByte": 193,
+        "endByte": 229,
+        "line": 15,
+        "headingPath": [
+          "Pricing",
+          "Limits"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "### Deep",
+        "start": 231,
+        "end": 239,
+        "startByte": 231,
+        "endByte": 239,
+        "line": 21,
+        "headingPath": [
+          "Pricing",
+          "Limits"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## Support",
+        "start": 241,
+        "end": 251,
+        "startByte": 241,
+        "endByte": 251,
+        "line": 23,
+        "headingPath": [
+          "Pricing"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "He said \"done.\"",
+        "start": 253,
+        "end": 268,
+        "startByte": 253,
+        "endByte": 268,
+        "line": 25,
+        "headingPath": [
+          "Pricing",
+          "Support"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Then left",
+        "start": 269,
+        "end": 278,
+        "startByte": 269,
+        "endByte": 278,
+        "line": 25,
+        "headingPath": [
+          "Pricing",
+          "Support"
+        ]
+      }
+    ],
+    "source": "test/regions.test.ts › splitRegions › the fixture document splits into these exact regions (v4 also passes no path here)",
+    "origin": "copied"
+  },
+  {
+    "name": "structural line starts a piece; continuation lines stay in their piece",
+    "input": {
+      "text": "Intro sentence that wraps\nonto a second line.\n- item that wraps\n  onto a second line\nVersion 1.2 ships today.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Intro sentence that wraps\nonto a second line.",
+        "start": 0,
+        "end": 45,
+        "startByte": 0,
+        "endByte": 45,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "- item that wraps\n  onto a second line\nVersion 1.2 ships today.",
+        "start": 46,
+        "end": 109,
+        "startByte": 46,
+        "endByte": 109,
+        "line": 3,
+        "headingPath": []
+      }
+    ],
+    "source": "test/regions.test.ts › splitRegions › a structural line starts a new region without a blank line; continuation lines stay in their piece (asserts kind, line, text)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "empty document",
+    "input": {
+      "text": "",
+      "path": null
+    },
+    "expected": [],
+    "source": "test/regions.test.ts › splitRegions › an empty document has no regions",
+    "origin": "copied"
+  },
+  {
+    "name": "whitespace-only document",
+    "input": {
+      "text": "\n\n  \n",
+      "path": null
+    },
+    "expected": [],
+    "source": "test/regions.test.ts › splitRegions › an empty document has no regions",
+    "origin": "copied"
+  },
+  {
+    "name": "real: numbered marker stays with its sentence",
+    "input": {
+      "fixture": "fixtures/regions/real-audit-rules.md",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "The rules, in order:",
+        "start": 0,
+        "end": 20,
+        "startByte": 0,
+        "endByte": 20,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "1. Blank lines separate blocks.",
+        "start": 22,
+        "end": 53,
+        "startByte": 22,
+        "endByte": 53,
+        "line": 3,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "2. Inside a block, a line that opens a heading, list item, blockquote, or table row starts a new piece.",
+        "start": 54,
+        "end": 157,
+        "startByte": 54,
+        "endByte": 157,
+        "line": 4,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "3. Each piece except a fenced block splits after `.`, `!`, or `?` (optionally followed by a closing quote, parenthesis, or bracket) when whitespace follows.",
+        "start": 158,
+        "end": 314,
+        "startByte": 158,
+        "endByte": 314,
+        "line": 5,
+        "headingPath": []
+      }
+    ],
+    "source": "test/regions-real.test.ts › splitRegions on real cases › docs/audit.mdx L29-33: a numbered marker stays with its sentence (asserts kind, line, text)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "real: list items split into sentences",
+    "input": {
+      "fixture": "fixtures/regions/real-claude-code-must-not.md",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "The skill also states what an agent must not do:",
+        "start": 0,
+        "end": 48,
+        "startByte": 0,
+        "endByte": 48,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "- vouch as a human.",
+        "start": 50,
+        "end": 69,
+        "startByte": 50,
+        "endByte": 69,
+        "line": 3,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "An agent attests as `agent:<name>`.",
+        "start": 70,
+        "end": 105,
+        "startByte": 70,
+        "endByte": 105,
+        "line": 3,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "Its vouch is recorded and does not reset a ttl.",
+        "start": 106,
+        "end": 153,
+        "startByte": 106,
+        "endByte": 153,
+        "line": 3,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "Only judged evidence or a `human:` vouch does (see [Attestations](/attestations)).",
+        "start": 154,
+        "end": 236,
+        "startByte": 154,
+        "endByte": 236,
+        "line": 3,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "- reanchor a claim without re-reading the sentence against its evidence.",
+        "start": 237,
+        "end": 309,
+        "startByte": 237,
+        "endByte": 309,
+        "line": 4,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "- delete a file under `.claims/` instead of running `hibi retire <id>`.",
+        "start": 310,
+        "end": 381,
+        "startByte": 310,
+        "endByte": 381,
+        "line": 5,
+        "headingPath": []
+      }
+    ],
+    "source": "test/regions-real.test.ts › splitRegions on real cases › docs/claude-code.mdx: the skill's 'must not do:' list (asserts kind, line, text)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "real: frontmatter and JSX tag lines are no units",
+    "input": {
+      "fixture": "fixtures/regions/real-index.mdx",
+      "path": "docs/index.mdx"
+    },
+    "expected": [
+      {
+        "kind": "heading",
+        "text": "## Start here",
+        "start": 322,
+        "end": 335,
+        "startByte": 322,
+        "endByte": 335,
+        "line": 8,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Install, record one claim of each kind, and run the loop.",
+        "start": 423,
+        "end": 480,
+        "startByte": 423,
+        "endByte": 480,
+        "line": 12,
+        "headingPath": [
+          "Start here"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "The agent loop, the human loop, and CI.",
+        "start": 553,
+        "end": 592,
+        "startByte": 553,
+        "endByte": 592,
+        "line": 15,
+        "headingPath": [
+          "Start here"
+        ]
+      }
+    ],
+    "source": "test/regions-real.test.ts › splitRegions on real cases › docs/index.mdx: frontmatter and JSX tag lines are no regions (asserts kind, line, text, and one headingPath)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "real: code span keeps its terminator; separator row is no unit",
+    "input": {
+      "fixture": "fixtures/regions/real-claims-table.md",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "table-row",
+        "text": "| field | shape |",
+        "start": 0,
+        "end": 17,
+        "startByte": 0,
+        "endByte": 17,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "table-row",
+        "text": "| `sources` | `[{ id?, resource, title? }]` |",
+        "start": 28,
+        "end": 73,
+        "startByte": 28,
+        "endByte": 73,
+        "line": 3,
+        "headingPath": []
+      }
+    ],
+    "source": "test/regions-real.test.ts › splitRegions on real cases › docs/claims.mdx: a terminator inside an inline code span does not split; separator rows are no regions (asserts kind, line, text)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "real: numbered heading is one unit",
+    "input": {
+      "fixture": "fixtures/regions/real-quickstart-install.mdx",
+      "path": "docs/quickstart.mdx"
+    },
+    "expected": [
+      {
+        "kind": "heading",
+        "text": "## 1. Install",
+        "start": 0,
+        "end": 13,
+        "startByte": 0,
+        "endByte": 13,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "fenced",
+        "text": "```sh\n# Prebuilt single-file executable (no runtime needed)\n```",
+        "start": 15,
+        "end": 78,
+        "startByte": 15,
+        "endByte": 78,
+        "line": 3,
+        "headingPath": [
+          "1. Install"
+        ]
+      }
+    ],
+    "source": "test/regions-real.test.ts › splitRegions on real cases › docs/quickstart.mdx: `## 1. Install` is one heading region (asserts kind, line, text, and one headingPath)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "real: table row's closing pipe stays with its last sentence",
+    "input": {
+      "fixture": "fixtures/regions/real-lifecycle-row.md",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "table-row",
+        "text": "| `enforced` | The default.",
+        "start": 0,
+        "end": 27,
+        "startByte": 0,
+        "endByte": 27,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "table-row",
+        "text": "The claim may gate (exit 2) and warn. |",
+        "start": 28,
+        "end": 67,
+        "startByte": 28,
+        "endByte": 67,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "test/regions-real.test.ts › splitRegions on real cases › docs/lifecycle.mdx: a table row's closing pipe stays with its last sentence (asserts kind, line, text)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "real: thematic break is no unit",
+    "input": {
+      "fixture": "fixtures/regions/real-cookbook-break.md",
+      "path": "references/cookbook.md"
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Shared setup: a knowledge repo `handbook/` with `docs/pricing.md`, `docs/billing-policy.md`, and `AGENTS.md`, and a sibling code repo `../api` with `src/limits.ts` (`export const RATE_LIMIT_PER_MIN = 100;`).",
+        "start": 0,
+        "end": 207,
+        "startByte": 0,
+        "endByte": 207,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "heading",
+        "text": "## 1. Initialize a knowledge repo",
+        "start": 214,
+        "end": 247,
+        "startByte": 214,
+        "endByte": 247,
+        "line": 5,
+        "headingPath": []
+      }
+    ],
+    "source": "test/regions-real.test.ts › thematic breaks › plugins/hibi-cli/skills/hibi/references/cookbook.md: a `---` line is no region (asserts kind, line, text)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "frontmatter skipped in .md",
+    "input": {
+      "text": "---\ntitle: x\n---\n\nBody.",
+      "path": "docs/a.md"
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Body.",
+        "start": 18,
+        "end": 23,
+        "startByte": 18,
+        "endByte": 23,
+        "line": 5,
+        "headingPath": []
+      }
+    ],
+    "source": "test/regions-real.test.ts › splitRegions on real cases › frontmatter is skipped only in .md and .mdx files and only when closed; elsewhere its `---` lines are thematic breaks (asserts texts)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "frontmatter not skipped in .txt",
+    "input": {
+      "text": "---\ntitle: x\n---\n\nBody.",
+      "path": "notes.txt"
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "title: x",
+        "start": 4,
+        "end": 12,
+        "startByte": 4,
+        "endByte": 12,
+        "line": 2,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Body.",
+        "start": 18,
+        "end": 23,
+        "startByte": 18,
+        "endByte": 23,
+        "line": 5,
+        "headingPath": []
+      }
+    ],
+    "source": "test/regions-real.test.ts › splitRegions on real cases › frontmatter is skipped only in .md and .mdx files and only when closed; elsewhere its `---` lines are thematic breaks (asserts texts)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "unclosed frontmatter is not frontmatter",
+    "input": {
+      "text": "---\ntitle: x\n\nBody.",
+      "path": "a.mdx"
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "title: x",
+        "start": 4,
+        "end": 12,
+        "startByte": 4,
+        "endByte": 12,
+        "line": 2,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Body.",
+        "start": 14,
+        "end": 19,
+        "startByte": 14,
+        "endByte": 19,
+        "line": 4,
+        "headingPath": []
+      }
+    ],
+    "source": "test/regions-real.test.ts › splitRegions on real cases › frontmatter is skipped only in .md and .mdx files and only when closed; elsewhere its `---` lines are thematic breaks (asserts texts)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "heading is one line; the next line opens a piece",
+    "input": {
+      "text": "# Title. Part two\nBody line. Second.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "heading",
+        "text": "# Title. Part two",
+        "start": 0,
+        "end": 17,
+        "startByte": 0,
+        "endByte": 17,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Body line.",
+        "start": 18,
+        "end": 28,
+        "startByte": 18,
+        "endByte": 28,
+        "line": 2,
+        "headingPath": [
+          "Title. Part two"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Second.",
+        "start": 29,
+        "end": 36,
+        "startByte": 29,
+        "endByte": 36,
+        "line": 2,
+        "headingPath": [
+          "Title. Part two"
+        ]
+      }
+    ],
+    "source": "test/regions-real.test.ts › splitRegions on real cases › a heading is one line: the line after it opens a new piece (asserts kind, line, text)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "inline code span may cross lines",
+    "input": {
+      "text": "Run `a. b\nc! d` now. Done.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Run `a. b\nc! d` now.",
+        "start": 0,
+        "end": 20,
+        "startByte": 0,
+        "endByte": 20,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Done.",
+        "start": 21,
+        "end": 26,
+        "startByte": 21,
+        "endByte": 26,
+        "line": 2,
+        "headingPath": []
+      }
+    ],
+    "source": "test/regions-real.test.ts › splitRegions on real cases › an inline code span may cross lines; a fence inside a block keeps it whole (asserts kind, line, text)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "fence opening inside a prose block makes the whole block one fenced unit",
+    "input": {
+      "text": "Text. More.\n```\nx. y\n```",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "fenced",
+        "text": "Text. More.\n```\nx. y\n```",
+        "start": 0,
+        "end": 24,
+        "startByte": 0,
+        "endByte": 24,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "test/regions-real.test.ts › splitRegions on real cases › an inline code span may cross lines; a fence inside a block keeps it whole (asserts kind, line, text)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "*** and ___ separate blocks",
+    "input": {
+      "text": "One.\n***\nTwo.\n___\nThree.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "One.",
+        "start": 0,
+        "end": 4,
+        "startByte": 0,
+        "endByte": 4,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Two.",
+        "start": 9,
+        "end": 13,
+        "startByte": 9,
+        "endByte": 13,
+        "line": 3,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Three.",
+        "start": 18,
+        "end": 24,
+        "startByte": 18,
+        "endByte": 24,
+        "line": 5,
+        "headingPath": []
+      }
+    ],
+    "source": "test/regions-real.test.ts › thematic breaks › `***` and `___` lines separate blocks even without blank lines; inside a fence they stay (asserts kind, line, text)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "--- inside a fence stays",
+    "input": {
+      "text": "```\n---\n```",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "fenced",
+        "text": "```\n---\n```",
+        "start": 0,
+        "end": 11,
+        "startByte": 0,
+        "endByte": 11,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "test/regions-real.test.ts › thematic breaks › `***` and `___` lines separate blocks even without blank lines; inside a fence they stay (asserts kind, line, text)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "setext-style --- under a paragraph is a thematic break, not a heading underline",
+    "input": {
+      "text": "Title line\n---\nBody.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Title line",
+        "start": 0,
+        "end": 10,
+        "startByte": 0,
+        "endByte": 10,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Body.",
+        "start": 15,
+        "end": 20,
+        "startByte": 15,
+        "endByte": 20,
+        "line": 3,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "tilde fence",
+    "input": {
+      "text": "~~~\na. b\n\nc\n~~~\nAfter. More.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "fenced",
+        "text": "~~~\na. b\n\nc\n~~~\nAfter. More.",
+        "start": 0,
+        "end": 28,
+        "startByte": 0,
+        "endByte": 28,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "backtick fence is not closed by a tilde line",
+    "input": {
+      "text": "```\ncode\n~~~\nstill code\n```",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "fenced",
+        "text": "```\ncode\n~~~\nstill code\n```",
+        "start": 0,
+        "end": 27,
+        "startByte": 0,
+        "endByte": 27,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "unclosed fence runs to the end of the text",
+    "input": {
+      "text": "Intro.\n\n```\ncode\n\nmore. text\n",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Intro.",
+        "start": 0,
+        "end": 6,
+        "startByte": 0,
+        "endByte": 6,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "fenced",
+        "text": "```\ncode\n\nmore. text",
+        "start": 8,
+        "end": 28,
+        "startByte": 8,
+        "endByte": 28,
+        "line": 3,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "longer closing fence closes",
+    "input": {
+      "text": "```\nx\n`````\n\nAfter.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "fenced",
+        "text": "```\nx\n`````",
+        "start": 0,
+        "end": 11,
+        "startByte": 0,
+        "endByte": 11,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "After.",
+        "start": 13,
+        "end": 19,
+        "startByte": 13,
+        "endByte": 19,
+        "line": 5,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "indented fence",
+    "input": {
+      "text": "  ```\n  x. y\n  ```",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "fenced",
+        "text": "```\n  x. y\n  ```",
+        "start": 2,
+        "end": 18,
+        "startByte": 2,
+        "endByte": 18,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "double-backtick span with a single backtick inside",
+    "input": {
+      "text": "Use ``a`b. c`` here. Next.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Use ``a`b. c`` here.",
+        "start": 0,
+        "end": 20,
+        "startByte": 0,
+        "endByte": 20,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Next.",
+        "start": 21,
+        "end": 26,
+        "startByte": 21,
+        "endByte": 26,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "unclosed backtick is literal text",
+    "input": {
+      "text": "Start `open. Next sentence.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Start `open.",
+        "start": 0,
+        "end": 12,
+        "startByte": 0,
+        "endByte": 12,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Next sentence.",
+        "start": 13,
+        "end": 27,
+        "startByte": 13,
+        "endByte": 27,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "terminators: ! ? and closing quote, paren, bracket",
+    "input": {
+      "text": "One! Two? (Three.) [Four.] \"Five.\" Six",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "One!",
+        "start": 0,
+        "end": 4,
+        "startByte": 0,
+        "endByte": 4,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Two?",
+        "start": 5,
+        "end": 9,
+        "startByte": 5,
+        "endByte": 9,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "(Three.)",
+        "start": 10,
+        "end": 18,
+        "startByte": 10,
+        "endByte": 18,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "[Four.]",
+        "start": 19,
+        "end": 26,
+        "startByte": 19,
+        "endByte": 26,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "\"Five.\"",
+        "start": 27,
+        "end": 34,
+        "startByte": 27,
+        "endByte": 34,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Six",
+        "start": 35,
+        "end": 38,
+        "startByte": 35,
+        "endByte": 38,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "terminator not followed by whitespace does not split",
+    "input": {
+      "text": "Version 1.2.3 ships.Next. See e.g. the docs.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Version 1.2.3 ships.Next.",
+        "start": 0,
+        "end": 25,
+        "startByte": 0,
+        "endByte": 25,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "See e.g.",
+        "start": 26,
+        "end": 34,
+        "startByte": 26,
+        "endByte": 34,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "the docs.",
+        "start": 35,
+        "end": 44,
+        "startByte": 35,
+        "endByte": 44,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "abbreviation splits like any terminator",
+    "input": {
+      "text": "See e.g. the docs. Then go.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "See e.g.",
+        "start": 0,
+        "end": 8,
+        "startByte": 0,
+        "endByte": 8,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "the docs.",
+        "start": 9,
+        "end": 18,
+        "startByte": 9,
+        "endByte": 18,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Then go.",
+        "start": 19,
+        "end": 27,
+        "startByte": 19,
+        "endByte": 27,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "list markers: *, +, 1), 10.",
+    "input": {
+      "text": "* star item. Two.\n+ plus item\n1) paren item\n10. ten item",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "list-item",
+        "text": "* star item.",
+        "start": 0,
+        "end": 12,
+        "startByte": 0,
+        "endByte": 12,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "Two.",
+        "start": 13,
+        "end": 17,
+        "startByte": 13,
+        "endByte": 17,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "+ plus item",
+        "start": 18,
+        "end": 29,
+        "startByte": 18,
+        "endByte": 29,
+        "line": 2,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "1) paren item",
+        "start": 30,
+        "end": 43,
+        "startByte": 30,
+        "endByte": 43,
+        "line": 3,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "10. ten item",
+        "start": 44,
+        "end": 56,
+        "startByte": 44,
+        "endByte": 56,
+        "line": 4,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "number at line start without trailing space is prose",
+    "input": {
+      "text": "2026.\n1.5 is a number.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "2026.",
+        "start": 0,
+        "end": 5,
+        "startByte": 0,
+        "endByte": 5,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "1.5 is a number.",
+        "start": 6,
+        "end": 22,
+        "startByte": 6,
+        "endByte": 22,
+        "line": 2,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "blockquote lines start pieces and are sentences",
+    "input": {
+      "text": "> First. Second.\n> Third.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "> First.",
+        "start": 0,
+        "end": 8,
+        "startByte": 0,
+        "endByte": 8,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Second.",
+        "start": 9,
+        "end": 16,
+        "startByte": 9,
+        "endByte": 16,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "> Third.",
+        "start": 17,
+        "end": 25,
+        "startByte": 17,
+        "endByte": 25,
+        "line": 2,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "heading with closing hashes; headingPath strips them",
+    "input": {
+      "text": "# Top #\n\n## Sub ##\n\nText.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "heading",
+        "text": "# Top #",
+        "start": 0,
+        "end": 7,
+        "startByte": 0,
+        "endByte": 7,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "heading",
+        "text": "## Sub ##",
+        "start": 9,
+        "end": 18,
+        "startByte": 9,
+        "endByte": 18,
+        "line": 3,
+        "headingPath": [
+          "Top"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Text.",
+        "start": 20,
+        "end": 25,
+        "startByte": 20,
+        "endByte": 25,
+        "line": 5,
+        "headingPath": [
+          "Top",
+          "Sub"
+        ]
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "#hashtag without a space is prose",
+    "input": {
+      "text": "#hashtag is not a heading.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "#hashtag is not a heading.",
+        "start": 0,
+        "end": 26,
+        "startByte": 0,
+        "endByte": 26,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "seven hashes is not a heading",
+    "input": {
+      "text": "####### Seven.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "####### Seven.",
+        "start": 0,
+        "end": 14,
+        "startByte": 0,
+        "endByte": 14,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "heading levels pop the path",
+    "input": {
+      "text": "# A\n## B\n### C\nc text.\n## D\nd text.\n# E\ne text.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "heading",
+        "text": "# A",
+        "start": 0,
+        "end": 3,
+        "startByte": 0,
+        "endByte": 3,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "heading",
+        "text": "## B",
+        "start": 4,
+        "end": 8,
+        "startByte": 4,
+        "endByte": 8,
+        "line": 2,
+        "headingPath": [
+          "A"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "### C",
+        "start": 9,
+        "end": 14,
+        "startByte": 9,
+        "endByte": 14,
+        "line": 3,
+        "headingPath": [
+          "A",
+          "B"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "c text.",
+        "start": 15,
+        "end": 22,
+        "startByte": 15,
+        "endByte": 22,
+        "line": 4,
+        "headingPath": [
+          "A",
+          "B",
+          "C"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## D",
+        "start": 23,
+        "end": 27,
+        "startByte": 23,
+        "endByte": 27,
+        "line": 5,
+        "headingPath": [
+          "A"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "d text.",
+        "start": 28,
+        "end": 35,
+        "startByte": 28,
+        "endByte": 35,
+        "line": 6,
+        "headingPath": [
+          "A",
+          "D"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "# E",
+        "start": 36,
+        "end": 39,
+        "startByte": 36,
+        "endByte": 39,
+        "line": 7,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "e text.",
+        "start": 40,
+        "end": 47,
+        "startByte": 40,
+        "endByte": 47,
+        "line": 8,
+        "headingPath": [
+          "E"
+        ]
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "table without leading pipe on separator",
+    "input": {
+      "text": "| a | b |\n--- | ---\n| 1 | 2 |",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "table-row",
+        "text": "| a | b |\n--- | ---",
+        "start": 0,
+        "end": 19,
+        "startByte": 0,
+        "endByte": 19,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "table-row",
+        "text": "| 1 | 2 |",
+        "start": 20,
+        "end": 29,
+        "startByte": 20,
+        "endByte": 29,
+        "line": 3,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "table separator with alignment colons",
+    "input": {
+      "text": "| a | b |\n|:---|---:|\n| 1. x | 2 |",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "table-row",
+        "text": "| a | b |",
+        "start": 0,
+        "end": 9,
+        "startByte": 0,
+        "endByte": 9,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "table-row",
+        "text": "| 1.",
+        "start": 22,
+        "end": 26,
+        "startByte": 22,
+        "endByte": 26,
+        "line": 3,
+        "headingPath": []
+      },
+      {
+        "kind": "table-row",
+        "text": "x | 2 |",
+        "start": 27,
+        "end": 34,
+        "startByte": 27,
+        "endByte": 34,
+        "line": 3,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "row not starting with a pipe is prose",
+    "input": {
+      "text": "a | b | c. d",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "a | b | c.",
+        "start": 0,
+        "end": 10,
+        "startByte": 0,
+        "endByte": 10,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "d",
+        "start": 11,
+        "end": 12,
+        "startByte": 11,
+        "endByte": 12,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "tag-only line separates blocks",
+    "input": {
+      "text": "Before.\n<br/>\nAfter.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Before.",
+        "start": 0,
+        "end": 7,
+        "startByte": 0,
+        "endByte": 7,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "After.",
+        "start": 14,
+        "end": 20,
+        "startByte": 14,
+        "endByte": 20,
+        "line": 3,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "tag with text on the same line is prose",
+    "input": {
+      "text": "<Note>Inline text.</Note>",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "<Note>Inline text.</Note>",
+        "start": 0,
+        "end": 25,
+        "startByte": 0,
+        "endByte": 25,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "self-closing JSX with attributes is a tag line",
+    "input": {
+      "text": "One.\n<Card title=\"x\" href=\"/y\" />\nTwo.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "One.",
+        "start": 0,
+        "end": 4,
+        "startByte": 0,
+        "endByte": 4,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Two.",
+        "start": 34,
+        "end": 38,
+        "startByte": 34,
+        "endByte": 38,
+        "line": 3,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "frontmatter path is case-insensitive",
+    "input": {
+      "text": "---\nt: 1\n---\nBody.",
+      "path": "README.MD"
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Body.",
+        "start": 13,
+        "end": 18,
+        "startByte": 13,
+        "endByte": 18,
+        "line": 4,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "frontmatter only on the first line",
+    "input": {
+      "text": "\n---\nt: 1\n---\nBody.",
+      "path": "a.md"
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "t: 1",
+        "start": 5,
+        "end": 9,
+        "startByte": 5,
+        "endByte": 9,
+        "line": 3,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Body.",
+        "start": 14,
+        "end": 19,
+        "startByte": 14,
+        "endByte": 19,
+        "line": 5,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "frontmatter not skipped without a path",
+    "input": {
+      "text": "---\nt: 1\n---\nBody.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "t: 1",
+        "start": 4,
+        "end": 8,
+        "startByte": 4,
+        "endByte": 8,
+        "line": 2,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Body.",
+        "start": 13,
+        "end": 18,
+        "startByte": 13,
+        "endByte": 18,
+        "line": 4,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "non-ascii offsets",
+    "input": {
+      "text": "Größe ist 5 €. Emoji 😀 hier. Ende.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Größe ist 5 €.",
+        "start": 0,
+        "end": 14,
+        "startByte": 0,
+        "endByte": 18,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Emoji 😀 hier.",
+        "start": 15,
+        "end": 29,
+        "startByte": 19,
+        "endByte": 35,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Ende.",
+        "start": 30,
+        "end": 35,
+        "startByte": 36,
+        "endByte": 41,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "leading indentation is outside the unit",
+    "input": {
+      "text": "   Indented sentence. Two.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Indented sentence.",
+        "start": 3,
+        "end": 21,
+        "startByte": 3,
+        "endByte": 21,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Two.",
+        "start": 22,
+        "end": 26,
+        "startByte": 22,
+        "endByte": 26,
+        "line": 1,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "blank line inside a list item ends the piece",
+    "input": {
+      "text": "- item one.\n\n  continued paragraph.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "list-item",
+        "text": "- item one.",
+        "start": 0,
+        "end": 11,
+        "startByte": 0,
+        "endByte": 11,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "continued paragraph.",
+        "start": 15,
+        "end": 35,
+        "startByte": 15,
+        "endByte": 35,
+        "line": 3,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions",
+    "origin": "computed"
+  },
+  {
+    "name": "frontmatter in .md (former CRLF case, fed as LF)",
+    "input": {
+      "text": "---\ntitle: x\n---\nBody. More.\n",
+      "path": "a.md"
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Body.",
+        "start": 17,
+        "end": 22,
+        "startByte": 17,
+        "endByte": 22,
+        "line": 4,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "More.",
+        "start": 23,
+        "end": 28,
+        "startByte": 23,
+        "endByte": 28,
+        "line": 4,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions; formerly named \"frontmatter with CRLF in .md\" with CRLF input; SPEC §4.2 and §16.2 feed the splitter LF text, so the input was converted and v4 re-run",
+    "origin": "computed"
+  },
+  {
+    "name": "multi-line units (former CRLF case, fed as LF)",
+    "input": {
+      "text": "Line one\nline two. Next.\n\n- item\n  cont.\n",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Line one\nline two.",
+        "start": 0,
+        "end": 18,
+        "startByte": 0,
+        "endByte": 18,
+        "line": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Next.",
+        "start": 19,
+        "end": 24,
+        "startByte": 19,
+        "endByte": 24,
+        "line": 2,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "- item\n  cont.",
+        "start": 26,
+        "end": 40,
+        "startByte": 26,
+        "endByte": 40,
+        "line": 4,
+        "headingPath": []
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions; formerly named \"CRLF line endings keep \\r inside multi-line units\" with CRLF input; SPEC §4.2 and §16.2 feed the splitter LF text, so the input was converted and v4 re-run",
+    "origin": "computed"
+  },
+  {
+    "name": "whole v4 document docs/index.mdx",
+    "input": {
+      "fixture": "fixtures/regions/v4-index.mdx",
+      "path": "docs/index.mdx"
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Hibi (日々, \"day after day\") tracks **claims**: sentences in documents that assert something checkable.",
+        "start": 322,
+        "end": 423,
+        "startByte": 322,
+        "endByte": 427,
+        "line": 8,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "The documents can be anything: a README, `CLAUDE.md`, an ADR, a pricing page, a process note in a knowledge repository.",
+        "start": 424,
+        "end": 543,
+        "startByte": 428,
+        "endByte": 547,
+        "line": 8,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Hibi reports which claims are stale, which documents cannot be trusted right now, which sentences contradict each other, and which sentences nothing could verify.",
+        "start": 544,
+        "end": 706,
+        "startByte": 548,
+        "endByte": 710,
+        "line": 8,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Hibi runs no verifiers and no resolvers.",
+        "start": 708,
+        "end": 748,
+        "startByte": 712,
+        "endByte": 752,
+        "line": 10,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Its only network call is the judge API, and its only subprocess is `git`.",
+        "start": 749,
+        "end": 822,
+        "startByte": 753,
+        "endByte": 826,
+        "line": 10,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "An agent collects evidence and submits it.",
+        "start": 823,
+        "end": 865,
+        "startByte": 827,
+        "endByte": 869,
+        "line": 10,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "The primary user is a coding agent; JSON is the contract.",
+        "start": 866,
+        "end": 923,
+        "startByte": 870,
+        "endByte": 927,
+        "line": 10,
+        "headingPath": []
+      },
+      {
+        "kind": "heading",
+        "text": "## Three kinds of claim",
+        "start": 925,
+        "end": 948,
+        "startByte": 929,
+        "endByte": 952,
+        "line": 12,
+        "headingPath": []
+      },
+      {
+        "kind": "table-row",
+        "text": "| kind | where its truth is observed | what makes it stale |",
+        "start": 950,
+        "end": 1010,
+        "startByte": 954,
+        "endByte": 1014,
+        "line": 14,
+        "headingPath": [
+          "Three kinds of claim"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "| `code` | one or more code spans | an anchored span changed, disappeared, or matches several places |",
+        "start": 1025,
+        "end": 1127,
+        "startByte": 1029,
+        "endByte": 1131,
+        "line": 16,
+        "headingPath": [
+          "Three kinds of claim"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "| `reference` | one span in another document | the span changed, or the judge finds it no longer supports the sentence |",
+        "start": 1128,
+        "end": 1248,
+        "startByte": 1132,
+        "endByte": 1252,
+        "line": 17,
+        "headingPath": [
+          "Three kinds of claim"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "| `attested` | outside the repository: a dashboard, a vendor page, a person | its `ttl` ran out since the last judged evidence or human vouch, or submitted evidence refutes it |",
+        "start": 1249,
+        "end": 1426,
+        "startByte": 1253,
+        "endByte": 1430,
+        "line": 18,
+        "headingPath": [
+          "Three kinds of claim"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## The agent loop",
+        "start": 1428,
+        "end": 1445,
+        "startByte": 1432,
+        "endByte": 1449,
+        "line": 20,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Before an agent relies on a document, it runs `hibi check --doc <file>`; exit 2 means a sentence in it is stale, and the verdicts say which one and what to do.",
+        "start": 1447,
+        "end": 1606,
+        "startByte": 1451,
+        "endByte": 1610,
+        "line": 22,
+        "headingPath": [
+          "The agent loop"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "When it writes or reviews a document, it runs `hibi audit --doc <file>` to see which sentences are claims of which kind and records them with `hibi record`.",
+        "start": 1607,
+        "end": 1763,
+        "startByte": 1611,
+        "endByte": 1767,
+        "line": 22,
+        "headingPath": [
+          "The agent loop"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "After a code change, `hibi check --since origin/main` names the sentences the change invalidated.",
+        "start": 1764,
+        "end": 1861,
+        "startByte": 1768,
+        "endByte": 1865,
+        "line": 22,
+        "headingPath": [
+          "The agent loop"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Periodically, `hibi check` lists a worklist of claims to re-check; the agent follows each claim's procedure, collects what it observed, and submits it with `hibi evidence`.",
+        "start": 1862,
+        "end": 2034,
+        "startByte": 1866,
+        "endByte": 2038,
+        "line": 22,
+        "headingPath": [
+          "The agent loop"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "The judge decides whether the evidence supports the sentence.",
+        "start": 2035,
+        "end": 2096,
+        "startByte": 2039,
+        "endByte": 2100,
+        "line": 22,
+        "headingPath": [
+          "The agent loop"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Only judged evidence or a human vouch resets a claim's ttl.",
+        "start": 2097,
+        "end": 2156,
+        "startByte": 2101,
+        "endByte": 2160,
+        "line": 22,
+        "headingPath": [
+          "The agent loop"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## What hibi will and will not do",
+        "start": 2158,
+        "end": 2191,
+        "startByte": 2162,
+        "endByte": 2195,
+        "line": 24,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "- **Same tree, same verdicts.** Anchor resolution is deterministic.",
+        "start": 2193,
+        "end": 2260,
+        "startByte": 2197,
+        "endByte": 2264,
+        "line": 26,
+        "headingPath": [
+          "What hibi will and will not do"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "Judge verdicts are cached in `.claims/judge/` by model and exact request and never re-asked.",
+        "start": 2261,
+        "end": 2353,
+        "startByte": 2265,
+        "endByte": 2357,
+        "line": 26,
+        "headingPath": [
+          "What hibi will and will not do"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- **A flag means re-verify.** Hibi never rewrites prose and never declares a sentence false on its own authority.",
+        "start": 2354,
+        "end": 2467,
+        "startByte": 2358,
+        "endByte": 2471,
+        "line": 27,
+        "headingPath": [
+          "What hibi will and will not do"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "Only `archive` (the tombstone) and `init --instructions` (one appended line) write to a document.",
+        "start": 2468,
+        "end": 2565,
+        "startByte": 2472,
+        "endByte": 2569,
+        "line": 27,
+        "headingPath": [
+          "What hibi will and will not do"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- **Nothing clears without evidence or a human.** An agent vouch is recorded and does not reset a ttl.",
+        "start": 2566,
+        "end": 2668,
+        "startByte": 2570,
+        "endByte": 2672,
+        "line": 28,
+        "headingPath": [
+          "What hibi will and will not do"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- **One knob.** `judge.threshold` (default 0.8) is the one configurable confidence bar for every judgment.",
+        "start": 2669,
+        "end": 2775,
+        "startByte": 2673,
+        "endByte": 2779,
+        "line": 29,
+        "headingPath": [
+          "What hibi will and will not do"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "Every rule that fires is a reason label in the output.",
+        "start": 2776,
+        "end": 2830,
+        "startByte": 2780,
+        "endByte": 2834,
+        "line": 29,
+        "headingPath": [
+          "What hibi will and will not do"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- **No key, no silent pass.** Without `TYPESAFE_API_KEY`, or when the judge fails, a judgment the cache cannot answer is `pending`, a warning.",
+        "start": 2831,
+        "end": 2973,
+        "startByte": 2835,
+        "endByte": 2977,
+        "line": 30,
+        "headingPath": [
+          "What hibi will and will not do"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## Start here",
+        "start": 2975,
+        "end": 2988,
+        "startByte": 2979,
+        "endByte": 2992,
+        "line": 32,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Install, record one claim of each kind, and run the loop.",
+        "start": 3076,
+        "end": 3133,
+        "startByte": 3080,
+        "endByte": 3137,
+        "line": 36,
+        "headingPath": [
+          "Start here"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "The agent loop, the human loop, and CI.",
+        "start": 3206,
+        "end": 3245,
+        "startByte": 3210,
+        "endByte": 3249,
+        "line": 39,
+        "headingPath": [
+          "Start here"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Kinds, sides, sources, procedures, and the store.",
+        "start": 3317,
+        "end": 3366,
+        "startByte": 3321,
+        "endByte": 3370,
+        "line": 42,
+        "headingPath": [
+          "Start here"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Axes, gating, exit codes, and the worklist.",
+        "start": 3446,
+        "end": 3489,
+        "startByte": 3450,
+        "endByte": 3493,
+        "line": 45,
+        "headingPath": [
+          "Start here"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Jev, the threshold, the cache, and what stays in code.",
+        "start": 3554,
+        "end": 3608,
+        "startByte": 3558,
+        "endByte": 3612,
+        "line": 48,
+        "headingPath": [
+          "Start here"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "The problem, the principles, and what was removed.",
+        "start": 3679,
+        "end": 3729,
+        "startByte": 3683,
+        "endByte": 3733,
+        "line": 51,
+        "headingPath": [
+          "Start here"
+        ]
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions on docs/index.mdx at v0.7.0",
+    "origin": "computed"
+  },
+  {
+    "name": "whole v4 document docs/lifecycle.mdx",
+    "input": {
+      "fixture": "fixtures/regions/v4-lifecycle.mdx",
+      "path": "docs/lifecycle.mdx"
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Hibi asks two separate questions.",
+        "start": 259,
+        "end": 292,
+        "startByte": 259,
+        "endByte": 292,
+        "line": 8,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "May this claim gate?",
+        "start": 293,
+        "end": 313,
+        "startByte": 293,
+        "endByte": 313,
+        "line": 8,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Where is this document in its life?",
+        "start": 314,
+        "end": 349,
+        "startByte": 314,
+        "endByte": 349,
+        "line": 8,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Each has its own field and its own verbs.",
+        "start": 350,
+        "end": 391,
+        "startByte": 350,
+        "endByte": 391,
+        "line": 8,
+        "headingPath": []
+      },
+      {
+        "kind": "heading",
+        "text": "## Enforcement",
+        "start": 393,
+        "end": 407,
+        "startByte": 393,
+        "endByte": 407,
+        "line": 10,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Enforcement is a field on the claim.",
+        "start": 409,
+        "end": 445,
+        "startByte": 409,
+        "endByte": 445,
+        "line": 12,
+        "headingPath": [
+          "Enforcement"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "| enforcement | meaning |",
+        "start": 447,
+        "end": 472,
+        "startByte": 447,
+        "endByte": 472,
+        "line": 14,
+        "headingPath": [
+          "Enforcement"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "| `enforced` | The default.",
+        "start": 483,
+        "end": 510,
+        "startByte": 483,
+        "endByte": 510,
+        "line": 16,
+        "headingPath": [
+          "Enforcement"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "The claim may gate (exit 2) and warn. |",
+        "start": 511,
+        "end": 550,
+        "startByte": 511,
+        "endByte": 550,
+        "line": 16,
+        "headingPath": [
+          "Enforcement"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "| `suggested` | Advisory.",
+        "start": 551,
+        "end": 576,
+        "startByte": 551,
+        "endByte": 576,
+        "line": 17,
+        "headingPath": [
+          "Enforcement"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "Recorded with `record --suggest` (or `\"suggest\": true` in a `--from-file` item).",
+        "start": 577,
+        "end": 657,
+        "startByte": 577,
+        "endByte": 657,
+        "line": 17,
+        "headingPath": [
+          "Enforcement"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "It never gates and never warns. |",
+        "start": 658,
+        "end": 691,
+        "startByte": 658,
+        "endByte": 691,
+        "line": 17,
+        "headingPath": [
+          "Enforcement"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "| `retired` | Withdrawn with `hibi retire`.",
+        "start": 692,
+        "end": 735,
+        "startByte": 692,
+        "endByte": 735,
+        "line": 18,
+        "headingPath": [
+          "Enforcement"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "Kept in the store for history.",
+        "start": 736,
+        "end": 766,
+        "startByte": 736,
+        "endByte": 766,
+        "line": 18,
+        "headingPath": [
+          "Enforcement"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "It never gates or warns, the contradiction pass skips it, and `evidence` and `attest` refuse it. |",
+        "start": 767,
+        "end": 865,
+        "startByte": 767,
+        "endByte": 865,
+        "line": 18,
+        "headingPath": [
+          "Enforcement"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "### `retire`",
+        "start": 867,
+        "end": 879,
+        "startByte": 867,
+        "endByte": 879,
+        "line": 20,
+        "headingPath": [
+          "Enforcement"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```sh\nhibi retire <claim-id> [--dry-run]\n```",
+        "start": 881,
+        "end": 925,
+        "startByte": 881,
+        "endByte": 925,
+        "line": 22,
+        "headingPath": [
+          "Enforcement",
+          "`retire`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Sets the claim's `enforcement` to `retired` and saves it.",
+        "start": 927,
+        "end": 984,
+        "startByte": 927,
+        "endByte": 984,
+        "line": 26,
+        "headingPath": [
+          "Enforcement",
+          "`retire`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "The claim file stays in `.claims/claims/`; do not delete it by hand.",
+        "start": 985,
+        "end": 1053,
+        "startByte": 985,
+        "endByte": 1053,
+        "line": 26,
+        "headingPath": [
+          "Enforcement",
+          "`retire`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "A second call changes nothing and reports `alreadyRetired: true`.",
+        "start": 1054,
+        "end": 1119,
+        "startByte": 1054,
+        "endByte": 1119,
+        "line": 26,
+        "headingPath": [
+          "Enforcement",
+          "`retire`"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```json\n{ \"ok\": true, \"action\": \"retire\", \"schemaVersion\": \"v4\",\n  \"id\": \"clm_…\", \"alreadyRetired\": false, \"next\": \"hibi check\" }\n```",
+        "start": 1121,
+        "end": 1254,
+        "startByte": 1121,
+        "endByte": 1256,
+        "line": 28,
+        "headingPath": [
+          "Enforcement",
+          "`retire`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "In `check`, a retired claim is not resolved: its verdict reads `doc: \"retired\"` (and `evidence: \"retired\"` when it has an evidence side) and carries one reason, `retired claim: never gates or warns`.",
+        "start": 1256,
+        "end": 1455,
+        "startByte": 1258,
+        "endByte": 1457,
+        "line": 33,
+        "headingPath": [
+          "Enforcement",
+          "`retire`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "It is counted in `summary.retired` and in none of `gating`, `warning`, or `clean`.",
+        "start": 1456,
+        "end": 1538,
+        "startByte": 1458,
+        "endByte": 1540,
+        "line": 33,
+        "headingPath": [
+          "Enforcement",
+          "`retire`"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## Document lifecycle",
+        "start": 1540,
+        "end": 1561,
+        "startByte": 1542,
+        "endByte": 1563,
+        "line": 35,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Lifecycle is a field on the document record in `.claims/documents/`.",
+        "start": 1563,
+        "end": 1631,
+        "startByte": 1565,
+        "endByte": 1633,
+        "line": 37,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "| lifecycle | meaning |",
+        "start": 1633,
+        "end": 1656,
+        "startByte": 1635,
+        "endByte": 1658,
+        "line": 39,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "| `active` | In the read path.",
+        "start": 1667,
+        "end": 1697,
+        "startByte": 1669,
+        "endByte": 1699,
+        "line": 41,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "The default. |",
+        "start": 1698,
+        "end": 1712,
+        "startByte": 1700,
+        "endByte": 1714,
+        "line": 41,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "| `superseded` | Replaced by another document.",
+        "start": 1713,
+        "end": 1759,
+        "startByte": 1715,
+        "endByte": 1761,
+        "line": 42,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "The old document's record carries `supersededBy` with the new document's id. |",
+        "start": 1760,
+        "end": 1838,
+        "startByte": 1762,
+        "endByte": 1840,
+        "line": 42,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "table-row",
+        "text": "| `archived` | Moved to `archive/`, with a tombstone at the old path. |",
+        "start": 1839,
+        "end": 1910,
+        "startByte": 1841,
+        "endByte": 1912,
+        "line": 43,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "A live claim (not retired) on a `superseded` or `archived` document is **stranded**.",
+        "start": 1912,
+        "end": 1996,
+        "startByte": 1914,
+        "endByte": 1998,
+        "line": 45,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "List them with:",
+        "start": 1997,
+        "end": 2012,
+        "startByte": 1999,
+        "endByte": 2014,
+        "line": 45,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```sh\nhibi list --state stranded\n```",
+        "start": 2014,
+        "end": 2050,
+        "startByte": 2016,
+        "endByte": 2052,
+        "line": 47,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "A stranded claim still resolves, still gates, and still warns.",
+        "start": 2052,
+        "end": 2114,
+        "startByte": 2054,
+        "endByte": 2116,
+        "line": 51,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "In `check` JSON, every live claim on a non-active document appears in that document's `suspect[]` with the lifecycle as its status when nothing worse applies.",
+        "start": 2115,
+        "end": 2273,
+        "startByte": 2117,
+        "endByte": 2275,
+        "line": 51,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Claims on a non-active document are left out of the worklist, so no agent is asked to collect evidence for them.",
+        "start": 2274,
+        "end": 2386,
+        "startByte": 2276,
+        "endByte": 2388,
+        "line": 51,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "### `supersede`",
+        "start": 2388,
+        "end": 2403,
+        "startByte": 2390,
+        "endByte": 2405,
+        "line": 53,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```sh\nhibi supersede --from <old> --to <new> [--dry-run]\n```",
+        "start": 2405,
+        "end": 2465,
+        "startByte": 2407,
+        "endByte": 2467,
+        "line": 55,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "In one pass:",
+        "start": 2467,
+        "end": 2479,
+        "startByte": 2469,
+        "endByte": 2481,
+        "line": 59,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "1. Registers `--to` in the store if needed.",
+        "start": 2481,
+        "end": 2524,
+        "startByte": 2483,
+        "endByte": 2526,
+        "line": 61,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "`--from` must already be registered; otherwise the command fails with `document <path> is not registered`.",
+        "start": 2525,
+        "end": 2631,
+        "startByte": 2527,
+        "endByte": 2633,
+        "line": 61,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "2. Moves every live claim on `--from` to `--to`, without reading the old file.",
+        "start": 2632,
+        "end": 2710,
+        "startByte": 2634,
+        "endByte": 2712,
+        "line": 62,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "When a claim's stored quote occurs verbatim exactly once in `--to`, its position is updated; otherwise its anchors are left as stored.",
+        "start": 2711,
+        "end": 2845,
+        "startByte": 2713,
+        "endByte": 2847,
+        "line": 62,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "The claim's id, sentence, quote, hashes, evidence, sources, procedure, attestations, and `ref` never change.",
+        "start": 2846,
+        "end": 2954,
+        "startByte": 2848,
+        "endByte": 2956,
+        "line": 62,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "3. Sets `--from` to `superseded` and records `supersededBy` on it.",
+        "start": 2955,
+        "end": 3021,
+        "startByte": 2957,
+        "endByte": 3023,
+        "line": 63,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```json\n{ \"ok\": true, \"action\": \"supersede\", \"schemaVersion\": \"v4\",\n  \"from\": \"design-v1.md\", \"to\": \"design-v2.md\",\n  \"relocated\": [{ \"claimId\": \"clm_…\", \"doc\": \"unchanged\", \"evidence\": \"unchanged\" }],\n  \"misses\": [],\n  \"strandedClaims\": [],\n  \"dryRun\": false,\n  \"next\": \"hibi check\" }\n```",
+        "start": 3023,
+        "end": 3312,
+        "startByte": 3025,
+        "endByte": 3316,
+        "line": 65,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Each `relocated` entry is `{ claimId, doc, evidence? }` with the claim's anchor states after the move.",
+        "start": 3314,
+        "end": 3416,
+        "startByte": 3318,
+        "endByte": 3420,
+        "line": 75,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "A quote found in `--to` reads `unchanged`.",
+        "start": 3417,
+        "end": 3459,
+        "startByte": 3421,
+        "endByte": 3463,
+        "line": 75,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "A sentence that was edited reads `changed`.",
+        "start": 3460,
+        "end": 3503,
+        "startByte": 3464,
+        "endByte": 3507,
+        "line": 75,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "A sentence that is not in `--to` reads `orphaned` and gates; fix it with `hibi reanchor <id> --doc-quote \"…\"` or `hibi retire <id>`.",
+        "start": 3504,
+        "end": 3636,
+        "startByte": 3508,
+        "endByte": 3642,
+        "line": 75,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "A quote found more than once is resolved by the normal resolver and may read `moved`.",
+        "start": 3637,
+        "end": 3722,
+        "startByte": 3643,
+        "endByte": 3728,
+        "line": 75,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "`misses` lists only claims whose move failed with an error, so it is normally empty.",
+        "start": 3724,
+        "end": 3808,
+        "startByte": 3730,
+        "endByte": 3814,
+        "line": 77,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "`strandedClaims` lists the live claims still on the old document after the pass, and is normally empty too.",
+        "start": 3809,
+        "end": 3916,
+        "startByte": 3815,
+        "endByte": 3922,
+        "line": 77,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "A claim stays on a superseded document only when its move failed (it is listed in `misses`) or when it was recorded there after the supersede.",
+        "start": 3917,
+        "end": 4059,
+        "startByte": 3923,
+        "endByte": 4065,
+        "line": 77,
+        "headingPath": [
+          "Document lifecycle",
+          "`supersede`"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "### `archive`",
+        "start": 4061,
+        "end": 4074,
+        "startByte": 4067,
+        "endByte": 4080,
+        "line": 79,
+        "headingPath": [
+          "Document lifecycle"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```sh\nhibi archive --doc <path> [--successor <path>] [--dry-run]\n```",
+        "start": 4076,
+        "end": 4144,
+        "startByte": 4082,
+        "endByte": 4150,
+        "line": 81,
+        "headingPath": [
+          "Document lifecycle",
+          "`archive`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Copies the file to `archive/<path>`, replaces the original with a short tombstone, and sets the document's lifecycle to `archived`.",
+        "start": 4146,
+        "end": 4277,
+        "startByte": 4152,
+        "endByte": 4283,
+        "line": 85,
+        "headingPath": [
+          "Document lifecycle",
+          "`archive`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "The tombstone is a Markdown page headed `# Archived` that names the old path and, with `--successor`, links to the successor.",
+        "start": 4278,
+        "end": 4403,
+        "startByte": 4284,
+        "endByte": 4409,
+        "line": 85,
+        "headingPath": [
+          "Document lifecycle",
+          "`archive`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Claims are not moved.",
+        "start": 4404,
+        "end": 4425,
+        "startByte": 4410,
+        "endByte": 4431,
+        "line": 85,
+        "headingPath": [
+          "Document lifecycle",
+          "`archive`"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```json\n{ \"ok\": true, \"action\": \"archive\", \"schemaVersion\": \"v4\",\n  \"doc\": \"old.md\", \"archivedTo\": \"archive/old.md\", \"successor\": \"new.md\",\n  \"lifecycle\": \"archived\", \"strandedClaims\": [\"clm_…\"], \"dryRun\": false,\n  \"next\": \"reanchor or retire each stranded claim, then hibi check\" }\n```",
+        "start": 4427,
+        "end": 4713,
+        "startByte": 4433,
+        "endByte": 4721,
+        "line": 87,
+        "headingPath": [
+          "Document lifecycle",
+          "`archive`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "`archivedTo` is null when the document is registered but its file was not on disk.",
+        "start": 4715,
+        "end": 4797,
+        "startByte": 4723,
+        "endByte": 4805,
+        "line": 94,
+        "headingPath": [
+          "Document lifecycle",
+          "`archive`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "A path that is not a registered document (one with no record in `.claims/documents/`) is an error, and nothing is written.",
+        "start": 4798,
+        "end": 4920,
+        "startByte": 4806,
+        "endByte": 4928,
+        "line": 94,
+        "headingPath": [
+          "Document lifecycle",
+          "`archive`"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "To withdraw a document that has no successor, archive it without `--successor`.",
+        "start": 4921,
+        "end": 5000,
+        "startByte": 4929,
+        "endByte": 5008,
+        "line": 94,
+        "headingPath": [
+          "Document lifecycle",
+          "`archive`"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## Reanchoring a claim",
+        "start": 5002,
+        "end": 5024,
+        "startByte": 5010,
+        "endByte": 5032,
+        "line": 96,
+        "headingPath": []
+      },
+      {
+        "kind": "fenced",
+        "text": "```sh\nhibi reanchor <claim-id> [--doc <path>] [--doc-quote <text> | --doc-range L1:L3]\n                         [--code-file <path> (--code-quote <text> | --code-range L1:L9)]...\n                         [--ref-file <path> (--ref-quote <text> | --ref-range L1:L3)]\n                         [--suggest] [--dry-run]\nhibi reanchor --moved [--doc <path>] [--dry-run]\n```",
+        "start": 5026,
+        "end": 5392,
+        "startByte": 5034,
+        "endByte": 5400,
+        "line": 98,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "`reanchor` re-resolves every span of the claim against the working tree and stores the relocated sides as the new baseline.",
+        "start": 5394,
+        "end": 5517,
+        "startByte": 5402,
+        "endByte": 5525,
+        "line": 106,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "It refreshes the claim's `sentence` from the doc span when the doc side is relocated.",
+        "start": 5518,
+        "end": 5603,
+        "startByte": 5526,
+        "endByte": 5611,
+        "line": 106,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- Without span flags for a side, the side is relocated only when it reads `moved`.",
+        "start": 5605,
+        "end": 5687,
+        "startByte": 5613,
+        "endByte": 5695,
+        "line": 108,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "A side that reads `unchanged` is kept.",
+        "start": 5688,
+        "end": 5726,
+        "startByte": 5696,
+        "endByte": 5734,
+        "line": 108,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- A side that reads `changed`, `ambiguous`, or `orphaned` is left as stored, and the result's `kept` gives the reason, for example `doc: changed; pass --doc-quote to re-anchor` or `evidence: orphaned; pass --code-quote to re-anchor`.",
+        "start": 5727,
+        "end": 5960,
+        "startByte": 5735,
+        "endByte": 5968,
+        "line": 109,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "Hibi does not guess where an edited or lost span went; pass the new span.",
+        "start": 5961,
+        "end": 6034,
+        "startByte": 5969,
+        "endByte": 6042,
+        "line": 109,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- The command exits 0 when at least one side was relocated or no side needed relocating.",
+        "start": 6035,
+        "end": 6123,
+        "startByte": 6043,
+        "endByte": 6131,
+        "line": 110,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "It exits 1 and writes nothing when a side needed relocating and no side was relocated.",
+        "start": 6124,
+        "end": 6210,
+        "startByte": 6132,
+        "endByte": 6218,
+        "line": 110,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- `--doc`, the doc span flags, and the ref span flags may each be given once.",
+        "start": 6211,
+        "end": 6288,
+        "startByte": 6219,
+        "endByte": 6296,
+        "line": 111,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "A repeat is an error such as `--doc-quote given twice; reanchor takes one span per side`.",
+        "start": 6289,
+        "end": 6378,
+        "startByte": 6297,
+        "endByte": 6386,
+        "line": 111,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- A value that starts with `-` takes the `=` form: `--doc-quote=\"- Retries are capped at 5 attempts\"`.",
+        "start": 6379,
+        "end": 6481,
+        "startByte": 6387,
+        "endByte": 6489,
+        "line": 112,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- `--doc <path>` with `--doc-quote` or `--doc-range` moves the claim to another document.",
+        "start": 6482,
+        "end": 6571,
+        "startByte": 6490,
+        "endByte": 6579,
+        "line": 113,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- `--code-file` is repeatable: each one opens a span that takes the `--code-quote` or `--code-range` after it, and the spans given replace all of a `code` claim's spans, in order; `--ref-file` with `--ref-quote` or `--ref-range` replaces a `reference` claim's span.",
+        "start": 6572,
+        "end": 6837,
+        "startByte": 6580,
+        "endByte": 6845,
+        "line": 114,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "The wrong kind is an error, for example `claim <id> is a code claim; --ref-file, --ref-quote, and --ref-range are for reference claims.`",
+        "start": 6838,
+        "end": 6974,
+        "startByte": 6846,
+        "endByte": 6982,
+        "line": 114,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- An evidence side in a sibling repo that is not checked out is kept as stored, with a warning such as `evidence side api:src/limits.ts kept unchanged: sibling repo \"api\" is not checked out at ../api`.",
+        "start": 6975,
+        "end": 7176,
+        "startByte": 6983,
+        "endByte": 7184,
+        "line": 115,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "The other sides are re-resolved.",
+        "start": 7177,
+        "end": 7209,
+        "startByte": 7185,
+        "endByte": 7217,
+        "line": 115,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- An explicit `--code-file` span in a sibling repo that is not checked out keeps the stored span for that file.",
+        "start": 7210,
+        "end": 7321,
+        "startByte": 7218,
+        "endByte": 7329,
+        "line": 116,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "The result's `kept` lists it with `state: \"unavailable\"` and the reason `evidence: repository api not checked out; kept as stored`, and the command exits 0 when another side was relocated.",
+        "start": 7322,
+        "end": 7510,
+        "startByte": 7330,
+        "endByte": 7518,
+        "line": 116,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- `--moved` takes no claim id.",
+        "start": 7511,
+        "end": 7541,
+        "startByte": 7519,
+        "endByte": 7549,
+        "line": 117,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "It applies the plain rule to every live claim in the store, or with `--doc <path>` to the live claims of that document: `moved` sides are relocated, and `changed`, `ambiguous`, and `orphaned` sides are kept and listed.",
+        "start": 7542,
+        "end": 7760,
+        "startByte": 7550,
+        "endByte": 7768,
+        "line": 117,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "It prints one line per claim with a side relocated or kept, and exits 0.",
+        "start": 7761,
+        "end": 7833,
+        "startByte": 7769,
+        "endByte": 7841,
+        "line": 117,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "The JSON is `{ \"action\": \"reanchor\", \"moved\": true, \"relocated\": <sides relocated>, \"claims\": [{ \"id\", \"relocated\": [{ \"side\", \"file\" }], \"kept\": [{ \"side\", \"file\", \"state\", \"reason\" }] }], \"next\" }`.",
+        "start": 7834,
+        "end": 8034,
+        "startByte": 7842,
+        "endByte": 8042,
+        "line": 117,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "`--dry-run` writes nothing.",
+        "start": 8035,
+        "end": 8062,
+        "startByte": 8043,
+        "endByte": 8070,
+        "line": 117,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- `--suggest` is read-only.",
+        "start": 8063,
+        "end": 8090,
+        "startByte": 8071,
+        "endByte": 8098,
+        "line": 118,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "It ranks candidate locations for the stored doc and evidence quotes.",
+        "start": 8091,
+        "end": 8159,
+        "startByte": 8099,
+        "endByte": 8167,
+        "line": 118,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "It cannot be combined with span flags or `--dry-run`.",
+        "start": 8160,
+        "end": 8213,
+        "startByte": 8168,
+        "endByte": 8221,
+        "line": 118,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "- `--dry-run` computes the result and writes nothing.",
+        "start": 8214,
+        "end": 8267,
+        "startByte": 8222,
+        "endByte": 8275,
+        "line": 119,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Reanchor only after you have re-read the sentence against its evidence.",
+        "start": 8269,
+        "end": 8340,
+        "startByte": 8277,
+        "endByte": 8348,
+        "line": 121,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "A reanchor tells hibi that the current text is correct.",
+        "start": 8341,
+        "end": 8396,
+        "startByte": 8349,
+        "endByte": 8404,
+        "line": 121,
+        "headingPath": [
+          "Reanchoring a claim"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## Deleting or renaming a document",
+        "start": 8398,
+        "end": 8432,
+        "startByte": 8406,
+        "endByte": 8440,
+        "line": 123,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Claims belong to the document they quote.",
+        "start": 8434,
+        "end": 8475,
+        "startByte": 8442,
+        "endByte": 8483,
+        "line": 125,
+        "headingPath": [
+          "Deleting or renaming a document"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Move them in the same change as the prose:",
+        "start": 8476,
+        "end": 8518,
+        "startByte": 8484,
+        "endByte": 8526,
+        "line": 125,
+        "headingPath": [
+          "Deleting or renaming a document"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "1. `hibi list --path <old-doc>` lists the claims that name the file on either side.",
+        "start": 8520,
+        "end": 8603,
+        "startByte": 8528,
+        "endByte": 8611,
+        "line": 127,
+        "headingPath": [
+          "Deleting or renaming a document"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "2. `hibi supersede --from <old-doc> --to <new-doc>`.",
+        "start": 8604,
+        "end": 8656,
+        "startByte": 8612,
+        "endByte": 8664,
+        "line": 128,
+        "headingPath": [
+          "Deleting or renaming a document"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "3. For each `relocated` entry that reads `changed` or `orphaned`, fix the sentence in the new document if it is wrong, then run `hibi reanchor <id> --doc-quote \"…\"`, or `hibi retire <id>`.",
+        "start": 8657,
+        "end": 8845,
+        "startByte": 8665,
+        "endByte": 8855,
+        "line": 129,
+        "headingPath": [
+          "Deleting or renaming a document"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "4. For each entry in `misses`, run `hibi reanchor <id> --doc <new-doc> --doc-quote \"…\"`, or `hibi retire <id>`.",
+        "start": 8846,
+        "end": 8957,
+        "startByte": 8856,
+        "endByte": 8969,
+        "line": 130,
+        "headingPath": [
+          "Deleting or renaming a document"
+        ]
+      },
+      {
+        "kind": "list-item",
+        "text": "5. When `strandedClaims` is empty, delete or archive the old file.",
+        "start": 8958,
+        "end": 9024,
+        "startByte": 8970,
+        "endByte": 9036,
+        "line": 131,
+        "headingPath": [
+          "Deleting or renaming a document"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "If you skip steps 2 to 4, the claims become `doc: orphaned` after the delete, and an orphaned enforced claim gates.",
+        "start": 9026,
+        "end": 9141,
+        "startByte": 9038,
+        "endByte": 9153,
+        "line": 133,
+        "headingPath": [
+          "Deleting or renaming a document"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Orphaned is not retired: it is a live record that points at a missing file.",
+        "start": 9142,
+        "end": 9217,
+        "startByte": 9154,
+        "endByte": 9229,
+        "line": 133,
+        "headingPath": [
+          "Deleting or renaming a document"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## Who does what",
+        "start": 9219,
+        "end": 9235,
+        "startByte": 9231,
+        "endByte": 9247,
+        "line": 135,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Hibi records lifecycle and enforcement and reports what is stranded or orphaned.",
+        "start": 9237,
+        "end": 9317,
+        "startByte": 9249,
+        "endByte": 9329,
+        "line": 137,
+        "headingPath": [
+          "Who does what"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "A person or an agent rewrites the prose, decides what to reanchor and what to retire, and runs `hibi check` again.",
+        "start": 9318,
+        "end": 9432,
+        "startByte": 9330,
+        "endByte": 9444,
+        "line": 137,
+        "headingPath": [
+          "Who does what"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Hibi never edits prose.",
+        "start": 9433,
+        "end": 9456,
+        "startByte": 9445,
+        "endByte": 9468,
+        "line": 137,
+        "headingPath": [
+          "Who does what"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Two verbs write a document: `archive` copies it to `archive/` and writes the tombstone in its place, and `init --instructions` appends one line to an agent instruction file.",
+        "start": 9457,
+        "end": 9630,
+        "startByte": 9469,
+        "endByte": 9642,
+        "line": 137,
+        "headingPath": [
+          "Who does what"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## Next",
+        "start": 9632,
+        "end": 9639,
+        "startByte": 9644,
+        "endByte": 9651,
+        "line": 139,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "How enforcement and states become gates, warnings, and exit codes.",
+        "start": 9731,
+        "end": 9797,
+        "startByte": 9743,
+        "endByte": 9809,
+        "line": 143,
+        "headingPath": [
+          "Next"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Every flag of `retire`, `supersede`, `archive`, and `reanchor`.",
+        "start": 9881,
+        "end": 9944,
+        "startByte": 9893,
+        "endByte": 9956,
+        "line": 146,
+        "headingPath": [
+          "Next"
+        ]
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions on docs/lifecycle.mdx at v0.7.0",
+    "origin": "computed"
+  },
+  {
+    "name": "whole v4 document docs/quickstart.mdx",
+    "input": {
+      "fixture": "fixtures/regions/v4-quickstart.mdx",
+      "path": "docs/quickstart.mdx"
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "This page walks through the whole loop in a small repository: a retry constant in code, a refund policy in another document, and a price that lives in Stripe.",
+        "start": 266,
+        "end": 424,
+        "startByte": 266,
+        "endByte": 424,
+        "line": 8,
+        "headingPath": []
+      },
+      {
+        "kind": "fenced",
+        "text": "```\nsrc/retry.ts       export const MAX_ATTEMPTS = 5;\ndocs/billing.md    Refunds are issued within 14 days.\nREADME.md          Retries are capped at 5 attempts.\n                   Refunds are issued within two weeks of a request.\ndocs/pricing.md    The Pro plan costs $29 per month.\n```",
+        "start": 426,
+        "end": 712,
+        "startByte": 426,
+        "endByte": 712,
+        "line": 10,
+        "headingPath": []
+      },
+      {
+        "kind": "heading",
+        "text": "## 1. Install",
+        "start": 714,
+        "end": 727,
+        "startByte": 714,
+        "endByte": 727,
+        "line": 18,
+        "headingPath": []
+      },
+      {
+        "kind": "fenced",
+        "text": "```sh\n# Prebuilt single-file executable (no runtime needed)\ncurl -fsSL https://raw.githubusercontent.com/npupko/hibi/main/scripts/install.sh | sh\n\n# Or, in a Bun or JS project\nbun add @npupko/hibi        # then: bunx hibi …\nbunx @npupko/hibi --help    # or run it once without installing\n```",
+        "start": 729,
+        "end": 1020,
+        "startByte": 729,
+        "endByte": 1022,
+        "line": 20,
+        "headingPath": [
+          "1. Install"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "The judge needs a TypeSafe API key.",
+        "start": 1022,
+        "end": 1057,
+        "startByte": 1024,
+        "endByte": 1059,
+        "line": 29,
+        "headingPath": [
+          "1. Install"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Without one, everything except judge calls works, and judgments are `pending`.",
+        "start": 1058,
+        "end": 1136,
+        "startByte": 1060,
+        "endByte": 1138,
+        "line": 29,
+        "headingPath": [
+          "1. Install"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```sh\nexport TYPESAFE_API_KEY=…\n```",
+        "start": 1138,
+        "end": 1173,
+        "startByte": 1140,
+        "endByte": 1177,
+        "line": 31,
+        "headingPath": [
+          "1. Install"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## 2. Create the store",
+        "start": 1175,
+        "end": 1197,
+        "startByte": 1179,
+        "endByte": 1201,
+        "line": 35,
+        "headingPath": []
+      },
+      {
+        "kind": "fenced",
+        "text": "```sh\nhibi init --instructions AGENTS.md\n```",
+        "start": 1199,
+        "end": 1243,
+        "startByte": 1203,
+        "endByte": 1247,
+        "line": 37,
+        "headingPath": [
+          "2. Create the store"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```json\n{\n  \"ok\": true,\n  \"action\": \"init\",\n  \"schemaVersion\": \"v4\",\n  \"store\": \"/path/to/repo/.claims\",\n  \"version\": \"v4\",\n  \"judge\": { \"model\": \"jev-1.14.0\", \"threshold\": 0.8 },\n  \"instructions\": { \"file\": \"AGENTS.md\", \"appended\": true },\n  \"next\": \"hibi audit --doc <file>\"\n}\n```",
+        "start": 1245,
+        "end": 1527,
+        "startByte": 1249,
+        "endByte": 1531,
+        "line": 41,
+        "headingPath": [
+          "2. Create the store"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "`init` also writes `.claims/.gitignore` with the line `judge/`, so the judge cache in `.claims/judge/` is not committed.",
+        "start": 1529,
+        "end": 1649,
+        "startByte": 1533,
+        "endByte": 1653,
+        "line": 54,
+        "headingPath": [
+          "2. Create the store"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "`--instructions` appends one line to the file, once:",
+        "start": 1651,
+        "end": 1703,
+        "startByte": 1655,
+        "endByte": 1707,
+        "line": 56,
+        "headingPath": [
+          "2. Create the store"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "> Before relying on a document, run `hibi check --doc <file>`; exit 2 means a sentence in it is stale.",
+        "start": 1705,
+        "end": 1807,
+        "startByte": 1709,
+        "endByte": 1811,
+        "line": 58,
+        "headingPath": [
+          "2. Create the store"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## 3. Audit a document",
+        "start": 1809,
+        "end": 1831,
+        "startByte": 1813,
+        "endByte": 1835,
+        "line": 60,
+        "headingPath": []
+      },
+      {
+        "kind": "fenced",
+        "text": "```sh\nhibi audit --doc README.md\n```",
+        "start": 1833,
+        "end": 1869,
+        "startByte": 1837,
+        "endByte": 1873,
+        "line": 62,
+        "headingPath": [
+          "3. Audit a document"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```\nREADME.md\n  L1  not-a-claim   0.94  \"# Demo\"\n  L3  code          0.94  record  \"Retries are capped at 5 attempts.\"\n  L5  reference     0.94  record  \"Refunds are issued within two weeks of a request.\"\n3 regions, 0 covered, 3 uncovered; code 1, reference 1, not-a-claim 1; 1 judge request\n```",
+        "start": 1871,
+        "end": 2166,
+        "startByte": 1875,
+        "endByte": 2170,
+        "line": 66,
+        "headingPath": [
+          "3. Audit a document"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Each uncovered region gets a kind from the judge's triage, with the judge's probability.",
+        "start": 2168,
+        "end": 2256,
+        "startByte": 2172,
+        "endByte": 2260,
+        "line": 74,
+        "headingPath": [
+          "3. Audit a document"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "`code`, `reference`, and `attested` rows say `record`; an `unverifiable` row says `rewrite as an attributed opinion, or remove`.",
+        "start": 2257,
+        "end": 2385,
+        "startByte": 2261,
+        "endByte": 2389,
+        "line": 74,
+        "headingPath": [
+          "3. Audit a document"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Hibi never records on its own.",
+        "start": 2386,
+        "end": 2416,
+        "startByte": 2390,
+        "endByte": 2420,
+        "line": 74,
+        "headingPath": [
+          "3. Audit a document"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Without an API key the rows are `pending`.",
+        "start": 2417,
+        "end": 2459,
+        "startByte": 2421,
+        "endByte": 2463,
+        "line": 74,
+        "headingPath": [
+          "3. Audit a document"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "See [Audit](/audit).",
+        "start": 2460,
+        "end": 2480,
+        "startByte": 2464,
+        "endByte": 2484,
+        "line": 74,
+        "headingPath": [
+          "3. Audit a document"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## 4. Record one claim of each kind",
+        "start": 2482,
+        "end": 2517,
+        "startByte": 2486,
+        "endByte": 2521,
+        "line": 76,
+        "headingPath": []
+      },
+      {
+        "kind": "fenced",
+        "text": "```sh\n# code: the sentence is backed by a code span\nhibi record --doc README.md --doc-quote \"Retries are capped at 5 attempts.\" \\\n  --kind code --code-file src/retry.ts --code-quote \"MAX_ATTEMPTS = 5\" --by agent:opus\n\n# reference: the sentence is backed by a span in another document\nhibi record --doc README.md --doc-quote \"Refunds are issued within two weeks of a request.\" \\\n  --kind reference --ref-file docs/billing.md --ref-quote \"Refunds are issued within 14 days.\" \\\n  --by agent:opus\n\n# attested: the truth lives outside the repo; it needs a ttl\nhibi record --doc docs/pricing.md --doc-quote 'The Pro plan costs $29 per month.' \\\n  --kind attested --ttl P90D --owner human:alice@example.com \\\n  --source stripe=https://dashboard.stripe.com/products/prod_123 \\\n  --instructions \"Open the Stripe dashboard and report the Pro monthly price.\" \\\n  --by human:alice@example.com\n```",
+        "start": 2519,
+        "end": 3403,
+        "startByte": 2523,
+        "endByte": 3407,
+        "line": 78,
+        "headingPath": [
+          "4. Record one claim of each kind"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```json\n{\n  \"ok\": true,\n  \"action\": \"record\",\n  \"schemaVersion\": \"v4\",\n  \"id\": \"clm_418fde0aee55433e\",\n  \"kind\": \"attested\",\n  \"doc\": \"docs/pricing.md\",\n  \"evidence\": null,\n  \"enforcement\": \"enforced\",\n  \"next\": \"hibi check\"\n}\n```",
+        "start": 3405,
+        "end": 3635,
+        "startByte": 3409,
+        "endByte": 3639,
+        "line": 96,
+        "headingPath": [
+          "4. Record one claim of each kind"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "`--by` is required: it names the actor whose `vouch` the new claim starts with.",
+        "start": 3637,
+        "end": 3716,
+        "startByte": 3641,
+        "endByte": 3720,
+        "line": 110,
+        "headingPath": [
+          "4. Record one claim of each kind"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "There is no default.",
+        "start": 3717,
+        "end": 3737,
+        "startByte": 3721,
+        "endByte": 3741,
+        "line": 110,
+        "headingPath": [
+          "4. Record one claim of each kind"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Paths are stored as POSIX paths relative to the anchor root (the current directory, or `--cwd`), so `./README.md` and `README.md` are the same document.",
+        "start": 3738,
+        "end": 3890,
+        "startByte": 3742,
+        "endByte": 3894,
+        "line": 110,
+        "headingPath": [
+          "4. Record one claim of each kind"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Quote the load-bearing token on the code side (`MAX_ATTEMPTS = 5`, not the whole file), so a change from `5` to `50` is caught.",
+        "start": 3892,
+        "end": 4019,
+        "startByte": 3896,
+        "endByte": 4023,
+        "line": 112,
+        "headingPath": [
+          "4. Record one claim of each kind"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Agents usually send all three as a JSON array to `hibi record --from-file - --by agent:<name>`; see [Claims](/claims).",
+        "start": 4020,
+        "end": 4138,
+        "startByte": 4024,
+        "endByte": 4142,
+        "line": 112,
+        "headingPath": [
+          "4. Record one claim of each kind"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## 5. Check",
+        "start": 4140,
+        "end": 4151,
+        "startByte": 4144,
+        "endByte": 4155,
+        "line": 114,
+        "headingPath": []
+      },
+      {
+        "kind": "fenced",
+        "text": "```sh\nhibi check\n```",
+        "start": 4153,
+        "end": 4173,
+        "startByte": 4157,
+        "endByte": 4177,
+        "line": 116,
+        "headingPath": [
+          "5. Check"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```\nhibi check worktree\n\n⚠ README.md   1 suspect · 1 clean\n  ⚠ judge:pending   clm_ed3e7d37f89b41b8\n     \"Refunds are issued within two weeks of a request.\"\n     docs/billing.md:3   worktree\n\n✓ docs/pricing.md   1 claim clean\n\nWorklist (2)\n  never-checked clm_418fde0aee55433e   docs/pricing.md\n     \"The Pro plan costs $29 per month.\"\n     kind attested   owner human:alice@example.com   sources stripe\n     procedure: Open the Stripe dashboard and report the Pro monthly price.\n\n  pending       clm_ed3e7d37f89b41b8   README.md\n     \"Refunds are issued within two weeks of a request.\"\n     kind reference\n\nFound 0 gating, 1 warning, 2 in worklist across 2 documents.  exit 0\n```",
+        "start": 4175,
+        "end": 4855,
+        "startByte": 4179,
+        "endByte": 4866,
+        "line": 120,
+        "headingPath": [
+          "5. Check"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "This run had no API key, so the reference claim is `pending` (a warning).",
+        "start": 4857,
+        "end": 4930,
+        "startByte": 4868,
+        "endByte": 4941,
+        "line": 143,
+        "headingPath": [
+          "5. Check"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "The attested claim is in the worklist with reason `never-checked`: it has a procedure and a source, and no evidence has been judged for it yet.",
+        "start": 4931,
+        "end": 5074,
+        "startByte": 4942,
+        "endByte": 5085,
+        "line": 143,
+        "headingPath": [
+          "5. Check"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "With a key, the reference claim is judged once and the verdict is cached in `.claims/judge/`.",
+        "start": 5075,
+        "end": 5168,
+        "startByte": 5086,
+        "endByte": 5179,
+        "line": 143,
+        "headingPath": [
+          "5. Check"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Piped, `check` prints JSON; the full shape is on [Verdicts](/verdicts).",
+        "start": 5169,
+        "end": 5240,
+        "startByte": 5180,
+        "endByte": 5251,
+        "line": 143,
+        "headingPath": [
+          "5. Check"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## 6. Submit evidence",
+        "start": 5242,
+        "end": 5263,
+        "startByte": 5253,
+        "endByte": 5274,
+        "line": 145,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "An agent follows the procedure, then submits what it saw.",
+        "start": 5265,
+        "end": 5322,
+        "startByte": 5276,
+        "endByte": 5333,
+        "line": 147,
+        "headingPath": [
+          "6. Submit evidence"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Hibi does not open Stripe; the agent does.",
+        "start": 5323,
+        "end": 5365,
+        "startByte": 5334,
+        "endByte": 5376,
+        "line": 147,
+        "headingPath": [
+          "6. Submit evidence"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```sh\necho '[{\"claimId\":\"clm_418fde0aee55433e\",\"evidence\":\"Pro plan: $29.00 per month\",\n        \"source\":\"stripe\",\"summary\":\"Stripe lists Pro at $29/month\"}]' \\\n  | hibi evidence --from-file - --by agent:opus\n```",
+        "start": 5367,
+        "end": 5579,
+        "startByte": 5378,
+        "endByte": 5590,
+        "line": 149,
+        "headingPath": [
+          "6. Submit evidence"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```json\n{\n  \"ok\": true,\n  \"action\": \"evidence\",\n  \"schemaVersion\": \"v4\",\n  \"results\": [\n    {\n      \"claimId\": \"clm_418fde0aee55433e\",\n      \"judge\": \"supported\",\n      \"relation\": \"supports\",\n      \"confidence\": 0.9249999999999999,\n      \"probabilities\": { \"supports\": 0.95, \"refutes\": 0.03, \"does_not_address\": 0.02 },\n      \"reasons\": [\n        \"evidence supports the sentence (confidence 0.92 >= threshold 0.8)\",\n        \"source matches declared source \\\"stripe\\\"\"\n      ],\n      \"attested\": true,\n      \"cached\": false\n    }\n  ],\n  \"summary\": { \"supported\": 1, \"refuted\": 0, \"review\": 0, \"pending\": 0, \"requests\": 1 },\n  \"next\": \"hibi check\"\n}\n```",
+        "start": 5581,
+        "end": 6233,
+        "startByte": 5592,
+        "endByte": 6244,
+        "line": 155,
+        "headingPath": [
+          "6. Submit evidence"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "`attested: true` means an `evidence` attestation was appended, and the 90-day ttl now counts from it.",
+        "start": 6235,
+        "end": 6336,
+        "startByte": 6246,
+        "endByte": 6347,
+        "line": 180,
+        "headingPath": [
+          "6. Submit evidence"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "The raw evidence text is not stored; the cache keeps its sha256, the numbers, money amounts, versions, and dates in it, the source, the summary, and the judge's probabilities.",
+        "start": 6337,
+        "end": 6512,
+        "startByte": 6348,
+        "endByte": 6523,
+        "line": 180,
+        "headingPath": [
+          "6. Submit evidence"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## 7. Attest",
+        "start": 6514,
+        "end": 6526,
+        "startByte": 6525,
+        "endByte": 6537,
+        "line": 182,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "A person who checked the price can vouch for it:",
+        "start": 6528,
+        "end": 6576,
+        "startByte": 6539,
+        "endByte": 6587,
+        "line": 184,
+        "headingPath": [
+          "7. Attest"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```sh\nhibi attest clm_418fde0aee55433e --by human:alice@example.com --note \"checked Stripe\"\n```",
+        "start": 6578,
+        "end": 6673,
+        "startByte": 6589,
+        "endByte": 6684,
+        "line": 186,
+        "headingPath": [
+          "7. Attest"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```json\n{\n  \"ok\": true,\n  \"action\": \"attest\",\n  \"schemaVersion\": \"v4\",\n  \"claimIds\": [\"clm_418fde0aee55433e\"],\n  \"attestation\": { \"by\": \"human:alice@example.com\", \"at\": \"2026-10-22T18:16:03.426Z\", \"basis\": \"vouch\", \"note\": \"checked Stripe\" },\n  \"countsTowardTtl\": true,\n  \"next\": \"hibi check\"\n}\n```",
+        "start": 6675,
+        "end": 6973,
+        "startByte": 6686,
+        "endByte": 6984,
+        "line": 190,
+        "headingPath": [
+          "7. Attest"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "The same command with `--by agent:opus` is recorded with `countsTowardTtl: false`.",
+        "start": 6975,
+        "end": 7057,
+        "startByte": 6986,
+        "endByte": 7068,
+        "line": 202,
+        "headingPath": [
+          "7. Attest"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "See [Attestations](/attestations).",
+        "start": 7058,
+        "end": 7092,
+        "startByte": 7069,
+        "endByte": 7103,
+        "line": 202,
+        "headingPath": [
+          "7. Attest"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## 8. Break it",
+        "start": 7094,
+        "end": 7108,
+        "startByte": 7105,
+        "endByte": 7119,
+        "line": 204,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Change `MAX_ATTEMPTS = 5` to `50` and run `hibi check` again:",
+        "start": 7110,
+        "end": 7171,
+        "startByte": 7121,
+        "endByte": 7182,
+        "line": 206,
+        "headingPath": [
+          "8. Break it"
+        ]
+      },
+      {
+        "kind": "fenced",
+        "text": "```\n✖ README.md   1 suspect · 1 clean\n  ✖ evidence:changed   clm_b87be1a1752b4a49\n     \"Retries are capped at 5 attempts.\"\n     src/retry.ts:1   worktree\n     reason: value changed (was `5`); identifiers or literals renamed\n     help: hibi reanchor clm_b87be1a1752b4a49  (Update the sentence, then reanchor: …)\n\nFound 1 gating, 0 warning across 2 documents.  exit 2\n```",
+        "start": 7173,
+        "end": 7542,
+        "startByte": 7184,
+        "endByte": 7560,
+        "line": 208,
+        "headingPath": [
+          "8. Break it"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Fix the sentence (or the code), then run `hibi reanchor clm_b87be1a1752b4a49` to store the new baseline.",
+        "start": 7544,
+        "end": 7648,
+        "startByte": 7562,
+        "endByte": 7666,
+        "line": 219,
+        "headingPath": [
+          "8. Break it"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "## Next",
+        "start": 7650,
+        "end": 7657,
+        "startByte": 7668,
+        "endByte": 7675,
+        "line": 221,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "When to run which command, for agents, people, and CI.",
+        "start": 7742,
+        "end": 7796,
+        "startByte": 7760,
+        "endByte": 7814,
+        "line": 225,
+        "headingPath": [
+          "Next"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "Install the skill that teaches an agent this loop.",
+        "start": 7887,
+        "end": 7937,
+        "startByte": 7905,
+        "endByte": 7955,
+        "line": 228,
+        "headingPath": [
+          "Next"
+        ]
+      }
+    ],
+    "source": "computed: src/engine/regions.ts splitRegions on docs/quickstart.mdx at v0.7.0",
+    "origin": "computed"
+  }
+]

@@ -1,0 +1,1 @@
+| `enforced` | The default. The claim may gate (exit 2) and warn. |

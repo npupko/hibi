@@ -1,0 +1,112 @@
+[
+  {
+    "name": "kitten to sitting",
+    "input": {
+      "a": "kitten",
+      "b": "sitting"
+    },
+    "expected": 3,
+    "source": "test/algo.test.ts › text normalization and similarity › levenshtein basics",
+    "origin": "copied"
+  },
+  {
+    "name": "empty to abc",
+    "input": {
+      "a": "",
+      "b": "abc"
+    },
+    "expected": 3,
+    "source": "test/algo.test.ts › text normalization and similarity › levenshtein basics",
+    "origin": "copied"
+  },
+  {
+    "name": "equal strings",
+    "input": {
+      "a": "abc",
+      "b": "abc"
+    },
+    "expected": 0,
+    "source": "computed: src/algo/normalize.ts levenshtein",
+    "origin": "computed"
+  },
+  {
+    "name": "abc to empty",
+    "input": {
+      "a": "abc",
+      "b": ""
+    },
+    "expected": 3,
+    "source": "computed: src/algo/normalize.ts levenshtein",
+    "origin": "computed"
+  },
+  {
+    "name": "both empty",
+    "input": {
+      "a": "",
+      "b": ""
+    },
+    "expected": 0,
+    "source": "computed: src/algo/normalize.ts levenshtein",
+    "origin": "computed"
+  },
+  {
+    "name": "one substitution",
+    "input": {
+      "a": "MAX = 5",
+      "b": "MAX = 6"
+    },
+    "expected": 1,
+    "source": "computed: src/algo/normalize.ts levenshtein",
+    "origin": "computed"
+  },
+  {
+    "name": "one insertion",
+    "input": {
+      "a": "MAX = 5",
+      "b": "MAX = 50"
+    },
+    "expected": 1,
+    "source": "computed: src/algo/normalize.ts levenshtein",
+    "origin": "computed"
+  },
+  {
+    "name": "transposition costs two",
+    "input": {
+      "a": "ab",
+      "b": "ba"
+    },
+    "expected": 2,
+    "source": "computed: src/algo/normalize.ts levenshtein",
+    "origin": "computed"
+  },
+  {
+    "name": "unit-sensitive: e-acute vs e is one UTF-16 unit change",
+    "input": {
+      "a": "café",
+      "b": "cafe"
+    },
+    "expected": 1,
+    "source": "computed: src/algo/normalize.ts levenshtein",
+    "origin": "computed"
+  },
+  {
+    "name": "unit-sensitive: two different emoji are one substitution",
+    "input": {
+      "a": "😀",
+      "b": "😁"
+    },
+    "expected": 1,
+    "source": "computed: src/algo/normalize.ts levenshtein; the same value counting characters (SPEC §4.1); formerly named \"unit-sensitive: two emoji differing only in the low surrogate cost 1 in UTF-16 units\"",
+    "origin": "computed"
+  },
+  {
+    "name": "unit-sensitive: ASCII letter vs emoji is one substitution",
+    "input": {
+      "a": "a",
+      "b": "😀"
+    },
+    "expected": 1,
+    "source": "computed: src/algo/normalize.ts levenshtein | v5-adjusted: SPEC §4.1 (characters, not UTF-16 units): v4 levenshtein run with each non-BMP character remapped to one BMP placeholder; v4 itself gives 2; formerly named \"unit-sensitive: ASCII letter vs emoji costs 2 in UTF-16 units\"",
+    "origin": "v5-adjusted"
+  }
+]

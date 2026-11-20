@@ -1,0 +1,4090 @@
+[
+  {
+    "name": "typescript const: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 32,
+        "end": 48,
+        "startByte": 32,
+        "endByte": 48
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/reformat.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS   =   5",
+        "start": 34,
+        "end": 54,
+        "startByte": 34,
+        "endByte": 54
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript const: trailing-comma (parameters split one per line with a trailing comma added (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 32,
+        "end": 48,
+        "startByte": 32,
+        "endByte": 48
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/trailing-comma.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 32,
+        "end": 48,
+        "startByte": 32,
+        "endByte": 48
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript const: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 32,
+        "end": 48,
+        "startByte": 32,
+        "endByte": 48
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/comment-outside.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 40,
+        "end": 56,
+        "startByte": 40,
+        "endByte": 56
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript const: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 32,
+        "end": 48,
+        "startByte": 32,
+        "endByte": 48
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/comment-inside.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 32,
+        "end": 48,
+        "startByte": 32,
+        "endByte": 48
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript const: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 32,
+        "end": 48,
+        "startByte": 32,
+        "endByte": 48
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/literal.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 50",
+        "start": 32,
+        "end": 49,
+        "startByte": 32,
+        "endByte": 49
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript const: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 32,
+        "end": 48,
+        "startByte": 32,
+        "endByte": 48
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/rename.ts",
+        "language": "typescript",
+        "quote": "MAX_TRIES = 5",
+        "start": 32,
+        "end": 45,
+        "startByte": 32,
+        "endByte": 45
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript const: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 32,
+        "end": 48,
+        "startByte": 32,
+        "endByte": 48
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/structure.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 32,
+        "end": 48,
+        "startByte": 32,
+        "endByte": 48
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript type: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "interface RetryOptions {",
+        "start": 58,
+        "end": 82,
+        "startByte": 58,
+        "endByte": 82
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/reformat.ts",
+        "language": "typescript",
+        "quote": "interface RetryOptions\n{",
+        "start": 65,
+        "end": 89,
+        "startByte": 65,
+        "endByte": 89
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript type: trailing-comma (parameters split one per line with a trailing comma added (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "interface RetryOptions {",
+        "start": 58,
+        "end": 82,
+        "startByte": 58,
+        "endByte": 82
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/trailing-comma.ts",
+        "language": "typescript",
+        "quote": "interface RetryOptions {",
+        "start": 58,
+        "end": 82,
+        "startByte": 58,
+        "endByte": 82
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript type: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "interface RetryOptions {",
+        "start": 58,
+        "end": 82,
+        "startByte": 58,
+        "endByte": 82
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/comment-outside.ts",
+        "language": "typescript",
+        "quote": "interface RetryOptions {",
+        "start": 66,
+        "end": 90,
+        "startByte": 66,
+        "endByte": 90
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript type: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "interface RetryOptions {",
+        "start": 58,
+        "end": 82,
+        "startByte": 58,
+        "endByte": 82
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/comment-inside.ts",
+        "language": "typescript",
+        "quote": "interface RetryOptions {",
+        "start": 58,
+        "end": 82,
+        "startByte": 58,
+        "endByte": 82
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript type: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "interface RetryOptions {",
+        "start": 58,
+        "end": 82,
+        "startByte": 58,
+        "endByte": 82
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/literal.ts",
+        "language": "typescript",
+        "quote": "interface RetryOptions {",
+        "start": 59,
+        "end": 83,
+        "startByte": 59,
+        "endByte": 83
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript type: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "interface RetryOptions {",
+        "start": 58,
+        "end": 82,
+        "startByte": 58,
+        "endByte": 82
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/rename.ts",
+        "language": "typescript",
+        "quote": "interface RetryOptions {",
+        "start": 55,
+        "end": 79,
+        "startByte": 55,
+        "endByte": 79
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript type: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "interface RetryOptions {",
+        "start": 58,
+        "end": 82,
+        "startByte": 58,
+        "endByte": 82
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/structure.ts",
+        "language": "typescript",
+        "quote": "interface RetryOptions {",
+        "start": 58,
+        "end": 82,
+        "startByte": 58,
+        "endByte": 82
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript fn: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "function retry(",
+        "start": 113,
+        "end": 128,
+        "startByte": 113,
+        "endByte": 128
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/reformat.ts",
+        "language": "typescript",
+        "quote": "function retry(",
+        "start": 128,
+        "end": 143,
+        "startByte": 128,
+        "endByte": 143
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript fn: trailing-comma (parameters split one per line with a trailing comma added (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "function retry(",
+        "start": 113,
+        "end": 128,
+        "startByte": 113,
+        "endByte": 128
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/trailing-comma.ts",
+        "language": "typescript",
+        "quote": "function retry(",
+        "start": 113,
+        "end": 128,
+        "startByte": 113,
+        "endByte": 128
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5 | v5-adjusted: SPEC §8.4 ast-v1: equality of the ast-v1 streams in ast-node.json (comments and trailing commas skipped); v4's semantic hashes were different",
+    "origin": "v5-adjusted"
+  },
+  {
+    "name": "typescript fn: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "function retry(",
+        "start": 113,
+        "end": 128,
+        "startByte": 113,
+        "endByte": 128
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/comment-outside.ts",
+        "language": "typescript",
+        "quote": "function retry(",
+        "start": 150,
+        "end": 165,
+        "startByte": 150,
+        "endByte": 165
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript fn: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "function retry(",
+        "start": 113,
+        "end": 128,
+        "startByte": 113,
+        "endByte": 128
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/comment-inside.ts",
+        "language": "typescript",
+        "quote": "function retry(",
+        "start": 113,
+        "end": 128,
+        "startByte": 113,
+        "endByte": 128
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5 | v5-adjusted: SPEC §8.4 ast-v1: equality of the ast-v1 streams in ast-node.json (comments and trailing commas skipped); v4's semantic hashes were different",
+    "origin": "v5-adjusted"
+  },
+  {
+    "name": "typescript fn: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "function retry(",
+        "start": 113,
+        "end": 128,
+        "startByte": 113,
+        "endByte": 128
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/literal.ts",
+        "language": "typescript",
+        "quote": "function retry(",
+        "start": 114,
+        "end": 129,
+        "startByte": 114,
+        "endByte": 129
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript fn: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "function retry(",
+        "start": 113,
+        "end": 128,
+        "startByte": 113,
+        "endByte": 128
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/rename.ts",
+        "language": "typescript",
+        "quote": "function retry(",
+        "start": 107,
+        "end": 122,
+        "startByte": 107,
+        "endByte": 122
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "typescript fn: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/typescript/base.ts",
+        "language": "typescript",
+        "quote": "function retry(",
+        "start": 113,
+        "end": 128,
+        "startByte": 113,
+        "endByte": 128
+      },
+      "b": {
+        "fixture": "fixtures/ast/typescript/structure.ts",
+        "language": "typescript",
+        "quote": "function retry(",
+        "start": 132,
+        "end": 147,
+        "startByte": 132,
+        "endByte": 147
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx const: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "LIMIT = 99",
+        "start": 32,
+        "end": 42,
+        "startByte": 32,
+        "endByte": 42
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/reformat.tsx",
+        "language": "tsx",
+        "quote": "LIMIT    =    99",
+        "start": 32,
+        "end": 48,
+        "startByte": 32,
+        "endByte": 48
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx const: prettier-jsx (JSX wrapped in parentheses with its child on its own line (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "LIMIT = 99",
+        "start": 32,
+        "end": 42,
+        "startByte": 32,
+        "endByte": 42
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/prettier-jsx.tsx",
+        "language": "tsx",
+        "quote": "LIMIT = 99",
+        "start": 32,
+        "end": 42,
+        "startByte": 32,
+        "endByte": 42
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx const: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "LIMIT = 99",
+        "start": 32,
+        "end": 42,
+        "startByte": 32,
+        "endByte": 42
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/comment-outside.tsx",
+        "language": "tsx",
+        "quote": "LIMIT = 99",
+        "start": 40,
+        "end": 50,
+        "startByte": 40,
+        "endByte": 50
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx const: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "LIMIT = 99",
+        "start": 32,
+        "end": 42,
+        "startByte": 32,
+        "endByte": 42
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/comment-inside.tsx",
+        "language": "tsx",
+        "quote": "LIMIT = 99",
+        "start": 32,
+        "end": 42,
+        "startByte": 32,
+        "endByte": 42
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx const: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "LIMIT = 99",
+        "start": 32,
+        "end": 42,
+        "startByte": 32,
+        "endByte": 42
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/literal.tsx",
+        "language": "tsx",
+        "quote": "LIMIT = 100",
+        "start": 32,
+        "end": 43,
+        "startByte": 32,
+        "endByte": 43
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx const: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "LIMIT = 99",
+        "start": 32,
+        "end": 42,
+        "startByte": 32,
+        "endByte": 42
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/rename.tsx",
+        "language": "tsx",
+        "quote": "MAX_SHOWN = 99",
+        "start": 32,
+        "end": 46,
+        "startByte": 32,
+        "endByte": 46
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx const: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "LIMIT = 99",
+        "start": 32,
+        "end": 42,
+        "startByte": 32,
+        "endByte": 42
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/structure.tsx",
+        "language": "tsx",
+        "quote": "LIMIT = 99",
+        "start": 32,
+        "end": 42,
+        "startByte": 32,
+        "endByte": 42
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx jsx: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "<span className",
+        "start": 129,
+        "end": 144,
+        "startByte": 129,
+        "endByte": 144
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/reformat.tsx",
+        "language": "tsx",
+        "quote": "<span   className",
+        "start": 161,
+        "end": 178,
+        "startByte": 161,
+        "endByte": 178
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx jsx: prettier-jsx (JSX wrapped in parentheses with its child on its own line (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "<span className",
+        "start": 129,
+        "end": 144,
+        "startByte": 129,
+        "endByte": 144
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/prettier-jsx.tsx",
+        "language": "tsx",
+        "quote": "<span className",
+        "start": 135,
+        "end": 150,
+        "startByte": 135,
+        "endByte": 150
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx jsx: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "<span className",
+        "start": 129,
+        "end": 144,
+        "startByte": 129,
+        "endByte": 144
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/comment-outside.tsx",
+        "language": "tsx",
+        "quote": "<span className",
+        "start": 166,
+        "end": 181,
+        "startByte": 166,
+        "endByte": 181
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx jsx: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "<span className",
+        "start": 129,
+        "end": 144,
+        "startByte": 129,
+        "endByte": 144
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/comment-inside.tsx",
+        "language": "tsx",
+        "quote": "<span className",
+        "start": 145,
+        "end": 160,
+        "startByte": 145,
+        "endByte": 160
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx jsx: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "<span className",
+        "start": 129,
+        "end": 144,
+        "startByte": 129,
+        "endByte": 144
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/literal.tsx",
+        "language": "tsx",
+        "quote": "<span className",
+        "start": 130,
+        "end": 145,
+        "startByte": 130,
+        "endByte": 145
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx jsx: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "<span className",
+        "start": 129,
+        "end": 144,
+        "startByte": 129,
+        "endByte": 144
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/rename.tsx",
+        "language": "tsx",
+        "quote": "<span className",
+        "start": 133,
+        "end": 148,
+        "startByte": 133,
+        "endByte": 148
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx jsx: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "<span className",
+        "start": 129,
+        "end": 144,
+        "startByte": 129,
+        "endByte": 144
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/structure.tsx",
+        "language": "tsx",
+        "quote": "<span className",
+        "start": 143,
+        "end": 158,
+        "startByte": 143,
+        "endByte": 158
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx fn: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "function Badge(",
+        "start": 52,
+        "end": 67,
+        "startByte": 52,
+        "endByte": 67
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/reformat.tsx",
+        "language": "tsx",
+        "quote": "function Badge(",
+        "start": 58,
+        "end": 73,
+        "startByte": 58,
+        "endByte": 73
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx fn: prettier-jsx (JSX wrapped in parentheses with its child on its own line (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "function Badge(",
+        "start": 52,
+        "end": 67,
+        "startByte": 52,
+        "endByte": 67
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/prettier-jsx.tsx",
+        "language": "tsx",
+        "quote": "function Badge(",
+        "start": 52,
+        "end": 67,
+        "startByte": 52,
+        "endByte": 67
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx fn: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "function Badge(",
+        "start": 52,
+        "end": 67,
+        "startByte": 52,
+        "endByte": 67
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/comment-outside.tsx",
+        "language": "tsx",
+        "quote": "function Badge(",
+        "start": 89,
+        "end": 104,
+        "startByte": 89,
+        "endByte": 104
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx fn: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "function Badge(",
+        "start": 52,
+        "end": 67,
+        "startByte": 52,
+        "endByte": 67
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/comment-inside.tsx",
+        "language": "tsx",
+        "quote": "function Badge(",
+        "start": 52,
+        "end": 67,
+        "startByte": 52,
+        "endByte": 67
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5 | v5-adjusted: SPEC §8.4 ast-v1: equality of the ast-v1 streams in ast-node.json (comments and trailing commas skipped); v4's semantic hashes were different",
+    "origin": "v5-adjusted"
+  },
+  {
+    "name": "tsx fn: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "function Badge(",
+        "start": 52,
+        "end": 67,
+        "startByte": 52,
+        "endByte": 67
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/literal.tsx",
+        "language": "tsx",
+        "quote": "function Badge(",
+        "start": 53,
+        "end": 68,
+        "startByte": 53,
+        "endByte": 68
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx fn: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "function Badge(",
+        "start": 52,
+        "end": 67,
+        "startByte": 52,
+        "endByte": 67
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/rename.tsx",
+        "language": "tsx",
+        "quote": "function Badge(",
+        "start": 56,
+        "end": 71,
+        "startByte": 56,
+        "endByte": 71
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "tsx fn: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tsx/base.tsx",
+        "language": "tsx",
+        "quote": "function Badge(",
+        "start": 52,
+        "end": 67,
+        "startByte": 52,
+        "endByte": 67
+      },
+      "b": {
+        "fixture": "fixtures/ast/tsx/structure.tsx",
+        "language": "tsx",
+        "quote": "function Badge(",
+        "start": 52,
+        "end": 67,
+        "startByte": 52,
+        "endByte": 67
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python const: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 18,
+        "end": 34,
+        "startByte": 18,
+        "endByte": 34
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/reformat.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS=5",
+        "start": 18,
+        "end": 32,
+        "startByte": 18,
+        "endByte": 32
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python const: trailing-comma (parameters split one per line with a trailing comma added (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 18,
+        "end": 34,
+        "startByte": 18,
+        "endByte": 34
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/trailing-comma.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 18,
+        "end": 34,
+        "startByte": 18,
+        "endByte": 34
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python const: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 18,
+        "end": 34,
+        "startByte": 18,
+        "endByte": 34
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/comment-outside.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 26,
+        "end": 42,
+        "startByte": 26,
+        "endByte": 42
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python const: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 18,
+        "end": 34,
+        "startByte": 18,
+        "endByte": 34
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/comment-inside.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 18,
+        "end": 34,
+        "startByte": 18,
+        "endByte": 34
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python const: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 18,
+        "end": 34,
+        "startByte": 18,
+        "endByte": 34
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/literal.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS = 50",
+        "start": 18,
+        "end": 35,
+        "startByte": 18,
+        "endByte": 35
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python const: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 18,
+        "end": 34,
+        "startByte": 18,
+        "endByte": 34
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/rename.py",
+        "language": "python",
+        "quote": "MAX_TRIES = 5",
+        "start": 18,
+        "end": 31,
+        "startByte": 18,
+        "endByte": 31
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python const: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 18,
+        "end": 34,
+        "startByte": 18,
+        "endByte": 34
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/structure.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 18,
+        "end": 34,
+        "startByte": 18,
+        "endByte": 34
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python type: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "class RetryOptions:",
+        "start": 37,
+        "end": 56,
+        "startByte": 37,
+        "endByte": 56
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/reformat.py",
+        "language": "python",
+        "quote": "class RetryOptions :",
+        "start": 34,
+        "end": 54,
+        "startByte": 34,
+        "endByte": 54
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python type: trailing-comma (parameters split one per line with a trailing comma added (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "class RetryOptions:",
+        "start": 37,
+        "end": 56,
+        "startByte": 37,
+        "endByte": 56
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/trailing-comma.py",
+        "language": "python",
+        "quote": "class RetryOptions:",
+        "start": 37,
+        "end": 56,
+        "startByte": 37,
+        "endByte": 56
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python type: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "class RetryOptions:",
+        "start": 37,
+        "end": 56,
+        "startByte": 37,
+        "endByte": 56
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/comment-outside.py",
+        "language": "python",
+        "quote": "class RetryOptions:",
+        "start": 45,
+        "end": 64,
+        "startByte": 45,
+        "endByte": 64
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python type: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "class RetryOptions:",
+        "start": 37,
+        "end": 56,
+        "startByte": 37,
+        "endByte": 56
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/comment-inside.py",
+        "language": "python",
+        "quote": "class RetryOptions:",
+        "start": 37,
+        "end": 56,
+        "startByte": 37,
+        "endByte": 56
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python type: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "class RetryOptions:",
+        "start": 37,
+        "end": 56,
+        "startByte": 37,
+        "endByte": 56
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/literal.py",
+        "language": "python",
+        "quote": "class RetryOptions:",
+        "start": 38,
+        "end": 57,
+        "startByte": 38,
+        "endByte": 57
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python type: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "class RetryOptions:",
+        "start": 37,
+        "end": 56,
+        "startByte": 37,
+        "endByte": 56
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/rename.py",
+        "language": "python",
+        "quote": "class RetryOptions:",
+        "start": 34,
+        "end": 53,
+        "startByte": 34,
+        "endByte": 53
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python type: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "class RetryOptions:",
+        "start": 37,
+        "end": 56,
+        "startByte": 37,
+        "endByte": 56
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/structure.py",
+        "language": "python",
+        "quote": "class RetryOptions:",
+        "start": 37,
+        "end": 56,
+        "startByte": 37,
+        "endByte": 56
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python fn: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "def retry(",
+        "start": 81,
+        "end": 91,
+        "startByte": 81,
+        "endByte": 91
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/reformat.py",
+        "language": "python",
+        "quote": "def retry(",
+        "start": 78,
+        "end": 88,
+        "startByte": 78,
+        "endByte": 88
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python fn: trailing-comma (parameters split one per line with a trailing comma added (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "def retry(",
+        "start": 81,
+        "end": 91,
+        "startByte": 81,
+        "endByte": 91
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/trailing-comma.py",
+        "language": "python",
+        "quote": "def retry(",
+        "start": 81,
+        "end": 91,
+        "startByte": 81,
+        "endByte": 91
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5 | v5-adjusted: SPEC §8.4 ast-v1: equality of the ast-v1 streams in ast-node.json (comments and trailing commas skipped); v4's semantic hashes were different",
+    "origin": "v5-adjusted"
+  },
+  {
+    "name": "python fn: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "def retry(",
+        "start": 81,
+        "end": 91,
+        "startByte": 81,
+        "endByte": 91
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/comment-outside.py",
+        "language": "python",
+        "quote": "def retry(",
+        "start": 113,
+        "end": 123,
+        "startByte": 113,
+        "endByte": 123
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python fn: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "def retry(",
+        "start": 81,
+        "end": 91,
+        "startByte": 81,
+        "endByte": 91
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/comment-inside.py",
+        "language": "python",
+        "quote": "def retry(",
+        "start": 81,
+        "end": 91,
+        "startByte": 81,
+        "endByte": 91
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5 | v5-adjusted: SPEC §8.4 ast-v1: equality of the ast-v1 streams in ast-node.json (comments and trailing commas skipped); v4's semantic hashes were different",
+    "origin": "v5-adjusted"
+  },
+  {
+    "name": "python fn: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "def retry(",
+        "start": 81,
+        "end": 91,
+        "startByte": 81,
+        "endByte": 91
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/literal.py",
+        "language": "python",
+        "quote": "def retry(",
+        "start": 82,
+        "end": 92,
+        "startByte": 82,
+        "endByte": 92
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python fn: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "def retry(",
+        "start": 81,
+        "end": 91,
+        "startByte": 81,
+        "endByte": 91
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/rename.py",
+        "language": "python",
+        "quote": "def retry(",
+        "start": 75,
+        "end": 85,
+        "startByte": 75,
+        "endByte": 85
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "python fn: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/python/base.py",
+        "language": "python",
+        "quote": "def retry(",
+        "start": 81,
+        "end": 91,
+        "startByte": 81,
+        "endByte": 91
+      },
+      "b": {
+        "fixture": "fixtures/ast/python/structure.py",
+        "language": "python",
+        "quote": "def retry(",
+        "start": 106,
+        "end": 116,
+        "startByte": 106,
+        "endByte": 116
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust const: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "const MAX_ATTEMPTS: u32 = 5;",
+        "start": 23,
+        "end": 51,
+        "startByte": 23,
+        "endByte": 51
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/reformat.rs",
+        "language": "rust",
+        "quote": "const MAX_ATTEMPTS : u32 =   5;",
+        "start": 25,
+        "end": 56,
+        "startByte": 25,
+        "endByte": 56
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust const: trailing-comma (parameters split one per line with a trailing comma added (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "const MAX_ATTEMPTS: u32 = 5;",
+        "start": 23,
+        "end": 51,
+        "startByte": 23,
+        "endByte": 51
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/trailing-comma.rs",
+        "language": "rust",
+        "quote": "const MAX_ATTEMPTS: u32 = 5;",
+        "start": 23,
+        "end": 51,
+        "startByte": 23,
+        "endByte": 51
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust const: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "const MAX_ATTEMPTS: u32 = 5;",
+        "start": 23,
+        "end": 51,
+        "startByte": 23,
+        "endByte": 51
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/comment-outside.rs",
+        "language": "rust",
+        "quote": "const MAX_ATTEMPTS: u32 = 5;",
+        "start": 31,
+        "end": 59,
+        "startByte": 31,
+        "endByte": 59
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust const: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "const MAX_ATTEMPTS: u32 = 5;",
+        "start": 23,
+        "end": 51,
+        "startByte": 23,
+        "endByte": 51
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/comment-inside.rs",
+        "language": "rust",
+        "quote": "const MAX_ATTEMPTS: u32 = 5;",
+        "start": 23,
+        "end": 51,
+        "startByte": 23,
+        "endByte": 51
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust const: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "const MAX_ATTEMPTS: u32 = 5;",
+        "start": 23,
+        "end": 51,
+        "startByte": 23,
+        "endByte": 51
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/literal.rs",
+        "language": "rust",
+        "quote": "const MAX_ATTEMPTS: u32 = 50;",
+        "start": 23,
+        "end": 52,
+        "startByte": 23,
+        "endByte": 52
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust const: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "const MAX_ATTEMPTS: u32 = 5;",
+        "start": 23,
+        "end": 51,
+        "startByte": 23,
+        "endByte": 51
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/rename.rs",
+        "language": "rust",
+        "quote": "const MAX_TRIES: u32 = 5;",
+        "start": 23,
+        "end": 48,
+        "startByte": 23,
+        "endByte": 48
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust const: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "const MAX_ATTEMPTS: u32 = 5;",
+        "start": 23,
+        "end": 51,
+        "startByte": 23,
+        "endByte": 51
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/structure.rs",
+        "language": "rust",
+        "quote": "const MAX_ATTEMPTS: u32 = 5;",
+        "start": 23,
+        "end": 51,
+        "startByte": 23,
+        "endByte": 51
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust type: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "struct RetryOptions {",
+        "start": 57,
+        "end": 78,
+        "startByte": 57,
+        "endByte": 78
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/reformat.rs",
+        "language": "rust",
+        "quote": "struct RetryOptions\n{",
+        "start": 62,
+        "end": 83,
+        "startByte": 62,
+        "endByte": 83
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust type: trailing-comma (parameters split one per line with a trailing comma added (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "struct RetryOptions {",
+        "start": 57,
+        "end": 78,
+        "startByte": 57,
+        "endByte": 78
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/trailing-comma.rs",
+        "language": "rust",
+        "quote": "struct RetryOptions {",
+        "start": 57,
+        "end": 78,
+        "startByte": 57,
+        "endByte": 78
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust type: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "struct RetryOptions {",
+        "start": 57,
+        "end": 78,
+        "startByte": 57,
+        "endByte": 78
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/comment-outside.rs",
+        "language": "rust",
+        "quote": "struct RetryOptions {",
+        "start": 65,
+        "end": 86,
+        "startByte": 65,
+        "endByte": 86
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust type: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "struct RetryOptions {",
+        "start": 57,
+        "end": 78,
+        "startByte": 57,
+        "endByte": 78
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/comment-inside.rs",
+        "language": "rust",
+        "quote": "struct RetryOptions {",
+        "start": 57,
+        "end": 78,
+        "startByte": 57,
+        "endByte": 78
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust type: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "struct RetryOptions {",
+        "start": 57,
+        "end": 78,
+        "startByte": 57,
+        "endByte": 78
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/literal.rs",
+        "language": "rust",
+        "quote": "struct RetryOptions {",
+        "start": 58,
+        "end": 79,
+        "startByte": 58,
+        "endByte": 79
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust type: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "struct RetryOptions {",
+        "start": 57,
+        "end": 78,
+        "startByte": 57,
+        "endByte": 78
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/rename.rs",
+        "language": "rust",
+        "quote": "struct RetryOptions {",
+        "start": 54,
+        "end": 75,
+        "startByte": 54,
+        "endByte": 75
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust type: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "struct RetryOptions {",
+        "start": 57,
+        "end": 78,
+        "startByte": 57,
+        "endByte": 78
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/structure.rs",
+        "language": "rust",
+        "quote": "struct RetryOptions {",
+        "start": 57,
+        "end": 78,
+        "startByte": 57,
+        "endByte": 78
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust fn: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "fn retry(",
+        "start": 109,
+        "end": 118,
+        "startByte": 109,
+        "endByte": 118
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/reformat.rs",
+        "language": "rust",
+        "quote": "fn retry(",
+        "start": 117,
+        "end": 126,
+        "startByte": 117,
+        "endByte": 126
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust fn: trailing-comma (parameters split one per line with a trailing comma added (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "fn retry(",
+        "start": 109,
+        "end": 118,
+        "startByte": 109,
+        "endByte": 118
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/trailing-comma.rs",
+        "language": "rust",
+        "quote": "fn retry(",
+        "start": 109,
+        "end": 118,
+        "startByte": 109,
+        "endByte": 118
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5 | v5-adjusted: SPEC §8.4 ast-v1: equality of the ast-v1 streams in ast-node.json (comments and trailing commas skipped); v4's semantic hashes were different",
+    "origin": "v5-adjusted"
+  },
+  {
+    "name": "rust fn: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "fn retry(",
+        "start": 109,
+        "end": 118,
+        "startByte": 109,
+        "endByte": 118
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/comment-outside.rs",
+        "language": "rust",
+        "quote": "fn retry(",
+        "start": 143,
+        "end": 152,
+        "startByte": 143,
+        "endByte": 152
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust fn: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "fn retry(",
+        "start": 109,
+        "end": 118,
+        "startByte": 109,
+        "endByte": 118
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/comment-inside.rs",
+        "language": "rust",
+        "quote": "fn retry(",
+        "start": 109,
+        "end": 118,
+        "startByte": 109,
+        "endByte": 118
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust fn: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "fn retry(",
+        "start": 109,
+        "end": 118,
+        "startByte": 109,
+        "endByte": 118
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/literal.rs",
+        "language": "rust",
+        "quote": "fn retry(",
+        "start": 110,
+        "end": 119,
+        "startByte": 110,
+        "endByte": 119
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust fn: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "fn retry(",
+        "start": 109,
+        "end": 118,
+        "startByte": 109,
+        "endByte": 118
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/rename.rs",
+        "language": "rust",
+        "quote": "fn retry(",
+        "start": 103,
+        "end": 112,
+        "startByte": 103,
+        "endByte": 112
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "rust fn: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/rust/base.rs",
+        "language": "rust",
+        "quote": "fn retry(",
+        "start": 109,
+        "end": 118,
+        "startByte": 109,
+        "endByte": 118
+      },
+      "b": {
+        "fixture": "fixtures/ast/rust/structure.rs",
+        "language": "rust",
+        "quote": "fn retry(",
+        "start": 131,
+        "end": 140,
+        "startByte": 131,
+        "endByte": 140
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go const: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "MaxAttempts = 5",
+        "start": 40,
+        "end": 55,
+        "startByte": 40,
+        "endByte": 55
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/reformat.go",
+        "language": "go",
+        "quote": "MaxAttempts   =   5",
+        "start": 40,
+        "end": 59,
+        "startByte": 40,
+        "endByte": 59
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go const: trailing-comma (parameters split one per line with a trailing comma added (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "MaxAttempts = 5",
+        "start": 40,
+        "end": 55,
+        "startByte": 40,
+        "endByte": 55
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/trailing-comma.go",
+        "language": "go",
+        "quote": "MaxAttempts = 5",
+        "start": 40,
+        "end": 55,
+        "startByte": 40,
+        "endByte": 55
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go const: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "MaxAttempts = 5",
+        "start": 40,
+        "end": 55,
+        "startByte": 40,
+        "endByte": 55
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/comment-outside.go",
+        "language": "go",
+        "quote": "MaxAttempts = 5",
+        "start": 48,
+        "end": 63,
+        "startByte": 48,
+        "endByte": 63
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go const: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "MaxAttempts = 5",
+        "start": 40,
+        "end": 55,
+        "startByte": 40,
+        "endByte": 55
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/comment-inside.go",
+        "language": "go",
+        "quote": "MaxAttempts = 5",
+        "start": 40,
+        "end": 55,
+        "startByte": 40,
+        "endByte": 55
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go const: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "MaxAttempts = 5",
+        "start": 40,
+        "end": 55,
+        "startByte": 40,
+        "endByte": 55
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/literal.go",
+        "language": "go",
+        "quote": "MaxAttempts = 50",
+        "start": 40,
+        "end": 56,
+        "startByte": 40,
+        "endByte": 56
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go const: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "MaxAttempts = 5",
+        "start": 40,
+        "end": 55,
+        "startByte": 40,
+        "endByte": 55
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/rename.go",
+        "language": "go",
+        "quote": "MaxTries = 5",
+        "start": 40,
+        "end": 52,
+        "startByte": 40,
+        "endByte": 52
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go const: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "MaxAttempts = 5",
+        "start": 40,
+        "end": 55,
+        "startByte": 40,
+        "endByte": 55
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/structure.go",
+        "language": "go",
+        "quote": "MaxAttempts = 5",
+        "start": 40,
+        "end": 55,
+        "startByte": 40,
+        "endByte": 55
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go type: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "type RetryOptions struct {",
+        "start": 57,
+        "end": 83,
+        "startByte": 57,
+        "endByte": 83
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/reformat.go",
+        "language": "go",
+        "quote": "type RetryOptions   struct {",
+        "start": 61,
+        "end": 89,
+        "startByte": 61,
+        "endByte": 89
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go type: trailing-comma (parameters split one per line with a trailing comma added (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "type RetryOptions struct {",
+        "start": 57,
+        "end": 83,
+        "startByte": 57,
+        "endByte": 83
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/trailing-comma.go",
+        "language": "go",
+        "quote": "type RetryOptions struct {",
+        "start": 57,
+        "end": 83,
+        "startByte": 57,
+        "endByte": 83
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go type: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "type RetryOptions struct {",
+        "start": 57,
+        "end": 83,
+        "startByte": 57,
+        "endByte": 83
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/comment-outside.go",
+        "language": "go",
+        "quote": "type RetryOptions struct {",
+        "start": 65,
+        "end": 91,
+        "startByte": 65,
+        "endByte": 91
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go type: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "type RetryOptions struct {",
+        "start": 57,
+        "end": 83,
+        "startByte": 57,
+        "endByte": 83
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/comment-inside.go",
+        "language": "go",
+        "quote": "type RetryOptions struct {",
+        "start": 57,
+        "end": 83,
+        "startByte": 57,
+        "endByte": 83
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go type: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "type RetryOptions struct {",
+        "start": 57,
+        "end": 83,
+        "startByte": 57,
+        "endByte": 83
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/literal.go",
+        "language": "go",
+        "quote": "type RetryOptions struct {",
+        "start": 58,
+        "end": 84,
+        "startByte": 58,
+        "endByte": 84
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go type: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "type RetryOptions struct {",
+        "start": 57,
+        "end": 83,
+        "startByte": 57,
+        "endByte": 83
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/rename.go",
+        "language": "go",
+        "quote": "type RetryOptions struct {",
+        "start": 54,
+        "end": 80,
+        "startByte": 54,
+        "endByte": 80
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go type: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "type RetryOptions struct {",
+        "start": 57,
+        "end": 83,
+        "startByte": 57,
+        "endByte": 83
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/structure.go",
+        "language": "go",
+        "quote": "type RetryOptions struct {",
+        "start": 57,
+        "end": 83,
+        "startByte": 57,
+        "endByte": 83
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go fn: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "func Retry(",
+        "start": 101,
+        "end": 112,
+        "startByte": 101,
+        "endByte": 112
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/reformat.go",
+        "language": "go",
+        "quote": "func Retry(",
+        "start": 117,
+        "end": 128,
+        "startByte": 117,
+        "endByte": 128
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go fn: trailing-comma (parameters split one per line with a trailing comma added (what a formatter does))",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "func Retry(",
+        "start": 101,
+        "end": 112,
+        "startByte": 101,
+        "endByte": 112
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/trailing-comma.go",
+        "language": "go",
+        "quote": "func Retry(",
+        "start": 101,
+        "end": 112,
+        "startByte": 101,
+        "endByte": 112
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5 | v5-adjusted: SPEC §8.4 ast-v1: equality of the ast-v1 streams in ast-node.json (comments and trailing commas skipped); v4's semantic hashes were different",
+    "origin": "v5-adjusted"
+  },
+  {
+    "name": "go fn: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "func Retry(",
+        "start": 101,
+        "end": 112,
+        "startByte": 101,
+        "endByte": 112
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/comment-outside.go",
+        "language": "go",
+        "quote": "func Retry(",
+        "start": 134,
+        "end": 145,
+        "startByte": 134,
+        "endByte": 145
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go fn: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "func Retry(",
+        "start": 101,
+        "end": 112,
+        "startByte": 101,
+        "endByte": 112
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/comment-inside.go",
+        "language": "go",
+        "quote": "func Retry(",
+        "start": 101,
+        "end": 112,
+        "startByte": 101,
+        "endByte": 112
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5 | v5-adjusted: SPEC §8.4 ast-v1: equality of the ast-v1 streams in ast-node.json (comments and trailing commas skipped); v4's semantic hashes were different",
+    "origin": "v5-adjusted"
+  },
+  {
+    "name": "go fn: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "func Retry(",
+        "start": 101,
+        "end": 112,
+        "startByte": 101,
+        "endByte": 112
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/literal.go",
+        "language": "go",
+        "quote": "func Retry(",
+        "start": 102,
+        "end": 113,
+        "startByte": 102,
+        "endByte": 113
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go fn: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "func Retry(",
+        "start": 101,
+        "end": 112,
+        "startByte": 101,
+        "endByte": 112
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/rename.go",
+        "language": "go",
+        "quote": "func Retry(",
+        "start": 95,
+        "end": 106,
+        "startByte": 95,
+        "endByte": 106
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "go fn: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/go/base.go",
+        "language": "go",
+        "quote": "func Retry(",
+        "start": 101,
+        "end": 112,
+        "startByte": 101,
+        "endByte": 112
+      },
+      "b": {
+        "fixture": "fixtures/ast/go/structure.go",
+        "language": "go",
+        "quote": "func Retry(",
+        "start": 114,
+        "end": 125,
+        "startByte": 114,
+        "endByte": 125
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java const: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 54,
+        "end": 70,
+        "startByte": 54,
+        "endByte": 70
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/reformat.java",
+        "language": "java",
+        "quote": "MAX_ATTEMPTS   =   5",
+        "start": 54,
+        "end": 74,
+        "startByte": 54,
+        "endByte": 74
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java const: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 54,
+        "end": 70,
+        "startByte": 54,
+        "endByte": 70
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/comment-outside.java",
+        "language": "java",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 62,
+        "end": 78,
+        "startByte": 62,
+        "endByte": 78
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java const: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 54,
+        "end": 70,
+        "startByte": 54,
+        "endByte": 70
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/comment-inside.java",
+        "language": "java",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 54,
+        "end": 70,
+        "startByte": 54,
+        "endByte": 70
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java const: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 54,
+        "end": 70,
+        "startByte": 54,
+        "endByte": 70
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/literal.java",
+        "language": "java",
+        "quote": "MAX_ATTEMPTS = 50",
+        "start": 54,
+        "end": 71,
+        "startByte": 54,
+        "endByte": 71
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java const: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 54,
+        "end": 70,
+        "startByte": 54,
+        "endByte": 70
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/rename.java",
+        "language": "java",
+        "quote": "MAX_TRIES = 5",
+        "start": 54,
+        "end": 67,
+        "startByte": 54,
+        "endByte": 67
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java const: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 54,
+        "end": 70,
+        "startByte": 54,
+        "endByte": 70
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/structure.java",
+        "language": "java",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 54,
+        "end": 70,
+        "startByte": 54,
+        "endByte": 70
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java type: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "static class Options {",
+        "start": 77,
+        "end": 99,
+        "startByte": 77,
+        "endByte": 99
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/reformat.java",
+        "language": "java",
+        "quote": "static class Options\n  {",
+        "start": 79,
+        "end": 103,
+        "startByte": 79,
+        "endByte": 103
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java type: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "static class Options {",
+        "start": 77,
+        "end": 99,
+        "startByte": 77,
+        "endByte": 99
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/comment-outside.java",
+        "language": "java",
+        "quote": "static class Options {",
+        "start": 85,
+        "end": 107,
+        "startByte": 85,
+        "endByte": 107
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java type: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "static class Options {",
+        "start": 77,
+        "end": 99,
+        "startByte": 77,
+        "endByte": 99
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/comment-inside.java",
+        "language": "java",
+        "quote": "static class Options {",
+        "start": 77,
+        "end": 99,
+        "startByte": 77,
+        "endByte": 99
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java type: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "static class Options {",
+        "start": 77,
+        "end": 99,
+        "startByte": 77,
+        "endByte": 99
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/literal.java",
+        "language": "java",
+        "quote": "static class Options {",
+        "start": 78,
+        "end": 100,
+        "startByte": 78,
+        "endByte": 100
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java type: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "static class Options {",
+        "start": 77,
+        "end": 99,
+        "startByte": 77,
+        "endByte": 99
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/rename.java",
+        "language": "java",
+        "quote": "static class Options {",
+        "start": 74,
+        "end": 96,
+        "startByte": 74,
+        "endByte": 96
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java type: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "static class Options {",
+        "start": 77,
+        "end": 99,
+        "startByte": 77,
+        "endByte": 99
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/structure.java",
+        "language": "java",
+        "quote": "static class Options {",
+        "start": 77,
+        "end": 99,
+        "startByte": 77,
+        "endByte": 99
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java fn: reformat (whitespace and line breaks only)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "int retry(",
+        "start": 137,
+        "end": 147,
+        "startByte": 137,
+        "endByte": 147
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/reformat.java",
+        "language": "java",
+        "quote": "int retry(",
+        "start": 133,
+        "end": 143,
+        "startByte": 133,
+        "endByte": 143
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java fn: comment-outside (comments outside the span's node changed or added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "int retry(",
+        "start": 137,
+        "end": 147,
+        "startByte": 137,
+        "endByte": 147
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/comment-outside.java",
+        "language": "java",
+        "quote": "int retry(",
+        "start": 178,
+        "end": 188,
+        "startByte": 178,
+        "endByte": 188
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java fn: comment-inside (a comment inside the span's node changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "int retry(",
+        "start": 137,
+        "end": 147,
+        "startByte": 137,
+        "endByte": 147
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/comment-inside.java",
+        "language": "java",
+        "quote": "int retry(",
+        "start": 137,
+        "end": 147,
+        "startByte": 137,
+        "endByte": 147
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5 | v5-adjusted: SPEC §8.4 ast-v1: equality of the ast-v1 streams in ast-node.json (comments and trailing commas skipped); v4's semantic hashes were different",
+    "origin": "v5-adjusted"
+  },
+  {
+    "name": "java fn: literal (a number and a string literal changed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "int retry(",
+        "start": 137,
+        "end": 147,
+        "startByte": 137,
+        "endByte": 147
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/literal.java",
+        "language": "java",
+        "quote": "int retry(",
+        "start": 138,
+        "end": 148,
+        "startByte": 138,
+        "endByte": 148
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java fn: rename (the constant, a field and a parameter renamed)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "int retry(",
+        "start": 137,
+        "end": 147,
+        "startByte": 137,
+        "endByte": 147
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/rename.java",
+        "language": "java",
+        "quote": "int retry(",
+        "start": 131,
+        "end": 141,
+        "startByte": 131,
+        "endByte": 141
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "java fn: structure (a parameter and a field added)",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/java/base.java",
+        "language": "java",
+        "quote": "int retry(",
+        "start": 137,
+        "end": 147,
+        "startByte": 137,
+        "endByte": 147
+      },
+      "b": {
+        "fixture": "fixtures/ast/java/structure.java",
+        "language": "java",
+        "quote": "int retry(",
+        "start": 169,
+        "end": 179,
+        "startByte": 169,
+        "endByte": 179
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "computed: src/ast/analyzer.ts analyze on fixtures written for v5",
+    "origin": "computed"
+  },
+  {
+    "name": "ast.test: re-indentation keeps the semantic hash",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/ast-reindent-a.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 13,
+        "end": 29,
+        "startByte": 13,
+        "endByte": 29
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/ast-reindent-b.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS   =   5",
+        "start": 18,
+        "end": 38,
+        "startByte": 18,
+        "endByte": 38
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "test/ast.test.ts › tree-sitter snapping and the two-tier hash › structural hash is invariant under re-indentation",
+    "origin": "copied"
+  },
+  {
+    "name": "ast.test: a rename changes the semantic hash",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/ast-rename-a.ts",
+        "language": "typescript",
+        "quote": "retry(maxAttempts",
+        "start": 9,
+        "end": 26,
+        "startByte": 9,
+        "endByte": 26
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/ast-rename-b.ts",
+        "language": "typescript",
+        "quote": "retry(maxTries",
+        "start": 9,
+        "end": 23,
+        "startByte": 9,
+        "endByte": 23
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "test/ast.test.ts › tree-sitter snapping and the two-tier hash › a rename keeps the structural hash but changes the semantic hash",
+    "origin": "copied"
+  },
+  {
+    "name": "ast.test: 5 to 50 changes the semantic hash",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/ast-literal-a.ts",
+        "language": "typescript",
+        "quote": "MAX = 5",
+        "start": 6,
+        "end": 13,
+        "startByte": 6,
+        "endByte": 13
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/ast-literal-b.ts",
+        "language": "typescript",
+        "quote": "MAX = 50",
+        "start": 6,
+        "end": 14,
+        "startByte": 6,
+        "endByte": 14
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "test/ast.test.ts › tree-sitter snapping and the two-tier hash › a changed numeric literal changes the semantic hash (5 to 50)",
+    "origin": "copied"
+  },
+  {
+    "name": "precision: literal-5-to-50",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-literal-5-to-50-a.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 13,
+        "end": 29,
+        "startByte": 13,
+        "endByte": 29
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-literal-5-to-50-b.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 13,
+        "end": 29,
+        "startByte": 13,
+        "endByte": 29
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "test/precision.test.ts › never report a drifted claim as `unchanged` › numeric literal 5 to 50 (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "precision: string-changed",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-string-changed-a.ts",
+        "language": "typescript",
+        "quote": "MODE = \"strict\"",
+        "start": 13,
+        "end": 28,
+        "startByte": 13,
+        "endByte": 28
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-string-changed-b.ts",
+        "language": "typescript",
+        "quote": "MODE = \"lenient",
+        "start": 13,
+        "end": 28,
+        "startByte": 13,
+        "endByte": 28
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "test/precision.test.ts › never report a drifted claim as `unchanged` › string literal changed (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "precision: boolean-flipped",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-boolean-flipped-a.ts",
+        "language": "typescript",
+        "quote": "ENABLED = true",
+        "start": 13,
+        "end": 27,
+        "startByte": 13,
+        "endByte": 27
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-boolean-flipped-b.ts",
+        "language": "typescript",
+        "quote": "ENABLED = fals",
+        "start": 13,
+        "end": 27,
+        "startByte": 13,
+        "endByte": 27
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "test/precision.test.ts › never report a drifted claim as `unchanged` › boolean flipped (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "precision: param-added",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-param-added-a.ts",
+        "language": "typescript",
+        "quote": "function retry(max: number)",
+        "start": 0,
+        "end": 27,
+        "startByte": 0,
+        "endByte": 27
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-param-added-b.ts",
+        "language": "typescript",
+        "quote": "function retry(max: number,",
+        "start": 0,
+        "end": 27,
+        "startByte": 0,
+        "endByte": 27
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "test/precision.test.ts › never report a drifted claim as `unchanged` › signature gained a parameter (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "precision: reindent",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-reindent-a.ts",
+        "language": "typescript",
+        "quote": "return 5",
+        "start": 17,
+        "end": 25,
+        "startByte": 17,
+        "endByte": 25
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-reindent-b.ts",
+        "language": "typescript",
+        "quote": "return 5",
+        "start": 23,
+        "end": 31,
+        "startByte": 23,
+        "endByte": 31
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "test/precision.test.ts › neutral edits do not produce false `changed`/`orphaned` › re-indentation never produces false-changed (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "precision: blank-lines-elsewhere",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-blank-lines-elsewhere-a.ts",
+        "language": "typescript",
+        "quote": "MAX = 5",
+        "start": 13,
+        "end": 20,
+        "startByte": 13,
+        "endByte": 20
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-blank-lines-elsewhere-b.ts",
+        "language": "typescript",
+        "quote": "MAX = 5",
+        "start": 13,
+        "end": 20,
+        "startByte": 13,
+        "endByte": 20
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "test/precision.test.ts › neutral edits do not produce false `changed`/`orphaned` › reflow (added blank lines elsewhere) stays unchanged (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "precision: code-added-below",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-code-added-below-a.ts",
+        "language": "typescript",
+        "quote": "MAX = 5",
+        "start": 13,
+        "end": 20,
+        "startByte": 13,
+        "endByte": 20
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-code-added-below-b.ts",
+        "language": "typescript",
+        "quote": "MAX = 5",
+        "start": 13,
+        "end": 20,
+        "startByte": 13,
+        "endByte": 20
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "test/precision.test.ts › neutral edits do not produce false `changed`/`orphaned` › unrelated code added below the anchor stays unchanged (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "precision: battery-comment-appended",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-battery-comment-appended-a.ts",
+        "language": "typescript",
+        "quote": "MAX = 5",
+        "start": 13,
+        "end": 20,
+        "startByte": 13,
+        "endByte": 20
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-battery-comment-appended-b.ts",
+        "language": "typescript",
+        "quote": "MAX = 5",
+        "start": 13,
+        "end": 20,
+        "startByte": 13,
+        "endByte": 20
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "test/precision.test.ts › neutral edits do not produce false `changed`/`orphaned` › a battery of neutral edits yields zero false-changed/orphaned (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "precision: battery-header-comment",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-battery-header-comment-a.ts",
+        "language": "typescript",
+        "quote": "MAX = 5",
+        "start": 13,
+        "end": 20,
+        "startByte": 13,
+        "endByte": 20
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-battery-header-comment-b.ts",
+        "language": "typescript",
+        "quote": "MAX = 5",
+        "start": 23,
+        "end": 30,
+        "startByte": 23,
+        "endByte": 30
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "test/precision.test.ts › neutral edits do not produce false `changed`/`orphaned` › a battery of neutral edits yields zero false-changed/orphaned (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "precision: battery-line-appended",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-battery-line-appended-a.ts",
+        "language": "typescript",
+        "quote": "MAX = 5",
+        "start": 13,
+        "end": 20,
+        "startByte": 13,
+        "endByte": 20
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-battery-line-appended-b.ts",
+        "language": "typescript",
+        "quote": "MAX = 5",
+        "start": 13,
+        "end": 20,
+        "startByte": 13,
+        "endByte": 20
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "test/precision.test.ts › neutral edits do not produce false `changed`/`orphaned` › a battery of neutral edits yields zero false-changed/orphaned (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "precision: battery-spaces-inside",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-battery-spaces-inside-a.ts",
+        "language": "typescript",
+        "quote": "MAX = 5",
+        "start": 13,
+        "end": 20,
+        "startByte": 13,
+        "endByte": 20
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-battery-spaces-inside-b.ts",
+        "language": "typescript",
+        "quote": "MAX   =   5",
+        "start": 17,
+        "end": 28,
+        "startByte": 17,
+        "endByte": 28
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "test/precision.test.ts › neutral edits do not produce false `changed`/`orphaned` › a battery of neutral edits yields zero false-changed/orphaned (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "precision: rename-constant",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-rename-constant-a.ts",
+        "language": "typescript",
+        "quote": "const MAX_ATTEMPTS = 5;",
+        "start": 7,
+        "end": 30,
+        "startByte": 7,
+        "endByte": 30
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-rename-constant-b.ts",
+        "language": "typescript",
+        "quote": "const MAX_TRIES = 5;\n",
+        "start": 7,
+        "end": 28,
+        "startByte": 7,
+        "endByte": 28
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "test/precision.test.ts › a rename grades `changed` with the rename reason label › renaming the anchored identifier (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "precision: rename-callee",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-rename-callee-a.ts",
+        "language": "typescript",
+        "quote": "const result = computeTotal(items);",
+        "start": 0,
+        "end": 35,
+        "startByte": 0,
+        "endByte": 35
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-rename-callee-b.ts",
+        "language": "typescript",
+        "quote": "const result = computeSum(items);\n",
+        "start": 0,
+        "end": 34,
+        "startByte": 0,
+        "endByte": 34
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "test/precision.test.ts › a rename grades `changed` with the rename reason label › a rename of a called function inside a whole-statement anchor (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "precision: rename-parameter",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-rename-parameter-a.ts",
+        "language": "typescript",
+        "quote": "function retryWithBackoff(maxAttempts: number)",
+        "start": 0,
+        "end": 46,
+        "startByte": 0,
+        "endByte": 46
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-rename-parameter-b.ts",
+        "language": "typescript",
+        "quote": "function retryWithBackoff(maxTries: number)",
+        "start": 0,
+        "end": 43,
+        "startByte": 0,
+        "endByte": 43
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "test/precision.test.ts › a rename grades `changed` with the rename reason label › a rename of a parameter inside a function anchor (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "precision: moved-by-prologue",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/precision-moved-by-prologue-a.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 13,
+        "end": 29,
+        "startByte": 13,
+        "endByte": 29
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/precision-moved-by-prologue-b.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 417,
+        "end": 433,
+        "startByte": 417,
+        "endByte": 433
+      }
+    },
+    "expected": {
+      "semanticHashEqual": true
+    },
+    "source": "test/precision.test.ts › a moved-but-intact region grades moved (the test asserts the claim state; span b is where v4's locate step finds the quote; the hash relation is computed)",
+    "origin": "computed"
+  },
+  {
+    "name": "languages: typescript 5 to 50",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/languages-typescript-a.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 13,
+        "end": 29,
+        "startByte": 13,
+        "endByte": 29
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/languages-typescript-b.ts",
+        "language": "typescript",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 13,
+        "end": 29,
+        "startByte": 13,
+        "endByte": 29
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "test/languages.test.ts › all five first-party grammars › typescript: a changed literal never grades evidence:unchanged (span b is where v4's locate step finds the quote; the hash relation is computed and consistent with the test)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "languages: python 5 to 50",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/languages-python-a.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 0,
+        "end": 16,
+        "startByte": 0,
+        "endByte": 16
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/languages-python-b.py",
+        "language": "python",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 0,
+        "end": 16,
+        "startByte": 0,
+        "endByte": 16
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "test/languages.test.ts › all five first-party grammars › python: a changed literal never grades evidence:unchanged (span b is where v4's locate step finds the quote; the hash relation is computed and consistent with the test)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "languages: rust 5 to 50",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/languages-rust-a.rs",
+        "language": "rust",
+        "quote": "MAX_ATTEMPTS: u32 = 5",
+        "start": 6,
+        "end": 27,
+        "startByte": 6,
+        "endByte": 27
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/languages-rust-b.rs",
+        "language": "rust",
+        "quote": "MAX_ATTEMPTS: u32 = 5",
+        "start": 6,
+        "end": 27,
+        "startByte": 6,
+        "endByte": 27
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "test/languages.test.ts › all five first-party grammars › rust: a changed literal never grades evidence:unchanged (span b is where v4's locate step finds the quote; the hash relation is computed and consistent with the test)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "languages: go 5 to 50",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/languages-go-a.go",
+        "language": "go",
+        "quote": "MaxAttempts = 5",
+        "start": 6,
+        "end": 21,
+        "startByte": 6,
+        "endByte": 21
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/languages-go-b.go",
+        "language": "go",
+        "quote": "MaxAttempts = 5",
+        "start": 6,
+        "end": 21,
+        "startByte": 6,
+        "endByte": 21
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "test/languages.test.ts › all five first-party grammars › go: a changed literal never grades evidence:unchanged (span b is where v4's locate step finds the quote; the hash relation is computed and consistent with the test)",
+    "origin": "narrowed"
+  },
+  {
+    "name": "languages: java 5 to 50",
+    "input": {
+      "a": {
+        "fixture": "fixtures/ast/tests/languages-java-a.java",
+        "language": "java",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 27,
+        "end": 43,
+        "startByte": 27,
+        "endByte": 43
+      },
+      "b": {
+        "fixture": "fixtures/ast/tests/languages-java-b.java",
+        "language": "java",
+        "quote": "MAX_ATTEMPTS = 5",
+        "start": 27,
+        "end": 43,
+        "startByte": 27,
+        "endByte": 43
+      }
+    },
+    "expected": {
+      "semanticHashEqual": false
+    },
+    "source": "test/languages.test.ts › all five first-party grammars › java: a changed literal never grades evidence:unchanged (span b is where v4's locate step finds the quote; the hash relation is computed and consistent with the test)",
+    "origin": "narrowed"
+  }
+]

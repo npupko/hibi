@@ -1,0 +1,1 @@
+function retry(maxAttempts: number) { return maxAttempts; }
