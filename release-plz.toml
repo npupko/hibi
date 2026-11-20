@@ -1,0 +1,33 @@
+# release-plz configuration: https://release-plz.dev/docs/config
+#
+# One version for the whole workspace (`version.workspace = true` in every
+# crate), one root CHANGELOG.md, and one tag `vX.Y.Z` per release. The tag
+# starts .github/workflows/release.yml (cargo-dist), which builds the `hibi`
+# binary and creates the GitHub Release with the changelog section as notes.
+
+[workspace]
+# Read released versions from git tags instead of crates.io. In this mode
+# release-plz never runs `cargo publish`. To publish the `hibi` crate later,
+# set `git_only = false` for that package; see CONTRIBUTING.md.
+git_only = true
+# Every package resolves its released version from the same tag, so the
+# template is set for all of them, not only for the package that creates it.
+git_tag_name = "v{{ version }}"
+# Only hibi-cli creates the tag (below). No package creates a GitHub Release:
+# cargo-dist creates it when the tag is pushed.
+git_tag_enable = false
+git_release_enable = false
+# Only hibi-cli writes a changelog (below).
+changelog_update = false
+# Release only when a release pull request is merged, not on every push.
+release_always = false
+# The version follows conventional commits only; no cargo-semver-checks run.
+semver_check = false
+
+[[package]]
+name = "hibi-cli"
+git_tag_enable = true
+changelog_update = true
+changelog_path = "./CHANGELOG.md"
+# Most behaviour lives in the library, so its commits belong in the changelog.
+changelog_include = ["hibi", "hibi-provider-reference"]
