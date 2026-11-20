@@ -18,15 +18,12 @@ mod harness;
 
 mod canon;
 mod duration;
+mod text;
 
 /// Case files that no test loads yet, because the module they bind belongs
 /// to a unit that has not landed. R1 fails if a file listed here does not
 /// exist or is bound in `bindings!`. This list MUST be empty at release.
 const PENDING: &[&str] = &[
-    // text (sections 4.1 to 4.3)
-    "normalize.json",
-    "levenshtein.json",
-    "similarity.json",
     // locate (section 7, and quote_selector of section 16.1)
     "error-budget.json",
     "within-budget.json",
@@ -77,6 +74,9 @@ macro_rules! bindings {
 bindings! {
     file "canon.json" => canon_json, canon::canon;
     file "ids.json" => ids_json, canon::ids;
+    file "normalize.json" => normalize_json, text::normalize;
+    file "levenshtein.json" => levenshtein_json, text::levenshtein;
+    file "similarity.json" => similarity_json, text::similarity;
     file "duration.json" => duration_json, duration::duration;
     file "recheck-boundary.json" => recheck_boundary_json, duration::recheck_boundary;
 }
