@@ -74,6 +74,50 @@ pub fn levenshtein_chars(a: &[char], b: &[char]) -> usize {
     row[short.len()]
 }
 
+/// `Some(levenshtein(a, b))` when that distance is at most `max`, `None`
+/// otherwise. Only the diagonal band of width `2 * max + 1` is computed, and
+/// the computation stops as soon as every cell of a row exceeds `max`, so
+/// the cost is `O(min(len) * max)` instead of `O(len(a) * len(b))`.
+pub fn levenshtein_at_most(a: &[char], b: &[char], max: usize) -> Option<usize> {
+    let (long, short) = if a.len() >= b.len() { (a, b) } else { (b, a) };
+    if long.len() - short.len() > max {
+        return None;
+    }
+    let s = short.len();
+    // Cells outside the band hold `over`; no stored value exceeds it.
+    let over = max.saturating_add(1);
+    let mut prev: Vec<usize> = (0..=s).map(|j| if j <= max { j } else { over }).collect();
+    let mut cur = vec![over; s + 1];
+    for (i, &lc) in long.iter().enumerate() {
+        let i = i + 1;
+        let lo = i.saturating_sub(max);
+        let hi = (i.saturating_add(max)).min(s);
+        // The next row reads this row at `lo - 1 ..= hi + 1` only.
+        let mut row_min = over;
+        if lo == 0 {
+            cur[0] = i;
+            row_min = i;
+        } else {
+            cur[lo - 1] = over;
+        }
+        for j in lo.max(1)..=hi {
+            let substitute = prev[j - 1].saturating_add(usize::from(lc != short[j - 1]));
+            let delete = prev[j].saturating_add(1);
+            let insert = cur[j - 1].saturating_add(1);
+            cur[j] = substitute.min(delete).min(insert).min(over);
+            row_min = row_min.min(cur[j]);
+        }
+        if hi < s {
+            cur[hi + 1] = over;
+        }
+        if row_min > max {
+            return None;
+        }
+        std::mem::swap(&mut prev, &mut cur);
+    }
+    Some(prev[s]).filter(|&d| d <= max)
+}
+
 /// `similarity(a, b)` of section 4.3: 1 when the normalized strings are
 /// equal (also when both are empty), else
 /// `max(0, 1 - levenshtein(na, nb) / max(len(na), len(nb)))` in binary64.
@@ -145,23 +189,35 @@ pub fn line_at(text: &str, byte: usize) -> usize {
 
 /// A text as characters with the byte offset of each, for algorithms that
 /// work on character indices and report byte offsets.
+///
+/// Memory: 4 bytes per character, plus 4 bytes per character when the text
+/// is not all ASCII. Offsets are `u32`: every text hibi locates in is
+/// bounded far below 4 GiB (`MAX_FILE_BYTES`, section 6.1, and the 16 MiB
+/// protocol line limit, section 13.1).
 #[derive(Debug, Clone)]
 pub struct Chars {
     chars: Vec<char>,
-    /// `offsets[i]` is the byte offset of character `i`; one extra entry
-    /// holds the byte length.
-    offsets: Vec<usize>,
+    /// Empty when the text is all ASCII (byte offset equals character
+    /// index). Otherwise `offsets[i]` is the byte offset of character `i`,
+    /// and one extra entry holds the byte length.
+    offsets: Vec<u32>,
 }
 
 impl Chars {
+    /// Panics if the text is 4 GiB or longer.
     pub fn new(text: &str) -> Self {
-        let mut chars = Vec::with_capacity(text.len());
-        let mut offsets = Vec::with_capacity(text.len() + 1);
-        for (b, c) in text.char_indices() {
-            chars.push(c);
-            offsets.push(b);
-        }
-        offsets.push(text.len());
+        let len = u32::try_from(text.len()).expect("a located text is shorter than 4 GiB");
+        let mut chars = Vec::with_capacity(text.chars().count());
+        chars.extend(text.chars());
+        let offsets = if chars.len() == text.len() {
+            Vec::new()
+        } else {
+            let mut offsets = Vec::with_capacity(chars.len() + 1);
+            // Each offset is below `len`, which fits in u32.
+            offsets.extend(text.char_indices().map(|(b, _)| b as u32));
+            offsets.push(len);
+            offsets
+        };
         Chars { chars, offsets }
     }
 
@@ -179,13 +235,26 @@ impl Chars {
 
     /// Byte offset of character index `i`, clamped to the byte length.
     pub fn byte(&self, i: usize) -> usize {
-        self.offsets[i.min(self.chars.len())]
+        let i = i.min(self.chars.len());
+        if self.offsets.is_empty() {
+            i
+        } else {
+            self.offsets[i] as usize
+        }
     }
 
     /// Character index at or before byte offset `byte`, clamped to the
     /// character count.
     pub fn index(&self, byte: usize) -> usize {
-        match self.offsets.binary_search(&byte) {
+        let n = self.chars.len();
+        if self.offsets.is_empty() {
+            return byte.min(n);
+        }
+        if byte >= self.offsets[n] as usize {
+            return n;
+        }
+        // `byte` is below the byte length, so it fits in u32.
+        match self.offsets.binary_search(&(byte as u32)) {
             Ok(i) => i,
             Err(i) => i - 1,
         }
@@ -231,6 +300,51 @@ mod tests {
         assert_eq!(floor_boundary(t, 5), 3);
         assert_eq!(ceil_boundary(t, 5), 7);
         assert_eq!(line_at("a\nb\nc", 4), 3);
+    }
+
+    #[test]
+    fn ascii_offsets() {
+        let t = "ab c";
+        let c = Chars::new(t);
+        for b in 0..=6 {
+            assert_eq!(c.index(b), byte_to_char(t, b), "{b}");
+        }
+        for i in 0..=6 {
+            assert_eq!(c.byte(i), char_to_byte(t, i), "{i}");
+        }
+        assert_eq!(c.string(1, 9), "b c");
+        let e = Chars::new("");
+        assert_eq!((e.len(), e.index(3), e.byte(2)), (0, 0, 0));
+    }
+
+    /// `levenshtein_at_most` agrees with the full computation for every
+    /// bound, on pseudo-random strings over small alphabets.
+    #[test]
+    fn banded_levenshtein_agrees() {
+        let mut seed: u64 = 7;
+        let mut rnd = |n: u64| {
+            seed = seed
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            (seed >> 33) % n
+        };
+        let alphabet = ['a', 'b', 'c', 'é', '😀'];
+        for _ in 0..3000 {
+            let k = 1 + rnd(alphabet.len() as u64) as usize;
+            let mut word = |len: u64| -> Vec<char> {
+                (0..rnd(len))
+                    .map(|_| alphabet[rnd(k as u64) as usize])
+                    .collect()
+            };
+            let a = word(14);
+            let b = word(14);
+            let d = levenshtein_chars(&a, &b);
+            for max in 0..=16 {
+                let want = (d <= max).then_some(d);
+                assert_eq!(levenshtein_at_most(&a, &b, max), want, "{a:?} {b:?} {max}");
+            }
+            assert_eq!(levenshtein_at_most(&a, &b, usize::MAX), Some(d));
+        }
     }
 
     #[test]

@@ -5,6 +5,7 @@
 //! on character indices; every offset passed in or returned is a UTF-8 byte
 //! offset on a character boundary.
 
+use crate::model::MAX_QUOTE_CHARS;
 use crate::text::{self, Chars};
 
 /// Characters of stored context on each side of a quote.
@@ -74,10 +75,12 @@ pub fn error_budget(n: usize) -> usize {
 
 /// `within_budget(located, quote)`: the normalized strings are equal, or
 /// their Levenshtein distance is within the budget of the normalized quote.
+/// The distance is computed only up to the budget (at most [`ERROR_CAP`]),
+/// so the cost is linear in the length of the shorter string.
 pub fn within_budget(located: &str, quote: &str) -> bool {
-    let a = text::normalize(located);
-    let b = text::normalize(quote);
-    a == b || text::levenshtein(&a, &b) <= error_budget(text::char_len(&b))
+    let a: Vec<char> = text::normalize(located).chars().collect();
+    let b: Vec<char> = text::normalize(quote).chars().collect();
+    a == b || text::levenshtein_at_most(&a, &b, error_budget(b.len())).is_some()
 }
 
 fn similarity_chars(a: &[char], b: &str) -> f64 {
@@ -388,22 +391,32 @@ pub struct QuoteSelector {
     pub pos: usize,
 }
 
-/// The error of [`quote_selector`]: the span is empty after trimming WS.
-/// The CLI reports it as `invalid_anchor`.
+/// The errors of [`quote_selector`]. The CLI reports both as
+/// `invalid_anchor`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
-#[error("empty span")]
-pub struct EmptySpan;
+pub enum SpanError {
+    /// The span is empty after trimming WS.
+    #[error("empty span")]
+    EmptySpan,
+    /// The span is longer than [`MAX_QUOTE_CHARS`] characters, the longest
+    /// quote a selector may hold (section 5.2).
+    #[error("span longer than {MAX_QUOTE_CHARS} characters")]
+    TooLong,
+}
 
 /// `quote_selector(text, start, end)` of section 16.1: clamp the byte range
 /// to the text (start moves down and end up to a character boundary, end is
 /// at least start), and return the quote with its context and position. The
 /// quote is the span as it is, untrimmed (section 5.2).
-pub fn quote_selector(text: &str, start: usize, end: usize) -> Result<QuoteSelector, EmptySpan> {
+pub fn quote_selector(text: &str, start: usize, end: usize) -> Result<QuoteSelector, SpanError> {
     let start = text::floor_boundary(text, start);
     let end = text::ceil_boundary(text, end.max(start));
     let quote = &text[start..end];
     if text::trim(quote).is_empty() {
-        return Err(EmptySpan);
+        return Err(SpanError::EmptySpan);
+    }
+    if quote.chars().nth(MAX_QUOTE_CHARS).is_some() {
+        return Err(SpanError::TooLong);
     }
     let before = &text[..start];
     let prefix_start = before
@@ -430,13 +443,48 @@ mod tests {
         assert_eq!(error_budget(usize::MAX), ERROR_CAP);
     }
 
+    /// Long inputs: the budget check is banded, so 20,000 characters with
+    /// the cap of 256 errors stays cheap, and the answer is exact at the cap.
+    #[test]
+    fn within_budget_long_inputs() {
+        let quote = "abcdefghij".repeat(2000);
+        let with_errors = |k: usize| -> String {
+            quote
+                .chars()
+                .enumerate()
+                .map(|(i, c)| if i % 10 == 0 && i / 10 < k { 'X' } else { c })
+                .collect()
+        };
+        assert!(within_budget(&with_errors(ERROR_CAP), &quote));
+        assert!(!within_budget(&with_errors(ERROR_CAP + 1), &quote));
+        assert!(!within_budget(&"x".repeat(40_000), &quote));
+    }
+
     #[test]
     fn quote_selector_boundaries() {
         let t = "é TARGET é";
         let q = quote_selector(t, 1, 9).unwrap();
         assert_eq!(q.quote, "é TARGET");
         assert_eq!(q.pos, 0);
-        assert_eq!(quote_selector(t, 99, 120), Err(EmptySpan));
+        assert_eq!(quote_selector(t, 99, 120), Err(SpanError::EmptySpan));
+    }
+
+    #[test]
+    fn quote_selector_length_limit() {
+        let t = format!("{}x", "é".repeat(MAX_QUOTE_CHARS));
+        let q = quote_selector(&t, 0, 2 * MAX_QUOTE_CHARS).unwrap();
+        assert_eq!(q.quote.chars().count(), MAX_QUOTE_CHARS);
+        assert_eq!(q.suffix, "x");
+        assert_eq!(quote_selector(&t, 0, t.len()), Err(SpanError::TooLong));
+        // The stored form of a span within the limit is a valid selector.
+        let sel = crate::model::Selector {
+            quote: Some(q.quote),
+            prefix: Some(q.prefix),
+            suffix: Some(q.suffix),
+            pos: Some(q.pos as u64),
+            ..Default::default()
+        };
+        sel.validate().unwrap();
     }
 
     #[test]
