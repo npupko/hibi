@@ -21,6 +21,7 @@ mod code;
 mod duration;
 mod engine;
 mod fingerprint;
+mod judge;
 mod locate;
 mod prose;
 mod provider;
@@ -86,6 +87,9 @@ bindings! {
     file "resolve.json" => resolve_json, resolve::resolve;
     file "freshness.json" => freshness_json, engine::freshness;
     file "coverage.json" => coverage_json, engine::coverage;
+    file "judge/triage.json" => judge_triage_json, judge::triage;
+    file "judge/suggest-evidence.json" => judge_suggest_evidence_json, judge::suggest_evidence;
+    file "judge/order.json" => judge_order_json, judge::order;
     dir "provider/protocol/" => provider_protocol_cases, provider::protocol;
     dir "provider/reference/" => provider_reference_cases, provider::reference;
 }

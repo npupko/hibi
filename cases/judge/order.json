@@ -1,0 +1,54 @@
+[
+  {
+    "name": "judge-order: one stale claim with two sides",
+    "input": {
+      "statement": "The client retries a request three times.",
+      "content": ["The client retries a request four times.", "pub fn retries() -> u32 {\n    4\n}"],
+      "response": {
+        "model": "jev-1.14.0",
+        "answers": {"q0": {"type": "noul", "noul": 0.04}},
+        "usage": {"input_tokens": 70, "output_tokens": 2}
+      }
+    },
+    "expected": {
+      "request": {
+        "model": "jev-1.14.0",
+        "state": {"task": "hibi-order-v1", "statement": "The client retries a request three times."},
+        "questions": {
+          "q0": {"type": "noul",
+            "instructions": {"ask": "The statement is still true given this content.",
+                             "content": ["The client retries a request four times.", "pub fn retries() -> u32 {\n    4\n}"]}}
+        }
+      },
+      "answers": {"q0": {"noul": 0.04}}
+    },
+    "source": "synthetic, not recorded from the live API: written by hand from SPEC 14.2 and 14.5 and the NoulAnswer schema of https://api.typesafe.ai/openapi.json (read 2026-11-20).",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "judge-order: a response for another question name is unusable",
+    "input": {
+      "statement": "Retries are capped.",
+      "content": ["Retries are capped at 5."],
+      "response": {
+        "model": "jev-1.14.0",
+        "answers": {"q1": {"type": "noul", "noul": 0.9}},
+        "usage": {"input_tokens": 50, "output_tokens": 2}
+      }
+    },
+    "expected": {
+      "request": {
+        "model": "jev-1.14.0",
+        "state": {"task": "hibi-order-v1", "statement": "Retries are capped."},
+        "questions": {
+          "q0": {"type": "noul",
+            "instructions": {"ask": "The statement is still true given this content.",
+                             "content": ["Retries are capped at 5."]}}
+        }
+      },
+      "answers": {"q0": null}
+    },
+    "source": "synthetic, not recorded from the live API: SPEC 14.2, a response that lacks an answer for a question of the request fails the request.",
+    "origin": "spec-derived"
+  }
+]

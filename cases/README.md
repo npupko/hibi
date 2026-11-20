@@ -322,6 +322,28 @@ The `freshness.json` and `coverage.json` cases are `spec-derived`: each
 `source` gives the rule applied. They bind `engine::evaluate`, and
 `engine::covered_keys` with `engine::classify`.
 
+### `judge/`: synthetic, not recorded
+
+The three files under `judge/` are **synthetic**. They were written by hand
+from SPEC sections 14.2 to 14.5 and from the answer schemas of the vendor's
+OpenAPI document (`https://api.typesafe.ai/openapi.json`, read on
+2026-11-20). No case was recorded from the live Jev API. Every case has
+origin `spec-derived`, and its `source` starts with "synthetic, not recorded
+from the live API". SPEC section 16.3 asks for recorded pairs, so these
+files are a stand-in until someone with a `TYPESAFE_API_KEY` records real
+ones.
+
+| file | `input` | `expected` |
+|---|---|---|
+| `judge/triage.json` | `{document, units: [{headings, text}], response}`: the document locator, the units of one request in order, and a response body | `{request, answers, results}`: the exact request body, each answer as hibi reads it (`{noul}`, `{choice, p}`, or `null` when unusable, which fails the request), and per unit `{checkable, band, evidence}`, or `null` when an answer is unusable |
+| `judge/suggest-evidence.json` | `{statement, candidates: [{where, code}], response}` | `{request, answers, results: [{p, fits}], noneFits}`, with `results` and `noneFits` `null` when an answer is unusable |
+| `judge/order.json` | `{statement, content, response}`: one stale claim's statement and side texts | `{request, answers}` |
+
+They bind `judge::questions` (the request shapes) and `judge::read_answer`
+with `judge::Band` and `judge::EvidenceLabel` (reading the answers). Packing
+into requests, the cache and the transport are tested against a local
+scripted server in `crates/hibi/tests/judge/`.
+
 The four `rfc8785` cases of `canon.json` are the primitive-types sample of
 RFC 8785 section 3.2.2 with the bytes of section 3.2.4, the sorting sample of
 section 3.2.3, the number samples of appendix B, and the appendix B row
