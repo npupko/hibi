@@ -2,6 +2,8 @@
 //! real git repository with the real file provider, store and cache.
 //! Requirements R22 to R27, R61 and R64, and the transport policy of 14.7.
 
+#![cfg(feature = "judge")]
+
 mod mock;
 
 use std::collections::BTreeMap;
