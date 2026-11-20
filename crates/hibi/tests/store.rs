@@ -17,8 +17,8 @@ use hibi::model::{
     Anchor, Claim, Fingerprint, Locator, Mark, MarkSide, Retirement, Selector, Timestamp,
 };
 use hibi::store::git_text::{
-    self, GITATTRIBUTES, GitTextStore, MAX_SHARD_BYTES, check_root, discover_root, init,
-    init_files, shard_of, shard_paths,
+    self, GITATTRIBUTES, GitTextStore, MAX_SHARD_BYTES, MAX_STORE_BYTES, check_root, discover_root,
+    init, init_files, shard_of, shard_paths,
 };
 use hibi::store::{Batch, Store};
 
@@ -419,6 +419,22 @@ fn r9_unsorted_and_duplicate_lines() {
     sorted.sort();
     assert_eq!(ids, sorted);
 
+    // An append that adds nothing new to the shard still leaves it sorted
+    // and without duplicates.
+    store
+        .append(&Batch {
+            claims: vec![a.clone()],
+            ..Batch::default()
+        })
+        .unwrap();
+    assert_shards_canonical(dir.path());
+    let mut sorted_lines = [line(&a), line(&b), line(&c)];
+    sorted_lines.sort();
+    assert_eq!(
+        fs::read_to_string(&shard).unwrap(),
+        sorted_lines.join("\n") + "\n"
+    );
+
     let d = claim_in_shard(5, "d", "d");
     store.append(&claim_and_mark(d)).unwrap();
     assert_shards_canonical(dir.path());
@@ -562,32 +578,362 @@ fn orphans_and_unknown_replacements_are_warnings() {
     assert_eq!(ledger.retirements, vec![r], "the retirement stands");
     let codes: BTreeSet<&str> = ledger.warnings.iter().map(|w| w.code.as_str()).collect();
     assert_eq!(codes, ["orphan_record", "unknown_replacement"].into());
+
+    // Section 12.4 step 3b: a write to the orphan's shard keeps its line.
+    let shard = shard_of(&gone.subject.loc);
+    store
+        .append(&claim_and_mark(claim_in_shard(shard, "n", "n")))
+        .unwrap();
+    let orphan_line = String::from_utf8(m.canonical().unwrap()).unwrap();
+    let lines: Vec<String> = fs::read_to_string(&path)
+        .unwrap()
+        .lines()
+        .map(str::to_owned)
+        .collect();
+    assert!(lines.contains(&orphan_line), "the orphan line is kept");
+    assert!(lines.len() >= 2, "the new mark is in the same shard");
+    assert_shards_canonical(dir.path());
+    assert!(store.load().unwrap().marks.iter().all(|x| x.id != m.id));
 }
 
-/// R63: a shard longer than `MAX_SHARD_BYTES` is `store_corrupt`.
+/// The errors of `load`, `append` and `snapshot_id`, in that order. Each
+/// must fail.
+fn three_errors(store: &GitTextStore) -> [(&'static str, hibi::Error); 3] {
+    [
+        ("load", store.load().unwrap_err()),
+        (
+            "append",
+            store
+                .append(&claim_and_mark(claim("a.md", "a")))
+                .unwrap_err(),
+        ),
+        ("snapshot_id", store.snapshot_id().unwrap_err()),
+    ]
+}
+
+/// Set the length of an existing shard file without writing data (a sparse
+/// file of zero bytes).
+fn set_shard_len(root: &Path, rel: &str, len: u64) {
+    fs::OpenOptions::new()
+        .write(true)
+        .open(root.join(".hibi").join(rel))
+        .unwrap()
+        .set_len(len)
+        .unwrap();
+}
+
+/// R63: a shard longer than `MAX_SHARD_BYTES` is `store_corrupt`; a shard of
+/// exactly `MAX_SHARD_BYTES` is not refused for its size.
+///
+/// The size is checked when a shard is read, by one comparison that
+/// `load`, `append` (its read under the lock) and `snapshot_id` share. The
+/// write path of `append` has no size check of its own.
+///
+/// The shard at the cap is a sparse file of zero bytes. `load` and `append`
+/// read it and fail on its content, with an error that is not the size
+/// error. Acceptance is not shown with a shard that loads: 64 MiB of valid
+/// records take too long to build and parse in a test, and `snapshot_id`,
+/// which does not parse, takes seconds to hash 64 MiB in a debug build.
 #[test]
-fn r63_oversized_shard() {
-    let (dir, store) = new_store();
-    let f = fs::File::create(dir.path().join(".hibi/claims/0.jsonl")).unwrap();
-    f.set_len(MAX_SHARD_BYTES + 1).unwrap();
-    assert_eq!(store.load().unwrap_err().code, Code::StoreCorrupt);
-    assert_eq!(store.snapshot_id().unwrap_err().code, Code::StoreCorrupt);
-    assert_eq!(
-        store
-            .append(&claim_and_mark(claim("a.md", "a")))
-            .unwrap_err()
-            .code,
-        Code::StoreCorrupt
-    );
+fn r63_shard_size_boundary() {
+    let size_error = format!("is longer than {MAX_SHARD_BYTES} bytes");
+    for rel in ["claims/0.jsonl", "marks/0.jsonl"] {
+        let (dir, store) = new_store();
+        set_shard_len(dir.path(), rel, MAX_SHARD_BYTES);
+        for (op, e) in [
+            ("load", store.load().unwrap_err()),
+            (
+                "append",
+                store
+                    .append(&claim_and_mark(claim("a.md", "a")))
+                    .unwrap_err(),
+            ),
+        ] {
+            assert_eq!(e.code, Code::StoreCorrupt, "{op} {rel}");
+            assert_eq!(
+                e.message,
+                format!(".hibi/{rel} line 1 does not end with a newline"),
+                "{op} {rel}: the content is refused, not the size"
+            );
+        }
+
+        set_shard_len(dir.path(), rel, MAX_SHARD_BYTES + 1);
+        for (op, e) in three_errors(&store) {
+            assert_eq!(e.code, Code::StoreCorrupt, "{op} {rel}");
+            assert_eq!(e.message, format!(".hibi/{rel} {size_error}"), "{op} {rel}");
+        }
+    }
 }
 
+/// The 32 shard files together may hold `MAX_STORE_BYTES`; one byte more is
+/// `store_corrupt`, found from the file sizes before any shard is read.
+///
+/// Every file stays at or under `MAX_SHARD_BYTES`, so the per-file check
+/// cannot be what refuses. The files are sparse and hold zero bytes: at
+/// exactly the cap `load` and `append` get as far as reading a shard and
+/// fail on its content. `snapshot_id` makes the same check through the same
+/// function; it is not run at the cap, because hashing 256 MiB takes many
+/// seconds in a debug build.
+#[test]
+fn total_store_size_boundary() {
+    assert_eq!(MAX_STORE_BYTES, 268_435_456);
+    assert_eq!(MAX_STORE_BYTES, 4 * MAX_SHARD_BYTES);
+    let (dir, store) = new_store();
+    // Two claims shards and two marks shards, each exactly at the per-file
+    // cap: the total is exactly MAX_STORE_BYTES.
+    for rel in [
+        "claims/0.jsonl",
+        "claims/f.jsonl",
+        "marks/0.jsonl",
+        "marks/f.jsonl",
+    ] {
+        set_shard_len(dir.path(), rel, MAX_SHARD_BYTES);
+    }
+    for (op, e) in [
+        ("load", store.load().unwrap_err()),
+        (
+            "append",
+            store
+                .append(&claim_and_mark(claim("a.md", "a")))
+                .unwrap_err(),
+        ),
+    ] {
+        assert_eq!(e.code, Code::StoreCorrupt, "{op}");
+        assert_eq!(
+            e.message, ".hibi/marks/0.jsonl line 1 does not end with a newline",
+            "{op}: a shard was read and its content refused, not the total size"
+        );
+    }
+
+    // One byte more, in a fifth file.
+    set_shard_len(dir.path(), "marks/7.jsonl", 1);
+    for (op, e) in three_errors(&store) {
+        assert_eq!(e.code, Code::StoreCorrupt, "{op}");
+        assert_eq!(
+            e.message,
+            format!(
+                "the shard files under .hibi/claims and .hibi/marks hold {} bytes in total, more than the limit of {MAX_STORE_BYTES} bytes",
+                MAX_STORE_BYTES + 1
+            ),
+            "{op}"
+        );
+        let remediation = e.remediation.as_deref().unwrap_or("");
+        assert!(
+            remediation.contains(".hibi/claims") && remediation.contains(".hibi/marks"),
+            "{op}: {remediation}"
+        );
+    }
+}
+
+/// Section 12.3: a missing shard file is an empty shard, for reading and
+/// for writing.
 #[test]
 fn missing_shards_are_empty() {
     let (dir, store) = new_store();
-    fs::remove_file(dir.path().join(".hibi/claims/3.jsonl")).unwrap();
-    fs::remove_dir_all(dir.path().join(".hibi/marks")).unwrap();
-    assert!(store.load().unwrap().claims.is_empty());
-    store.snapshot_id().unwrap();
+    let empty = store.snapshot_id().unwrap();
+    for rel in shard_paths() {
+        fs::remove_file(dir.path().join(rel)).unwrap();
+    }
+    let ledger = store.load().unwrap();
+    assert!(ledger.claims.is_empty() && ledger.warnings.is_empty());
+    assert_eq!(store.snapshot_id().unwrap(), empty);
+    let c = claim("a.md", "a");
+    store.append(&claim_and_mark(c.clone())).unwrap();
+    assert_eq!(store.load().unwrap().claims, vec![c]);
+}
+
+/// A missing `claims` or `marks` directory is `store_corrupt` in `load`,
+/// `append` and `snapshot_id`. The message names the directory and the
+/// remediation says how to restore it. Nothing is created, not even
+/// `.hibi/.lock`.
+#[test]
+fn missing_shard_directory_is_store_corrupt() {
+    for d in ["claims", "marks"] {
+        let (dir, store) = new_store();
+        fs::remove_dir_all(dir.path().join(".hibi").join(d)).unwrap();
+        let before = tree_state(dir.path());
+        for (op, e) in three_errors(&store) {
+            assert_eq!(e.code, Code::StoreCorrupt, "{op} {d}");
+            assert_eq!(
+                e.message,
+                format!("the directory .hibi/{d} is missing"),
+                "{op} {d}"
+            );
+            assert_eq!(
+                e.remediation.as_deref(),
+                Some(
+                    format!(
+                        "Restore .hibi/{d} from git, for example with git checkout -- .hibi/{d}, or create the empty directory again with mkdir .hibi/{d}."
+                    )
+                    .as_str()
+                ),
+                "{op} {d}"
+            );
+        }
+        assert_eq!(tree_state(dir.path()), before, "nothing written: {d}");
+
+        // The second remediation works: an empty directory is a store whose
+        // shards of that kind are all missing, that is, empty.
+        fs::create_dir(dir.path().join(".hibi").join(d)).unwrap();
+        assert!(store.load().unwrap().claims.is_empty());
+        store.snapshot_id().unwrap();
+        let c = claim("a.md", "a");
+        store.append(&claim_and_mark(c.clone())).unwrap();
+        let ledger = store.load().unwrap();
+        assert_eq!(ledger.claims, vec![c]);
+        assert_eq!(ledger.marks.len(), 1);
+    }
+}
+
+/// Section 12.2: the shard is the first hex digit of BLAKE3 over the UTF-8
+/// bytes of the subject locator, that is the high four bits of digest
+/// byte 0.
+///
+/// The expected values were not produced by `shard_of`. A separate scratch
+/// program that depends only on the `blake3` crate (1.8.x) printed
+/// `blake3::hash(locator.as_bytes()).to_hex()` for each locator; the two
+/// hex digits below are the first two characters of that text, copied by
+/// hand. Neither the `b3sum` tool nor a Python `blake3` module was
+/// installed, so the digests come from the same BLAKE3 implementation that
+/// the library links, but not through the library's code and without any
+/// shift or mask. To check a row with another implementation:
+/// `printf %s file:README.md | b3sum` must print a digest that starts with
+/// the two digits of that row.
+///
+/// In 12 of the 14 rows the two digits differ, so taking the low four bits
+/// of byte 0 gives a different shard.
+#[test]
+fn shard_is_the_first_hex_digit_of_blake3_of_the_subject_locator() {
+    // (locator, first two hex digits of its BLAKE3 digest)
+    let known = [
+        ("file:README.md", "60"),
+        ("file:docs/a.md", "27"),
+        ("file:docs/b.md", "b9"),
+        ("file:docs/guide/install.md", "fe"),
+        ("file:src/lib.rs", "e3"),
+        ("file:src/store/git_text.rs", "04"),
+        ("file:crates/hibi/Cargo.toml", "00"),
+        ("file:docs/日本語.md", "df"),
+        ("repo:api//openapi.yaml", "a6"),
+        ("repo:web//src/index.ts", "07"),
+        ("archctl:component/store", "1a"),
+        ("file:a", "78"),
+        ("file:c", "89"),
+        ("file:d", "88"),
+    ];
+    let mut differ = 0;
+    for (loc, byte0) in known {
+        let first = byte0.chars().next().unwrap();
+        let second = byte0.chars().nth(1).unwrap();
+        differ += usize::from(first != second);
+        let shard = shard_of(&Locator::new(loc).unwrap());
+        assert_eq!(git_text::shard_digit(shard), first, "{loc}");
+        assert_eq!(u32::from(shard), first.to_digit(16).unwrap(), "{loc}");
+    }
+    assert_eq!(differ, 12);
+
+    // A claim is written to the shard file of that digit.
+    let (dir, store) = new_store();
+    let c = claim("docs/b.md", "b");
+    store.append(&claim_and_mark(c.clone())).unwrap();
+    for (kind, id) in [("claims", c.id.as_str()), ("marks", "m1-")] {
+        let text = fs::read_to_string(dir.path().join(format!(".hibi/{kind}/b.jsonl"))).unwrap();
+        assert!(text.contains(id), "{kind}/b.jsonl holds the record");
+        let other = fs::read(dir.path().join(format!(".hibi/{kind}/9.jsonl"))).unwrap();
+        assert!(other.is_empty(), "{kind}/9.jsonl is empty");
+    }
+}
+
+/// Section 12.3: a damaged line is reported with its file and its line
+/// number.
+#[test]
+fn damaged_lines_name_file_and_line() {
+    let a = claim_in_shard(5, "a", "a");
+    let b = claim_in_shard(5, "b", "b");
+    let line = |c: &Claim| String::from_utf8(c.canonical().unwrap()).unwrap();
+    let (la, lb) = (line(&a), line(&b));
+    let m = mark(&a, "2026-11-20T00:00:00Z");
+    let lm = String::from_utf8(m.canonical().unwrap()).unwrap();
+    let mut tampered: serde_json::Value = serde_json::from_str(&lb).unwrap();
+    tampered["statement"] = "changed".into();
+    let reordered = {
+        // The same record with its keys in another order: valid JSON, right
+        // id, not canonical.
+        let v: serde_json::Value = serde_json::from_str(&lb).unwrap();
+        let mut keys: Vec<_> = v.as_object().unwrap().iter().collect();
+        keys.reverse();
+        let body: Vec<String> = keys
+            .iter()
+            .map(|(k, v)| format!("{}:{v}", serde_json::to_string(k).unwrap()))
+            .collect();
+        format!("{{{}}}", body.join(","))
+    };
+    assert_ne!(reordered, lb);
+    let cases: Vec<(&str, String, String)> = vec![
+        (
+            "claims/5.jsonl",
+            format!("{la}\nnot json\n"),
+            ".hibi/claims/5.jsonl line 2: not valid JSON: expected ident at line 1 column 2".into(),
+        ),
+        (
+            "claims/5.jsonl",
+            format!("{la}\n\n{lb}\n"),
+            ".hibi/claims/5.jsonl line 2: not valid JSON: EOF while parsing a value at line 1 column 0".into(),
+        ),
+        (
+            "claims/5.jsonl",
+            format!("{la}\n{lb}"),
+            ".hibi/claims/5.jsonl line 2 does not end with a newline".into(),
+        ),
+        (
+            "claims/5.jsonl",
+            format!("{la}\n{lb}\n{reordered}\n"),
+            ".hibi/claims/5.jsonl line 3: the line is not the canonical form of its record".into(),
+        ),
+        (
+            "claims/5.jsonl",
+            format!("{la}\n{}\n", lb.replacen('{', "{\"extra\":1,", 1)),
+            ".hibi/claims/5.jsonl line 2: unknown field `extra`, expected one of `id`, `statement`, `subject`, `evidence`, `recheck`, `note`".into(),
+        ),
+        (
+            "claims/5.jsonl",
+            format!("{la}\n{}\n", serde_json::to_string(&tampered).unwrap()),
+            format!(
+                ".hibi/claims/5.jsonl line 2: the id {} is not the id derived from the record body ({})",
+                b.id,
+                claim(
+                    b.subject.loc.as_str().strip_prefix("file:").unwrap(),
+                    "changed"
+                )
+                .id
+            ),
+        ),
+        (
+            "marks/5.jsonl",
+            format!("{lm}\n{la}\n"),
+            format!(
+                ".hibi/marks/5.jsonl line 2: id {:?} is neither a mark nor a retirement id",
+                a.id.as_str()
+            ),
+        ),
+        (
+            "marks/5.jsonl",
+            format!("{lm}\n[1]\n"),
+            ".hibi/marks/5.jsonl line 2: id \"\" is neither a mark nor a retirement id".into(),
+        ),
+        (
+            "marks/5.jsonl",
+            format!("{lm}\n{}\n", lm.replacen('{', "{ ", 1)),
+            ".hibi/marks/5.jsonl line 2: the line is not the canonical form of its record".into(),
+        ),
+    ];
+    for (rel, content, message) in cases {
+        let (dir, store) = new_store();
+        fs::write(dir.path().join(".hibi").join(rel), &content).unwrap();
+        let e = store.load().unwrap_err();
+        assert_eq!(e.code, Code::StoreCorrupt, "{content:?}");
+        assert_eq!(e.message, message, "{content:?}");
+    }
 }
 
 // ---------------------------------------------------------------------------

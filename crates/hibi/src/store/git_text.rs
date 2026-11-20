@@ -12,9 +12,9 @@
 //! Also here: root discovery and the `legacy_store` refusal (section 12.5),
 //! and the store part of `hibi init` ([`init`], section 15.3).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, Read, Write};
+use std::io::{self, BufRead, BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
@@ -27,6 +27,13 @@ use crate::store::{Batch, Ledger, ORPHAN_RECORD, Store, StoreWarning, UNKNOWN_RE
 
 /// The largest shard file, in bytes (section 12.3).
 pub const MAX_SHARD_BYTES: u64 = 67_108_864;
+
+/// The largest total size of the 32 shard files, in bytes (256 MiB). A
+/// loaded store takes several times its size on disk in memory, and git can
+/// deliver every shard at [`MAX_SHARD_BYTES`]; this cap bounds what one
+/// command reads. It is checked from the file sizes before any shard is
+/// read.
+pub const MAX_STORE_BYTES: u64 = 268_435_456;
 
 /// How long `append` waits for the lock (section 12.4).
 pub const LOCK_TIMEOUT: Duration = Duration::from_secs(10);
@@ -308,13 +315,30 @@ fn link_error(rel: &str) -> Error {
     corrupt(format!("{rel} is a symbolic link"))
 }
 
+/// What [`scan`] saw besides the things it refuses.
+struct Scan {
+    /// `.hibi` is a directory.
+    hibi_exists: bool,
+    /// The first of `claims` and `marks` that does not exist.
+    missing_dir: Option<ShardKind>,
+    /// The sum of the sizes of the shard files, from their metadata.
+    shard_bytes: u64,
+}
+
 /// The symbolic-link check of section 12.3: `.hibi`, `hibi.toml`, `claims`,
 /// `marks`, every shard file and `.lock` must not be links; the
-/// directories must be directories and the files regular files.
-fn check_links(hibi: &Path) -> Result<(), Error> {
+/// directories must be directories and the files regular files. Reads
+/// metadata only.
+fn scan(hibi: &Path) -> Result<Scan, Error> {
+    let mut found = Scan {
+        hibi_exists: false,
+        missing_dir: None,
+        shard_bytes: 0,
+    };
     match entry(hibi, "")? {
         Entry::Link => return Err(link_error(HIBI_DIR)),
-        Entry::Missing | Entry::Dir => {}
+        Entry::Missing => {}
+        Entry::Dir => found.hibi_exists = true,
         _ => return Err(corrupt(format!("{HIBI_DIR} is not a directory"))),
     }
     for f in ["hibi.toml", ".lock"] {
@@ -327,7 +351,10 @@ fn check_links(hibi: &Path) -> Result<(), Error> {
     for kind in [ShardKind::Claims, ShardKind::Marks] {
         match entry(&hibi.join(kind.dir()), kind.dir())? {
             Entry::Link => return Err(link_error(&format!("{HIBI_DIR}/{}", kind.dir()))),
-            Entry::Missing => continue,
+            Entry::Missing => {
+                found.missing_dir.get_or_insert(kind);
+                continue;
+            }
             Entry::Dir => {}
             _ => {
                 return Err(corrupt(format!(
@@ -340,26 +367,76 @@ fn check_links(hibi: &Path) -> Result<(), Error> {
             let rel = shard_rel(kind, s);
             match entry(&hibi.join(&rel), &rel)? {
                 Entry::Link => return Err(link_error(&format!("{HIBI_DIR}/{rel}"))),
-                Entry::Missing | Entry::File(_) => {}
+                Entry::Missing => {}
+                Entry::File(len) => found.shard_bytes = found.shard_bytes.saturating_add(len),
                 _ => return Err(corrupt(format!("{HIBI_DIR}/{rel} is not a regular file"))),
             }
         }
     }
+    Ok(found)
+}
+
+/// The checks of [`scan`], for `init`, which runs before the store exists.
+fn check_links(hibi: &Path) -> Result<(), Error> {
+    scan(hibi).map(|_| ())
+}
+
+/// The checks every operation on an existing store makes before it reads a
+/// shard or takes the lock: the checks of [`scan`]; then, under an existing
+/// `.hibi`, both shard directories exist; then the shard files together
+/// hold at most [`MAX_STORE_BYTES`]. Reads metadata only.
+///
+/// A missing shard file is an empty shard (section 12.3). A missing shard
+/// directory is refused: `append` could not write into it, and a store
+/// whose records were removed with their directory would otherwise read as
+/// a store without records.
+fn check_store(hibi: &Path) -> Result<(), Error> {
+    let found = scan(hibi)?;
+    if found.hibi_exists
+        && let Some(kind) = found.missing_dir
+    {
+        let dir = format!("{HIBI_DIR}/{}", kind.dir());
+        return Err(
+            corrupt(format!("the directory {dir} is missing")).with_remediation(format!(
+                "Restore {dir} from git, for example with git checkout -- {dir}, or create the empty directory again with mkdir {dir}."
+            )),
+        );
+    }
+    if found.shard_bytes > MAX_STORE_BYTES {
+        let (claims, marks) = (ShardKind::Claims.dir(), ShardKind::Marks.dir());
+        return Err(corrupt(format!(
+            "the shard files under {HIBI_DIR}/{claims} and {HIBI_DIR}/{marks} hold {} bytes in total, more than the limit of {MAX_STORE_BYTES} bytes",
+            found.shard_bytes
+        ))
+        .with_remediation(format!(
+            "Restore {HIBI_DIR}/{claims} and {HIBI_DIR}/{marks} from a commit in which they are smaller, for example with git checkout <commit> -- {HIBI_DIR}/{claims} {HIBI_DIR}/{marks}."
+        )));
+    }
     Ok(())
 }
 
-/// Read one shard: `None` when missing. A link, a non-file or a file longer
-/// than [`MAX_SHARD_BYTES`] is `store_corrupt`. Opened without following a
-/// link.
-fn read_shard(hibi: &Path, rel: &str) -> Result<Option<Vec<u8>>, Error> {
+/// The size check of a shard (section 12.3), for a length taken from the
+/// file's metadata and for the count of bytes read from it. This is the
+/// only comparison with [`MAX_SHARD_BYTES`].
+fn check_shard_len(shown: &str, len: u64) -> Result<(), Error> {
+    if len > MAX_SHARD_BYTES {
+        return Err(corrupt(format!(
+            "{shown} is longer than {MAX_SHARD_BYTES} bytes"
+        )));
+    }
+    Ok(())
+}
+
+/// Open one shard for reading: `None` when missing. A link, a non-file or a
+/// file longer than [`MAX_SHARD_BYTES`] is `store_corrupt`. Opened without
+/// following a link. The reader yields at most `MAX_SHARD_BYTES` + 1 bytes.
+fn open_shard(hibi: &Path, rel: &str) -> Result<Option<io::Take<File>>, Error> {
     let path = hibi.join(rel);
     let shown = format!("{HIBI_DIR}/{rel}");
-    let too_large = || corrupt(format!("{shown} is longer than {MAX_SHARD_BYTES} bytes"));
     match entry(&path, rel)? {
         Entry::Missing => return Ok(None),
         Entry::Link => return Err(link_error(&shown)),
-        Entry::File(len) if len > MAX_SHARD_BYTES => return Err(too_large()),
-        Entry::File(_) => {}
+        Entry::File(len) => check_shard_len(&shown, len)?,
         _ => return Err(corrupt(format!("{shown} is not a regular file"))),
     }
     let file = match nofollow::apply(OpenOptions::new().read(true)).open(&path) {
@@ -372,152 +449,271 @@ fn read_shard(hibi: &Path, rel: &str) -> Result<Option<Vec<u8>>, Error> {
     if !meta.is_file() {
         return Err(corrupt(format!("{shown} is not a regular file")));
     }
+    Ok(Some(file.take(MAX_SHARD_BYTES + 1)))
+}
+
+/// The bytes of one shard, empty when it is missing ([`open_shard`]).
+fn read_shard(hibi: &Path, rel: &str) -> Result<Vec<u8>, Error> {
+    let shown = format!("{HIBI_DIR}/{rel}");
     let mut buf = Vec::new();
-    file.take(MAX_SHARD_BYTES + 1)
-        .read_to_end(&mut buf)
-        .map_err(|e| Error::io(&shown, &e))?;
-    if buf.len() as u64 > MAX_SHARD_BYTES {
-        return Err(too_large());
+    if let Some(mut file) = open_shard(hibi, rel)? {
+        file.read_to_end(&mut buf)
+            .map_err(|e| Error::io(&shown, &e))?;
+        check_shard_len(&shown, buf.len() as u64)?;
     }
-    Ok(Some(buf))
+    Ok(buf)
 }
 
-/// A parsed shard line.
-#[derive(Debug, Clone)]
-enum Record {
-    Claim(Claim),
-    Mark(Mark),
-    Retirement(Retirement),
-}
+/// A record kind that a shard holds one per line.
+trait ShardRecord: Sized {
+    fn id(&self) -> &str;
 
-impl Record {
-    fn id(&self) -> &str {
-        match self {
-            Record::Claim(c) => c.id.as_str(),
-            Record::Mark(m) => m.id.as_str(),
-            Record::Retirement(r) => r.id.as_str(),
-        }
-    }
+    fn canonical(&self) -> Result<Vec<u8>, Error>;
 
-    fn canonical(&self) -> Result<Vec<u8>, Error> {
-        match self {
-            Record::Claim(c) => c.canonical(),
-            Record::Mark(m) => m.canonical(),
-            Record::Retirement(r) => r.canonical(),
-        }
-    }
-}
+    /// The record of `line`, or `None` when the line does not parse.
+    fn parse_direct(line: &[u8]) -> Option<Self>;
 
-/// One shard as read: its bytes and its records by id (duplicates merged).
-#[derive(Debug, Default)]
-struct ShardData {
-    bytes: Vec<u8>,
-    /// id to the canonical line (without the newline) and the record.
-    lines: BTreeMap<String, (Vec<u8>, Record)>,
+    /// The record of a line that parsed as JSON to `value`, whose `id`
+    /// member is `id` (empty when there is none). The error is the text
+    /// after "line n: ".
+    fn parse_value(id: &str, value: serde_json::Value) -> Result<Self, String>;
+
+    /// Give back the spare capacity of the record's lists. A list of one
+    /// element is deserialized with room for four.
+    fn shrink(&mut self);
 }
 
 fn parse_as<T: DeserializeOwned>(value: serde_json::Value) -> Result<T, String> {
     serde_json::from_value(value).map_err(|e| e.to_string())
 }
 
-/// Parse a shard by the rules of section 12.3, except the checks that need
-/// other shards.
-fn parse_shard(kind: ShardKind, rel: &str, bytes: Vec<u8>) -> Result<ShardData, Error> {
-    let shown = format!("{HIBI_DIR}/{rel}");
-    let mut lines = BTreeMap::new();
-    if !bytes.is_empty() && bytes.last() != Some(&b'\n') {
-        let n = bytes.split(|&b| b == b'\n').count();
-        return Err(corrupt(format!(
-            "{shown} line {n} does not end with a newline"
-        )));
+impl ShardRecord for Claim {
+    fn id(&self) -> &str {
+        self.id.as_str()
     }
-    let body = bytes.strip_suffix(b"\n").unwrap_or(&bytes);
-    if !bytes.is_empty() {
-        for (i, line) in body.split(|&b| b == b'\n').enumerate() {
-            let n = i + 1;
-            let bad = |why: &str| corrupt(format!("{shown} line {n}: {why}"));
-            let value: serde_json::Value =
-                serde_json::from_slice(line).map_err(|e| bad(&format!("not valid JSON: {e}")))?;
-            let id = value
-                .get("id")
-                .and_then(serde_json::Value::as_str)
-                .unwrap_or("")
-                .to_owned();
-            let record = match kind {
-                ShardKind::Claims => Record::Claim(parse_as(value).map_err(|e| bad(&e))?),
-                ShardKind::Marks if id.starts_with("m1-") => {
-                    Record::Mark(parse_as(value).map_err(|e| bad(&e))?)
-                }
-                ShardKind::Marks if id.starts_with("r1-") => {
-                    Record::Retirement(parse_as(value).map_err(|e| bad(&e))?)
-                }
-                ShardKind::Marks => {
-                    return Err(bad(&format!(
-                        "id {id:?} is neither a mark nor a retirement id"
-                    )));
-                }
-            };
-            let canonical = record.canonical()?;
-            if canonical != line {
-                return Err(bad("the line is not the canonical form of its record"));
-            }
-            lines.insert(record.id().to_owned(), (canonical, record));
+
+    fn canonical(&self) -> Result<Vec<u8>, Error> {
+        Claim::canonical(self)
+    }
+
+    fn parse_direct(line: &[u8]) -> Option<Self> {
+        serde_json::from_slice(line).ok()
+    }
+
+    fn parse_value(_id: &str, value: serde_json::Value) -> Result<Self, String> {
+        parse_as(value)
+    }
+
+    fn shrink(&mut self) {
+        self.evidence.shrink_to_fit();
+    }
+}
+
+/// A line of a marks shard.
+#[derive(Debug, Clone)]
+enum MarkLine {
+    Mark(Mark),
+    Retirement(Retirement),
+}
+
+/// The `id` member of a line, read without building the other members.
+#[derive(serde::Deserialize)]
+struct IdOnly {
+    id: Option<String>,
+}
+
+impl ShardRecord for MarkLine {
+    fn id(&self) -> &str {
+        match self {
+            MarkLine::Mark(m) => m.id.as_str(),
+            MarkLine::Retirement(r) => r.id.as_str(),
         }
     }
-    Ok(ShardData { bytes, lines })
+
+    fn canonical(&self) -> Result<Vec<u8>, Error> {
+        match self {
+            MarkLine::Mark(m) => m.canonical(),
+            MarkLine::Retirement(r) => r.canonical(),
+        }
+    }
+
+    fn parse_direct(line: &[u8]) -> Option<Self> {
+        let id = serde_json::from_slice::<IdOnly>(line).ok()?.id?;
+        if id.starts_with("m1-") {
+            serde_json::from_slice(line).ok().map(MarkLine::Mark)
+        } else if id.starts_with("r1-") {
+            serde_json::from_slice(line).ok().map(MarkLine::Retirement)
+        } else {
+            None
+        }
+    }
+
+    fn parse_value(id: &str, value: serde_json::Value) -> Result<Self, String> {
+        if id.starts_with("m1-") {
+            parse_as(value).map(MarkLine::Mark)
+        } else if id.starts_with("r1-") {
+            parse_as(value).map(MarkLine::Retirement)
+        } else {
+            Err(format!("id {id:?} is neither a mark nor a retirement id"))
+        }
+    }
+
+    fn shrink(&mut self) {
+        if let MarkLine::Mark(m) = self {
+            m.sides.shrink_to_fit();
+        }
+    }
+}
+
+/// Parse one line (without its newline) by the rules of section 12.3.
+/// `bad` makes the `store_corrupt` error that names the file and the line.
+///
+/// A line is accepted when it parses as its record type, which includes
+/// the key set and the derived id, and its bytes are the canonical form of
+/// the record. The first attempt builds the record straight from the bytes.
+/// When that attempt does not end in an accepted record, the line is parsed
+/// again by way of a JSON value, and that second parse alone decides
+/// between accepting the line and the error to report. The second parse is
+/// the definition; the first is the same decision for every line it
+/// accepts, because such a line is the canonical form of the record it
+/// produced.
+fn parse_line<T: ShardRecord>(line: &[u8], bad: &dyn Fn(&str) -> Error) -> Result<T, Error> {
+    if let Some(record) = T::parse_direct(line)
+        && record.canonical().is_ok_and(|c| c == line)
+    {
+        return Ok(record);
+    }
+    let value: serde_json::Value =
+        serde_json::from_slice(line).map_err(|e| bad(&format!("not valid JSON: {e}")))?;
+    let id = value
+        .get("id")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("")
+        .to_owned();
+    let record = T::parse_value(&id, value).map_err(|e| bad(&e))?;
+    if record.canonical()? != line {
+        return Err(bad("the line is not the canonical form of its record"));
+    }
+    Ok(record)
+}
+
+/// One shard as read: its records sorted by id, one per id.
+#[derive(Debug)]
+struct ShardData<T> {
+    /// The file held its lines in ascending id order with no id twice (or
+    /// was empty or missing). Every line is canonical, so the file's bytes
+    /// are then exactly what a writer renders from `records`.
+    sorted: bool,
+    records: Vec<T>,
+}
+
+impl<T> Default for ShardData<T> {
+    fn default() -> Self {
+        ShardData {
+            sorted: true,
+            records: Vec::new(),
+        }
+    }
+}
+
+/// Read and parse one shard by the rules of section 12.3, except the checks
+/// that need other shards. The file is read one line at a time; neither its
+/// whole text nor a second copy of its lines is kept.
+fn read_records<T: ShardRecord>(hibi: &Path, rel: &str) -> Result<ShardData<T>, Error> {
+    let shown = format!("{HIBI_DIR}/{rel}");
+    let mut data = ShardData::default();
+    let Some(file) = open_shard(hibi, rel)? else {
+        return Ok(data);
+    };
+    let mut reader = BufReader::new(file);
+    let mut line = Vec::new();
+    let mut bytes = 0u64;
+    let mut n = 0usize;
+    loop {
+        line.clear();
+        let read = reader
+            .read_until(b'\n', &mut line)
+            .map_err(|e| Error::io(&shown, &e))?;
+        if read == 0 {
+            break;
+        }
+        bytes += read as u64;
+        check_shard_len(&shown, bytes)?;
+        n += 1;
+        if line.pop() != Some(b'\n') {
+            return Err(corrupt(format!(
+                "{shown} line {n} does not end with a newline"
+            )));
+        }
+        let mut record: T = parse_line(&line, &|why| corrupt(format!("{shown} line {n}: {why}")))?;
+        record.shrink();
+        if data
+            .records
+            .last()
+            .is_some_and(|prev| prev.id() >= record.id())
+        {
+            data.sorted = false;
+        }
+        data.records.push(record);
+    }
+    if !data.sorted {
+        // Two lines with one id are the same bytes: the id is derived from
+        // the body and both lines are canonical.
+        data.records.sort_by(|a, b| a.id().cmp(b.id()));
+        data.records.dedup_by(|b, a| a.id() == b.id());
+    }
+    Ok(data)
 }
 
 /// The whole store as read, with every check of section 12.3 applied.
 #[derive(Debug, Default)]
 struct Snapshot {
-    claims: [ShardData; 16],
-    marks: [ShardData; 16],
-    ledger: Ledger,
+    claims: [ShardData<Claim>; 16],
+    /// Every mark and retirement on disk, including those in `orphans`.
+    marks: [ShardData<MarkLine>; 16],
+    /// Ids of the marks and retirements whose claim is not in the store.
+    orphans: BTreeSet<String>,
+    warnings: Vec<StoreWarning>,
 }
 
-/// Read all 32 shards and build the ledger. Marks shards are read before
-/// claims shards: a writer renames claims shards first, so a mark seen here
-/// has its claim on disk by the time the claims shards are read, and a
-/// concurrent append cannot produce a spurious `orphan_record`.
+/// Read all 32 shards and apply the checks that need more than one. Marks
+/// shards are read before claims shards: a writer renames claims shards
+/// first, so a mark seen here has its claim on disk by the time the claims
+/// shards are read, and a concurrent append cannot produce a spurious
+/// `orphan_record`.
 fn read_store(hibi: &Path) -> Result<Snapshot, Error> {
-    check_links(hibi)?;
+    check_store(hibi)?;
     let mut snap = Snapshot::default();
-    for kind in [ShardKind::Marks, ShardKind::Claims] {
-        for s in 0..16u8 {
-            let rel = shard_rel(kind, s);
-            let bytes = read_shard(hibi, &rel)?.unwrap_or_default();
-            let data = parse_shard(kind, &rel, bytes)?;
-            match kind {
-                ShardKind::Claims => snap.claims[usize::from(s)] = data,
-                ShardKind::Marks => snap.marks[usize::from(s)] = data,
-            }
-        }
+    for s in 0..16u8 {
+        snap.marks[usize::from(s)] = read_records(hibi, &shard_rel(ShardKind::Marks, s))?;
     }
-    let mut claims: BTreeMap<String, Claim> = BTreeMap::new();
+    for s in 0..16u8 {
+        snap.claims[usize::from(s)] = read_records(hibi, &shard_rel(ShardKind::Claims, s))?;
+    }
+    let mut claims: HashMap<&str, &Claim> = HashMap::new();
     for (s, data) in snap.claims.iter().enumerate() {
-        for (id, (_, rec)) in &data.lines {
-            let Record::Claim(c) = rec else { continue };
+        for c in &data.records {
             let want = shard_of(&c.subject.loc);
             if usize::from(want) != s {
                 return Err(corrupt(format!(
-                    "claim {id} is in {HIBI_DIR}/{} but belongs in {HIBI_DIR}/{}",
+                    "claim {} is in {HIBI_DIR}/{} but belongs in {HIBI_DIR}/{}",
+                    c.id,
                     shard_rel(ShardKind::Claims, s as u8),
                     shard_rel(ShardKind::Claims, want)
                 )));
             }
-            claims.insert(id.clone(), c.clone());
+            claims.insert(c.id.as_str(), c);
         }
     }
-    let mut marks: BTreeMap<String, Mark> = BTreeMap::new();
-    let mut retirements: BTreeMap<String, Retirement> = BTreeMap::new();
+    let mut orphans = BTreeSet::new();
     let mut warnings = Vec::new();
     for (s, data) in snap.marks.iter().enumerate() {
         let rel = shard_rel(ShardKind::Marks, s as u8);
-        for (id, (_, rec)) in &data.lines {
+        for rec in &data.records {
+            let id = rec.id();
             let (claim_id, what) = match rec {
-                Record::Mark(m) => (m.claim.as_str(), "mark"),
-                Record::Retirement(r) => (r.retires.as_str(), "retirement"),
-                Record::Claim(_) => continue,
+                MarkLine::Mark(m) => (m.claim.as_str(), "mark"),
+                MarkLine::Retirement(r) => (r.retires.as_str(), "retirement"),
             };
             let Some(claim) = claims.get(claim_id) else {
                 warnings.push(StoreWarning::new(
@@ -526,6 +722,7 @@ fn read_store(hibi: &Path) -> Result<Snapshot, Error> {
                         "{what} {id} in {HIBI_DIR}/{rel} names claim {claim_id}, which is not in the store; the {what} is ignored"
                     ),
                 ));
+                orphans.insert(id.to_owned());
                 continue;
             };
             let want = shard_of(&claim.subject.loc);
@@ -536,12 +733,11 @@ fn read_store(hibi: &Path) -> Result<Snapshot, Error> {
                 )));
             }
             match rec {
-                Record::Mark(m) => {
+                MarkLine::Mark(m) => {
                     m.check_against(claim)
                         .map_err(|e| corrupt(format!("{HIBI_DIR}/{rel}: {}", e.message)))?;
-                    marks.insert(id.clone(), m.clone());
                 }
-                Record::Retirement(r) => {
+                MarkLine::Retirement(r) => {
                     if let Some(rep) = &r.replaced_by
                         && !claims.contains_key(rep.as_str())
                     {
@@ -552,19 +748,55 @@ fn read_store(hibi: &Path) -> Result<Snapshot, Error> {
                             ),
                         ));
                     }
-                    retirements.insert(id.clone(), r.clone());
                 }
-                Record::Claim(_) => {}
             }
         }
     }
-    snap.ledger = Ledger {
-        claims: claims.into_values().collect(),
-        marks: marks.into_values().collect(),
-        retirements: retirements.into_values().collect(),
-        warnings,
-    };
+    drop(claims);
+    snap.orphans = orphans;
+    snap.warnings = warnings;
     Ok(snap)
+}
+
+impl Snapshot {
+    /// The ledger: every claim, and every mark and retirement whose claim
+    /// is in the store, each list sorted by id. The records are moved, not
+    /// copied.
+    fn into_ledger(self) -> Ledger {
+        // Start from the largest shard's list so that its records stay
+        // where they are.
+        let mut parts: Vec<Vec<Claim>> = self.claims.into_iter().map(|d| d.records).collect();
+        let largest = (0..parts.len())
+            .max_by_key(|&i| parts[i].len())
+            .unwrap_or(0);
+        let mut claims = parts.swap_remove(largest);
+        for part in parts {
+            claims.extend(part);
+        }
+        claims.sort_unstable_by(|a, b| a.id.cmp(&b.id));
+
+        let mut marks = Vec::new();
+        let mut retirements = Vec::new();
+        for data in self.marks {
+            for rec in data.records {
+                if self.orphans.contains(rec.id()) {
+                    continue;
+                }
+                match rec {
+                    MarkLine::Mark(m) => marks.push(m),
+                    MarkLine::Retirement(r) => retirements.push(r),
+                }
+            }
+        }
+        marks.sort_unstable_by(|a, b| a.id.cmp(&b.id));
+        retirements.sort_unstable_by(|a, b| a.id.cmp(&b.id));
+        Ledger {
+            claims,
+            marks,
+            retirements,
+            warnings: self.warnings,
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -684,15 +916,47 @@ fn replace_shard(hibi: &Path, kind: ShardKind, shard: u8, bytes: &[u8]) -> Resul
     Ok(())
 }
 
-/// The bytes of a shard holding `lines`: sorted by id, one canonical line
-/// each, each followed by a newline.
-fn render(lines: &BTreeMap<String, Vec<u8>>) -> Vec<u8> {
-    let mut out = Vec::with_capacity(lines.values().map(|l| l.len() + 1).sum());
-    for line in lines.values() {
+/// Section 12.4 step 3 for one shard: add the lines of `new` (id and
+/// canonical line) whose id the shard does not hold, and write the shard
+/// sorted by id, one canonical line each, each followed by a newline. A
+/// record already in the shard is kept. Nothing is written when the result
+/// would equal the file's current bytes.
+fn merge_shard<T: ShardRecord>(
+    hibi: &Path,
+    kind: ShardKind,
+    shard: u8,
+    current: &ShardData<T>,
+    new: &[(String, Vec<u8>)],
+) -> Result<(), Error> {
+    let mut added: BTreeMap<&str, &[u8]> = BTreeMap::new();
+    for (id, line) in new {
+        let stored = current
+            .records
+            .binary_search_by(|r| r.id().cmp(id.as_str()))
+            .is_ok();
+        if !stored {
+            added.entry(id.as_str()).or_insert(line.as_slice());
+        }
+    }
+    if added.is_empty() && current.sorted {
+        return Ok(());
+    }
+    let mut out = Vec::new();
+    let mut push = |line: &[u8]| {
         out.extend_from_slice(line);
         out.push(b'\n');
+    };
+    let mut added = added.into_iter().peekable();
+    for record in &current.records {
+        while let Some((_, line)) = added.next_if(|(id, _)| *id < record.id()) {
+            push(line);
+        }
+        push(&record.canonical()?);
     }
-    out
+    for (_, line) in added {
+        push(line);
+    }
+    replace_shard(hibi, kind, shard, &out)
 }
 
 /// Check every record of a batch before anything is locked or written:
@@ -744,26 +1008,23 @@ impl GitTextStore {
 
 impl Store for GitTextStore {
     fn load(&self) -> Result<Ledger, Error> {
-        Ok(read_store(&self.hibi)?.ledger)
+        Ok(read_store(&self.hibi)?.into_ledger())
     }
 
     fn append(&self, batch: &Batch) -> Result<(), Error> {
         verify_records(batch)?;
-        // Step 1: the link check, then the lock.
-        check_links(&self.hibi)?;
+        // Step 1: the checks that read metadata only, then the lock.
+        check_store(&self.hibi)?;
         let _lock = acquire_lock(&self.hibi)?;
         crash_point!(Step::Locked);
         // Re-read under the lock. Every shard passes section 12.3 or the
         // append fails before writing.
         let snap = read_store(&self.hibi)?;
-        let stored: BTreeMap<&str, &Claim> = snap
+        let stored: HashMap<&str, &Claim> = snap
             .claims
             .iter()
-            .flat_map(|d| d.lines.values())
-            .filter_map(|(_, r)| match r {
-                Record::Claim(c) => Some((c.id.as_str(), c)),
-                _ => None,
-            })
+            .flat_map(|d| &d.records)
+            .map(|c| (c.id.as_str(), c))
             .collect();
         batch.verify_claims(stored.values().map(|c| &c.id))?;
         let claim_of = |id: &ClaimId| -> Option<&Claim> {
@@ -806,36 +1067,24 @@ impl Store for GitTextStore {
         }
 
         // Step 3: claims shards in ascending order, then marks shards.
-        for (kind, groups, current) in [
-            (ShardKind::Claims, &new_claims, &snap.claims),
-            (ShardKind::Marks, &new_marks, &snap.marks),
-        ] {
-            for (&shard, records) in groups {
-                let data = &current[usize::from(shard)];
-                let mut lines: BTreeMap<String, Vec<u8>> = data
-                    .lines
-                    .iter()
-                    .map(|(id, (line, _))| (id.clone(), line.clone()))
-                    .collect();
-                for (id, line) in records {
-                    lines.entry(id.clone()).or_insert_with(|| line.clone());
-                }
-                let bytes = render(&lines);
-                if bytes == data.bytes {
-                    continue;
-                }
-                replace_shard(&self.hibi, kind, shard, &bytes)?;
-            }
+        for (&shard, records) in &new_claims {
+            let current = &snap.claims[usize::from(shard)];
+            merge_shard(&self.hibi, ShardKind::Claims, shard, current, records)?;
+        }
+        for (&shard, records) in &new_marks {
+            let current = &snap.marks[usize::from(shard)];
+            merge_shard(&self.hibi, ShardKind::Marks, shard, current, records)?;
         }
         // Step 4: the lock is released when `_lock` is dropped.
         Ok(())
     }
 
     fn snapshot_id(&self) -> Result<String, Error> {
-        check_links(&self.hibi)?;
+        check_store(&self.hibi)?;
         let mut h = blake3::Hasher::new();
         for (kind, s) in all_shards() {
-            let bytes = read_shard(&self.hibi, &shard_rel(kind, s))?.unwrap_or_default();
+            // One shard is in memory at a time.
+            let bytes = read_shard(&self.hibi, &shard_rel(kind, s))?;
             h.update(&(bytes.len() as u64).to_be_bytes());
             h.update(&bytes);
         }
