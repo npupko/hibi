@@ -1254,13 +1254,67 @@
     "origin": "spec-derived"
   },
   {
-    "name": "typescript: overloads and a repeated quote: the hit at the text start wins by its empty context",
+    "name": "typescript: new anchor: a repeated quote in every overload gives every overload",
     "input": {
       "path": "src/over.ts",
       "fixture": "fixtures/resolve/over.ts",
       "sel": {
         "symbol": "f",
         "quote": "export function f(a: "
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:f",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "export function f(a: string): void;",
+            "prefix": "",
+            "suffix": "\nexport function f(a: number): void;\nexport func",
+            "pos": 0,
+            "symbol": "f"
+          }
+        },
+        {
+          "key": "function:f~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "export function f(a: number): void;",
+            "prefix": "export function f(a: string): void;\n",
+            "suffix": "\nexport function f(a: any) {\n  return a;\n}\n\nfunc",
+            "pos": 36,
+            "symbol": "f"
+          }
+        },
+        {
+          "key": "function:f~3",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "export function f(a: any) {",
+            "prefix": "ing): void;\nexport function f(a: number): void;\n",
+            "suffix": "\n  return a;\n}\n\nfunction g(a /* first */, b) {\n ",
+            "pos": 72,
+            "symbol": "f"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "typescript: stored anchor: an empty stored prefix makes the hit at the text start win",
+    "input": {
+      "path": "src/over.ts",
+      "fixture": "fixtures/resolve/over.ts",
+      "sel": {
+        "symbol": "f",
+        "quote": "export function f(a: ",
+        "prefix": ""
       }
     },
     "expected": {
@@ -2244,6 +2298,202 @@
             "prefix": "",
             "suffix": " tail\nsecond line\n\nother block\n",
             "pos": 0
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "new anchor: a long quote on the first line and in another unit gives both",
+    "input": {
+      "path": "docs/first.md",
+      "text": "Retries are capped at five.\n\nNote: Retries are capped at five, says the guide.\n",
+      "sel": {
+        "quote": "Retries are capped at five"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "Retries are capped at five.",
+            "prefix": "",
+            "suffix": "\n\nNote: Retries are capped at five, says the gui",
+            "pos": 0
+          }
+        },
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "Note: Retries are capped at five, says the guide.",
+            "prefix": "Retries are capped at five.\n\n",
+            "suffix": "\n",
+            "pos": 29
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "stored anchor: the completed selector of the first-line hit resolves to it",
+    "input": {
+      "path": "docs/first.md",
+      "text": "Retries are capped at five.\n\nNote: Retries are capped at five, says the guide.\n",
+      "sel": {
+        "quote": "Retries are capped at five",
+        "prefix": "",
+        "suffix": ".\n\nNote: Retries are capped at five, says the gu",
+        "pos": 0
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "Retries are capped at five",
+            "prefix": "",
+            "suffix": ".\n\nNote: Retries are capped at five, says the gu",
+            "pos": 0
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "stored anchor: the completed selector of the other hit resolves to it",
+    "input": {
+      "path": "docs/first.md",
+      "text": "Retries are capped at five.\n\nNote: Retries are capped at five, says the guide.\n",
+      "sel": {
+        "quote": "Retries are capped at five",
+        "prefix": "Retries are capped at five.\n\nNote: ",
+        "suffix": ", says the guide.\n",
+        "pos": 35
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "Retries are capped at five",
+            "prefix": "Retries are capped at five.\n\nNote: ",
+            "suffix": ", says the guide.\n",
+            "pos": 35
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "new anchor: a long quote on the last line and in another unit gives both",
+    "input": {
+      "path": "docs/last.md",
+      "text": "The guide says retries are capped at five times.\n\nAnd so: retries are capped at five times",
+      "sel": {
+        "quote": "retries are capped at five times"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "The guide says retries are capped at five times.",
+            "prefix": "",
+            "suffix": "\n\nAnd so: retries are capped at five times",
+            "pos": 0
+          }
+        },
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "And so: retries are capped at five times",
+            "prefix": "e guide says retries are capped at five times.\n\n",
+            "suffix": "",
+            "pos": 50
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "stored anchor: the completed selector of the last-line hit resolves to it",
+    "input": {
+      "path": "docs/last.md",
+      "text": "The guide says retries are capped at five times.\n\nAnd so: retries are capped at five times",
+      "sel": {
+        "quote": "retries are capped at five times",
+        "prefix": "says retries are capped at five times.\n\nAnd so: ",
+        "suffix": "",
+        "pos": 58
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "retries are capped at five times",
+            "prefix": "says retries are capped at five times.\n\nAnd so: ",
+            "suffix": "",
+            "pos": 58
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "stored anchor: the completed selector of the earlier hit resolves to it",
+    "input": {
+      "path": "docs/last.md",
+      "text": "The guide says retries are capped at five times.\n\nAnd so: retries are capped at five times",
+      "sel": {
+        "quote": "retries are capped at five times",
+        "prefix": "The guide says ",
+        "suffix": ".\n\nAnd so: retries are capped at five times",
+        "pos": 15
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "retries are capped at five times",
+            "prefix": "The guide says ",
+            "suffix": ".\n\nAnd so: retries are capped at five times",
+            "pos": 15
           }
         }
       ]
