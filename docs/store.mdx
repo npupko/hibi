@@ -53,9 +53,9 @@ claims/*.jsonl text eol=lf merge=union linguist-generated
 marks/*.jsonl text eol=lf merge=union linguist-generated
 ```
 
-Records are immutable lines with pseudo-random ids, so two branches that add
-claims to the same shard add different lines, and the union merge keeps both
-without a conflict. A merged shard may be unsorted or hold a line twice; hibi
+Records are immutable lines whose ids are derived from their content. Two
+branches that add different claims to the same shard add different lines,
+and the union merge keeps both without a conflict. A merged shard may be unsorted or hold a line twice; hibi
 reads it correctly and the next write sorts it again. The repository's tests
 cover a two-branch merge into one shard.
 
@@ -81,6 +81,7 @@ claim without its mark, which reads as stale.
 | A record in the wrong shard | `store_corrupt` |
 | A shard, `.hibi` or another store path that is a symbolic link | `store_corrupt` |
 | A shard larger than 64 MiB | `store_corrupt` |
+| All shards together larger than 256 MiB | `store_corrupt`; restore the shards from a commit in which they are smaller |
 | A mark or retirement whose claim is not in the store | Warning `orphan_record`; the record is ignored |
 | A retirement whose `replacedBy` claim is not in the store | Warning `unknown_replacement`; the retirement stands |
 | A missing shard file | Read as empty |

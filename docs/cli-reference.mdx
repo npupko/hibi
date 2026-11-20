@@ -37,7 +37,8 @@ hibi claim --help
 ## Output and exit status
 
 The result is JSON when standard output is not a terminal or with
-`--format json`: one object with `"ok": true`, `"command"`, `"warnings"` and
+`--format json`, except for `completions`, `schema <name>` and `--help`: one
+object with `"ok": true`, `"command"`, `"warnings"` and
 the result keys, or `"ok": false` and `"errors"`. Otherwise it is text, with
 errors and warnings on standard error.
 
@@ -67,7 +68,7 @@ one sentence or one command, or `null`.
 | `unsupported_store_version` | `version` in `hibi.toml` is not 1 |
 | `invalid_config` | `.hibi/hibi.toml` does not parse or breaks a rule |
 | `invalid_user_config` | The user config does not parse or breaks a rule |
-| `store_corrupt` | A shard is damaged, misplaced, oversized or a symbolic link |
+| `store_corrupt` | A shard is damaged, misplaced, larger than 64 MiB or a symbolic link, or the shards hold more than 256 MiB together |
 | `store_locked` | Another hibi process held the write lock for 10 seconds |
 | `io_error` | A file operation failed |
 | `git_failed` | A git command failed |

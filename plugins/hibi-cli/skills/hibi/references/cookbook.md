@@ -304,7 +304,7 @@ In another repository, a quote inside a doc comment is refused, because
 comments are not part of the fingerprint:
 
 ```text output
-$ hibi claim "The request timeout is 30 seconds." --subject "file:README.md::timeout is 30 seconds" --evidence "file:src/config.rs#Config::Seconds before a request"
+$ hibi claim "The request timeout is stored in whole seconds." --subject "file:README.md::stored in whole seconds" --evidence "file:src/config.rs#Config::Seconds before a request"
 error: quote_in_comment: evidence 1 (file:src/config.rs): the quote lies wholly or partly inside a code comment
   fix: Anchor the code the comment describes.
 ```
@@ -312,8 +312,8 @@ error: quote_in_comment: evidence 1 (file:src/config.rs): the quote lies wholly 
 Anchor the field itself by its symbol:
 
 ```text output
-$ hibi claim "The request timeout is 30 seconds." --subject "file:README.md::timeout is 30 seconds" --evidence "file:src/config.rs#Config.timeout_secs"
-c1-ha7qmhmnwmqqggw8wd73  created  subject file:README.md (sentence "The request timeout is 30 seconds.", line 4); evidence 1 file:src/config.rs (field "Config.timeout_secs", line 5)
+$ hibi claim "The request timeout is stored in whole seconds." --subject "file:README.md::stored in whole seconds" --evidence "file:src/config.rs#Config.timeout_secs"
+c1-0m5jkh4kmdjbmejs6jyd  created  subject file:README.md (sentence "The request timeout is stored in whole seconds.", line 4); evidence 1 file:src/config.rs (field "Config.timeout_secs", line 5)
 ```
 
 A Python docstring is a string and can be quoted:

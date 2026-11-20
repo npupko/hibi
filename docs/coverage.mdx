@@ -25,8 +25,8 @@ exclude = [
 |---|---|
 | `name` | Required, unique, lower-case letters, digits and `-` |
 | `resource` | Required. For `file:` and `repo:`, a glob over the paths git lists (tracked files, and untracked files that are not ignored): `*` within a path segment, `**` across segments, `?`, `[...]`, `{a,b}`. Paths under `.hibi/` never match. For an external scheme, one exact locator. |
-| `kinds` | Required, not empty. The [unit kinds](/providers/file#unit-kinds) that must be covered. A kind that no unit has selects nothing. |
-| `exclude` | Optional. Each entry has a `resource` pattern, an optional exact unit `key`, and a required `reason`. |
+| `kinds` | Required, not empty. The [unit kinds](/providers/file#unit-kinds) that must be covered. A kind that the scope's provider does not have is `invalid_config`. |
+| `exclude` | Optional. Each entry has a `resource` pattern, an optional `unit` holding one exact unit key (as shown by `cover`), and a required `reason`. Without `unit`, the entry excludes every unit of the matching resources. |
 
 ## What counts as covered
 

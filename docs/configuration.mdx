@@ -40,10 +40,10 @@ version = 1
 
 | Key | Rule |
 |---|---|
-| `version` | Required, must be `1`. Another value is the error `unsupported_store_version`. |
-| `[repos]` | Optional. `alias = "suggested directory"`. The value is only shown to people; hibi never reads from it. |
-| `[schemes.<name>]` | Optional, one table per external scheme, with an optional `description`. Any other key, including `command`, is an error. |
-| `[[scope]]` | Optional, repeatable. See [coverage and scopes](/coverage). |
+| `version` | Required, the integer `1`. A missing `version` or a string such as `"1"` is `invalid_config`; another integer is `unsupported_store_version`. |
+| `[repos]` | Optional. `alias = "suggested directory"`. An alias matches `[a-z0-9][a-z0-9-]*`. The value is only shown to people; hibi never reads from it. |
+| `[schemes.<name>]` | Optional, one table per external scheme, with an optional `description`. A scheme name matches `[a-z][a-z0-9-]*` and cannot be `file` or `repo`, which are built in. Any other key, including `command`, is an error. |
+| `[[scope]]` | Optional, repeatable. A scope name matches `[a-z0-9][a-z0-9-]*`. See [coverage and scopes](/coverage). |
 
 Unknown keys are the error `invalid_config`, as is a file larger than 1 MiB.
 A scope on a scheme that is neither `file`, `repo` nor declared under
@@ -53,7 +53,8 @@ A scope on a scheme that is neither `file`, `repo` nor declared under
 
 The first that applies:
 
-1. the path in `HIBI_CONFIG`;
+1. the path in `HIBI_CONFIG`, when it is set and not empty. A relative path
+   is taken relative to the working directory;
 2. `$XDG_CONFIG_HOME/hibi/config.toml`;
 3. `~/.config/hibi/config.toml` on Linux and macOS,
    `%APPDATA%\hibi\config.toml` on Windows.
@@ -99,10 +100,14 @@ A claim in one repository can use evidence from another with a
 Until step 2, sides on that alias are `unavailable` with reason
 `repo_not_allowed`, and both `hibi providers` and the error message print the
 exact `[[repo]]` lines to add, with absolute paths filled in from the
-suggested location. A sibling is used only when its directory exists, is the
-top level of a git work tree, and is not the root, inside it, or above it.
-Files in a sibling are read only when git lists them there. Resolving a
-`repo:` locator needs git.
+suggested location. Files in a sibling are read only when git lists them
+there. Resolving a `repo:` locator needs git. Each run checks the sibling
+before reading anything from it; a failure gives one of two reasons:
+
+| Reason | When |
+|---|---|
+| `repo_not_found` | The alias is not declared under `[repos]`; the `path` in your entry does not exist or is not a directory; or git is missing or older than 2.45.0 |
+| `repo_not_allowed` | Your user config has no `[[repo]]` entry with this repository as `root` and this `alias`; the `path` is the root, inside it, or above it; or the `path` is not the top level of a git work tree |
 
 ```bash
 hibi claim "The API times out after 30 seconds." \
@@ -115,7 +120,8 @@ hibi claim "The API times out after 30 seconds." \
 ## Cache
 
 hibi keeps one SQLite file of cached unit lists (keyed by the file's git blob
-id and the hibi version) and cached judge answers. The first that applies:
+id, the resource class and the hibi version) and cached judge answers. The
+first that applies:
 
 1. `$HIBI_CACHE_DIR/cache.sqlite3`;
 2. `$XDG_CACHE_HOME/hibi/cache.sqlite3`;

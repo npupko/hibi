@@ -186,8 +186,10 @@ pub fn delay_ms(n: u32) -> u64 {
 
 ## Output for agents
 
-When standard output is not a terminal, every command prints exactly one JSON
-object followed by a newline, also on error. `--format human` or
+When standard output is not a terminal, each command prints exactly one JSON
+object followed by a newline, also on error. The exceptions are
+`hibi completions` (a shell script), `hibi schema <name>` (the schema itself)
+and `--help` (text). `--format human` or
 `--format json` overrides the choice. This is `hibi status` from the last step,
 piped:
 

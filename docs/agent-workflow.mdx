@@ -88,9 +88,9 @@ applies:
 | Fresh with no approximate side, or retired | `null` |
 | A side is missing or ambiguous | `hibi reanchor <id> --subject <anchor>` or `--evidence <n>=<anchor>`, one option per such side |
 | A side is unavailable because its scheme is not declared, its provider is not registered or failed, or a sibling repository is not allowed | `hibi providers` |
-| A side is unavailable for another reason (repository not found, not text, too large, provider error) | `null` |
+| A side is unavailable because a sibling repository was not found, the file is not text or too large, or the provider answered with an error | `null` |
 | Fresh, and a side was found only approximately | `hibi reanchor <id>`, or `hibi reanchor <id> --note <text>` when the plain command would recreate a retired claim |
-| Otherwise: expired, or a side changed | `hibi mark <id>` |
+| Otherwise: expired, a side changed, or a side is unavailable with `profile_mismatch` | `hibi mark <id>` |
 
 A stale claim with an approximately found side gets `hibi mark <id>`. After
 the mark, the claim is fresh and drifted, and its `next` becomes
@@ -138,9 +138,13 @@ prints one JSON object. The fields an agent reads from `status`:
 |---|---|
 | `summary` | Counts of every claim in the store by state, before any filter. `drifted` counts the fresh claims with an approximately found side and is part of `fresh`. |
 | `claims[].state` | `fresh`, `stale`, `expired` or `retired` |
-| `claims[].sides[]` | One entry per side: `role`, `anchor`, `state`, `reason`, `approx`, `unit`, `fp` and `markedFp`, plus `text` with `--detail` |
+| `claims[].sides[]` | One entry per side: `index` (0 for the subject, n for evidence n), `role`, `anchor`, `state`, `reason`, `approx`, `unit`, `fp` and `markedFp`, plus `candidates` when ambiguous and `text` with `--detail` |
 | `claims[].next` | The command to run after a successful re-check, or `null` |
 | `nextNote` | The two reminders: re-check a stale or expired statement before running its `next`, and for a drifted fresh claim, look at what the anchor points to now before running its `reanchor` |
+
+Every write that adds a mark (`claim`, `mark`, `reanchor`) also reports the
+claim's state before the write and which sides had changed, and every result
+that carries a `next` also carries `nextNote`.
 
 Errors are `{"ok": false, "errors": [{"code", "message", "remediation"}]}` with
 exit status 1. `remediation` is one sentence or one command that fixes the
@@ -150,10 +154,11 @@ cause.
 
 `claim` and `mark` read a JSON array from standard input with `--stdin`. A
 batch is written all or nothing: if any element fails, nothing is written and
-every failing element is reported with its `index`.
+every error of every failing element is reported in the same run, each with
+the element's `index`.
 
 ```bash
-echo '["c1-zfv9", {"claim": "c1-dryh", "note": "checked against MAX_ATTEMPTS"}]' | hibi mark --stdin
+echo '["c1-zfv9", {"claim": "c1-r0gt", "note": "checked against delay_ms"}]' | hibi mark --stdin
 ```
 
 ```bash

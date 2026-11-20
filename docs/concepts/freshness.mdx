@@ -3,6 +3,14 @@ title: "Freshness"
 description: "The one rule that decides whether a claim is fresh, stale, expired or retired, and what each side state means."
 ---
 
+<Note>
+The examples continue the repository from the [quickstart](/quickstart).
+Later in that repository's history `docs/retry.md` gains a section
+`## Timeouts` with the sentence "Each attempt times out after 10 seconds.",
+and the claim `c1-rj6k` on its delay sentence is recorded as in the
+[ranges](/ranges) page. Ids are the ones those runs printed.
+</Note>
+
 ## Claim states
 
 hibi evaluates a claim from the claim, its marks, its retirements, the current
@@ -65,7 +73,7 @@ matching mark if any mark matches, otherwise the newest mark.
 `--recheck` takes an ISO 8601 duration with whole numbers: `P90D`, `P6M`,
 `P1Y`, `P2W`, `PT12H`. Years and months move the calendar date, using the
 last day of a shorter month; weeks, days, hours, minutes and seconds add fixed
-seconds.
+seconds. A period of zero, such as `P0D`, is `invalid_duration`.
 
 ```bash
 hibi claim "Each attempt times out after 10 seconds." \

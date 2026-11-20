@@ -138,7 +138,9 @@ Protocol version 1. The full specification is section 13 of
 ### Transport
 
 - hibi starts `command[0]` with the other elements as arguments, without a
-  shell, in the root directory. The environment is inherited, plus
+  shell, in the root directory. A program name without `/` is looked up on
+  `PATH`; give any other program as an absolute path. Relative arguments are
+  read by your program, which runs in the root directory. The environment is inherited, plus
   `HIBI_ROOT` (the absolute root) and `HIBI_PROTOCOL=1`.
 - One process per scheme per hibi run, started only when a locator of that
   scheme is needed.
@@ -149,8 +151,8 @@ Protocol version 1. The full specification is section 13 of
 - Requests are sequential. The first is always `hello`.
 - Each response must arrive within `timeout_ms` (default 10000, from 100 to
   600000). A response line longer than 16 MiB is a violation.
-- When it is done, hibi closes standard input. The provider must then exit;
-  hibi kills it after 2 seconds.
+- When it is done, hibi closes standard input. The provider must then exit
+  with status 0; hibi kills it after 2 seconds.
 - On a timeout, an oversized line, a line that is not a JSON object, a
   response with the wrong `id`, or an unexpected exit, hibi kills the provider
   for the rest of the run, and every side it had not answered is `unavailable`
@@ -182,37 +184,106 @@ responses in order:
 
 | Method | Params | Result |
 |---|---|---|
-| `hello` | `protocol` (versions hibi speaks), `client`, `root` | `protocol` (the one chosen), `provider` (`name`, `version`), `schemes` (must include the registered one), `selectors` (from `quote`, `symbol`, `key`), `kinds`, `capabilities` (`units`, `render`, `batch`; missing means false) |
+| `hello` | `protocol` (versions hibi speaks, ascending), `client` (`name`, `version`), `root` | `protocol` (the one chosen), `provider` (`name`, `version`), `schemes` (must include the registered one), `selectors` (from `quote`, `symbol`, `key`), `kinds`, `capabilities` (`units`, `render`, `batch`; missing means false) |
 | `resolve` | `loc`, `sel` | `units`: none (the resource exists, nothing matched), one, or several (ambiguous). A resource that does not exist is the error `not_found`, never an empty list. Mandatory. |
-| `units` | `loc`, optional `kind` | `units` without `text`, in a stable order with unique keys |
-| `render` | `loc`, `unit` (a key) | `text` for a person or a judge, and `context`, outermost first |
-| `batch` | `requests`: up to 1000 inner requests without `id` | `responses`: one `result` or `error` per request, same order. Used only when the `batch` capability is true. |
+| `units` | `loc`, optional `kind` | `units` without `text`, in a stable order with unique keys. Without `kind`, every unit. |
+| `render` | `loc`, `unit` (a key) | `text` for a person or a judge, and `context`, a list of strings, outermost first, possibly empty |
+| `batch` | `requests`: up to 1000 inner requests, each `{"method", "params"}` without `id` | `responses`: one `{"result": ...}` or `{"error": ...}` per request, same length and order. Used only when the `batch` capability is true. |
 
-A unit has `key`, `kind`, `fp` and `sel` (required), and `parent`, `label` and
-`range` (optional). `text` is required in `resolve` only. `fp` is a
-fingerprint string `b3:<profile>:<hex>` with 32 to 64 hex digits; the provider
-names its own profile. `sel` must be a selector that, sent back to `resolve`
-with the same `loc`, returns exactly this unit; hibi stores it in the claim. A
-unit's `parent` key makes a claim on it cover its ancestors too.
+Inside a batch, an inner `hello` or `batch` is answered with the error
+`invalid_request`; the other inner requests are answered as usual, errors
+included, and the batch itself still succeeds.
 
-Both sides ignore object keys they do not know, except inside a selector,
-which is closed: hibi rejects a returned `sel` with an unknown key or a key the
-provider did not list in `selectors`.
+### Lines that are not requests
+
+A provider answers every line it reads, and keeps running:
+
+| The line | Answer |
+|---|---|
+| Not JSON, not a JSON object, or an object without a positive integer `id` | `{"id": null, "error": {"code": "invalid_request", "message": ...}}`. This is the only answer with a `null` id. |
+| An object with a valid `id` but no string `method` | That `id` with `invalid_request` |
+| A known method with params it cannot read | That `id` with `invalid_request` |
+| An unknown method | That `id` with `unknown_method` |
+
+### Selectors
+
+A selector sent in `resolve` is an object with at most these keys, and only
+the keys the provider listed in `selectors` in its `hello`:
+
+| Key | Meaning |
+|---|---|
+| `quote` | Text that occurs in the unit |
+| `prefix`, `suffix` | Up to 48 characters before and after the quote, as stored |
+| `pos` | The quote's byte offset when it was stored; a hint |
+| `symbol` | A declaration path |
+| `key` | A unit key |
+
+Listing `quote` in `selectors` also allows `prefix`, `suffix` and `pos`. The
+empty selector `{}` is always allowed. A selector is closed: hibi never sends
+a key the provider did not list, and rejects a returned `sel` with an unknown
+key or an unlisted one.
+
+### Units
+
+| Key | Required | Meaning |
+|---|---|---|
+| `key` | yes | Unique within the resource, and stable while the unit is the same unit |
+| `kind` | yes | The unit's kind |
+| `fp` | yes | A fingerprint, see below |
+| `sel` | yes | A selector that, sent back to `resolve` with the same `loc`, returns exactly this unit now. hibi stores it in the claim. |
+| `text` | in `resolve` only | The unit's content |
+| `parent` | no, default `null` | Key of the enclosing unit. A claim on a unit also covers its ancestors. |
+| `label` | no | One line for people |
+| `range` | no | `{"start", "end", "line", "endLine"}`: UTF-8 byte offsets into the resource text (start inclusive, end exclusive) and 1-based line numbers. Leave it out when the resource is not text. |
+| `approx` | no, default `false` | In `resolve`: the selector did not match exactly, and the unit was found by approximation or fallback |
+| `refuse` | no | In `resolve`: this resolution must not be used to create a claim or replace a side. One of `quote_spans_units` and `quote_in_comment`. |
+
+A fingerprint is `b3:<profile>:<hex>`: `b3` says the digest is BLAKE3,
+`<profile>` names how the provider normalized the content and matches
+`[a-z][a-z0-9-]*`, and `<hex>` is 32 to 64 lower-case hex digits, the start
+of the digest. hibi checks only this format and never recomputes a digest:
+two fingerprints are equal only when the strings are equal. What goes into
+the digest is the provider's choice. It must be the same for the same
+content and change whenever a change should make claims stale. Use your own
+profile name, such as `memo-v1`. The built-in `prose-v1` is BLAKE3 over the
+bytes `hibi:prose-v1` and a newline, followed by the text after Unicode NFC
+and whitespace collapsing (every run of whitespace becomes one space, then
+the result is trimmed); the reference provider uses it. Name a new profile
+when you change what the fingerprint covers; sides marked under the old name
+then report `profile_mismatch` instead of silently changing state.
+
+hibi checks every unit it receives: `fp` must match that format, `sel` must
+be a valid selector that uses only listed keys, and keys must be unique in
+one `units` answer. A unit that fails is not used, and the side becomes
+`unavailable` with reason `provider_error`.
+
+Both sides ignore object keys they do not know, except inside a selector.
 
 ### Errors
 
-| Code | Meaning | Side result |
-|---|---|---|
-| `not_found` | The resource does not exist | `missing` |
-| `not_text` | The resource is not text the provider can read | `unavailable` |
-| `too_large` | The resource exceeds a size limit | `unavailable` |
-| `invalid_request`, `unknown_method`, `invalid_locator`, `invalid_selector`, `unavailable`, `internal` | As named | `unavailable` (`provider_error`) |
-| `unsupported_protocol` | `hello` only: no common version | The provider is unusable for the run |
-| `unknown_unit` | `render` only | The side cannot be rendered |
+An error is `{"code": <string>, "message": <string>}`.
 
-An unknown code is treated as `internal`. A line that is not a request is
-answered with `{"id": null, "error": {"code": "invalid_request", ...}}`, and
-the provider keeps running.
+| Code | Use it when | Side result |
+|---|---|---|
+| `not_found` | The resource does not exist | `missing` (`resource_not_found`) |
+| `not_text` | The resource is not text the provider can read | `unavailable` (`not_text`) |
+| `too_large` | The resource exceeds a size limit of the provider | `unavailable` (`too_large`) |
+| `invalid_locator` | The locator is not valid for this provider, for example a scheme it does not serve or an opaque part it cannot parse | `unavailable` (`provider_error`) |
+| `invalid_selector` | The selector has a key the provider does not accept | `unavailable` (`provider_error`) |
+| `invalid_request` | The line or its params cannot be read (see above) | `unavailable` (`provider_error`) |
+| `unknown_method` | The method is not implemented | `unavailable` (`provider_error`) |
+| `unavailable` | The resource exists but cannot be read now | `unavailable` (`provider_error`) |
+| `internal` | Anything else | `unavailable` (`provider_error`) |
+| `unsupported_protocol` | `hello` only: the provider speaks none of the offered versions | The provider is unusable for the run |
+| `unknown_unit` | `render` only: no unit has that key | The side cannot be rendered |
+
+An unknown code is treated as `internal`. After answering `hello` with
+`unsupported_protocol`, a provider may keep running or exit; hibi never sends
+a second `hello` in a run, and sends no other request to that provider.
+
+How `resolve` matches a selector, what `render` puts in `context`, and which
+unit kinds exist are the provider's own design. The reference provider below
+is one complete, small answer to those questions.
 
 ## The reference provider
 
@@ -238,7 +309,11 @@ cargo install --locked --path crates/hibi-provider-reference
 ## Checking a provider
 
 `hibi providers --check <scheme>` starts the registered command and runs the
-protocol conformance cases that are compiled into hibi. A failing case is
+protocol conformance cases that are compiled into hibi. They check the
+handshake, the envelope, malformed lines, unknown methods, `batch` ordering,
+an error for a resource the provider cannot have, and exit on end of input.
+They do not check how `resolve` matches, the content of `units` or
+`render`, or fingerprints; test those with claims of your own. A failing case is
 reported and does not make the command fail.
 
 ```bash
@@ -256,7 +331,7 @@ check ref: 7 passed, 0 failed, 0 skipped
   passed  resolve on a locator the provider cannot have is an error, not an empty list
   passed  the provider exits with status 0 when its standard input is closed
   passed  an unknown method is unknown_method with the request's id
-  passed  hello offering only an unknown protocol version is unsupported_protocol, and the provider keeps running
+  passed  hello offering only an unknown protocol version is unsupported_protocol
 ```
 
 The case files are in `cases/provider/protocol/` of the repository; `cases/provider/reference/` holds further cases for the reference

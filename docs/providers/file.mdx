@@ -29,9 +29,11 @@ selector, as in `--subject file:docs/retry.md`, selects it.
 A code file that does not parse without error is read as class `text` for that
 run, so its units are blocks (see
 [fingerprints](/concepts/fingerprints#a-file-that-does-not-parse)). A file
-that is not valid UTF-8 or is larger than 8 MiB is not read. A symbolic link
-anywhere in the path is not followed: the file counts as not found. CRLF line
-endings are read as LF.
+that is not valid UTF-8 is not read, and a side on it is `unavailable` with
+reason `not_text`; a file larger than 8 MiB is `unavailable` with reason
+`too_large`. A symbolic link anywhere in the path is not followed: the file
+counts as not found, and a side on it is `missing` with reason
+`resource_not_found`. CRLF line endings are read as LF.
 
 ## Unit kinds
 
@@ -52,6 +54,48 @@ code block is one unit of kind `fenced`. A heading, a list item, a blockquote
 line and a table row each start a new piece; a table's separator row is
 dropped. Pieces other than headings and fences are cut into sentences after
 `.`, `!` or `?` followed by whitespace, except inside an inline code span.
+
+Three consequences of these rules can surprise:
+
+- **Prose directly after a fence, with no blank line, joins the fenced
+  unit.** A block that contains a fence is one `fenced` unit.
+- **An HTML comment is prose.** Its text is cut into sentences like any
+  other line, the `<!--` and `-->` included.
+- **A setext heading is a sentence.** Only `#` headings are `heading` units.
+  A line underlined with `===` becomes one sentence together with its
+  underline.
+
+For example, this file:
+
+````markdown docs/split.md
+Intro line.
+
+```text
+inside fence
+```
+Prose right after the fence.
+
+<!-- An HTML comment. It has two sentences. -->
+
+Setext heading
+==============
+
+Body text.
+````
+
+has these units:
+
+```text output
+d (file:docs/split.md; sentence, heading, list-item, table-row, fenced): 7 units, 0 covered, 0 excluded, 7 uncovered
+  file:docs/split.md
+        1  sentence  Intro line.
+        3  fenced  ```text inside fence ``` Prose right after the fence.
+        8  sentence  <!-- An HTML comment.
+        8  sentence  It has two sentences.
+        8  sentence  -->
+       10  sentence  Setext heading ==============
+       13  sentence  Body text.
+```
 
 This document:
 
@@ -216,4 +260,7 @@ keys.
 
 `repo:<alias>//<path>` reads a file of another git repository with the same
 rules. The alias must be declared in `.hibi/hibi.toml` and allowed in your
-user config; see [configuration](/configuration#sibling-repositories).
+user config; see [configuration](/configuration#sibling-repositories). The
+file must also be in the sibling's git file list: tracked, or untracked and
+not ignored. Any other path is `missing` with reason `resource_not_found`,
+even when the file exists on disk.

@@ -1,6 +1,6 @@
 ---
 title: "Security model"
-description: "What untrusted repository content can and cannot make hibi do, and what hibi does not protect against."
+description: "What untrusted repository content can and cannot make hibi do, what was and was not verified, and what hibi does not protect against."
 ---
 
 hibi runs in repositories other people wrote: a cloned project, a pull
@@ -18,8 +18,14 @@ including how to report a vulnerability, is in
 - **Make git run a program.** Every git process hibi starts sets
   `safe.bareRepository=explicit` and `core.fsmonitor=false`, disables the
   untracked cache and optional locks, never uses a pager, and sets
-  `GIT_NO_LAZY_FETCH=1` and `GIT_TERMINAL_PROMPT=0`. None of the git commands
-  hibi runs starts a hook or contacts a remote.
+  `GIT_NO_LAZY_FETCH=1` and `GIT_TERMINAL_PROMPT=0`. It removes the
+  repository-location variables `GIT_DIR`, `GIT_WORK_TREE`,
+  `GIT_INDEX_FILE`, `GIT_OBJECT_DIRECTORY`,
+  `GIT_ALTERNATE_OBJECT_DIRECTORIES`, `GIT_COMMON_DIR`, `GIT_NAMESPACE` and
+  `GIT_PREFIX` from git's environment, so a run inside a git hook does not
+  point git at another repository. None of the git commands hibi runs starts
+  a hook or contacts a remote. In a sibling repository hibi runs only
+  `git rev-parse --show-toplevel` and `git ls-files`.
 - **Make hibi write elsewhere.** hibi writes only under `.hibi/` and to its
   cache file. If `.hibi`, `hibi.toml`, a shard directory, a shard or the lock
   file is a symbolic link, the command stops with `store_corrupt` before
@@ -27,16 +33,39 @@ including how to report a vulnerability, is in
 - **Make hibi read elsewhere.** A path with a symbolic link in it is treated
   as not found. A sibling repository is read only when your user config
   allows its directory, and only files that git lists there.
+- **Exhaust memory with one file.** A file larger than 8 MiB is not read, a
+  shard larger than 64 MiB, a store larger than 256 MiB in total, and a `hibi.toml` or user config larger than 1 MiB
+  are errors, and a provider response line longer than 16 MiB kills the
+  provider.
 - **Send data off the machine.** Only `triage`, `suggest-evidence` and
   `status --judge-order` use the network, and only with `TYPESAFE_API_KEY`
-  set. They send text only from files git lists (tracked, or untracked and
-  not ignored). See [the judge](/judge#what-is-sent) for what is sent.
+  set. What they send is listed on [the judge](/judge#what-is-sent) page: for
+  files, only text of files git lists (tracked, or untracked and not
+  ignored); for `status --judge-order`, also the claims' statements and the
+  rendered text of sides served by external providers.
+
+## Caveats
+
+- **The git hardening is reasoned, not proven.** The list of git options was
+  derived from git's documentation. The tests ran with git 2.55.0, one of them
+  against one hostile repository layout. Whether the options stop every
+  program that repository configuration can name was not verified for every
+  git version from 2.45.0 on.
+- **`--since` can run a clean filter.** `git diff`, which `--since` uses on
+  the root repository, can run a `clean` filter named in that repository's own
+  `.git/config`. That file is written by your git and is not transferred by a
+  clone. No `diff` runs in a sibling repository.
+- **A repository copied with its `.git` directory is trusted.** A repository
+  obtained together with its `.git` directory from an untrusted source (a
+  tarball, a copied folder) is outside this model, as it is for git itself.
+- **Providers inherit your environment.** A registered provider command runs
+  with hibi's environment, including `TYPESAFE_API_KEY` when it is set, plus
+  `HIBI_ROOT` and `HIBI_PROTOCOL`. Register only programs you trust.
 
 ## What is trusted
 
 - Your user config.
-- The repository's own `.git/config`, and that of a sibling you allowed. git
-  writes it locally and a clone does not transfer it.
+- The repository's own `.git/config`, and that of a sibling you allowed.
 - The provider programs you register.
 - The agent or person running hibi.
 

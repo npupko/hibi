@@ -177,9 +177,11 @@ nothing stale
 
 Commit `.hibi/` with the change. The next session starts from this memory.
 
-When standard output is not a terminal, as in an agent's shell tool, every
+When standard output is not a terminal, as in an agent's shell tool, each
 command prints one JSON object instead, with the same facts and a `next`
-command per claim.
+command per claim. The exceptions are `hibi completions`, which prints a
+shell script, `hibi schema <name>`, which prints the schema itself, and
+`--help`, which prints text.
 
 ## The model in one screen
 

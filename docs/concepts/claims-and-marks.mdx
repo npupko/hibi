@@ -3,6 +3,14 @@ title: "Claims and marks"
 description: "The three records hibi keeps: claims, marks and retirements."
 ---
 
+<Note>
+The examples continue the repository from the [quickstart](/quickstart).
+Later in that repository's history `docs/retry.md` gains a section
+`## Timeouts` with the sentence "Each attempt times out after 10 seconds.",
+and the claim `c1-rj6k` on its delay sentence is recorded as in the
+[ranges](/ranges) page. Ids are the ones those runs printed.
+</Note>
+
 hibi keeps three kinds of records. None of them is ever edited or deleted.
 
 ## Claim
@@ -13,7 +21,7 @@ A claim is a statement that was checked, and what it was checked against.
 |---|---|
 | `statement` | The statement, as text. Stored trimmed. |
 | `subject` | One [anchor](/concepts/anchors): the unit the statement is about, usually the sentence in a document that makes it. |
-| `evidence` | Zero or more anchors: the units that support the statement, usually declarations in code. Order matters; evidence is numbered from 1. |
+| `evidence` | Zero or more anchors: the units that support the statement, usually declarations in code. Order matters; evidence is numbered from 1. The same anchor twice is rejected. |
 | `recheck` | Optional. An ISO 8601 duration such as `P90D` or `P6M`. After this long the claim is expired even if nothing changed. |
 | `note` | Optional. How to check the claim again, or where the truth lives. |
 
@@ -65,8 +73,8 @@ hibi retire c1-dryh --note "The docs no longer state the attempt limit."
 c1-dryhtmnz5njjpp2ppy6t  retired  r1-h506gay6a3500pbj2y65
 ```
 
-`--replaced-by <claim-id>` names a claim that takes the place of the retired
-one.
+`--replaced-by <claim-id>` names the claim that takes the place of the
+retired one. It must be a live claim, not one of those being retired.
 
 ## Changing a claim
 

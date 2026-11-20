@@ -34,10 +34,24 @@ and an item's text is cut to its first 4,000 characters.
 | `suggest-evidence` | The task name and your statement | The candidate unit's locator, label and text |
 | `status --judge-order` | The task name and the claim's statement | The current text of each side of the stale claim |
 
-Text from files is sent only when git lists the file: tracked, or untracked
-and not ignored. Text of an ignored file is never sent; such an item is
-counted as skipped. Text from an external provider is what its `render`
-returns.
+Text from files is sent only when git lists the file, in the root or in an
+allowed sibling repository: tracked, or untracked and not ignored. Text of an
+ignored file is never sent. What happens to an item whose text is not sent
+depends on the command:
+
+- `triage` counts it in `skipped`.
+- `suggest-evidence` takes candidates only from files git lists, so an
+  ignored file never yields a candidate. A candidate whose text cannot be
+  rendered is neither sent nor counted.
+- `status --judge-order` treats the claim as one that cannot be rendered (see
+  below).
+
+Text from an external provider is what its `render` returns.
+
+Each request is a `POST` to the service address with the headers
+`Authorization: Bearer <TYPESAFE_API_KEY>`, `Content-Type: application/json`
+and `User-Agent: hibi/<version>`. Redirects are not followed, so the key is
+never sent to a second host; a redirect answer fails the request.
 
 Nothing else reads `TYPESAFE_API_KEY` or uses the network. Without the key
 every other command works.
@@ -108,10 +122,12 @@ with "These are units to read, not findings."
 
 ### `status --judge-order`
 
-Only the order of the stale claims changes: most likely broken first. Claims
-with a side that cannot be rendered (missing, ambiguous, or from a provider
-without `render`) are not sent and come first. The answer itself is not
-printed.
+Only the order of the stale claims changes: most likely broken first. A side
+cannot be rendered when it does not resolve to exactly one unit (it is
+missing, ambiguous or unavailable), when its provider does not offer
+`render` or `render` fails, or when it is a `file:` or `repo:` side whose
+file git does not list. Claims with such a side are not sent and come first,
+ordered by id. The answer itself is not printed.
 
 ## Repeatability and failures
 
@@ -126,4 +142,6 @@ errors and status 408, 429 and 5xx, with at most 6 requests in flight. If a
 request still fails, the command fails with `judge_failed` and prints no
 partial result. A failed call is never read as a "no".
 
-`HIBI_JEV_URL` replaces the service address. It exists for tests.
+`HIBI_JEV_URL` replaces the service address. It exists for tests. It must be
+an `https://` URL, or an `http://` URL to `127.0.0.1`, `[::1]` or
+`localhost`; any other value is `invalid_argument` before anything is sent.

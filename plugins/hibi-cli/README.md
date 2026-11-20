@@ -30,6 +30,25 @@ In Claude Code:
 | `skills/hibi/references/cookbook.md` | Worked tasks with real commands and outputs |
 | `skills/hibi/references/cli-reference.md` | Every command and option. Generated from the code by `cargo run -p hibi-cli --example cli-reference`; do not edit by hand |
 
-The skill pre-approves only the commands that read: `hibi status`,
-`hibi list`, `hibi cover`, `hibi version` and `hibi schema`. Commands that
-write to `.hibi/` ask for permission as usual.
+## Permissions
+
+The skill's `allowed-tools` lists `hibi status`, `hibi list`, `hibi cover`,
+`hibi providers`, `hibi version` and `hibi schema`. Claude Code runs those
+without asking only during the turn that invokes the skill; the grant clears
+when you send your next message. Commands that write to `.hibi/` ask for
+permission as usual.
+
+Two of the listed commands can do more than read, because an allow rule
+matches any arguments after the command name and cannot exclude a flag:
+
+- `hibi status --judge-order` sends claim statements and the text of their
+  sides to TypeSafe's API. It needs `TYPESAFE_API_KEY`, so it fails without
+  the key.
+- `hibi providers --check <scheme>` starts the provider program registered
+  in your user config.
+
+The skill tells the agent to run either only when you ask. Claude Code
+permission settings can also hold deny rules such as
+`Bash(hibi status --judge-order:*)`; deny rules are evaluated before allow
+rules, but a rule matches the command words as written, so it does not catch
+the flag in another position.
