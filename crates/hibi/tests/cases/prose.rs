@@ -20,7 +20,7 @@ fn class_of(path: Option<&str>) -> ProseClass {
 /// `input: {text, path}` or `{fixture, path}`; `expected`: array of
 /// `{kind, text, startByte, endByte, line, endLine?, headingPath}` (the
 /// UTF-16 `start` and `end` are reference only). `endLine` is compared when
-/// the expected unit has it; the cases extracted from v4 do not.
+/// the expected unit has it; the cases extracted from the 0.7.0 tree do not.
 pub fn regions(case: &Case) -> Result<(), String> {
     let text = match case.input.get("fixture").and_then(Value::as_str) {
         Some(f) => std::fs::read_to_string(cases_dir().join(f)).map_err(|e| format!("{f}: {e}"))?,

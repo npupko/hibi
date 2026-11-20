@@ -20,7 +20,7 @@ pub struct Case {
     pub origin: String,
 }
 
-/// The values of `origin` (cases/README.md): the four of the v4 extraction,
+/// The values of `origin` (cases/README.md): the four of the extraction from the 0.7.0 tree,
 /// plus `rfc8785` (taken from RFC 8785), `independent` (computed by an
 /// implementation that shares no code with this crate), `spec-derived`
 /// (derived by hand from the spec, with the derivation in `source`) and
