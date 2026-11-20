@@ -1620,5 +1620,39 @@
     },
     "source": "written for v5 from SPEC sections 6.4 and 8.4 and the ruling that html_comment is a comment kind; expected values derived by hand from the fixture source",
     "origin": "computed"
+  },
+  {
+    "name": "rust: blank lines and a comment before the first item; the file unit still spans [0, len)",
+    "input": {
+      "fixture": "fixtures/units/leading.rs",
+      "path": "src/leading.rs"
+    },
+    "expected": {
+      "class": "rust",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 29,
+          "line": 1,
+          "endLine": 5
+        },
+        {
+          "kind": "function",
+          "symbol": "a",
+          "key": "function:a",
+          "parent": "file",
+          "start": 18,
+          "end": 27,
+          "line": 4,
+          "endLine": 4
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC sections 6.2 (the file unit has range [0, len)) and 6.4; expected values derived by hand from the fixture bytes",
+    "origin": "computed"
   }
 ]

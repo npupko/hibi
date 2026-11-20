@@ -1920,6 +1920,33 @@
     "origin": "computed"
   },
   {
+    "name": "text: the 120-character cut lands on a space and the default quote is trimmed again",
+    "input": {
+      "path": "conf/long.cfg",
+      "text": "word word word word word word word word word word word word word word word word word word word word word word word word tail\nsecond line\n\nother block\n",
+      "sel": {
+        "quote": "second line\n\nother"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "block:*",
+          "approx": false,
+          "refuse": "quote_spans_units",
+          "sel": {
+            "quote": "word word word word word word word word word word word word word word word word word word word word word word word word",
+            "prefix": "",
+            "suffix": " tail\nsecond line\n\nother block\n",
+            "pos": 0
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7; expected units, approx, refuse and quote spans derived by hand from the fixture text; prefix, suffix and pos cut mechanically from the span",
+    "origin": "computed"
+  },
+  {
     "name": "decoding: CRLF becomes LF before units and selectors",
     "input": {
       "path": "crlf.md",

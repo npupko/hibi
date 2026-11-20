@@ -148,13 +148,6 @@ impl Doc {
                         tree = true;
                         let _ = comments.set(cf.comments);
                         for u in cf.units {
-                            if u.kind == "file" {
-                                // The `file` unit has range [0, len)
-                                // (section 6.2); its fingerprint is of the
-                                // root node (section 8.4).
-                                raws.push(file(u.fp, &text));
-                                continue;
-                            }
                             raws.push(Raw {
                                 key: u.key,
                                 kind: u.kind.into(),
@@ -323,7 +316,9 @@ impl Doc {
 
     /// The default quote span of entry `i` (section 6.7): the first line of
     /// the unit's text, cut before the first comment node that starts on
-    /// that line, trailing WS removed, cut to 120 characters.
+    /// that line, trailing WS removed, cut to 120 characters, and trailing
+    /// WS removed again so that the quote never ends in WS (ruling on
+    /// section 6.7).
     fn default_quote_end(&self, i: usize) -> usize {
         let e = &self.entries[i];
         let unit_text = &self.text[e.start..e.end];
@@ -344,10 +339,11 @@ impl Doc {
             end = e.start + text::trim_end(&self.text[e.start..line_end]).len();
         }
         let q = &self.text[e.start..end];
-        match q.char_indices().nth(DEFAULT_QUOTE_CHARS) {
-            Some((b, _)) => e.start + b,
-            None => end,
-        }
+        let q = match q.char_indices().nth(DEFAULT_QUOTE_CHARS) {
+            Some((b, _)) => &q[..b],
+            None => q,
+        };
+        e.start + text::trim_end(q).len()
     }
 
     /// The completed selector of entry `i` (section 6.7). `kept` is the span

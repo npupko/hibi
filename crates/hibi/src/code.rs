@@ -649,14 +649,26 @@ fn code_units(root: Node<'_>, text: &str, class: Class) -> CodeFile {
                 fingerprint::content_key("statement", &fp),
             ),
         };
-        let (line, end_line) = line_range(*node);
+        // The `file` unit has range [0, len) (section 6.2), which can be
+        // wider than the root node; its fingerprint is still the root
+        // node's (section 8.4).
+        let (start, end, line, end_line) = match src {
+            Src::File => {
+                let last = text.char_indices().last().map_or(0, |(i, _)| i);
+                (0, text.len(), 1, text::line_at(text, last))
+            }
+            _ => {
+                let (line, end_line) = line_range(*node);
+                (node.start_byte(), node.end_byte(), line, end_line)
+            }
+        };
         units.push(CodeUnit {
             key,
             kind,
             symbol,
             parent: None,
-            start: node.start_byte(),
-            end: node.end_byte(),
+            start,
+            end,
             line,
             end_line,
             fp,
