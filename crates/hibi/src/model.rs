@@ -18,6 +18,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use crate::canon::{self, RecordKind};
 use crate::duration;
 use crate::error::{Code, Error};
+use crate::text;
 
 /// The largest `pos` value: 2^53 - 1 (section 3.1).
 pub const MAX_POS: u64 = (1 << 53) - 1;
@@ -25,9 +26,27 @@ pub const MAX_POS: u64 = (1 << 53) - 1;
 /// The most characters a stored `prefix` or `suffix` holds (section 5.2).
 pub const MAX_CONTEXT_CHARS: usize = 48;
 
-/// Trim WS (section 4.1) from both ends.
-fn trim_ws(s: &str) -> &str {
-    s.trim_matches(char::is_whitespace)
+/// The most characters a selector `quote` holds (section 5.2). It bounds the
+/// cost of locating a quote (section 7).
+pub const MAX_QUOTE_CHARS: usize = 2048;
+
+/// The stored form of a free-text field (`note`, `by`): trimmed (WS,
+/// section 4.1), and `null` when the result is empty.
+fn normalize_free_text(value: Option<String>) -> Option<String> {
+    value
+        .map(|v| text::trim(&v).to_owned())
+        .filter(|v| !v.is_empty())
+}
+
+/// A stored free-text field must already be in the form
+/// [`normalize_free_text`] gives.
+fn check_free_text(record: &str, name: &str, value: &Option<String>) -> Result<(), Error> {
+    match value {
+        Some(v) if v.is_empty() || text::trim(v) != v => Err(Error::invalid_argument(format!(
+            "a {record} {name} is stored trimmed and never empty (an empty one is null)"
+        ))),
+        _ => Ok(()),
+    }
 }
 
 fn is_control(c: char) -> bool {
@@ -379,10 +398,15 @@ impl Selector {
                 }
             }
         }
-        if let Some(q) = &self.quote
-            && trim_ws(q).is_empty()
-        {
-            return bad("the quote is empty after trimming".into());
+        if let Some(q) = &self.quote {
+            if text::trim(q).is_empty() {
+                return bad("the quote is empty after trimming".into());
+            }
+            if q.chars().nth(MAX_QUOTE_CHARS).is_some() {
+                return bad(format!(
+                    "the quote is longer than {MAX_QUOTE_CHARS} characters"
+                ));
+            }
         }
         for (name, value) in [("prefix", &self.prefix), ("suffix", &self.suffix)] {
             if let Some(v) = value
@@ -846,9 +870,11 @@ struct ClaimBody<'a> {
 }
 
 impl Claim {
-    /// Build a claim and derive its id. The statement is trimmed (WS,
-    /// section 4.1) and must not be empty; an empty note becomes `null`;
-    /// `recheck` must parse by section 9.4 (`invalid_duration`).
+    /// Build a claim and derive its id. The statement and the note are
+    /// trimmed (WS, section 4.1); an empty note becomes `null`. The result
+    /// must then pass the same rules as a stored claim ([`Claim::validate`]):
+    /// an empty statement is `invalid_argument`, a bad selector
+    /// `invalid_anchor`, a bad `recheck` `invalid_duration`.
     pub fn new(
         statement: &str,
         subject: Anchor,
@@ -856,30 +882,17 @@ impl Claim {
         recheck: Option<String>,
         note: Option<String>,
     ) -> Result<Claim, Error> {
-        let statement = trim_ws(statement).to_owned();
-        if statement.is_empty() {
-            return Err(Error::invalid_argument("the statement is empty"));
-        }
-        if let Some(r) = &recheck {
-            duration::parse(r)?;
-        }
-        let note = note.filter(|n| !n.is_empty());
-        let body = ClaimBody {
-            statement: &statement,
-            subject: &subject,
-            evidence: &evidence,
-            recheck: &recheck,
-            note: &note,
-        };
-        let id = ClaimId(canon::derive_id(RecordKind::Claim, &body)?);
-        Ok(Claim {
-            id,
-            statement,
+        let mut c = Claim {
+            id: ClaimId(String::new()),
+            statement: text::trim(statement).to_owned(),
             subject,
             evidence,
             recheck,
-            note,
-        })
+            note: normalize_free_text(note),
+        };
+        c.validate_body()?;
+        c.id = c.derive_id()?;
+        Ok(c)
     }
 
     /// The id derived from the body (section 3.5).
@@ -896,23 +909,29 @@ impl Claim {
 
     /// The rules of section 3.2, the selector rules of section 5.2, and the
     /// id. Errors are `invalid_argument`, `invalid_anchor` or
-    /// `invalid_duration`.
+    /// `invalid_duration`. Deserialization runs this.
     pub fn validate(&self) -> Result<(), Error> {
-        if self.statement.is_empty() || trim_ws(&self.statement) != self.statement {
+        self.validate_body()?;
+        check_derived(self.id.as_str(), self.derive_id()?.as_str())
+    }
+
+    /// Every rule except the id. [`Claim::new`] runs this.
+    fn validate_body(&self) -> Result<(), Error> {
+        if self.statement.is_empty() {
+            return Err(Error::invalid_argument("the statement is empty"));
+        }
+        if text::trim(&self.statement) != self.statement {
             return Err(Error::invalid_argument(
-                "a claim statement must be non-empty and trimmed",
+                "a claim statement is stored trimmed",
             ));
         }
-        for a in std::iter::once(&self.subject).chain(&self.evidence) {
+        for a in self.sides() {
             a.sel.validate()?;
         }
         if let Some(r) = &self.recheck {
             duration::parse(r)?;
         }
-        if self.note.as_deref() == Some("") {
-            return Err(Error::invalid_argument("a claim note is never empty"));
-        }
-        check_derived(self.id.as_str(), self.derive_id()?.as_str())
+        check_free_text("claim", "note", &self.note)
     }
 
     /// The anchors of every side: entry 0 is the subject, entry `i` is
@@ -1015,7 +1034,9 @@ struct MarkBody<'a> {
 }
 
 impl Mark {
-    /// Build a mark and derive its id. Empty `by` and `note` become `null`.
+    /// Build a mark and derive its id. `by` and `note` are trimmed (WS,
+    /// section 4.1) and become `null` when empty. The result must then pass
+    /// the same rules as a stored mark ([`Mark::validate`]).
     pub fn new(
         claim: ClaimId,
         at: Timestamp,
@@ -1023,16 +1044,15 @@ impl Mark {
         sides: Vec<MarkSide>,
         note: Option<String>,
     ) -> Result<Mark, Error> {
-        let by = by.filter(|s| !s.is_empty());
-        let note = note.filter(|s| !s.is_empty());
         let mut m = Mark {
             id: MarkId(String::new()),
             claim,
             at,
-            by,
+            by: normalize_free_text(by),
             sides,
-            note,
+            note: normalize_free_text(note),
         };
+        m.validate_body()?;
         m.id = m.derive_id()?;
         Ok(m)
     }
@@ -1050,11 +1070,19 @@ impl Mark {
     }
 
     /// The rules of section 3.3 that need no claim, and the id.
+    /// Deserialization runs this.
     pub fn validate(&self) -> Result<(), Error> {
+        self.validate_body()?;
+        check_derived(self.id.as_str(), self.derive_id()?.as_str())
+    }
+
+    /// Every rule except the id. [`Mark::new`] runs this.
+    fn validate_body(&self) -> Result<(), Error> {
         if self.sides.is_empty() {
             return Err(Error::invalid_argument("a mark has at least one side"));
         }
-        check_derived(self.id.as_str(), self.derive_id()?.as_str())
+        check_free_text("mark", "by", &self.by)?;
+        check_free_text("mark", "note", &self.note)
     }
 
     /// The rules of section 3.3 that need the claim: the claim id, the side
@@ -1157,8 +1185,9 @@ struct RetirementBody<'a> {
 }
 
 impl Retirement {
-    /// Build a retirement and derive its id. Empty `by` and `note` become
-    /// `null`.
+    /// Build a retirement and derive its id. `by` and `note` are trimmed
+    /// (WS, section 4.1) and become `null` when empty. The result must then
+    /// pass the same rules as a stored retirement ([`Retirement::validate`]).
     pub fn new(
         retires: ClaimId,
         replaced_by: Option<ClaimId>,
@@ -1166,16 +1195,15 @@ impl Retirement {
         by: Option<String>,
         note: Option<String>,
     ) -> Result<Retirement, Error> {
-        let by = by.filter(|s| !s.is_empty());
-        let note = note.filter(|s| !s.is_empty());
         let mut r = Retirement {
             id: RetirementId(String::new()),
             retires,
             replaced_by,
             at,
-            by,
-            note,
+            by: normalize_free_text(by),
+            note: normalize_free_text(note),
         };
+        r.validate_body()?;
         r.id = r.derive_id()?;
         Ok(r)
     }
@@ -1195,9 +1223,22 @@ impl Retirement {
         )?))
     }
 
-    /// The id rule of section 3.5.
+    /// The rules of section 3.4 and the id. Deserialization runs this.
     pub fn validate(&self) -> Result<(), Error> {
+        self.validate_body()?;
         check_derived(self.id.as_str(), self.derive_id()?.as_str())
+    }
+
+    /// Every rule except the id. [`Retirement::new`] runs this.
+    fn validate_body(&self) -> Result<(), Error> {
+        if self.replaced_by.as_ref() == Some(&self.retires) {
+            return Err(Error::invalid_argument(format!(
+                "claim {} cannot be replaced by itself",
+                self.retires
+            )));
+        }
+        check_free_text("retirement", "by", &self.by)?;
+        check_free_text("retirement", "note", &self.note)
     }
 
     pub fn canonical(&self) -> Result<Vec<u8>, Error> {
@@ -1488,5 +1529,281 @@ mod tests {
         let back: Retirement = serde_json::from_str(&text).unwrap();
         assert_eq!(back, r);
         assert!(r.id.as_str().starts_with("r1-"));
+    }
+
+    #[test]
+    fn constructors_reject_what_readers_reject() {
+        let c = sample_claim();
+        let at = Timestamp::parse("2026-11-20T18:04:11Z").unwrap();
+        let quoteless = Anchor::new(
+            loc("file:a.md"),
+            Selector {
+                prefix: Some("p".into()),
+                ..Selector::default()
+            },
+        );
+        let e = Claim::new("x", quoteless, vec![], None, None).unwrap_err();
+        assert_eq!(e.code, Code::InvalidAnchor);
+        let long = Anchor::new(
+            loc("file:a.md"),
+            Selector::quote("é".repeat(MAX_QUOTE_CHARS + 1)),
+        );
+        let e = Claim::new("x", c.subject.clone(), vec![long], None, None).unwrap_err();
+        assert_eq!(e.code, Code::InvalidAnchor);
+        let at_limit = Anchor::new(
+            loc("file:a.md"),
+            Selector::quote("é".repeat(MAX_QUOTE_CHARS)),
+        );
+        Claim::new("x", at_limit, vec![], None, None).unwrap();
+
+        let e = Mark::new(c.id.clone(), at, None, vec![], None).unwrap_err();
+        assert_eq!(e.code, Code::InvalidArgument);
+
+        let e = Retirement::new(c.id.clone(), Some(c.id.clone()), at, None, None).unwrap_err();
+        assert_eq!(e.code, Code::InvalidArgument);
+        let r = Retirement::new(c.id.clone(), None, at, None, None).unwrap();
+        let mut v: serde_json::Value = serde_json::from_slice(&r.canonical().unwrap()).unwrap();
+        v["replacedBy"] = c.id.as_str().into();
+        // Re-derive the id so that only the replacedBy rule fails.
+        let mut body = v.clone();
+        body.as_object_mut().unwrap().remove("id");
+        v["id"] = canon::derive_id(RecordKind::Retirement, &body)
+            .unwrap()
+            .into();
+        let e = serde_json::from_value::<Retirement>(v).unwrap_err();
+        assert!(e.to_string().contains("replaced by itself"), "{e}");
+    }
+
+    #[test]
+    fn free_text_is_trimmed_and_checked_on_read() {
+        let c = sample_claim();
+        let at = Timestamp::parse("2026-11-20T18:04:11Z").unwrap();
+        let ws = "\u{a0}\u{2028} \t";
+        let claim = Claim::new(
+            "x",
+            c.subject.clone(),
+            vec![],
+            None,
+            Some(format!("{ws}n{ws}")),
+        )
+        .unwrap();
+        assert_eq!(claim.note.as_deref(), Some("n"));
+        let claim = Claim::new("x", c.subject.clone(), vec![], None, Some(ws.into())).unwrap();
+        assert_eq!(claim.note, None);
+        let sides = vec![MarkSide {
+            loc: c.subject.loc.clone(),
+            fp: Fingerprint::new("b3:prose-v1:0123456789abcdef0123456789abcdef").unwrap(),
+        }];
+        let m = Mark::new(c.id.clone(), at, Some(" a ".into()), sides, Some(ws.into())).unwrap();
+        assert_eq!((m.by.as_deref(), m.note.as_deref()), (Some("a"), None));
+        let r = Retirement::new(
+            c.id.clone(),
+            None,
+            at,
+            Some(ws.into()),
+            Some("\u{feff}".into()),
+        )
+        .unwrap();
+        // U+FEFF is not WS: it stays.
+        assert_eq!(
+            (r.by.as_deref(), r.note.as_deref()),
+            (None, Some("\u{feff}"))
+        );
+
+        // A stored value that is not in the normalized form is invalid on
+        // read, even with an id derived from it.
+        let reread = |kind: RecordKind, mut v: serde_json::Value, key: &str, bad: &str| {
+            v[key] = bad.into();
+            let mut body = v.clone();
+            body.as_object_mut().unwrap().remove("id");
+            v["id"] = canon::derive_id(kind, &body).unwrap().into();
+            match kind {
+                RecordKind::Claim => serde_json::from_value::<Claim>(v).map(|_| ()),
+                RecordKind::Mark => serde_json::from_value::<Mark>(v).map(|_| ()),
+                RecordKind::Retirement => serde_json::from_value::<Retirement>(v).map(|_| ()),
+            }
+        };
+        let json = |b: Vec<u8>| serde_json::from_slice::<serde_json::Value>(&b).unwrap();
+        for bad in ["", " n", "n\u{a0}", "\u{2028}"] {
+            assert!(
+                reread(
+                    RecordKind::Claim,
+                    json(claim.canonical().unwrap()),
+                    "note",
+                    bad
+                )
+                .is_err()
+            );
+            assert!(reread(RecordKind::Mark, json(m.canonical().unwrap()), "by", bad).is_err());
+            assert!(reread(RecordKind::Mark, json(m.canonical().unwrap()), "note", bad).is_err());
+            assert!(
+                reread(
+                    RecordKind::Retirement,
+                    json(r.canonical().unwrap()),
+                    "by",
+                    bad
+                )
+                .is_err()
+            );
+            assert!(
+                reread(
+                    RecordKind::Retirement,
+                    json(r.canonical().unwrap()),
+                    "note",
+                    bad
+                )
+                .is_err()
+            );
+        }
+        assert!(reread(RecordKind::Mark, json(m.canonical().unwrap()), "by", "n").is_ok());
+    }
+
+    /// Property: whatever a constructor accepts reads back from its
+    /// canonical bytes as an equal record with the same bytes. The inputs
+    /// mix valid and invalid values of every field.
+    #[test]
+    fn constructed_records_round_trip() {
+        let mut seed: u64 = 1;
+        let mut pick = |n: usize| {
+            seed = seed
+                .wrapping_mul(6364136223846793005)
+                .wrapping_add(1442695040888963407);
+            ((seed >> 33) as usize) % n
+        };
+        let texts: Vec<Option<String>> = vec![
+            None,
+            Some(String::new()),
+            Some(" ".into()),
+            Some("\u{a0}x\u{2028}".into()),
+            Some("x".into()),
+            Some("\u{feff}".into()),
+            Some("e\u{301} y".into()),
+        ];
+        let selectors: Vec<Selector> = [
+            "{}",
+            r#"{"quote":"q"}"#,
+            r#"{"quote":" q ","prefix":"","suffix":"s","pos":3}"#,
+            r#"{"symbol":"A.b","quote":"x"}"#,
+            r#"{"key":"k"}"#,
+        ]
+        .iter()
+        .map(|j| serde_json::from_str(j).unwrap())
+        .chain([
+            Selector {
+                prefix: Some("p".into()),
+                ..Selector::default()
+            },
+            Selector {
+                pos: Some(1),
+                ..Selector::default()
+            },
+            Selector::quote(" \n"),
+            Selector::quote("q".repeat(MAX_QUOTE_CHARS + 1)),
+            Selector {
+                quote: Some("q".into()),
+                pos: Some(MAX_POS + 1),
+                ..Selector::default()
+            },
+            Selector {
+                quote: Some("q".into()),
+                suffix: Some("s".repeat(MAX_CONTEXT_CHARS + 1)),
+                ..Selector::default()
+            },
+            Selector {
+                symbol: Some(String::new()),
+                ..Selector::default()
+            },
+        ])
+        .collect();
+        let locs = ["file:a.md", "repo:x//b.rs", "ext:o"].map(loc);
+        let statements = ["x", "  y\u{2028}", " ", ""];
+        let rechecks = [None, Some("P90D"), Some("P"), Some("PT0S")];
+        let claim_ids: Vec<ClaimId> = (0..3)
+            .map(|i| {
+                Claim::new(
+                    &format!("c{i}"),
+                    Anchor::new(loc("file:a"), Selector::empty()),
+                    vec![],
+                    None,
+                    None,
+                )
+                .unwrap()
+                .id
+            })
+            .collect();
+        let fp = Fingerprint::new("b3:prose-v1:0123456789abcdef0123456789abcdef").unwrap();
+        let at = Timestamp::parse("2026-11-20T18:04:11Z").unwrap();
+        let (mut ok, mut err) = (0, 0);
+
+        for _ in 0..4000 {
+            let anchor = |pick: &mut dyn FnMut(usize) -> usize| {
+                Anchor::new(
+                    locs[pick(locs.len())].clone(),
+                    selectors[pick(selectors.len())].clone(),
+                )
+            };
+            let subject = anchor(&mut pick);
+            let evidence: Vec<Anchor> = (0..pick(3)).map(|_| anchor(&mut pick)).collect();
+            let claim = Claim::new(
+                statements[pick(statements.len())],
+                subject,
+                evidence,
+                rechecks[pick(rechecks.len())].map(str::to_owned),
+                texts[pick(texts.len())].clone(),
+            );
+            let sides: Vec<MarkSide> = (0..pick(3))
+                .map(|_| MarkSide {
+                    loc: locs[pick(locs.len())].clone(),
+                    fp: fp.clone(),
+                })
+                .collect();
+            let mark = Mark::new(
+                claim_ids[pick(3)].clone(),
+                at,
+                texts[pick(texts.len())].clone(),
+                sides,
+                texts[pick(texts.len())].clone(),
+            );
+            let replaced = [None, Some(claim_ids[pick(3)].clone())][pick(2)].clone();
+            let retirement = Retirement::new(
+                claim_ids[pick(3)].clone(),
+                replaced,
+                at,
+                texts[pick(texts.len())].clone(),
+                texts[pick(texts.len())].clone(),
+            );
+            match claim {
+                Ok(r) => {
+                    let bytes = r.canonical().unwrap();
+                    let back: Claim =
+                        serde_json::from_slice(&bytes).unwrap_or_else(|e| panic!("{r:?}: {e}"));
+                    assert_eq!((&back, back.canonical().unwrap()), (&r, bytes));
+                    ok += 1;
+                }
+                Err(_) => err += 1,
+            }
+            match mark {
+                Ok(r) => {
+                    let bytes = r.canonical().unwrap();
+                    let back: Mark =
+                        serde_json::from_slice(&bytes).unwrap_or_else(|e| panic!("{r:?}: {e}"));
+                    assert_eq!((&back, back.canonical().unwrap()), (&r, bytes));
+                    ok += 1;
+                }
+                Err(_) => err += 1,
+            }
+            match retirement {
+                Ok(r) => {
+                    let bytes = r.canonical().unwrap();
+                    let back: Retirement =
+                        serde_json::from_slice(&bytes).unwrap_or_else(|e| panic!("{r:?}: {e}"));
+                    assert_eq!((&back, back.canonical().unwrap()), (&r, bytes));
+                    ok += 1;
+                }
+                Err(_) => err += 1,
+            }
+        }
+        // The inputs exercise both outcomes.
+        assert!(ok > 1000 && err > 1000, "ok {ok}, err {err}");
     }
 }
