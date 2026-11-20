@@ -67,7 +67,7 @@ fn spawn(argv: &[OsString], root: &Path) -> std::io::Result<Process> {
 enum State {
     NotStarted,
     Running {
-        process: Process,
+        process: Box<Process>,
         info: ProviderInfo,
         next_id: u64,
     },
@@ -147,7 +147,7 @@ impl CommandProvider {
                 return Err(e);
             }
         };
-        let mut process = process;
+        let mut process = Box::new(process);
         let hello = Call::Hello(HelloParams {
             protocol: vec![PROTOCOL_VERSION],
             client: client(),
@@ -182,7 +182,7 @@ impl CommandProvider {
                 };
                 Ok(())
             }
-            Err(why) => Err(self.fail_with(process, why)),
+            Err(why) => Err(self.fail_with(*process, why)),
         }
     }
 
@@ -221,7 +221,7 @@ impl CommandProvider {
                 else {
                     unreachable!()
                 };
-                Err(self.fail_with(process, why))
+                Err(self.fail_with(*process, why))
             }
         }
     }
