@@ -60,6 +60,11 @@ rusqlite = { workspace = true, optional = true }
 # Feature `judge`.
 ureq = { workspace = true, optional = true }
 
+# Unix only: the `O_NOFOLLOW` constant for opening store files without
+# following a symbolic link (section 12.4). No libc function is called.
+[target.'cfg(unix)'.dependencies]
+libc.workspace = true
+
 [dev-dependencies]
 insta.workspace = true
 tempfile.workspace = true

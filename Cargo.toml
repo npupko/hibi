@@ -40,6 +40,8 @@ wait-timeout = "0.2.1"
 thiserror = "2.0.21"
 insta = { version = "1.49.0", features = ["json"] }
 tempfile = "3.27.0"
+# Unix only: the O_NOFOLLOW constant for store files (section 12.4).
+libc = "0.2.191"
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

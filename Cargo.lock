@@ -409,6 +409,7 @@ dependencies = [
  "globset",
  "insta",
  "jiff",
+ "libc",
  "rusqlite",
  "schemars",
  "serde",
