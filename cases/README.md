@@ -268,6 +268,12 @@ values.
 |---|---|---|
 | `canon.json` | `{json, record}`: JSON text, and `null` or the record type (`claim`, `mark`, `retirement`) it must deserialize as | `{canonical, utf8}`: the RFC 8785 serialization as a string and as hex UTF-8 bytes |
 | `ids.json` | `{kind, body}`: a record type and a record body without `id` | `{canonical, blake3, id}`: the canonical body, the 64 hex digits of its BLAKE3 digest, and the id of SPEC section 3.5 |
+| `fingerprint.json` | `{profile: "prose-v1", text}` or `{profile: "ast-v1", class, stream}` | `{fingerprint}`: the string of SPEC section 8 |
+
+The `fingerprint.json` digests were computed with `@noble/hashes` 2.4.0
+under Bun, with NFC from `String.prototype.normalize` and the WS set of SPEC
+section 4.1 written out as a character class. The `ast-v1` streams are
+copied from `ast-node.json`, or written for the case.
 
 The three `rfc8785` cases of `canon.json` are the primitive-types sample of
 RFC 8785 section 3.2.2 with the bytes of section 3.2.4, the sorting sample of
