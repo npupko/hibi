@@ -4359,5 +4359,707 @@
     ],
     "source": "computed: src/engine/regions.ts splitRegions on docs/quickstart.mdx at v0.7.0",
     "origin": "computed"
+  },
+  {
+    "name": "four-backtick fence is not closed by a three-backtick line",
+    "input": {
+      "text": "````md\n```\nx. y\n````\n\nAfter. More.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "fenced",
+        "text": "````md\n```\nx. y\n````",
+        "start": 0,
+        "end": 20,
+        "startByte": 0,
+        "endByte": 20,
+        "line": 1,
+        "endLine": 4,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "After.",
+        "start": 22,
+        "end": 28,
+        "startByte": 22,
+        "endByte": 28,
+        "line": 6,
+        "endLine": 6,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "More.",
+        "start": 29,
+        "end": 34,
+        "startByte": 29,
+        "endByte": 34,
+        "line": 6,
+        "endLine": 6,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 step 2, ruling 9 (fences close by CommonMark). Lines: 1 '````md', 2 '```', 3 'x. y', 4 '````', 5 '', 6 'After. More.'. Line 1: no fence open, t starts with 4 backticks, so it opens a backtick fence of length 4 (info string 'md' allowed); fence open, not a boundary. Line 2: t is 3 backticks, fewer than 4, so it does not close; fence stays open. Line 3: inside the fence. Line 4: t is 4 backticks only, at least 4, so it closes; after the update no fence is open, t is not empty, not a tag, not a thematic break: not a boundary. Line 5: empty, no fence open: boundary. Line 6: not a boundary. Blocks: lines 1-4 (fenced, it has fence lines) and line 6. Step 3/5: the fenced block is one fenced unit, range from '`' at line 1 to the end of line 4. Line 6 is one sentence piece cut after 'After.' (followed by a space): units 'After.' and 'More.'. No headings, so every headingPath is []. Under the old rule (any same-marker fence line closes) line 2 closed the fence, line 4 reopened it, and the rest of the text became one fenced unit.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "a fence line with an info string does not close an open fence",
+    "input": {
+      "text": "```\n```js\nx\n```\n\nAfter.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "fenced",
+        "text": "```\n```js\nx\n```",
+        "start": 0,
+        "end": 15,
+        "startByte": 0,
+        "endByte": 15,
+        "line": 1,
+        "endLine": 4,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "After.",
+        "start": 17,
+        "end": 23,
+        "startByte": 17,
+        "endByte": 23,
+        "line": 6,
+        "endLine": 6,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 step 2, ruling 9 (a closing fence is made only of the marker character, nothing but WS after). Lines: 1 '```', 2 '```js', 3 'x', 4 '```', 5 '', 6 'After.'. Line 1 opens a backtick fence of length 3. Line 2: t '```js' holds a character other than '`', so it does not close; it is content. Line 3: content. Line 4: t is 3 backticks only, at least 3: closes; not a boundary (t not empty). Line 5: empty with no fence open: boundary. Line 6: not a boundary. Blocks: lines 1-4 (fenced) and line 6. Units: fenced '```\\n```js\\nx\\n```' (lines 1-4) and sentence 'After.' (line 6, no cut: '.' is not followed by WS). headingPath [] everywhere. Under the old rule line 2 closed the fence, line 4 reopened it and lines 5-6 stayed inside it: one fenced unit for the whole text.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "BOM before --- frontmatter does not prevent recognition",
+    "input": {
+      "text": "\ufeff---\nt: 1\n---\nBody.",
+      "path": "a.md"
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Body.",
+        "start": 14,
+        "end": 19,
+        "startByte": 16,
+        "endByte": 21,
+        "line": 4,
+        "endLine": 4,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 step 1, ruling 10 (a leading U+FEFF does not prevent recognition; the BOM stays in the text). Class markdown (path a.md). Line 1 is U+FEFF then '---'; with the one leading U+FEFF set aside and trailing WS removed it is '---', so it opens frontmatter. Line 3 '---' is the next line that with trailing WS removed is '---': splitting starts after its newline, at line 4. Line 4 'Body.' is one block, one sentence piece, no cut ('.' at the end). Offsets: U+FEFF is 3 bytes and 1 UTF-16 unit, so 'Body.' is bytes 16-21 and UTF-16 14-19. Under the old rule line 1 was not '---' (U+FEFF is not WS), no frontmatter was found, and the units were the sentence U+FEFF '---\\nt: 1' and 'Body.' (line 3 '---' is a thematic break).",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "+++ TOML frontmatter is skipped in .md",
+    "input": {
+      "text": "+++\nt = 1\n+++\nBody. More.",
+      "path": "a.md"
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Body.",
+        "start": 14,
+        "end": 19,
+        "startByte": 14,
+        "endByte": 19,
+        "line": 4,
+        "endLine": 4,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "More.",
+        "start": 20,
+        "end": 25,
+        "startByte": 20,
+        "endByte": 25,
+        "line": 4,
+        "endLine": 4,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 step 1, ruling 10 (+++ frontmatter is recognised like ---). Class markdown. Line 1 with trailing WS removed is '+++': it opens frontmatter. Line 3 '+++' is the next line that with trailing WS removed is '+++': splitting starts at line 4. Line 4 'Body. More.' is one block, one sentence piece, cut after 'Body.' (followed by a space): units 'Body.' and 'More.' on line 4. Under the old rule there was no frontmatter: lines 1-4 formed one block ('+++' is no boundary and, with no WS after '+', no list marker), one sentence piece cut after 'Body.', giving '+++\\nt = 1\\n+++\\nBody.' and 'More.'.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "+++ frontmatter is not closed by ---",
+    "input": {
+      "text": "+++  \nt = 1\n---\nBody.",
+      "path": "a.md"
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "+++  \nt = 1",
+        "start": 0,
+        "end": 11,
+        "startByte": 0,
+        "endByte": 11,
+        "line": 1,
+        "endLine": 2,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Body.",
+        "start": 16,
+        "end": 21,
+        "startByte": 16,
+        "endByte": 21,
+        "line": 4,
+        "endLine": 4,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 steps 1 and 2, ruling 10 (+++ frontmatter is closed only by a +++ line). Class markdown. Line 1 '+++  ' with trailing WS removed is '+++': a candidate opener. The closing line must with trailing WS removed be '+++'; line 3 is '---' and there is no other line, so there is no frontmatter and splitting starts at line 1. Step 2: line 1 '+++' and line 2 't = 1' are not boundaries; line 3 '---' is a thematic break: boundary; line 4 not a boundary. Blocks: lines 1-2 and line 4. Block 1 runs from '+' at line 1 to the end of line 2 ('t = 1'); its interior trailing spaces on line 1 stay. It is one sentence piece with no terminator: one unit, lines 1-2. Block 2: 'Body.' on line 4.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "thematic breaks with spaces or tabs between the characters separate blocks",
+    "input": {
+      "text": "One.\n- - -\nTwo.\n* * *\nThree.\n_\t_ _\nFour.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "One.",
+        "start": 0,
+        "end": 4,
+        "startByte": 0,
+        "endByte": 4,
+        "line": 1,
+        "endLine": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Two.",
+        "start": 11,
+        "end": 15,
+        "startByte": 11,
+        "endByte": 15,
+        "line": 3,
+        "endLine": 3,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Three.",
+        "start": 22,
+        "end": 28,
+        "startByte": 22,
+        "endByte": 28,
+        "line": 5,
+        "endLine": 5,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Four.",
+        "start": 35,
+        "end": 40,
+        "startByte": 35,
+        "endByte": 40,
+        "line": 7,
+        "endLine": 7,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 step 2, ruling 11 (a thematic break is 3 or more of one of '-', '*', '_' with only spaces or tabs between). Lines 2 '- - -', 4 '* * *' and 6 '_<TAB>_ _' are thematic breaks, so boundary lines (no fence is open). Lines 1, 3, 5, 7 are each a one-line block and one sentence piece with no cut ('.' at the end): units 'One.' (1), 'Two.' (3), 'Three.' (5), 'Four.' (7). Under the old rule (no spaces allowed) there were no boundaries: one block whose lines 2 and 4 start list-item pieces ('- ' and '* '), giving list items '- - -\\nTwo.' and '* * *\\nThree.\\n_<TAB>_ _\\nFour.'.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "mixed characters are not a thematic break",
+    "input": {
+      "text": "Text.\n- * -\nMore.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Text.",
+        "start": 0,
+        "end": 5,
+        "startByte": 0,
+        "endByte": 5,
+        "line": 1,
+        "endLine": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "- * -\nMore.",
+        "start": 6,
+        "end": 17,
+        "startByte": 6,
+        "endByte": 17,
+        "line": 2,
+        "endLine": 3,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 steps 2 to 5, ruling 11 (the break uses one character). Line 2 '- * -' mixes '-' and '*', so it is not a thematic break; no line is a boundary and lines 1-3 form one block. Step 3: line 2 with leading WS removed starts with '- ' (list marker), so it starts a piece; line 3 'More.' continues it. Pieces: line 1 (sentence, 'Text.') and lines 2-3 (list-item, from the first line '- * -'). Step 5: '- * -\\nMore.' has no terminator followed by WS: one list-item unit, lines 2-3.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "closing # run needs whitespace before it",
+    "input": {
+      "text": "# C#\nText.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "heading",
+        "text": "# C#",
+        "start": 0,
+        "end": 4,
+        "startByte": 0,
+        "endByte": 4,
+        "line": 1,
+        "endLine": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Text.",
+        "start": 5,
+        "end": 10,
+        "startByte": 5,
+        "endByte": 10,
+        "line": 2,
+        "endLine": 2,
+        "headingPath": [
+          "C#"
+        ]
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 step 6, ruling 12 (a closing '#' run is stripped only when preceded by WS). Line 1 '# C#' is a heading of level 1 with content 'C#'; the trailing '#' follows 'C', not WS, so it is part of the text: heading text 'C#'. Step 3: the line after a heading starts a new piece, so line 2 'Text.' is a sentence piece. Units: heading '# C#' with path [] (no ancestors), then 'Text.' with path ['C#']. Under the old rule the trailing '#' was stripped and the path was ['C'].",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "closing # run after whitespace is stripped; a heading of only a # run has empty text",
+    "input": {
+      "text": "# C #\nA.\n### ###\nB.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "heading",
+        "text": "# C #",
+        "start": 0,
+        "end": 5,
+        "startByte": 0,
+        "endByte": 5,
+        "line": 1,
+        "endLine": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "A.",
+        "start": 6,
+        "end": 8,
+        "startByte": 6,
+        "endByte": 8,
+        "line": 2,
+        "endLine": 2,
+        "headingPath": [
+          "C"
+        ]
+      },
+      {
+        "kind": "heading",
+        "text": "### ###",
+        "start": 9,
+        "end": 16,
+        "startByte": 9,
+        "endByte": 16,
+        "line": 3,
+        "endLine": 3,
+        "headingPath": [
+          "C"
+        ]
+      },
+      {
+        "kind": "sentence",
+        "text": "B.",
+        "start": 17,
+        "end": 19,
+        "startByte": 17,
+        "endByte": 19,
+        "line": 4,
+        "endLine": 4,
+        "headingPath": [
+          "C",
+          ""
+        ]
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 step 6, ruling 12. Line 1 '# C #': level 1, content 'C #'; the closing '#' follows a space, so it is stripped: text 'C'. Line 2 starts a piece after the heading: sentence 'A.' with path ['C']. Line 3 '### ###' starts a piece (heading pattern): level 3, content '###', which is a '#' run only: text ''. Before it is emitted, stacked headings of level 3 or more are popped (none): path ['C']; then '' is pushed. Line 4 starts a piece after the heading: sentence 'B.' with path ['C', ''].",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "frontmatter delimiters with trailing whitespace",
+    "input": {
+      "text": "---  \nt: 1\n--- \t\nBody.",
+      "path": "a.md"
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Body.",
+        "start": 17,
+        "end": 22,
+        "startByte": 17,
+        "endByte": 22,
+        "line": 4,
+        "endLine": 4,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 step 1. Class markdown. Line 1 '---  ' with trailing WS removed is '---': it opens frontmatter. Line 3 '--- <TAB>' with trailing WS removed is '---': it closes it; splitting starts at line 4. 'Body.' is one sentence unit on line 4.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "two backticks are not a fence",
+    "input": {
+      "text": "``\nA. B\n\nC.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "``\nA.",
+        "start": 0,
+        "end": 5,
+        "startByte": 0,
+        "endByte": 5,
+        "line": 1,
+        "endLine": 2,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "B",
+        "start": 6,
+        "end": 7,
+        "startByte": 6,
+        "endByte": 7,
+        "line": 2,
+        "endLine": 2,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "C.",
+        "start": 9,
+        "end": 11,
+        "startByte": 9,
+        "endByte": 11,
+        "line": 4,
+        "endLine": 4,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 steps 2 and 5. Line 1 '``' has only 2 backticks, so it is not a fence line and no fence opens. Line 3 is empty with no fence open: boundary. Blocks: lines 1-2 and line 4. Block 1 is one sentence piece '``\\nA. B'. Code spans: the only backtick run '``' has no later run of 2, so it is literal and there is no span. Cut after 'A.' (followed by a space): units '``\\nA.' (lines 1-2) and 'B' (line 2). Block 2: 'C.' on line 4.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "tag line needs a letter first and whitespace before attributes",
+    "input": {
+      "text": "One.\n<div class=\"x\">\nTwo.\n<div\"x\">\nThree.\n<1a>\nFour.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "One.",
+        "start": 0,
+        "end": 4,
+        "startByte": 0,
+        "endByte": 4,
+        "line": 1,
+        "endLine": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Two.",
+        "start": 21,
+        "end": 25,
+        "startByte": 21,
+        "endByte": 25,
+        "line": 3,
+        "endLine": 3,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "<div\"x\">\nThree.",
+        "start": 26,
+        "end": 41,
+        "startByte": 26,
+        "endByte": 41,
+        "line": 4,
+        "endLine": 5,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "<1a>\nFour.",
+        "start": 42,
+        "end": 52,
+        "startByte": 42,
+        "endByte": 52,
+        "line": 6,
+        "endLine": 7,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 step 2, tag pattern ^<\\/?[A-Za-z][\\w.:-]*(?:\\s[^<>]*)?\\/?>$. Line 2 '<div class=\"x\">': name 'div', then a space, then 'class=\"x\"' (no '<' or '>'), then '>': a tag line, boundary. Line 4 '<div\"x\">': after the name 'div' comes '\"', which is neither WS nor '/>' nor '>': not a tag line. Line 6 '<1a>': '1' is not a letter: not a tag line. Blocks: line 1, and lines 3-7. Step 3: no line of 4-7 starts a piece ('<' is not a piece start), so lines 3-7 are one sentence piece. Step 5: cuts after 'Two.' and 'Three.' (each followed by a newline): units 'Two.' (3), '<div\"x\">\\nThree.' (4-5), '<1a>\\nFour.' (6-7).",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "two dashes are not a thematic break",
+    "input": {
+      "text": "One.\n--\nTwo.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "One.",
+        "start": 0,
+        "end": 4,
+        "startByte": 0,
+        "endByte": 4,
+        "line": 1,
+        "endLine": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "--\nTwo.",
+        "start": 5,
+        "end": 12,
+        "startByte": 5,
+        "endByte": 12,
+        "line": 2,
+        "endLine": 3,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 steps 2 and 3. Line 2 '--' has 2 dashes, fewer than 3: not a thematic break, not a boundary. It does not start a piece either: '-' is followed by '-', not WS, so it is no list marker. One block, one sentence piece 'One.\\n--\\nTwo.', cut after 'One.' (followed by a newline): units 'One.' (line 1) and '--\\nTwo.' (lines 2-3).",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "> without a following space starts a piece",
+    "input": {
+      "text": "Intro\n>No space.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Intro",
+        "start": 0,
+        "end": 5,
+        "startByte": 0,
+        "endByte": 5,
+        "line": 1,
+        "endLine": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": ">No space.",
+        "start": 6,
+        "end": 16,
+        "startByte": 6,
+        "endByte": 16,
+        "line": 2,
+        "endLine": 2,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 steps 3 and 4. One block (no boundary lines). Line 2 with leading WS removed matches '>\\s?' (the space is optional), so it starts a new piece. Line 1 has no terminator, so without the piece cut both lines would be one unit. Pieces: 'Intro' (sentence) and '>No space.' (a blockquote line is sentence). No cuts inside either.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "table separator whose last cell has no trailing pipe is dropped",
+    "input": {
+      "text": "| a | b |\n|---|---\n| 1 | 2 |\n|---|x",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "table-row",
+        "text": "| a | b |",
+        "start": 0,
+        "end": 9,
+        "startByte": 0,
+        "endByte": 9,
+        "line": 1,
+        "endLine": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "table-row",
+        "text": "| 1 | 2 |",
+        "start": 19,
+        "end": 28,
+        "startByte": 19,
+        "endByte": 28,
+        "line": 3,
+        "endLine": 3,
+        "headingPath": []
+      },
+      {
+        "kind": "table-row",
+        "text": "|---|x",
+        "start": 29,
+        "end": 35,
+        "startByte": 29,
+        "endByte": 35,
+        "line": 4,
+        "endLine": 4,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 step 3, separator ^\\|?(?:\\s*:?-+:?\\s*\\|)+\\s*(?::?-+:?\\s*)?$. One block; every line starts with '|', so each line is its own piece of kind table-row. Line 2 '|---|---': leading '|', one group '---|', then the optional last cell '---' without a trailing pipe: it matches, so the piece is dropped. Line 4 '|---|x': after the group '---|' the rest 'x' is not ':?-+:?\\s*': no match, so it is a table row. No terminators: one unit per kept piece.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "+ is a list marker at a line start",
+    "input": {
+      "text": "Intro\n+ plus item. Two.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Intro",
+        "start": 0,
+        "end": 5,
+        "startByte": 0,
+        "endByte": 5,
+        "line": 1,
+        "endLine": 1,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "+ plus item.",
+        "start": 6,
+        "end": 18,
+        "startByte": 6,
+        "endByte": 18,
+        "line": 2,
+        "endLine": 2,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "Two.",
+        "start": 19,
+        "end": 23,
+        "startByte": 19,
+        "endByte": 23,
+        "line": 2,
+        "endLine": 2,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 steps 3 to 5. One block. Line 2 starts with '+ ' ([-*+]\\s), so it starts a piece of kind list-item; line 1 has no terminator, so the piece cut is what separates them. Step 5: the marker is '+ ' (bytes 0-2 of the piece); the '.' after 'item' is past it and followed by a space: cut. Units: 'Intro' (sentence), '+ plus item.' and 'Two.' (list-item).",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "list marker needs whitespace after it",
+    "input": {
+      "text": "Intro\n-x one\n+y two\n1.z three.",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "Intro\n-x one\n+y two\n1.z three.",
+        "start": 0,
+        "end": 30,
+        "startByte": 0,
+        "endByte": 30,
+        "line": 1,
+        "endLine": 4,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 steps 3 and 4. One block. Lines 2 '-x one', 3 '+y two' and 4 '1.z three.' do not match [-*+]\\s or \\d+[.)]\\s (no WS after the marker), nor any other piece start: one sentence piece. The '.' in '1.z' is followed by 'z' and the final '.' by nothing: no cut. One unit, lines 1-4.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "endLine of multi-line units",
+    "input": {
+      "text": "One\ntwo. Three\nfour.\n\n- item\n  cont.\n\n```\nx\n```",
+      "path": null
+    },
+    "expected": [
+      {
+        "kind": "sentence",
+        "text": "One\ntwo.",
+        "start": 0,
+        "end": 8,
+        "startByte": 0,
+        "endByte": 8,
+        "line": 1,
+        "endLine": 2,
+        "headingPath": []
+      },
+      {
+        "kind": "sentence",
+        "text": "Three\nfour.",
+        "start": 9,
+        "end": 20,
+        "startByte": 9,
+        "endByte": 20,
+        "line": 2,
+        "endLine": 3,
+        "headingPath": []
+      },
+      {
+        "kind": "list-item",
+        "text": "- item\n  cont.",
+        "start": 22,
+        "end": 36,
+        "startByte": 22,
+        "endByte": 36,
+        "line": 5,
+        "endLine": 6,
+        "headingPath": []
+      },
+      {
+        "kind": "fenced",
+        "text": "```\nx\n```",
+        "start": 38,
+        "end": 47,
+        "startByte": 38,
+        "endByte": 47,
+        "line": 8,
+        "endLine": 10,
+        "headingPath": []
+      }
+    ],
+    "source": "spec-derived: SPEC section 6.3 and section 6.2 (endLine is the 1-based line of the unit's last character). Lines 4 and 7 are empty with no fence open: boundaries. Line 8 opens a fence, line 10 closes it. Blocks: lines 1-3, 5-6, 8-10. Block 1: one sentence piece cut after 'two.' (followed by a space): 'One\\ntwo.' ends on line 2, 'Three\\nfour.' runs lines 2-3. Block 2: one list-item piece '- item\\n  cont.' (lines 5-6). Block 3: fenced '```\\nx\\n```' (lines 8-10).",
+    "origin": "spec-derived"
   }
 ]

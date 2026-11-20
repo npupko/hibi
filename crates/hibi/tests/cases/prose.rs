@@ -18,8 +18,9 @@ fn class_of(path: Option<&str>) -> ProseClass {
 }
 
 /// `input: {text, path}` or `{fixture, path}`; `expected`: array of
-/// `{kind, text, startByte, endByte, line, headingPath}` (the UTF-16
-/// `start` and `end` are reference only).
+/// `{kind, text, startByte, endByte, line, endLine?, headingPath}` (the
+/// UTF-16 `start` and `end` are reference only). `endLine` is compared when
+/// the expected unit has it; the cases extracted from v4 do not.
 pub fn regions(case: &Case) -> Result<(), String> {
     let text = match case.input.get("fixture").and_then(Value::as_str) {
         Some(f) => std::fs::read_to_string(cases_dir().join(f)).map_err(|e| format!("{f}: {e}"))?,
@@ -38,6 +39,7 @@ pub fn regions(case: &Case) -> Result<(), String> {
                 "startByte": r.start,
                 "endByte": r.end,
                 "line": r.line,
+                "endLine": r.end_line,
                 "headingPath": r.heading_path,
             })
         })
@@ -48,14 +50,18 @@ pub fn regions(case: &Case) -> Result<(), String> {
         .ok_or("expected is not an array")?
         .iter()
         .map(|u| {
-            json!({
+            let mut w = json!({
                 "kind": u["kind"],
                 "text": u["text"],
                 "startByte": u["startByte"],
                 "endByte": u["endByte"],
                 "line": u["line"],
                 "headingPath": u["headingPath"],
-            })
+            });
+            if let Some(end_line) = u.get("endLine") {
+                w["endLine"] = end_line.clone();
+            }
+            w
         })
         .collect();
     if got.len() != want.len() {
@@ -68,7 +74,13 @@ pub fn regions(case: &Case) -> Result<(), String> {
         ));
     }
     for (i, (g, w)) in got.iter().zip(&want).enumerate() {
-        expect_eq(&format!("unit {i}"), g, w)?;
+        let mut g = g.clone();
+        if w.get("endLine").is_none() {
+            g.as_object_mut()
+                .expect("built as an object")
+                .remove("endLine");
+        }
+        expect_eq(&format!("unit {i}"), &g, w)?;
     }
     Ok(())
 }

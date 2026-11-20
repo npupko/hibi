@@ -3,6 +3,8 @@
 //! Pure: no file, clock, environment or process access. The input is the
 //! resource text of section 4.2 (no CRLF). Offsets are UTF-8 bytes.
 
+use std::collections::HashMap;
+
 use crate::fingerprint;
 use crate::model::Fingerprint;
 use crate::text::{is_ws, trim, trim_end, trim_start};
@@ -125,11 +127,19 @@ fn trim_span(text: &str, s: usize, e: usize) -> Option<(usize, usize)> {
     }
 }
 
-/// The fence marker of a trimmed line: `^(`{3,}|~{3,})`.
-fn fence_marker(t: &str) -> Option<char> {
-    ['`', '~']
-        .into_iter()
-        .find(|&m| t.chars().take(3).filter(|&c| c == m).count() == 3)
+/// The fence run of a trimmed line, `^(`{3,}|~{3,})`: the marker character
+/// and the length of the leading run of it.
+fn fence_run(t: &str) -> Option<(char, usize)> {
+    ['`', '~'].into_iter().find_map(|m| {
+        let n = t.len() - t.trim_start_matches(m).len();
+        (n >= 3).then_some((m, n))
+    })
+}
+
+/// Whether trimmed line `t` closes an open fence of `n` characters `m`: it
+/// consists only of `m`, at least `n` of them (CommonMark).
+fn closes_fence(t: &str, (m, n): (char, usize)) -> bool {
+    t.len() >= n && t.chars().all(|c| c == m)
 }
 
 /// `^<\/?[A-Za-z][\w.:-]*(?:\s[^<>]*)?\/?>$`
@@ -157,11 +167,14 @@ fn is_tag_line(t: &str) -> bool {
     }
 }
 
-/// `^(?:-{3,}|\*{3,}|_{3,})$`
+/// `^(?:-(?:[ \t]*-){2,}|\*(?:[ \t]*\*){2,}|_(?:[ \t]*_){2,})$` on a
+/// trimmed line: three or more of one of `-`, `*`, `_` with only spaces or
+/// tabs between them.
 fn is_thematic_break(t: &str) -> bool {
-    ['-', '*', '_']
-        .into_iter()
-        .any(|m| t.len() >= 3 && t.chars().all(|c| c == m))
+    ['-', '*', '_'].into_iter().any(|m| {
+        t.chars().all(|c| c == m || matches!(c, ' ' | '\t'))
+            && t.chars().filter(|&c| c == m).count() >= 3
+    })
 }
 
 /// Count of leading `#` and the rest, for `#{1,6}`.
@@ -175,8 +188,8 @@ fn is_line_terminator(c: char) -> bool {
 }
 
 /// `^(#{1,6})\s+(.*)$` on a line with leading WS removed: the level and the
-/// heading's own text (the captured text without a closing `#` run,
-/// trimmed).
+/// heading's own text (the captured text, trimmed, without a closing `#` run
+/// that is preceded by WS or is the whole text, trimmed again).
 fn heading(s: &str) -> Option<(usize, String)> {
     let (level, rest) = hashes(s)?;
     if !rest.starts_with(is_ws) {
@@ -187,8 +200,14 @@ fn heading(s: &str) -> Option<(usize, String)> {
     if content.contains(is_line_terminator) {
         return None;
     }
-    let own = trim(trim(content).trim_end_matches('#')).to_owned();
-    Some((level, own))
+    let content = trim(content);
+    let before_run = content.trim_end_matches('#');
+    let own = if before_run.is_empty() || before_run.ends_with(is_ws) {
+        trim(before_run)
+    } else {
+        content
+    };
+    Some((level, own.to_owned()))
 }
 
 /// `^(?:[-*+]\s|\d+[.)]\s)` on a line with leading WS removed; returns the
@@ -247,11 +266,17 @@ fn code_spans(p: &str) -> Vec<(usize, usize)> {
             i += 1;
         }
     }
+    // next_same[r]: the next later run with the length of run r, from one
+    // backward pass, so that pairing stays linear.
+    let mut next_same = vec![None; runs.len()];
+    let mut last_of_len: HashMap<usize, usize> = HashMap::new();
+    for (r, &(s, e)) in runs.iter().enumerate().rev() {
+        next_same[r] = last_of_len.insert(e - s, r);
+    }
     let mut spans = Vec::new();
     let mut r = 0;
     while r < runs.len() {
-        let len = runs[r].1 - runs[r].0;
-        match (r + 1..runs.len()).find(|&q| runs[q].1 - runs[q].0 == len) {
+        match next_same[r] {
             Some(q) => {
                 spans.push((runs[r].0, runs[q].1));
                 r = q + 1;
@@ -278,6 +303,9 @@ fn sentence_cuts(p: &str, kind: ProseKind) -> Vec<usize> {
         0
     };
     let mut cuts = Vec::new();
+    // The first span that ends after the candidate: the spans are sorted
+    // and disjoint, and candidates come in source order.
+    let mut span = 0;
     for (i, c) in p.char_indices() {
         if !matches!(c, '.' | '!' | '?') {
             continue;
@@ -292,7 +320,10 @@ fn sentence_cuts(p: &str, kind: ProseKind) -> Vec<usize> {
             }
             _ => continue,
         };
-        if spans.iter().any(|&(s, e)| s <= i && i < e) {
+        while spans.get(span).is_some_and(|&(_, e)| e <= i) {
+            span += 1;
+        }
+        if spans.get(span).is_some_and(|&(s, _)| s <= i) {
             continue;
         }
         if i < marker_end {
@@ -311,28 +342,29 @@ pub fn split(text: &str, class: ProseClass) -> Vec<Region> {
     let lines = lines_of(text);
     let line_str = |l: &Line| &text[l.start..l.end];
 
-    // Step 1: frontmatter.
+    // Step 1: frontmatter, `---` or `+++`. A leading U+FEFF is set aside for
+    // recognition only; it stays in the text.
     let mut first = 0;
+    let line1 = line_str(&lines[0]);
+    let delim = trim_end(line1.strip_prefix('\u{feff}').unwrap_or(line1));
     if class == ProseClass::Markdown
-        && trim_end(line_str(&lines[0])) == "---"
-        && let Some(close) = (1..lines.len()).find(|&i| trim_end(line_str(&lines[i])) == "---")
+        && (delim == "---" || delim == "+++")
+        && let Some(close) = (1..lines.len()).find(|&i| trim_end(line_str(&lines[i])) == delim)
     {
         first = close + 1;
     }
 
     // Step 2: blocks as (first line, last line, fenced).
     let mut blocks: Vec<(usize, usize, bool)> = Vec::new();
-    let mut open: Option<char> = None;
+    let mut open: Option<(char, usize)> = None;
     let mut cur: Option<(usize, usize, bool)> = None;
     for (li, line) in lines.iter().enumerate().skip(first) {
         let t = trim(line_str(line));
-        let marker = fence_marker(t);
-        if let Some(m) = marker {
-            match open {
-                None => open = Some(m),
-                Some(o) if o == m => open = None,
-                Some(_) => {}
-            }
+        let marker = fence_run(t);
+        match open {
+            None => open = marker,
+            Some(o) if closes_fence(t, o) => open = None,
+            Some(_) => {}
         }
         let boundary = open.is_none() && (t.is_empty() || is_tag_line(t) || is_thematic_break(t));
         if boundary {
@@ -416,4 +448,48 @@ pub fn split(text: &str, class: ProseClass) -> Vec<Region> {
         }
     }
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::{Duration, Instant};
+
+    use super::*;
+
+    /// A bound far above the linear cost in a debug build (under 0.1 s) and
+    /// below the former quadratic span check (9 s for the first input).
+    const BOUND: Duration = Duration::from_secs(5);
+
+    #[test]
+    fn many_code_spans_each_followed_by_a_sentence_end_split_in_linear_time() {
+        let n = 50_000;
+        let text = "`a`. ".repeat(n);
+        let t0 = Instant::now();
+        let regions = split(&text, ProseClass::Prose);
+        let took = t0.elapsed();
+        assert_eq!(regions.len(), n);
+        assert!(
+            regions
+                .iter()
+                .all(|r| &text[r.start..r.end] == "`a`." && r.kind == ProseKind::Sentence)
+        );
+        assert!(took < BOUND, "{n} code spans took {took:?}");
+    }
+
+    #[test]
+    fn many_unpaired_backtick_runs_pair_in_linear_time() {
+        // Runs of 2..=1001 backticks have no partner; each used to scan every
+        // later run. 50,000 paired single backticks follow.
+        let mut text = String::new();
+        for len in 2..=1001 {
+            text.push_str(&"`".repeat(len));
+            text.push(' ');
+        }
+        text.push_str(&"`a`. ".repeat(50_000));
+        let t0 = Instant::now();
+        let spans = code_spans(&text);
+        let took = t0.elapsed();
+        assert_eq!(spans.len(), 50_000);
+        assert!(took < BOUND, "code spans took {took:?}");
+    }
 }
