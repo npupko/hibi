@@ -39,6 +39,11 @@ fn one(e: Error) -> Failure {
 /// Run the parsed command line.
 pub fn run(cli: Cli) -> Result<Reply, Failure> {
     let global = &cli.global;
+    // A malformed global option fails every command that accepts it,
+    // whether or not the command reads the clock.
+    if let Some(text) = &global.now {
+        Timestamp::parse_instant(text).map_err(one)?;
+    }
     match cli.command {
         Command::Version => version(),
         Command::Schema(args) => schema_command(&args),

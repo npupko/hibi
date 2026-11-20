@@ -353,7 +353,7 @@ pub struct StatusArgs {
     /// The range is A, A.. or A..HEAD (since commit A), or A... or A...HEAD
     /// (since the merge base of A and HEAD). The compared end is always the
     /// working tree. Cannot be combined with --state or with ids
-    #[arg(long, value_name = "range")]
+    #[arg(long, value_name = "range", conflicts_with_all = ["ids", "state"])]
     pub since: Option<String>,
 
     /// Keep a claim only when the locator of one of its sides matches this

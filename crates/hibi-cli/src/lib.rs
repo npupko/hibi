@@ -16,7 +16,7 @@ use std::io::{IsTerminal, Write};
 use std::process::ExitCode;
 
 use clap::error::ErrorKind;
-use clap::{CommandFactory, FromArgMatches};
+use clap::{ArgAction, CommandFactory, FromArgMatches};
 use hibi::Error;
 use hibi::engine::ErrorEnvelope;
 
@@ -54,14 +54,39 @@ fn format_of(args: &[OsString]) -> Format {
 }
 
 /// The subcommand named on the command line, for the `command` of a usage
-/// error: the first argument that is a command name, else `hibi`.
+/// error: the first argument in subcommand position when it is a command
+/// name, else `hibi`. The clap definition says which global options take a
+/// value, so that a value equal to a command name (`--root status`) is not
+/// taken for the command.
 fn command_argument(args: &[OsString]) -> String {
-    let names = cli::command_names();
-    args.iter()
-        .skip(1)
-        .map(|a| a.to_string_lossy())
-        .find(|a| names.iter().any(|n| n == a))
-        .map_or_else(|| "hibi".to_owned(), |a| a.into_owned())
+    let definition = cli::command();
+    let takes_value = |name: &str| {
+        definition.get_arguments().any(|a| {
+            a.get_long() == Some(name)
+                && matches!(a.get_action(), ArgAction::Set | ArgAction::Append)
+        })
+    };
+    let mut args = args.iter().skip(1).map(|a| a.to_string_lossy());
+    while let Some(arg) = args.next() {
+        match arg.strip_prefix("--") {
+            // `--` ends the options: what follows is not a command.
+            Some("") => break,
+            Some(option) => {
+                if !option.contains('=') && takes_value(option) {
+                    args.next();
+                }
+            }
+            None if arg.starts_with('-') && arg.len() > 1 => {}
+            None => {
+                return if definition.find_subcommand(arg.as_ref()).is_some() {
+                    arg.into_owned()
+                } else {
+                    "hibi".to_owned()
+                };
+            }
+        }
+    }
+    "hibi".to_owned()
 }
 
 /// clap's message for a usage error, without its `error:` prefix and its
@@ -195,6 +220,21 @@ mod tests {
     #[test]
     fn the_command_of_a_usage_error_is_the_subcommand_or_hibi() {
         assert_eq!(command_argument(&args(&["hibi", "--bogus"])), "hibi");
+        // A command name that is the value of an option is not the command.
+        assert_eq!(
+            command_argument(&args(&["hibi", "--root", "status", "--bogus"])),
+            "hibi"
+        );
+        assert_eq!(
+            command_argument(&args(&["hibi", "--root=status", "list", "--bogus"])),
+            "list"
+        );
+        assert_eq!(
+            command_argument(&args(&["hibi", "--no-cache", "mark", "claim"])),
+            "mark"
+        );
+        assert_eq!(command_argument(&args(&["hibi", "nope", "status"])), "hibi");
+        assert_eq!(command_argument(&args(&["hibi", "--", "status"])), "hibi");
         assert_eq!(
             command_argument(&args(&["hibi", "--root", "x", "claim", "--bogus"])),
             "claim"
