@@ -76,6 +76,40 @@ fn label_of(s: &str) -> String {
     out
 }
 
+/// The exact hits of `quote` in `text` whose context score is the best, by
+/// section 7.1 steps 1 and 3 (non-overlapping hits left to right; score
+/// `similarity(48 characters before, prefix) + similarity(48 after,
+/// suffix)`), in text order. Byte spans.
+fn tied_hits(text: &str, quote: &str, prefix: &str, suffix: &str) -> Vec<Span> {
+    let chars = text::Chars::new(text);
+    let qlen = text::char_len(quote);
+    let window = |a: usize, b: usize| chars.string(a, b);
+    let scored: Vec<(f64, Span)> = text
+        .match_indices(quote)
+        .map(|(b, _)| {
+            let i = chars.index(b);
+            let before = window(i.saturating_sub(locate::CONTEXT), i);
+            let after = window(i + qlen, i + qlen + locate::CONTEXT);
+            (
+                text::similarity(&before, prefix) + text::similarity(&after, suffix),
+                Span {
+                    start: b,
+                    end: b + quote.len(),
+                },
+            )
+        })
+        .collect();
+    let top = scored
+        .iter()
+        .map(|(s, _)| *s)
+        .fold(f64::NEG_INFINITY, f64::max);
+    scored
+        .into_iter()
+        .filter(|(s, _)| *s == top)
+        .map(|(_, span)| span)
+        .collect()
+}
+
 /// `endLine` of the `file` unit: the line of the last character.
 fn last_line(text: &str) -> usize {
     let last = text.char_indices().last().map_or(0, |(i, _)| i);
@@ -482,6 +516,34 @@ impl Doc {
             // 6.7): a reflow that moves a line break inside the quote is
             // not an uncertain anchor. Only a difference beyond whitespace
             // leaves the result fuzzy.
+            // A new anchor (no stored `pos`) is not bound by the position
+            // tie-break of section 7.1 step 3: when a short quote's best
+            // exact hits tie, all of them are returned as an ambiguous
+            // result, so the caller sees every candidate (ruling on section
+            // 6.7). A stored anchor keeps the tie-break.
+            Located::Found {
+                how: How::Exact,
+                span,
+            } if sel.pos.is_none() && text::char_len(quote) < locate::AMBIGUOUS_MIN => {
+                let ties = tied_hits(
+                    &self.text[from..to],
+                    quote,
+                    sel.prefix.as_deref().unwrap_or_default(),
+                    sel.suffix.as_deref().unwrap_or_default(),
+                );
+                if ties.len() >= 2 {
+                    let ties: Vec<Span> = ties.into_iter().map(shift).collect();
+                    Located::Ambiguous {
+                        span: ties[0],
+                        ties,
+                    }
+                } else {
+                    Located::Found {
+                        how: How::Exact,
+                        span: shift(span),
+                    }
+                }
+            }
             Located::Found { how, span } => {
                 let span = shift(span);
                 let how = if how == How::Fuzzy

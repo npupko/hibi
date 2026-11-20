@@ -620,12 +620,53 @@
     "origin": "spec-derived"
   },
   {
-    "name": "rust: short duplicate quote across units: the hit nearest pos 0",
+    "name": "rust: new anchor: a short quote tied in two units gives both",
     "input": {
       "path": "src/lib.rs",
       "fixture": "fixtures/resolve/lib.rs",
       "sel": {
         "quote": "{ 1 }"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:Cache.get",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn get(&self) -> u32 { 1 }",
+            "prefix": "step(1);\n}\n\npub struct Cache;\n\nimpl Cache {\n    ",
+            "suffix": "\n    pub fn put(&self) -> u32 { 1 }\n}\n",
+            "pos": 248,
+            "symbol": "Cache.get"
+          }
+        },
+        {
+          "key": "method:Cache.put",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn put(&self) -> u32 { 1 }",
+            "prefix": " Cache {\n    pub fn get(&self) -> u32 { 1 }\n    ",
+            "suffix": "\n}\n",
+            "pos": 283,
+            "symbol": "Cache.put"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "rust: stored anchor: a short quote tied in two units takes the hit nearest pos 0",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "{ 1 }",
+        "pos": 0
       }
     },
     "expected": {
@@ -669,6 +710,63 @@
             "suffix": "\n}\n",
             "pos": 308,
             "symbol": "Cache.put"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "rust: new anchor: a short quote tied within one unit resolves by pick",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "step(1)"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:twice",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "step(1)",
+            "prefix": ")\n}\n\npub fn twice() {\n    // step(1); first\n    ",
+            "suffix": ";\n    step(1);\n}\n\npub struct Cache;\n\nimpl Cache ",
+            "pos": 187,
+            "symbol": "twice"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "rust: stored anchor: a short quote tied within one unit takes the hit nearest pos, here in a comment",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "quote": "step(1)",
+        "pos": 0
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:twice",
+          "approx": false,
+          "refuse": "quote_in_comment",
+          "sel": {
+            "quote": "pub fn twice() {",
+            "prefix": "et limit = MAX; // cap here\n    n.min(limit)\n}\n\n",
+            "suffix": "\n    // step(1); first\n    step(1);\n    step(1);",
+            "pos": 144,
+            "symbol": "twice"
           }
         }
       ]
@@ -1822,12 +1920,51 @@
     "origin": "spec-derived"
   },
   {
-    "name": "markdown: short duplicate quote: the hit nearest pos 0",
+    "name": "markdown: new anchor: a short quote tied in two sentences gives both",
     "input": {
       "path": "docs/pricing.md",
       "fixture": "fixtures/resolve/pricing.md",
       "sel": {
         "quote": "/month."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "Pro costs $29/month.",
+            "prefix": "---\ntitle: Pricing page\n---\n# Pricing\n\n",
+            "suffix": " Teams cost $99/month.\n\nSame sentence here. Othe",
+            "pos": 39
+          }
+        },
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "Teams cost $99/month.",
+            "prefix": "ricing page\n---\n# Pricing\n\nPro costs $29/month. ",
+            "suffix": "\n\nSame sentence here. Other words.\n\nSame sentenc",
+            "pos": 60
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown: stored anchor: a short quote tied in two sentences takes the hit nearest pos 0",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "/month.",
+        "pos": 0
       }
     },
     "expected": {
@@ -2107,6 +2244,146 @@
             "prefix": "",
             "suffix": " tail\nsecond line\n\nother block\n",
             "pos": 0
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python duplicate symbol: a symbol naming two declarations gives both",
+    "input": {
+      "path": "dup.py",
+      "fixture": "fixtures/resolve/dup.py",
+      "sel": {
+        "symbol": "max_size"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:max_size",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def max_size():",
+            "prefix": "",
+            "suffix": "\n    return 1\n\n\ndef max_size():\n    return 2\n",
+            "pos": 0,
+            "symbol": "max_size"
+          }
+        },
+        {
+          "key": "function:max_size~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def max_size():",
+            "prefix": "def max_size():\n    return 1\n\n\n",
+            "suffix": "\n    return 2\n",
+            "pos": 31,
+            "symbol": "max_size"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python duplicate symbol: new anchor: a short quote tied in both declarations does not narrow them",
+    "input": {
+      "path": "dup.py",
+      "fixture": "fixtures/resolve/dup.py",
+      "sel": {
+        "symbol": "max_size",
+        "quote": "return"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:max_size",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def max_size():",
+            "prefix": "",
+            "suffix": "\n    return 1\n\n\ndef max_size():\n    return 2\n",
+            "pos": 0,
+            "symbol": "max_size"
+          }
+        },
+        {
+          "key": "function:max_size~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def max_size():",
+            "prefix": "def max_size():\n    return 1\n\n\n",
+            "suffix": "\n    return 2\n",
+            "pos": 31,
+            "symbol": "max_size"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python duplicate symbol: stored anchor: a short quote is narrowed by pos to one declaration",
+    "input": {
+      "path": "dup.py",
+      "fixture": "fixtures/resolve/dup.py",
+      "sel": {
+        "symbol": "max_size",
+        "quote": "return",
+        "pos": 51
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:max_size~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "return",
+            "prefix": " max_size():\n    return 1\n\n\ndef max_size():\n    ",
+            "suffix": " 2\n",
+            "pos": 51,
+            "symbol": "max_size"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python duplicate symbol: a quote found once narrows the symbol to one declaration",
+    "input": {
+      "path": "dup.py",
+      "fixture": "fixtures/resolve/dup.py",
+      "sel": {
+        "symbol": "max_size",
+        "quote": "return 2"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:max_size~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "return 2",
+            "prefix": " max_size():\n    return 1\n\n\ndef max_size():\n    ",
+            "suffix": "\n",
+            "pos": 51,
+            "symbol": "max_size"
           }
         }
       ]
