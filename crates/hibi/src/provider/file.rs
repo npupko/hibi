@@ -395,7 +395,7 @@ impl FileProvider {
         if let Some(d) = row.and_then(|r| Doc::from_cache(text.clone(), class, &r)) {
             return Ok(d);
         }
-        let d = Doc::build(text, class);
+        let d = Doc::build(text, class)?;
         if let (Some(c), Some(b)) = (cache, &blob) {
             c.put_units(b, class.name(), &d.to_cache());
         }
@@ -519,7 +519,7 @@ impl Provider for FileProvider {
                 a.sel
                     .validate()
                     .map_err(|e| ProviderError::invalid_request(e.message))?;
-                Ok(doc.resolve(&a.sel))
+                doc.resolve(&a.sel)
             })
             .collect()
     }

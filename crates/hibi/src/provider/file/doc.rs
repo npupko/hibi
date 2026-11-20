@@ -9,7 +9,7 @@ use std::cell::OnceCell;
 use crate::code::{self, Analysis, Class};
 use crate::fingerprint::{self, AST_V1};
 use crate::locate::{self, How, Located, Span};
-use crate::model::{Fingerprint, Selector};
+use crate::model::{Fingerprint, MAX_QUOTE_CHARS, Selector};
 use crate::prose::{self, ProseClass};
 use crate::provider::{ProviderError, ProviderErrorCode, Range, Refuse, Rendered, Unit};
 use crate::text;
@@ -106,7 +106,7 @@ struct Raw {
 impl Doc {
     /// Build the units of `text`, the resource text of section 4.2, read
     /// with the class of its path.
-    pub(super) fn build(text: String, class: Class) -> Doc {
+    pub(super) fn build(text: String, class: Class) -> Result<Doc, ProviderError> {
         let file = |fp: Fingerprint, text: &str| Raw {
             key: "file".into(),
             kind: "file".into(),
@@ -192,7 +192,7 @@ impl Doc {
         raws: Vec<Raw>,
         comments: OnceCell<Vec<(usize, usize)>>,
         headings: OnceCell<Vec<Vec<String>>>,
-    ) -> Doc {
+    ) -> Result<Doc, ProviderError> {
         let mut doc = Doc {
             text,
             class,
@@ -231,10 +231,10 @@ impl Doc {
             doc.entries.push(entry);
         }
         for i in 0..doc.entries.len() {
-            let sel = doc.completed(i, None);
+            let sel = doc.completed(i, None)?;
             doc.entries[i].unit.sel = sel;
         }
-        doc
+        Ok(doc)
     }
 
     /// The cache form of section 11.3: the JSON array of the units without
@@ -349,27 +349,47 @@ impl Doc {
     /// The completed selector of entry `i` (section 6.7). `kept` is the span
     /// `[L.start, L.end)` when the input quote is kept; otherwise the default
     /// quote is used.
-    fn completed(&self, i: usize, kept: Option<Span>) -> Selector {
+    ///
+    /// The span is cut to its first `MAX_QUOTE_CHARS` characters, then
+    /// trailing WS is removed, so the quote is never dropped for its length
+    /// (ruling on section 6.7). A kept span is an exact hit of the input
+    /// quote, which is at most `MAX_QUOTE_CHARS` characters, and a default
+    /// quote is at most 120, so the cut is a guard. The span is never empty
+    /// after trimming: a kept span is the input quote, which is non-empty
+    /// after trimming (section 5.2), and a default quote starts at the
+    /// unit's first character, which is not WS. An empty span would be a
+    /// bug, so it is the error `internal`, not a selector without a quote.
+    fn completed(&self, i: usize, kept: Option<Span>) -> Result<Selector, ProviderError> {
         let e = &self.entries[i];
         if e.unit.kind == "file" {
-            return Selector::empty();
+            return Ok(Selector::empty());
         }
         let (s, end) = match kept {
             Some(span) => (span.start, span.end),
             None => (e.start, self.default_quote_end(i)),
         };
-        let mut sel = match locate::quote_selector(&self.text, s, end) {
-            Ok(q) => Selector {
-                quote: Some(q.quote),
-                prefix: Some(q.prefix),
-                suffix: Some(q.suffix),
-                pos: Some(q.pos as u64),
-                ..Selector::default()
-            },
-            Err(_) => Selector::default(),
+        let span = &self.text[s..end];
+        let end = match span.char_indices().nth(MAX_QUOTE_CHARS) {
+            Some((b, _)) => s + text::trim_end(&span[..b]).len(),
+            None => end,
         };
-        sel.symbol = e.symbol.clone();
-        sel
+        let q = locate::quote_selector(&self.text, s, end).map_err(|err| {
+            ProviderError::new(
+                ProviderErrorCode::Internal,
+                format!(
+                    "the completed selector of unit {:?} has no quote span ({err}) at {s}..{end}",
+                    e.unit.key
+                ),
+            )
+        })?;
+        Ok(Selector {
+            quote: Some(q.quote),
+            prefix: Some(q.prefix),
+            suffix: Some(q.suffix),
+            pos: Some(q.pos as u64),
+            symbol: e.symbol.clone(),
+            key: None,
+        })
     }
 
     /// The units of the resource, optionally of one kind, in order.
@@ -471,25 +491,31 @@ impl Doc {
 
     /// One resolved unit with its text, `approx`, `refuse` and completed
     /// selector. `l` is the final locate result, `None` without a quote.
-    fn out(&self, i: usize, l: Option<&Located>, approx: bool, refuse: Option<Refuse>) -> Unit {
+    fn out(
+        &self,
+        i: usize,
+        l: Option<&Located>,
+        approx: bool,
+        refuse: Option<Refuse>,
+    ) -> Result<Unit, ProviderError> {
         let e = &self.entries[i];
         let kept = match l {
             Some(l) if refuse.is_none() && self.inside(l, i) => l.span(),
             _ => None,
         };
         let mut u = e.unit.clone();
-        u.sel = self.completed(i, kept);
+        u.sel = self.completed(i, kept)?;
         u.text = Some(self.text[e.start..e.end].to_owned());
         u.approx = approx;
         u.refuse = refuse;
-        u
+        Ok(u)
     }
 
     /// `resolve(resource, sel)` of section 6.7. The selector has no `key`.
-    pub(super) fn resolve(&self, sel: &Selector) -> Vec<Unit> {
+    pub(super) fn resolve(&self, sel: &Selector) -> Result<Vec<Unit>, ProviderError> {
         let has_quote = sel.quote.is_some();
         if !has_quote && sel.symbol.is_none() {
-            return vec![self.out(0, None, false, None)];
+            return Ok(vec![self.out(0, None, false, None)?]);
         }
         let mut missed = false;
         if let Some(symbol) = &sel.symbol {
@@ -499,7 +525,7 @@ impl Doc {
             if s.len() == 1 {
                 let i = s[0];
                 if !has_quote {
-                    return vec![self.out(i, None, false, None)];
+                    return Ok(vec![self.out(i, None, false, None)?]);
                 }
                 let e = &self.entries[i];
                 let mut l = self.locate_in(e.start, e.end, sel);
@@ -512,7 +538,7 @@ impl Doc {
                     }
                     _ => None,
                 };
-                return vec![self.out(i, Some(&l), false, refuse)];
+                return Ok(vec![self.out(i, Some(&l), false, refuse)?]);
             }
             if s.len() > 1 {
                 if has_quote {
@@ -528,22 +554,30 @@ impl Doc {
                             .collect();
                         if c.len() == 1 {
                             let refuse = self.in_comment(span).then_some(Refuse::QuoteInComment);
-                            return vec![self.out(c[0], Some(&l), how == How::Fuzzy, refuse)];
+                            return Ok(vec![self.out(
+                                c[0],
+                                Some(&l),
+                                how == How::Fuzzy,
+                                refuse,
+                            )?]);
                         }
                     }
                     return s
                         .iter()
                         .map(|&i| self.out(i, Some(&l), false, None))
-                        .collect();
+                        .collect::<Result<_, _>>();
                 }
-                return s.iter().map(|&i| self.out(i, None, false, None)).collect();
+                return s
+                    .iter()
+                    .map(|&i| self.out(i, None, false, None))
+                    .collect::<Result<_, _>>();
             }
             missed = true;
         }
         if has_quote {
             let mut l = self.locate_in(0, self.text.len(), sel);
             match &l {
-                Located::Missing => return Vec::new(),
+                Located::Missing => return Ok(Vec::new()),
                 Located::Ambiguous { ties, .. } => {
                     let mut u: Vec<usize> = Vec::new();
                     for t in ties {
@@ -556,7 +590,7 @@ impl Doc {
                         return u
                             .into_iter()
                             .map(|i| self.out(i, Some(&l), false, None))
-                            .collect();
+                            .collect::<Result<_, _>>();
                     }
                     l = self.pick(ties);
                 }
@@ -573,9 +607,14 @@ impl Doc {
             } else {
                 None
             };
-            return vec![self.out(i, Some(&l), how == How::Fuzzy || missed, refuse)];
+            return Ok(vec![self.out(
+                i,
+                Some(&l),
+                how == How::Fuzzy || missed,
+                refuse,
+            )?]);
         }
-        Vec::new()
+        Ok(Vec::new())
     }
 }
 
@@ -597,10 +636,56 @@ mod tests {
         }
     }
 
+    /// Ruling on section 6.7: a completed quote is cut to MAX_QUOTE_CHARS
+    /// characters and trimmed, never dropped; an empty span is `internal`.
+    #[test]
+    fn completed_quote_is_cut_to_the_limit_and_never_dropped() {
+        // One block unit: 2,047 'a', a space, then 10 'b'.
+        let t = format!("{} {}\n", "a".repeat(MAX_QUOTE_CHARS - 1), "b".repeat(10));
+        let doc = Doc::build(t.clone(), Class::Text).unwrap();
+        let i = 1;
+        assert_eq!(doc.entries[i].unit.kind, "block");
+        let sel = doc
+            .completed(
+                i,
+                Some(Span {
+                    start: 0,
+                    end: t.len() - 1,
+                }),
+            )
+            .unwrap();
+        // The 2,048th character is the space: cut there, then trimmed.
+        let quote = sel.quote.unwrap();
+        assert_eq!(quote, "a".repeat(MAX_QUOTE_CHARS - 1));
+        assert_eq!(sel.pos, Some(0));
+        assert_eq!(sel.prefix.as_deref(), Some(""));
+        assert_eq!(sel.suffix.unwrap(), format!(" {}\n", "b".repeat(10)));
+        // A span of exactly MAX_QUOTE_CHARS characters is kept whole.
+        let t = format!("{}\n", "c".repeat(MAX_QUOTE_CHARS));
+        let doc = Doc::build(t.clone(), Class::Text).unwrap();
+        let sel = doc
+            .completed(
+                1,
+                Some(Span {
+                    start: 0,
+                    end: MAX_QUOTE_CHARS,
+                }),
+            )
+            .unwrap();
+        assert_eq!(sel.quote.unwrap().len(), MAX_QUOTE_CHARS);
+        // An empty span is a bug: internal, not a selector without a quote.
+        let t = "x  y\n".to_owned();
+        let doc = Doc::build(t, Class::Text).unwrap();
+        let err = doc
+            .completed(1, Some(Span { start: 1, end: 3 }))
+            .unwrap_err();
+        assert_eq!(err.code, ProviderErrorCode::Internal);
+    }
+
     #[test]
     fn cache_round_trip_gives_the_same_answers() {
         let t = "// lead\nfn a() { 1 } // c\nstruct S;\nimpl S { fn m(&self) {} }\n".to_owned();
-        let fresh = Doc::build(t.clone(), Class::Rust);
+        let fresh = Doc::build(t.clone(), Class::Rust).unwrap();
         let warm = Doc::from_cache(t, Class::Rust, &fresh.to_cache()).unwrap();
         assert_eq!(fresh.units(None), warm.units(None));
         for q in ["c", "fn a", "fn m", "1 }"] {
