@@ -1,0 +1,7 @@
+# Check out text files with LF line endings on every platform. The case files
+# and fixtures under cases/ hold byte offsets that a CRLF conversion breaks.
+* text=auto eol=lf
+
+# Written by the generator examples of hibi-cli; collapsed in pull request diffs.
+schemas/*.schema.json linguist-generated
+plugins/hibi-cli/reference/cli.md linguist-generated

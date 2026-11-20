@@ -1,0 +1,140 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# No job in this workflow writes to the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: stable
+          components: rustfmt
+          cache: false
+      - run: cargo fmt --all --check
+
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: stable
+          components: clippy
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: stable
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo test --workspace
+      - name: Build with the library's default features off
+        run: cargo build --workspace --no-default-features
+
+  # Minimum supported Rust version, from `rust-version` in Cargo.toml.
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: "1.90"
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo check --workspace --all-targets
+
+  schemas:
+    name: schema drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: stable
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo run -p hibi-cli --example write-schemas
+      - name: schemas/ matches the generator
+        run: |
+          git add --intent-to-add schemas/
+          if ! git diff --exit-code schemas/; then
+            echo "::error::schemas/ is out of date. Run: cargo run -p hibi-cli --example write-schemas"
+            exit 1
+          fi
+
+  cli-reference:
+    name: CLI-reference drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: stable
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo run -p hibi-cli --example cli-reference
+      - name: plugins/hibi-cli/reference/cli.md matches the generator
+        run: |
+          git add --intent-to-add plugins/hibi-cli/reference/cli.md
+          if ! git diff --exit-code plugins/hibi-cli/reference/cli.md; then
+            echo "::error::The CLI reference is out of date. Run: cargo run -p hibi-cli --example cli-reference"
+            exit 1
+          fi
+
+  # Prints what hibi reports about this repository's own claims. `hibi status`
+  # and `hibi cover` exit 0 whatever they find, so stale claims or uncovered
+  # units never fail this job; only an operational error (exit 1) does.
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: stable
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+      - run: cargo build -p hibi-cli
+      - name: hibi status
+        run: |
+          if [ ! -d .hibi ]; then
+            echo "::notice::This repository has no .hibi/ store yet, so there is nothing to report."
+            exit 0
+          fi
+          ./target/debug/hibi status --format human
+      - name: hibi cover
+        run: |
+          if [ ! -d .hibi ]; then
+            echo "::notice::This repository has no .hibi/ store yet, so there is nothing to report."
+            exit 0
+          fi
+          ./target/debug/hibi cover --format human
