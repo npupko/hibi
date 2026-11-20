@@ -70,50 +70,100 @@ design/SPEC.md                     this file
 
 Minimum supported Rust version: 1.90. `Cargo.lock` is committed.
 
+The three packages share one version, set once in `[workspace.package]` and
+inherited with `version.workspace = true` (section 2.7).
+
 `hibi-cli` contains argument parsing, output rendering and process exit only.
 Every behaviour in this file other than section 15's rendering lives in the
 `hibi` library so that an embedder gets the same results.
 
 ### 2.2 Library features
 
-| Feature | Default | Enables |
-|---|---|---|
-| `file` | on | The file provider, the prose splitter, tree-sitter and the six grammars. Works without `cache`: the provider takes an optional `UnitCache` (a trait defined in `provider::file`) and computes everything when given none. |
-| `git-store` | on | `GitTextStore` (section 12). |
-| `command` | on | `CommandProvider`, the external-command adapter (section 13). |
-| `cache` | on | The SQLite cache (section 11.3). |
-| `judge` | on | The Jev client (section 14). Requires `cache`. |
+| Feature | Default | Enables | Optional crates |
+|---|---|---|---|
+| `file` | on | The modules `code`, `prose` and `provider::file`: the file provider, the prose splitter, tree-sitter and the six grammars. Works without `cache`: the provider takes an optional `UnitCache` (a trait defined in `provider::file`) and computes everything when given none. | `tree-sitter`, the five grammar crates, `sha1` |
+| `git-store` | on | The module `store::git_text`: `GitTextStore` (section 12). | none |
+| `command` | on | The module `provider::command`: `CommandProvider`, the external-command adapter, and the conformance runner (section 13). | `wait-timeout` |
+| `cache` | on | The module `cache`: the SQLite cache (section 11.3). | `rusqlite`, `sha1` |
+| `judge` | on | The module `judge`: the Jev client (section 14). Requires `cache`. | `ureq` |
 
-With all features off the crate still provides `model`, `canon`, `locate`,
-`text`, `duration`, `engine` and the two traits. An embedder such as archctl
-links that subset and supplies its own `Store` and `Provider`.
+Items that depend on two features, or on one feature outside its own module:
+
+| Item | Compiled when |
+|---|---|
+| `git::blob_id` (the git blob id of a byte string, section 11.3) | `file` or `cache` |
+| `impl UnitCache for cache::Cache` | `cache` and `file` |
+| The conversion of `cache::Unavailable` into an engine warning (`cache_unavailable`) | `cache` |
+
+The modules `build_info`, `canon`, `config`, `duration`, `engine`, `error`,
+`fingerprint`, `git`, `locate`, `model`, `provider` (the trait, the protocol
+types and the `Providers` registry), `store` (the trait, `Ledger`, `Batch`)
+and `text` are compiled with every feature combination. So with all features
+off the crate still provides the records, canonical JSON and ids, the locate
+cascade, both fingerprint profiles' hashing, the configuration readers, the
+git runner, the engine and the two traits. An embedder such as archctl links
+that subset and supplies its own `Store` and `Provider`. The reference
+provider links `hibi` with default features off.
+
+The crate MUST build with all features off.
 
 ### 2.3 Modules
 
-| Module | Owns | May depend on |
-|---|---|---|
-| `model` | Record types, `Locator`, `Selector`, `Anchor`, `Fingerprint`, id types, serde and schemars derives | `canon` |
-| `canon` | RFC 8785 serialization, id derivation, base32 | none |
-| `text` | Whitespace set, normalization, Levenshtein, similarity, offset conversion | none |
-| `duration` | Duration grammar and arithmetic | none |
-| `locate` | The quote locate cascade and Bitap | `text` |
-| `fingerprint` | Profiles `prose-v1` and `ast-v1`, the fingerprint string format | `text` |
-| `prose` | The region splitter | `text` |
-| `code` | Language table, parsing, declaration units, semantic stream | `fingerprint` |
-| `provider` | The `Provider` trait, protocol types, `Providers` registry | `model` |
-| `provider::file` | `FileProvider`, the `UnitCache` trait | `prose`, `code`, `locate`, `git` |
-| `provider::command` | `CommandProvider`, conformance runner | `provider` |
-| `store` | The `Store` trait, `Ledger`, `Batch` | `model` |
-| `store::git_text` | `GitTextStore` | `store`, `canon` |
-| `config` | `hibi.toml` and user config | `model` |
-| `git` | The only place that starts `git` | none |
-| `cache` | The SQLite cache; implements `UnitCache` when feature `file` is on | none |
-| `engine` | Freshness, coverage, and one function per write command | `model`, `store`, `provider`, `config`, `duration`, `git` |
-| `judge` | Jev requests, cache, the two advisory commands | `engine`, `provider`, `cache` |
-| `error` | `Error`, the closed code list of section 15.4 | none |
+"Depends on" lists the other modules of the crate that the module's
+non-test code uses. A module MUST NOT use a module that is not listed for it.
+
+| Module | Feature | Owns | Depends on |
+|---|---|---|---|
+| `model` | always | Record types, `Locator`, `Selector`, `Anchor`, `Fingerprint`, `Timestamp`, id types, their validation, serde and schemars implementations, the compact anchor parser | `canon`, `duration`, `error`, `text` |
+| `canon` | always | RFC 8785 serialization, id derivation, base32, id-argument checking and prefix resolution (section 3.6) | `error` |
+| `text` | always | Whitespace set, normalization, Levenshtein, similarity, offset conversion | none |
+| `duration` | always | Duration grammar and arithmetic | `error` |
+| `locate` | always | The quote locate cascade and Bitap | `text`, `model` (the constant `MAX_QUOTE_CHARS`) |
+| `fingerprint` | always | Profiles `prose-v1` and `ast-v1` (hashing a given stream), the fingerprint string format, content keys | `text`, `model` |
+| `prose` | `file` | The region splitter | `text`, `fingerprint`, `model` |
+| `code` | `file` | Language table, parsing, declaration units, semantic stream, block units | `text`, `fingerprint`, `model` |
+| `provider` | always | The `Provider` trait, the protocol types (submodule `provider::protocol`), `Providers` registry | `model` |
+| `provider::file` | `file` | `FileProvider`, `FileOptions`, the `UnitCache` trait | `provider`, `model`, `error`, `config`, `git`, `code`, `prose`, `locate`, `fingerprint`, `text` |
+| `provider::command` | `command` | `CommandProvider`, conformance runner | `provider`, `model`, `config`, `error` |
+| `store` | always | The `Store` trait, `Ledger`, `Batch`, `StoreWarning` | `model`, `error` |
+| `store::git_text` | `git-store` | `GitTextStore`, root discovery, the store part of `init` | `store`, `model`, `error`, `config` (the no-follow open helper) |
+| `config` | always | `hibi.toml` and user config, the sibling-repository checks of section 11.1, the helper that opens a file without following a symbolic link | `model`, `error` |
+| `git` | always | The only place that starts `git` | `error` |
+| `cache` | `cache` | The SQLite cache; implements `UnitCache` when feature `file` is on | `error`; `provider::file` when feature `file` is on |
+| `engine` | always | Freshness, coverage, `--since`, one function per write and read command, the shared output types | `model`, `canon`, `duration`, `fingerprint`, `error`, `store`, `provider`, `config`, `git`; `cache` when feature `cache` is on (the warning conversion only) |
+| `judge` | `judge` | Jev requests, the judge cache, the advisory commands | `engine`, `provider`, `store`, `cache`, `config`, `git`, `model`, `canon`, `error` |
+| `error` | always | `Error`, `Code`, the closed code list of section 15.4 | none |
+| `build_info` | always | Constants a caller reports: `ENGINE_VERSION` (the package version), `STORE_VERSION` (1, section 11.1), `GRAMMARS` (class, grammar crate and pinned version for each of the six code classes) | none |
+
+`engine` is one public module. Its submodules are private and everything
+public is re-exported from `engine`:
+
+| Submodule | Owns |
+|---|---|
+| `engine::types` | States, reasons, warnings and the shared output objects of section 15.2 |
+| `engine::resolve` | Side resolution through `Providers` (sections 2.5 and 9.2) |
+| `engine::fresh` | Freshness (section 9) and the `next` suggestion (section 15.2) |
+| `engine::cover` | Coverage and `cover --since` (section 10) |
+| `engine::input` | Inputs of the write commands and the standard-input documents |
+| `engine::write` | `claim`, `mark`, `reanchor`, `retire` |
+| `engine::read` | `status`, `list`, `status --since` |
+| `engine::report` | The configuration report of `hibi providers` |
+
+`judge` has the private submodules `ask` (cache and request packing),
+`client` (transport), `gate` (the send rule of section 14.2), `order`,
+`suggest` and `triage` (one per command), and the public submodule
+`judge::questions` (every state, question, option and threshold).
 
 `locate`, `text`, `duration`, `prose`, `canon` and the stream and unit
 functions of `code` are pure: no file, clock, environment or process access.
+
+The engine never reads the clock: `now` is a parameter of every function
+that needs it. The library never reads `TYPESAFE_API_KEY` or `HIBI_JEV_URL`:
+the judge client is built by
+`Judge::new(key: Option<&str>, endpoint: Option<&str>) -> Result<Judge, Error>`
+and the caller passes the two values (section 14.1). The only environment
+variables the library reads are `HIBI_CACHE_DIR` (in `cache::default_path`)
+and `HIBI_CONFIG` (in `config::user_config_path`).
 
 ### 2.4 The storage trait
 
@@ -160,11 +210,14 @@ Contract for every backend:
   the same batch fails with `internal` and writes nothing.
 - The engine never deletes or rewrites a record through this trait.
 
+`Batch::verify_ids` and `Batch::verify_claims` implement the two `append`
+checks for any backend.
+
 ### 2.5 The provider trait
 
 ```rust
 pub trait Provider {
-    fn info(&self) -> &ProviderInfo;
+    fn info(&mut self) -> Result<&ProviderInfo, ProviderError>;
     /// One result per anchor, in order.
     fn resolve(&mut self, anchors: &[Anchor]) -> Vec<Result<Vec<Unit>, ProviderError>>;
     fn units(&mut self, loc: &Locator, kind: Option<&str>) -> Result<Vec<Unit>, ProviderError>;
@@ -176,6 +229,12 @@ pub trait Provider {
 the protocol objects in section 13.3 and serialize to exactly those shapes.
 `FileProvider` and `CommandProvider` both implement this trait and the engine
 uses nothing else from them.
+
+`info` can fail because a provider may start on first use. `CommandProvider`
+starts its child process on the first call of any trait method, `info`
+included, and at most once: when the process cannot be started or `hello`
+fails, `info` and every later request return the error `failed`, and nothing
+is restarted. `FileProvider::info` never fails.
 
 `resolve` returns, per anchor, an error or a list of units. An absent resource
 is the error `not_found`. An empty list means the resource exists and the
@@ -202,6 +261,81 @@ stored anchor the side is `unavailable` with reason `provider_error`.
 provider of a locator and receives either the provider or the reason no
 provider can serve it (section 9.2).
 
+```rust
+impl Providers {
+    pub fn new() -> Self;
+    /// Register `provider` for each of `schemes`. A scheme registered or
+    /// declared earlier is replaced.
+    pub fn register<S: AsRef<str>>(&mut self, schemes: &[S], provider: Box<dyn Provider>);
+    /// The scheme is declared in `hibi.toml` and has no command in the user
+    /// config. Does nothing if the scheme already has an entry.
+    pub fn declare_unregistered(&mut self, scheme: &str);
+    pub fn provider_for(&mut self, loc: &Locator) -> Result<&mut dyn Provider, NoProvider>;
+    pub fn provider_for_scheme(&mut self, scheme: &str) -> Result<&mut dyn Provider, NoProvider>;
+}
+
+pub enum NoProvider {
+    SchemeNotDeclared,      // reason `scheme_not_declared`
+    ProviderNotRegistered,  // reason `provider_not_registered`
+}
+```
+
+A provider that cannot start or fails `hello` is not a `NoProvider` case: it
+is registered and answers every request with the error `failed`.
+
+The file provider is built by one of two constructors, one per source of
+section 6.8:
+
+```rust
+impl FileProvider {
+    /// Reads the working tree under `root`, and sibling repositories for
+    /// `repo:` locators.
+    pub fn working_tree(root: impl Into<PathBuf>, options: FileOptions) -> FileProvider;
+    /// Reads the blobs of commit `base` of the repository at `root`.
+    pub fn revision(
+        root: impl Into<PathBuf>,
+        base: ObjectId,
+        options: FileOptions,
+    ) -> Result<FileProvider, Error>;
+}
+
+pub struct FileOptions {
+    /// `.hibi/hibi.toml`: the `[repos]` aliases.
+    pub repo: RepoConfig,
+    /// The user config: the `[[repo]]` entries that allow an alias.
+    pub user: UserConfig,
+    /// The once-per-run git check (section 10.4).
+    pub git: GitStatus,
+    /// The unit cache, or `None` to compute everything.
+    pub cache: Option<Box<dyn UnitCache>>,
+}
+
+pub trait UnitCache {
+    /// The stored value for a blob read as `class`: a JSON array of units
+    /// without `text`, or `not_text`. `None` when there is none or on error.
+    fn get_units(&self, blob: &str, class: &str) -> Option<String>;
+    /// Store the value for a blob read as `class`. Errors are ignored.
+    fn put_units(&self, blob: &str, class: &str, units: &str);
+}
+```
+
+- `FileProvider::revision` fails with `not_a_git_repository` or `git_too_old`
+  when `options.git` holds no usable git. In a provider built by it every
+  `repo:` locator is the provider error `invalid_locator`.
+- In a provider built by `working_tree` without a usable git, every `repo:`
+  locator is `repo_not_found` (section 10.4).
+- `blob` is the git blob id of the file's bytes and `class` the resource
+  class of section 6.1. The hibi version of the cache key (section 11.3) is
+  not an argument: an implementation serves one engine version.
+- A `UnitCache` is never authoritative. An implementation that loses a
+  value, or fails, MUST change no result. `UnitCache` is also implemented
+  for `&T`, `Rc<T>` and `Arc<T>` of an implementation, so one cache can be
+  shared by several providers.
+- The `ProviderInfo` of the file provider has `protocol` 1, provider name
+  `hibi-file` with the package version, `schemes` `["file", "repo"]`,
+  `selectors` `["quote", "symbol"]`, `kinds` the closed list of section 6.2,
+  and the capabilities `units`, `render` and `batch` all true.
+
 ### 2.6 Crates
 
 Versions are the latest stable on crates.io on 2026-11-20. Pin them in
@@ -216,11 +350,11 @@ are part of the `ast-v1` definition (section 8.4).
 | | `tree-sitter-rust` | =0.24.2 |
 | | `tree-sitter-go` | =0.25.0 |
 | | `tree-sitter-java` | =0.23.5 |
-| Serialization | `serde` 1.0.229, `serde_json` 1.0.154, `toml` 1.2.1 | |
+| Serialization | `serde` 1.0.229 (feature `derive`), `serde_json` 1.0.154, `toml` 1.2.1 | |
 | Canonical JSON | `serde_json_canonicalizer` | 0.4.1 |
 | Schemas | `schemars` | 1.2.3 |
-| CLI | `clap` 4.6.9, `clap_complete` 4.6.12 | |
-| Hashing | `blake3` 1.8.7, `sha1` (blob ids, section 11.3) | |
+| CLI | `clap` 4.6.9 (feature `derive`), `clap_complete` 4.6.12 | |
+| Hashing | `blake3` 1.8.7, `sha1` 0.11.0 (blob ids, section 11.3) | |
 | Base32 | `data-encoding` (custom `Specification`) | 2.11.1 |
 | Unicode | `unicode-normalization` | 0.1.26 |
 | Time | `jiff` | 1.0.1 |
@@ -230,11 +364,22 @@ are part of the `ast-v1` definition (section 8.4).
 | HTTP | `ureq` (default rustls) | 3.5.2 |
 | Child timeout | `wait-timeout` | 0.2.1 |
 | Errors | `thiserror` | 2.0.21 |
-| Tests | `insta` 1.49.0, `tempfile` 3.27.0 | |
-| File locks | `std::fs::File::lock` (stable since Rust 1.89) | |
+| Platform constants | `libc`, a dependency on Unix targets only (`[target.'cfg(unix)'.dependencies]`) | 0.2.191 |
+| Tests | `insta` 1.49.0 (feature `json`), `tempfile` 3.27.0 | |
+| File locks | `std::fs::File::try_lock`, polled (stable since Rust 1.89) | |
 | Release | `cargo-dist` (binary `dist`) | 0.34.0 |
 
 `git` is started as a child process. No git library is linked.
+
+`libc` supplies constants only: `O_NOFOLLOW` for opening store files without
+following a symbolic link, and `ELOOP` and `EMLINK` for recognising the
+resulting error (section 12.4). No `libc` function is called. On a target
+that is not Unix no such flag is set, and the `symlink_metadata` checks of
+section 12.4 are the only guard.
+
+The only lint configuration in `Cargo.toml` is `unsafe_code = "forbid"` under
+`[workspace.lints.rust]`, which every crate inherits with
+`[lints] workspace = true`. No crate of the workspace contains `unsafe` code.
 
 ### 2.7 Repository deliverables besides code
 
@@ -242,13 +387,73 @@ These files are part of the release tree and are bound by this section.
 
 | Deliverable | Contract |
 |---|---|
-| `schemas/<name>.schema.json` | Written by `cargo run -p hibi-cli --example write-schemas`. Equal to `hibi schema <name>`. |
-| `plugins/hibi-cli/reference/cli.md` | The generated CLI reference: every command, option, default and help text, taken from the clap definition. Written by `cargo run -p hibi-cli --example cli-reference`. Never edited by hand. |
+| `schemas/<name>.schema.json` | Written by `cargo run -p hibi-cli --example write-schemas`, which also removes a schema file whose name `hibi schema` no longer knows. Equal to `hibi schema <name>`. |
+| `plugins/hibi-cli/skills/hibi/references/cli-reference.md` | The generated CLI reference: every command, option, default and help text, taken from the clap definition. Written by `cargo run -p hibi-cli --example cli-reference`. Never edited by hand. |
 | `plugins/hibi-cli/` skill and cookbook, `docs/*.mdx`, `README.md` | Every `hibi` command line they show is checked against the generated CLI reference, the one source: its command and each of its options MUST appear there (requirement R43). |
-| `.github/workflows/ci.yml` | Jobs: `cargo fmt --all --check`; `cargo clippy --workspace --all-targets -- -D warnings`; `cargo test --workspace`; schema drift (run the schema generator, fail on `git diff --exit-code schemas/`); CLI-reference drift (same for the reference file); and a report job that runs `hibi status` and `hibi cover` on the repository's own store and prints the result. The report job cannot fail on claim state, because both commands exit 0 whatever they find. |
-| Release | `cargo-dist` configured in `dist-workspace.toml`, building the `hibi` binary only, with the shell and PowerShell installers. `scripts/install.sh` downloads a release archive and nothing else. |
-| Versioning | release-please with `release-type: rust`. `CHANGELOG.md` restarts at the first v5 release with one note that the earlier TypeScript line ended at 0.7.0. |
-| Dependency updates | Dependabot for `cargo` and `github-actions`. The grammar crates are excluded from automatic updates because of section 8.4. |
+| `.github/workflows/ci.yml` | Runs on every pull request and on every push to `main`, with read-only repository permission. Seven jobs, described below. |
+| Release | release-plz and `cargo-dist`, described below. `scripts/install.sh` downloads a release archive and nothing else. |
+| Versioning | One version for the whole workspace and one root `CHANGELOG.md`, both maintained by release-plz from conventional commits. `CHANGELOG.md` restarts at the first v5 release with one note that the earlier TypeScript line ended at 0.7.0. |
+| Dependency updates | Dependabot for `cargo` and `github-actions`, weekly, with minor and patch updates grouped. `tree-sitter` and the grammar crates (`tree-sitter-*`) are excluded from automatic updates because of section 8.4. `.github/workflows/release.yml` is excluded from the `github-actions` updates because it is generated. |
+| `.editorconfig` | UTF-8, LF line endings, a final newline, spaces for indentation: 4 in `*.rs`, 2 elsewhere. Trailing whitespace is trimmed except in `*.md`. |
+| `.github/CODEOWNERS` | One rule: the repository owner owns every path. |
+| `.github/workflows/codeql.yml` | CodeQL analysis of the Rust code on every push to `main`, every pull request to `main`, and weekly. |
+| `.github/workflows/scorecard.yml` | OpenSSF Scorecard on every push to `main`, on a branch-protection change, and weekly. |
+| `.github/workflows/dependency-review.yml` | Dependency review of every pull request. |
+
+The CI jobs of `ci.yml`:
+
+| Job | What it runs |
+|---|---|
+| `fmt` | `cargo fmt --all --check` |
+| `clippy` | `cargo clippy --workspace --all-targets -- -D warnings` |
+| `test` | `cargo test --workspace`, then `cargo build --workspace --no-default-features` |
+| `msrv` | `cargo check --workspace --all-targets` with the toolchain of the minimum supported Rust version (section 2.1) |
+| `schemas` (schema drift) | Runs the schema generator, then `git add --intent-to-add schemas/` and `git diff --exit-code schemas/`. A changed, new or removed schema file fails the job. |
+| `cli-reference` (CLI-reference drift) | The same for the CLI reference file and its generator. |
+| `report` | Builds `hibi-cli`, then runs `hibi status --format human` and `hibi cover --format human` on the repository's own store and prints the result. When the repository has no `.hibi/` directory each step prints a notice and succeeds. |
+
+The report job cannot fail on claim state, because both commands exit 0
+whatever they find. Only an operational error (exit 1) fails it. The other
+jobs use the stable toolchain. Every action in every workflow is pinned by
+commit.
+
+Release:
+
+- **Versions and tags.** Every crate has `version.workspace = true`. A
+  release has one version `X.Y.Z` and one tag `vX.Y.Z`. No crate is
+  published to a registry: release-plz runs with `git_only = true`, reads the
+  released version from the git tags, and never runs `cargo publish`.
+- **`release-plz.toml`.** For the workspace: `git_only = true`,
+  `git_tag_name = "v{{ version }}"`, `git_tag_enable = false`,
+  `git_release_enable = false`, `changelog_update = false`,
+  `release_always = false`, `semver_check = false`. For the package
+  `hibi-cli` only: `git_tag_enable = true`, `changelog_update = true`,
+  `changelog_path = "./CHANGELOG.md"` and
+  `changelog_include = ["hibi", "hibi-provider-reference"]`. So one package
+  creates the tag and writes the changelog, the changelog holds the commits
+  of all three crates, and release-plz creates no GitHub Release.
+- **`.github/workflows/release-plz.yml`.** Runs on every push to `main`. The
+  job `release-pr` opens or updates the release pull request: the new version
+  in `Cargo.toml` and `Cargo.lock` and a new `CHANGELOG.md` section. The job
+  `release` pushes the tag `vX.Y.Z` when a release pull request has been
+  merged, and does nothing otherwise. Both jobs use a token of a GitHub App
+  installed on the repository (secrets `RELEASE_APP_CLIENT_ID` and
+  `RELEASE_APP_PRIVATE_KEY`), because a tag or pull request created with the
+  default workflow token starts no other workflow.
+- **`dist-workspace.toml` and `.github/workflows/release.yml`.** The tag
+  starts `release.yml`, which `cargo-dist` generates from
+  `dist-workspace.toml` and which is never edited by hand. It builds the
+  package `hibi-cli` only, that is the `hibi` binary and neither the library
+  nor the reference provider, for the targets `aarch64-apple-darwin`,
+  `x86_64-apple-darwin`, `aarch64-unknown-linux-gnu`,
+  `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-musl`,
+  `x86_64-unknown-linux-musl` and `x86_64-pc-windows-msvc`, with the shell
+  and PowerShell installers, and creates the GitHub Release with the
+  changelog section of the version as its notes. Installers place the binary
+  in `CARGO_HOME`. No updater is installed. On a pull request the workflow
+  only runs `dist plan`. The actions it uses are pinned by commit in
+  `[dist.github-action-commits]`. The build profile is `dist`: it inherits
+  `release` and sets `lto = "thin"`.
 
 `hibi-cli` has a library target that exposes the clap command definition, so
 that the two generator examples and the tests use the same definition as the
@@ -267,9 +472,23 @@ binary. The generators are examples, not subcommands, and are not shipped.
   `invalid_json` when read from standard input).
 - Inside a selector an absent field is omitted. `null` is not allowed there.
 - Timestamps are RFC 3339 in UTC with second precision and the `Z` suffix:
-  `2026-11-20T18:04:11Z`. No fraction, no offset.
-- Strings are stored as given. hibi does not Unicode-normalize stored strings.
+  `2026-11-20T18:04:11Z`. No fraction, no offset. A stored timestamp is
+  exactly 20 characters, `YYYY-MM-DDTHH:MM:SSZ`, with a four-digit year from
+  0000 to 9999, and names a date and time that exist.
+- Strings are stored as given, apart from the trimming of `statement`, `note`
+  and `by` (sections 3.2 to 3.4). hibi does not Unicode-normalize stored
+  strings.
+- The free-text fields `note` and `by` are stored trimmed (WS, section 4.1).
+  A value that is empty after trimming is stored as `null`. A stored `note`
+  or `by` is therefore `null` or a non-empty string without leading or
+  trailing WS. U+FEFF is not WS and is kept.
 - The only number in any record is `pos`, an integer from 0 to 2^53 - 1.
+
+An instant given by a caller, such as the value of `--now` (section 15.1),
+is not a stored timestamp and is read by `Timestamp::parse_instant`: RFC
+3339 with a `Z` or any numeric offset, converted to UTC, with a fraction of
+a second truncated. Text that does not parse, that has no offset, or whose
+UTC year is before 0000 is `invalid_time`.
 
 ### 3.2 Claim
 
@@ -280,7 +499,7 @@ binary. The generators are examples, not subcommands, and are not shipped.
 | `subject` | Anchor | Section 5 |
 | `evidence` | array of Anchor | May be empty. Order is significant. |
 | `recheck` | string or null | A duration in the grammar of section 9.4 |
-| `note` | string or null | How to re-check, or where the truth lives. Never empty: an empty note is stored as `null`. |
+| `note` | string or null | How to re-check, or where the truth lives. Stored trimmed. Never empty: a note that is empty after trimming is stored as `null`. |
 
 ### 3.3 Mark
 
@@ -289,9 +508,9 @@ binary. The generators are examples, not subcommands, and are not shipped.
 | `id` | string | `m1-` id |
 | `claim` | string | Full id of the claim |
 | `at` | timestamp | When the check happened |
-| `by` | string or null | Free text. Kept for audit. Never interpreted. |
-| `sides` | array of `{loc, fp}` | One entry per side, index-aligned: entry 0 is the subject, entry `i` is `evidence[i-1]`. `loc` MUST equal that anchor's `loc`. `fp` is a fingerprint string (section 8.1). |
-| `note` | string or null | |
+| `by` | string or null | Free text. Kept for audit. Never interpreted. Stored trimmed; `null` when empty after trimming. |
+| `sides` | array of `{loc, fp}` | At least one entry. One entry per side, index-aligned: entry 0 is the subject, entry `i` is `evidence[i-1]`. `loc` MUST equal that anchor's `loc`. `fp` is a fingerprint string (section 8.1). |
+| `note` | string or null | Stored trimmed; `null` when empty after trimming. |
 
 A mark always covers every side. A mark whose `sides` length differs from
 `1 + evidence.length` of its claim, or whose `loc` values do not match, is
@@ -303,15 +522,18 @@ A mark always covers every side. A mark whose `sides` length differs from
 |---|---|---|
 | `id` | string | `r1-` id |
 | `retires` | string | Full id of the retired claim |
-| `replacedBy` | string or null | Full id of another claim |
+| `replacedBy` | string or null | Full id of another claim. MUST differ from `retires`. |
 | `at` | timestamp | |
-| `by` | string or null | |
-| `note` | string or null | |
+| `by` | string or null | Stored trimmed; `null` when empty after trimming. |
+| `note` | string or null | Stored trimmed; `null` when empty after trimming. |
 
 A claim with at least one retirement is retired. Retirement cannot be undone.
 Because ids are derived from content, a claim with the same body as a retired
 claim is that retired claim. To record the same statement and anchors again,
 the caller gives a different `note`; that makes a different claim.
+
+A retirement whose `replacedBy` equals its `retires` is invalid: it cannot be
+constructed and does not read.
 
 ### 3.5 Canonical JSON and id derivation
 
@@ -332,12 +554,19 @@ Id derivation, identical for the three record types:
 An id is therefore 23 ASCII characters and matches
 `^(c1|m1|r1)-[0-9a-hjkmnp-tv-z]{20}$`.
 
+The body is the record in its stored form: the id is derived after
+`statement`, `note` and `by` are trimmed and an empty `note` or `by` has
+become `null`.
+
 Consequences that implementations MUST preserve:
 
 - Two claims with equal bodies are the same claim.
 - Changing a statement, an anchor, `recheck` or `note` makes a different claim.
 - Two marks for the same claim with equal `at`, `by`, `sides` and `note` are
   the same mark.
+- Two inputs that differ only in leading or trailing WS of `statement`,
+  `note` or `by`, or only in an empty versus an absent `note` or `by`, give
+  the same record.
 
 ### 3.6 Id arguments and prefix resolution
 
@@ -352,6 +581,79 @@ Wherever the CLI or a standard-input document takes a record id:
    one: `ambiguous_id`, and the error message lists the candidates.
 
 Stored records always hold full ids.
+
+### 3.7 Construction and validation
+
+One set of rules decides whether a record is valid. It is applied when a
+record is read (from the store, from standard input, from any JSON) and when
+a record is constructed in memory. A constructor MUST NOT produce a record
+that a reader rejects, and a record a constructor returns MUST read back
+from its canonical bytes as an equal record with the same bytes.
+
+The rules, besides the key and type rules of section 3.1:
+
+| Record | Rules |
+|---|---|
+| Claim | `statement` is non-empty and equals itself trimmed. Every anchor's selector is valid by section 5.2. `recheck`, when not `null`, parses by section 9.4. `note` is in the stored form of section 3.1. |
+| Mark | `sides` has at least one entry. `by` and `note` are in the stored form of section 3.1. |
+| Retirement | `replacedBy` differs from `retires`. `by` and `note` are in the stored form of section 3.1. |
+| All three | `id` is a full id of the record's type and equals the id derived from the body (section 3.5). Every id a record names (`claim`, `retires`, `replacedBy`) is a full id of type `c1-`. |
+
+Reading does not repair a record. A stored `statement`, `note` or `by` with
+leading or trailing WS, an empty `note` or `by`, or an `id` that is not the
+derived id makes the record invalid, even when the other fields are valid.
+
+The constructors:
+
+```rust
+impl Claim {
+    pub fn new(
+        statement: &str,
+        subject: Anchor,
+        evidence: Vec<Anchor>,
+        recheck: Option<String>,
+        note: Option<String>,
+    ) -> Result<Claim, Error>;
+}
+
+impl Mark {
+    pub fn new(
+        claim: ClaimId,
+        at: Timestamp,
+        by: Option<String>,
+        sides: Vec<MarkSide>,
+        note: Option<String>,
+    ) -> Result<Mark, Error>;
+    /// The rules that need the claim (section 3.3).
+    pub fn check_against(&self, claim: &Claim) -> Result<(), Error>;
+}
+
+impl Retirement {
+    pub fn new(
+        retires: ClaimId,
+        replaced_by: Option<ClaimId>,
+        at: Timestamp,
+        by: Option<String>,
+        note: Option<String>,
+    ) -> Result<Retirement, Error>;
+}
+```
+
+A constructor first brings its input to the stored form: it trims
+`statement`, trims `note` and `by`, and replaces a `note` or `by` that is
+empty after trimming with `null`. It then applies every rule of the table
+except the id rule, and derives the id. It does not trim or change a
+selector, a locator or `recheck`.
+
+Error codes of a rule violation at construction: `invalid_anchor` for a
+selector, `invalid_duration` for `recheck`, `invalid_argument` for every
+other rule. The same violation in a record that is read is `store_corrupt`
+from the store and `invalid_json` from standard input (section 3.1).
+
+The rules of section 3.3 that need the claim are checked by
+`Mark::check_against`: the mark's `claim` is the claim's id, `sides` has
+`1 + evidence.length` entries, and each entry's `loc` equals the anchor's
+`loc`.
 
 ---
 
@@ -387,9 +689,22 @@ every U+000D U+000A pair with U+000A. The result is the resource text. Every
 offset, range, unit text, quote and fingerprint refers to the resource text,
 so no unit contains a U+000D that came from a CRLF line ending. This is the
 only place line endings are changed; the pure functions of `prose`, `locate`
-and `code` receive the resource text and do not handle CRLF themselves. A
-leading U+FEFF stays in the text and its offsets, and belongs to the first
-unit that starts there.
+and `code` receive the resource text and do not handle CRLF themselves.
+
+A leading U+FEFF (a byte order mark) stays in the resource text and in its
+offsets: it is the first character, in the byte range `[0, 3)`, and every other offset
+counts it. It is never removed and never treated as WS. Which units contain
+it depends on the class of the resource (section 6.1):
+
+| Class | Units that contain a leading U+FEFF |
+|---|---|
+| Every class | The `file` unit, whose range is `[0, len)`. |
+| `prose`, `markdown` | Also the first prose unit, when that unit starts at offset 0. U+FEFF is not WS, so trimming does not remove it from the unit: the unit's text, default quote and fingerprint include it. When a `markdown` text starts with frontmatter the U+FEFF lies in the frontmatter (section 6.3), which is in no prose unit. |
+| `text`, and a code class handled as `text` after a parse error | Also the first `block` unit, for the same reason, when the first line is not empty after trimming. |
+| A code class (`typescript`, `tsx`, `python`, `rust`, `go`, `java`) parsed without error | No other unit. It belongs only to the `file` unit: the parser skips a leading U+FEFF, so no declaration or `statement` unit starts before the first token. |
+
+A quote that starts after the U+FEFF has it in its stored `prefix`, and its
+`pos` counts the three bytes.
 
 ### 4.3 Normalization and similarity
 
@@ -437,7 +752,7 @@ A selector is a JSON object with these optional keys and no others:
 
 | Key | Type | Meaning |
 |---|---|---|
-| `quote` | string, non-empty | Text that occurs in the unit |
+| `quote` | string, non-empty, at most 2,048 characters | Text that occurs in the unit |
 | `prefix` | string | Up to 48 characters that preceded the quote |
 | `suffix` | string | Up to 48 characters that followed the quote |
 | `pos` | integer | Byte offset of the quote when it was recorded. A hint only. |
@@ -447,6 +762,31 @@ A selector is a JSON object with these optional keys and no others:
 `prefix`, `suffix` and `pos` are allowed only together with `quote`. The empty
 selector `{}` is valid. A quote that is empty after trimming is
 `invalid_anchor`. A quote is stored and matched as given, untrimmed.
+
+`MAX_QUOTE_CHARS` is 2,048. A quote longer than `MAX_QUOTE_CHARS` characters
+is `invalid_anchor`. The limit counts characters (section 4.1), not bytes,
+and includes leading and trailing WS of the quote. It bounds the cost of
+locating a quote (section 7). A quote of exactly 2,048 characters is valid.
+
+A selector is valid when all of these hold. Each violation is
+`invalid_anchor`:
+
+- It has no key other than the six above, and no key holds `null`.
+- `prefix`, `suffix` and `pos` appear only together with `quote`.
+- `quote`, when present, is not empty after trimming and has at most
+  `MAX_QUOTE_CHARS` characters.
+- `prefix` and `suffix`, when present, have at most 48 characters each. An
+  empty `prefix` or `suffix` is valid.
+- `pos`, when present, is an integer from 0 to 2^53 - 1.
+- `symbol` and `key`, when present, are not empty.
+
+These rules are applied wherever a selector enters hibi: when a selector is
+read as JSON (from the store, from standard input, from a provider), when a
+compact anchor is parsed (section 5.5), and when a claim is constructed
+(section 3.7). A selector that breaks them is never stored and never sent to
+a provider. Where the selector is part of a record read from the store the
+error is `store_corrupt`; in a provider's answer it is `provider_error`
+(section 2.5).
 
 Which keys a provider accepts:
 
@@ -483,6 +823,13 @@ at the first `#`; the right part, if any, is the symbol. A path that contains
 standard input. For any other scheme the whole argument is the locator and the
 selector is `{}`; other selectors for external schemes are given as JSON.
 
+The scheme of a compact anchor is the text before its first `:`. The locator
+part MUST match section 5.1 and the resulting selector MUST be valid by
+section 5.2; otherwise the error is `invalid_anchor`. So a compact anchor
+with an empty symbol (`file:a.rs#`), with a quote that is empty after
+trimming (`file:a.md::`), or with a quote longer than `MAX_QUOTE_CHARS`
+characters is `invalid_anchor`. The quote is not trimmed.
+
 ---
 
 ## 6. The file provider: resources and units
@@ -491,7 +838,13 @@ The file provider serves the schemes `file` and `repo`.
 
 ### 6.1 Resource class
 
-The class of a file follows from the lower-cased extension of its path:
+The class of a file follows from the extension of its locator path. The
+extension is the part of the last path segment (the text after the last `/`)
+that follows the segment's last `.`, with ASCII letters lower-cased. A last
+segment with no `.`, or whose only `.` is its first character (`.md`,
+`.gitignore`), has no extension, and the class is `text`. Only the last
+segment counts: `dir.md/file` is `text`, `a.d.ts` is `typescript`,
+`README.MD` is `markdown`.
 
 | Class | Extensions | Units |
 |---|---|---|
@@ -517,7 +870,9 @@ its resolution fails with `too_large` (section 9.2).
 Every walk over a parse tree in this file (discovery in section 6.4, the
 semantic stream in section 8.4, the comment lookup in section 6.7) MUST be
 iterative, for example with a tree cursor, so that its stack use does not grow
-with the depth of the tree. There is no depth limit.
+with the depth of the tree. No walk has a depth limit. Discovery alone stops
+descending into containers at `MAX_CONTAINER_DEPTH` (section 6.4); that limit
+bounds the number of nested units, not the depth of the tree that is read.
 
 ### 6.2 Unit fields
 
@@ -533,36 +888,64 @@ Every unit has:
 | `fp` | Fingerprint (section 8) |
 | `label` | One line for people: the symbol path for a declaration, otherwise the first 80 characters of `normalize(text)` |
 
-Closed list of file-provider unit kinds:
+`line` is the 1-based line of the character at `start`. `endLine` is the
+1-based line of the last character of the range, where a U+000A belongs to
+the line it ends. For an empty range `endLine` equals `line`. `endLine` is
+never less than `line`.
+
+Closed list of file-provider unit kinds, 22 in all. `ProviderInfo.kinds`
+lists them in this order:
 
 - Prose: `sentence`, `heading`, `list-item`, `table-row`, `fenced`
 - Code: `function`, `method`, `class`, `struct`, `interface`, `trait`, `enum`,
-  `type`, `variable`, `module`, `impl`, `macro`, `statement`
+  `type`, `variable`, `field`, `variant`, `module`, `impl`, `macro`,
+  `statement`
 - Text: `block`
 - All classes: `file`
 
-The `file` unit has range `[0, len)` and key `file`.
+The `file` unit has range `[0, len)`, where `len` is the byte length of the
+resource text, and key `file`. Its `line` is 1 and its `endLine` is the line
+of the last character of the text (1 for an empty text). In a code resource
+this range can be wider than the root node of the parse tree, for example
+when the file starts with blank lines or a comment. The fingerprint of the
+`file` unit is still that of the root node (section 8.4).
 
 ### 6.3 Prose units
 
 The splitter turns a text into an ordered list of units. Steps:
 
-1. **Frontmatter** (class `markdown` only). If the first line, with trailing
-   WS removed, is `---`, find the next line that with trailing WS removed is
-   `---`. If there is one, splitting starts after that line's newline. If
-   there is none, there is no frontmatter.
+1. **Frontmatter** (class `markdown` only). Take the first line, set aside
+   one leading U+FEFF if it has one, and remove trailing WS. If the result is
+   `---` or `+++`, that string is the delimiter: find the next line that with
+   trailing WS removed equals the delimiter. If there is one, splitting starts
+   after that line's newline. If there is none, there is no frontmatter. A
+   `+++` block is closed only by `+++` and a `---` block only by `---`. The
+   U+FEFF is set aside for this test only; it stays in the text and its
+   offsets (section 4.2).
 2. **Blocks.** Scan lines from the start position. Let `t` be the line
-   trimmed. A line whose `t` matches `^(`{3,}|~{3,})` is a fence line: when no
-   fence is open it opens one with that marker character; when a fence is open
-   and the marker character is the same, it closes it. A boundary line is a
-   line seen while no fence is open (evaluated after the fence update for that
-   line) whose `t` is empty, or matches the tag pattern
+   trimmed. A line whose `t` matches `^(`{3,}|~{3,})` is a fence line; its
+   marker character is the character of that run and its run length is the
+   length of the leading run of that character. Fence state, updated line by
+   line:
+   - When no fence is open, a fence line opens one, with its marker
+     character and its run length `n`.
+   - When a fence is open, a line closes it when its `t` consists only of the
+     marker character of the open fence, at least `n` times (the CommonMark
+     rule). So a shorter run does not close, a line of the other marker
+     character does not close, and a fence line with an info string
+     (```` ```js ````) does not close. Every other line leaves the fence open.
+     A fence that is never closed runs to the end of the text.
+
+   A boundary line is a line seen while no fence is open (evaluated after the
+   fence update for that line) whose `t` is empty, or matches the tag pattern
    `^<\/?[A-Za-z][\w.:-]*(?:\s[^<>]*)?\/?>$`, or matches the thematic break
-   `^(?:-{3,}|\*{3,}|_{3,})$`. Boundary lines belong to no block. Each maximal
-   run of non-boundary lines is one block. A block's range runs from the first
-   non-WS character of its first line to the end of its last line with
-   trailing WS removed. A block is fenced when any of its lines was a fence
-   line.
+   `^(?:-(?:[ \t]*-){2,}|\*(?:[ \t]*\*){2,}|_(?:[ \t]*_){2,})$`: three or
+   more of one of `-`, `*`, `_`, with only U+0020 or U+0009 between them
+   (`---`, `- - -`, `* * *`; not `--`, not `- * -`). Boundary lines belong to
+   no block. Each maximal run of non-boundary lines is one block. A block's
+   range runs from the first non-WS character of its first line to the end of
+   its last line with trailing WS removed. A block is fenced when any of its
+   lines was a fence line.
 3. **Pieces.** A fenced block is one piece of kind `fenced`. Any other block
    is cut at line starts: a line other than the block's first starts a new
    piece when, with leading WS removed, it matches
@@ -588,12 +971,33 @@ The splitter turns a text into an ordered list of units. Steps:
    Each cut segment and the tail, trimmed of WS, is one unit of the piece's
    kind. Empty segments produce no unit.
 6. **Heading path.** Each unit carries the list of heading texts above it. A
-   heading's own text (without the `#` run, without a closing `#` run, trimmed)
-   is pushed after its unit is emitted; before a heading of level n is emitted,
-   every stacked heading of level n or more is popped. A heading's own path
-   holds its ancestors only.
+   heading's own text is pushed after its unit is emitted; before a heading of
+   level n is emitted, every stacked heading of level n or more is popped. A
+   heading's own path holds its ancestors only. The own text is computed from
+   the text captured by `(.*)` in the heading pattern: trim it, giving `c`;
+   let `r` be `c` without its trailing run of `#`. If `r` is empty or ends
+   with a WS character, the own text is `r` trimmed. Otherwise the own text
+   is `c`. So a closing `#` run is removed only when WS precedes it or when
+   it is the whole text: `# C #` gives `C`, `# C#` gives `C#`, and `### ###`
+   gives the empty string, which is pushed like any other text.
 
 The parent of every prose unit is `file`.
+
+The splitter is not a Markdown parser. These cases are left as they are, on
+purpose:
+
+- A line that holds only one tag (the tag pattern of step 2) is a boundary
+  and belongs to no unit. A tag with text on the same line is prose.
+- There is no indented code block: indented lines are split like any other
+  prose, usually into `sentence` units.
+- An HTML comment (`<!-- ... -->`) does not match the tag pattern. Its lines
+  are prose and become `sentence` units.
+- There is no setext heading. A `===` underline stays part of the `sentence`
+  piece it ends. A `---` underline is a thematic break, so the line above it
+  is a `sentence`, not a `heading`.
+- A fence takes in the prose of its block: a block that contains a fence
+  line is one `fenced` unit, including lines before the opening fence and
+  after the closing one.
 
 ### 6.4 Code units
 
@@ -601,57 +1005,127 @@ Parse the text with the class's grammar. Declarations are discovered at the
 top level and inside containers only. hibi never descends into a function
 body, so local declarations are not units.
 
-**Discovery.** Start at the root node with an empty path. For each named child
-of the current container body:
+**Principle.** Every named member declared directly in the body of a named
+container is a unit. A named container is a declaration whose table row names
+a container body. The tables below state this per language.
+
+**Discovery.** Start at the root node with an empty path, no enclosing
+container, and depth 0. For each named child of the current container body, in
+source order:
 
 - If its kind is in the language's wrapper set, look through it at its named
   children with the same rules.
+- If its kind is in the language's looked-through set, look through it in the
+  same way. A looked-through node is not a wrapper for the unit-node rule.
 - If its kind is in the language's declaration table and it has a name by that
   table, it is a declaration unit with path `parentPath + "." + name` (just
   `name` at the top level). If the table marks it as a container, recurse into
-  its body with that path.
+  each of its container bodies with that path, with this declaration as the
+  enclosing container, and with the depth raised by 1.
+- Otherwise it is not a unit, and discovery does not look inside it. This
+  includes a node of a table kind that has no name by the table.
 
-**Unit node.** Start with the declaration node. While the parent's kind is in
-the wrapper set and this declaration is the only declaration unit directly
-under that parent, move to the parent. The node reached is the unit node. Its
-byte range is the unit's range, and it is the node that `ast-v1` fingerprints.
+The container bodies of a declaration are its direct named children whose kind
+the table lists, in source order, unless the table says otherwise.
 
-**Function or method.** A function-like declaration has kind `method` when its
-enclosing container is a class, interface, trait or impl, and `function`
-otherwise.
+**Depth.** `MAX_CONTAINER_DEPTH` is 32. The root has depth 0, and a container
+body found in a body of depth `d` has depth `d + 1`. A body of depth 32 or
+more is not searched. So a declaration nested inside 31 containers (its path
+has 32 segments when every name is one segment) is a unit, and the
+declarations inside it are not units: they stay part of its text and its
+fingerprint.
 
-**Tables.** "name" is the text of the node's `name` field unless stated.
+**Unit node.** Start with the declaration node. Take the wrappers that
+discovery looked through to reach it from the container body, innermost
+first. While this declaration is the only declaration unit of this container
+body that discovery reached by looking through the wrapper, move to that
+wrapper; stop at the first wrapper through which two or more declaration
+units of the body were reached. Declarations of a nested container body do
+not count. The node reached is
+the unit node, and it is the node that `ast-v1` fingerprints. Without leading
+nodes its byte range is the unit's range.
+
+**Leading nodes.** In Rust an `attribute_item`, and in TypeScript and TSX a
+`decorator`, that stands before a unit node as a sibling belongs to that
+unit. The leading nodes of a unit node are found by walking its previous
+named siblings backwards: a node of the leading kind joins, a comment node
+(section 8.4) is passed over, and any other node ends the walk. When a unit
+has leading nodes:
+
+- its range starts at the start of the first leading node and ends at the end
+  of the unit node; `line` is the line of the first leading node;
+- its fingerprint covers the leading nodes and the unit node (section 8.4);
+- the leading nodes are not units of their own.
+
+The rule applies to declaration units in every body and to `statement`
+units. It applies only where the grammar makes the attribute or decorator a
+sibling. A decorator that the grammar places inside the declaration node (a
+class decorator, a field decorator, a Python decorator inside
+`decorated_definition`, a Java annotation) is part of the unit node already.
+A Rust `inner_attribute_item` (`#![...]`) is not a leading node.
+
+**Unit kind.** The tables give a table kind. The unit kind is the table kind,
+except in a class-like container, that is when the enclosing container has
+kind `class`, `interface`, `trait`, `impl`, `struct`, `enum` or `variant`:
+there a table kind `function` gives the unit kind `method`, and a table kind
+`variable` gives the unit kind `field`. Wrappers do not count as containers.
+So `variable` is the kind of module-level, namespace-level and file-level
+bindings only, and `function` is never the kind of a class member. A
+container of kind `module` or `type` is not class-like.
+
+**Tables.** "name" is the text of the node's `name` field, as written, unless
+stated.
 
 TypeScript and TSX. Wrappers: `export_statement`, `ambient_declaration`,
-`lexical_declaration`, `variable_declaration`.
+`lexical_declaration`, `variable_declaration`, and an `expression_statement`
+whose only named child is an `internal_module` (a bare `namespace A {}`). No
+other `expression_statement` is a wrapper.
 
-| Node kind | Unit kind | Container body |
+| Node kind | Table kind | Container body |
 |---|---|---|
 | `function_declaration`, `generator_function_declaration`, `function_signature` | function | |
 | `class_declaration`, `abstract_class_declaration` | class | `class_body` |
 | `interface_declaration` | interface | `interface_body` |
 | `type_alias_declaration` | type | |
-| `enum_declaration` | enum | |
+| `enum_declaration` | enum | `enum_body` |
+| `enum_assignment` (an enum member with a value) | variant | |
+| `property_identifier`, `private_property_identifier`, `string`, `number`, `computed_property_name` directly under an `enum_body` (an enum member without a value) | variant, name is the node's own text | |
 | `internal_module`, `module` | module | `statement_block` |
 | `method_definition`, `method_signature`, `abstract_method_signature` | method | |
 | `public_field_definition`, `property_signature` | variable | |
 | `variable_declarator` whose `name` is an `identifier` | function when its `value` is `arrow_function`, `function_expression` or `generator_function`, else variable | |
 
+Members of a class are its methods (getters and setters included) and its
+fields; a field whose value is a function is a `field`. Members of an
+interface are its property signatures (`field`) and method signatures
+(`method`). Members of an enum are `variant` units; a member written as a
+string keeps its quotes in the name (`Color."Blue-ish"`). A decorator that
+stands before a class member as a sibling is a leading node of that member.
+
 Python. Wrappers: `decorated_definition`, `expression_statement`.
 
-| Node kind | Unit kind | Container body |
+| Node kind | Table kind | Container body |
 |---|---|---|
 | `function_definition` | function | |
 | `class_definition` | class | `block` |
 | `assignment` whose `left` is an `identifier`, directly under an `expression_statement` | variable, name is the text of `left` | |
 
-Rust. No wrappers.
+An annotated name without a value (`debug: bool`) is an `assignment` node and
+counts. In a class body a `function_definition` is a `method` and an
+assignment is a `field`.
 
-| Node kind | Unit kind | Container body |
+Rust. Wrapper: `foreign_mod_item` (an `extern` block). Looked through:
+the `declaration_list` of a `foreign_mod_item`. An extern block has no name:
+its items belong to the enclosing body, with no path segment and no unit for
+the block.
+
+| Node kind | Table kind | Container body |
 |---|---|---|
 | `function_item`, `function_signature_item` | function | |
-| `struct_item`, `union_item` | struct | |
-| `enum_item` | enum | |
+| `struct_item`, `union_item` | struct | `field_declaration_list` |
+| `field_declaration` | field | |
+| `enum_item` | enum | `enum_variant_list` |
+| `enum_variant` | variant | |
 | `trait_item` | trait | `declaration_list` |
 | `impl_item` | impl | `declaration_list` |
 | `mod_item` with a body | module | `declaration_list` |
@@ -659,41 +1133,126 @@ Rust. No wrappers.
 | `const_item`, `static_item` | variable | |
 | `macro_definition` | macro | |
 
-An `impl_item` has two names. Let `T` be the text of its `type` field with all
-WS removed and cut before the first `<`. Its own name is `impl T`, or
-`impl Tr for T` when it has a `trait` field, where `Tr` is the text of that
-field with all WS removed. The path prefix it gives its members is `T`. So a
-method of `impl Cache` and a method of `impl Display for Cache` both have a
-path that starts with `Cache.`.
+An `impl_item` has two names. Let `T` be `symbol_text` (below) of the text of
+its `type` field, cut before the first `<`. Its own name is `impl T`, or
+`impl Tr for T` when it has a `trait` field, where `Tr` is `symbol_text` of
+the text of that field, not cut. The path prefix it gives its members is `T`.
+So a method of `impl Cache` and a method of `impl Display for Cache` both have
+a path that starts with `Cache.`. `impl dyn Store` has the name
+`impl dyn Store` and the prefix `dyn Store`; `impl<'a> Store for &'a Point<u8>`
+has the name `impl Store for &'a Point` and the prefix `&'a Point`.
 
-Go. Wrappers: `type_declaration`, `const_declaration`, `var_declaration`.
+An `attribute_item` that stands before an item, a field or a variant is a
+leading node of that unit. Named fields of a struct or union are `field`
+units, and variants of an enum are `variant` units. In a trait or impl a
+function is a `method`, a `const_item` is a `field`, and an associated type
+is a `type`.
 
-| Node kind | Unit kind | Name |
+Go. Wrappers: `type_declaration`, `const_declaration`, `var_declaration`,
+`var_spec_list` (the specs of a grouped `var ( ... )`).
+
+| Node kind | Table kind | Name | Container body |
+|---|---|---|---|
+| `function_declaration` | function | `name` field | |
+| `method_declaration` | method | `R.name`, where `R` is `symbol_text` of the text of the `type` field of the first `parameter_declaration` in the `receiver` field, with one leading `*` removed and cut before the first `[` | |
+| `type_spec` | type | `name` field | Through its `type` field: for a `struct_type`, that node's `field_declaration_list` children; for an `interface_type`, the `interface_type` node itself; otherwise none |
+| `type_alias` | type | `name` field | |
+| `field_declaration` | field | the first `name` field; for an embedded field (no `name` field) the type name: `symbol_text` of the text of the `type` field, with one leading `*` removed, cut before the first `[`, then the part after the last `.` | |
+| `method_elem` | method | `name` field | |
+| `const_spec`, `var_spec` | variable | the first `name` field | |
+
+A spec or field that declares several names (`X, Y int`, `var a, b = 1, 2`)
+is one unit, keyed by its first name. An embedded field is a unit (`*Base`
+gives `Point.Base`, `io.Reader` gives `Point.Reader`); an embedded field
+whose type name comes out empty is not. Method elements of an interface are
+`method` units; an embedded interface or type element (`fmt.Stringer`) is
+not a unit. A `method_declaration` is not a member of its receiver type: its
+parent is `file`, and only its name carries the receiver.
+
+Java. Wrappers: `field_declaration`, `constant_declaration`. Looked through:
+`enum_body_declarations` (inside an `enum_body`).
+
+| Node kind | Table kind | Container body |
 |---|---|---|
-| `function_declaration` | function | `name` field |
-| `method_declaration` | method | `R.name`, where `R` is the text of the `type` field of the first `parameter_declaration` in the `receiver` field, with a leading `*` removed and cut before the first `[` |
-| `type_spec`, `type_alias` | type | `name` field |
-| `const_spec`, `var_spec` | variable | the first `name` field |
-
-Java. Wrappers: `field_declaration`, `constant_declaration`.
-
-| Node kind | Unit kind | Container body |
-|---|---|---|
-| `class_declaration`, `record_declaration` | class | `class_body` |
+| `class_declaration` | class | `class_body` |
+| `record_declaration` | class | `formal_parameters`, `class_body` |
 | `interface_declaration`, `annotation_type_declaration` | interface | `interface_body`, `annotation_type_body` |
-| `enum_declaration` | enum | `enum_body`, and `enum_body_declarations` inside it |
-| `method_declaration`, `constructor_declaration` | method | |
-| `variable_declarator` under `field_declaration` or `constant_declaration` | variable | |
+| `enum_declaration` | enum | `enum_body` |
+| `enum_constant` | variant | `class_body` |
+| `formal_parameter` directly under the `formal_parameters` of a `record_declaration` (a record component) | field | |
+| `method_declaration`, `constructor_declaration`, `annotation_type_element_declaration` | method | |
+| `variable_declarator` directly under a `field_declaration` or `constant_declaration` | variable | |
+
+Enum constants are `variant` units; an annotation on a constant is part of
+its node. A constant with a body is a container, so a method in it has a path
+such as `Level.HIGH.weight` and the constant as parent. Record components are
+`field` units of the record. An element of an annotation type
+(`String value();`) is a `method`. Field declarators of a class, interface,
+enum or enum constant body are `field` units.
+
+**Symbol text.** `symbol_text(s)` writes a type as it appears in a symbol. It
+removes WS, but keeps one U+0020 where a WS run separates two word
+characters. A word character is an alphanumeric character (Rust
+`char::is_alphanumeric`), `_` or `'`.
+
+```
+symbol_text(s):
+  out = ""; gap = false
+  for each character c of s:
+      if c is WS: gap = true; continue
+      if gap and out is not empty and word(last character of out) and word(c):
+          append U+0020 to out
+      gap = false
+      append c to out
+  return out
+```
+
+`dyn  Tr` gives `dyn Tr`; `& 'a  G < u8 >` gives `&'a G<u8>`; `* Sp` gives
+`*Sp`; `G2 [T]` gives `G2[T]`; `Iterator<Item = u8>` gives
+`Iterator<Item=u8>`. It is used for Rust `impl` types and traits, Go
+receivers, and Go embedded field types.
 
 **Statements.** Every named child of the root node that is not a comment
-(section 8.4), is not a unit node and contains no unit node is a unit of kind
-`statement`.
+(section 8.4), is not a unit node, contains no unit node, and is not a
+leading node of a unit is a unit of kind `statement`. A statement takes
+leading nodes like a declaration does (`#[cfg(test)]` before `use std::fmt;`
+is one statement). A root child of the leading kind never takes leading
+nodes itself, so a run of attributes that no unit node or statement follows
+gives one `statement` per attribute. An attribute before a root child that
+contains several unit nodes without being one (an extern block with two
+items) is a `statement` of its own. Statements exist at the top level only.
 
 **Parents.** The parent of a declaration unit is the unit of its enclosing
 container, or `file`. The parent of a `statement` is `file`.
 
 **Symbol.** The symbol of a declaration unit is its path. `statement` and
-`file` units have no symbol.
+`file` units have no symbol. A symbol can contain spaces and dots that are
+part of a name (`impl dyn Store`, `dyn Store.EMPTY`, `Point.Move` for a Go
+method at the top level).
+
+**What is not a unit.** Each of these stays part of the text and fingerprint
+of the unit around it, or of a `statement` at the top level:
+
+- anything declared in a function or method body, or in any block that is not
+  a container body (a definition inside a top-level `if` is part of that
+  `statement`);
+- members of a container that has no name: properties and methods of an
+  object literal, members of an object type (`type Point = { x: number }`),
+  fields of an anonymous struct type, members of an anonymous class;
+- members that have no name: TypeScript call, construct and index signatures
+  and class static blocks; Java initializer blocks and compact constructors;
+  Go embedded interface and type elements; the positional fields of a Rust
+  tuple struct;
+- the fields of a Rust enum variant (`Custom { level: u8 }`) and the
+  arguments of a Java enum constant: a variant has no container body except
+  the class body of a Java constant;
+- a TypeScript `variable_declarator` whose name is a pattern, a Python
+  assignment whose target is not a plain identifier or that is not a whole
+  expression statement, a Rust `mod x;` without a body;
+- nodes of no table kind inside a container: Rust `use` declarations and
+  macro invocations, imports, expression statements;
+- parameters and type parameters;
+- declarations in a body of depth `MAX_CONTAINER_DEPTH` or more.
 
 ### 6.5 Text units
 
@@ -722,17 +1281,36 @@ elsewhere, and changes when the unit's own content changes.
 Input: a resource and a selector. Output: an error, or a list of units (zero,
 one or several), each with `approx`, `refuse` and the completed `sel`.
 
-Errors, before anything else: the resource does not exist (`not_found`); a
-`repo:` alias fails section 11.1 (`repo_not_found`, `repo_not_allowed`); the
-file is longer than `MAX_FILE_BYTES` (`too_large`); the file is not valid
-UTF-8 (`not_text`); the selector has a `key` (`invalid_selector`).
+Errors come before anything else. When several apply, the first in this order
+is reported:
+
+1. The locator's scheme is not `file` or `repo`: `invalid_locator`.
+2. For a `repo:` locator, in this order: the source is a revision
+   (section 6.8): `invalid_locator`; git is not usable (section 10.4):
+   `repo_not_found`; the alias fails section 11.1: `repo_not_found` or
+   `repo_not_allowed`; the sibling repository's file list cannot be read:
+   `unavailable`; the file list does not contain the path: `not_found`.
+3. The path does not name a readable file by section 6.8: `not_found`. Any
+   other failure to read it is `unavailable`.
+4. The file is longer than `MAX_FILE_BYTES`: `too_large`.
+5. The file is not valid UTF-8: `not_text`.
+6. The selector has a `key`: `invalid_selector`.
+7. The selector is not valid by section 5.2 in any other way, for example
+   `prefix` without `quote`, or a quote longer than 2,048 characters:
+   `invalid_request`.
+
+Errors 1 to 5 are errors of the resource, so they win over errors 6 and 7 of
+the selector: a selector with a `key` on an absent file is `not_found`.
+`units` and `render` report errors 1 to 5 in the same order. In a batch each
+anchor gets its own result or error.
 
 Definitions:
 
 - Innermost unit for a span `[s, e)`: among units other than `file` whose
-  range contains byte `s`, the one with the smallest range. If none contains
-  `s`, the first unit in source order, other than `file`, whose range
-  intersects `[s, e)`. If there is none, the `file` unit.
+  range contains byte `s`, the one with the smallest range in bytes; when two
+  have ranges of equal size, the earlier in `units` order (below). If none
+  contains `s`, the first unit in `units` order, other than `file`, whose
+  range intersects `[s, e)`. If there is none, the `file` unit.
 - `inside(L, u)`: `L.status` is `found`, `L.how` is `exact`, and
   `[L.start, L.end)` lies within the range of `u`.
 - `in_comment(L)`: the resource has a parse tree and `[L.start, L.end)`
@@ -793,6 +1371,15 @@ In the path where a symbol matches exactly one declaration, a quote that is
 not found, or found only approximately, does not make the side `approx`. It
 only decides whether the completed selector keeps the quote.
 
+**Members.** Members of named containers are units (section 6.4), so the
+innermost unit of a quote on a member's line is the member. A quote on a
+struct field line (`pub host: String`, or the single word `host`) resolves to
+the `field` unit, not to the struct, and the completed selector carries the
+member's symbol (`Config.host`). A quote on the container's header line
+(`pub struct Config {`) resolves to the container. A quote that starts in one
+member and ends in the next resolves to the first member with
+`refuse: quote_spans_units`, although it lies inside the container.
+
 **Renames (resolution of the plan's open question on symbol anchors).** hibi
 keeps no alias record. A symbol that no longer exists falls back to the quote.
 If the quote finds the declaration under its new name, the side resolves with
@@ -812,16 +1399,38 @@ selector to store. It is a function of the resource text, `u`, and the final
   has one.
 - The quote is kept when the input had a quote, `inside(L, u)` holds and
   `refuse` is absent. The kept quote's span is `[L.start, L.end)`.
-- In every other case the quote is the default quote of `u`: the first line
-  of the unit's text, cut before the first comment node that starts on that
-  line, with trailing WS removed, cut to its first 120 characters. Its span
-  starts at the unit's start.
+- In every other case the quote is the default quote of `u`. Its span starts
+  at the unit's start and its end is found in this order:
+  1. Take the first line of the unit's text: the text up to, not including,
+     its first U+000A. For a unit with leading nodes (section 6.4) this is
+     the line of its first leading node.
+  2. When the resource has a parse tree, cut before the first comment node
+     that starts on that line, at or after the unit's start. Remove trailing
+     WS. If nothing but WS is left, because the first line starts with a
+     comment, take the whole first line with trailing WS removed instead.
+  3. Cut to the first 120 characters, then remove trailing WS again. A
+     default quote therefore never ends in WS, also when the cut lands
+     after a space.
 - `prefix` is the 48 characters of resource text before the span (fewer at
   the start of the text), `suffix` the 48 after it, `pos` the span's start
   byte.
+- A stored quote is at most 2,048 characters (section 5.2): a kept quote is
+  the input quote, which error 7 above limits, and a default quote has at
+  most 120 characters. If a span is empty after trimming or longer than
+  2,048 characters, the completed selector has no `quote`, `prefix`, `suffix`
+  or `pos`; it holds `symbol` when the unit has one.
 
 `units` (section 13.3) returns for each unit the completed selector built with
 the default quote.
+
+**Order of `units`.** `units` returns the `file` unit first, then every other
+unit by `start` ascending and, for equal `start`, by `end` descending. A
+container therefore comes before its members, and a unit with leading nodes
+is placed by the start of its first leading node. A `kind` filter keeps this
+order. This is the source order that section 6.6 uses to number duplicate
+keys, and the order of every list of units that `resolve` returns from one
+of the ambiguous exits above is the order of `S`, or the order in which the
+tied hits first reach each unit of `U`.
 
 Limit: two units of a prose or text resource with identical first lines and
 identical 48-character context on both sides cannot be told apart. An anchor
@@ -880,6 +1489,7 @@ Parameters. All are fixed. None is configurable.
 | `DISTANCE` | 100000 |
 | `ERROR_RATIO` | 0.4 |
 | `ERROR_CAP` | 256 |
+| `MAX_QUOTE_CHARS` | 2048 |
 
 ### 7.1 Cascade
 
@@ -909,6 +1519,26 @@ Parameters. All are fixed. None is configurable.
 `within_budget(located, quote)`: with `a = normalize(located)` and
 `b = normalize(quote)`, true when `a == b` or
 `levenshtein(a, b) <= error_budget(len(b))`.
+
+`within_budget` needs only to know whether the distance is within the budget,
+not the distance itself. An implementation MAY replace the test
+`levenshtein(a, b) <= max` by a bounded computation
+`levenshtein_at_most(a, b, max)`, which returns the distance when it is at
+most `max` and none otherwise:
+
+- When `|len(a) - len(b)| > max` the result is none, without computing
+  anything else.
+- Otherwise only the cells `(i, j)` of the distance table with
+  `|i - j| <= max` are computed. A cell outside this band, and any value
+  greater than `max`, counts as `max + 1`.
+- When every computed cell of a row is greater than `max` the result is none.
+- At the end the result is the last cell when it is at most `max`, else none.
+
+The bounded computation MUST give `levenshtein(a, b)` whenever that distance
+is at most `max`, and none in every other case, so `within_budget` returns the
+same value with either method. Because `max` is at most `ERROR_CAP`, its cost
+is proportional to `min(len(a), len(b)) * max`. `similarity` (section 4.3)
+needs the distance itself and uses the full computation.
 
 ### 7.2 Fuzzy step
 
@@ -977,11 +1607,11 @@ bitap(text, pattern, loc):
   m = len(pattern)
   mask[c] = OR over i with pattern[i] == c of (1 << (m - i - 1)); 0 for other c
   threshold = THRESHOLD
-  b = first index of pattern in text at or after loc
+  b = first index of pattern in text at or after loc             ; speed-up A, from here
   if b != -1:
       threshold = min(score(0, b), threshold)
       b = last index of pattern in text that starts at or before loc + m
-      if b != -1: threshold = min(score(0, b), threshold)
+      if b != -1: threshold = min(score(0, b), threshold)        ; speed-up A, to here
   match_bit = 1 << (m - 1)
   best = -1
   bin_max = m + len(text)
@@ -1008,16 +1638,65 @@ bitap(text, pattern, loc):
               if s <= threshold:
                   threshold = s
                   best = j - 1
-                  if best > loc: start = max(1, 2 * loc - best)
+                  if best > loc: start = max(1, 2 * loc - best)  ; speed-up B (the assignment)
                   else: break
       if score(d + 1, loc) > threshold: break
       last_rd = rd
   return best
 ```
 
+Two steps of `bitap` are speed-ups and do not change the value that
+`match_main` returns:
+
+- **A.** Tightening the initial `threshold` from the exact occurrences of the
+  pattern (the five lines marked A). Without it `threshold` starts at
+  `THRESHOLD`.
+- **B.** Moving `start` to `max(1, 2 * loc - best)` after a match right of
+  `loc` (the assignment marked B). Without it the inner loop runs down to the
+  `start` computed before the loop; the `else: break` stays.
+
+An implementation MAY include or omit either step. `match_main` with both,
+with one, or with neither MUST return the same value for every input, so no
+case can tell them apart. An implementation that includes a step MUST include
+it exactly as written: a `start` further right than `max(1, 2 * loc - best)`,
+or an initial threshold above `THRESHOLD`, changes the result. `bitap.json`
+pins these two boundaries with the cases
+`equal exact matches at equal distance on both sides of loc: the left one wins`
+and
+`the only exact occurrence is more than 40000 characters from loc: no match`.
+
 Where this pseudocode and the case files `cases/bitap.json` and
 `cases/fuzzy-locate.json` disagree, the case files are right and this section
 MUST be corrected.
+
+### 7.4 `quote_selector`
+
+`quote_selector(text, start, end)` builds the stored form of a quote from a
+byte span of the text: the `quote`, `prefix`, `suffix` and `pos` of a selector
+(section 5.2). The file provider uses it for the completed selector (section
+6.7). `cases/quote-selector.json` binds it.
+
+1. Clamp the span to the text. `start` becomes the largest character boundary
+   at or before `min(start, len(text))`. `end` becomes the smallest character
+   boundary at or after `min(max(end, start), len(text))`, where `start` is
+   the clamped value. So `end` is never before `start`, and a span that
+   starts or ends inside a character is widened to whole characters.
+2. `quote` is `text[start .. end]` as it is, untrimmed.
+3. If `quote` is empty after trimming WS, the result is the error `EmptySpan`.
+4. Otherwise, if `quote` is longer than `MAX_QUOTE_CHARS` (2,048) characters,
+   the result is the error `TooLong`. A quote of exactly 2,048 characters is
+   accepted. The limit is the same one that applies to the `quote` of a
+   selector, so every selector that `quote_selector` returns is a valid
+   selector.
+5. Otherwise the result is `quote`; `prefix`, the last `CONTEXT` characters of
+   the text before `start` (all of them when there are fewer); `suffix`, the
+   first `CONTEXT` characters of the text from `end` (all of them when there
+   are fewer); and `pos`, the byte offset `start`.
+
+The checks run in the order given: a span of more than 2,048 WS characters is
+`EmptySpan`. The two errors are distinct values. Their labels are
+`empty span` for `EmptySpan` and `span longer than 2048 characters` for
+`TooLong`; the case data names an error by its label.
 
 ---
 
@@ -1069,7 +1748,7 @@ over all children, named and anonymous, in source order:
 
 ```
 emit(n):
-  if kind(n) is a comment kind: return                 ; the whole subtree
+  if n is a skipped node: return                       ; the whole subtree
   if n is a trailing comma: return
   if n has no children: push kind(n) + ":" + text(n)
   else:                 push kind(n)
@@ -1077,12 +1756,23 @@ emit(n):
   for each child c of n: emit(c)
 ```
 
-Comment kinds: `comment`, `line_comment`, `block_comment`. These are the
-comment node kinds of the six pinned grammars. A comment node is skipped with
-everything under it, wherever it appears.
+Skipped nodes are comment nodes and comment-only JSX expressions. A skipped
+node is skipped with everything under it, wherever it appears.
+
+Comment kinds: `comment`, `line_comment`, `block_comment`, `html_comment`.
+These are the comment node kinds of the six pinned grammars; `html_comment`
+is the kind the TypeScript and TSX grammars give a `<!--` comment.
+The Rust kind `doc_comment` is not in the list and needs no entry: it occurs
+only inside a `line_comment` or `block_comment` node, which is skipped whole.
+
+Comment-only JSX expression: a node of kind `jsx_expression` whose named
+children are all comment nodes, or that has no named child. `{/* note */}`
+and `{}` are skipped; `{x}` and `{/* note */ x}` are not. The JSX way to
+write a comment therefore leaves the fingerprint unchanged, like any other
+comment.
 
 Trailing comma: an anonymous node whose text is `,` and whose next sibling,
-not counting comment nodes, is an anonymous node whose text is `)`, `]`, `}`
+not counting skipped nodes, is an anonymous node whose text is `)`, `]`, `}`
 or `>`. Every other anonymous node stays in the stream, because operators and
 keywords are anonymous nodes and must count.
 
@@ -1095,21 +1785,45 @@ Content literal kinds: `string`, `string_literal`,
 `rune_literal`, `number`, `integer`, `float`, `integer_literal`,
 `float_literal`, `int_literal`, `imaginary_literal`.
 
+The stream of a unit is the stream of its fingerprinted node. When the unit
+has leading nodes (section 6.4: Rust attributes, TypeScript and TSX member
+decorators), its stream is the streams of the leading nodes in source order,
+followed by the stream of the unit node. Comments between them add nothing.
+This holds for declaration units and for `statement` units.
+
 `digest = BLAKE3("hibi:ast-v1\n" + class + "\n" + join(stream, U+001F))`,
-where `class` is the resource class name of section 6.1.
+where `class` is the resource class name of section 6.1 and `stream` is the
+unit's stream.
+
+The stream of a node is a contiguous slice of the stream of the root node:
+the walk visits a subtree without interruption, and what is skipped inside a
+subtree depends on that subtree only. The stream of a unit with leading
+nodes is also one slice, from the first token of its first leading node to
+the last token of its unit node, because only comment nodes lie between
+them. An implementation SHOULD therefore compute every unit fingerprint of a
+resource from one walk of the root node, recording the slice of each unit,
+so that nested containers are not walked once per level. The result MUST
+equal the fingerprint computed from each unit's own walk.
 
 Properties that tests MUST show: whitespace, line breaks, comments anywhere,
 and a comma before a closing delimiter do not change the fingerprint; a
 changed literal, identifier, operator, keyword, or added or removed node does.
+A changed, added or removed leading attribute or decorator changes the
+fingerprint of its unit.
 
 Other punctuation that a formatter may add or remove does change the
 fingerprint: parentheses (for example around a JSX expression moved onto its
 own lines), semicolons, and quote style. A Python docstring is a string, not a
 comment, and counts.
 
+A member of a container is part of the container's node, so a change to a
+member changes the member's fingerprint and the fingerprint of every
+container around it, and leaves the fingerprints of its sibling members
+unchanged.
+
 The pinned grammar versions of section 2.6 are part of `ast-v1`. Changing any
-of them, or any rule of this section or of the unit-node rule in section 6.4,
-requires a new profile name (`ast-v2`).
+of them, or any rule of this section or of the unit-node and leading-node
+rules in section 6.4, requires a new profile name (`ast-v2`).
 
 ### 8.5 No fallback inside a profile
 
@@ -1125,9 +1839,33 @@ units use `prose-v1`.
 
 Freshness of a claim is a function of: the claim, its marks, its retirements,
 the current resolution of each side, and `now`. Nothing else. The engine
-resolves every side once per run, batching anchors per provider.
+resolves every side once per run, batching anchors per scheme.
 
 `now` is the wall clock in UTC, or the value of `--now` (section 15.1).
+
+Batching. One resolution pass takes a list of anchors and gives one result
+per anchor, in the order of the list:
+
+1. The anchors are grouped by the scheme of their locator. The groups are
+   handled in ascending order of the scheme name. `file` and `repo` are two
+   groups, although one provider serves both.
+2. A group whose scheme has no provider (the first two rows of the table in
+   section 9.2) is not sent anywhere; every anchor of the group gets that
+   row's result.
+3. For every other group the provider receives at most one `resolve` call
+   per pass. The call holds each distinct anchor of the group once, in the
+   order of first occurrence. Two anchors are identical when their `loc` and
+   their `sel` are equal; the one answer is used for every occurrence.
+4. An anchor whose selector has a key the provider does not allow
+   (section 2.5) is not part of the call. When no anchor of the group is left
+   to send, `resolve` is not called.
+
+`status`, `mark`, `claim`, `reanchor` and `cover` each make one pass over
+all the sides they need: `status` and `cover` over every side of every live
+claim, `mark` and `claim` over every side of every element of the batch,
+`reanchor` over the sides of the new claim. Sides of a retired claim are not
+part of any pass. `--since` adds one `resolve` call to the provider that
+reads the base commit (section 10.3), with the same rules 3 and 4.
 
 ### 9.2 Side resolution and side states
 
@@ -1139,17 +1877,27 @@ and every engine-side check appears once.
 |---|---|---|---|
 | Engine | The locator's scheme is not `file`, not `repo`, and not listed in `hibi.toml` | `unavailable` | `scheme_not_declared` |
 | Engine | The scheme is listed but the user config has no command for it. No command is run. | `unavailable` | `provider_not_registered` |
+| Engine | The provider's `info` cannot be obtained (section 2.5). This holds for every anchor of the scheme in the pass. | `unavailable` | `provider_failed` |
+| Engine | The stored selector has a key the provider does not allow (section 2.5). The anchor is not sent. | `unavailable` | `provider_error` |
 | Provider | Error `failed` | `unavailable` | `provider_failed` |
+| Provider | Error `unsupported_protocol` | `unavailable` | `provider_failed` |
 | Provider | Error `not_found` | `missing` | `resource_not_found` |
 | Provider | Error `not_text` | `unavailable` | `not_text` |
 | Provider | Error `too_large` | `unavailable` | `too_large` |
 | Provider | Error `repo_not_found` | `unavailable` | `repo_not_found` |
 | Provider | Error `repo_not_allowed` | `unavailable` | `repo_not_allowed` |
 | Provider | Any other error code | `unavailable` | `provider_error` |
+| Engine | A `resolve` call returns a number of answers other than the number of anchors sent. This holds for every anchor of the call. | `unavailable` | `provider_error` |
 | Engine | A returned unit fails validation (section 2.5) | `unavailable` | `provider_error` |
 | Provider | No unit | `missing` | `selector_not_found` |
 | Provider | Several units | `ambiguous` | `several_units` |
 | Provider | One unit | by the next table | |
+
+`unsupported_protocol` means the provider is unusable (section 13.4), so it
+maps to `provider_failed`, the same as `failed`. The other error codes of
+section 13.4 that have no row of their own (`invalid_request`,
+`unknown_method`, `invalid_locator`, `invalid_selector`, `unknown_unit`,
+`unavailable`, `internal`) map to `provider_error`.
 
 For one unit with fingerprint `fp`, given the reference mark `M`
 (section 9.3):
@@ -1162,9 +1910,17 @@ For one unit with fingerprint `fp`, given the reference mark `M`
 | Different profile | `unavailable` | `profile_mismatch` |
 
 Side states are exactly `same`, `changed`, `missing`, `ambiguous`,
-`unavailable`. The reasons above are a closed list.
+`unavailable`. The reasons above are a closed list. The reason is absent
+(`null` in JSON) exactly when the state is `same`.
 
 ### 9.3 Claim states
+
+Only marks that fit the claim take part in the evaluation. A mark fits when
+its `claim` equals the claim's id, it has as many sides as the claim, and the
+`loc` of each of its sides equals the locator of the claim's side at the same
+position. A mark that does not fit is ignored: it never matches, it is never
+the reference mark, and it is not an error. In the rest of this section
+"mark" means a mark that fits.
 
 A mark matches when every side resolves to `unit(fp)` with `fp` equal to that
 mark's fingerprint for the side.
@@ -1187,11 +1943,27 @@ Notes that follow from the table and MUST hold:
 - `expired` means the content still equals a marked state and only time ran
   out. The boundary is inclusive: at `now == add(m.at, recheck)` the claim is
   expired.
+- A zero duration is a valid `recheck` (section 9.4). With `recheck` equal
+  to `PT0S` or `P0D`, `add(m.at, recheck)` equals `m.at`, so a claim whose
+  content matches a mark is `expired` at every `now` that is not before
+  `m.at`, including the instant of the mark itself.
 - Sides of a retired claim are not resolved.
+
+Expiry that cannot be represented. `claim` and `reanchor` check
+`add(now, recheck)` when they write (section 9.4), but `mark` does not, so
+`add(m.at, recheck)` can fail for a later mark because the result is past
+9999-12-31T23:59:59Z. Such a failure is not an error of the run. Row 4 does
+not hold for that mark `m`: it does not keep the claim fresh. When no other
+matching mark satisfies row 4 the claim is `expired`. `expiresAt`
+(section 15.2) is `null` when `add` fails for the reference mark.
 
 The reference mark, used to report side states: the matching mark with the
 latest `at` if any mark matches, otherwise the mark with the latest `at`. Ties
 on `at` go to the greater id. If the claim has no mark there is none.
+
+For a retired claim no mark can match, because no side is resolved. Its
+reference mark is the mark with the latest `at` (ties to the greater id), or
+none when it has no mark.
 
 ### 9.4 Durations
 
@@ -1203,9 +1975,16 @@ n        = 1*DIGIT
 ```
 
 At least one component is required, and `T` requires at least one time
-component. Anything else is `invalid_duration`. A duration whose arithmetic
+component. Anything else is `invalid_duration`. The components appear in the
+order of the grammar, each at most once. A component may be zero: `PT0S` and
+`P0D` are valid and add nothing. A number `n` that does not fit in an
+unsigned 64-bit integer is `invalid_duration`. A duration whose arithmetic
 overflows, or that moves an instant past 9999-12-31T23:59:59Z, is
 `invalid_duration`; `claim` and `reanchor` check this with `add(now, recheck)`.
+`reanchor` makes the check on the `recheck` of the new claim, whether it was
+given with `--recheck` or kept from the old claim. `mark` does not make it;
+section 9.3 says what an expiry that cannot be represented means at
+evaluation.
 
 `duration::parse` and `duration::add` are pure functions over instants. They
 accept any instant, including one with a fraction of a second, and keep the
@@ -1243,6 +2022,16 @@ same form as the scope's. `unit`, when present, is an exact unit key. A unit is
 excluded when an exclusion's `resource` matches its resource and `unit` is
 absent or equals its key. `reason` is required and is shown in the output.
 
+An exclusion's `resource` matches a resource as follows: a `file:` pattern
+matches a `file:` locator whose path the glob matches; a `repo:` pattern
+matches a `repo:` locator with the same alias whose path the glob matches; a
+pattern on any other scheme matches the equal locator only.
+
+The exclusions of a scope are tried in declaration order, and the first one
+that matches a unit is the one that excludes it. A unit that several
+exclusions match is counted once, for that first exclusion; the `matched`
+count (section 15.3) of every later exclusion does not include it.
+
 ### 10.2 Covered
 
 Resolve every side of every live claim (as for freshness). A side that
@@ -1252,14 +2041,38 @@ resource's unit list, and at a key already visited. The claim's state does not
 matter: a stale claim still covers.
 
 A scope unit is `covered` when some side covers it, `excluded` when not
-covered and an exclusion matches, otherwise `uncovered`.
+covered and an exclusion matches, otherwise `uncovered`. A covered unit is
+never counted as excluded, whatever the exclusions say.
+
+The parent walk uses every unit of the resource, including units whose kind
+is not in the scope's `kinds`; only the units whose kind is in `kinds` are
+counted.
 
 A resource whose units cannot be listed is reported under `unavailable` in
 the output with the reason of section 9.2 (`provider_failed`, `not_text`,
 `too_large`, and so on). A path that matches a scope and that section 6.8
 does not accept, such as a symbolic link, is reported there with reason
 `resource_not_found`. Such resources are never counted as covered and never
-dropped silently.
+dropped silently. A unit list that fails the validation of section 2.5 puts
+the resource there with reason `provider_error`.
+
+Deleted tracked files. The file list of section 10.4 comes from the index
+and from the untracked files. A tracked file that was deleted from the
+working tree, while the index still has it, is therefore in the list. When it
+matches a scope it is reported under `unavailable` with reason
+`resource_not_found`, and it has no units. Once the deletion is in the index
+the path is no longer in the list and is not reported.
+
+A refused `repo:` scope. When the alias of a `repo:` scope fails the checks
+of section 11.1, no file list is read for it and no file of that repository
+is opened. The scope then has exactly one `unavailable` entry: its `loc` is
+the scope's `resource` pattern as written in `hibi.toml` (for example
+`repo:api//docs/*.md`), and its `reason` is `repo_not_found` or
+`repo_not_allowed` as section 11.1 gives it. All four counts of the scope are
+0 and `items` is empty.
+
+Each resource is listed once per run, also when several scopes contain it.
+Within a scope a resource appears at most once under `unavailable`.
 
 ### 10.3 `--since <range>`
 
@@ -1274,16 +2087,59 @@ commit:
 Any other form, including a right-hand side other than `HEAD`, is
 `invalid_range`. `A` is any revision that `git rev-parse` resolves to a commit.
 
+Resolving the range is a step of its own (`engine::resolve_since`). It runs
+before the store is read and before any provider is asked, and it gives the
+pair `{range, base}`: `range` is the argument exactly as the caller wrote it,
+and `base` is the full id of the base commit (40 or 64 lower-case hexadecimal
+digits). That pair is the `since` object of the output (section 15.3). The
+caller then builds, for `base`, a file provider that reads the base commit (a
+revision source, section 6.8) and passes both to the evaluation. `status`,
+`cover` and `triage` never parse a range themselves. The steps:
+
+1. Split the text. The first of these suffixes that the argument ends with
+   is removed, tried in this order: `...HEAD`, `...`, `..HEAD`, `..`. The two
+   three-dot suffixes select the merge base; the two-dot suffixes and no
+   suffix select the commit. The rest is `A`. An `A` that is empty, contains
+   `..`, or starts with `-` is `invalid_range`, and `A` is not passed to
+   git.
+2. Resolve `A` to a commit id (section 10.4, "Resolve `A`"). Failure is
+   `invalid_range`: `A` names nothing, or names an object that is not a
+   commit and does not peel to one, such as `HEAD:src/a.rs`.
+3. For the three-dot forms, take the merge base of that commit id and `HEAD`
+   (section 10.4, "Merge base"). Failure, including no common ancestor, is
+   `invalid_range`.
+
 Changed paths: the paths that differ between the base commit and the working
 tree, plus untracked files that are not ignored (section 10.4). A rename is a
-deletion and an addition.
+deletion and an addition. A path deleted since the base is a changed path.
 
 `cover --since`: of the units that plain `cover` would list for scopes on
 scheme `file`, keep a unit only if its resource is a changed path and no unit
 of the same resource at the base commit has both the same key and the same
 fingerprint. A resource absent at the base has no base units. Scopes on
 `repo:` and external schemes are not evaluated; each is reported with
-`skipped: "since_unsupported"`.
+`skipped: "since_unsupported"`, with all four counts 0, with empty `items`
+and `unavailable`, and with its exclusions listed with `matched: 0`.
+
+For each resource of a `file` scope that is a changed path:
+
+1. List its units in the working tree. If that fails, the resource is
+   reported under `unavailable` with the reason of section 9.2, as in plain
+   `cover`, and the base is not consulted. A tracked file deleted from the
+   working tree and still in the index is such a resource
+   (`resource_not_found`, section 10.2).
+2. List its units at the base commit with the base provider's `units`.
+   - Error `not_found`: the resource is absent at the base and has no base
+     units, so every unit of it is kept.
+   - Any other error, an `info` that cannot be obtained, or a base unit list
+     that fails the validation of section 2.5: the resource is reported under
+     `unavailable` with the reason of section 9.2 for that outcome
+     (`not_text`, `too_large`, `provider_failed`, `provider_error`, and so
+     on), and none of its units is counted or listed. A base that cannot be
+     read never makes every unit of the resource look new.
+3. Keep the units whose kind is in the scope's `kinds` and for which no base
+   unit has the same key and the same fingerprint. The counts and `items`
+   cover only the kept units.
 
 `status --since` lists the claims the range invalidated. A claim is listed
 when its state is `stale` and at least one of its sides meets all of:
@@ -1296,7 +2152,11 @@ when its state is `stale` and at least one of its sides meets all of:
 
 A claim that was already stale before the range and has no such side is not
 listed. `expired` claims are never listed. `--since` cannot be combined with
-`--state`; that is `usage`.
+`--state` or with claim ids; that is `usage`.
+
+The sides that meet condition 1 are resolved against the base commit in one
+`resolve` call to the base provider (section 9.1). A side on a `repo:`
+locator or on an external scheme never meets condition 1.
 
 ### 10.4 How git is invoked
 
@@ -1311,7 +2171,32 @@ started without a shell, with standard input closed unless stated, and with
 these additions to the environment: `GIT_OPTIONAL_LOCKS=0`, `LC_ALL=C`,
 `GIT_TERMINAL_PROMPT=0`, `GIT_NO_LAZY_FETCH=1`. `<dir>` is the root, or a
 sibling repository directory where stated. A non-zero exit is `git_failed`
-with git's standard error in the message, except where stated.
+with git's standard error in the message, except where stated. A git process
+that cannot be started after the version check passed is `git_failed` too.
+
+These variables are removed from the environment of every such invocation,
+whatever the process that started hibi set them to:
+
+```
+GIT_DIR
+GIT_WORK_TREE
+GIT_INDEX_FILE
+GIT_OBJECT_DIRECTORY
+GIT_ALTERNATE_OBJECT_DIRECTORIES
+GIT_COMMON_DIR
+GIT_NAMESPACE
+GIT_PREFIX
+```
+
+They would choose the repository, the work tree, the index or the object
+store. With them removed, `-C <dir>` alone decides which repository a call
+reads. This matters when hibi runs inside a git hook, where git sets
+`GIT_DIR`. Every other inherited variable is passed through unchanged,
+including the user's `GIT_CONFIG_*` variables, `GIT_CONFIG_PARAMETERS` and
+`GIT_CEILING_DIRECTORIES`. The `-c` options above win over configuration
+given through those variables. The version check below (`git --version`)
+gets the four additions; the removal is not applied to it, because it reads
+no repository.
 
 `MIN_GIT` is 2.45.0. Once per run, before any other git call, the `git`
 module runs `git --version` (with no other argument) and parses its output:
@@ -1330,15 +2215,43 @@ What a missing or too-old git does depends on who needs it:
 In both columns no further git command is run. The judge commands fail this
 way before any network contact.
 
+The command line applies the first row with two calls:
+
+- `require` takes the result of the version check and gives the usable git,
+  or fails with the error of the first row: `not_a_git_repository` when git
+  could not be started, `git_too_old` when it is older than `MIN_GIT` or its
+  version output did not parse. It starts no process.
+- `check_root` runs the "Top level of a directory" row of the table below in
+  the root and fails with `not_a_git_repository` when the root, canonicalized,
+  is not the canonicalized top level of a git work tree.
+
+When they are called:
+
+| Command | Calls | When |
+|---|---|---|
+| `cover`, `triage`, `suggest-evidence` | `require`, then `check_root` | Always. After the root is found and `hibi.toml` and the user config are read; before the store is read, before any provider is asked and before any range is resolved. In the judge commands the key check of section 14.1 comes first. |
+| `status --judge-order` | `require`, then `check_root` | At the same point. |
+| Any command with `--since` | `require`, then `check_root` | Before the range is resolved (section 10.3). `status --since` without `--judge-order` needs git only for this. |
+| `init` | `require` | Then the top level of the working directory is looked up; `check_root` is not called, because there is no root yet. |
+| `claim`, `mark`, `reanchor`, `status` without `--since` and without `--judge-order`, `providers` | neither | The second row of the table above applies to their `repo:` sides, and in `providers` to the alias checks of section 11.1. |
+| `list`, `retire`, `schema`, `completions`, `version` | neither | These start no git process, not even `git --version`. |
+
 | Purpose | Arguments |
 |---|---|
-| Top level of a directory | `rev-parse --show-toplevel`. The result and `<dir>` are both canonicalized (symbolic links resolved) before they are compared. For the root a mismatch is `not_a_git_repository`. |
-| Resolve `A` | `rev-parse --verify --quiet --end-of-options A^{commit}`. Failure is `invalid_range`. |
-| Merge base | `merge-base A HEAD`. Failure is `invalid_range`. |
-| File list | `ls-files -z --cached --others --exclude-standard`. Drop every path that contains a character U+0000 to U+001F or U+007F. A path that section 6.8 does not accept stays in the list and is reported (section 10.2). |
-| Changed paths | `diff --name-only --no-renames --no-ext-diff --no-textconv -z <base> --` plus `ls-files -z --others --exclude-standard` |
-| Base entries | `ls-tree -r -z <base>`, with no path arguments. hibi filters the output to the changed paths; each entry gives a mode and a blob id. |
+| Top level of a directory | `rev-parse --show-toplevel`. The result and `<dir>` are both canonicalized (symbolic links resolved) before they are compared. A non-zero exit or empty output means the directory has no top level; that is not `git_failed`. For the root a mismatch is `not_a_git_repository`. |
+| Resolve `A` | `rev-parse --verify --quiet --end-of-options A^{commit}`. Failure is `invalid_range`. The result is a full commit id. |
+| Merge base | `merge-base <commit> HEAD`, where `<commit>` is the full commit id that "Resolve `A`" gave, never the text `A`. Failure is `invalid_range`. |
+| File list | `ls-files -z --cached --others --exclude-standard`. Drop every path that is not valid UTF-8 or that contains a character U+0000 to U+001F or U+007F. The list is sorted by byte order and has no duplicates. A path that section 6.8 does not accept stays in the list and is reported (section 10.2). A tracked file deleted from the working tree stays in the list while the index has it (section 10.2). |
+| Changed paths | `diff --name-only --no-renames --no-ext-diff --no-textconv -z <base> --` plus `ls-files -z --others --exclude-standard`. The same paths are dropped from both outputs as from the file list. |
+| Base entries | `ls-tree -r -z <base>`, with no path arguments. hibi filters the output to the changed paths; each entry gives a mode and a blob id. An entry whose path would be dropped from the file list is skipped. |
 | Base content | `cat-file --batch` with blob ids on standard input, without `--filters` or `--textconv` |
+
+Dropped paths. The rule is the same wherever git prints a path: the file
+list, both outputs of the changed paths, and the base entries. A path that is
+not valid UTF-8, or that contains a character U+0000 to U+001F or U+007F, is
+dropped without an error and without a warning, because no locator can name
+it (section 5.1). Such a file is in no scope, is never a changed path and has
+no base entry.
 
 What these choices rule out, and why they are required:
 
@@ -1352,6 +2265,9 @@ What these choices rule out, and why they are required:
   `cat-file` from fetching in a partial clone.
 - `diff --name-only` can run a `clean` filter named by the root repository's
   own configuration. No `diff` is ever run in a sibling repository.
+- Removing `GIT_DIR` and the other variables listed above stops an inherited
+  environment from pointing a call at another repository, index or object
+  store.
 
 Trust boundary: the `.git/config` of the root repository, and of a sibling
 repository the user allowed, is trusted. It is written by the user's own git
@@ -1412,17 +2328,61 @@ Rules:
   Failing 1 or 3 gives `repo_not_found`. Failing 2, 4 or 5 gives
   `repo_not_allowed`. Nothing is read from any directory in either case. The
   remediation for a failed 2 prints the exact lines to add to the user
-  config, with the suggested location as `path`. Without `git`, or with a
-  git older than `MIN_GIT`, every `repo:` side is `repo_not_found`
-  (section 10.4).
+  config, with the suggested location as `path` (section 11.4). Without
+  `git`, or with a git older than `MIN_GIT`, every `repo:` side is
+  `repo_not_found` (section 10.4).
+- The checks run in the order 1 to 5 and stop at the first that fails. The
+  root is compared in canonical form. When several `[[repo]]` entries satisfy
+  check 2, the first in file order is used. Check 5 runs only when checks 1
+  to 4 hold; when the git command of check 5 itself fails, the result is
+  `repo_not_allowed`.
 - `MAX_CONFIG_BYTES` is 1,048,576. A larger `hibi.toml` is `invalid_config`.
-- `version` other than 1 is `unsupported_store_version`.
+- `version` MUST be the integer 1. An integer other than 1 is
+  `unsupported_store_version`. A missing `version`, or a `version` that is not
+  an integer (for example `version = "1"`), is `invalid_config`.
 - A scheme table names a scheme. It never names a command. A `command` key or
   any key other than `description` is `invalid_config`.
 - A scope `resource` on a scheme that is neither `file`, `repo` nor listed
   under `[schemes]` is `invalid_config`.
 - `kinds` entries are not validated against a provider's kind list. A kind no
   unit has selects nothing.
+
+`hibi.toml` is read and checked in this order. The first failing step decides
+the error; later steps are not run.
+
+| Step | Check | Failure |
+|---|---|---|
+| 1 | `.hibi` and `.hibi/hibi.toml` are not symbolic links (section 12.3); the file is opened without following a symbolic link (section 12.7) | `store_corrupt` |
+| 2 | `.hibi/hibi.toml` exists | `not_initialized` |
+| 3 | It is a regular file, at most `MAX_CONFIG_BYTES` long, and valid UTF-8 | `invalid_config` |
+| 4 | It is valid TOML. A key or table defined twice is not valid TOML. | `invalid_config` |
+| 5 | `version`, by the rule above | `unsupported_store_version` or `invalid_config` |
+| 6 | No table under `[schemes]` has a `command` key | `invalid_config` |
+| 7 | No unknown key at any level, every required key present, every value of the type shown above | `invalid_config` |
+| 8 | The value rules below | `invalid_config` |
+
+Step 5 comes before steps 6 and 7. A file with `version = 2` and keys this
+version does not know is therefore `unsupported_store_version`, not
+`invalid_config`. The message of a failed step 6 names the scheme and says
+that the provider command is registered in the user config under
+`[providers.<scheme>]`.
+
+Value rules of step 8:
+
+- A `[repos]` key (an alias) MUST match `[a-z0-9][a-z0-9-]*`. Its value MUST
+  be a non-empty string.
+- A `[schemes]` table name MUST match `[a-z][a-z0-9-]*`. The tables
+  `[schemes.file]` and `[schemes.repo]` are rejected: `file` and `repo` are
+  built in and cannot be declared.
+- A scope `name` MUST match `[a-z0-9][a-z0-9-]*`. Two scopes with the same
+  `name` are rejected.
+- A scope `resource` and an exclusion `resource` MUST be a pattern of
+  section 10.1 on a scheme that is `file`, `repo` or listed under
+  `[schemes]`.
+- `kinds` MUST be a non-empty array of non-empty strings.
+- An exclusion `unit`, when present, MUST NOT be the empty string.
+- An exclusion `reason` is required and MUST NOT be blank: a `reason` that is
+  empty or consists only of white space is rejected.
 
 ### 11.2 User config
 
@@ -1432,6 +2392,13 @@ Location, first that applies:
 2. `$XDG_CONFIG_HOME/hibi/config.toml`;
 3. `~/.config/hibi/config.toml` on Linux and macOS, `%APPDATA%\hibi\config.toml`
    on Windows.
+
+`HIBI_CONFIG` set to the empty string is treated as unset. Its value is used
+as written, with no expansion; a relative path is relative to the working
+directory. The file it names is read by the same rules as the default
+location: when that file does not exist, the config is empty and no error is
+reported. When no location can be determined (no `HIBI_CONFIG` and no home
+directory), the config is empty.
 
 A missing file is an empty config. Unknown keys are `invalid_user_config`.
 
@@ -1451,6 +2418,28 @@ expanded. Two entries with the same `root` and `alias` are
 `invalid_user_config`. A user config larger than `MAX_CONFIG_BYTES`
 (section 11.1) is `invalid_user_config`.
 
+Further rules. Each violation is `invalid_user_config`, and the message
+starts with the path of the file:
+
+- The file MUST be valid UTF-8 and valid TOML. A table defined twice (two
+  `[providers.archctl]` tables) is not valid TOML.
+- The user config has no `version` key. The only top-level keys are
+  `providers` and `repo`; a provider table has only `command` and
+  `timeout_ms`; a `[[repo]]` entry has only `root`, `alias` and `path`.
+- A `[providers]` table name MUST match `[a-z][a-z0-9-]*`. The tables
+  `[providers.file]` and `[providers.repo]` are rejected.
+- `command` MUST be an array of strings with at least one element, and its
+  first element MUST NOT be the empty string.
+- `timeout_ms` MUST be an integer from 100 to 600000.
+- `alias` MUST match `[a-z0-9][a-z0-9-]*`.
+- `root` and `alias` of two entries are compared as written, without
+  canonicalization, to find a duplicate. Two entries whose `root` values
+  differ as text but name the same directory are both accepted; check 2 of
+  section 11.1 then uses the first in file order.
+
+The user config is the user's own file: it is read following symbolic links.
+A file that exists but cannot be read is `io_error`.
+
 A provider command is run only when all of these hold: the scheme is listed in
 the repository's `hibi.toml`, the user config has a table for the scheme, and
 either a command needs a locator of that scheme or the user ran
@@ -1463,29 +2452,46 @@ Location, first that applies: `$HIBI_CACHE_DIR/cache.sqlite3`;
 `$XDG_CACHE_HOME/hibi/cache.sqlite3`; `~/.cache/hibi/cache.sqlite3` on Linux
 and macOS, `%LOCALAPPDATA%\hibi\cache.sqlite3` on Windows.
 
+`HIBI_CACHE_DIR` set to the empty string is treated as unset. When no
+location can be determined, the run uses no cache and reports no warning.
+
 The cache is never committed and never authoritative. Deleting it changes no
 result of any command that does not call the judge. For the judge commands it
 is the only source of repeatability (section 14.6): after deleting it, a new
 call may return different probabilities. `--no-cache` makes a run neither read
 nor write it.
 
-Opening: set a busy timeout of 5000 ms, then in one `BEGIN IMMEDIATE`
+Opening: create the directory of the file, with its missing ancestors, when
+it does not exist. Open the file, creating it when missing. Set a busy
+timeout of 5000 ms, then in one `BEGIN IMMEDIATE`
 transaction check `user_version`, create the tables when it is 0, and delete
 every `units` row whose `engine` is not the running version. If
 `user_version` is neither 0 nor 1 (a database written by another hibi), or
 the file cannot be opened, hibi leaves the file as it is, runs without a
-cache and reports warning `cache_unavailable`. Two hibi processes opening a missing
-cache at once MUST both succeed.
+cache and reports warning `cache_unavailable`. The same holds when any other
+step of opening fails: the directory cannot be created, the file is not a
+SQLite database, the transaction cannot be started or committed, or the
+database does not enter WAL mode.
+
+When `user_version` is 0, the two `CREATE TABLE` statements and
+`PRAGMA user_version = 1` run inside that transaction.
+`PRAGMA journal_mode = WAL` MUST NOT be run inside it, because SQLite does not
+change the journal mode within a transaction. It is run on the same
+connection after the transaction has committed. The journal mode is stored in
+the database file. A database whose journal mode after this statement is not
+`wal` is not used (`cache_unavailable`).
+
+TO CONFIRM (lead): the concurrent-open sequence of the cache is being fixed; this paragraph states only the required outcome.
+
+Two hibi processes opening a missing cache at once MUST both succeed.
 
 ```sql
-PRAGMA user_version = 1;
-PRAGMA journal_mode = WAL;
-
+-- inside the BEGIN IMMEDIATE transaction, when user_version is 0
 CREATE TABLE units (
   blob    TEXT NOT NULL,   -- hex SHA-1 of "blob <byte length>\0" + file bytes (the git blob id)
   class   TEXT NOT NULL,   -- resource class, section 6.1
   engine  TEXT NOT NULL,   -- hibi version string, e.g. "5.0.0"
-  units   TEXT NOT NULL,   -- JSON array of Unit without `text`, or the string "not_text"
+  units   TEXT NOT NULL,   -- JSON array of Unit without `text`, or the text not_text
   PRIMARY KEY (blob, class, engine)
 ) WITHOUT ROWID;
 
@@ -1495,12 +2501,90 @@ CREATE TABLE judge (
   answer   TEXT NOT NULL,      -- the answer object as JSON
   at       TEXT NOT NULL       -- timestamp
 ) WITHOUT ROWID;
+
+PRAGMA user_version = 1;
+
+-- after the transaction has committed
+PRAGMA journal_mode = WAL;
 ```
+
+Only `units` rows are deleted on opening. `judge` rows are kept across hibi
+versions.
 
 The `units` table caches the unit list of a file's bytes, including
 fingerprints. The profile versions are covered by `engine`: every hibi release
 starts with empty rows. The blob id is computed from the bytes as read from
 disk or from git, before CRLF replacement.
+
+The value of the `units` column is one of two forms:
+
+- The 8 characters `not_text`, with no quotation marks. It is not JSON. It
+  records that the bytes are not valid UTF-8.
+- A JSON array with one element per unit of the file, in the order of the
+  unit list of section 6. The first element is the unit with key `file`.
+  Each element is the unit object of section 13.3 with these keys: `key`,
+  `kind`, `parent` (a string or `null`), `label` (omitted when the unit has
+  none), `range` (`{start, end, line, endLine}`), `fp` and `sel`. The keys
+  `text`, `approx` and `refuse` are not written.
+
+```json
+[{"key":"file","kind":"file","parent":null,"range":{"start":0,"end":412,"line":1,"endLine":18},"fp":"...","sel":{}},
+ {"key":"...","kind":"sentence","parent":"file","range":{"start":0,"end":57,"line":1,"endLine":1},"fp":"...","sel":{"...":"..."}}]
+```
+
+Offsets in `range` refer to the text after CRLF replacement (section 4).
+
+A row is used only when it describes the text being read. A reader MUST
+ignore a row, compute the unit list from the text, and write the row again,
+when any of these holds: the value is not `not_text` and does not parse as
+such an array; the array is empty; its first element does not have key
+`file` or its `range.end` is not the byte length of the text; any element
+has no `range`; any `range` has `start` greater than `end`, `end` greater
+than the byte length of the text, or an offset that is not on a character
+boundary of the text.
+
+A failed read of a row is a miss. A failed write of a row is dropped without
+a warning. Neither changes a result.
+
+### 11.4 Lines printed for a missing registration
+
+For an alias that fails check 2 of section 11.1, the remediation is this
+text, where `<root>` is the canonical path of the root, `<alias>` is the
+alias, and `<path>` is the suggested location from `[repos]`:
+
+```
+Add these lines to the user config:
+[[repo]]
+root = "<root>"
+alias = "<alias>"
+path = "<path>"
+```
+
+The three values are written as TOML strings, so the four lines after the
+first are a valid user config. A suggested location that is absolute is used
+as `<path>` unchanged. A relative one is joined to the canonical root and its
+`.` and `..` segments are resolved by text alone, without reading the file
+system: root `/home/u/work/shop` and suggestion `../api` give
+`/home/u/work/api`. Checks 4 and 5 have no remediation lines.
+
+The text appears in two places:
+
+- `hibi providers` human output prints it under the alias's line, each line
+  indented by four spaces (section 15.3). It is not a key of the JSON output.
+- The message of a side that is `unavailable` with `repo_not_allowed` for
+  this reason is the refusal message, then `. `, then the text.
+
+For a scheme listed under `[schemes]` with no `[providers.<scheme>]` table in
+the user config, `hibi providers` human output prints:
+
+```
+scheme <scheme>: not registered. To register it, add to the user config:
+    [providers.<scheme>]
+    command = ["<program>", "<argument>"]
+```
+
+`<program>` and `<argument>` are printed literally as placeholders. hibi does
+not suggest a command, because the repository never names one.
 
 ---
 
@@ -1569,27 +2653,80 @@ because a union merge can produce both. It keeps one record per id.
 | A shard file is longer than `MAX_SHARD_BYTES` (67,108,864, 64 MiB) | `store_corrupt` |
 | A mark or retirement names a claim that is not in the store | Warning `orphan_record`. The record is ignored. |
 | `replacedBy` names a claim that is not in the store | Warning `unknown_replacement`. The retirement stands. |
+| `.hibi`, `.hibi/claims` or `.hibi/marks` exists and is not a directory, or `.hibi/hibi.toml`, `.hibi/.lock` or a shard file exists and is not a regular file | `store_corrupt` |
+| A non-empty shard file does not end with U+000A, or contains an empty line | `store_corrupt`, naming file and line |
+| A line of a marks shard has an `id` that starts with neither `m1-` nor `r1-` | `store_corrupt`, naming file and line |
+| A mark whose claim is in the store breaks a rule of section 3.3 that needs the claim: its number of sides differs from the claim's, or a side's `loc` differs from the locator of the claim's side at that position | `store_corrupt` |
 
 Readers take no lock.
+
+`load` reads in this order:
+
+1. Apply the symbolic-link and file-type checks of the table above to
+   `.hibi`, `hibi.toml`, `.lock`, the two shard directories and the 32 shard
+   files.
+2. Read the 16 marks shards, `marks/0` to `marks/f`.
+3. Read the 16 claims shards, `claims/0` to `claims/f`.
+4. Apply the checks that need more than one shard: the shard of each claim,
+   the claim of each mark and retirement, the shard of each mark and
+   retirement, the sides of each mark, `replacedBy`.
+
+Marks shards MUST be read before claims shards. A writer renames claims
+shards before marks shards (section 12.4), so the claim of every mark that
+step 2 saw is on disk by the time step 3 reads. A reader that runs during an
+append therefore reports no `orphan_record` caused by that append. It may see
+a claim whose mark it has not seen; that claim reads as `stale` with reason
+`no_mark`.
+
+Each shard file is opened without following a symbolic link (section 12.7)
+and at most `MAX_SHARD_BYTES` + 1 bytes of it are read.
 
 `snapshot_id` for this backend is `b3:` plus the 64 hex digits of BLAKE3 over,
 for each of the 32 shard files in the order `claims/0` to `claims/f` then
 `marks/0` to `marks/f`: the file's byte length as 8 bytes big-endian followed
 by its bytes (length 0 for a missing file).
 
+`snapshot_id` applies step 1 above first and reads the shard files in its own
+order, claims then marks. It does not parse them.
+
 ### 12.4 Writing
 
 `GitTextStore::append` does exactly this:
 
+0. Before anything is read, locked or created, check every record of the
+   batch: its `id` equals the id derived from its body (section 3.5), and the
+   record keeps the rules of section 3. A failure is `internal`. No file is
+   created or changed, not even `.hibi/.lock`.
 1. Apply the symbolic-link check of section 12.3. Open `.hibi/.lock` (create
    if absent) without following a symbolic link (`O_NOFOLLOW` on Unix) and
    take an exclusive advisory lock. Retry for up to 10 seconds. Failure is
    `store_locked`.
+   The lock is tried without blocking and tried again every 10 ms until
+   10 seconds have passed. `.hibi/.lock` being a symbolic link is
+   `store_corrupt`. Any other failure to open or lock the file is `io_error`.
 2. Group the batch by target shard file.
+   Before grouping, while holding the lock, read the whole store by the
+   rules of section 12.3: all 32 shard files, not only those the batch
+   targets. If that read is `store_corrupt`, the append fails with
+   `store_corrupt` and writes no shard. Then check the batch against what was
+   read:
+   - every mark and every retirement of the batch names a claim that is in
+     the store or in the batch;
+   - every mark of the batch has as many sides as its claim, and each side's
+     `loc` equals the locator of the claim's side at that position
+     (section 3.3).
+   A failure of either is `internal` and no shard is written. The shard of a
+   mark or retirement is the shard of its claim, taken from the store or
+   from the batch.
 3. For each claims shard in ascending name order, then each marks shard in
    ascending name order:
    a. Read the shard file as it is now.
+      This is the content read in step 2. The lock is held from step 1 to
+      step 4, so no other writer has changed the file since.
    b. Add the new records, drop duplicates by id, sort by id.
+      Every record already in the shard is kept, including one that step 2
+      reported as `orphan_record`. For an id that is already in the shard,
+      the line already there is kept.
    c. If the result equals the current bytes, skip this file.
    d. Create `<dir>/<shard>.jsonl.tmp-<r>` in the same directory, where `r`
       is 16 random hex digits, with exclusive creation and without following
@@ -1599,6 +2736,22 @@ by its bytes (length 0 for a missing file).
       directory. The directory `fsync` is required on Unix and skipped on
       Windows.
 4. Release the lock by closing the file. The lock file is not deleted.
+
+Temp names in step 3d:
+
+- `r` is 16 lower-case hex digits.
+- At most 9 names are tried for one shard file: the first and 8 more. A name
+  counts as existing when it is taken by a file, a directory or a symbolic
+  link, whatever the link points to. Nothing is written to or through an
+  existing name, and an existing name is not removed.
+- When all 9 names exist, the append fails with `io_error`. Shard files
+  renamed earlier in the same append stay as written.
+- A failure to create the temp file for any other reason is `io_error` at
+  once, without trying another name.
+- When the write, the `fsync` or the rename fails, the writer removes its
+  temp file and fails with `io_error`.
+- A temp file left behind by a process that was killed is never read and is
+  never removed by hibi. `.hibi/.gitignore` keeps it out of git.
 
 Claims are written before marks and retirements. A crash can therefore leave a
 claim without its mark (the claim reads as `stale` with reason `no_mark`), or
@@ -1617,6 +2770,114 @@ with `legacy_store`. hibi does not read, convert or delete a store written by
 hibi 0.x. The message is: "this repository has a hibi 0.x store in .claims/,
 which this version does not read". The remediation is: "remove or move
 .claims/, or use hibi 0.7".
+
+Without `--root`, discovery (`discover_root`) starts at the working
+directory, made absolute without resolving symbolic links, and visits it and
+then each ancestor in turn up to the file system root. In each directory it
+checks, in this order:
+
+1. If the directory contains a directory `.claims/`, discovery stops with
+   `legacy_store`.
+2. If the directory contains an entry `.hibi/hibi.toml`, the directory is the
+   root.
+
+A directory that contains `.claims/` is therefore a candidate root even when
+it has no `.hibi/hibi.toml`: a command run anywhere inside a hibi 0.x
+repository fails with `legacy_store`, not with `not_initialized`. A directory
+that holds both `.claims/` and `.hibi/hibi.toml` gives `legacy_store`.
+Discovery stops at the first directory that matches either check, so a
+`.claims/` directory above the root that was found is not looked at.
+
+With `--root <dir>`, no ancestor is visited. The directory is made absolute
+without resolving symbolic links. If it contains a directory `.claims/`, the
+command fails with `legacy_store`. Otherwise, if it has no entry
+`.hibi/hibi.toml`, the command fails with `not_initialized`. For `init`,
+`--root` instead names the directory whose git top level is used
+(section 12.6).
+
+`.claims/` counts when the path `.claims` is a directory or a symbolic link
+to a directory, empty or not. A regular file named `.claims` is not a legacy
+store. Step 2 accepts any entry named `hibi.toml` and does not follow a
+symbolic link in that last component; what the entry is, is checked when the
+file is read (section 11.1), so a `hibi.toml` that is a symbolic link is
+`store_corrupt`.
+
+The `legacy_store` check reads nothing but the type of `.claims` and changes
+no file. It is made again when the store is opened.
+
+One exception to the second paragraph: a judge command run without
+`TYPESAFE_API_KEY` fails with `judge_unavailable` before the root is
+discovered (section 14.1), also in a directory that holds `.claims/`.
+
+After the root is found, a command reads `.hibi/hibi.toml` (section 11.1)
+before it reads the user config, the cache or any shard.
+
+### 12.6 Initialization
+
+`hibi init` (section 15.3) creates the store in the git top level `T` of the
+working directory, or of the `--root` directory when that option is given. It
+does not use root discovery and does not look at any ancestor of `T`. It does
+these steps in order:
+
+1. If `T` contains a directory `.claims/`: `legacy_store`.
+2. Apply the symbolic-link and file-type checks of section 12.3 to whatever
+   exists under `T/.hibi`. A failure is `store_corrupt`.
+3. If `.hibi/hibi.toml` exists: `already_initialized`.
+4. If any other of the 36 files of step 6 exists, as a file, a directory or
+   anything else: `already_initialized`. The message names the first such
+   file and says to remove it or to restore `.hibi/hibi.toml`.
+5. Create the directories `.hibi`, `.hibi/claims` and `.hibi/marks`. One that
+   already exists is used as it is.
+6. Create the files in this order: `.hibi/.gitattributes`, `.hibi/.gitignore`,
+   `.hibi/.ignore`, `claims/0.jsonl` to `claims/f.jsonl`, `marks/0.jsonl` to
+   `marks/f.jsonl`, and last `.hibi/hibi.toml`. Each file is created
+   exclusively and without following a symbolic link (section 12.7). The 32
+   shard files are empty. `.hibi/.lock` is not created.
+
+Steps 1 to 4 write nothing. A file of step 6 that turns out to exist when it
+is created, because another process created it after step 4, is
+`already_initialized`. Any other failure in step 5 or 6 is `io_error`.
+
+`hibi.toml` MUST be written last. `init` does not remove what it created when
+a later step fails or the process is killed. The half-finished state is then
+a `.hibi` directory that holds some of the 35 other files and no `hibi.toml`.
+In that state:
+
+- root discovery does not find a store, so every command that needs a root
+  fails with `not_initialized`;
+- `init` fails at step 4 with `already_initialized` and writes nothing. It
+  does not complete the store. The user removes the leftover files, or the
+  whole `.hibi` directory, and runs `init` again.
+
+A `.hibi` directory that holds only empty `claims` and `marks` directories,
+or only `.lock`, does not stop `init`.
+
+The `created` list of the JSON result (section 15.3) is in a fixed order that
+is not the write order: `.hibi/hibi.toml`, `.hibi/.gitattributes`,
+`.hibi/.gitignore`, `.hibi/.ignore`, the 16 claims shards, the 16 marks
+shards.
+
+### 12.7 Opening without following a symbolic link
+
+"Without following a symbolic link" in sections 6.8, 11.1, 12.3, 12.4 and
+12.6 means this.
+
+On Unix, the open call carries the flag `O_NOFOLLOW`. The value of the flag
+comes from the constant `O_NOFOLLOW` of the `libc` crate, which is a
+dependency on Unix targets only, and is passed through
+`std::os::unix::fs::OpenOptionsExt::custom_flags`. hibi calls no function of
+`libc`. An open that fails with `ELOOP` or `EMLINK` is treated as having met
+a symbolic link.
+
+`O_NOFOLLOW` guards only the last path component. The components above it
+(`.hibi`, `claims`, `marks`) are checked first with a call that does not
+follow links (`symlink_metadata`), as part of the checks of section 12.3.
+
+On Windows no flag is set. The check with `symlink_metadata` that precedes
+each open is the only guard, and no open error is treated as a symbolic
+link. Exclusive creation still fails when the name exists. The directory
+`fsync` of section 12.4 step 3d is skipped. The Windows behaviour of this
+section and of section 12.4 is not covered by a test (section 18).
 
 ---
 
@@ -1639,15 +2900,22 @@ which this version does not read". The remediation is: "remove or move
   response before sending the next. The first request is always `hello`.
 - Timeout: each response MUST arrive within `timeout_ms` (section 11.2) of the
   request being written. A `batch` is one request.
-- Output limit: a response line longer than 16 MiB (16,777,216 bytes) is a
-  violation.
+- Output limit: a response line longer than 16 MiB (16,777,216 bytes, not
+  counting the terminating U+000A) is a violation.
 - Shutdown: hibi closes the provider's standard input. The provider MUST exit
   on end of input. hibi waits 2 seconds, then kills it.
-- On a timeout, an output-limit violation, a line that is not a JSON object,
-  a response whose `id` is not the request's, or an unexpected exit, hibi
-  kills the process and does not restart it in that run. Every request of that
-  scheme not yet answered gets the error `failed`, so its sides are
-  `unavailable` with reason `provider_failed`.
+- On a request that cannot be written, a timeout, an output-limit violation,
+  a line that is not a JSON object, a response that breaks the envelope
+  (section 13.2), a response whose `id` is not the request's, or an
+  unexpected exit, hibi kills the process and does not restart it in that
+  run. A command that cannot be started is treated the same way and is not
+  tried again in that run. Every request of that scheme not yet answered,
+  and every later request of that scheme in the run, gets the error `failed`,
+  so its sides are `unavailable` with reason `provider_failed`. Nothing more
+  is written to the provider.
+- A response that keeps the envelope and carries a `result` of the wrong
+  shape does not make the provider unusable (section 13.3, "Results hibi
+  rejects").
 
 ### 13.2 Envelope
 
@@ -1657,8 +2925,9 @@ Request:
 {"id": 1, "method": "resolve", "params": {}}
 ```
 
-`id` is a positive integer, increasing by one per request. `method` is one of
-`hello`, `resolve`, `units`, `render`, `batch`. `params` is an object.
+`id` is a positive integer, increasing by one per request. `hello` has `id`
+1. `method` is one of `hello`, `resolve`, `units`, `render`, `batch`. `params`
+is an object.
 
 Response, exactly one of `result` and `error`:
 
@@ -1670,6 +2939,33 @@ Response, exactly one of `result` and `error`:
 A provider that reads a line it cannot parse as a request object answers
 `{"id": null, "error": {"code": "invalid_request", "message": "..."}}` and
 keeps running. This is the only response with a `null` id.
+
+Which id a provider answers with:
+
+| The line the provider read | `id` of the response | Error |
+|---|---|---|
+| Not JSON, or JSON that is not an object | `null` | `invalid_request` |
+| An object without `id`, or whose `id` is not a positive integer | `null` | `invalid_request` |
+| An object with a positive integer `id` and no string `method` | the request's `id` | `invalid_request` |
+| An object with a positive integer `id` and a method the provider does not implement | the request's `id` | `unknown_method` |
+| An object with a positive integer `id`, a known method, and `params` that are missing, not an object or not of the method's shape (including an invalid locator or selector) | the request's `id` | `invalid_request` |
+
+The protocol cases (section 13.6) check rows 1, 2 and 4. The reference cases
+check row 5.
+
+What hibi requires of a response line. A line that fails any row breaks the
+envelope and makes the provider unusable (section 13.1):
+
+| Rule | |
+|---|---|
+| `id` | MUST be present. It is a positive integer or `null`. `0`, a negative number, a fraction and a string all break the envelope. |
+| `result`, `error` | Exactly one MUST be present. Both, or neither, breaks the envelope. |
+| `error` | MUST be an object with a string `code` and a string `message`. |
+| `null` id | Allowed only together with the error `invalid_request`. A `null` id with a `result`, or with any other error code, breaks the envelope. |
+| Match | `id` MUST equal the id of the request hibi sent. hibi sends only well-formed requests, so a well-formed response with a `null` id is also a mismatch and makes the provider unusable. |
+
+`result` may be any JSON value as far as the envelope goes. Its shape is
+checked per method (section 13.3).
 
 Both sides MUST ignore object keys they do not know, with one exception: a
 selector (`sel`) is closed, in requests and in responses. hibi rejects a
@@ -1691,13 +2987,19 @@ never sends one (section 2.5).
 |---|---|
 | `params.protocol` | The versions the client speaks, ascending |
 | `result.protocol` | One version from that list. If the provider speaks none of them it answers with error `unsupported_protocol`. |
+| `result.provider` | `{name, version}`, both strings. Required. |
 | `result.schemes` | Schemes this process serves. It MUST include the scheme it was registered for. |
-| `result.selectors` | Selector keys it accepts, from `quote`, `symbol`, `key`. `quote` includes `prefix`, `suffix` and `pos`. The empty selector is always accepted. |
-| `result.kinds` | Unit kinds it can return. Informational. |
+| `result.selectors` | Selector keys it accepts, from `quote`, `symbol`, `key`. `quote` includes `prefix`, `suffix` and `pos`. The empty selector is always accepted. The list is closed: any other entry, including `prefix`, `suffix` or `pos`, makes the `hello` result invalid. |
+| `result.kinds` | Unit kinds it can return. Informational. A missing key is the empty list. |
 | `result.capabilities` | Booleans `units`, `render`, `batch`. A missing key is `false`. `resolve` is mandatory. |
 
-If `hello` fails, returns a version not offered, or omits the registered
-scheme, the provider is unusable for the run (`provider_failed`).
+If `hello` fails, returns a result that does not have this shape, returns a
+version not offered, or omits the registered scheme, the provider is unusable
+for the run (`provider_failed`): hibi kills it and sends nothing after
+`hello`.
+
+A provider that answers `hello` with `unsupported_protocol` keeps running and
+MUST answer a later `hello` that offers a version it speaks.
 
 **`resolve`**
 
@@ -1709,6 +3011,10 @@ scheme, the provider is unusable for the run (`provider_failed`).
 `units` has zero entries (the resource exists and the selector found
 nothing), one (resolved) or several (ambiguous). A resource that does not
 exist is error `not_found`, never an empty list.
+
+hibi does not write a `resolve` whose selector has a key the provider does
+not allow (section 2.5). The call is answered locally with the error
+`invalid_selector`.
 
 **`units`**
 
@@ -1729,8 +3035,8 @@ exist is error `not_found`.
 ```
 
 `unit` is a unit key. `text` is the unit as text for a person or a judge.
-`context` is a list of strings, outermost first, and may be empty. An unknown
-key is error `unknown_unit`.
+`context` is a list of strings, outermost first, and may be empty. Both keys
+are required. An unknown key is error `unknown_unit`.
 
 **`batch`**
 
@@ -1742,9 +3048,58 @@ key is error `unknown_unit`.
 ```
 
 `responses` has the same length and order as `requests`. Inner requests have
-no `id`. `hello` and `batch` are not allowed inside a batch
-(`invalid_request` for that entry). hibi sends at most 1000 inner requests per
-batch and uses `batch` only when the capability is `true`.
+no `id`, and inner responses have none. Each inner response is an object with
+exactly one of `result` and `error`. A `batch` with no requests is answered
+with no responses.
+
+`hello` and `batch` are not allowed inside a batch. The provider answers
+`invalid_request` for that entry whatever its `params` are, valid or not, and
+answers the other entries normally. An inner request with an unknown method
+is `unknown_method` for that entry, and one with malformed `params` is
+`invalid_request` for that entry.
+
+hibi sends at most 1000 inner requests per batch and uses `batch` only when
+the capability is `true`. hibi puts only `resolve` requests in a batch, and
+only when it has more than one anchor to send to the provider in one call;
+a single anchor goes out as a plain `resolve`. More than 1000 anchors are
+sent as consecutive batches in input order. When the `batch` request itself
+is answered with an error, every entry of that batch gets that error.
+
+**Capabilities that are `false`**
+
+A call for a method whose capability is `false` (or missing) is answered by
+hibi without writing a request for it:
+
+| Capability | Behaviour |
+|---|---|
+| `units: false` | Every `units` call gets the error `unknown_method`. |
+| `render: false` | Every `render` call gets the error `unknown_method`. |
+| `batch: false` | hibi never sends `batch`. Each anchor is its own `resolve` request, in input order. |
+
+The provider is still started, and `hello` is still sent, the first time one
+of its locators is needed, because the capabilities come from `hello`.
+
+**Results hibi rejects**
+
+A response that keeps the envelope (section 13.2) and whose `result` is not
+usable is the error `internal` for the affected request. The provider stays
+usable and the next request is sent normally. This applies to:
+
+- a `result` that does not have the shape of its method's result, for
+  example a `resolve` result without `units`, or a unit without `fp`;
+- a unit that fails the validation of section 2.5: an invalid fingerprint,
+  an invalid `sel`, a `sel` with an unknown key or a key the provider does
+  not allow, or two units with one `key` in one answer;
+- a `batch` result whose `responses` is missing, has a length other than the
+  number of requests, or has an entry that is not an inner response. Every
+  entry of that batch then gets `internal`.
+
+Inside a batch the check is per entry: an entry whose `result` is rejected
+gets `internal`, and the other entries keep their own results and errors.
+
+`internal` maps to `unavailable` with reason `provider_error` (section 9.2).
+The exception is `hello`: a `hello` result of the wrong shape makes the
+provider unusable.
 
 **Unit object**
 
@@ -1761,6 +3116,17 @@ batch and uses `batch` only when the capability is `true`.
 | `approx` | boolean | no (default false) | In `resolve`: the selector did not match exactly and the unit was found by approximation or fallback |
 | `refuse` | string | no | In `resolve`: this resolution must not be used to create a claim or replace a side. One of `quote_spans_units`, `quote_in_comment`. |
 
+hibi does not validate `text`. A `resolve` unit without `text` is accepted
+and is treated as a unit whose text is not known: outputs that would show the
+text omit it. A `units` answer whose units carry `text` is accepted. hibi does
+not compare `text` with `fp`: the fingerprint is the provider's statement and
+is the only value freshness uses. A `text` that is neither a string nor
+`null` gives a result of the wrong shape.
+
+A `parent` chain may contain a cycle. `CommandProvider` passes such units
+through unchanged, and every reader of the chain MUST stop when a key
+repeats.
+
 ### 13.4 Errors
 
 `{"code": <string>, "message": <string>}`. Closed code list. The last column
@@ -1768,7 +3134,7 @@ is the side result of a `resolve` that fails with the code (section 9.2).
 
 | Code | Meaning | State, reason |
 |---|---|---|
-| `invalid_request` | Malformed request or params | `unavailable`, `provider_error` |
+| `invalid_request` | Malformed request or params. The file provider also returns it for a selector that is invalid by section 5.2. | `unavailable`, `provider_error` |
 | `unknown_method` | Method not implemented | `unavailable`, `provider_error` |
 | `unsupported_protocol` | `hello` only | the provider is unusable: `unavailable`, `provider_failed` |
 | `invalid_locator` | The locator is not valid for this provider | `unavailable`, `provider_error` |
@@ -1783,7 +3149,26 @@ is the side result of a `resolve` that fails with the code (section 9.2).
 | `internal` | Anything else | `unavailable`, `provider_error` |
 
 An unknown code is treated as `internal`. `failed` is not a wire code
-(section 2.5).
+(section 2.5): a provider that sends the code `failed` is read as having sent
+`internal`.
+
+Three codes are also produced by hibi itself, without an error on the wire:
+
+| Code | Produced by hibi when |
+|---|---|
+| `invalid_selector` | A selector has a key the provider does not allow. The request is not written (section 13.3). |
+| `unknown_method` | The call is `units` or `render` and the capability is `false`. The request is not written (section 13.3). |
+| `internal` | A `result` is rejected (section 13.3, "Results hibi rejects"). |
+
+`unavailable` is not reserved for external providers. The file provider
+returns it when a resource cannot be read for a reason that is neither
+absence nor size nor encoding:
+
+- reading a file of the working tree fails with an input or output error
+  other than "no such file" or "not a directory" (those two are `not_found`);
+- a resource is read at a revision (`--since`, section 10.3) and git is not
+  usable, a git read fails, or the object of the path is not available;
+- the file list of a sibling repository cannot be read.
 
 ### 13.5 Reference provider
 
@@ -1796,15 +3181,54 @@ fixture file and holds no other state.
   {"key":"n2","kind":"note","parent":"n1","text":"The cap is configurable."}]}}}
 ```
 
-- `hello`: protocol 1, name `hibi-provider-reference`, `schemes: ["ref"]`,
-  `selectors: ["key", "quote"]`, all capabilities `true`.
+Fixture rules:
+
+- `--fixture` is required.
+- The file is `{"resources": {<locator>: {"units": [...]}}}`. A fixture unit
+  is `{key, kind, parent, text}`; `parent` is optional and defaults to
+  `null`. Unknown keys at any of the three levels are an error.
+- A unit key MUST NOT be empty and MUST NOT repeat within a resource.
+- A resource may have no units.
+- A fixture that cannot be read, is not of this shape or breaks a key rule
+  makes the program print a message to standard error and exit with status 2
+  before reading any request.
+
+Serving rules:
+
+- The program answers every line of standard input and exits with status 0
+  at end of input. The ids of its responses follow the table of section
+  13.2. A line that is not UTF-8 is answered with `id: null` and
+  `invalid_request`.
+- `hello`: protocol 1, name `hibi-provider-reference`, version the program's
+  version, `schemes: ["ref"]`, `selectors: ["key", "quote"]`, all
+  capabilities `true`. `kinds` is every distinct `kind` of the fixture, in
+  order of first appearance, with resources taken in ascending order of
+  their locator strings. A `hello` whose `protocol` list does not contain 1
+  is `unsupported_protocol`. `hello` may be sent more than once.
 - Fingerprint of a unit: `prose-v1` over its `text`.
-- `sel` of a unit: `{"key": <key>}`. `label`: the text. No `range`.
+- `sel` of a unit: `{"key": <key>}`. `label`: the text. No `range`. `parent`
+  as in the fixture. `approx` and `refuse` are never set.
 - `resolve` with `key`: the unit with that key, or none. With `quote`: every
   unit whose text contains the quote as an exact substring, in fixture order.
-  With `{}`: every unit of the resource. With `symbol`: `invalid_selector`.
-  A locator that is not in the fixture: `not_found`.
-- `units`, `render`, `batch` as specified above.
+  `prefix`, `suffix` and `pos` are ignored. With `key` and `quote`: the units
+  that satisfy both. With `{}`: every unit of the resource. With `symbol`,
+  alone or with other keys: `invalid_selector`. Units of a `resolve` answer
+  carry `text`.
+- `units`: every unit of the resource in fixture order, or those whose `kind`
+  equals `kind`. A `kind` no unit has gives an empty list. Units carry no
+  `text`.
+- `render`: `text` is the unit's text. `context` is the texts of its
+  ancestors by the `parent` chain, outermost first. The chain stops at a
+  `parent` that names no unit of the resource, and at the first unit that was
+  already visited, so a cycle terminates. A key no unit has is
+  `unknown_unit`.
+- `batch`: each inner request is answered as it would be at the top level, in
+  order, except `hello` and `batch`, which are `invalid_request`.
+- A locator that is not in the fixture: `not_found`, for `resolve`, `units`
+  and `render`.
+- Malformed `params` (a `sel` with an unknown key, a `null` inside `sel`,
+  `prefix` without `quote`, a string that is not a locator, a missing `sel`):
+  `invalid_request` with the request's id.
 
 ### 13.6 Conformance cases
 
@@ -1814,6 +3238,7 @@ Cases are JSON files, one case per file.
 {
   "name": "resolve by key returns one unit",
   "fixture": "notes.json",
+  "requires": ["batch"],
   "steps": [
     {"send": {"method":"hello","params":{"protocol":[1],"client":{"name":"conformance","version":"0"},"root":"."}},
      "expect": {"result":{"protocol":1}}},
@@ -1824,33 +3249,131 @@ Cases are JSON files, one case per file.
 }
 ```
 
-- The runner starts the provider (for the reference provider, with
-  `--fixture cases/provider/fixtures/<fixture>`), sends each `send` with the
-  next `id`, and compares the response to `expect`.
+| Key | Required | Meaning |
+|---|---|---|
+| `name` | yes | Unique within its directory |
+| `fixture` | no | A fixture file name |
+| `requires` | no (default empty) | Capability names from `units`, `render`, `batch` |
+| `steps` | yes | Array of `{send, expect}` |
+| `end` | no | `"exit"` |
+
+Unknown keys in a case or in a step are an error. Every case in `cases/`
+starts with a `hello` step and has `"end": "exit"`.
+
+- The runner starts one process per case, without a shell, with the working
+  directory and environment of section 13.1. For a case with `fixture` it
+  appends `--fixture <dir>/<fixture>` to the command, where `<dir>` is the
+  fixture directory the runner was given (`cases/provider/fixtures` for the
+  reference provider). A case with `fixture` run without a fixture directory
+  fails.
+- Ids: a `send` that is an object is written with the key `id` set by the
+  runner. The first object of a case gets `id` 1 and each later object gets
+  the next integer. The response to it MUST carry the same `id`; this is
+  checked before `expect`, whether or not `expect` names `id`.
+- A `send` given as a string instead of an object is written verbatim as a
+  line (for malformed-input cases). It gets no `id` and does not consume one.
+  The `id` of its response is checked only through `expect`.
+- The runner sends each `send`, reads one response line and compares it to
+  `expect`. Each response MUST arrive within the timeout the runner was
+  given (default 10 s) and MUST NOT exceed the output limit of section 13.1.
 - Matching: every key in `expect` MUST be present in the response with a
   matching value. Objects match recursively by this rule. Arrays match when
   they have the same length and each element matches in order. The strings
   `"<any>"`, `"<fingerprint>"` and `"<string>"` match any value, any valid
   fingerprint string, and any string. Other values match by equality.
-- A `send` given as a string instead of an object is written verbatim as a
-  line (for malformed-input cases).
+- `requires`: after a `hello` step whose response matched and carries a
+  `result`, the runner reads `result.capabilities`. If any capability named
+  in `requires` is not `true` there, the case stops at that step and is
+  reported as skipped. The remaining steps and `end` are not run. A skipped
+  case is not a failure.
 - `"end": "exit"` requires that after standard input is closed the process
   exits with status 0 within 2 seconds.
 - In every case the runner also fails if any standard-output line is not a
-  JSON object.
+  JSON object, including lines written after the last step and before the
+  process exits.
+
+The runner reports:
+
+```json
+{"hello": {"protocol":1, "...": "..."}, "passed": 6, "failed": 0, "skipped": 1,
+ "cases": [{"name": "...", "ok": true, "skipped": false, "detail": null}]}
+```
+
+| Key | Meaning |
+|---|---|
+| `hello` | The `result` of the first `hello` step of the run that got one, or `null` |
+| `passed` | Cases that ran to the end and passed. Skipped cases are not counted. |
+| `failed` | Cases that failed |
+| `skipped` | Cases that were skipped |
+| `cases[].ok` | `true` for a passed or skipped case, `false` for a failed one |
+| `cases[].skipped` | `true` only for a skipped case |
+| `cases[].detail` | `null` for a passed case. For a failed case: the step number, what differed and, when the provider wrote to standard error, its tail. For a skipped case: the capabilities the provider does not offer. |
+
+`cases` has one entry per case, in the order the cases were given.
+`passed + failed + skipped` equals the number of cases.
 
 Two directories:
 
 - `cases/provider/protocol/`: cases every provider MUST pass. They use only
-  `hello`, an unknown method, an unoffered protocol version, a malformed line
-  (answered with `id: null`), `resolve` on a locator the provider cannot have
-  (answered with an error, not an empty list), `batch` ordering with errors
-  inside, and shutdown. They have no `fixture`.
+  `hello`, an unknown method, an unoffered protocol version (answered with
+  `unsupported_protocol`, after which a `hello` offering version 1 is
+  answered normally), a malformed line (answered with `id: null`; this
+  includes an object without `id`), `resolve` on a locator the provider
+  cannot have (answered with an error, not an empty list), `batch` ordering
+  with errors inside (including `hello` and `batch` as inner requests), and
+  shutdown. They have no `fixture`. The `batch` case has
+  `"requires": ["batch"]`.
 - `cases/provider/reference/`: cases for the reference provider and its
   fixtures. They cover zero, one and several units, `units` with and without
   `kind`, `render`, `parent`, and every error code the reference can produce.
+  None of them has `requires`.
 
 The protocol cases are compiled into the `hibi` binary and run by
+`hibi providers --check <scheme>` (section 15.3). The compiled-in cases MUST
+equal the files of `cases/provider/protocol/`.
+
+### 13.7 `check_provider`
+
+`hibi providers --check <scheme>` calls one library function, in
+`provider::command`:
+
+```rust
+pub fn check_provider(
+    config: &RepoConfig,
+    user: &UserConfig,
+    root: &Path,
+    scheme: &str,
+) -> Result<ProviderCheck, Error>;
+
+pub struct ProviderCheck {
+    pub scheme: String,
+    #[serde(flatten)]
+    pub report: ConformanceReport,
+}
+```
+
+- A scheme that is not listed under `[schemes]` in `hibi.toml` is
+  `invalid_argument`. A listed scheme with no command in the user config is
+  `invalid_argument`. In both cases nothing is started and the remedy is
+  `hibi providers`. `file` and `repo` cannot be listed under `[schemes]`, so
+  they are `invalid_argument`.
+- Otherwise the function runs the compiled-in protocol cases (section 13.6)
+  against the registered command, with `root` as the working directory, the
+  registered `timeout_ms` as the response timeout and no fixture directory.
+  The provider is started once per case.
+- A failing case is part of the result and not an error. A command that
+  cannot be started is not an error either: every case is reported as failed
+  and `hello` is `null`.
+
+`ProviderCheck` serializes to one object, the report of section 13.6 with
+`scheme` added:
+
+```json
+{"scheme": "ref", "hello": {"protocol":1, "...": "..."}, "passed": 7, "failed": 0, "skipped": 0,
+ "cases": [{"name": "...", "ok": true, "skipped": false, "detail": null}]}
+```
+
+This object is the value of `check` in the output of
 `hibi providers --check <scheme>` (section 15.3).
 
 ---
@@ -1865,12 +3388,31 @@ ranks and labels.
 
 `triage`, `suggest-evidence` and `status --judge-order` need the environment
 variable `TYPESAFE_API_KEY`. When it is unset or empty they fail with
-`judge_unavailable` before doing any other work. With the key set they next
+`judge_unavailable` before doing any other work, including root discovery, so
+the result is the same outside a repository. With the key set they next
+check the endpoint (section 14.2) and fail with `invalid_argument` when it is
+not allowed, also before any other work. Then they
 check git (section 10.4) and fail with `not_a_git_repository` or `git_too_old`
 before any network contact. This is intended for
 `status --judge-order` as well: the flag asks for the judge, so without the
 key the command fails and the caller runs `status` without the flag. No other
 command reads the variable or contacts the network.
+
+The library never reads the environment. The key and the endpoint are
+arguments of the client constructor, and only the `hibi` binary reads
+`TYPESAFE_API_KEY` and `HIBI_JEV_URL`:
+
+```rust
+impl Judge {
+    /// `key`: the value of TYPESAFE_API_KEY. `endpoint`: the value of HIBI_JEV_URL.
+    pub fn new(key: Option<&str>, endpoint: Option<&str>) -> Result<Judge, Error>;
+}
+```
+
+`key` that is `None` or empty is `judge_unavailable`. `endpoint` that is
+`None` or empty means the default URL of section 14.2. The key is checked
+first. The constructor contacts nothing. Every judge function takes a
+`Judge`, so none can run without a key.
 
 ### 14.2 Request
 
@@ -1885,18 +3427,60 @@ Content-Type: application/json
 - The model id is the constant `jev-1.14.0`. An alias is never sent.
 - The environment variable `HIBI_JEV_URL` replaces the URL. It exists for
   tests.
+- Endpoint guard. The URL, default or replaced, MUST pass all of these
+  checks, or the command fails with `invalid_argument` and nothing is
+  contacted. The checks are on the string, are case-sensitive, and do not
+  resolve names:
+  1. It contains no control character and no space.
+  2. It starts with `https://` followed by at least one character, or it
+     starts with `http://` and passes checks 3 and 4.
+  3. For `http://`: the authority is the text after `http://` up to the
+     first `/`, `?` or `#`. It MUST NOT contain `@`.
+  4. For `http://`: the host is the text between `[` and `]` when the
+     authority starts with `[`, otherwise the authority up to its first `:`.
+     The host MUST be exactly `127.0.0.1`, `::1` (written `[::1]` in the
+     URL) or `localhost`.
+
+  So the key travels only over TLS or to the local machine. Examples:
+  `http://127.0.0.1:4000/v1/systemone`, `http://localhost/x` and
+  `http://[::1]:9/x` are allowed. `http://example.com/x`, `ftp://x`,
+  `http://127.0.0.1.evil.com/`, `http://u@127.0.0.1:1@evil.com/`, `https://`
+  and `https://a b` are refused.
 - Every item is its own question. A request holds at most 100 questions and
   at most 60,000 bytes of serialized `questions`. Items are packed into
   requests in input order.
+- Packing rule. An item is the one or two questions a command asks about one
+  thing. Items that share one `state` form a group, and a request never mixes
+  groups. Within a group, in input order:
+  1. Questions that have a cached answer (section 14.6) are left out. An item
+     with no question left is left out.
+  2. The size of a request is the exact byte length of its `questions`
+     object serialized as compact JSON: braces, names, quotes, colons and
+     commas included.
+  3. An item is added to the current request unless the request already holds
+     at least one item and adding the item would bring it above 100 questions
+     or above 60,000 bytes. In that case the current request is closed and
+     the item starts a new one.
+  4. The questions of one item always go in the same request.
+  5. An item whose questions alone exceed 60,000 bytes is sent alone in a
+     request of its own. If the service refuses it, the command fails with
+     `judge_failed` (section 14.7).
 - Question names are `q0`, `q1`, ... within a request, with a suffix where a
-  command asks two questions per item.
-- Item text placed in a question is cut to its first 4,000 characters.
+  command asks two questions per item. The number is the position of the item
+  among the items of that request, starting at 0 in every request. The suffix
+  is joined with a dot: `q0.checkable`.
+- Item text placed in a question is cut to its first 4,000 characters
+  (Unicode scalar values). Nothing is appended to mark the cut. The cut
+  applies to `text` in `triage`, `code` in `suggest-evidence` and each entry
+  of `content` in `status --judge-order`. Headings, `where` and the statement
+  are not cut.
 - Text from the file provider is sent only when its path is in the file list
   (section 10.4) of the root or of an allowed sibling repository, that is
-  tracked, or untracked and not ignored. An item that fails this is not sent
-  and is counted as skipped (in `triage` and `suggest-evidence`) or treated as
-  a side that cannot be rendered (in `status --judge-order`). The judge
-  commands therefore need `git`.
+  tracked, or untracked and not ignored. An item that fails this is not sent.
+  In `triage` it is counted in `skipped`. In `status --judge-order` it is
+  treated as a side that cannot be rendered. In `suggest-evidence` the
+  candidates are taken from the file lists, so no candidate can fail it. The
+  judge commands therefore need `git`.
 
 Response: `{"model", "answers": {<name>: <answer>}, "usage"}`. A Noul answer is
 `{"type":"noul","noul":<p>}`. A Choice answer is
@@ -1905,6 +3489,19 @@ hibi reads `noul`, `choice` and `probabilities[choice]`. It never reads
 `confidence`. A response that lacks an answer of the right type for any
 question of the request fails the request.
 
+A response is usable only when all of these hold. Otherwise the request
+fails, is not retried, and nothing from it is cached:
+
+- The body is JSON.
+- `model` is present and equals `jev-1.14.0`. A response that names another
+  model, or none, is refused.
+- `answers` is an object with an entry for every question name of the
+  request.
+- Each answer has the `type` of its question.
+- A Noul answer has `noul`, a number in [0, 1].
+- A Choice answer has `choice`, a string that is one of the option names of
+  the question's `criteria`, and `probabilities[choice]`, a number in [0, 1].
+
 ### 14.3 `triage`
 
 Input: the uncovered units that `cover` would list with the same `--scope` and
@@ -1912,6 +3509,22 @@ Input: the uncovered units that `cover` would list with the same `--scope` and
 `list-item`, `table-row` or `heading` served by the file provider. Other
 uncovered units are not sent and are counted in `skipped`. One request group
 per resource.
+
+A unit that is uncovered in several scopes is considered once. Units are
+identified by locator and unit key, and the first occurrence in scope order
+is used. This holds for sent and for skipped units, so no unit is counted
+twice.
+
+`skipped` is the number of uncovered units, each counted once, that were not
+sent to the judge. A unit is skipped when any of these holds:
+
+- its locator is not on scheme `file` or `repo`;
+- its kind is not one of the four prose kinds;
+- its path is not in a file list (section 14.2);
+- `render` fails for it.
+
+`considered` is the number of units that were sent and ranked, before the cut
+to `--limit`. Every uncovered unit is in exactly one of the two counts.
 
 State: `{"task":"hibi-triage-v1","document":<locator>}`.
 
@@ -1935,12 +3548,27 @@ when `p >= 0.7`, `unlikely` when `p <= 0.3`, otherwise `unsure`. `evidence` is
 the chosen option when its probability is at least 0.6, otherwise `unsure`.
 Units are ordered by `p` descending, then by locator and start offset.
 
+The complete order, each key applied only when the earlier ones tie:
+
+1. `p` descending;
+2. locator ascending, compared as strings byte by byte;
+3. start offset ascending, a unit without a range first;
+4. unit key ascending.
+
 ### 14.4 `suggest-evidence`
 
 Input: a statement and the candidate units: every unit of the kinds given by
 `--kind` (default: `function`, `method`, `class`, `struct`, `interface`,
 `trait`, `enum`, `type`, `variable`) in the resources matched by the `--in`
 patterns. More than 10,000 candidates is `too_many_candidates`.
+
+The resources are the paths of the root's file list (without `.hibi/`) and of
+the file lists of allowed sibling repositories that match an `--in` pattern.
+A resource whose units cannot be listed contributes no candidates. A
+candidate whose text cannot be rendered is not sent and is not counted
+anywhere: the output of `suggest-evidence` has no `skipped` field.
+`considered` is the number of candidates that were sent and ranked, before
+the cut to `--limit`.
 
 State: `{"task":"hibi-suggest-evidence-v1","statement":<statement>}`.
 
@@ -1952,10 +3580,16 @@ One question per candidate:
                   "where":"<locator> <label>","code":"..."}}
 ```
 
+`where` is the locator alone when the unit has no label.
+
 Result: candidates ordered by probability descending, cut to `--limit`.
 `fits` is `true` for a candidate with `p >= 0.7`. `noneFits` is `true` when no
 candidate has `p >= 0.7`. A candidate is a suggestion to read, never a
 finding.
+
+Ties in probability are ordered as in section 14.3: locator, then start
+offset, then unit key. `noneFits` is computed over every ranked candidate,
+before the cut, and is `true` when there are no candidates.
 
 ### 14.5 `status --judge-order`
 
@@ -1976,6 +3610,16 @@ that cannot be rendered are not sent and come first, by id. The answer is
 not printed and no claim is added, removed or relabelled. Without the flag the
 order is by claim id.
 
+The complete order of the listed claims with the flag:
+
+1. stale claims with a side that cannot be rendered, by id;
+2. the other stale claims, by the answer ascending, ties by id;
+3. every listed claim that is not stale (fresh, expired or retired), by id.
+
+Only stale claims are sent. Claims of group 3 appear when the selection
+includes them, for example with `--state fresh`, and always come after every
+stale claim. When no listed claim is stale, no request is sent.
+
 ### 14.6 Cache
 
 Key: the 64 hex digits of
@@ -1994,11 +3638,61 @@ determinism guarantee.
 | Backoff before retry n | `min(5 s, 0.5 s * 2^(n-1))`. A `Retry-After` header replaces it when present, capped at 5 s. |
 | Retried | Status 408, 429, 500 to 599 (including 529), connection errors, timeouts |
 | Not retried | Any other status |
+| Redirects | Not followed |
 | Concurrency | At most 6 requests in flight |
+
+Statuses:
+
+- 200 to 299 is success. The body is then read as section 14.2 says. A body
+  that cannot be read to its end is retried like a connection error. A body
+  that is read and is not usable fails the request without a retry.
+- 408, 429 and every status from 500 to 599 are retried.
+- Every other status fails the request at once, without a retry. This
+  includes every 3xx status and 400, 401, 403, 404, 413, 415 and 422.
+
+Redirects: hibi never follows a redirect. A 3xx response is a failed request
+under the rule above, so the key is never sent to a second host.
+
+`Retry-After`:
+
+- It is read only on a response with a retried status.
+- Its value MUST be a non-negative decimal number of seconds. A fraction is
+  allowed (`0.25` is 250 ms).
+- The delay before the next attempt is that value capped at 5 s. It replaces
+  the computed backoff for that retry only; the next retry is computed from
+  its own number again (a `Retry-After: 2` on the first failure followed by a
+  failure without the header gives delays of 2 s and 1 s).
+- The HTTP-date form, a negative number and any other value are ignored, and
+  the computed backoff is used.
 
 If any request fails after its attempts, the command fails with
 `judge_failed` and prints no partial result. Answers already cached stay
 cached. A failed call is never read as a "no".
+
+After a failure:
+
+- Once one request has failed, no further request is started.
+- Requests that are in flight at that moment are not cancelled. Each runs to
+  its end, retries included.
+- Every request that succeeds has its answers stored in the cache
+  (section 14.6), also when another request of the same command fails. A
+  later run asks only for what is still missing.
+- The command reports one `judge_failed` error and no ranking, whatever the
+  other requests returned.
+
+### 14.8 Cases
+
+The files under `cases/judge/` are synthetic. They were written by hand from
+sections 14.2 to 14.5 and from the answer schemas in the vendor's published
+API description. None was recorded from a call to the live service. Each
+case says so at the start of its `source`, and has the origin `spec-derived`.
+
+They bind the request shapes of sections 14.3 to 14.5 (the exact request
+body for given items) and the reading of answers (section 14.2) with the
+thresholds of sections 14.3 and 14.4. They do not show how the live service
+answers: packing, the cache and the transport policy are tested against a
+local scripted server, and the thresholds remain unverified against real
+answers (section 18).
 
 ---
 
@@ -2010,26 +3704,54 @@ Global options, accepted by every command:
 
 | Option | Meaning |
 |---|---|
-| `--root <dir>` | Use this root instead of discovery |
+| `--root <dir>` | Use this root instead of discovery (section 12.5). For `init`: find the git top level of this directory instead of the working directory. |
 | `--format <human\|json>` | Output format. Default: `json` when standard output is not a terminal, else `human`. |
 | `--now <timestamp>` | Use this instant as `now`. RFC 3339 with any offset. A fraction of a second is accepted and truncated. Bad input is `invalid_time`. |
 | `--no-cache` | Do not read or write the cache database |
-| `-h`, `--help` | Print help, exit 0 |
+| `-h`, `--help` | Print help to standard output, exit 0, in both formats |
+
+There is no `--version` option and no `help` subcommand: `hibi --version` and
+`hibi help` are `usage`. The version is printed by `hibi version`, and help by
+`-h` or `--help` on the program or on a command. Running `hibi` with no
+command is `usage`.
 
 Environment: `HIBI_BY` (default for `--by`), `HIBI_CONFIG`, `HIBI_CACHE_DIR`,
-`HIBI_JEV_URL`, `TYPESAFE_API_KEY`, `NO_COLOR`.
+`HIBI_JEV_URL` (which must pass the endpoint rule of section 14.2),
+`TYPESAFE_API_KEY`, `NO_COLOR`.
+
+`HIBI_BY` is used wherever a `by` value is not given: when `--by` is absent,
+and for every element of a standard-input batch whose `by` key is absent or
+`null`. An element whose `by` is a string, including the empty string, keeps
+its own value.
 
 `--by`, `HIBI_BY`, `--note` and the `by` and `note` fields of standard-input
 elements are trimmed; an empty result is stored as `null`.
 
 Exit status: 0 when the command ran, whatever it found. 1 on any error of
 section 15.4, including argument errors. No other status is used. clap's
-default status 2 for usage errors MUST be mapped to 1.
+default status 2 for usage errors MUST be mapped to 1. A panic MUST be caught
+at the entry point of the binary and reported as one error with code
+`internal` and exit status 1, in the format of the run.
 
 Streams: the result goes to standard output. In `human` format errors and
-warnings go to standard error. In `json` format standard output holds exactly
-one JSON object followed by a newline, also on error, and standard error is
-empty unless the process aborts.
+warnings go to standard error, and on an error standard output is empty. In
+`json` format standard output holds exactly one JSON object followed by a
+newline, also on error, and standard error is empty unless the process
+panics or aborts. The two exceptions are `schema <name>` and `completions`,
+whose standard output is the schema or the script in both formats, and help.
+
+Human error and warning lines:
+
+```
+warning: <code>: <message>
+error: <code>: <message>
+  fix: <remediation>
+```
+
+Warnings are printed before the result. An error of a standard-input element
+starts with `error: element <index>: <code>: `. The remediation line is
+omitted when the remediation is `null`, and its label is `help:` instead of
+`fix:` for a `usage` error.
 
 JSON envelope:
 
@@ -2038,14 +3760,34 @@ JSON envelope:
 {"ok": false, "command": "claim",  "errors": [{"code": "...", "message": "...", "remediation": "...", "index": 0}]}
 ```
 
+`command` is the name of the command that ran. When the arguments do not
+parse (`usage` from the argument parser) or the process panics, no command
+ran: `command` is then the first argument that equals a command name, and
+`hibi` when there is none. The remediation of such a `usage` error is
+`hibi <command> --help`, or `hibi --help` when `command` is `hibi`; its
+message is the argument parser's message. The format of such an error is
+taken from the last `--format json` or `--format human` (also written
+`--format=<value>`) among the arguments, else from the terminal rule above.
+
+`warnings` is present on every success result of every command with JSON
+output, including `init`, `schema` (without a name) and `version`, and is an
+array that may be empty. The failure envelope has no `warnings` key.
+
 `errors` has at least one entry. `remediation` is a string or `null`: one
 sentence or one command that fixes the cause. `index` appears only for
-standard-input batches and is the position of the offending element.
+errors about one element of a standard-input batch and is the 0-based
+position of that element; an error about the whole document has no `index`.
 `warnings` entries are `{code, message}` with codes `orphan_record`,
 `unknown_replacement` (section 12.3), `cache_unavailable` (the cache could
 not be opened in a run that would have used it, section 11.3) and
 `git_too_old` (a `repo:` side could not be resolved because git is older than
 `MIN_GIT`, section 10.4). The list is closed.
+
+`cache_unavailable` is reported by the commands that open the cache: `claim`,
+`mark`, `reanchor`, `status`, `cover`, `triage` and `suggest-evidence`. It is
+the last entry of `warnings`. It is never reported with `--no-cache`, and
+never by `init`, `retire`, `list`, `providers`, `schema`, `completions` or
+`version`, which do not open the cache.
 
 `next`: where a result carries `next`, it is one command line the caller can
 run, or `null`. Arguments are quoted for a POSIX shell. A part the caller must
@@ -2055,8 +3797,9 @@ supply is written as `<anchor>`.
 
 Anchor: `{"loc", "sel"}` as stored.
 
-UnitRef: `{"key", "kind", "label", "line", "endLine"}`; `line` and `endLine`
-are `null` without a range.
+UnitRef: `{"key", "kind", "label", "line", "endLine"}`. All five keys are
+always present. `label` is `null` when the provider gave the unit no label.
+`line` and `endLine` are `null` without a range.
 
 Side:
 
@@ -2074,6 +3817,25 @@ Side:
 | `candidates` | array of UnitRef, present only when `state` is `ambiguous` |
 | `text` | current unit text, present only with `--detail` |
 
+Rules for the Side keys:
+
+- `reason` is `null` exactly when `state` is `same`.
+- `unit` and `fp` are set when the side resolves to exactly one unit, whatever
+  its state (`same`, `changed`, or `unavailable` with `profile_mismatch`).
+  They are `null` in every other case.
+- `approx` is the `approx` of that one unit, and `false` when the side does
+  not resolve to exactly one unit.
+- `markedFp` is the fingerprint the reference mark (section 9.3) holds for
+  this side. It is `null` only when the claim has no reference mark. It is
+  set also when the side is `missing`, `ambiguous` or `unavailable`.
+- `candidates` holds the units the provider returned, in the provider's
+  order.
+- `text` is the whole unit text. It is absent without `--detail`, and absent
+  when the side has no unit or the provider returned the unit without text.
+  The one exception to "only with `--detail`" is the output of `mark`
+  (section 15.3): there every `approx` side carries `text` cut to 240
+  characters.
+
 ClaimView:
 
 | Key | Type |
@@ -2085,6 +3847,30 @@ ClaimView:
 | `expiresAt` | `add(markedAt, recheck)` when the claim is `fresh` or `expired` and `recheck` is set, else `null` |
 | `sides` | array of Side (empty for a retired claim) |
 | `next` | string or `null` |
+
+All keys are always present. `recheck` and `note` are `null` when the stored
+claim has none. `expiresAt` is also `null` when `add(markedAt, recheck)`
+fails by section 9.4 because the result is past 9999-12-31T23:59:59Z
+(section 9.3).
+
+The ClaimView of a retired claim:
+
+| Key | Value |
+|---|---|
+| `id`, `statement`, `recheck`, `note` | as stored |
+| `state` | `"retired"` |
+| `mark` | id of the reference mark of section 9.3: the claim's mark with the latest `at` (ties to the greater id), or `null` when it has no mark |
+| `markedAt` | that mark's `at`, or `null` |
+| `expiresAt` | `null`, whatever `recheck` is |
+| `sides` | `[]` |
+| `next` | `null` |
+
+A ClaimView in the output of `claim`, `mark` or `reanchor` is evaluated at
+`now` as if the records of the command were already stored: the claim's marks
+are the stored ones plus the mark the command writes. In the output of
+`claim` and `reanchor` every side has `approx: false`, because the stored
+selector is the completed one. In the output of `mark` a side keeps its
+`approx`.
 
 `next` for a claim, first rule that applies:
 
@@ -2098,6 +3884,11 @@ ClaimView:
 | The claim is `fresh` and a side is `approx` | `hibi reanchor <id>`. If the claim rebuilt from the completed selectors would be a retired claim, `hibi reanchor <id> --note <text>` instead, because the plain command would fail with `claim_retired`. |
 | Otherwise (`expired`, or sides `changed` or `profile_mismatch`) | `hibi mark <id>` |
 
+In the second row the options follow the sides in index order, `n` is the
+side's index (evidence numbers start at 1), and `<anchor>` and `<text>` are
+written literally, as parts the caller supplies (section 15.1). `<id>` is the
+full claim id.
+
 A stale or expired claim with an `approx` side falls through to the last
 row: `next` is `hibi mark <id>`, and the mark output then suggests `reanchor`
 (section 15.3). The `approx` row never applies to a claim that is not fresh,
@@ -2109,6 +3900,74 @@ statement is no longer true the caller fixes the text or retires the claim.
 The human output says so once per run, and the JSON result of `status`
 carries the same sentence once in `nextNote`.
 
+Order of lists. Every list in a result has a fixed order:
+
+| List | Order |
+|---|---|
+| `claims` of `status` (without `--judge-order`) and of `list` | by claim id |
+| `sides` of a ClaimView | by `index` |
+| `marks` and `retirements` of `list <claim-id>` | by `at`, then by id |
+| `scopes` of `cover` | the order of `hibi.toml` |
+| `items` of a scope | by locator, then start offset, then key; a unit without a range comes before the units of the same locator that have one |
+| `exclusions` of a scope | declaration order |
+| `unavailable` of a scope | by `loc` |
+| `claims` of `claim`, `marks` of `mark`, `retired` of `retire` | one entry per input element or argument, in input order |
+| `errors` of a batch | by `index` |
+| `repos` and `schemes` of `providers` | by alias, by scheme name |
+
+Ids, locators, keys and names are compared as byte strings.
+
+Errors of the commands that resolve sides (`claim`, `mark`, `reanchor`).
+The error object is the one of section 15.1; these rules fix its
+`remediation`:
+
+- `side_unavailable`. The message gives the reason code of section 9.2. In
+  `claim` and `reanchor` the `remediation` is `hibi providers` when the
+  reason is `scheme_not_declared`, `provider_not_registered`,
+  `provider_failed` or `repo_not_allowed`, and `null` for every other reason
+  (`repo_not_found`, `not_text`, `too_large`, `provider_error`). This is the
+  same split as rows three to five of the `next` table.
+- `mark`. When a side of a claim does not resolve to one unit, the error
+  code comes from the first such side in index order (`side_missing`,
+  `side_ambiguous` or `side_unavailable`), and the `remediation` is the
+  claim's `next` by the table above, computed from the state the claim has
+  before the mark. It names every side that is `missing` or `ambiguous`, for
+  example `hibi reanchor <id> --subject <anchor>`. When that `next` is `null`
+  the `remediation` is `null`.
+- `claim_retired` from `mark`, and from `reanchor` when the old claim is
+  retired, has `remediation: null`: no command makes a retired claim
+  writable. (`claim_retired` from `claim`, and from `reanchor` step 5, keeps
+  the remediation of sections 3.4 and 15.3.)
+
+Batches. `claim` and `mark` take one element (the argument form) or the
+array of `--stdin`.
+
+- Standard input is handled in two passes. Pass 1 parses the document and
+  checks the shape of every element. It runs after the root is found and
+  before any record is read or any provider is asked. Input that is not
+  UTF-8, not JSON, not an array, or an empty array is one `invalid_json`
+  error without `index`. Otherwise every
+  element with a wrong shape gives one error with its `index`:
+  `invalid_json` for an element of the wrong type, a missing or mistyped
+  key, or an unknown key; `invalid_anchor` in `claim --stdin` for a `subject`
+  or `evidence` entry that is neither a string nor an Anchor object that
+  parses. A compact anchor string is not parsed in pass 1. If pass 1 reports
+  any error the command stops there: `errors` holds only the pass 1 errors,
+  and no element, including the well-formed ones, is checked further.
+- Pass 2 applies the checks of the command (section 15.3) to every element.
+  Each failing element reports one error, its first failing check, with its
+  `index`. A failure in one element does not stop the checks of the others.
+- `index` is the zero-based position in the array. Errors of the argument
+  form carry no `index`.
+- Duplicate elements are accepted. A record whose id equals the id of a
+  record already in the same batch is written once. Two `claim` elements
+  that build the same claim id write the claim once: the first has
+  `created: true`, each later one `created: false`. Each element builds its
+  own mark; two marks with the same id (same claim, `at`, `by`, sides and
+  `note`) are written once and both entries name that mark id. The same
+  holds for a claim named twice in `mark`. The output still has one entry
+  per element.
+
 ### 15.3 Commands
 
 Every command below lists its arguments, its JSON result keys beyond the
@@ -2116,7 +3975,8 @@ envelope, and its human output.
 
 **`hibi init`**
 
-No arguments. Finds the git top level of the working directory
+No arguments of its own. Finds the git top level of the working directory, or
+of the directory given with `--root`
 (`not_a_git_repository` if none). If `.hibi` or anything under it that
 section 12.3 names is a symbolic link, it fails with `store_corrupt` before
 writing anything. It fails with `already_initialized` if `.hibi/hibi.toml`
@@ -2132,7 +3992,7 @@ count of files, then the next step (declare scopes in `.hibi/hibi.toml`).
 **`hibi claim --stdin`**
 
 Anchors are in compact syntax (section 5.5). With `--stdin`, standard input is
-a JSON array; no other claim argument is allowed. Each element:
+a JSON array; no other claim argument is allowed (`usage`). Each element:
 
 ```json
 {"statement": "...", "subject": <Anchor or compact string>, "evidence": [<Anchor or compact string>],
@@ -2140,7 +4000,23 @@ a JSON array; no other claim argument is allowed. Each element:
 ```
 
 `evidence`, `recheck`, `note`, `by` are optional. An empty array is
-`invalid_json`.
+`invalid_json`. `--note` and `note` are stored as given (trimmed): the text
+`none` has no special meaning here, and `--recheck none` is
+`invalid_duration`.
+
+Standard input is parsed in two passes, for `claim --stdin` and
+`mark --stdin` alike. It is read after the root is found.
+
+1. The document. Input that is not UTF-8, not JSON, not an array, or an
+   empty array is one `invalid_json` error without `index`. Then the shape of
+   every element is checked: an element that is not of the form above, lacks
+   a required key or has an unknown key is `invalid_json`; an anchor value
+   that is neither a string nor an Anchor object (section 5.3) is
+   `invalid_anchor`. Every failing element is reported with its `index`. If
+   this pass reports any error the run ends here: nothing is resolved and
+   the checks of the second pass are not made.
+2. The elements. The steps below are applied to every element. A compact
+   anchor string is parsed in this pass.
 
 For each element, in order:
 
@@ -2160,12 +4036,30 @@ For each element, in order:
 4. Build a mark with `at = now`, the resolved fingerprints, `by`, and
    `note: null`.
 
+The remediation of `side_unavailable`, here and for every side in `reanchor`,
+follows the reason code as in the table of section 15.2: `hibi providers`
+when the reason is `scheme_not_declared`, `provider_not_registered`,
+`provider_failed` or `repo_not_allowed`, and `null` for any other reason.
+
 If any element fails, nothing is written and every failing element is reported
-in `errors`. Otherwise all claims and marks are appended in one `append`. A
+in `errors`, once, with its first failing check, in element order. Otherwise
+all claims and marks are appended in one `append`. A
 claim that already exists is not written again; its new mark is.
 
-JSON: `claims`: array of `{id, created, mark, claim}` where `created` is
-`false` for an existing claim and `claim` is a ClaimView (state `fresh`).
+Two elements of one batch that build the same claim are both accepted. The
+claim is written once: `created` is `true` for the first of them and `false`
+for every later one. Their marks are records like any other: two marks with
+the same id (same claim, `at`, `by` and fingerprints) are written once, and
+both entries of `claims` name that mark.
+
+JSON: `claims`: array of `{id, created, mark, claim}`, one entry per element
+in input order, where `created` is
+`false` for an existing claim and `claim` is a ClaimView. The view is
+evaluated by section 9.3 at `now` with the new mark included. Its state is
+`fresh`, with one exception: when `add(now, recheck)` is not later than
+`now`, which is the case for a zero `recheck` such as `PT0S` or `P0D`, the
+state is `expired`, `expiresAt` equals `now` and `next` is `hibi mark <id>`.
+The same holds for the ClaimView in the output of `mark` and `reanchor`.
 Human: one line per claim with id, `created` or `marked`, and each side's
 locator and unit label.
 
@@ -2192,17 +4086,53 @@ JSON:
 ```
 
 `since` is `null` without `--since`. Claims are ordered by id, or as
-section 14.5 with `--judge-order`.
+section 14.5 with `--judge-order`. `nextNote` is always present with this
+sentence.
 
-Human: the summary line, then per listed claim: id, state, statement, one line
-per side that is not `same` (role, locator, state, reason, unit label and
-line), and `next`. With nothing listed: the summary line and "nothing stale".
+Human:
+
+```
+<n> claims: <n> fresh, <n> stale, <n> expired, <n> retired
+since <range> (base <commit>)
+
+<id>  <state>  <statement>
+  recheck <recheck> ran out at <expiresAt>
+  <role>  <locator>  <side state> (<reason>), found approximately  <kind> "<label>", line <n>
+    candidate: <kind> "<label>", line <n>
+    | <one line of the unit text>
+  next: <next>
+
+Re-check each statement before running its next command.
+```
+
+- The summary line is always printed. The word is `claim` when the count
+  is 1. The `since` line is printed only with `--since`.
+- When no claim is listed, the next and last line is `nothing stale` if the
+  caller gave no id, no `--state`, no `--loc` and no `--since`, and
+  `no claim matches` otherwise.
+- Each listed claim is a block after an empty line. The statement is put on
+  one line and cut to 100 characters. The `recheck` line is printed only for
+  an `expired` claim.
+- A side line is printed for each side that is not `same`, that is `approx`,
+  or that carries `text` (every resolved side with `--detail`). `<role>` is
+  `subject` or `evidence <n>`. ` (<reason>)` is omitted when the reason is
+  `null`, `, found approximately` is printed only for an `approx` side, and
+  the unit is omitted when the side has none. The unit shows `lines <a>-<b>`
+  when it spans several lines. `candidate` lines are printed for an
+  `ambiguous` side, and the `|` lines are the side's `text`.
+- The `next` line is omitted when `next` is `null`.
+- The closing sentence (the value of `nextNote`) is printed once, after an
+  empty line, when the `next` of at least one listed claim is a `hibi mark`
+  or `hibi reanchor` command.
 
 **`hibi mark <claim-id>... [--note <text>] [--by <text>]`**
 **`hibi mark --stdin`**
 
 Standard-input form: a JSON array whose elements are a claim id string or
-`{"claim": <id>, "note": "...", "by": "..."}`.
+`{"claim": <id>, "note": "...", "by": "..."}`. It is parsed in the two passes
+described for `claim`; an element that is neither a string nor such an object
+is `invalid_json` with its `index`. No other mark argument is allowed with
+`--stdin` (`usage`). `--note none` stores the text `none`.
 
 For each claim: `claim_retired` if retired; resolve every side; a side that is
 `missing`, `ambiguous` or `unavailable` for a reason other than
@@ -2212,25 +4142,43 @@ caller has just re-checked the claim and is trusted. `refuse` is not checked
 here. Otherwise build a mark with `at = now` and the current fingerprints.
 All or nothing, as for `claim`.
 
+Remediation of these errors: for `side_missing`, `side_ambiguous` and
+`side_unavailable` it is the `next` of the claim by the table of section
+15.2, evaluated on the current resolution, so `hibi reanchor <id>` with one
+option per missing or ambiguous side, or `hibi providers`, or `null` when
+that `next` is `null`. For `claim_retired` it is `null`, in `mark` and for a
+retired old claim in `reanchor`: a retired claim cannot be marked or
+re-anchored.
+
+Naming the same claim twice, as arguments or as elements, gives one entry of
+`marks` per mention. Two of them with the same `by` and `note` build the same
+mark, which is written once.
+
 In the output every `approx` side carries `approx: true`, its `unit` and its
 `text` (cut to 240 characters) whether or not `--detail` is given, so the
 caller sees what was marked. The ClaimView's `next` is then the `reanchor`
 command of section 15.2, which refreshes the selector.
 
-JSON: `marks`: array of `{claim, mark, claimView}`. Human: one line per claim.
+JSON: `marks`: array of `{claim, mark, claimView}`, one entry per input in
+input order. Human: one line per claim.
 
 **`hibi reanchor <claim-id> [--statement <text>] [--subject <anchor>] [--evidence <n>=<anchor>]... [--add-evidence <anchor>]... [--drop-evidence <n>]... [--recheck <duration|none>] [--note <text|none>] [--by <text>]`**
 
 Builds a new claim from the old one:
 
 1. Start from the old claim's fields. Apply `--statement`, `--recheck`,
-   `--note` (`none` sets `null`).
+   `--note` (`none` sets `null`). `none` is recognised only as exactly these
+   four lower-case characters, and only by `reanchor`; any other `--recheck`
+   value is checked by section 9.4 and any other `--note` value is the new
+   note. A note with the text `none` therefore cannot be set.
 2. Sides: `--subject` replaces the subject. `--evidence <n>=<anchor>` replaces
    evidence number `n` (1-based). `--drop-evidence <n>` removes it (numbers
    refer to the old list). `--add-evidence` appends. Every side not replaced
    is resolved from its stored anchor. Naming the same `n` twice, in any
    combination of `--evidence` and `--drop-evidence`, or an `n` that does not
-   exist, is `usage`.
+   exist, is `usage`. So is an `--evidence` value that is not
+   `<n>=<anchor>` and a `--drop-evidence` value that is not a non-negative
+   integer.
 3. Every resulting side MUST resolve to exactly one unit; a replaced or added
    side is subject to the write checks of `claim` step 2, including
    `selector_not_exact`; a kept side may be `approx` and its `refuse` is not
@@ -2247,7 +4195,8 @@ Builds a new claim from the old one:
 6. Append the new claim, a mark for it (`at = now`), and a retirement of the
    old claim with `replacedBy` set to the new id, in one `append`.
 
-Fails with `claim_retired` when the old claim is retired.
+Fails with `claim_retired` when the old claim is retired; the remediation is
+then `null`.
 
 JSON: `old`, `new`, `mark`, `retirement` (ids), `claim` (ClaimView of the new
 claim). Human: old id, new id, and each side's new anchor.
@@ -2256,16 +4205,20 @@ claim). Human: old id, new id, and each side's new anchor.
 
 Appends one retirement per claim that is not already retired. `--replaced-by`
 MUST resolve to an existing claim other than those being retired
-(`invalid_argument` otherwise). No provider is contacted.
+(`invalid_argument` otherwise). No provider is contacted. `--note none`
+stores the text `none`.
 
 JSON: `retired`: array of `{claim, retirement, alreadyRetired}` with
-`retirement: null` when already retired. Human: one line per claim.
+`retirement: null` when already retired, one entry per argument in argument
+order. Human: one line per claim.
 
 **`hibi cover [--scope <name>]... [--since <range>] [--limit <n>]`**
 
 Computes coverage (section 10). No scope in `hibi.toml` is `no_scopes`. An
 unknown `--scope` name is `unknown_scope`. `--limit` caps `items` per scope
-(default 200, 0 for no cap); counts are never capped.
+(default 200, 0 for no cap); counts are never capped. A `--limit` value that
+is not a non-negative integer is `usage`, here and in `triage` and
+`suggest-evidence`.
 
 JSON:
 
@@ -2299,10 +4252,12 @@ statement), ordered by id.
 JSON: `claims`: array of
 `{id, statement, subject, evidence, recheck, note, marks, lastMarkedAt, retired}`
 where `subject` and `evidence` are locators, `marks` is a count and `retired`
-is a boolean.
+is a boolean. `lastMarkedAt` is the latest `at` among the claim's marks, or
+`null` when it has none.
 
-With an id: `claim` (the stored record), `marks` (stored records, by `at`),
-`retirements` (stored records).
+With an id: `claim` (the stored record), `marks` (stored records, ordered by
+`at`, then by id), `retirements` (stored records, ordered by `at`, then by
+id). `--loc`, `--text` and `--retired` are not applied.
 
 Human: one line per claim, or the full record and its history.
 
@@ -2311,7 +4266,7 @@ Human: one line per claim, or the full record and its history.
 Section 14.3. JSON: `model`, `items`: array of
 `{loc, unit, text, anchor, checkable, band, evidence}`, cut to `--limit`
 (default 50, 0 for no cap), `considered` (count before the cut) and `skipped`
-(uncovered units that are not prose). Human: a
+(uncovered units that were not sent, section 14.3). Human: a
 ranked list with the probability, band and evidence label.
 
 **`hibi suggest-evidence <statement> --in <glob>... [--kind <kind>]... [--limit <n>]`**
@@ -2320,6 +4275,14 @@ Section 14.4. `--in` is required and takes locator globs on scheme `file` or
 `repo`. `--limit` defaults to 10. JSON: `model`, `statement`, `considered`,
 `noneFits`, `candidates`: array of `{loc, unit, anchor, p, fits}`. Human: a
 ranked list, and a line saying that none fits when `noneFits` is `true`.
+
+A judge command (`triage`, `suggest-evidence`, `status --judge-order`) checks
+`TYPESAFE_API_KEY` before it looks for the root (section 14.1). Run without
+the key it therefore fails with `judge_unavailable` wherever it is run: in a
+root that holds `.claims/` the error is `judge_unavailable` and not
+`legacy_store`, and outside any store it is `judge_unavailable` and not
+`not_initialized`. With the key set, the refusals of section 12.5 apply as
+for every other command.
 
 **`hibi providers [--check <scheme>]`**
 
@@ -2345,10 +4308,28 @@ prints the `[[repo]]` lines to add. An unregistered scheme has `registered: fals
 output prints the config lines to add to the user config.
 
 With `--check <scheme>`: starts the registered provider and runs the protocol
-conformance cases against it. JSON adds `check`: `{scheme, hello, passed,
-failed, cases: [{name, ok, detail}]}`, where `hello` is the provider's `hello`
-result or `null`. A failing case does not make the command fail. A
-scheme that is not registered is `invalid_argument`.
+conformance cases against it. JSON adds the key `check`, which is absent
+without `--check`:
+
+```json
+"check":{"scheme":"archctl","hello":{ ... },"passed":6,"failed":0,"skipped":1,
+         "cases":[{"name":"hello","ok":true,"skipped":false,"detail":null}]}
+```
+
+`hello` is the provider's first `hello` result or `null`. Each case has
+`name`, `ok`, `skipped` and `detail`. `skipped` is `true` when the provider
+does not offer a capability the case requires; such a case is not run to its
+end and has `ok: true`. `ok` is `false` only for a failed case. `detail` is a
+string that says why the case failed or was skipped, and `null` for a passed
+case. `passed`, `failed` and `skipped` count the cases, each case in exactly
+one of them: `failed` counts `ok: false`, `skipped` counts `skipped: true`,
+and `passed` is the rest. The human output adds the line
+`check <scheme>: <n> passed, <n> failed, <n> skipped` and one line per case
+with `passed`, `failed` or `skipped`, the name and the detail. A failing case
+does not make the command fail. A
+scheme that is not registered is `invalid_argument`, and so is a scheme that
+`hibi.toml` does not list (including `file` and `repo`); the remediation is
+`hibi providers` and nothing is started.
 
 **`hibi schema [<name>]`**
 
@@ -2359,6 +4340,18 @@ An unknown name is `invalid_argument`. Names: `claim`, `mark`, `retirement`,
 `error`, `unit`, `provider-request`, `provider-response`, `conformance-case`,
 and `<command>-output` for each command that has JSON output. The files in
 `schemas/` are `<name>.schema.json` and MUST equal this command's output.
+
+`claim-input` and `mark-input` describe the whole standard-input document of
+`claim --stdin` and `mark --stdin`: an array with at least one element, not
+one element. `error` describes the failure envelope of section 15.1
+(`ok`, `command`, `errors`), not one error object. `<command>-output`
+describes the success envelope of that command, with `ok`, `command` and
+`warnings`. Every command except `completions` has one: `init-output`,
+`claim-output`, `status-output`, `mark-output`, `reanchor-output`,
+`retire-output`, `cover-output`, `list-output`, `triage-output`,
+`suggest-evidence-output`, `providers-output`, `schema-output` (the result of
+`schema` without a name) and `version-output`. `schemas` lists the names in
+the order given here.
 
 **`hibi completions <bash|zsh|fish|powershell|elvish>`**
 
@@ -2376,7 +4369,7 @@ Closed list. Every error carries one of these codes.
 
 | Code | When |
 |---|---|
-| `usage` | Unknown command or option, missing argument |
+| `usage` | Unknown command or option, missing argument, arguments that cannot be combined, or an option value that does not parse: `--format`, `--state`, `--limit`, `--drop-evidence`, `--evidence <n>=<anchor>`, the shell of `completions`. Also a `reanchor` evidence number that is named twice or does not exist. |
 | `invalid_argument` | A well-formed argument with an unacceptable value |
 | `invalid_json` | Standard input is not the expected JSON |
 | `invalid_anchor` | A locator, selector or compact anchor does not parse |
@@ -2412,7 +4405,7 @@ Closed list. Every error carries one of these codes.
 | `too_many_candidates` | Section 14.4 |
 | `judge_unavailable` | Section 14.1 |
 | `judge_failed` | Section 14.7 |
-| `internal` | A bug. The message asks for a report. |
+| `internal` | A bug, including a panic (section 15.1). The message asks for a report. |
 
 ---
 
@@ -2429,27 +4422,107 @@ Every case is binding. Most were recorded from the earlier TypeScript
 implementation. The ones whose `origin` is `v5-adjusted` carry the value this
 specification requires where it differs (section 16.2).
 
+A case file is every file under `cases/` except `README.md` and the files
+inside a directory named `fixtures`, which are inputs that cases refer to by
+a path relative to `cases/`. Every case file except those under `provider/`
+is a JSON array with at least one case. A case has exactly the five keys
+above. `name` is unique within its file, `source` is a non-empty string, and
+`origin` is one of the seven values below. A file that breaks one of these
+rules fails the test that loads it. The files under `provider/` have the
+shape of section 13.6, one case per file.
+
+| `origin` | Meaning |
+|---|---|
+| `copied` | A test of the earlier implementation asserts exactly this value. |
+| `narrowed` | A test of the earlier implementation asserts a weaker property (a range, "not equal", "contains", or only some fields). `expected` is that implementation's exact output, which satisfies the property. |
+| `computed` | No test of the earlier implementation asserts it. `expected` is that implementation's output for an input written for the extraction. |
+| `v5-adjusted` | This specification overrides the earlier implementation. `expected` was derived from its output by a mechanical step that `source` names, or was changed by a ruling that `source` names. |
+| `rfc8785` | Input and expected value are taken from RFC 8785 itself. |
+| `independent` | `expected` was computed by an implementation that shares no code with the Rust crates. `source` names it: the npm packages `canonicalize` 5.1.0 (JCS) and `@noble/hashes` 2.4.0 (BLAKE3), with the 100-bit base32 step written out bit by bit, and, for `bitap.json`, the npm package `diff-match-patch` 1.0.5. |
+| `spec-derived` | `expected` was derived by hand from the section of this specification that `source` names, and `source` gives the derivation. |
+
+`synthetic` is not a value of `origin`. It describes the three files under
+`judge/`: their cases were written by hand from sections 14.2 to 14.5 and the
+vendor's published answer schemas, and none was recorded from the live API.
+Each has `origin: "spec-derived"` and a `source` that starts with
+`synthetic, not recorded from the live API`.
+
+The cases of `resolve.json` and three cases of `units-code.json` have
+`origin: "computed"` although they were not taken from the earlier
+implementation; their `source` starts with `written for v5 from SPEC` and
+says that the expected values were derived by hand.
+
 ### 16.1 Files and the functions they bind
+
+Each file is bound by one test in `crates/hibi/tests/cases/`, which runs
+every case of the file and reports every failing case.
 
 | File | Function under test | Section |
 |---|---|---|
 | `normalize.json` | `text::normalize` | 4.3 |
-| `levenshtein.json`, `similarity.json` | `text::levenshtein`, `text::similarity` | 4.3 |
+| `levenshtein.json`, `similarity.json` | `text::levenshtein`, `text::similarity`. Similarity is compared as an exact binary64 value. | 4.3 |
 | `error-budget.json`, `within-budget.json` | `locate::error_budget`, `locate::within_budget` | 7.1 |
 | `bitap.json` | `locate::match_main`. The label `PatternTooLong` is its error for a pattern over 32 characters. | 7.3 |
 | `fuzzy-locate.json` | `locate::fuzzy` | 7.2 |
 | `locate.json` | `locate::locate` | 7.1 |
-| `quote-selector.json` | `locate::quote_selector(text, start, end)`: clamps the range to the text and returns the quote, the 48-character prefix and suffix, and the position. A span that is empty after trimming is its error `EmptySpan`, labelled `empty span` in the data; the CLI reports it as `invalid_anchor`. | 6.7 |
-| `regions.json` | `prose::split(text, class)`. The class comes from `input.path` by section 6.1, that is from the lower-cased extension: `notes.txt` is `prose`, `README.MD` and any `.md` or `.mdx` path are `markdown`, and `path: null` is `prose`. | 6.3 |
+| `quote-selector.json` | `locate::quote_selector(text, start, end)`: clamps the range to the text and returns the quote, the 48-character prefix and suffix, and the position. A span that is empty after trimming is its error `EmptySpan`, labelled `empty span` in the data; the CLI reports it as `invalid_anchor`. A span longer than 2,048 characters is its error `TooLong` (section 7.4); no case in the file exercises it. | 6.7, 7.4 |
+| `regions.json` | `prose::split(text, class)`. The class comes from `input.path` by section 6.1, that is from the lower-cased extension: `notes.txt` is `prose`, `README.MD` and any `.md` or `.mdx` path are `markdown`, and `path: null` is `prose`. Each unit is compared by `kind`, `text` (the slice of the document at the unit's byte range), `startByte`, `endByte`, `line` and `headingPath`, and by `endLine` when the expected unit has that key. | 6.3 |
 | `duration.json`, `recheck-boundary.json` | `duration::parse`, `duration::add`, and the comparison `now >= add(from, duration)`. Inputs may carry a fraction of a second or an offset; the functions keep full precision (section 9.4). The label `invalid_duration` is the parse error. | 9.3, 9.4 |
 | `ast-node.json` | `code::smallest_named_node(root, start, end)` and `code::semantic_stream(node)` | 8.4 |
 | `ast-equivalence.json` | Equality of `ast-v1` digests of the two snapped nodes | 8.4 |
+| `canon.json` | Canonical JSON: the input text is parsed and serialized, and the result equals `expected.canonical` and, as hex UTF-8 bytes, `expected.utf8`. When `input.record` names a record type (`claim`, `mark`, `retirement`) the text also deserializes as that record and the record's own canonical form equals the same bytes. | 3.5 |
+| `ids.json` | Id derivation: the canonical form of `input.body`, the 64 hex digits of its BLAKE3 digest, and the id. The body with the expected `id` added deserializes as a record of `input.kind`, and the id derived from that record equals the expected id. | 3.5 |
+| `fingerprint.json` | `fingerprint::prose_v1(text)` (with NFC) and `fingerprint::ast_v1(class, stream)`: the complete fingerprint string | 8.3, 8.4 |
+| `units-code.json` | `code::analyze(text, class)`, with the class taken from `input.path`: the class after the parse-error fallback and every unit in source order as `kind`, `symbol`, `key`, `parent`, `start`, `end`, `line`, `endLine`. See "Content keys and `endLine`" below. | 6.1, 6.4 to 6.6 |
+| `resolve.json` | `resolve` of the file provider on a working tree that holds only the case's file: the returned units in order as `key`, `approx`, `refuse` and the completed selector `sel`, or the provider error code. The same anchor is resolved twice without a cache and twice through a cache (empty, then filled), and the four answers MUST be equal. | 6.7 |
+| `freshness.json` | `engine::evaluate`: the claim state, the reference mark, `expiresAt`, and each side's state and reason, for a table of marks, side resolutions and `now` | 9.2, 9.3, 15.2 |
+| `coverage.json` | `engine::covered_keys` and `engine::classify`: the units of a scope that are covered, excluded and uncovered, and the number of units each exclusion matched | 10.2 |
+| `judge/triage.json`, `judge/suggest-evidence.json`, `judge/order.json` | The request body built by the functions of `judge::questions` equals `expected.request`. `judge::read_answer` reads each answer of `input.response` as `expected.answers` says, where `null` is an unusable answer. `triage.json` also binds the band (`judge::Band`) and the evidence label (`judge::EvidenceLabel`) of each unit; `suggest-evidence.json` also binds `fits` per candidate and `noneFits`. | 14.2 to 14.5 |
+| `provider/protocol/` | The conformance cases that every provider MUST pass. They use no fixture. The same cases are compiled into hibi for `hibi providers --check`, and a test requires the compiled-in cases to equal the files of this directory. | 13.6, 15.3 |
+| `provider/reference/` | The conformance cases of the reference provider. Each names a fixture file under `provider/fixtures/`. | 13.5, 13.6 |
+| `provider/fixtures/` | Not case files: the fixture documents (`notes.json`, `cycle.json`) that the reference provider serves. | 13.5 |
+| `fixtures/ast/`, `fixtures/regions/`, `fixtures/resolve/`, `fixtures/units/` | Not case files: the source and text files that the cases of `ast-node.json` and `ast-equivalence.json`, `regions.json`, `resolve.json` and `units-code.json` read. | |
 
 `code::smallest_named_node` exists for these two files: trim WS from the span
 (an empty result becomes the one character that starts at `start`), take the
 smallest node that covers it, and climb to the nearest named node. The
 provider itself fingerprints unit nodes (section 6.4), with the same stream
 function.
+
+**Provider cases.** The test in `crates/hibi/tests/cases/` loads every file
+under `provider/protocol/` and `provider/reference/` and checks its form: the
+file parses as a case of section 13.6, case names are unique within the
+directory, the first step sends `hello`, `end` is `exit`, and `fixture` is
+absent in `protocol/` and names an existing file of `provider/fixtures/` in
+`reference/`. The cases are run against the reference provider's binary by
+the tests of the `hibi-provider-reference` crate, which require every case to
+pass and none to be skipped.
+
+**Judge cases.** The files under `judge/` bind the request shapes and the
+reading of answers only. Packing questions into requests, the cache and the
+transport policy (sections 14.2, 14.6 and 14.7) are tested against a local
+scripted server, not by case files. Recorded request and response pairs from
+the live API do not exist (section 16.3).
+
+**Content keys and `endLine`.** A content key (the key of a `statement` or
+`block` unit, section 6.6) contains 12 hex digits of a digest that a case
+author cannot derive by hand. In `units-code.json` and `resolve.json` such a
+key is written `<kind>:*`, with `~n` after it for a duplicate. The checks
+are:
+
+- In both files, an expected key `<kind>:*<rest>` matches a key that is
+  `<kind>:`, then 12 characters from `0-9a-f`, then exactly `<rest>` (empty or
+  `~n`). Every other key is compared for equality.
+- The `units-code.json` test also checks every content key against the
+  unit's own fingerprint: the key MUST be `<kind>:` plus the first 12 hex
+  digits of that unit's fingerprint digest, and the n-th unit (n at least 2)
+  with the same base key in source order MUST have `~n` appended.
+- `endLine` is the line of the unit's last character (section 6.2). The
+  `units-code.json` test compares `endLine` of every unit, including the
+  `file` unit. The `regions.json` test compares `endLine` only for an expected
+  unit that has the key: the 18 `spec-derived` cases of that file have it, and
+  the cases extracted from the earlier implementation, which had no
+  `endLine`, do not. `resolve.json` has no `endLine`.
 
 ### 16.2 Where v5 differs from the recorded behaviour
 
@@ -2494,24 +4567,26 @@ tested in `fingerprint.json`.
 `regions.json`: `frontmatter in .md (former CRLF case, fed as LF)` and
 `multi-line units (former CRLF case, fed as LF)`.
 
+**Code units (section 6.4).** Six cases of `units-code.json` were changed by
+rulings on section 6.4 made after they were written: outer attributes belong
+to their item, the members of named containers are units, and the kind
+`field`. The `source` of each names the ruling and the edit.
+
 **Kept as recorded:** empty stored context at the text edges, fences taking
 in the prose of their block, the table separator row without a leading pipe,
 sentence splitting inside table cells, the inclusive Bitap threshold, and
 ambiguous results carrying the earliest tied range.
 
-### 16.3 Files this specification adds
+### 16.3 Case data that is still missing
 
-| File or directory | Covers |
-|---|---|
-| `canon.json` | Records to canonical bytes |
-| `ids.json` | Bodies to ids, including the base32 step |
-| `fingerprint.json` | `prose-v1` (with NFC) and `ast-v1` strings for fixed inputs |
-| `units-code.json` | Section 6.4 per language: kind, symbol, key, range, parent |
-| `resolve.json` | Section 6.7: units, `approx`, `refuse` and the completed selector for every input combination, including the rename and comment cases |
-| `freshness.json` | Sections 9.2 and 9.3 as a table of marks, resolutions and `now` |
-| `coverage.json` | Section 10.2 |
-| `provider/` | Section 13.6 |
-| `judge/` | Recorded request and response pairs for sections 14.3 to 14.5 |
+Every file and directory that this specification adds exists and is listed
+in section 16.1. One kind of data is missing: request and response pairs for
+sections 14.3 to 14.5 recorded from the live judge API. The files under
+`judge/` are written by hand (section 16) and stand in for them.
+
+`quote-selector.json` has no case for the error `TooLong` (section 7.4), and
+no case file exercises the bounded Levenshtein computation of section 7.1 at
+its cap. Unit tests of the `locate` and `text` modules cover both.
 
 `cargo test` MUST load and run every case file. A case file that no test
 loads is an error in the test suite. An implementer who finds that a case
@@ -2565,13 +4640,13 @@ Each row is a choice the plan left open or marked illustrative.
 | 48 | Ruling: every git call carries `safe.bareRepository=explicit` and `core.fsmonitor=false`; `hibi.toml` only names sibling aliases and the user config supplies their directories, per repository; the directory must be a git top level outside the root and not above it; `repo:` paths are read only when that repository lists them. Reason `repo_not_allowed`. Resolving `repo:` needs git. | A cloned `hibi.toml` must not cause command execution or reads of files the user did not offer. Same rule as provider commands. |
 | 49 | Ruling: `claim` and `reanchor` refuse a quote that touches a code comment. The default quote stops before a comment. | `ast-v1` ignores comments, so such a claim could never go stale. |
 | 50 | Ruling: `reanchor` fails with `claim_retired` when the rebuilt claim is a retired one. When it is another live claim, that claim is marked and the old one retired. | Otherwise nothing live would remain. |
-| 51 | `MAX_FILE_BYTES` is 8 MiB; larger files report `too_large`. Tree walks are iterative, with no depth limit. | Bounded memory; no stack overflow on deeply nested input. |
+| 51 | `MAX_FILE_BYTES` is 8 MiB; larger files report `too_large`. Tree walks are iterative, with no depth limit; declaration discovery stops at `MAX_CONTAINER_DEPTH` (32) nested containers. | Bounded memory; no stack overflow on deeply nested input. |
 | 52 | Ruling (replaces the earlier one): `mark` accepts approximate sides, shows the unit and text it marked, and suggests `reanchor`. | Plan decision 1: the agent is trusted and has just re-checked. |
 | 53 | Store paths that are symbolic links are `store_corrupt`. A locator path with a symbolic link in any component is `not_found`, in the working tree and in a revision. | hibi never writes or reads through a link it did not create. |
 | 54 | `hibi providers` starts a provider only with `--check`. | Listing configuration should run nothing. |
-| 55 | `triage` sends prose units of kind `sentence`, `list-item`, `table-row` and `heading` from the file provider; other uncovered units are counted as skipped. | The plan limits triage to prose regions; a fenced block is code. |
+| 55 | `triage` sends prose units of kind `sentence`, `list-item`, `table-row` and `heading` from the file provider; other uncovered units, units outside the file lists and units that cannot be rendered are counted as skipped. | The plan limits triage to prose regions; a fenced block is code. |
 | 56 | `render` returns `context` as a list of strings. | A heading that contains " > " survives. |
-| 57 | Section 2.7: the schema files and the CLI reference are written by two cargo examples in `hibi-cli`; the reference lives at `plugins/hibi-cli/reference/cli.md`. | Generators that are not shipped and not subcommands. |
+| 57 | Section 2.7: the schema files and the CLI reference are written by two cargo examples in `hibi-cli`; the reference lives at `plugins/hibi-cli/skills/hibi/references/cli-reference.md`. | Generators that are not shipped and not subcommands. |
 | 58 | Deleting the cache changes no output except judge probabilities. | Jev is not deterministic; the cache is its only source of repeatability. |
 | 59 | Ruling: minimum git is 2.45.0, checked once per run; older is error `git_too_old` for commands that require git, and `repo_not_found` plus a warning for a `repo:` side elsewhere. | `safe.bareRepository` and `GIT_NO_LAZY_FETCH` must be honoured, not ignored. |
 | 60 | Ruling: judge commands send file text only from tracked or untracked-and-not-ignored paths of the root or an allowed sibling. They need git. | Ignored files often hold secrets. |
@@ -2580,6 +4655,35 @@ Each row is a choice the plan left open or marked illustrative.
 | 63 | A scope-matched path that is a symbolic link is listed under the scope's `unavailable` items with reason `resource_not_found`. | No new reason code; nothing is dropped silently. |
 | 64 | An unknown cache `user_version` leaves the database untouched. | Another hibi version may own it. |
 | 65 | Ruling: `next` suggests `reanchor` for an approximate side only on a fresh claim; `status` output carries `nextNote`. | Following `next` must never clear a stale claim without a re-check. |
+| 66 | Every named member declared directly in the body of a named container is a unit. Kinds `field` and `variant` are added (22 kinds). In a class-like container a function is `method` and a variable is `field`. | A claim on one field must not go stale when a sibling field changes. |
+| 67 | Rust attributes and TypeScript member decorators that precede a unit belong to its range and fingerprint, also for a statement. Rust `foreign_mod_item` is a wrapper. | An attribute change is a change of the item; an extern block has no name. |
+| 68 | Symbols of Rust impl types and Go receivers use one normalisation function (whitespace removed, one space kept between word characters). | The symbol is stable under reformatting and stays readable. |
+| 69 | `html_comment` is a comment kind, and a `jsx_expression` that holds only comments is skipped in `ast-v1`. | A JSX comment must not stale a claim. |
+| 70 | Prose splitting: `+++` frontmatter, a leading U+FEFF ignored when recognising frontmatter, CommonMark fence closing, thematic breaks with spaces, a closing `#` run removed only after whitespace. Tag-only lines, indented code, HTML comments and setext headings keep the earlier behaviour. | Closer to CommonMark where the rule is local to one line. |
+| 71 | Default quote: when the unit's first line starts with a comment the whole line is used; trailing whitespace is removed again after the 120-character cut. | A default quote is never empty and never ends in whitespace. |
+| 72 | File-provider error order: resource errors before selector errors; a `key` selector is `invalid_selector`, any other invalid selector `invalid_request`. | One deterministic error when several apply. |
+| 73 | A selector quote is at most 2,048 characters (`MAX_QUOTE_CHARS`); `quote_selector` returns `TooLong` above it. | Bounds the cost of locating; every selector hibi builds is valid. |
+| 74 | `note` and `by` are stored trimmed, and `null` when empty; a reader rejects any other stored form. Constructors run the same validation as readers. `replacedBy` must differ from `retires`. | Ids do not depend on stray whitespace; no record can be written that cannot be read. |
+| 75 | `Provider::info` takes `&mut self` and can fail. | A command provider starts on first use. |
+| 76 | The library never reads the environment for the judge: key and endpoint are arguments. The endpoint must be `https://`, or `http://` to a loopback host. Redirects are not followed. A response whose `model` is not the pinned id fails the request. | Only the binary owns the environment; the key never travels in clear text or to a second host; answers of another model are not ranked or cached. |
+| 77 | After a failed judge request no new request starts; requests in flight finish and their answers are cached. | Answers already paid for are kept. |
+| 78 | `within_budget` may use a bounded Levenshtein distance, and the two Bitap speed-up steps are optional. | Both give identical results (section 7; evidence in `cases/README.md`). |
+| 79 | Case origins `independent`, `rfc8785` and `spec-derived` are added. The judge cases are written by hand, not recorded. | No earlier implementation and no API key existed for them. |
+| 80 | A response that breaks the envelope makes the provider unusable; a well-formed response with a wrong-shaped `result` is `internal` for that request or batch entry. `units` and `render` with capability `false` are answered `unknown_method` without contacting the provider. hibi does not validate unit `text`. | A broken envelope means the stream cannot be trusted; a bad result is local to one answer. |
+| 81 | Conformance cases may carry `requires`; a case whose capability is missing is reported as skipped. `providers --check` reports `skipped`. | An optional method must not fail the check. |
+| 82 | Anchors are batched per scheme in ascending scheme order, and identical anchors are sent once. `unsupported_protocol` maps to `provider_failed`. | Fewer provider calls and a deterministic order. |
+| 83 | A mark that does not fit its claim (claim id, side count, locators) is ignored during evaluation. | A foreign `Store` cannot break evaluation. |
+| 84 | A unit matched by several exclusions counts for the first in declaration order. A refused `repo:` scope has one `unavailable` entry whose `loc` is the scope's pattern. In `cover --since`, a base listing that fails with anything but `not_found` puts the resource under `unavailable`. | Each unit is counted once; no file of a refused repository is listed; an unreadable base must not make every unit look new. |
+| 85 | Every git call removes the inherited repository-location variables (section 10.4), `merge-base` runs on the resolved commit id, and paths that are not UTF-8 or contain control characters are dropped from every git output. | `-C <dir>` alone chooses the repository; the caller's text reaches git only through `rev-parse`. |
+| 86 | `hibi.toml`: `version` is checked before unknown keys; tables for the built-in schemes `file` and `repo` are rejected. An empty `HIBI_CONFIG` or `HIBI_CACHE_DIR` counts as unset. | A file of a later format reports its version, not a stray key. |
+| 87 | `init` writes `hibi.toml` last, never cleans up, and refuses with `already_initialized` when any file it would create exists. Root discovery treats a directory with `.claims/` as a candidate root. | A half-finished store is invisible to discovery and is never completed silently; a 0.x repository reports `legacy_store`. |
+| 88 | `load` reads marks shards before claims shards. `append` validates records before taking the lock and re-reads every shard under it. | No false `orphan_record` during a concurrent append; `append` never builds on a damaged store. |
+| 89 | A judge command without `TYPESAFE_API_KEY` fails with `judge_unavailable` before root discovery, so before `legacy_store` and `not_initialized`. | The key check is the first step. |
+| 90 | There is no `--version` option and no `help` subcommand. A panic is reported as `internal` with exit status 1. The `command` of a usage error is the first argument that names a command, else `hibi`. | One way to ask for each thing; no run exits with another status. |
+| 91 | `HIBI_BY` also fills `by` of a standard-input element that has none. The schemas `claim-input` and `mark-input` describe the whole array; the schema `error` is the failure envelope. | A schema validates the document a caller sends or receives. |
+| 92 | `claim`, `mark` and `reanchor` return the claim's state as evaluated at `now`; with a zero `recheck` that is `expired`. | The view is computed, never assumed. |
+| 93 | Standard input is parsed in full before any element is evaluated. Duplicate elements of a batch are written once. `none` is special only in `reanchor`. `mark` side errors carry the claim's `next` as remediation. | Shape errors are reported alone; remediation is a command that can be run. |
+| 94 | Release is release-plz plus cargo-dist: one workspace version, one tag `vX.Y.Z`, the root `CHANGELOG.md`, no registry publish. `libc` is a Unix-only dependency used for constants. | Replaces release-please; `O_NOFOLLOW` has no standard-library constant. |
 | 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
 | 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
 | 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
@@ -2596,39 +4700,72 @@ Each row is a choice the plan left open or marked illustrative.
 
 ## 18. Facts not verified
 
-- Whether the pinned grammar crates work with `tree-sitter` 0.27.2 at run
-  time. They link through `tree-sitter-language ^0.1`; the ABI was not tested.
-- Whether the pinned grammar crates produce the same streams as the grammar
-  builds that produced `cases/ast-node.json`, for the five languages whose
-  versions match. The node kinds named in section 6.4 were checked against
-  each pinned grammar's `node-types.json`.
-- The constant name `LANGUAGE` in the Python, Rust, Go and Java grammar crates.
-- Whether the Rust streams in `cases/ast-node.json`, recorded with
-  `tree-sitter-rust` 0.24.0 under web-tree-sitter 0.27.0, equal the streams of
-  the pinned 0.24.2 under `tree-sitter` 0.27.2. The implementer of the `code`
-  module MUST report any stream difference and MUST NOT edit the cases.
+Platforms and tools:
+
+- Windows. No test ran there. The store code on Windows has no no-follow open
+  flag and relies on a metadata check; the directory `fsync` is skipped; the
+  symbolic-link tests are Unix only. `etcetera` 0.11.0 does not read
+  `XDG_CONFIG_HOME` or `XDG_CACHE_HOME` on Windows (read from its source).
+- git 2.45.0 itself. The tests ran with git 2.55.0. `safe.bareRepository`
+  dates from 2.38 and `GIT_NO_LAZY_FETCH` from 2.45 by git's release notes.
 - Whether the git flags of section 10.4 neutralise every program that
   repository configuration can name for the commands listed there. The list
   was reasoned from git's documentation, not tested against a hostile
   repository.
-- That git 2.45.0 honours every flag and variable of section 10.4.
-  `safe.bareRepository` dates from 2.38 and `GIT_NO_LAZY_FETCH` from 2.45 by
-  git's release notes; neither was tested.
-- That `serde_json_canonicalizer` passes the RFC 8785 test vectors. hibi's
-  records contain only strings, nulls, arrays, objects and one small integer,
-  so number formatting is not exercised.
-- The `sha1` crate's current version and advisory status.
-- That the TSX grammar parses ordinary JavaScript files without error.
-- The Bitap pseudocode of section 7.3 against the diff-match-patch source. It
-  was written from the published algorithm; the case files decide.
 - That git applies `merge=union` in an add and add merge, and on hosting
   services' server-side merges.
-- Jev's rate limits, and whether item text placed in `instructions` rather
-  than in `state` gives usable answers. Sections 14.3 to 14.5 need recorded
-  calls before their thresholds are relied on.
+- The release tooling. release-plz and cargo-dist were configured and never
+  run. `release.yml` is written by hand, not generated. That cargo-dist uses
+  the changelog section as release notes is taken from a configuration
+  comment.
+- musl builds.
 - Which SQLite version `rusqlite` 0.43.0 bundles (advisory RUSTSEC-2026-0459
   needs SQLite 3.54.0 or later).
 - Whether the crate name `hibi` is reserved. It is not registered.
+- Whether the CI step that builds with `--no-default-features` proves the
+  build with every library feature off, given that `hibi-cli` enables the
+  features explicitly.
+
+Judge:
+
+- The judge was never called live. `cases/judge/` is written by hand. No
+  request shape, answer shape or threshold was checked against the service.
+- Jev's rate limits, the format of its `Retry-After` header (hibi reads
+  decimal seconds only), and that the 60,000-byte limit keeps a request under
+  its token limits.
+- Whether item text placed in `instructions` rather than in `state` gives
+  usable answers.
+
+Behaviour stated in this file that no test or case covers:
+
+- A leading U+FEFF in a code file, in a `text` file, and before markdown
+  frontmatter (section 4.2). The code-file rule rests on tree-sitter skipping
+  a leading BOM.
+- The enum-member node kinds `private_property_identifier`, `number` and
+  `computed_property_name` (section 6.4).
+- The file provider returning `invalid_request` for an invalid selector
+  (section 6.7).
+- An expiry that cannot be represented (section 9.3).
+- A tracked file deleted from the working tree, in `cover` (section 10).
+- The write order of `init` and the marks-before-claims load order as such
+  (section 12).
+- Triage deduplication across scopes, and requests in flight finishing after
+  a failure (section 14).
+- `--version` and `help` as `usage`, a panic as `internal`, a non-integer
+  `--limit` or `--drop-evidence` as `usage`, `init --root`, `HIBI_BY` on
+  standard-input elements, and the `expired` result of a zero `recheck`
+  through the CLI (section 15).
+- `quote_selector` returning `TooLong` has a unit test and no case.
+
+Other:
+
+- The Bitap pseudocode of section 7.3 against the diff-match-patch source
+  line by line. `cases/bitap.json` has cases computed with diff-match-patch
+  1.0.5, and `cases/README.md` records a comparison on 300,000 inputs.
+- That `serde_json_canonicalizer` passes the RFC 8785 test vectors beyond the
+  cases of `cases/canon.json`. hibi's records contain only strings, nulls,
+  arrays, objects and one small integer.
+- The advisory status of the `sha1` crate.
 
 ---
 
@@ -2710,8 +4847,9 @@ Verification section in order.
 - R24. A judge request body contains the model id `jev-1.14.0` and one
   question per item.
 - R25. A second identical judge run with a warm cache sends no request.
-- R26. A request that fails three times makes the command fail with
-  `judge_failed` and prints no ranking.
+- R26. A request that fails on every attempt, or once with a status that is
+  not retried, makes the command fail with `judge_failed` and prints no
+  ranking.
 - R27. No judge command changes any file under `.hibi/`.
 
 **Providers (V7)**
@@ -2721,8 +4859,9 @@ Verification section in order.
   `provider_not_registered`, and no child process other than `git` is started.
 - R29. A `command` key in `hibi.toml` is rejected with `invalid_config` and
   nothing is run.
-- R30. A provider that exceeds the timeout, exceeds the line limit or prints a
-  non-JSON line is killed, and its sides report `provider_failed`.
+- R30. A provider that exceeds the timeout, exceeds the line limit, prints a
+  non-JSON line, answers with a wrong or `null` id, or breaks the envelope is
+  killed, and its sides report `provider_failed`.
 - R31. A provider process is started at most once per scheme per run and
   receives `hello` first.
 
@@ -2731,6 +4870,9 @@ Verification section in order.
 - R32. Every command in a directory whose root holds `.claims/`, except
   `version`, `schema` and `completions`, exits 1 with `legacy_store` and changes
   no file.
+  A judge command run without `TYPESAFE_API_KEY` is the exception: it fails
+  with `judge_unavailable` first (section 14.1). An empty `.claims/`
+  directory is refused; a regular file named `.claims` is not.
 - R33. `claim --stdin` and `mark --stdin` with one invalid element write
   nothing and report that element's `index`.
 - R34. Every failing run exits 1 and, in `json` format, prints one object with
@@ -2740,7 +4882,9 @@ Verification section in order.
 - R36. `reanchor` writes a new claim, a mark and a retirement of the old claim
   with `replacedBy`, and the old claim then reports `retired`.
 - R37. A renamed function whose claim has a quote reports `changed` with
-  `approx: true`, and `next` is a `reanchor` command.
+  `approx: true`; the claim is `stale` and its `next` is `hibi mark <id>`.
+  After `mark` the claim is `fresh` with the side still `approx`, and `next`
+  is `hibi reanchor <id>`.
 - R38. `cover` reports a unit as covered when a live claim side resolves to it
   or to a unit nested in it, and reports every exclusion with its reason and
   match count.
@@ -2755,18 +4899,23 @@ Verification section in order.
   `bun.lock`, `.claims/` path or `action.yml`.
 - R42. A search of the release tree outside `design/` and `cases/` for
   `attest`, `--fail-on`, `bunx`, `supersede`, `archive` and `v4` finds matches
-  only in the changelog note. `design/` and `cases/` are excluded because
-  they define and test behaviour carried over from the earlier version and
-  have to name it.
+  only in the changelog note. `v4` counts only when it is not followed by a
+  dot or a digit, so version numbers such as `v4.2` and action pins do not
+  match. The release workflow is exempt, because its tool names are fixed by
+  the release tooling. `design/` and `cases/` are excluded because they
+  define and test behaviour carried over from the earlier version and have to
+  name it.
 - R43. The docs site builds, and for every `hibi` command line in the skill
   and the docs, the command and each option appear in the generated CLI
   reference.
 
 **Safety of repository-controlled input**
 
-- R44. Every `git` process hibi starts has `--no-pager`,
-  `-c safe.bareRepository=explicit` and `-c core.fsmonitor=false` in its
-  arguments. (Test with a recording `git` first on `PATH`.)
+- R44. Every `git` process hibi starts, other than `git --version`, has
+  `--no-pager`, `-c core.quotePath=false`, `-c safe.bareRepository=explicit`,
+  `-c core.fsmonitor=false` and `-c core.untrackedCache=false` in its
+  arguments, and `git --version` runs once and first. (Test with a recording
+  `git` first on `PATH`.)
 - R45. A `[repos]` alias with no matching `[[repo]]` entry in the user config
   makes its sides `unavailable` with `repo_not_allowed`, whatever location
   `hibi.toml` suggests, and no file is opened. So does a user-config
@@ -2812,11 +4961,12 @@ Verification section in order.
 
 **Repository deliverables (section 2.7)**
 
-- R57. CI has the six jobs of section 2.7, and the schema and CLI-reference
+- R57. CI has the seven jobs of section 2.7, and the schema and CLI-reference
   jobs fail when a generated file differs from the committed one.
 - R58. The CI report job exits 0 when the repository's own store has stale
   claims or uncovered units.
-- R59. `plugins/hibi-cli/reference/cli.md` equals the output of its generator.
+- R59. `plugins/hibi-cli/skills/hibi/references/cli-reference.md` equals the
+  output of its generator.
 - R60. With a `git` older than 2.45.0 first on `PATH`: `init`, `cover`, any
   `--since` and the judge commands fail with `git_too_old` naming both
   versions; in every other command a `repo:` side is `unavailable` with
@@ -2832,3 +4982,90 @@ Verification section in order.
   a provider's standard input.
 - R63. A shard longer than `MAX_SHARD_BYTES` fails with `store_corrupt`; a
   `hibi.toml` longer than `MAX_CONFIG_BYTES` fails with `invalid_config`.
+
+**Added after implementation**
+
+Each of these has a test, named in parentheses.
+
+- R65. A quote on a member of a container resolves to the member. Editing a
+  sibling member keeps the member's key and fingerprint; editing the member
+  changes its fingerprint; the container's fingerprint changes in both cases.
+  (`members_are_units_with_their_own_fingerprints`, `cases/resolve.json`.)
+- R66. Containers nested 4,000 deep give 32 declaration units in bounded
+  time. (`deep_container_nesting_is_bounded`.)
+- R67. A leading attribute or decorator changes the fingerprint of the unit
+  it precedes and forms no statement of its own.
+  (`leading_attributes_and_decorators_belong_to_the_unit`.)
+- R68. A JSX expression that holds only comments, and an `html_comment`, do
+  not change a fingerprint. (`comment_only_jsx_expressions_are_skipped`,
+  `html_comments_are_skipped`.)
+- R69. Fingerprints computed in one walk of a file equal the fingerprints
+  computed per unit. (`slice_fingerprints_equal_direct_streams`.)
+- R70. Every content key in `cases/units-code.json` is `<kind>:` plus the
+  first 12 hex digits of the unit's fingerprint, with `~n` for duplicates.
+  (`check_content_keys`.)
+- R71. A constructor rejects what a reader rejects: a quote over 2,048
+  characters, a prefix without a quote, a mark with no side, a `replacedBy`
+  equal to `retires`. `note` and `by` are stored trimmed, an empty value is
+  `null`, and an untrimmed stored value fails to read.
+  (`constructors_reject_what_readers_reject`,
+  `free_text_is_trimmed_and_checked_on_read`.)
+- R72. `quote_selector` accepts a span of 2,048 characters and returns
+  `TooLong` for 2,049. The bounded Levenshtein distance equals the full
+  distance for every bound. (`quote_selector_length_limit`,
+  `banded_levenshtein_agrees`.)
+- R73. The protocol cases compiled into the binary equal
+  `cases/provider/protocol/`. (`compiled_in_cases_equal_the_directory`.)
+- R74. `units` and `render` are not written to a provider whose capability
+  is `false`. A wrong-shaped result is `internal` for its entry and the
+  provider stays usable. `hello` and `batch` inside a batch are
+  `invalid_request`. (`methods_the_provider_does_not_offer_are_not_sent`,
+  `a_batch_answer_of_the_wrong_length_is_internal_for_its_entries`,
+  `batch_round_trip`.)
+- R75. A conformance case whose `requires` is not met is reported as skipped,
+  and `providers --check` shows it.
+  (`conformance_runner_reports_each_kind_of_failure`,
+  `providers_lists_the_registration_and_check_runs_the_conformance_cases`.)
+- R76. A judge endpoint that is neither `https://` nor `http://` to a
+  loopback host is `invalid_argument`.
+  (`the_endpoint_must_be_https_or_loopback`.)
+- R77. A judge request holds at most 100 questions and 60,000 bytes; an item
+  is cut to 4,000 characters; an item over the byte limit is sent alone.
+  (`requests_are_split_by_question_count_and_bytes`,
+  `item_text_is_cut_to_4000_characters`, `an_oversized_item_goes_alone`.)
+- R78. A response with another `model` fails without retry and is not
+  cached. Answers of successful requests stay cached when another request
+  fails. (`malformed_and_partial_answers_fail_without_retry_or_cache`,
+  `a_failed_request_keeps_the_answers_of_successful_ones`.)
+- R79. With `--judge-order`, claims that are not stale come last.
+  (`judge_order_ranks_stale_claims_most_likely_broken_first`.)
+- R80. Inherited `GIT_DIR`, `GIT_WORK_TREE` and `GIT_INDEX_FILE` do not
+  redirect any git call. (`inherited_git_dir_does_not_redirect`.)
+- R81. A mark that does not fit its claim is ignored.
+  (`a_mark_that_does_not_fit_its_claim_is_ignored`.)
+- R82. Two batch elements that build the same claim write one claim and one
+  mark, with `created` true then false.
+  (`two_elements_that_build_the_same_claim_write_it_once`.)
+- R83. `cover --since` reports a base resource that cannot be listed under
+  `unavailable`.
+  (`cover_since_reports_a_base_resource_that_cannot_be_listed`.)
+- R84. A `hibi.toml` with an unsupported `version` and an unknown key is
+  `unsupported_store_version`. (`version_rules`.)
+- R85. `init` with a leftover file and no `hibi.toml` is
+  `already_initialized` and writes nothing.
+  (`init_refuses_leftover_files_without_writing`.)
+- R86. `append` with a wrong id, a mark or retirement without its claim, or
+  a mark whose sides differ from its claim is `internal` and writes no shard.
+  `append` on a damaged store is `store_corrupt` and writes no shard. After
+  nine existing temp names it is `io_error`.
+  (`append_rejects_bad_ids_and_missing_claims`,
+  `damaged_shards_are_store_corrupt`,
+  `temp_names_give_up_after_eight_retries`.)
+- R87. A cache database with an unknown `user_version` is left unchanged
+  byte for byte. (`unknown_user_version_leaves_the_file_untouched`.)
+- R88. The `command` of a usage error is the subcommand or `hibi`, and every
+  result carries `warnings`.
+  (`the_command_of_a_usage_error_is_the_subcommand_or_hibi`,
+  `version_needs_no_root_and_reports_the_build`.)
+- R89. `reanchor --note none` and `--recheck none` set `null`.
+  (`reanchor_edits_the_evidence_list_the_recheck_period_and_the_note`.)
