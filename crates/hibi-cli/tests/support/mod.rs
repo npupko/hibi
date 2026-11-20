@@ -178,7 +178,15 @@ impl Cmd {
         let mut child = self.command.spawn().expect("hibi starts");
         if let Some(text) = &self.stdin {
             let mut pipe = child.stdin.take().expect("a pipe");
-            pipe.write_all(text.as_bytes()).expect("stdin is written");
+            // hibi may exit before reading its input (for example on
+            // invalid_config); the exit status and output are still checked.
+            if let Err(e) = pipe.write_all(text.as_bytes()) {
+                assert_eq!(
+                    e.kind(),
+                    std::io::ErrorKind::BrokenPipe,
+                    "stdin is written: {e}"
+                );
+            }
         }
         out_of(child.wait_with_output().expect("hibi exits"))
     }
