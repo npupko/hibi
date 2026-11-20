@@ -620,10 +620,9 @@ The client retries a failed call five times. Each retry waits thrice as long as 
     assert_eq!(fresh_view(&second, "reflowed")["sides"][0]["fp"], second_fp);
     assert_eq!(
         summary(&repo),
-        // Both stay fresh. Both drifted: each stored quote spans a line
-        // break that moved, so it is found only approximately and the
-        // claim asks for a reanchor (section 15.2).
-        json!({"claims": 2, "fresh": 2, "drifted": 2, "stale": 0, "expired": 0, "retired": 0})
+        // Both stay fresh and neither drifted: a quote that differs from
+        // the text only in whitespace is an exact match.
+        json!({"claims": 2, "fresh": 2, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
     );
 
     // One word of the second sentence.
