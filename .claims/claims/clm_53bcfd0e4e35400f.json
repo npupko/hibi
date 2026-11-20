@@ -25,21 +25,21 @@
       "selectors": [
         {
           "kind": "text-quote",
-          "exact": "const h = !fenced && !front ? HEADING.exec(text) : null;",
+          "exact": "const heading = !fenced && !front ? parseHeading(text) : null;",
           "prefix": ");\n    const fenced = inFence || fenceLine;\n    ",
-          "suffix": "\n    out.push({\n      text,\n      start,\n      f"
+          "suffix": "\n    out.push({ text, start, fenced, front, ...("
         },
         {
           "kind": "text-position",
-          "start": 2992,
-          "end": 3048
+          "start": 4142,
+          "end": 4204
         },
         {
           "kind": "ast-node",
           "language": "typescript",
           "nodeType": "lexical_declaration",
-          "structuralHash": "ed0442caf9d2a7e5",
-          "semanticHash": "bd5f7bd67855c97d"
+          "structuralHash": "ed3a814cd6515702",
+          "semanticHash": "e954c7ed2469db0d"
         },
         {
           "kind": "value",
@@ -60,8 +60,8 @@
         },
         {
           "kind": "text-position",
-          "start": 4567,
-          "end": 4622
+          "start": 5623,
+          "end": 5678
         },
         {
           "kind": "ast-node",
@@ -90,5 +90,5 @@
     }
   ],
   "createdAt": "2026-10-23T13:54:05.587Z",
-  "ref": "4d54689d21cc18b4528531172fd30e0559ec4c5a"
+  "ref": "08eba35ecb80239922f12e0677120d288bd9c4a7"
 }
