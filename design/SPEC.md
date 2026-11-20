@@ -187,9 +187,16 @@ Section 9.2 maps every code to a side state.
 
 The engine validates every unit a provider returns before using it: `fp`
 matches section 8.1; `sel` is a valid selector by section 5.2 (unknown keys
-inside `sel` are not ignored) and uses only keys the provider's `selectors`
-list allows; keys are unique within one `units` answer. A violation is
-`provider_error` for the affected side or resource.
+inside `sel` are not ignored) and uses only keys the provider allows; keys
+are unique within one `units` answer. A violation is `provider_error` for the
+affected side or resource.
+
+Allowed keys: `ProviderInfo.selectors` lists keys from `quote`, `symbol` and
+`key`. Listing `quote` also allows `prefix`, `suffix` and `pos`. The empty
+selector is always allowed. The same rule is applied before a selector is
+sent: the engine does not send a selector with a key the provider does not
+allow. For a new anchor that is the error `unsupported_selector`; for a
+stored anchor the side is `unavailable` with reason `provider_error`.
 
 `Providers` maps a scheme to a boxed `Provider`. The engine asks it for the
 provider of a locator and receives either the provider or the reason no
@@ -237,7 +244,7 @@ These files are part of the release tree and are bound by this section.
 |---|---|
 | `schemas/<name>.schema.json` | Written by `cargo run -p hibi-cli --example write-schemas`. Equal to `hibi schema <name>`. |
 | `plugins/hibi-cli/reference/cli.md` | The generated CLI reference: every command, option, default and help text, taken from the clap definition. Written by `cargo run -p hibi-cli --example cli-reference`. Never edited by hand. |
-| `plugins/hibi-cli/` skill and cookbook, `docs/*.mdx`, `README.md` | Every `hibi` command line they show parses against the clap definition (requirement R43). |
+| `plugins/hibi-cli/` skill and cookbook, `docs/*.mdx`, `README.md` | Every `hibi` command line they show is checked against the generated CLI reference, the one source: its command and each of its options MUST appear there (requirement R43). |
 | `.github/workflows/ci.yml` | Jobs: `cargo fmt --all --check`; `cargo clippy --workspace --all-targets -- -D warnings`; `cargo test --workspace`; schema drift (run the schema generator, fail on `git diff --exit-code schemas/`); CLI-reference drift (same for the reference file); and a report job that runs `hibi status` and `hibi cover` on the repository's own store and prints the result. The report job cannot fail on claim state, because both commands exit 0 whatever they find. |
 | Release | `cargo-dist` configured in `dist-workspace.toml`, building the `hibi` binary only, with the shell and PowerShell installers. `scripts/install.sh` downloads a release archive and nothing else. |
 | Versioning | release-please with `release-type: rust`. `CHANGELOG.md` restarts at the first v5 release with one note that the earlier TypeScript line ended at 0.7.0. |
@@ -445,7 +452,7 @@ Which keys a provider accepts:
 
 | Provider | Accepts |
 |---|---|
-| File provider | `{}`, `quote` (with `prefix`, `suffix`, `pos`), `symbol`, or `symbol` with `quote`. `key` is `invalid_selector` (CLI code `unsupported_selector`). |
+| File provider | Its `ProviderInfo.selectors` is `["quote", "symbol"]`: `{}`, `quote` (with `prefix`, `suffix`, `pos`), `symbol`, or `symbol` with `quote`. `key` is not allowed (CLI code `unsupported_selector`). |
 | External provider | Whatever its `hello` lists in `selectors` (section 13.3). |
 
 ### 5.3 Anchor
@@ -730,6 +737,9 @@ Definitions:
   `[L.start, L.end)` lies within the range of `u`.
 - `in_comment(L)`: the resource has a parse tree and `[L.start, L.end)`
   intersects the range of a comment node (section 8.4).
+- `pick(L)` for an ambiguous `L` whose tied hits all lie in one unit: the
+  result is `found`, `exact`, at the earliest tied hit that is not
+  `in_comment`, or at the earliest tied hit when all are.
 - When a quote is given, `locate` (section 7) always runs. Nothing below skips
   it.
 
@@ -744,8 +754,8 @@ resolve(resource, sel):
           if not sel.quote                         -> [u]
           L = locate(text of u, sel)               ; pos becomes max(0, pos - u.start),
                                                    ; result offsets are mapped back to the resource
-          if L.status == ambiguous: L = found, exact, at the range it carries
-          -> [u] with approx = not inside(L, u)
+          if L.status == ambiguous: L = pick(L)
+          -> [u] with approx = false               ; the symbol identifies the unit
                       refuse = quote_in_comment if L.status == found and in_comment(L)
       if |S| > 1:
           if sel.quote:
@@ -763,7 +773,7 @@ resolve(resource, sel):
       if L.status == ambiguous:
           U = distinct innermost units of the tied hits
           if |U| > 1                               -> U       (ambiguous)
-          L = found, exact, at the range it carries
+          L = pick(L)
       u = innermost unit for [L.start, L.end)
       -> [u] with approx = (L.how == fuzzy) or missed
                   refuse = quote_in_comment  if in_comment(L)
@@ -775,7 +785,13 @@ resolve(resource, sel):
 engine that this resolution MUST NOT be used to create a claim or replace a
 side (section 15.3). It has no effect on freshness or coverage. A quote inside
 a comment is refused because `ast-v1` does not see comments: a claim anchored
-there could never go stale.
+there could never go stale. Documentation comments (JSDoc, rustdoc, Javadoc)
+are comments and cannot be anchored. A Python docstring is a string and can.
+The user documentation MUST say so.
+
+In the path where a symbol matches exactly one declaration, a quote that is
+not found, or found only approximately, does not make the side `approx`. It
+only decides whether the completed selector keeps the quote.
 
 **Renames (resolution of the plan's open question on symbol anchors).** hibi
 keeps no alias record. A symbol that no longer exists falls back to the quote.
@@ -821,12 +837,13 @@ A `FileProvider` reads one of two sources:
   (section 10.4). `repo:` locators are not available in a revision source.
 
 One rule decides whether a path names a readable file, in both sources: the
-path names a regular file, and no component of the path, the last included,
-is a symbolic link. In the working tree this is checked component by
+path names a regular file, and no component of the locator's path, the last
+included, is a symbolic link. Components above the root, or above the alias
+directory, are not examined. In the working tree this is checked component by
 component without following links. In a revision the tree entry's mode MUST
 be `100644` or `100755`. Anything else is `not_found`.
 
-A `repo:` path is read only when the alias passes section 11.1 and the
+A `repo:` path is read only when the alias is allowed (section 11.1) and the
 sibling repository's file list (section 10.4) contains the path. Otherwise
 the result is `not_found`. Resolving a `repo:` locator therefore needs `git`.
 
@@ -1239,7 +1256,10 @@ covered and an exclusion matches, otherwise `uncovered`.
 
 A resource whose units cannot be listed is reported under `unavailable` in
 the output with the reason of section 9.2 (`provider_failed`, `not_text`,
-`too_large`, and so on). It is never counted as covered.
+`too_large`, and so on). A path that matches a scope and that section 6.8
+does not accept, such as a symbolic link, is reported there with reason
+`resource_not_found`. Such resources are never counted as covered and never
+dropped silently.
 
 ### 10.3 `--since <range>`
 
@@ -1293,14 +1313,20 @@ these additions to the environment: `GIT_OPTIONAL_LOCKS=0`, `LC_ALL=C`,
 sibling repository directory where stated. A non-zero exit is `git_failed`
 with git's standard error in the message, except where stated.
 
+`MIN_GIT` is 2.45.0. Once per run, before any other git call, the `git`
+module runs `git --version` (with no other argument) and parses the version.
+An older git is the error `git_too_old`, whose message gives the version found
+and the version required. A `git` that cannot be started is
+`not_a_git_repository` where git is required.
+
 | Purpose | Arguments |
 |---|---|
 | Top level of a directory | `rev-parse --show-toplevel`. The result and `<dir>` are both canonicalized (symbolic links resolved) before they are compared. For the root a mismatch is `not_a_git_repository`. |
 | Resolve `A` | `rev-parse --verify --quiet --end-of-options A^{commit}`. Failure is `invalid_range`. |
 | Merge base | `merge-base A HEAD`. Failure is `invalid_range`. |
-| File list | `ls-files -z --cached --others --exclude-standard`. Drop every path that contains a character U+0000 to U+001F or U+007F, and every path that section 6.8 does not accept. |
+| File list | `ls-files -z --cached --others --exclude-standard`. Drop every path that contains a character U+0000 to U+001F or U+007F. A path that section 6.8 does not accept stays in the list and is reported (section 10.2). |
 | Changed paths | `diff --name-only --no-renames --no-ext-diff --no-textconv -z <base> --` plus `ls-files -z --others --exclude-standard` |
-| Base entries | `ls-tree -r -z <base> -- <path>...` for the changed paths: gives each path's mode and blob id |
+| Base entries | `ls-tree -r -z <base>`, with no path arguments. hibi filters the output to the changed paths; each entry gives a mode and a blob id. |
 | Base content | `cat-file --batch` with blob ids on standard input, without `--filters` or `--textconv` |
 
 What these choices rule out, and why they are required:
@@ -1314,8 +1340,13 @@ What these choices rule out, and why they are required:
   `core.sshCommand`, or contacts a remote. `GIT_NO_LAZY_FETCH=1` keeps
   `cat-file` from fetching in a partial clone.
 - `diff --name-only` can run a `clean` filter named by the root repository's
-  own configuration. That configuration belongs to the user and is not
-  cloned. No `diff` is ever run in a sibling repository.
+  own configuration. No `diff` is ever run in a sibling repository.
+
+Trust boundary: the `.git/config` of the root repository, and of a sibling
+repository the user allowed, is trusted. It is written by the user's own git
+and is not transferred by a clone. A repository obtained together with its
+`.git` directory from an untrusted source (an archive, a copied folder) is
+outside the threat model, as it is for git itself.
 
 Only `rev-parse --show-toplevel` and the file list are run in a sibling
 repository.
@@ -1334,8 +1365,8 @@ Committed. Keys are snake_case. Unknown keys are `invalid_config`.
 ```toml
 version = 1                       # required, must be 1
 
-[repos]                           # optional: alias = directory
-api = "../api"                    # a directory, relative to the root or absolute
+[repos]                           # optional: alias = suggested directory
+api = "../api"                    # shown to the user; never used to read anything
 
 [schemes.archctl]                 # optional: one table per external scheme
 description = "Architecture facts served by archctl"   # optional
@@ -1352,18 +1383,25 @@ exclude = [                       # optional
 
 Rules:
 
-- A `[repos]` value is a directory path. `~` and environment variables are
-  not expanded. A sibling repository is used only when all of these hold,
-  checked each run before anything is read from it:
-  1. the path, taken relative to the root when not absolute, exists and
-     canonicalizes to a directory `D`;
-  2. `D` is not the root, not inside the root, and not an ancestor of the
+- `[repos]` declares alias names. The value is a suggested location and is
+  only ever displayed. The directory of an alias comes from the user config
+  (section 11.2), as a provider command does. A sibling repository is used
+  only when all of these hold, checked each run before anything is read from
+  it:
+  1. the alias is declared in `[repos]`;
+  2. the user config has a `[[repo]]` entry whose `root` canonicalizes to
+     this root and whose `alias` equals the alias;
+  3. that entry's `path` exists and canonicalizes to a directory `D`;
+  4. `D` is not the root, not inside the root, and not an ancestor of the
      root;
-  3. `D` is the top level of a git work tree, by the first row of the table
+  5. `D` is the top level of a git work tree, by the first row of the table
      in section 10.4 run in `D`.
-  An alias that is not mapped, or fails 1, gives `repo_not_found`. An alias
-  that fails 2 or 3 gives `repo_not_allowed`. Nothing is read from `D` in
-  either case. Without `git`, every `repo:` side is `repo_not_found`.
+  Failing 1 or 3 gives `repo_not_found`. Failing 2, 4 or 5 gives
+  `repo_not_allowed`. Nothing is read from any directory in either case. The
+  remediation for a failed 2 prints the exact lines to add to the user
+  config, with the suggested location as `path`. Without `git`, every `repo:`
+  side is `repo_not_found`.
+- `MAX_CONFIG_BYTES` is 1,048,576. A larger `hibi.toml` is `invalid_config`.
 - `version` other than 1 is `unsupported_store_version`.
 - A scheme table names a scheme. It never names a command. A `command` key or
   any key other than `description` is `invalid_config`.
@@ -1387,7 +1425,17 @@ A missing file is an empty config. Unknown keys are `invalid_user_config`.
 [providers.archctl]               # one table per scheme
 command = ["archctl", "hibi-provider"]   # required: argv, at least one element
 timeout_ms = 10000                # optional, default 10000, 100 to 600000
+
+[[repo]]                          # one entry per allowed sibling repository
+root  = "/home/u/work/shop"       # required, absolute: the repository whose hibi.toml declares the alias
+alias = "api"                     # required
+path  = "/home/u/work/api"        # required, absolute: the directory to use
 ```
+
+`root` and `path` MUST be absolute; `~` and environment variables are not
+expanded. Two entries with the same `root` and `alias` are
+`invalid_user_config`. A user config larger than `MAX_CONFIG_BYTES`
+(section 11.1) is `invalid_user_config`.
 
 A provider command is run only when all of these hold: the scheme is listed in
 the repository's `hibi.toml`, the user config has a table for the scheme, and
@@ -1410,9 +1458,9 @@ nor write it.
 Opening: set a busy timeout of 5000 ms, then in one `BEGIN IMMEDIATE`
 transaction check `user_version`, create the tables when it is 0, and delete
 every `units` row whose `engine` is not the running version. If
-`user_version` is neither 0 nor 1, or the file cannot be opened, hibi deletes
-the file and tries once more. If that fails the run continues without a cache
-and reports warning `cache_unavailable`. Two hibi processes opening a missing
+`user_version` is neither 0 nor 1 (a database written by another hibi), or
+the file cannot be opened, hibi leaves the file as it is, runs without a
+cache and reports warning `cache_unavailable`. Two hibi processes opening a missing
 cache at once MUST both succeed.
 
 ```sql
@@ -1503,7 +1551,8 @@ because a union merge can produce both. It keeps one record per id.
 | A line is not valid JSON, has a wrong key set, or its `id` is not the id derived from its body | `store_corrupt`, naming file and line |
 | A line parses and its id is right, but its bytes are not the canonical form of the record | `store_corrupt` |
 | A claim sits in a shard other than `shard(claim)`, or a mark or retirement sits in a marks shard other than its claim's | `store_corrupt` |
-| `.hibi`, `.hibi/claims`, `.hibi/marks`, a shard file or `.hibi/.lock` is a symbolic link | `store_corrupt` |
+| `.hibi`, `.hibi/hibi.toml`, `.hibi/claims`, `.hibi/marks`, a shard file or `.hibi/.lock` is a symbolic link | `store_corrupt` |
+| A shard file is longer than `MAX_SHARD_BYTES` (67,108,864, 64 MiB) | `store_corrupt` |
 | A mark or retirement names a claim that is not in the store | Warning `orphan_record`. The record is ignored. |
 | `replacedBy` names a claim that is not in the store | Warning `unknown_replacement`. The retirement stands. |
 
@@ -1528,8 +1577,11 @@ by its bytes (length 0 for a missing file).
    a. Read the shard file as it is now.
    b. Add the new records, drop duplicates by id, sort by id.
    c. If the result equals the current bytes, skip this file.
-   d. Write the result to `<dir>/<shard>.jsonl.tmp-<pid>` in the same
-      directory, `fsync` it, rename it over the shard file, and `fsync` the
+   d. Create `<dir>/<shard>.jsonl.tmp-<r>` in the same directory, where `r`
+      is 16 random hex digits, with exclusive creation and without following
+      a symbolic link (`O_CREAT | O_EXCL | O_NOFOLLOW` on Unix). If the name
+      exists, choose a new `r`, up to 8 times, then fail with `io_error`.
+      Write the result to it, `fsync` it, rename it over the shard file, and `fsync` the
       directory. The directory `fsync` is required on Unix and skipped on
       Windows.
 4. Release the lock by closing the file. The lock file is not deleted.
@@ -1607,8 +1659,8 @@ keeps running. This is the only response with a `null` id.
 
 Both sides MUST ignore object keys they do not know, with one exception: a
 selector (`sel`) is closed, in requests and in responses. hibi rejects a
-returned `sel` with an unknown key or a key the provider did not list in
-`selectors` (section 2.5).
+returned `sel` with an unknown key or a key the provider does not allow, and
+never sends one (section 2.5).
 
 ### 13.3 Requests
 
@@ -1626,7 +1678,7 @@ returned `sel` with an unknown key or a key the provider did not list in
 | `params.protocol` | The versions the client speaks, ascending |
 | `result.protocol` | One version from that list. If the provider speaks none of them it answers with error `unsupported_protocol`. |
 | `result.schemes` | Schemes this process serves. It MUST include the scheme it was registered for. |
-| `result.selectors` | Selector keys it accepts, from `quote`, `symbol`, `key`. The empty selector is always accepted. |
+| `result.selectors` | Selector keys it accepts, from `quote`, `symbol`, `key`. `quote` includes `prefix`, `suffix` and `pos`. The empty selector is always accepted. |
 | `result.kinds` | Unit kinds it can return. Informational. |
 | `result.capabilities` | Booleans `units`, `render`, `batch`. A missing key is `false`. `resolve` is mandatory. |
 
@@ -1712,7 +1764,7 @@ is the side result of a `resolve` that fails with the code (section 9.2).
 | `too_large` | The resource exceeds a size limit of the provider | `unavailable`, `too_large` |
 | `repo_not_found` | File provider only, section 11.1 | `unavailable`, `repo_not_found` |
 | `repo_not_allowed` | File provider only, section 11.1 | `unavailable`, `repo_not_allowed` |
-| `unknown_unit` | `render` only | CLI error `unknown_unit` |
+| `unknown_unit` | `render` only | none: the side cannot be rendered (section 14.5) |
 | `unavailable` | The resource exists but cannot be read now | `unavailable`, `provider_error` |
 | `internal` | Anything else | `unavailable`, `provider_error` |
 
@@ -1823,6 +1875,12 @@ Content-Type: application/json
 - Question names are `q0`, `q1`, ... within a request, with a suffix where a
   command asks two questions per item.
 - Item text placed in a question is cut to its first 4,000 characters.
+- Text from the file provider is sent only when its path is in the file list
+  (section 10.4) of the root or of an allowed sibling repository, that is
+  tracked, or untracked and not ignored. An item that fails this is not sent
+  and is counted as skipped (in `triage` and `suggest-evidence`) or treated as
+  a side that cannot be rendered (in `status --judge-order`). The judge
+  commands therefore need `git`.
 
 Response: `{"model", "answers": {<name>: <answer>}, "usage"}`. A Noul answer is
 `{"type":"noul","noul":<p>}`. A Choice answer is
@@ -2017,8 +2075,9 @@ ClaimView:
 | `fresh` with no side `approx`, or `retired` | `null` |
 | A side is `missing` or `ambiguous` | `hibi reanchor <id>` with `--subject <anchor>` or `--evidence <n>=<anchor>` for each such side |
 | A side is `unavailable` with `scheme_not_declared`, `provider_not_registered` or `provider_failed` | `hibi providers` |
-| A side is `unavailable` with `repo_not_found`, `repo_not_allowed`, `not_text`, `too_large` or `provider_error` | `null` |
-| A side is `approx` | `hibi reanchor <id>` |
+| A side is `unavailable` with `repo_not_allowed` | `hibi providers` |
+| A side is `unavailable` with `repo_not_found`, `not_text`, `too_large` or `provider_error` | `null` |
+| A side is `approx` | `hibi reanchor <id>`. If the claim rebuilt from the completed selectors would be a retired claim, `hibi reanchor <id> --note <text>` instead, because the plain command would fail with `claim_retired`. |
 | Otherwise (`expired`, or sides `changed` or `profile_mismatch`) | `hibi mark <id>` |
 
 `hibi mark` in `next` means: re-check the statement, then mark. If the
@@ -2033,8 +2092,11 @@ envelope, and its human output.
 **`hibi init`**
 
 No arguments. Finds the git top level of the working directory
-(`not_a_git_repository` if none), fails with `already_initialized` if
-`.hibi/hibi.toml` exists, then creates the files of section 12.1: `hibi.toml`
+(`not_a_git_repository` if none). If `.hibi` or anything under it that
+section 12.3 names is a symbolic link, it fails with `store_corrupt` before
+writing anything. It fails with `already_initialized` if `.hibi/hibi.toml`
+exists. Every file is created exclusively and without following a symbolic
+link. It then creates the files of section 12.1: `hibi.toml`
 with `version = 1` and commented examples, the three dot files, and the 32
 empty shard files. It writes nothing outside `.hibi/`.
 
@@ -2060,7 +2122,8 @@ For each element, in order:
 1. Validate the fields. The scheme of every locator MUST be `file`, `repo` or
    listed in `hibi.toml` (`unknown_scheme`).
 2. Resolve every anchor and apply the write checks, first that applies: a
-   `key` selector on a `file:` or `repo:` locator: `unsupported_selector`.
+   selector key the provider does not allow (section 2.5), such as `key` on a
+   `file:` locator: `unsupported_selector`, without sending it.
    Missing: `side_missing`. Several units: `side_ambiguous`. Unavailable:
    `side_unavailable`. One unit with `approx`: `selector_not_exact`. One unit
    with `refuse`: the error code equal to the `refuse` value
@@ -2119,10 +2182,15 @@ Standard-input form: a JSON array whose elements are a claim id string or
 For each claim: `claim_retired` if retired; resolve every side; a side that is
 `missing`, `ambiguous` or `unavailable` for a reason other than
 `profile_mismatch` fails with `side_missing`, `side_ambiguous` or
-`side_unavailable`; a side that resolves with `approx` fails with
-`selector_not_exact` and the remediation `hibi reanchor <id>`. `refuse` is
-not checked here. Otherwise build a mark with `at = now` and the current
-fingerprints. All or nothing, as for `claim`.
+`side_unavailable`. A side that resolves with `approx` is accepted: the
+caller has just re-checked the claim and is trusted. `refuse` is not checked
+here. Otherwise build a mark with `at = now` and the current fingerprints.
+All or nothing, as for `claim`.
+
+In the output every `approx` side carries `approx: true`, its `unit` and its
+`text` (cut to 240 characters) whether or not `--detail` is given, so the
+caller sees what was marked. The ClaimView's `next` is then the `reanchor`
+command of section 15.2, which refreshes the selector.
 
 JSON: `marks`: array of `{claim, mark, claimView}`. Human: one line per claim.
 
@@ -2139,12 +2207,15 @@ Builds a new claim from the old one:
    combination of `--evidence` and `--drop-evidence`, or an `n` that does not
    exist, is `usage`.
 3. Every resulting side MUST resolve to exactly one unit; a replaced or added
-   side is subject to the write checks of `claim` step 2; a kept side may be
-   `approx` and its `refuse` is not checked.
+   side is subject to the write checks of `claim` step 2, including
+   `selector_not_exact`; a kept side may be `approx` and its `refuse` is not
+   checked. Step 4 refreshes the selector of a kept `approx` side.
 4. Each side's stored selector becomes the completed selector of its resolved
    unit. This refreshes quote, context, position and symbol.
 5. If the new claim id equals the old one: `no_change`. If it equals the id
-   of any retired claim: `claim_retired`, and nothing is written. (Without
+   of any retired claim: `claim_retired`, nothing is written, and the
+   remediation is the command `hibi reanchor <id> --note <text>` with the
+   caller's other arguments repeated. (Without
    this rule, re-anchoring back to an earlier form would mark a retired claim
    and retire the live one.) If it equals another live claim, that claim gets
    the mark and the old claim is retired with `replacedBy` naming it.
@@ -2237,13 +2308,15 @@ JSON:
 {"ok":true,"command":"providers",
  "builtin":{"schemes":["file","repo"],"classes":["markdown","prose","typescript","tsx","python","rust","go","java","text"],
             "profiles":["prose-v1","ast-v1"]},
- "repos":[{"alias":"api","path":"/abs/api","error":null}],
+ "repos":[{"alias":"api","suggested":"../api","path":"/home/u/work/api","error":null}],
  "schemes":[{"scheme":"archctl","registered":true,"command":["archctl","hibi-provider"]}],
  "userConfig":"/home/u/.config/hibi/config.toml","warnings":[]}
 ```
 
-A repo's `error` is `null`, `"repo_not_found"` or `"repo_not_allowed"`. An
-unregistered scheme has `registered: false`, `command: null`, and the human
+For a repo, `suggested` is the value in `hibi.toml`, `path` is the directory
+from the user config or `null`, and `error` is `null`, `"repo_not_found"` or
+`"repo_not_allowed"`. For an alias with no user-config entry the human output
+prints the `[[repo]]` lines to add. An unregistered scheme has `registered: false`, `command: null`, and the human
 output prints the config lines to add to the user config.
 
 With `--check <scheme>`: starts the registered provider and runs the protocol
@@ -2292,10 +2365,11 @@ Closed list. Every error carries one of these codes.
 | `unsupported_store_version` | `version` in `hibi.toml` is not 1 |
 | `invalid_config` | `hibi.toml` does not parse or breaks section 11.1 |
 | `invalid_user_config` | The user config does not parse or breaks section 11.2 |
-| `store_corrupt` | Section 12.3 |
+| `store_corrupt` | Section 12.3, including symbolic links and oversized shards |
 | `store_locked` | Section 12.4 |
 | `io_error` | A file operation failed |
 | `git_failed` | Section 10.4 |
+| `git_too_old` | The installed git is older than `MIN_GIT` (section 10.4) |
 | `claim_not_found` | Section 3.6 |
 | `ambiguous_id` | Section 3.6 |
 | `claim_retired` | A write on a retired claim |
@@ -2304,11 +2378,10 @@ Closed list. Every error carries one of these codes.
 | `side_missing` | An anchor resolves to no unit |
 | `side_ambiguous` | An anchor resolves to several units. The message lists them. |
 | `side_unavailable` | An anchor cannot be evaluated. The message gives the reason code. |
-| `selector_not_exact` | An anchor resolved only approximately. The message shows what was found. |
+| `selector_not_exact` | A new anchor (in `claim`, or a replaced or added side in `reanchor`) resolved only approximately. The message shows what was found. |
 | `quote_spans_units` | A quote reaches outside one unit |
 | `quote_in_comment` | A quote lies wholly or partly inside a code comment. Remediation: anchor the code the comment describes. |
-| `unsupported_selector` | A selector key the provider does not accept, such as `key` on a `file:` locator |
-| `unknown_unit` | A unit key the provider does not have |
+| `unsupported_selector` | A new anchor has a selector key its provider does not allow, such as `key` on a `file:` locator |
 | `no_scopes` | `cover` or `triage` with no scope declared |
 | `unknown_scope` | `--scope` names no scope |
 | `too_many_candidates` | Section 14.4 |
@@ -2434,7 +2507,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 4 | A profile mismatch reports the side as `unavailable` with reason `profile_mismatch`, and `mark` accepts such a side. | It is visibly not a content change, and one re-check clears it. |
 | 5 | No alias record for renames. A missing symbol falls back to the quote and is flagged `approx`; `reanchor` stores the new symbol. | A rename changes the declaration's fingerprint, so a re-check is needed anyway. |
 | 6 | Stored selectors are completed by the provider (symbol, quote, context, position). | Every stored anchor can be re-found by two independent means. |
-| 7 | A claim or replaced side must resolve exactly; approximate matches are refused at write time and accepted at check time. | A new record should not start with a stale selector. |
+| 7 | Ruling: a new anchor (in `claim`, or a replaced or added side in `reanchor`) must resolve exactly. `mark` and kept `reanchor` sides accept an approximate resolution. | A new record should not start with a stale selector; a re-check by a trusted agent must not be blocked or forced into a new claim id. |
 | 8 | Unit keys: `<kind>:<symbol>` for declarations, `<kind>:<12 hex of fingerprint>` for content units, `~n` for duplicates. | Stable without storing anything. |
 | 9 | Extra unit kinds `file`, `statement`, `block`. | Every byte of every text file belongs to a unit, so every quote resolves. |
 | 10 | Files with no grammar are split into blank-line-separated blocks. | Finer than whole-file, needs no grammar. |
@@ -2463,18 +2536,24 @@ Each row is a choice the plan left open or marked illustrative.
 | 44 | CRLF is replaced by LF once, when the file provider decodes a file. | Units, quotes and fingerprints then never contain a line-ending U+000D, and the pure functions stay free of the rule. |
 | 45 | Ruling: an absent resource is the provider error `not_found`; an empty unit list means the selector found nothing; provider error codes map one to one onto side reasons. | The engine must tell `resource_not_found` from `selector_not_found` through the trait alone. |
 | 46 | A resolved unit can carry `refuse` (`quote_spans_units`, `quote_in_comment`). | The provider knows the located span; the engine only needs the verdict. |
-| 47 | Ruling: `locate` always runs when a quote is given. With a symbol that matches one declaration the quote is located inside that declaration only, and the side is `approx` when the quote is not found there exactly. | The stored selector, and so the claim id, is the same in every implementation; a duplicate of the quote elsewhere in the file cannot disturb it. |
-| 48 | Ruling: every git call carries `safe.bareRepository=explicit` and `core.fsmonitor=false`; a `[repos]` alias must be a git top level outside the root and not above it; `repo:` paths are read only when that repository lists them. New reason `repo_not_allowed`. Resolving `repo:` needs git. | A cloned `hibi.toml` must not cause command execution or reads of arbitrary files. |
+| 47 | Ruling: `locate` always runs when a quote is given. With a symbol that matches one declaration the quote is located inside that declaration only and the side is never `approx`; the quote only decides the completed selector. | The symbol identifies the unit. The stored selector, and so the claim id, is the same in every implementation. |
+| 48 | Ruling: every git call carries `safe.bareRepository=explicit` and `core.fsmonitor=false`; `hibi.toml` only names sibling aliases and the user config supplies their directories, per repository; the directory must be a git top level outside the root and not above it; `repo:` paths are read only when that repository lists them. Reason `repo_not_allowed`. Resolving `repo:` needs git. | A cloned `hibi.toml` must not cause command execution or reads of files the user did not offer. Same rule as provider commands. |
 | 49 | Ruling: `claim` and `reanchor` refuse a quote that touches a code comment. The default quote stops before a comment. | `ast-v1` ignores comments, so such a claim could never go stale. |
 | 50 | Ruling: `reanchor` fails with `claim_retired` when the rebuilt claim is a retired one. When it is another live claim, that claim is marked and the old one retired. | Otherwise nothing live would remain. |
 | 51 | `MAX_FILE_BYTES` is 8 MiB; larger files report `too_large`. Tree walks are iterative, with no depth limit. | Bounded memory; no stack overflow on deeply nested input. |
-| 52 | Ruling: `mark` refuses a side that resolves only approximately and points to `reanchor`. | Same rule as decision 7 for every write. |
+| 52 | Ruling (replaces the earlier one): `mark` accepts approximate sides, shows the unit and text it marked, and suggests `reanchor`. | Plan decision 1: the agent is trusted and has just re-checked. |
 | 53 | Store paths that are symbolic links are `store_corrupt`. A locator path with a symbolic link in any component is `not_found`, in the working tree and in a revision. | hibi never writes or reads through a link it did not create. |
 | 54 | `hibi providers` starts a provider only with `--check`. | Listing configuration should run nothing. |
 | 55 | `triage` sends prose units of kind `sentence`, `list-item`, `table-row` and `heading` from the file provider; other uncovered units are counted as skipped. | The plan limits triage to prose regions; a fenced block is code. |
 | 56 | `render` returns `context` as a list of strings. | A heading that contains " > " survives. |
 | 57 | Section 2.7: the schema files and the CLI reference are written by two cargo examples in `hibi-cli`; the reference lives at `plugins/hibi-cli/reference/cli.md`. | Generators that are not shipped and not subcommands. |
 | 58 | Deleting the cache changes no output except judge probabilities. | Jev is not deterministic; the cache is its only source of repeatability. |
+| 59 | Ruling: minimum git is 2.45.0, checked once per run; older is `git_too_old`. | `safe.bareRepository` and `GIT_NO_LAZY_FETCH` must be honoured, not ignored. |
+| 60 | Ruling: judge commands send file text only from tracked or untracked-and-not-ignored paths of the root or an allowed sibling. They need git. | Ignored files often hold secrets. |
+| 61 | User-config sibling entries are `[[repo]]` tables with absolute `root`, `alias` and `path`. | An alias is allowed for one repository, not for every clone that names it. |
+| 62 | `MAX_SHARD_BYTES` is 64 MiB (`store_corrupt`); `MAX_CONFIG_BYTES` is 1 MiB (`invalid_config`, `invalid_user_config`). | Bounded reads of repository-controlled files. |
+| 63 | A scope-matched path that is a symbolic link is listed under the scope's `unavailable` items with reason `resource_not_found`. | No new reason code; nothing is dropped silently. |
+| 64 | An unknown cache `user_version` leaves the database untouched. | Another hibi version may own it. |
 | 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
 | 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
 | 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
@@ -2506,8 +2585,9 @@ Each row is a choice the plan left open or marked illustrative.
   repository configuration can name for the commands listed there. The list
   was reasoned from git's documentation, not tested against a hostile
   repository.
-- `GIT_NO_LAZY_FETCH` and `safe.bareRepository` need a recent git (2.38 for
-  the latter). The minimum git version was not fixed or tested.
+- That git 2.45.0 honours every flag and variable of section 10.4.
+  `safe.bareRepository` dates from 2.38 and `GIT_NO_LAZY_FETCH` from 2.45 by
+  git's release notes; neither was tested.
 - That `serde_json_canonicalizer` passes the RFC 8785 test vectors. hibi's
   records contain only strings, nulls, arrays, objects and one small integer,
   so number formatting is not exercised.
@@ -2652,25 +2732,29 @@ Verification section in order.
   only in the changelog note. `design/` and `cases/` are excluded because
   they define and test behaviour carried over from the earlier version and
   have to name it.
-- R43. The docs site builds, and every `hibi` command line in the skill and
-  the docs parses against the generated CLI reference.
+- R43. The docs site builds, and for every `hibi` command line in the skill
+  and the docs, the command and each option appear in the generated CLI
+  reference.
 
 **Safety of repository-controlled input**
 
 - R44. Every `git` process hibi starts has `--no-pager`,
   `-c safe.bareRepository=explicit` and `-c core.fsmonitor=false` in its
   arguments. (Test with a recording `git` first on `PATH`.)
-- R45. A `[repos]` alias that points inside the root, at the root, at an
-  ancestor of the root, or at a directory that is not a git top level makes
-  its sides `unavailable` with `repo_not_allowed`, and no file under it is
-  opened.
+- R45. A `[repos]` alias with no matching `[[repo]]` entry in the user config
+  makes its sides `unavailable` with `repo_not_allowed`, whatever location
+  `hibi.toml` suggests, and no file is opened. So does a user-config
+  directory that is the root, inside it, an ancestor of it, or not a git top
+  level.
 - R46. A `repo:` path that the sibling repository's file list does not
   contain reports `missing` with `resource_not_found`, even when the file
   exists on disk.
 - R47. A locator path with a symbolic link in any component reports `missing`
   with `resource_not_found`, in the working tree and at a base commit.
-- R48. A store in which `.hibi`, a shard directory, a shard file or the lock
-  is a symbolic link fails with `store_corrupt` before any write.
+- R48. A store in which `.hibi`, `hibi.toml`, a shard directory, a shard file
+  or the lock is a symbolic link fails with `store_corrupt` before any write,
+  in every command including `init`. A temp file name that already exists,
+  as a file or as a symbolic link, is never written through.
 - R49. A file longer than `MAX_FILE_BYTES` reports `too_large` and is not
   parsed. A source file nested 100,000 levels deep is processed or reported
   as class `text` without a crash.
@@ -2684,15 +2768,18 @@ Verification section in order.
 
 **Write rules**
 
-- R52. `claim` and `reanchor` with a quote that lies in or overlaps a code
-  comment fail with `quote_in_comment` and write nothing.
+- R52. `claim`, and `reanchor` for a replaced or added side, with a quote
+  that lies in or overlaps a code comment fail with `quote_in_comment` and
+  write nothing.
 - R53. The same input anchors on the same file contents give the same claim
   id on every run, for every combination in `cases/resolve.json`.
 - R54. `reanchor` whose result equals a retired claim fails with
   `claim_retired` and writes nothing.
-- R55. `mark` on a claim with an `approx` side fails with
-  `selector_not_exact`, and `status` gives `hibi reanchor <id>` as `next` for
-  that claim.
+- R55. `mark` on a claim with an `approx` side succeeds, keeps the claim id,
+  and its output shows `approx: true` with the unit and text for that side.
+  `status` gives a `reanchor` command as `next` for that claim when no
+  earlier row of the table in section 15.2 applies. Editing the quoted line
+  of a declaration anchored by symbol does not make the side `approx`.
 - R56. `hibi providers` without `--check` starts no child process other than
   `git`.
 
@@ -2703,4 +2790,13 @@ Verification section in order.
 - R58. The CI report job exits 0 when the repository's own store has stale
   claims or uncovered units.
 - R59. `plugins/hibi-cli/reference/cli.md` equals the output of its generator.
-
+- R60. With a `git` older than 2.45.0 first on `PATH`, every command that
+  needs git fails with `git_too_old` naming both versions, and runs no other
+  git command.
+- R61. `status --judge-order`, `triage` and `suggest-evidence` put no text of
+  an ignored file, and no text from a sibling repository that is not allowed,
+  into any request body.
+- R62. A selector with a key the provider does not allow is never written to
+  a provider's standard input.
+- R63. A shard longer than `MAX_SHARD_BYTES` fails with `store_corrupt`; a
+  `hibi.toml` longer than `MAX_CONFIG_BYTES` fails with `invalid_config`.
