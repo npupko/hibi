@@ -163,6 +163,26 @@ fn r55_approx_side_rows() {
     let v = view(&f.store, &mut f.p, &f.id);
     assert_eq!(v.state, ClaimState::Fresh);
     assert!(v.sides[1].approx && !v.sides[0].approx);
+    // A drifted fresh claim is in the default selection and is counted.
+    let out = engine::status(
+        &f.store,
+        &mut f.p,
+        &no_git(),
+        &engine::StatusQuery::default(),
+        None,
+        now(),
+    )
+    .unwrap();
+    assert_eq!(
+        out.claims
+            .iter()
+            .map(|c| (c.id.clone(), c.state))
+            .collect::<Vec<_>>(),
+        [(v.id.clone(), engine::ClaimState::Fresh)]
+    );
+    assert_eq!(out.claims[0].next, v.next);
+    assert_eq!((out.summary.fresh, out.summary.drifted), (1, 1));
+    assert!(out.next_note.contains("drifted"));
     assert_eq!(v.next, Some(format!("hibi reanchor {}", f.id)));
 
     // Stale with an approximate, changed side (R37's rename): `hibi mark`.

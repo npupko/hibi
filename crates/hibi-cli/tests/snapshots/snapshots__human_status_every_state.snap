@@ -15,6 +15,6 @@ c1-faavzhmqj1e7rzvnyz75  stale  Workers restart every night.
   subject  file:docs/ops.md  missing (selector_not_found)
   next: hibi reanchor c1-faavzhmqj1e7rzvnyz75 --subject <anchor>
 
-Re-check each statement before running its next command.
+Re-check each stale or expired statement before running its next command.
 ---- standard error ----
 (empty)

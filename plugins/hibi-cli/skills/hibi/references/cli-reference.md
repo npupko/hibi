@@ -136,7 +136,9 @@ hibi status [OPTIONS] [claim-id]...
 
 Compare every claim with the current content. A claim is fresh when some mark matches the current fingerprint of every side, stale when none does, expired when a mark matches but the recheck period has passed, and retired when it was retired.
 
-Without arguments the stale and expired claims are listed. Each listed claim shows the sides that are not the same as at its mark, and the next command to run. Re-check the statement before you run that command. The summary always counts every claim in the store.
+Without arguments every claim that needs attention is listed: the stale and expired ones, and fresh claims that drifted. A claim drifted when one of its anchors was found only approximately, because the text it quotes was reworded or its symbol was renamed: the claim still holds, and `hibi reanchor` brings the stored anchor up to date.
+
+Each listed claim shows the sides that are not the same as at its mark, and the next command to run. Re-check a stale or expired statement before you run that command. The summary always counts every claim in the store.
 
 Arguments:
 
@@ -146,7 +148,7 @@ Options:
 
 - `--since <range>`: List only the stale claims that the changes since a commit caused. The range is A, A.. or A..HEAD (since commit A), or A... or A...HEAD (since the merge base of A and HEAD). The compared end is always the working tree. Cannot be combined with --state or with ids.
 - `--loc <glob>`: Keep a claim only when the locator of one of its sides matches this glob, for example 'file:src/**'. Repeat for several.
-- `--state <state>`: List claims in this state. Repeat for several [default: stale and expired] Values: `fresh` (Some mark matches the current content and is recent enough), `stale` (No mark matches the current content), `expired` (A mark matches the content, but the recheck period has passed), `retired` (The claim was retired).
+- `--state <state>`: List claims in this state. Repeat for several [default: stale, expired, and fresh claims that drifted] Values: `fresh` (Some mark matches the current content and is recent enough), `stale` (No mark matches the current content), `expired` (A mark matches the content, but the recheck period has passed), `retired` (The claim was retired).
 - `--detail`: Include the current text of every side.
 - `--judge-order`: Order the stale claims by how likely each is broken, most likely first, as rated by the judge model. Needs TYPESAFE_API_KEY and git. The order is the only thing that changes.
 

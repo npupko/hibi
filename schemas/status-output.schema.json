@@ -393,10 +393,16 @@
       ]
     },
     "StatusSummary": {
-      "description": "`summary` in the output of `status`: every claim in the store.",
+      "description": "`summary` in the output of `status`: every claim in the store.\n`claims` is the sum of `fresh`, `stale`, `expired` and `retired`.",
       "type": "object",
       "properties": {
         "claims": {
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "drifted": {
+          "description": "How many of the `fresh` claims drifted: a side was found only\napproximately, so the claim holds but its stored selector is out of\ndate and its `next` is a `reanchor` command.",
           "type": "integer",
           "format": "uint",
           "minimum": 0
@@ -425,6 +431,7 @@
       "required": [
         "claims",
         "fresh",
+        "drifted",
         "stale",
         "expired",
         "retired"

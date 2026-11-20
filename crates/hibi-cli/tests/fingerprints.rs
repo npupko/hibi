@@ -427,8 +427,10 @@ fn check_class(lang: &Lang) {
     let marks = marks_of(&repo, &id);
     assert_eq!(marks.len(), 1);
     assert_eq!(marks[0]["id"], view["mark"]);
-    let all_fresh = json!({"claims": 1, "fresh": 1, "stale": 0, "expired": 0, "retired": 0});
-    let one_stale = json!({"claims": 1, "fresh": 0, "stale": 1, "expired": 0, "retired": 0});
+    let all_fresh =
+        json!({"claims": 1, "fresh": 1, "drifted": 0, "stale": 0, "expired": 0, "retired": 0});
+    let one_stale =
+        json!({"claims": 1, "fresh": 0, "drifted": 0, "stale": 1, "expired": 0, "retired": 0});
     assert_eq!(summary(&repo), all_fresh);
 
     // R12: whitespace, line breaks, comments, commas before a closing
@@ -617,7 +619,10 @@ The client retries a failed call five times. Each retry waits thrice as long as 
     assert_eq!(fresh_view(&second, "reflowed")["sides"][0]["fp"], second_fp);
     assert_eq!(
         summary(&repo),
-        json!({"claims": 2, "fresh": 2, "stale": 0, "expired": 0, "retired": 0})
+        // Both stay fresh. Both drifted: each stored quote spans a line
+        // break that moved, so it is found only approximately and the
+        // claim asks for a reanchor (section 15.2).
+        json!({"claims": 2, "fresh": 2, "drifted": 2, "stale": 0, "expired": 0, "retired": 0})
     );
 
     // One word of the second sentence.
@@ -626,7 +631,7 @@ The client retries a failed call five times. Each retry waits thrice as long as 
     let listed = repo.json(&["status"]);
     assert_eq!(
         listed["summary"],
-        json!({"claims": 2, "fresh": 1, "stale": 1, "expired": 0, "retired": 0})
+        json!({"claims": 2, "fresh": 1, "drifted": 0, "stale": 1, "expired": 0, "retired": 0})
     );
     assert_eq!(listed["claims"].as_array().unwrap().len(), 1, "{listed}");
     let view = &listed["claims"][0];
@@ -723,7 +728,7 @@ fn r18_recheck_boundary_under_now() {
     assert_eq!(envelope["now"], "2026-03-31T23:59:59Z");
     assert_eq!(
         envelope["summary"],
-        json!({"claims": 1, "fresh": 1, "stale": 0, "expired": 0, "retired": 0})
+        json!({"claims": 1, "fresh": 1, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
     );
     assert_eq!(view["id"], id.as_str());
     assert_eq!(view["state"], "fresh", "{view}");
@@ -738,7 +743,7 @@ fn r18_recheck_boundary_under_now() {
     assert_eq!(envelope["now"], expires);
     assert_eq!(
         envelope["summary"],
-        json!({"claims": 1, "fresh": 0, "stale": 0, "expired": 1, "retired": 0})
+        json!({"claims": 1, "fresh": 0, "drifted": 0, "stale": 0, "expired": 1, "retired": 0})
     );
     assert_eq!(view["id"], id.as_str());
     assert_eq!(view["state"], "expired", "{view}");

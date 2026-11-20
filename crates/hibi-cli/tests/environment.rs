@@ -291,7 +291,7 @@ fn r22_every_other_command_works_without_a_key_and_contacts_no_judge() {
         assert_eq!(ids(&v), Vec::<String>::new());
         assert_eq!(
             v["summary"],
-            json!({"claims": 1, "fresh": 1, "stale": 0, "expired": 0, "retired": 0})
+            json!({"claims": 1, "fresh": 1, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
         );
 
         replace(&repo, "src/a.rs", "    1\n", "    11\n");
@@ -338,7 +338,7 @@ fn r22_every_other_command_works_without_a_key_and_contacts_no_judge() {
         let v = run(&["status"]).ok();
         assert_eq!(
             v["summary"],
-            json!({"claims": 2, "fresh": 0, "stale": 0, "expired": 0, "retired": 2})
+            json!({"claims": 2, "fresh": 0, "drifted": 0, "stale": 0, "expired": 0, "retired": 2})
         );
 
         let v = run(&["providers"]).ok();
@@ -523,7 +523,7 @@ fn r39_commands_that_do_not_need_git_work_without_git() {
     assert_eq!(ids(&v), Vec::<String>::new());
     assert_eq!(
         v["summary"],
-        json!({"claims": 1, "fresh": 1, "stale": 0, "expired": 0, "retired": 0})
+        json!({"claims": 1, "fresh": 1, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
     );
 
     replace(&repo, "src/a.rs", "    1\n", "    11\n");
@@ -615,7 +615,7 @@ fn r39_commands_that_do_not_need_git_work_without_git() {
     let v = run(&["status"]).ok();
     assert_eq!(
         v["summary"],
-        json!({"claims": 2, "fresh": 0, "stale": 0, "expired": 0, "retired": 2})
+        json!({"claims": 2, "fresh": 0, "drifted": 0, "stale": 0, "expired": 0, "retired": 2})
     );
     run(&["providers"]).ok();
     run(&["version"]).ok();
@@ -667,7 +667,7 @@ fn r39_a_repo_side_without_git_is_repo_not_found() {
     assert_eq!(claim["next"], Value::Null);
     assert_eq!(
         v["summary"],
-        json!({"claims": 2, "fresh": 1, "stale": 1, "expired": 0, "retired": 0})
+        json!({"claims": 2, "fresh": 1, "drifted": 0, "stale": 1, "expired": 0, "retired": 0})
     );
 }
 
@@ -827,7 +827,7 @@ fn r60_a_repo_side_with_an_old_git_is_repo_not_found_with_a_warning() {
     assert_eq!(ids(&v), vec![s.remote.clone()]);
     assert_eq!(
         v["summary"],
-        json!({"claims": 2, "fresh": 1, "stale": 1, "expired": 0, "retired": 0})
+        json!({"claims": 2, "fresh": 1, "drifted": 0, "stale": 1, "expired": 0, "retired": 0})
     );
     let claim = &v["claims"][0];
     assert_eq!(claim["state"], "stale");

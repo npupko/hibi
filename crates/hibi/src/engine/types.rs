@@ -17,7 +17,7 @@ use crate::store::{ORPHAN_RECORD, StoreWarning, UNKNOWN_REPLACEMENT};
 pub const TEXT_EXCERPT_CHARS: usize = 240;
 
 /// The sentence `status` carries once in `nextNote` (section 15.2).
-pub const NEXT_NOTE: &str = "Re-check each statement before running its next command.";
+pub const NEXT_NOTE: &str = "Re-check each statement before running its next command. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command.";
 
 /// Schema helper: a field that is always present and may be `null`.
 pub(crate) struct Nullable<T>(std::marker::PhantomData<T>);

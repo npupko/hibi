@@ -5,8 +5,8 @@
 use std::fmt::Write as _;
 
 use hibi::engine::{
-    ClaimOutput, ClaimState, ClaimView, CoverOutput, ListOutput, MarkOutput, NEXT_NOTE,
-    ReanchorOutput, RetireOutput, Role, Side, SideState, StatusOutput, UnitRef, Warning,
+    ClaimOutput, ClaimState, ClaimView, CoverOutput, ListOutput, MarkOutput, ReanchorOutput,
+    RetireOutput, Role, Side, SideState, StatusOutput, UnitRef, Warning,
 };
 use hibi::judge::{SuggestOutput, TriageOutput};
 use hibi::model::Anchor;
@@ -187,8 +187,13 @@ fn writes_a_mark(view: &ClaimView) -> bool {
 /// `--loc` or `--since`: only then an empty list means nothing is stale.
 pub fn status(o: &StatusOutput, default_selection: bool) -> String {
     let s = &o.summary;
+    let drifted = if s.drifted > 0 {
+        format!(" ({} drifted)", s.drifted)
+    } else {
+        String::new()
+    };
     let mut out = format!(
-        "{}: {} fresh, {} stale, {} expired, {} retired\n",
+        "{}: {} fresh{drifted}, {} stale, {} expired, {} retired\n",
         plural(s.claims, "claim", "claims"),
         s.fresh,
         s.stale,
@@ -210,8 +215,19 @@ pub fn status(o: &StatusOutput, default_selection: bool) -> String {
         out.push('\n');
         claim_block(&mut out, view);
     }
-    if o.claims.iter().any(writes_a_mark) {
-        let _ = writeln!(out, "\n{NEXT_NOTE}");
+    // One sentence per kind of listed claim, so that neither misleads.
+    let fresh = |v: &&ClaimView| v.state == ClaimState::Fresh;
+    if o.claims.iter().filter(|v| !fresh(v)).any(writes_a_mark) {
+        let _ = writeln!(
+            out,
+            "\nRe-check each stale or expired statement before running its next command."
+        );
+    }
+    if o.claims.iter().filter(fresh).any(writes_a_mark) {
+        let _ = writeln!(
+            out,
+            "\nA fresh claim is listed because its anchor drifted. The statement still holds: look at what the anchor points to now, then run its reanchor command."
+        );
     }
     out
 }

@@ -175,10 +175,15 @@ mark matches the current fingerprint of every side, stale when none does, \
 expired when a mark matches but the recheck period has passed, and retired \
 when it was retired.
 
-Without arguments the stale and expired claims are listed. Each listed claim \
-shows the sides that are not the same as at its mark, and the next command \
-to run. Re-check the statement before you run that command. The summary \
-always counts every claim in the store.")]
+Without arguments every claim that needs attention is listed: the stale and \
+expired ones, and fresh claims that drifted. A claim drifted when one of its \
+anchors was found only approximately, because the text it quotes was \
+reworded or its symbol was renamed: the claim still holds, and `hibi \
+reanchor` brings the stored anchor up to date.
+
+Each listed claim shows the sides that are not the same as at its mark, and \
+the next command to run. Re-check a stale or expired statement before you \
+run that command. The summary always counts every claim in the store.")]
     Status(StatusArgs),
 
     /// Record that claims were checked again and still hold
@@ -368,7 +373,7 @@ pub struct StatusArgs {
     pub loc: Vec<String>,
 
     /// List claims in this state. Repeat for several
-    /// [default: stale and expired]
+    /// [default: stale, expired, and fresh claims that drifted]
     #[arg(long, value_enum, value_name = "state")]
     pub state: Vec<StateArg>,
 

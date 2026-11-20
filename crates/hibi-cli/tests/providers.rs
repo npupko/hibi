@@ -143,7 +143,7 @@ fn r28_a_listed_scheme_without_registration_is_unavailable_and_starts_nothing() 
     assert_eq!(ids(&v), vec![id.clone()]);
     assert_eq!(
         v["summary"],
-        json!({"claims": 1, "fresh": 0, "stale": 1, "expired": 0, "retired": 0})
+        json!({"claims": 1, "fresh": 0, "drifted": 0, "stale": 1, "expired": 0, "retired": 0})
     );
     let claim = &v["claims"][0];
     assert_eq!(claim["state"], "stale");
@@ -404,7 +404,7 @@ fn a_registered_provider_resolves_and_detects_a_changed_note() {
     assert_eq!(ids(&v), Vec::<String>::new());
     assert_eq!(
         v["summary"],
-        json!({"claims": 1, "fresh": 1, "stale": 0, "expired": 0, "retired": 0})
+        json!({"claims": 1, "fresh": 1, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
     );
     let detail = repo.json(&["status", "--detail", &id]);
     assert_eq!(

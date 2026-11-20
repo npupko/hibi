@@ -222,7 +222,7 @@ fn r7_r8_two_branches_claim_in_one_shard_and_merge_without_conflict() {
     let status = status.ok();
     assert_eq!(
         status["summary"],
-        json!({"claims": 5, "fresh": 5, "stale": 0, "expired": 0, "retired": 0})
+        json!({"claims": 5, "fresh": 5, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
     );
     assert_eq!(status["claims"], json!([]));
     assert_eq!(status["warnings"], json!([]));
@@ -293,7 +293,7 @@ fn r7_r8_the_same_mark_written_on_both_branches_counts_once() {
     let status = repo.json(&["status"]);
     assert_eq!(
         status["summary"],
-        json!({"claims": 3, "fresh": 3, "stale": 0, "expired": 0, "retired": 0})
+        json!({"claims": 3, "fresh": 3, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
     );
     assert_eq!(status["warnings"], json!([]));
     assert_eq!(listed_ids(&repo), sorted(all.clone()));
@@ -351,7 +351,7 @@ fn r9_an_unsorted_shard_with_a_duplicate_loads_and_the_next_write_sorts_it() {
     let status = repo.json(&["status"]);
     assert_eq!(
         status["summary"],
-        json!({"claims": 4, "fresh": 4, "stale": 0, "expired": 0, "retired": 0})
+        json!({"claims": 4, "fresh": 4, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
     );
     assert_eq!(status["warnings"], json!([]));
     assert_eq!(listed_ids(&repo), sorted(ids.clone()));
@@ -554,7 +554,7 @@ fn r10_two_claim_processes_at_the_same_time() {
     let status = status.ok();
     assert_eq!(
         status["summary"],
-        json!({"claims": total, "fresh": total, "stale": 0, "expired": 0, "retired": 0})
+        json!({"claims": total, "fresh": total, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
     );
     assert_eq!(status["warnings"], json!([]));
     let list = repo.run(&["list"]);
@@ -602,7 +602,7 @@ fn r10_eight_claim_processes_on_one_shard() {
     assert_eq!(states(&repo, &claims), all_fresh(&claims));
     assert_eq!(
         repo.json(&["status"])["summary"],
-        json!({"claims": 8, "fresh": 8, "stale": 0, "expired": 0, "retired": 0})
+        json!({"claims": 8, "fresh": 8, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
     );
 }
 

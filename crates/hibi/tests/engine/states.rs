@@ -210,14 +210,14 @@ fn status_selection_summary_and_order() {
     assert_eq!(ids(&out), sorted(vec![stale.clone(), expired.clone()]));
     assert_eq!(
         serde_json::to_value(out.summary).unwrap(),
-        serde_json::json!({"claims": 4, "fresh": 1, "stale": 1, "expired": 1, "retired": 1})
+        serde_json::json!({"claims": 4, "fresh": 1, "drifted": 0, "stale": 1, "expired": 1, "retired": 1})
     );
     assert_eq!(out.since, None);
     assert_eq!(out.now, now());
     assert_eq!(out.snapshot, "mem:4:4:1");
     assert_eq!(
         out.next_note,
-        "Re-check each statement before running its next command."
+        "Re-check each statement before running its next command. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command."
     );
 
     // --state.
@@ -321,7 +321,7 @@ fn status_json_shape() {
         json,
         serde_json::json!({
             "ok": true, "command": "status", "now": NOW, "snapshot": "mem:1:1:0", "since": null,
-            "summary": {"claims": 1, "fresh": 0, "stale": 1, "expired": 0, "retired": 0},
+            "summary": {"claims": 1, "fresh": 0, "drifted": 0, "stale": 1, "expired": 0, "retired": 0},
             "claims": [{
                 "id": id, "statement": "Retries are capped.", "recheck": "P90D", "note": null,
                 "state": "stale", "mark": mark, "markedAt": "2026-11-01T00:00:00Z",
@@ -344,7 +344,7 @@ fn status_json_shape() {
                 ],
                 "next": format!("hibi mark {id}")
             }],
-            "nextNote": "Re-check each statement before running its next command.",
+            "nextNote": engine::NEXT_NOTE,
             "warnings": []
         })
     );

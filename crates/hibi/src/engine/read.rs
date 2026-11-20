@@ -74,7 +74,8 @@ pub struct StatusQuery {
     /// Claim ids or id prefixes. When non-empty, exactly these claims are
     /// listed, in any state, and `states` and `locs` are not applied.
     pub ids: Vec<String>,
-    /// `--state`. Empty means `stale` and `expired`.
+    /// `--state`. Empty means every claim that needs attention: `stale`,
+    /// `expired`, and `fresh` claims that drifted (see [`StatusSummary`]).
     pub states: Vec<ClaimState>,
     /// `--loc` globs, matched against the whole locator string.
     pub locs: Vec<String>,
@@ -83,10 +84,15 @@ pub struct StatusQuery {
 }
 
 /// `summary` in the output of `status`: every claim in the store.
+/// `claims` is the sum of `fresh`, `stale`, `expired` and `retired`.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, JsonSchema)]
 pub struct StatusSummary {
     pub claims: usize,
     pub fresh: usize,
+    /// How many of the `fresh` claims drifted: a side was found only
+    /// approximately, so the claim holds but its stored selector is out of
+    /// date and its `next` is a `reanchor` command.
+    pub drifted: usize,
     pub stale: usize,
     pub expired: usize,
     pub retired: usize,
@@ -185,8 +191,16 @@ fn invalidated<'a>(
     Ok(out)
 }
 
+/// True when a side of a claim resolved only approximately. For a fresh
+/// claim this is what "drifted" means.
+fn drifted(resolved: &[Resolved]) -> bool {
+    resolved.iter().any(|r| r.unit().is_some_and(|u| u.approx))
+}
+
 /// `hibi status` (section 15.3): evaluate the freshness of every claim and
-/// list the selected ones, ordered by id.
+/// list the selected ones, ordered by id. Without ids, `--state` or
+/// `--since`, the selected claims are the stale, the expired and the
+/// drifted fresh ones: every claim whose `next` asks for something.
 ///
 /// Every side of every live claim is resolved once; sides of retired claims
 /// are not resolved. `summary` counts every claim before filtering. With
@@ -256,7 +270,12 @@ pub fn status(
             now,
         )?;
         match eval.state {
-            ClaimState::Fresh => summary.fresh += 1,
+            ClaimState::Fresh => {
+                summary.fresh += 1;
+                if drifted(resolved) {
+                    summary.drifted += 1;
+                }
+            }
             ClaimState::Stale => summary.stale += 1,
             ClaimState::Expired => summary.expired += 1,
             ClaimState::Retired => summary.retired += 1,
@@ -277,11 +296,17 @@ pub fn status(
         }
     };
 
-    let default_states = [ClaimState::Stale, ClaimState::Expired];
-    let states: &[ClaimState] = if query.states.is_empty() {
-        &default_states
-    } else {
-        &query.states
+    // The default selection is every claim that needs attention.
+    let selected = |eval: &super::fresh::Evaluation<'_>, resolved: &[Resolved]| {
+        if query.states.is_empty() {
+            match eval.state {
+                ClaimState::Stale | ClaimState::Expired => true,
+                ClaimState::Fresh => drifted(resolved),
+                ClaimState::Retired => false,
+            }
+        } else {
+            query.states.contains(&eval.state)
+        }
     };
     let options = ViewOptions {
         detail: query.detail,
@@ -293,7 +318,7 @@ pub fn status(
         let listed = match (&wanted, &invalidated_ids) {
             (Some(ids), _) => ids.contains(id),
             (None, Some(ids)) => ids.contains(id) && filter.keeps(claim),
-            (None, None) => states.contains(&eval.state) && filter.keeps(claim),
+            (None, None) => selected(eval, resolved) && filter.keeps(claim),
         };
         if listed {
             claims.push(claim_view(claim, eval, resolved, options, &|id| {

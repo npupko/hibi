@@ -919,11 +919,11 @@ fn r35_every_stale_or_expired_claim_has_the_next_of_the_table() {
     assert_eq!(v["claims"], json!([]));
     assert_eq!(
         v["summary"],
-        json!({"claims": 8, "fresh": 8, "stale": 0, "expired": 0, "retired": 0})
+        json!({"claims": 8, "fresh": 8, "drifted": 0, "stale": 0, "expired": 0, "retired": 0})
     );
     assert_eq!(
         v["nextNote"],
-        "Re-check each statement before running its next command."
+        "Re-check each statement before running its next command. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command."
     );
     assert_eq!(v["since"], Value::Null);
     assert_eq!(v["now"], NOW);
@@ -953,11 +953,14 @@ fn r35_every_stale_or_expired_claim_has_the_next_of_the_table() {
     assert_eq!(v["now"], TOMORROW);
     assert_eq!(
         v["summary"],
-        json!({"claims": 8, "fresh": 1, "stale": 6, "expired": 1, "retired": 0})
+        json!({"claims": 8, "fresh": 1, "drifted": 1, "stale": 6, "expired": 1, "retired": 0})
     );
+    // The default selection is the same eight: every one has a `next`,
+    // the drifted fresh claim included.
+    assert_eq!(at(&repo, TOMORROW, &["status"])["claims"], v["claims"]);
     assert_eq!(
         v["nextNote"],
-        "Re-check each statement before running its next command."
+        "Re-check each statement before running its next command. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command."
     );
     let mut sorted = ids(&v);
     assert_eq!(sorted.len(), 8);
@@ -1054,15 +1057,22 @@ fn r35_every_stale_or_expired_claim_has_the_next_of_the_table() {
     assert_eq!(c["sides"][1]["unit"]["key"], "function:time_out");
     assert_eq!(s(&c["next"]), format!("hibi mark {stale_approx}"));
 
-    // The default selection is the stale and the expired claims, and every
-    // one of them has a `next`.
+    // The default selection is the stale and the expired claims and the
+    // drifted fresh one, and every one of them has a `next`.
     let v = at(&repo, TOMORROW, &["status"]);
     let default = by_id(&v);
-    assert_eq!(default.len(), 7);
-    assert!(!default.contains_key(&fresh_approx));
+    assert_eq!(default.len(), 8);
+    assert_eq!(default[&fresh_approx]["state"], "fresh");
+    assert_eq!(
+        s(&default[&fresh_approx]["next"]),
+        format!("hibi reanchor {fresh_approx}")
+    );
     for (id, c) in &default {
-        assert!(matches!(s(&c["state"]), "stale" | "expired"), "{id}");
         assert_eq!(c["next"], claims[id]["next"], "{id}");
+        if id == &fresh_approx {
+            continue;
+        }
+        assert!(matches!(s(&c["state"]), "stale" | "expired"), "{id}");
         let next = s(&c["next"]);
         assert!(
             next.starts_with(&format!("hibi mark {id}"))
@@ -1103,7 +1113,8 @@ fn status_selects_by_state_by_locator_and_by_id() {
     j(&repo, &["retire", &retired]);
     repo.write("src/a.rs", &CODE.replace("= 64;", "= 128;"));
 
-    let summary = json!({"claims": 3, "fresh": 1, "stale": 1, "expired": 0, "retired": 1});
+    let summary =
+        json!({"claims": 3, "fresh": 1, "drifted": 0, "stale": 1, "expired": 0, "retired": 1});
 
     // Default: stale and expired only.
     let v = j(&repo, &["status"]);
@@ -1357,7 +1368,7 @@ fn r36_reanchor_with_a_new_statement_replaces_the_claim() {
     let v = j(&repo, &["status"]);
     assert_eq!(
         v["summary"],
-        json!({"claims": 2, "fresh": 1, "stale": 0, "expired": 0, "retired": 1})
+        json!({"claims": 2, "fresh": 1, "drifted": 0, "stale": 0, "expired": 0, "retired": 1})
     );
 
     // A retired claim cannot be re-anchored again.
@@ -1642,7 +1653,7 @@ fn reanchor_edits_the_evidence_list_the_recheck_period_and_the_note() {
     let v = j(&repo, &["status"]);
     assert_eq!(
         v["summary"],
-        json!({"claims": 8, "fresh": 1, "stale": 0, "expired": 0, "retired": 7})
+        json!({"claims": 8, "fresh": 1, "drifted": 0, "stale": 0, "expired": 0, "retired": 7})
     );
     assert_eq!(ids(&j(&repo, &["list"])), [eighth]);
 }
@@ -1868,8 +1879,33 @@ fn r55_mark_accepts_an_approx_side_and_shows_what_was_marked() {
         json!([["same", null, true], ["same", null, false]])
     );
     assert_eq!(s(&view["next"]), format!("hibi reanchor {id}"));
-    // Fresh, so not in the default listing.
-    assert_eq!(j(&repo, &["status"])["claims"], json!([]));
+    // Fresh but drifted: its `next` asks for something, so the default
+    // listing shows it and the summary counts it.
+    let default = j(&repo, &["status"]);
+    assert_eq!(ids(&default), [id.as_str()]);
+    assert_eq!(default["claims"][0]["state"], "fresh");
+    assert_eq!(
+        s(&default["claims"][0]["next"]),
+        format!("hibi reanchor {id}")
+    );
+    assert_eq!(default["summary"]["fresh"], 1);
+    assert_eq!(default["summary"]["drifted"], 1);
+    let human = repo.human(&["--now", NOW, "status"]);
+    assert!(
+        human.stdout.contains("1 fresh (1 drifted)"),
+        "{}",
+        human.stdout
+    );
+    assert!(
+        human.stdout.contains("its anchor drifted"),
+        "{}",
+        human.stdout
+    );
+    assert!(
+        !human.stdout.contains("Re-check each stale or expired"),
+        "{}",
+        human.stdout
+    );
 
     // The reanchor refreshes the quote.
     let v = at(&repo, "2026-11-20T14:00:00Z", &["reanchor", &id]);
@@ -2301,7 +2337,7 @@ fn retire_takes_several_ids_and_reports_already_retired() {
     let v = j(&repo, &["status"]);
     assert_eq!(
         v["summary"],
-        json!({"claims": 3, "fresh": 0, "stale": 0, "expired": 0, "retired": 3})
+        json!({"claims": 3, "fresh": 0, "drifted": 0, "stale": 0, "expired": 0, "retired": 3})
     );
 }
 
