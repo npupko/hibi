@@ -1,5 +1,6 @@
 {
   "name": "hibi-cli",
+  "version": "5.0.0",
   "description": "Use the hibi CLI as memory across sessions: check status at the start of a session, re-check stale claims and mark, reanchor or retire them, record new claims after checking a statement against evidence, and find uncovered units with cover. Bundles the `hibi` Agent Skill.",
   "author": {
     "name": "Nick Pupko",

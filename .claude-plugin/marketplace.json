@@ -1,5 +1,6 @@
 {
   "name": "hibi",
+  "description": "Claude Code plugins for hibi, which records that a statement was checked against evidence and reports what changed since the check.",
   "owner": {
     "name": "Nick Pupko",
     "email": "lazynick7@gmail.com"
