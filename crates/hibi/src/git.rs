@@ -64,6 +64,15 @@ pub const GIT_ENV: [(&str, &str); 4] = [
     ("GIT_NO_LAZY_FETCH", "1"),
 ];
 
+/// The most ids one [`Git::read_blobs`] call takes. With the size limit per
+/// blob the caller gives, it bounds the bytes one call holds; a caller with
+/// more ids reads them in batches of this size.
+pub const MAX_BLOBS_PER_BATCH: usize = 16;
+
+/// How much of the end of git's standard error [`Git::read_blobs`] keeps
+/// for an error message, in bytes. The rest is read and dropped.
+pub const STDERR_TAIL_BYTES: usize = 4096;
+
 // ---------------------------------------------------------------------------
 // Version
 // ---------------------------------------------------------------------------
@@ -672,6 +681,18 @@ impl Git {
     /// `cat-file --batch` with `ids` on standard input, without `--filters`
     /// or `--textconv`. One answer per id, in order. A blob larger than
     /// `max_bytes` is [`Blob::TooLarge`] and its bytes are not kept.
+    ///
+    /// One call takes at most [`MAX_BLOBS_PER_BATCH`] ids, so the answers
+    /// hold at most `MAX_BLOBS_PER_BATCH * max_bytes` bytes. A longer list
+    /// is `internal` and starts no process: the caller passes it in batches
+    /// (`ids.chunks(MAX_BLOBS_PER_BATCH)`), one call each, and lets go of a
+    /// batch's answers before it reads the next.
+    ///
+    /// The ids are written, and git's standard error is read, on their own
+    /// threads while this one reads standard output, so no pipe can fill
+    /// and stop git. Of standard error only the last
+    /// [`STDERR_TAIL_BYTES`] bytes are kept, for the message of
+    /// `git_failed`.
     pub fn read_blobs(
         &self,
         root: &Path,
@@ -680,6 +701,12 @@ impl Git {
     ) -> Result<Vec<Blob>, Error> {
         if ids.is_empty() {
             return Ok(Vec::new());
+        }
+        if ids.len() > MAX_BLOBS_PER_BATCH {
+            return Err(Error::internal(format!(
+                "read_blobs was given {} ids; one call takes at most {MAX_BLOBS_PER_BATCH}",
+                ids.len()
+            )));
         }
         let args = [OsStr::new("cat-file"), OsStr::new("--batch")];
         let failed = |what: String| {
@@ -709,6 +736,13 @@ impl Git {
             drop(stdin);
             r
         });
+        // Read standard error on another thread so that a git that writes
+        // more than a pipe holds is never stopped by it.
+        let stderr = child
+            .stderr
+            .take()
+            .ok_or_else(|| failed("no standard error".into()))?;
+        let stderr_reader = std::thread::spawn(move || read_tail(stderr, STDERR_TAIL_BYTES));
         let stdout = child
             .stdout
             .take()
@@ -725,16 +759,13 @@ impl Git {
                 }
             }
         }
-        // Drain whatever is left so that git can exit, then collect it.
+        // Drain whatever is left so that git can exit.
         let _ = std::io::copy(&mut reader, &mut std::io::sink());
-        let mut stderr = String::new();
-        if let Some(mut s) = child.stderr.take() {
-            let _ = s.read_to_string(&mut stderr);
-        }
         let status = child
             .wait()
             .map_err(|e| failed(format!("could not be waited for: {e}")))?;
         let write_result = writer.join();
+        let stderr = stderr_reader.join().unwrap_or_default();
         if let Some(e) = read_err {
             return Err(failed(format!("{e}; {}", stderr.trim_end())));
         }
@@ -748,6 +779,32 @@ impl Git {
         }
         Ok(blobs)
     }
+}
+
+/// Read `source` to its end and return the last `keep` bytes of it as text
+/// (bytes that are not UTF-8 are replaced). At most `2 * keep` bytes are
+/// held while reading. A read error ends the reading; what was read until
+/// then is returned.
+fn read_tail(mut source: impl Read, keep: usize) -> String {
+    let mut tail: Vec<u8> = Vec::new();
+    let mut chunk = [0u8; 8192];
+    loop {
+        match source.read(&mut chunk) {
+            Ok(0) => break,
+            Ok(n) => {
+                tail.extend_from_slice(&chunk[..n]);
+                if tail.len() > 2 * keep {
+                    tail.drain(..tail.len() - keep);
+                }
+            }
+            Err(e) if e.kind() == std::io::ErrorKind::Interrupted => {}
+            Err(_) => break,
+        }
+    }
+    if tail.len() > keep {
+        tail.drain(..tail.len() - keep);
+    }
+    String::from_utf8_lossy(&tail).into_owned()
 }
 
 /// Read one `cat-file --batch` answer: `<id> <type> <size>\n<bytes>\n` or

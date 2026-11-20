@@ -15,7 +15,9 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use hibi::Code;
-use hibi::git::{Blob, Git, GitStatus, MIN_GIT, SinceRange, TreeMode, parse_range};
+use hibi::git::{
+    Blob, Git, GitStatus, MAX_BLOBS_PER_BATCH, MIN_GIT, SinceRange, TreeMode, parse_range,
+};
 
 /// Run the real git with an isolated configuration; panic on failure.
 fn sh_git(dir: &Path, args: &[&str]) -> String {
@@ -47,9 +49,14 @@ fn write_script(path: &Path, body: &str) {
     fs::set_permissions(path, fs::Permissions::from_mode(0o755)).unwrap();
 }
 
-/// A wrapper that records its arguments and the four environment variables
-/// of section 10.4 to `log`, then runs the real git with an isolated
-/// configuration.
+/// A wrapper that records each call to `log`, then runs the real git with an
+/// isolated configuration. A call is recorded as the line `CALL`, one line
+/// `ARG <argument>` per argument, one `ENV` line with the four environment
+/// variables of section 10.4, and one `STDIN` line: whether standard input
+/// is a terminal, whether it is `/dev/null`, and, when it is `/dev/null`,
+/// how many bytes could be read from it (`unread` otherwise, so that the
+/// wrapper never takes the ids meant for `cat-file --batch` and never waits
+/// on an open standard input).
 fn recording_git(dir: &Path, log: &Path) -> PathBuf {
     let wrapper = dir.join("git-recorder");
     let real = String::from_utf8(
@@ -65,11 +72,112 @@ fn recording_git(dir: &Path, log: &Path) -> PathBuf {
     write_script(
         &wrapper,
         &format!(
-            "printf '%s\\n' \"ARGS $*\" \"ENV GIT_OPTIONAL_LOCKS=$GIT_OPTIONAL_LOCKS LC_ALL=$LC_ALL GIT_TERMINAL_PROMPT=$GIT_TERMINAL_PROMPT GIT_NO_LAZY_FETCH=$GIT_NO_LAZY_FETCH\" >> '{}'\nGIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 exec '{real}' \"$@\"\n",
+            r#"{{
+  printf 'CALL\n'
+  for a in "$@"; do printf 'ARG %s\n' "$a"; done
+  printf 'ENV GIT_OPTIONAL_LOCKS=%s LC_ALL=%s GIT_TERMINAL_PROMPT=%s GIT_NO_LAZY_FETCH=%s\n' "$GIT_OPTIONAL_LOCKS" "$LC_ALL" "$GIT_TERMINAL_PROMPT" "$GIT_NO_LAZY_FETCH"
+  if [ -t 0 ]; then tty=yes; else tty=no; fi
+  if [ /dev/stdin -ef /dev/null ]; then null=yes; bytes=$(wc -c | tr -d ' '); else null=no; bytes=unread; fi
+  printf 'STDIN tty=%s null=%s bytes=%s\n' "$tty" "$null" "$bytes"
+}} >> '{}'
+GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1 exec '{real}' "$@"
+"#,
             log.display()
         ),
     );
     wrapper
+}
+
+/// One call recorded by [`recording_git`].
+#[derive(Debug)]
+struct Call {
+    args: Vec<String>,
+    env: String,
+    stdin: String,
+}
+
+fn recorded_calls(log: &Path) -> Vec<Call> {
+    let mut calls: Vec<Call> = Vec::new();
+    for line in fs::read_to_string(log).unwrap().lines() {
+        if line == "CALL" {
+            calls.push(Call {
+                args: Vec::new(),
+                env: String::new(),
+                stdin: String::new(),
+            });
+            continue;
+        }
+        let call = calls.last_mut().expect("the log starts with CALL");
+        if let Some(a) = line.strip_prefix("ARG ") {
+            call.args.push(a.to_owned());
+        } else if let Some(e) = line.strip_prefix("ENV ") {
+            call.env = e.to_owned();
+        } else if let Some(s) = line.strip_prefix("STDIN ") {
+            call.stdin = s.to_owned();
+        } else {
+            panic!("unexpected log line {line:?}");
+        }
+    }
+    calls
+}
+
+/// The fixed arguments of section 10.4 for a call in `dir`.
+fn fixed_prefix(dir: &str) -> Vec<String> {
+    [
+        "--no-pager",
+        "-C",
+        dir,
+        "-c",
+        "core.quotePath=false",
+        "-c",
+        "safe.bareRepository=explicit",
+        "-c",
+        "core.fsmonitor=false",
+        "-c",
+        "core.untrackedCache=false",
+    ]
+    .iter()
+    .map(|s| s.to_string())
+    .collect()
+}
+
+/// What [`recording_git`] records for a standard input that is closed
+/// (`/dev/null`): not a terminal, and end of file at once.
+const STDIN_CLOSED: &str = "tty=no null=yes bytes=0";
+
+/// Run `f` on another thread and return its result; panic when it has not
+/// finished after `secs` seconds, so that a deadlock fails the test instead
+/// of blocking the suite.
+fn within<T: Send + 'static>(secs: u64, f: impl FnOnce() -> T + Send + 'static) -> T {
+    use std::sync::mpsc::{RecvTimeoutError, channel};
+    let (tx, rx) = channel();
+    std::thread::spawn(move || {
+        let _ = tx.send(f());
+    });
+    match rx.recv_timeout(std::time::Duration::from_secs(secs)) {
+        Ok(v) => v,
+        Err(RecvTimeoutError::Timeout) => panic!("the call did not return within {secs} s"),
+        Err(RecvTimeoutError::Disconnected) => panic!("the call panicked"),
+    }
+}
+
+/// A program that answers `--version` as a usable git and otherwise runs
+/// `body` (a shell fragment), with `$log` naming a file it may append to.
+fn fake_git(dir: &Path, name: &str, body: &str) -> (PathBuf, PathBuf) {
+    let program = dir.join(name);
+    let log = dir.join(format!("{name}.log"));
+    write_script(
+        &program,
+        &format!(
+            "log='{}'\nif [ \"$1\" = --version ]; then echo 'git version {MIN_GIT}'; exit 0; fi\n{body}\n",
+            log.display()
+        ),
+    );
+    (program, log)
+}
+
+fn oid(n: usize) -> hibi::git::ObjectId {
+    hibi::git::ObjectId::new(format!("{n:040x}")).unwrap()
 }
 
 fn ready(program: &Path) -> Git {
@@ -120,42 +228,37 @@ fn r44_every_invocation_carries_the_hardening() {
         .unwrap();
     let _ = changed;
 
-    let text = fs::read_to_string(&log).unwrap();
-    let lines: Vec<&str> = text.lines().collect();
-    let args: Vec<&str> = lines
-        .iter()
-        .filter_map(|l| l.strip_prefix("ARGS "))
-        .collect();
+    let calls = recorded_calls(&log);
     assert_eq!(
-        args[0], "--version",
+        calls[0].args,
+        ["--version"],
         "the version check runs first and alone"
     );
-    assert!(args.len() >= 10, "{args:?}");
-    for a in &args[1..] {
-        assert!(a.starts_with("--no-pager -C "), "{a}");
-        for flag in [
-            "-c core.quotePath=false",
-            "-c safe.bareRepository=explicit",
-            "-c core.fsmonitor=false",
-            "-c core.untrackedCache=false",
-        ] {
-            assert!(a.contains(flag), "{flag} missing in {a}");
+    assert_eq!(calls[0].stdin, STDIN_CLOSED, "the version check");
+    assert!(calls.len() >= 10, "{calls:?}");
+    let mut subcommands = BTreeSet::new();
+    for c in &calls[1..] {
+        assert_eq!(
+            c.args[..11],
+            fixed_prefix(&c.args[2]),
+            "the fixed arguments come first: {c:?}"
+        );
+        let sub = c.args[11].as_str();
+        subcommands.insert(sub);
+        // Standard input is closed for every call but `cat-file --batch`,
+        // which gets the ids on a pipe.
+        if sub == "cat-file" {
+            assert_eq!(c.stdin, "tty=no null=no bytes=unread", "{c:?}");
+        } else {
+            assert_eq!(c.stdin, STDIN_CLOSED, "{c:?}");
         }
     }
-    for e in lines.iter().filter_map(|l| l.strip_prefix("ENV ")) {
+    for c in &calls {
         assert_eq!(
-            e,
-            "GIT_OPTIONAL_LOCKS=0 LC_ALL=C GIT_TERMINAL_PROMPT=0 GIT_NO_LAZY_FETCH=1"
+            c.env, "GIT_OPTIONAL_LOCKS=0 LC_ALL=C GIT_TERMINAL_PROMPT=0 GIT_NO_LAZY_FETCH=1",
+            "{c:?}"
         );
     }
-    let subcommands: BTreeSet<&str> = args[1..]
-        .iter()
-        .map(|a| {
-            a.split(' ')
-                .nth(11)
-                .unwrap_or_else(|| panic!("no subcommand in {a}"))
-        })
-        .collect();
     assert_eq!(
         subcommands,
         [
@@ -168,6 +271,142 @@ fn r44_every_invocation_carries_the_hardening() {
         ]
         .into()
     );
+}
+
+/// Section 10.4, "Changed paths": the two calls carry exactly these
+/// arguments after the fixed ones, and standard input is closed for both.
+#[test]
+fn changed_paths_argv_and_closed_stdin() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = sample_repo(tmp.path());
+    let log = tmp.path().join("log");
+    let git = ready(&recording_git(tmp.path(), &log));
+    let head = sh_git(&root, &["rev-parse", "HEAD"]).trim().to_owned();
+    let base = hibi::git::ObjectId::new(head.clone()).unwrap();
+    fs::write(root.join("a.md"), "alpha 2\n").unwrap();
+    fs::write(root.join("new.md"), "new\n").unwrap();
+    let changed = git.changed_paths(&root, &base).unwrap();
+    assert_eq!(changed, ["a.md".to_owned(), "new.md".to_owned()].into());
+
+    let calls = recorded_calls(&log);
+    let with_prefix = |rest: &[&str]| -> Vec<String> {
+        let mut v = fixed_prefix(root.to_str().unwrap());
+        v.extend(rest.iter().map(|s| s.to_string()));
+        v
+    };
+    let argv: Vec<Vec<String>> = calls.iter().map(|c| c.args.clone()).collect();
+    assert_eq!(
+        argv,
+        [
+            vec!["--version".to_owned()],
+            with_prefix(&[
+                "diff",
+                "--name-only",
+                "--no-renames",
+                "--no-ext-diff",
+                "--no-textconv",
+                "-z",
+                &head,
+                "--",
+            ]),
+            with_prefix(&["ls-files", "-z", "--others", "--exclude-standard"]),
+        ]
+    );
+    for c in &calls {
+        assert_eq!(c.stdin, STDIN_CLOSED, "{c:?}");
+    }
+}
+
+/// `cat-file --batch`: a git that writes several hundred KiB to standard
+/// error before it reads an id, and more after each answer, does not block
+/// the call: standard error is read while standard output is.
+#[test]
+fn read_blobs_does_not_block_on_standard_error() {
+    let tmp = tempfile::tempdir().unwrap();
+    let (program, _) = fake_git(
+        tmp.path(),
+        "noisy",
+        r#"head -c 524288 /dev/zero | tr '\0' 'e' >&2
+while read -r id; do
+  printf '%s blob 6\nalpha\n\n' "$id"
+  head -c 131072 /dev/zero | tr '\0' 'w' >&2
+done"#,
+    );
+    let git = ready(&program);
+    let root = tmp.path().to_owned();
+    let ids = vec![oid(1), oid(2), oid(3)];
+    let blobs = within(20, move || git.read_blobs(&root, &ids, 1 << 20)).unwrap();
+    assert_eq!(blobs, vec![Blob::Content(b"alpha\n".to_vec()); 3]);
+}
+
+/// A failing `cat-file --batch` that wrote several hundred KiB to standard
+/// error is `git_failed` at once, and the message carries the end of what
+/// git wrote, not all of it.
+#[test]
+fn read_blobs_failure_keeps_the_end_of_standard_error() {
+    let tmp = tempfile::tempdir().unwrap();
+    let (program, _) = fake_git(
+        tmp.path(),
+        "failing",
+        r#"head -c 524288 /dev/zero | tr '\0' 'e' >&2
+echo 'fatal: the last words of the fake git' >&2
+exit 3"#,
+    );
+    let git = ready(&program);
+    let root = tmp.path().to_owned();
+    let err = within(20, move || git.read_blobs(&root, &[oid(1)], 1 << 20)).unwrap_err();
+    assert_eq!(err.code, Code::GitFailed);
+    assert!(
+        err.message
+            .ends_with("fatal: the last words of the fake git"),
+        "the message ends with {:?}",
+        &err.message[err.message.len().saturating_sub(200)..]
+    );
+    assert!(
+        err.message.len() < 16 * 1024,
+        "the message holds {} bytes",
+        err.message.len()
+    );
+}
+
+/// One call answers at most `MAX_BLOBS_PER_BATCH` ids, so the bytes it holds
+/// are bounded by that count times the size limit per blob. A longer list is
+/// refused before any git process is started; the caller passes it in
+/// batches.
+#[test]
+fn read_blobs_takes_a_bounded_batch() {
+    let tmp = tempfile::tempdir().unwrap();
+    let (program, log) = fake_git(
+        tmp.path(),
+        "counting",
+        r#"echo call >> "$log"
+while read -r id; do printf '%s blob 6\nalpha\n\n' "$id"; done"#,
+    );
+    let git = ready(&program);
+    let full: Vec<_> = (0..MAX_BLOBS_PER_BATCH).map(oid).collect();
+    let blobs = git.read_blobs(tmp.path(), &full, 1 << 20).unwrap();
+    assert_eq!(blobs.len(), MAX_BLOBS_PER_BATCH);
+    assert_eq!(fs::read_to_string(&log).unwrap(), "call\n");
+
+    let over: Vec<_> = (0..=MAX_BLOBS_PER_BATCH).map(oid).collect();
+    let err = git.read_blobs(tmp.path(), &over, 1 << 20).unwrap_err();
+    assert_eq!(err.code, Code::Internal);
+    assert!(
+        err.message.contains(&MAX_BLOBS_PER_BATCH.to_string()),
+        "{}",
+        err.message
+    );
+    assert_eq!(
+        fs::read_to_string(&log).unwrap(),
+        "call\n",
+        "no git process was started for the refused list"
+    );
+
+    let mut all = Vec::new();
+    for batch in over.chunks(MAX_BLOBS_PER_BATCH) {
+        all.extend(git.read_blobs(tmp.path(), batch, 1 << 20).unwrap());
+    }
+    assert_eq!(all.len(), MAX_BLOBS_PER_BATCH + 1);
 }
 
 #[test]
