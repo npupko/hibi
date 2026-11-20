@@ -79,8 +79,13 @@ tar -xJf "${tmp}/${tarball}" -C "$tmp" ||
 [ -f "${tmp}/${name}/hibi" ] || fail "${tarball} does not contain ${name}/hibi"
 
 mkdir -p "$BIN_DIR"
-cp "${tmp}/${name}/hibi" "${BIN_DIR}/hibi"
-chmod 755 "${BIN_DIR}/hibi"
+# Copy to a temporary name in the same directory, then rename it onto
+# `hibi`, so a running or partly written binary is never overwritten in place.
+staged="${BIN_DIR}/.hibi.tmp.$$"
+trap 'rm -rf "$tmp"; rm -f "$staged"' EXIT
+cp "${tmp}/${name}/hibi" "$staged" || fail "could not write ${staged}"
+chmod 755 "$staged" || fail "could not make ${staged} executable"
+mv -f "$staged" "${BIN_DIR}/hibi" || fail "could not move ${staged} to ${BIN_DIR}/hibi"
 echo "Installed hibi to ${BIN_DIR}/hibi"
 
 case ":${PATH}:" in
