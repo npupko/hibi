@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::error::{Code, Error};
-use crate::model::{Anchor, parse_compact};
+use crate::model::{Anchor, CLAIM_ID_ARGUMENT_PATTERN, DURATION_PATTERN, parse_compact};
 
 /// An anchor as a caller gives it: compact syntax (section 5.5) or the
 /// JSON object of section 5.3.
@@ -56,11 +56,15 @@ impl From<Anchor> for AnchorInput {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ClaimInput {
+    /// Not empty after trimming.
+    #[schemars(length(min = 1))]
     pub statement: String,
     pub subject: AnchorInput,
     #[serde(default)]
     pub evidence: Vec<AnchorInput>,
+    /// A duration in the grammar of section 9.4, for example `P90D`.
     #[serde(default)]
+    #[schemars(extend("pattern" = DURATION_PATTERN))]
     pub recheck: Option<String>,
     #[serde(default)]
     pub note: Option<String>,
@@ -74,6 +78,7 @@ pub struct ClaimInput {
 #[serde(deny_unknown_fields)]
 pub struct MarkInput {
     /// A claim id or id prefix (section 3.6).
+    #[schemars(extend("pattern" = CLAIM_ID_ARGUMENT_PATTERN))]
     pub claim: String,
     #[serde(default)]
     pub note: Option<String>,

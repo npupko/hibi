@@ -8,19 +8,23 @@
       "$ref": "#/$defs/Timestamp"
     },
     "by": {
+      "description": "Stored trimmed and never empty.",
       "type": [
         "string",
         "null"
-      ]
+      ],
+      "minLength": 1
     },
     "id": {
       "$ref": "#/$defs/RetirementId"
     },
     "note": {
+      "description": "Stored trimmed and never empty.",
       "type": [
         "string",
         "null"
-      ]
+      ],
+      "minLength": 1
     },
     "replacedBy": {
       "description": "Full id of another claim.",

@@ -7,7 +7,7 @@ use hibi::engine::{
     MarkOutput, ReanchorOutput, RetireOutput, StatusOutput,
 };
 use hibi::judge::{SuggestOutput, TriageOutput};
-use hibi::model::{Anchor, Claim, Mark, Retirement, Selector};
+use hibi::model::{Anchor, CLAIM_ID_ARGUMENT_PATTERN, Claim, Mark, Retirement, Selector};
 use hibi::provider::command::ConformanceCase;
 use hibi::provider::{Request, Response, Unit};
 use schemars::{JsonSchema, Schema, schema_for};
@@ -26,7 +26,7 @@ struct ClaimStdin(#[schemars(length(min = 1))] Vec<ClaimInput>);
 #[schemars(untagged, rename = "MarkStdinElement")]
 #[allow(dead_code)]
 enum MarkElement {
-    Id(String),
+    Id(#[schemars(extend("pattern" = CLAIM_ID_ARGUMENT_PATTERN))] String),
     Mark(MarkInput),
 }
 
@@ -150,6 +150,93 @@ mod tests {
                 "{name}"
             );
         }
+    }
+
+    /// The limits that validation enforces are in the schemas, with the
+    /// values of the model's constants.
+    #[test]
+    fn the_schemas_carry_the_limits_that_validation_enforces() {
+        use hibi::model::{
+            CLAIM_ID_ARGUMENT_PATTERN, DURATION_PATTERN, MAX_CONTEXT_CHARS, MAX_POS,
+            MAX_QUOTE_CHARS,
+        };
+        let get = |name: &str, pointer: &str| -> serde_json::Value {
+            serde_json::to_value(schema(name).unwrap())
+                .unwrap()
+                .pointer(pointer)
+                .unwrap_or_else(|| panic!("{name} has no {pointer}"))
+                .clone()
+        };
+        // The selector, alone and wherever it is embedded.
+        for (name, at) in [
+            ("selector", ""),
+            ("anchor", "/$defs/Selector"),
+            ("claim", "/$defs/Selector"),
+            ("claim-input", "/$defs/Selector"),
+            ("unit", "/$defs/Selector"),
+            ("status-output", "/$defs/Selector"),
+            ("cover-output", "/$defs/Selector"),
+        ] {
+            let p = |rest: &str| get(name, &format!("{at}/properties/{rest}"));
+            assert_eq!(p("quote/minLength"), 1, "{name}");
+            assert_eq!(p("quote/maxLength"), MAX_QUOTE_CHARS, "{name}");
+            assert_eq!(p("prefix/maxLength"), MAX_CONTEXT_CHARS, "{name}");
+            assert_eq!(p("suffix/maxLength"), MAX_CONTEXT_CHARS, "{name}");
+            assert_eq!(p("pos/maximum"), MAX_POS, "{name}");
+            assert_eq!(p("symbol/minLength"), 1, "{name}");
+            assert_eq!(p("key/minLength"), 1, "{name}");
+            assert_eq!(
+                get(name, &format!("{at}/dependentRequired")),
+                serde_json::json!({"prefix": ["quote"], "suffix": ["quote"], "pos": ["quote"]}),
+                "{name}"
+            );
+            assert_eq!(get(name, &format!("{at}/additionalProperties")), false);
+        }
+        // Stored records.
+        assert_eq!(get("claim", "/properties/statement/minLength"), 1);
+        assert_eq!(get("claim", "/properties/note/minLength"), 1);
+        assert_eq!(
+            get("claim", "/properties/recheck/pattern"),
+            DURATION_PATTERN
+        );
+        assert_eq!(
+            get("claim", "/$defs/ClaimId/pattern"),
+            "^c1-[0-9a-hjkmnp-tv-z]{20}$"
+        );
+        for record in ["mark", "retirement"] {
+            assert_eq!(get(record, "/properties/by/minLength"), 1, "{record}");
+            assert_eq!(get(record, "/properties/note/minLength"), 1, "{record}");
+            assert!(get(record, "/$defs/Timestamp/pattern").is_string());
+        }
+        assert_eq!(get("mark", "/properties/sides/minItems"), 1);
+        assert_eq!(
+            get("mark", "/$defs/MarkId/pattern"),
+            "^m1-[0-9a-hjkmnp-tv-z]{20}$"
+        );
+        assert!(get("mark", "/$defs/Fingerprint/pattern").is_string());
+        assert!(get("mark", "/$defs/Locator/pattern").is_string());
+        assert_eq!(
+            get("retirement", "/$defs/RetirementId/pattern"),
+            "^r1-[0-9a-hjkmnp-tv-z]{20}$"
+        );
+        // Standard-input documents.
+        let input = "/$defs/ClaimInput/properties";
+        assert_eq!(
+            get("claim-input", &format!("{input}/statement/minLength")),
+            1
+        );
+        assert_eq!(
+            get("claim-input", &format!("{input}/recheck/pattern")),
+            DURATION_PATTERN
+        );
+        assert_eq!(
+            get("mark-input", "/$defs/MarkInput/properties/claim/pattern"),
+            CLAIM_ID_ARGUMENT_PATTERN
+        );
+        assert_eq!(
+            get("mark-input", "/$defs/MarkStdinElement/anyOf/0/pattern"),
+            CLAIM_ID_ARGUMENT_PATTERN
+        );
     }
 
     #[test]

@@ -30,6 +30,16 @@ pub const MAX_CONTEXT_CHARS: usize = 48;
 /// cost of locating a quote (section 7).
 pub const MAX_QUOTE_CHARS: usize = 2048;
 
+/// The duration grammar of section 9.4 as an ECMA 262 regular expression,
+/// for the JSON Schemas. It accepts exactly the strings `duration::parse`
+/// accepts by form; a duration whose arithmetic overflows cannot be
+/// expressed in a pattern.
+pub const DURATION_PATTERN: &str = "^P(?=[0-9]|T[0-9])([0-9]+Y)?([0-9]+M)?([0-9]+W)?([0-9]+D)?(T(?=[0-9])([0-9]+H)?([0-9]+M)?([0-9]+S)?)?$";
+
+/// A claim id argument (section 3.6) as an ECMA 262 regular expression: a
+/// full claim id or a prefix of at least four characters after `c1-`.
+pub const CLAIM_ID_ARGUMENT_PATTERN: &str = "^c1-[0-9a-hjkmnp-tv-z]{4,20}$";
+
 /// The stored form of a free-text field (`note`, `by`): trimmed (WS,
 /// section 4.1), and `null` when the result is empty.
 fn normalize_free_text(value: Option<String>) -> Option<String> {
@@ -275,19 +285,23 @@ impl Locator {
 /// when serialized, and `null` is not accepted.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Hash, Serialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
-#[schemars(description = "A selector (spec section 5.2). No key may be null.")]
+#[schemars(
+    description = "A selector (spec section 5.2). No key may be null.",
+    extend("dependentRequired" = {"prefix": ["quote"], "suffix": ["quote"], "pos": ["quote"]})
+)]
 pub struct Selector {
-    /// Text that occurs in the unit.
+    /// Text that occurs in the unit. At most 2,048 characters, and not
+    /// only whitespace.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schemars(with = "String", length(min = 1))]
+    #[schemars(with = "String", length(min = 1, max = 2048))]
     pub quote: Option<String>,
     /// Up to 48 characters that preceded the quote.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schemars(with = "String")]
+    #[schemars(with = "String", length(max = 48))]
     pub prefix: Option<String>,
     /// Up to 48 characters that followed the quote.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schemars(with = "String")]
+    #[schemars(with = "String", length(max = 48))]
     pub suffix: Option<String>,
     /// Byte offset of the quote when it was recorded. A hint only.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -822,15 +836,16 @@ impl<T: JsonSchema> JsonSchema for Nullable<T> {
 pub struct Claim {
     pub id: ClaimId,
     /// Non-empty, stored trimmed.
+    #[schemars(length(min = 1))]
     pub statement: String,
     pub subject: Anchor,
     /// May be empty. Order is significant.
     pub evidence: Vec<Anchor>,
     /// A duration in the grammar of section 9.4.
-    #[schemars(with = "Nullable<String>")]
+    #[schemars(with = "Nullable<String>", extend("pattern" = DURATION_PATTERN))]
     pub recheck: Option<String>,
     /// Never empty: an empty note is stored as `null`.
-    #[schemars(with = "Nullable<String>")]
+    #[schemars(with = "Nullable<String>", length(min = 1))]
     pub note: Option<String>,
 }
 
@@ -990,12 +1005,15 @@ pub struct Mark {
     pub claim: ClaimId,
     /// When the check happened.
     pub at: Timestamp,
-    /// Free text, kept for audit, never interpreted.
-    #[schemars(with = "Nullable<String>")]
+    /// Free text, kept for audit, never interpreted. Stored trimmed and
+    /// never empty.
+    #[schemars(with = "Nullable<String>", length(min = 1))]
     pub by: Option<String>,
     /// One entry per side, index-aligned with the claim's sides.
+    #[schemars(length(min = 1))]
     pub sides: Vec<MarkSide>,
-    #[schemars(with = "Nullable<String>")]
+    /// Stored trimmed and never empty.
+    #[schemars(with = "Nullable<String>", length(min = 1))]
     pub note: Option<String>,
 }
 
@@ -1142,9 +1160,11 @@ pub struct Retirement {
     #[schemars(with = "Nullable<ClaimId>")]
     pub replaced_by: Option<ClaimId>,
     pub at: Timestamp,
-    #[schemars(with = "Nullable<String>")]
+    /// Stored trimmed and never empty.
+    #[schemars(with = "Nullable<String>", length(min = 1))]
     pub by: Option<String>,
-    #[schemars(with = "Nullable<String>")]
+    /// Stored trimmed and never empty.
+    #[schemars(with = "Nullable<String>", length(min = 1))]
     pub note: Option<String>,
 }
 

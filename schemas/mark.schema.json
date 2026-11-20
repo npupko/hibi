@@ -9,11 +9,12 @@
       "$ref": "#/$defs/Timestamp"
     },
     "by": {
-      "description": "Free text, kept for audit, never interpreted.",
+      "description": "Free text, kept for audit, never interpreted. Stored trimmed and\nnever empty.",
       "type": [
         "string",
         "null"
-      ]
+      ],
+      "minLength": 1
     },
     "claim": {
       "description": "Full id of the claim.",
@@ -23,17 +24,20 @@
       "$ref": "#/$defs/MarkId"
     },
     "note": {
+      "description": "Stored trimmed and never empty.",
       "type": [
         "string",
         "null"
-      ]
+      ],
+      "minLength": 1
     },
     "sides": {
       "description": "One entry per side, index-aligned with the claim's sides.",
       "type": "array",
       "items": {
         "$ref": "#/$defs/MarkSide"
-      }
+      },
+      "minItems": 1
     }
   },
   "additionalProperties": false,

@@ -21,7 +21,8 @@
         },
         "claim": {
           "description": "A claim id or id prefix (section 3.6).",
-          "type": "string"
+          "type": "string",
+          "pattern": "^c1-[0-9a-hjkmnp-tv-z]{4,20}$"
         },
         "note": {
           "type": [
@@ -40,7 +41,8 @@
       "description": "One element of the standard input of `mark --stdin`: a claim id, or an\nobject with the id and an optional note and actor.",
       "anyOf": [
         {
-          "type": "string"
+          "type": "string",
+          "pattern": "^c1-[0-9a-hjkmnp-tv-z]{4,20}$"
         },
         {
           "$ref": "#/$defs/MarkInput"

@@ -62,14 +62,18 @@
           "default": null
         },
         "recheck": {
+          "description": "A duration in the grammar of section 9.4, for example `P90D`.",
           "type": [
             "string",
             "null"
           ],
-          "default": null
+          "default": null,
+          "pattern": "^P(?=[0-9]|T[0-9])([0-9]+Y)?([0-9]+M)?([0-9]+W)?([0-9]+D)?(T(?=[0-9])([0-9]+H)?([0-9]+M)?([0-9]+S)?)?$"
         },
         "statement": {
-          "type": "string"
+          "description": "Not empty after trimming.",
+          "type": "string",
+          "minLength": 1
         },
         "subject": {
           "$ref": "#/$defs/AnchorInput"
@@ -104,16 +108,19 @@
         },
         "prefix": {
           "description": "Up to 48 characters that preceded the quote.",
-          "type": "string"
+          "type": "string",
+          "maxLength": 48
         },
         "quote": {
-          "description": "Text that occurs in the unit.",
+          "description": "Text that occurs in the unit. At most 2,048 characters, and not\nonly whitespace.",
           "type": "string",
+          "maxLength": 2048,
           "minLength": 1
         },
         "suffix": {
           "description": "Up to 48 characters that followed the quote.",
-          "type": "string"
+          "type": "string",
+          "maxLength": 48
         },
         "symbol": {
           "description": "Declaration path in a code resource.",
@@ -121,7 +128,18 @@
           "minLength": 1
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "dependentRequired": {
+        "pos": [
+          "quote"
+        ],
+        "prefix": [
+          "quote"
+        ],
+        "suffix": [
+          "quote"
+        ]
+      }
     }
   }
 }

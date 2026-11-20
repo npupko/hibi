@@ -110,18 +110,21 @@
           "type": [
             "string",
             "null"
-          ]
+          ],
+          "minLength": 1
         },
         "recheck": {
           "description": "A duration in the grammar of section 9.4.",
           "type": [
             "string",
             "null"
-          ]
+          ],
+          "pattern": "^P(?=[0-9]|T[0-9])([0-9]+Y)?([0-9]+M)?([0-9]+W)?([0-9]+D)?(T(?=[0-9])([0-9]+H)?([0-9]+M)?([0-9]+S)?)?$"
         },
         "statement": {
           "description": "Non-empty, stored trimmed.",
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
         "subject": {
           "$ref": "#/$defs/Anchor"
@@ -224,11 +227,12 @@
           "$ref": "#/$defs/Timestamp"
         },
         "by": {
-          "description": "Free text, kept for audit, never interpreted.",
+          "description": "Free text, kept for audit, never interpreted. Stored trimmed and\nnever empty.",
           "type": [
             "string",
             "null"
-          ]
+          ],
+          "minLength": 1
         },
         "claim": {
           "description": "Full id of the claim.",
@@ -238,17 +242,20 @@
           "$ref": "#/$defs/MarkId"
         },
         "note": {
+          "description": "Stored trimmed and never empty.",
           "type": [
             "string",
             "null"
-          ]
+          ],
+          "minLength": 1
         },
         "sides": {
           "description": "One entry per side, index-aligned with the claim's sides.",
           "type": "array",
           "items": {
             "$ref": "#/$defs/MarkSide"
-          }
+          },
+          "minItems": 1
         }
       },
       "additionalProperties": false,
@@ -290,19 +297,23 @@
           "$ref": "#/$defs/Timestamp"
         },
         "by": {
+          "description": "Stored trimmed and never empty.",
           "type": [
             "string",
             "null"
-          ]
+          ],
+          "minLength": 1
         },
         "id": {
           "$ref": "#/$defs/RetirementId"
         },
         "note": {
+          "description": "Stored trimmed and never empty.",
           "type": [
             "string",
             "null"
-          ]
+          ],
+          "minLength": 1
         },
         "replacedBy": {
           "description": "Full id of another claim.",
@@ -352,16 +363,19 @@
         },
         "prefix": {
           "description": "Up to 48 characters that preceded the quote.",
-          "type": "string"
+          "type": "string",
+          "maxLength": 48
         },
         "quote": {
-          "description": "Text that occurs in the unit.",
+          "description": "Text that occurs in the unit. At most 2,048 characters, and not\nonly whitespace.",
           "type": "string",
+          "maxLength": 2048,
           "minLength": 1
         },
         "suffix": {
           "description": "Up to 48 characters that followed the quote.",
-          "type": "string"
+          "type": "string",
+          "maxLength": 48
         },
         "symbol": {
           "description": "Declaration path in a code resource.",
@@ -369,7 +383,18 @@
           "minLength": 1
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "dependentRequired": {
+        "pos": [
+          "quote"
+        ],
+        "prefix": [
+          "quote"
+        ],
+        "suffix": [
+          "quote"
+        ]
+      }
     },
     "Timestamp": {
       "description": "RFC 3339 in UTC with second precision and the Z suffix",
