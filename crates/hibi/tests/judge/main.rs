@@ -785,6 +785,354 @@ fn item_text_is_cut_to_4000_characters() {
 }
 
 // ---------------------------------------------------------------------------
+// The key never reaches an error, the output or the cache
+// ---------------------------------------------------------------------------
+
+/// A key that does not occur by chance in a message.
+const SECRET: &str = "sk-test-9f3k2m7q4x8tbh2d5wqa";
+
+const LATER: &str = "Run the command again later.";
+const CHECK_KEY: &str = "Check TYPESAFE_API_KEY: the service refused it.";
+const CHECK_URL: &str = "Check HIBI_JEV_URL: the endpoint did not answer as the Jev service does.";
+
+fn report_bug(status: u16) -> String {
+    format!(
+        "This is a bug in hibi: the service rejected the request. Report it at https://github.com/npupko/hibi/issues with the status {status}."
+    )
+}
+
+/// The client of [`Fx::judge`] with another key.
+fn judge_with_key(fx: &Fx, mock: &Mock, key: &str) -> Judge {
+    Judge::new(Some(key), Some(&mock.url))
+        .unwrap()
+        .with_policy(fx.judge(mock).policy().clone())
+}
+
+/// Neither the message, the remediation nor the error as the CLI prints it
+/// (JSON) holds the key, a leading part of it, or the header scheme.
+fn assert_no_key(e: &hibi::Error, what: &str) {
+    let json = serde_json::to_string(e).unwrap();
+    let remediation = e.remediation.clone().unwrap_or_default();
+    for text in [&e.message, &remediation, &json, &e.to_string()] {
+        assert!(!text.contains(SECRET), "{what}: the key is in {text:?}");
+        assert!(
+            !text.contains(&SECRET[..12]),
+            "{what}: part of the key is in {text:?}"
+        );
+        assert!(
+            !text.to_ascii_lowercase().contains("bearer"),
+            "{what}: the header value is in {text:?}"
+        );
+    }
+}
+
+/// What a proxy that echoes the request headers answers.
+fn echo(r: &mock::Recorded) -> String {
+    json!({"detail": "refused", "headers": {"authorization": r.header("authorization")}})
+        .to_string()
+}
+
+#[test]
+fn key_leak_an_echoed_authorization_header_is_redacted_from_errors() {
+    let fx = fixture(&[]);
+    let mock = ok_mock();
+    let judge = judge_with_key(&fx, &mock, SECRET);
+    for status in [401, 400, 500] {
+        mock.set_script(Arc::new(move |r, _| Reply {
+            body: echo(r),
+            ..Reply::status(status)
+        }));
+        let e = fx.triage(&judge, true).unwrap_err();
+        let what = format!("status {status}");
+        assert_eq!(
+            mock.recorded().last().unwrap().header("authorization"),
+            Some(format!("Bearer {SECRET}").as_str()),
+            "the server did receive the key"
+        );
+        assert_eq!(e.code, Code::JudgeFailed, "{what}");
+        assert!(e.message.contains(&status.to_string()), "{}", e.message);
+        assert_no_key(&e, &what);
+        assert!(e.message.contains("[redacted]"), "{}", e.message);
+        assert!(e.message.contains("refused"), "{}", e.message);
+    }
+}
+
+#[test]
+fn key_leak_a_cut_body_leaves_no_part_of_the_key() {
+    let fx = fixture(&[]);
+    // The key starts 12 characters before the 300 character cut.
+    let mock = Mock::start(Arc::new(|r, _| Reply {
+        body: format!(
+            "{}{}",
+            "x".repeat(281),
+            r.header("authorization").unwrap_or_default()
+        ),
+        ..Reply::status(400)
+    }));
+    let e = fx
+        .triage(&judge_with_key(&fx, &mock, SECRET), false)
+        .unwrap_err();
+    assert!(e.message.contains("400"), "{}", e.message);
+    assert_no_key(&e, "a cut body");
+}
+
+#[test]
+fn key_leak_a_200_that_is_not_json_and_holds_the_key_is_redacted() {
+    let fx = fixture(&[]);
+    let mock = Mock::start(Arc::new(|r, _| Reply {
+        body: format!(
+            "<html>authorization: {}</html>",
+            r.header("authorization").unwrap_or_default()
+        ),
+        ..Reply::status(200)
+    }));
+    let e = fx
+        .triage(&judge_with_key(&fx, &mock, SECRET), true)
+        .unwrap_err();
+    assert_eq!(e.code, Code::JudgeFailed);
+    assert_eq!(mock.count(), 1);
+    assert!(e.message.contains("not JSON"), "{}", e.message);
+    assert_no_key(&e, "a 200 that is not JSON");
+}
+
+#[test]
+fn key_leak_a_200_that_names_the_key_as_its_model_is_redacted() {
+    let fx = fixture(&[]);
+    let mock = Mock::start(Arc::new(|r, _| {
+        let mut v = mock::answers(&r.body, &by_content);
+        v["model"] = json!(r.header("authorization"));
+        Reply::json(200, &v)
+    }));
+    let e = fx
+        .triage(&judge_with_key(&fx, &mock, SECRET), true)
+        .unwrap_err();
+    assert_eq!(e.code, Code::JudgeFailed);
+    assert_eq!(mock.count(), 1);
+    assert!(e.message.contains("model"), "{}", e.message);
+    assert_no_key(&e, "a 200 from another model");
+    assert!(e.message.contains("[redacted]"), "{}", e.message);
+}
+
+#[test]
+fn key_leak_an_echoed_key_in_an_answer_is_not_cached() {
+    let fx = fixture(&[]);
+    // A usable response whose answers carry an extra member with the header.
+    let mock = Mock::start(Arc::new(|r, _| {
+        let mut v = mock::answers(&r.body, &by_content);
+        for (_, a) in v["answers"].as_object_mut().unwrap() {
+            a["echo"] = json!(r.header("authorization"));
+        }
+        Reply::json(200, &v)
+    }));
+    let judge = judge_with_key(&fx, &mock, SECRET);
+    let out = fx.triage(&judge, true).unwrap();
+    assert_eq!(out.considered, 5);
+    assert!(!serde_json::to_string(&out).unwrap().contains(SECRET));
+    // The answers were cached.
+    fx.triage(&judge, true).unwrap();
+    assert_eq!(mock.count(), 1);
+    let key = judge::cache_key(
+        judge::MODEL,
+        &questions::triage_state("file:docs/guide.md"),
+        &questions::triage_checkable(
+            &["Retries".to_owned()],
+            "The client retries a request three times.",
+        ),
+    )
+    .unwrap();
+    let entry = fx.cache.judge(&key).unwrap().unwrap();
+    assert!(
+        !entry.answer.contains(SECRET),
+        "the key is in the cached answer {}",
+        entry.answer
+    );
+    assert!(entry.answer.contains("[redacted]"), "{}", entry.answer);
+    // No file of the cache database holds the key.
+    for e in std::fs::read_dir(fx._cache_dir.path()).unwrap() {
+        let path = e.unwrap().path();
+        let bytes = std::fs::read(&path).unwrap();
+        let found = bytes.windows(SECRET.len()).any(|w| w == SECRET.as_bytes());
+        assert!(!found, "the key is in {}", path.display());
+    }
+}
+
+// ---------------------------------------------------------------------------
+// The remediation of judge_failed by cause, and what is retried (14.7)
+// ---------------------------------------------------------------------------
+
+/// One failing triage against `mock`: the error and the requests it took.
+fn fail_once(fx: &Fx, mock: &Mock, judge: &Judge) -> (hibi::Error, usize) {
+    let before = mock.count();
+    let e = fx.triage(judge, false).unwrap_err();
+    assert_eq!(e.code, Code::JudgeFailed);
+    (e, mock.count() - before)
+}
+
+fn remediation_for_statuses(
+    statuses: &[u16],
+    requests: usize,
+    remediation: &dyn Fn(u16) -> String,
+) {
+    let fx = fixture(&[]);
+    let mock = ok_mock();
+    let judge = fx.judge(&mock);
+    for &status in statuses {
+        mock.set_script(Arc::new(move |_, _| Reply::status(status)));
+        let (e, sent) = fail_once(&fx, &mock, &judge);
+        assert_eq!(
+            mock.recorded().last().unwrap().method,
+            "POST",
+            "status {status}"
+        );
+        assert_eq!(sent, requests, "requests for status {status}");
+        assert!(e.message.contains(&status.to_string()), "{}", e.message);
+        assert_eq!(
+            e.remediation.as_deref(),
+            Some(remediation(status).as_str()),
+            "status {status}"
+        );
+    }
+}
+
+#[test]
+fn remediation_authentication_names_the_key_variable() {
+    remediation_for_statuses(&[401, 403], 1, &|_| CHECK_KEY.to_owned());
+}
+
+#[test]
+fn remediation_a_rejected_request_is_a_bug_to_report_with_the_status() {
+    remediation_for_statuses(&[400, 404, 413, 415, 422], 1, &report_bug);
+}
+
+#[test]
+fn remediation_rate_limit_and_server_errors_say_run_again_later() {
+    remediation_for_statuses(&[408, 429, 500, 503, 529], 3, &|_| LATER.to_owned());
+}
+
+#[test]
+fn remediation_a_redirect_names_the_endpoint_variable() {
+    remediation_for_statuses(&[301, 302, 307, 308], 1, &|_| CHECK_URL.to_owned());
+}
+
+#[test]
+fn remediation_an_answer_of_another_shape_names_the_endpoint_variable() {
+    let fx = fixture(&[]);
+    let mock = ok_mock();
+    let judge = fx.judge(&mock);
+    type Mangle = fn(&mut Value);
+    let cases: [(&str, Mangle); 3] = [
+        ("another model", |v| v["model"] = json!("jev-1.13.0")),
+        ("no answers", |v| {
+            v.as_object_mut().unwrap().remove("answers");
+        }),
+        ("not json", |v| *v = json!("<html>")),
+    ];
+    for (what, mangle) in cases {
+        mock.set_script(Arc::new(move |r, _| {
+            let mut v = mock::answers(&r.body, &by_content);
+            mangle(&mut v);
+            let body = match v.as_str() {
+                Some(s) => s.to_owned(),
+                None => v.to_string(),
+            };
+            Reply {
+                body,
+                ..Reply::status(200)
+            }
+        }));
+        let (e, sent) = fail_once(&fx, &mock, &judge);
+        assert_eq!(sent, 1, "{what}");
+        assert_eq!(e.remediation.as_deref(), Some(CHECK_URL), "{what}");
+    }
+}
+
+#[test]
+fn remediation_connection_errors_and_timeouts_say_run_again_later() {
+    let fx = fixture(&[]);
+    // A timeout: three attempts.
+    let mock = Mock::start(Arc::new(|_, _| {
+        Reply::status(200).after(Duration::from_millis(1500))
+    }));
+    let (e, sent) = fail_once(&fx, &mock, &fx.judge(&mock));
+    assert_eq!(sent, 3);
+    assert_eq!(e.remediation.as_deref(), Some(LATER));
+    assert_eq!(fx.sleeps(), [500, 1000]);
+
+    // A refused connection: three attempts, seen as two backoffs.
+    let fx = fixture(&[]);
+    let port = {
+        let l = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        l.local_addr().unwrap().port()
+    };
+    let sleeps = fx.sleeps.clone();
+    let judge = Judge::new(
+        Some(KEY),
+        Some(&format!("http://127.0.0.1:{port}/v1/systemone")),
+    )
+    .unwrap()
+    .with_policy(Policy {
+        sleep: Arc::new(move |d| sleeps.lock().unwrap().push(d)),
+        ..Policy::default()
+    });
+    let e = fx.triage(&judge, false).unwrap_err();
+    assert_eq!(e.code, Code::JudgeFailed);
+    assert_eq!(e.remediation.as_deref(), Some(LATER));
+    assert_eq!(fx.sleeps(), [500, 1000]);
+}
+
+/// A key the HTTP library cannot send: nothing is sent, nothing is waited
+/// for, and the error names the variable and the fault, not the key.
+fn a_key_that_cannot_be_sent(key: &str, fault: &str) {
+    let fx = fixture(&[]);
+    let mock = ok_mock();
+    // A real sleep of 5 s per backoff, so that a retry would show in the
+    // elapsed time.
+    let sleeps = fx.sleeps.clone();
+    let judge = Judge::new(Some(key), Some(&mock.url))
+        .unwrap()
+        .with_policy(Policy {
+            backoff_initial: Duration::from_secs(5),
+            sleep: Arc::new(move |d| {
+                sleeps.lock().unwrap().push(d);
+                std::thread::sleep(d);
+            }),
+            ..Policy::default()
+        });
+    let start = std::time::Instant::now();
+    let e = fx.triage(&judge, false).unwrap_err();
+    let took = start.elapsed();
+    assert_eq!(e.code, Code::JudgeFailed);
+    assert_eq!(mock.count(), 0, "no request");
+    assert_eq!(fx.sleeps(), [] as [u128; 0], "no backoff");
+    assert!(took < Duration::from_secs(3), "took {took:?}");
+    assert_eq!(
+        mock.connections.load(std::sync::atomic::Ordering::SeqCst),
+        0,
+        "no connection"
+    );
+    assert!(e.message.contains("TYPESAFE_API_KEY"), "{}", e.message);
+    assert!(e.message.contains(fault), "{}", e.message);
+    assert!(!e.message.contains("attempts"), "{}", e.message);
+    let remediation = e.remediation.clone().unwrap_or_default();
+    assert!(remediation.contains("TYPESAFE_API_KEY"), "{remediation}");
+    let json = serde_json::to_string(&e).unwrap();
+    for part in key.split(['\n', '\r']).filter(|p| !p.is_empty()) {
+        assert!(!json.contains(part), "the key is in {json}");
+    }
+}
+
+#[test]
+fn a_key_with_a_non_ascii_character_is_not_sent_and_not_retried() {
+    a_key_that_cannot_be_sent("sk-test-9f3k2m7qé4x8tbh2d5wqa", "not printable ASCII");
+}
+
+#[test]
+fn a_key_with_a_line_break_is_not_sent_and_not_retried() {
+    a_key_that_cannot_be_sent("sk-test-9f3k2m7q\n4x8tbh2d5wqa", "control character");
+    a_key_that_cannot_be_sent("sk-test-9f3k2m7q4x8tbh2d5wqa\r\n", "control character");
+}
+
+// ---------------------------------------------------------------------------
 // R27, R22, R23, R64
 // ---------------------------------------------------------------------------
 
