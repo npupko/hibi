@@ -259,6 +259,15 @@ fn list_registered(providers: &mut Providers, loc: &Locator) -> Listing {
     }
 }
 
+/// The file list of a repository directory (section 10.4) without the
+/// paths under `.hibi/`, which are never resources (section 10.1). This
+/// holds for the root and for a sibling repository alike.
+fn listed_files(env: &CoverEnv<'_>, dir: &Path) -> Result<Vec<String>, Error> {
+    let mut files = env.git.file_list(dir)?;
+    files.retain(|p| p != ".hibi" && !p.starts_with(".hibi/"));
+    Ok(files)
+}
+
 /// The resources of a scope, or the one `unavailable` entry of a refused
 /// sibling alias.
 fn scope_resources(
@@ -276,9 +285,7 @@ fn scope_resources(
     match scope.resource.kind() {
         PatternKind::File { .. } => {
             if root_files.is_none() {
-                let mut files = env.git.file_list(env.root)?;
-                files.retain(|p| p != ".hibi" && !p.starts_with(".hibi/"));
-                *root_files = Some(files);
+                *root_files = Some(listed_files(env, env.root)?);
             }
             Ok(Ok(locators("file:", root_files.as_deref().unwrap_or(&[]))))
         }
@@ -295,7 +302,7 @@ fn scope_resources(
                     },
                 })),
                 Ok(dir) => {
-                    let files = env.git.file_list(&dir)?;
+                    let files = listed_files(env, &dir)?;
                     Ok(Ok(locators(&format!("repo:{alias}//"), &files)))
                 }
             }

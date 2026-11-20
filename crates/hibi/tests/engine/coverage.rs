@@ -389,6 +389,53 @@ fn scopes_are_selected_by_name_in_config_order_and_hibi_is_never_listed() {
     assert_eq!(f.cover(&[], 0).unwrap_err().code, Code::NoScopes);
 }
 
+/// Section 10.1: paths under `.hibi/` are never in the file list, in a
+/// sibling repository as in the root.
+#[test]
+fn hibi_paths_of_a_sibling_repository_are_never_listed() {
+    let mut f = fixture();
+    let sibling = repo(&[
+        ("docs/x.md", "x"),
+        (".hibi/hibi.toml", "version = 1\n"),
+        (".hibi/notes.md", "n"),
+        ("sub/.hibi/kept.md", "k"),
+    ]);
+    f.config = RepoConfig::parse(
+        "version = 1\n[repos]\napi = \"../api\"\n[[scope]]\nname = \"sibling\"\nresource = \"repo:api//**/*.md\"\nkinds = [\"sentence\"]\n",
+    )
+    .unwrap();
+    f.user = UserConfig {
+        repos: vec![hibi::config::RepoEntry {
+            root: f.dir.path().to_path_buf(),
+            alias: "api".into(),
+            path: sibling.path().to_path_buf(),
+        }],
+        ..UserConfig::default()
+    };
+    for loc in [
+        "repo:api//docs/x.md",
+        "repo:api//.hibi/notes.md",
+        "repo:api//sub/.hibi/kept.md",
+    ] {
+        set(
+            &f.files,
+            loc,
+            vec![sym_unit("s", "sentence", "A sentence.")],
+        );
+    }
+    let out = f.cover(&["sibling"], 0).unwrap();
+    let scope = &out.scopes[0];
+    assert!(scope.unavailable.is_empty(), "{:?}", scope.unavailable);
+    let listed: Vec<&str> = scope.items.iter().map(|i| i.loc.as_str()).collect();
+    // Only a top-level `.hibi/` is the store; `sub/.hibi/` is a plain
+    // directory.
+    assert_eq!(
+        listed,
+        ["repo:api//docs/x.md", "repo:api//sub/.hibi/kept.md"]
+    );
+    assert_eq!((scope.units, scope.uncovered), (2, 2));
+}
+
 /// For the judge: `coverage` gives every uncovered unit, and `unit_texts`
 /// their full text; `render_sides` gives the text of a claim's sides.
 #[test]
