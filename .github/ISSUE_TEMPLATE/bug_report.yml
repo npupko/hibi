@@ -1,0 +1,87 @@
+name: Bug report
+description: Report something in hibi that is broken or behaves differently from the docs.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        hibi is deterministic: the same store, files and `--now` give the same
+        output. A short sequence of commands that reproduces the problem is
+        usually enough to find it.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you expected, and what hibi did instead.
+      placeholder: |
+        Expected: the claim is reported as stale after the function changed.
+        Actual: it is reported as fresh.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The commands you ran, in order, and the smallest files that show the problem.
+      placeholder: |
+        1. hibi init
+        2. hibi claim ...
+        3. Edit src/lib.rs
+        4. hibi status
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: The output of the failing command with `--format json`. It is rendered as code, so no backticks are needed.
+      render: json
+    validations:
+      required: false
+  - type: input
+    id: hibi-version
+    attributes:
+      label: hibi version
+      description: Output of `hibi version`.
+    validations:
+      required: true
+  - type: input
+    id: git-version
+    attributes:
+      label: git version
+      description: Output of `git --version`.
+    validations:
+      required: false
+  - type: dropdown
+    id: install
+    attributes:
+      label: How did you install hibi?
+      options:
+        - Shell or PowerShell installer
+        - scripts/install.sh
+        - Release download
+        - Built from source with cargo
+        - Other
+    validations:
+      required: false
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+        - Other
+    validations:
+      required: false
+  - type: checkboxes
+    id: acknowledgements
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues and found no duplicate.
+          required: true
+        - label: I can reproduce this with the latest release.
+          required: true
