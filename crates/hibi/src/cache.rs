@@ -314,19 +314,53 @@ mod tests {
         assert_eq!(n, 0, "the old engine's rows are deleted, not only hidden");
     }
 
+    /// Section 11.3: a database with a `user_version` other than 0 or 1 is
+    /// left as it is. The database here has the real tables with a row in
+    /// each; the `units` row is of another engine, so an open that went on
+    /// would delete it.
     #[test]
     fn unknown_user_version_leaves_the_file_untouched() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join(FILE_NAME);
-        {
-            let c = Connection::open(&path).unwrap();
-            c.execute_batch("CREATE TABLE other (x); PRAGMA user_version = 7;")
+        type Row = (String, String, String, String);
+        let rows = |path: &Path, sql: &str| -> Vec<Row> {
+            let c = Connection::open(path).unwrap();
+            let mut stmt = c.prepare(sql).unwrap();
+            stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))
+                .unwrap()
+                .collect::<Result<_, _>>()
+                .unwrap()
+        };
+        let s = |t: [&str; 4]| -> Vec<Row> { vec![t.map(str::to_owned).into()] };
+        for version in [2i64, 99] {
+            let dir = tempfile::tempdir().unwrap();
+            let path = dir.path().join(FILE_NAME);
+            {
+                let c = Connection::open(&path).unwrap();
+                c.execute_batch(SCHEMA).unwrap();
+                c.execute_batch(&format!(
+                    "INSERT INTO units VALUES ('b', 'markdown', 'another-engine', '[1]');
+                     INSERT INTO judge VALUES ('k', 'm', '{{}}', '2026-11-20T18:04:11Z');
+                     PRAGMA user_version = {version};"
+                ))
                 .unwrap();
+            }
+            let before = std::fs::read(&path).unwrap();
+            let err = Cache::open(&path).unwrap_err();
+            assert!(
+                err.message
+                    .ends_with(&format!("has user_version {version}, written by another hibi version; running without it")),
+                "{}",
+                err.message
+            );
+            assert_eq!(std::fs::read(&path).unwrap(), before, "the file bytes");
+            assert_eq!(user_version(&path), version);
+            assert_eq!(
+                rows(&path, "SELECT blob, class, engine, units FROM units"),
+                s(["b", "markdown", "another-engine", "[1]"])
+            );
+            assert_eq!(
+                rows(&path, "SELECT key, model, answer, at FROM judge"),
+                s(["k", "m", "{}", "2026-11-20T18:04:11Z"])
+            );
         }
-        let before = std::fs::read(&path).unwrap();
-        let err = Cache::open(&path).unwrap_err();
-        assert!(err.message.contains('7'), "{}", err.message);
-        assert_eq!(std::fs::read(&path).unwrap(), before);
-        assert_eq!(user_version(&path), 7);
     }
 }
