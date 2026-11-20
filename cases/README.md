@@ -272,6 +272,8 @@ extracted files (next section), use three more `origin` values.
 | `fingerprint.json` | `{profile: "prose-v1", text}` or `{profile: "ast-v1", class, stream}` | `{fingerprint}`: the string of SPEC section 8 |
 | `units-code.json` | `{fixture, path}`: a file under `fixtures/units/` and a path whose extension selects the class | `{class, units}`: the class after the parse-error fallback, and every unit in source order (start ascending, then end descending) as `{kind, symbol, key, parent, start, end, line, endLine}`. `endLine` is the line of the unit's last character. A content key (`statement`, `block`) is written `<kind>:*`, with `~n` for a duplicate, and matches any 12 lower-case hex digits there. |
 | `resolve.json` | `{path, fixture or text, sel}`: the locator path (its extension selects the class), the file's content from a file under `fixtures/resolve/` or inline (inline text keeps CR LF and a BOM byte for byte), and the selector. With neither `fixture` nor `text` the file does not exist. | `{units}`, every unit `resolve` returns in order as `{key, approx, refuse, sel}`, where `refuse` is `null` when absent and `sel` is the completed selector; or `{error}` with a provider error code. Content keys are written `<kind>:*` as in `units-code.json`. |
+| `freshness.json` | `{recheck, retired, now, marks: [{at, sides: [fingerprint]}], sides}`: the claim's `recheck`, whether it is retired, `now`, its marks, and the current resolution of each side as `{unit: <fingerprint>}`, `{units: 0}` (no unit), `{units: 2}` (several), `{error: <provider error code or "failed">}`, `{noProvider: "scheme_not_declared" or "provider_not_registered"}` or `{invalidUnit: true}`. A retired claim has no `sides`. | `{state, mark, expiresAt, sides: [{state, reason}]}`: the claim state, the reference mark as an index into `input.marks` (`null` for none, `{greaterIdOf: [indexes]}` for a tie on `at`), `expiresAt` of SPEC section 15.2, and each side's state and reason |
+| `coverage.json` | `{loc, units: [{key, kind, parent}], kinds, resolved, exclude: [{resource, unit}]}`: one resource, its unit list, the scope's kinds, the keys that claim sides resolve to, and the scope's exclusions in declaration order | `{covered, excluded, uncovered, matched}`: the scope units by status, each list in unit order, and the number of units each exclusion excluded |
 
 The `resolve.json` expectations were derived by hand from SPEC section 6.7
 and the fixture text: which units, `approx`, `refuse`, and the span of the
@@ -291,6 +293,11 @@ The `units-code.json` expectations were derived by hand from the fixture
 sources, SPEC section 6.4 and the grammars' `grammar.js` and
 `node-types.json`, without running a parser, and then compared with the
 implementation.
+
+The `freshness.json` and `coverage.json` cases are `spec-derived`: each
+`expected` was written by hand from SPEC sections 9.2, 9.3 and 10.2, and
+`source` gives the rule applied. They bind `engine::evaluate`, and
+`engine::covered_keys` with `engine::classify`.
 
 The four `rfc8785` cases of `canon.json` are the primitive-types sample of
 RFC 8785 section 3.2.2 with the bytes of section 3.2.4, the sorting sample of
