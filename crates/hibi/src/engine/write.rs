@@ -725,7 +725,8 @@ pub fn reanchor(
 // ---------------------------------------------------------------------------
 
 /// `hibi retire` (section 15.3): one retirement per claim that is not
-/// already retired. No provider is contacted. `replaced_by` must name an
+/// already retired. A claim named more than once counts once: the output
+/// has one entry per claim, in the order of first occurrence. No provider is contacted. `replaced_by` must name an
 /// existing claim that is not among those being retired; an unknown id or
 /// one of the retired ids is `invalid_argument`.
 pub fn retire(
@@ -736,11 +737,15 @@ pub fn retire(
     let ledger = store.load()?;
     let index = Index::new(&ledger);
     let warnings = Warning::from_store_all(&ledger.warnings)?;
-    let targets: Vec<&Claim> = input
-        .claims
-        .iter()
-        .map(|arg| resolve_claim_id(&ledger, arg))
-        .collect::<Result<_, _>>()?;
+    // The same claim named twice (by id or by two prefixes) is one target,
+    // at its first position.
+    let mut targets: Vec<&Claim> = Vec::with_capacity(input.claims.len());
+    for arg in &input.claims {
+        let claim = resolve_claim_id(&ledger, arg)?;
+        if !targets.iter().any(|t| t.id == claim.id) {
+            targets.push(claim);
+        }
+    }
     let replaced_by = match &input.replaced_by {
         None => None,
         Some(arg) => {
@@ -778,9 +783,7 @@ pub fn retire(
             by.clone(),
             note.clone(),
         )?;
-        if !batch.retirements.iter().any(|x| x.id == r.id) {
-            batch.retirements.push(r.clone());
-        }
+        batch.retirements.push(r.clone());
         retired.push(RetireResult {
             claim: claim.id.clone(),
             retirement: Some(r.id),

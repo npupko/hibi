@@ -955,6 +955,63 @@ fn reanchor_onto_another_live_claim_marks_it() {
 // retire
 // ---------------------------------------------------------------------------
 
+/// A claim named twice, by its id and by a prefix, is retired once: one
+/// output entry per claim, in the order of first occurrence.
+#[test]
+fn retire_collapses_a_claim_named_twice() {
+    let (_w, mut p, store) = setup();
+    let a = claim_at(&store, &mut p, on("A", "k1"), NOW);
+    let b = claim_at(&store, &mut p, on("B", "k2"), NOW);
+    let out = engine::retire(
+        &store,
+        &RetireInput {
+            claims: vec![
+                b.to_string(),
+                a.to_string(),
+                b.as_str()[..8].to_owned(),
+                a.to_string(),
+            ],
+            ..RetireInput::default()
+        },
+        ts("2026-12-01T00:00:00Z"),
+    )
+    .unwrap();
+    let ledger = store.ledger();
+    assert_eq!(ledger.retirements.len(), 2);
+    let of = |id: &ClaimId| {
+        ledger
+            .retirements
+            .iter()
+            .find(|r| &r.retires == id)
+            .unwrap()
+            .id
+            .clone()
+    };
+    assert_eq!(
+        serde_json::to_value(&out.retired).unwrap(),
+        serde_json::json!([
+            {"claim": b, "retirement": of(&b), "alreadyRetired": false},
+            {"claim": a, "retirement": of(&a), "alreadyRetired": false}
+        ])
+    );
+
+    // The same for a claim that is already retired.
+    let out = engine::retire(
+        &store,
+        &RetireInput {
+            claims: vec![a.to_string(), a.to_string()],
+            ..RetireInput::default()
+        },
+        ts("2026-12-02T00:00:00Z"),
+    )
+    .unwrap();
+    assert_eq!(
+        serde_json::to_value(&out.retired).unwrap(),
+        serde_json::json!([{"claim": a, "retirement": null, "alreadyRetired": true}])
+    );
+    assert_eq!(store.ledger().retirements.len(), 2);
+}
+
 #[test]
 fn retire_appends_one_retirement_per_live_claim_and_contacts_no_provider() {
     let (w, mut p, store) = setup();
