@@ -177,6 +177,18 @@ impl RawCall {
             Method::Batch => p(&self.params, Call::Batch),
         }
     }
+
+    /// Check an inner request of a `batch` (section 13.3): as
+    /// [`RawCall::parse`], except that `hello` and `batch` are
+    /// `invalid_request` whatever their params.
+    pub fn parse_inner(&self) -> Result<Call, ProviderError> {
+        match Method::from_name(&self.method) {
+            Some(m @ (Method::Hello | Method::Batch)) => Err(ProviderError::invalid_request(
+                format!("{} is not allowed inside a batch", m.as_str()),
+            )),
+            _ => self.parse(),
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -304,15 +316,28 @@ impl Serialize for Response {
 impl<'de> Deserialize<'de> for Response {
     fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         let mut map = Map::<String, Value>::deserialize(d)?;
-        let id =
-            match map.remove("id") {
-                Some(Value::Null) => None,
-                Some(v) => Some(v.as_u64().ok_or_else(|| {
-                    D::Error::custom("a response id is a positive integer or null")
-                })?),
-                None => return Err(D::Error::custom("a response has an id")),
-            };
+        let id = match map.remove("id") {
+            Some(Value::Null) => None,
+            Some(v) => match v.as_u64() {
+                Some(id) if id > 0 => Some(id),
+                _ => {
+                    return Err(D::Error::custom(
+                        "a response id is a positive integer or null",
+                    ));
+                }
+            },
+            None => return Err(D::Error::custom("a response has an id")),
+        };
         let outcome = outcome_from_map::<D::Error>(&mut map)?;
+        // Section 13.2: a null id answers only a line that could not be
+        // parsed as a request, and that answer is the error invalid_request.
+        if id.is_none()
+            && !matches!(&outcome, Err(e) if e.code == ProviderErrorCode::InvalidRequest)
+        {
+            return Err(D::Error::custom(
+                "a response with a null id must carry the error invalid_request",
+            ));
+        }
         Ok(Response { id, outcome })
     }
 }
@@ -471,17 +496,31 @@ mod tests {
 
     #[test]
     fn batch_round_trip() {
-        let line = r#"{"id":5,"method":"batch","params":{"requests":[{"method":"resolve","params":{"loc":"archctl:model","sel":{"key":"a"}}},{"method":"hello","params":{}}]}}"#;
+        let line = r#"{"id":5,"method":"batch","params":{"requests":[{"method":"resolve","params":{"loc":"archctl:model","sel":{"key":"a"}}},{"method":"hello","params":{}},{"method":"hello","params":{"protocol":[1],"client":{"name":"c","version":"0"},"root":"/r"}},{"method":"batch","params":{"requests":[]}},{"method":"frobnicate","params":{}}]}}"#;
         let (_, call) = parse_request_line(line).unwrap();
         let Call::Batch(b) = call else { panic!() };
-        assert!(matches!(b.requests[0].parse().unwrap(), Call::Resolve(_)));
+        let codes: Vec<Option<ProviderErrorCode>> = b
+            .requests
+            .iter()
+            .map(|r| r.parse_inner().err().map(|e| e.code))
+            .collect();
+        assert_eq!(
+            codes,
+            [
+                None,
+                Some(ProviderErrorCode::InvalidRequest),
+                Some(ProviderErrorCode::InvalidRequest),
+                Some(ProviderErrorCode::InvalidRequest),
+                Some(ProviderErrorCode::UnknownMethod),
+            ]
+        );
         assert!(matches!(
-            b.requests[1].parse(),
-            Err(ProviderError {
-                code: ProviderErrorCode::InvalidRequest,
-                ..
-            })
+            b.requests[0].parse_inner().unwrap(),
+            Call::Resolve(_)
         ));
+        // At the top level the same hello and batch are valid calls.
+        assert!(matches!(b.requests[2].parse().unwrap(), Call::Hello(_)));
+        assert!(matches!(b.requests[3].parse().unwrap(), Call::Batch(_)));
 
         let resp = r#"{"id":5,"result":{"responses":[{"result":{"units":[]}},{"error":{"code":"invalid_selector","message":"..."}}]}}"#;
         let r: Response = serde_json::from_str(resp).unwrap();
@@ -511,6 +550,18 @@ mod tests {
             .is_err()
         );
         assert!(serde_json::from_str::<Response>(r#"{"id":1}"#).is_err());
+        // Section 13.2: the id is a positive integer; null only with
+        // invalid_request.
+        for bad in [
+            r#"{"id":0,"result":{}}"#,
+            r#"{"id":-1,"result":{}}"#,
+            r#"{"id":1.5,"result":{}}"#,
+            r#"{"id":"1","result":{}}"#,
+            r#"{"id":null,"result":{}}"#,
+            r#"{"id":null,"error":{"code":"not_found","message":"m"}}"#,
+        ] {
+            assert!(serde_json::from_str::<Response>(bad).is_err(), "{bad}");
+        }
         assert!(serde_json::from_str::<Response>(r#"{"result":{}}"#).is_err());
         let r = Response::err(None, ProviderError::invalid_request("bad"));
         assert_eq!(

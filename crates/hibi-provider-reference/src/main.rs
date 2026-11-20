@@ -155,14 +155,7 @@ fn handle(fixture: &Fixture, call: Call) -> Result<Value, ProviderError> {
             let responses = b
                 .requests
                 .iter()
-                .map(|raw| {
-                    InnerResponse(raw.parse().and_then(|call| match call {
-                        Call::Hello(_) | Call::Batch(_) => Err(ProviderError::invalid_request(
-                            "hello and batch are not allowed inside a batch",
-                        )),
-                        call => handle(fixture, call),
-                    }))
-                })
+                .map(|raw| InnerResponse(raw.parse_inner().and_then(|call| handle(fixture, call))))
                 .collect();
             to_value(BatchResult { responses })
         }

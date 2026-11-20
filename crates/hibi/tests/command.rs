@@ -220,6 +220,10 @@ fn broken_envelope_kills() {
         r#"{"id":@ID@}"#.to_owned(),
         r#"{"id":@ID@,"result":{"units":[]},"error":{"code":"internal","message":"m"}}"#.into(),
         r#"{"result":{"units":[]}}"#.into(),
+        // Section 13.2: ids are positive; a null id only with invalid_request.
+        r#"{"id":0,"result":{"units":[]}}"#.into(),
+        r#"{"id":null,"result":{"units":[]}}"#.into(),
+        r#"{"id":null,"error":{"code":"not_found","message":"m"}}"#.into(),
     ] {
         let mut s = scripted(&[hello(), line], LONG);
         let r = resolve_one(&mut s.provider, "k");
@@ -358,6 +362,12 @@ fn hello_failures_make_the_provider_unusable() {
         (
             hello().replace(r#"["t"]"#, r#"["other"]"#),
             "do not include \"t\"",
+        ),
+        // `selectors` is the closed list quote, symbol, key: a provider that
+        // lists prefix or pos is unusable for the run.
+        (
+            hello().replace(r#"["key"]"#, r#"["key","prefix"]"#),
+            "hello:",
         ),
         (hello().replace(r#"["key"]"#, r#"["pos"]"#), "hello:"),
         (
