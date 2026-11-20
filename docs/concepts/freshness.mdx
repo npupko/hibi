@@ -50,8 +50,12 @@ Consequences:
 
 A side can also be `approx`: found only approximately, through a fuzzy match
 of its quote or a symbol that no longer exists. `approx` never changes the
-state; it changes `next` to suggest `reanchor` (see
-[agent workflow](/agent-workflow#reading-next)).
+claim's state. A fresh claim with an `approx` side is called **drifted**: the
+statement still holds as checked, but the stored anchor no longer matches
+exactly, and `next` suggests `reanchor` (see
+[agent workflow](/agent-workflow#reading-next)). The summary counts drifted
+claims as part of `fresh`, for example `4 claims: 2 fresh (1 drifted), 0 stale,
+1 expired, 1 retired`.
 
 The reference mark, against which side states are reported, is the newest
 matching mark if any mark matches, otherwise the newest mark.
@@ -76,13 +80,13 @@ claim expired although nothing changed:
 
 ```text output
 $ hibi status
-6 claims: 2 fresh, 0 stale, 1 expired, 3 retired
+4 claims: 2 fresh, 0 stale, 1 expired, 1 retired
 
-c1-1y9x18za6d6qb7q5q3nx  expired  Each attempt times out after 10 seconds.
+c1-zfv9r5t784m0vnty4fv9  expired  Each attempt times out after 10 seconds.
   recheck P90D ran out at 2026-10-30T09:00:00Z
-  next: hibi mark c1-1y9x18za6d6qb7q5q3nx
+  next: hibi mark c1-zfv9r5t784m0vnty4fv9
 
-Re-check each statement before running its next command.
+Re-check each stale or expired statement before running its next command.
 ```
 
 ## The current time
@@ -97,7 +101,7 @@ fresh.
 
 | Invocation | Lists |
 |---|---|
-| `hibi status` | Stale and expired claims |
+| `hibi status` | Stale and expired claims, and drifted fresh claims |
 | `hibi status --state fresh --state retired` | Claims in the given states |
 | `hibi status c1-bvy8 c1-dryh` | Exactly these claims, in any state |
 | `hibi status --loc 'file:src/**'` | Claims with a side whose locator matches the glob |

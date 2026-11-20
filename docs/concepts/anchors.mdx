@@ -77,6 +77,8 @@ On every later run hibi resolves each stored anchor:
    contains it. Several exact occurrences are told apart by the similarity of
    the 48 characters before and after them. A tie goes to the occurrence nearest
    `pos` when the quote is under 8 characters, and is `ambiguous` otherwise.
+   A quote that differs from the text only in whitespace, for example after
+   a paragraph was re-wrapped, counts as an exact occurrence.
 3. With no exact occurrence, a fuzzy search near `pos` looks for the quote
    with up to 40% of its characters changed (at most 256). A unit found this
    way is reported as found approximately (`approx`).
@@ -123,7 +125,7 @@ refused, and that includes documentation comments: JSDoc, rustdoc and
 Javadoc.
 
 ```text output
-$ hibi claim "A job runs at most 3 times." --subject "file:README.md::at most 3 times" --evidence "file:src/config.rs#Config::Seconds before a request"
+$ hibi claim "The request timeout is 30 seconds." --subject "file:README.md::timeout is 30 seconds" --evidence "file:src/config.rs#Config::Seconds before a request"
 error: quote_in_comment: evidence 1 (file:src/config.rs): the quote lies wholly or partly inside a code comment
   fix: Anchor the code the comment describes.
 ```
@@ -133,7 +135,7 @@ and can be anchored:
 
 ```text output
 $ hibi claim "A job runs at most 3 times." --subject "file:README.md::at most 3 times" --evidence "file:src/jobs.py#Job::Jobs run at most 3 times"
-c1-15heaync8sdxwfm9amfg  created  subject file:README.md (sentence "A job runs at most 3 times.", line 3); evidence 1 file:src/jobs.py (class "Job", lines 1-8)
+c1-m1qvn3f8a0ks4chyraxf  created  subject file:README.md (sentence "A job runs at most 3 times.", line 3); evidence 1 file:src/jobs.py (class "Job", lines 1-8)
 ```
 
 ## Renames
@@ -146,21 +148,31 @@ declaration's own fingerprint, so the claim is stale until someone re-checks
 it. Renaming `JOB_LIMIT = 100` to `MAX_JOBS = 100` in Python gives:
 
 ```text output
-c1-zre725c6srw6pf23jj5p  stale  Max jobs
+$ hibi status
+4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
+
+c1-vvcgebbx7gmyg7cahm3z  stale  At most 100 jobs are queued.
   evidence 1  file:src/jobs.py  missing (selector_not_found)
-  next: hibi reanchor c1-zre725c6srw6pf23jj5p --evidence 1=<anchor>
+  next: hibi reanchor c1-vvcgebbx7gmyg7cahm3z --evidence 1=<anchor>
+
+Re-check each stale or expired statement before running its next command.
 ```
 
 A rename of an enclosing container (a struct, class or module) changes a
 member's path but not the member's fingerprint. That side stays the same, is
-found approximately, and the claim stays fresh. Renaming the struct `Config`
-to `Settings` gives, for a claim on its field `Config.timeout_secs`:
+found approximately, and the claim stays fresh but drifted. Renaming the
+struct `Config` to `Settings` gives, for a claim on its field
+`Config.timeout_secs`:
 
 ```text output
-c1-0v8jc46fz77efrkx852p  fresh  Timeout is 30
+$ hibi status
+4 claims: 4 fresh (1 drifted), 0 stale, 0 expired, 0 retired
+
+c1-ha7qmhmnwmqqggw8wd73  fresh  The request timeout is 30 seconds.
   evidence 1  file:src/config.rs  same, found approximately  field "Settings.timeout_secs", line 5
-  next: hibi reanchor c1-0v8jc46fz77efrkx852p
+  next: hibi reanchor c1-ha7qmhmnwmqqggw8wd73
+
+A fresh claim is listed because its anchor drifted. The statement still holds: look at what the anchor points to now, then run its reanchor command.
 ```
 
-Plain `hibi status` does not list this claim, because it is fresh. Ask for it
-with `hibi status <id>` or `hibi status --state fresh`.
+`hibi reanchor c1-ha7q` stores the new symbol `Settings.timeout_secs`.

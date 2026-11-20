@@ -17,7 +17,7 @@ resource = "file:docs/**/*.md"
 kinds = ["sentence", "list-item", "table-row"]
 exclude = [
   { resource = "file:docs/changelog.md", reason = "release notes, not claims" },
-  { resource = "file:docs/retry.md", unit = "sentence:619145cf695d", reason = "set by the HTTP library; no code here to check" },
+  { resource = "file:docs/retry.md", unit = "sentence:0863e2920c1f", reason = "a pointer, not a statement" },
 ]
 ```
 
@@ -53,12 +53,15 @@ docs (file:docs/**/*.md; sentence, list-item, table-row): 3 units, 0 covered, 0 
         5  sentence  The delay between attempts doubles each time, starting at 200 ms.
 ```
 
-With the exclusions above, in a later state of the same repository:
+With the exclusions above, in a later state of the same repository where
+`docs/retry.md` ends with the sentence "See the FAQ for more.":
 
 ```text output
-docs (file:docs/**/*.md; sentence, list-item, table-row): 4 units, 2 covered, 2 excluded, 0 uncovered
+docs (file:docs/**/*.md; sentence, list-item, table-row): 5 units, 2 covered, 2 excluded, 1 uncovered
+  file:docs/retry.md
+        3  sentence  The client retries a failed download.
   excluded: file:docs/changelog.md (1 unit): release notes, not claims
-  excluded: file:docs/retry.md unit sentence:619145cf695d (1 unit): set by the HTTP library; no code here to check
+  excluded: file:docs/retry.md unit sentence:0863e2920c1f (1 unit): a pointer, not a statement
 ```
 
 Every exclusion is printed with its reason and the number of units it
@@ -104,9 +107,11 @@ never dropped silently. Here `docs/bad.md` is not valid UTF-8 and
 `docs/link.md` is a symbolic link:
 
 ```text output
-docs (file:docs/**/*.md; sentence, list-item, table-row): 4 units, 2 covered, 2 excluded, 0 uncovered
+docs (file:docs/**/*.md; sentence, list-item, table-row): 5 units, 2 covered, 2 excluded, 1 uncovered
+  file:docs/retry.md
+        3  sentence  The client retries a failed download.
   excluded: file:docs/changelog.md (1 unit): release notes, not claims
-  excluded: file:docs/retry.md unit sentence:619145cf695d (1 unit): set by the HTTP library; no code here to check
+  excluded: file:docs/retry.md unit sentence:0863e2920c1f (1 unit): a pointer, not a statement
   unavailable: file:docs/bad.md (not_text)
   unavailable: file:docs/link.md (resource_not_found)
 ```

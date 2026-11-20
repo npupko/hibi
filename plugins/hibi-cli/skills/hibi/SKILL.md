@@ -37,11 +37,19 @@ JSON object. Add `--format human` for a shorter text form.
 
 ## The session loop
 
-1. **Status.** `hibi status --detail` lists stale and expired claims with the
-   current text of every side. Each side that is not `same` has a `state`
-   (`changed`, `missing`, `ambiguous`, `unavailable`) and a `reason`.
-2. **Re-check.** Read the statement and the current text. Decide whether the
-   statement still holds. Never run `next` without this step.
+1. **Status.** `hibi status --detail` lists stale and expired claims, and
+   drifted fresh claims, with the current text of every side. Each side that
+   is not `same` has a `state` (`changed`, `missing`, `ambiguous`,
+   `unavailable`) and a `reason`.
+2. **Re-check** each stale or expired claim. Read the statement and the
+   current text. Decide whether the statement still holds. Never run `next`
+   without this step.
+   **Refresh** each drifted claim. It is fresh, so the statement still holds
+   as checked, but a side was found only approximately (its quote was
+   reworded, or its symbol's container was renamed). Look at the unit the
+   side resolves to now. If it is the right unit, run `next`
+   (`hibi reanchor <id>`). If not, give the right anchor with `--subject` or
+   `--evidence <n>=<anchor>`.
 3. **Record what you found.**
    - Still holds: `hibi mark <id>`.
    - Holds, but a side moved or matches several units:
@@ -54,6 +62,8 @@ JSON object. Add `--format human` for a shorter text form.
      Do not mark.
 4. **Claim.** After you check a new statement, record it:
    `hibi claim "<statement>" --subject <anchor> --evidence <anchor>`.
+   Running the same claim again, even after text near the quote changed,
+   marks the existing live claim (`created: false`) instead of adding one.
 5. **Cover.** `hibi cover` (or `--since main...`) lists units of the declared
    scopes that no claim covers. Claim the checkable ones. Excluding a unit
    in `.hibi/hibi.toml` needs a reason and the user's agreement.
@@ -69,13 +79,14 @@ or `null`:
 |---|---|
 | `hibi mark <id>` | A side changed or the period expired. Re-check, then mark, or repair or retire. |
 | `hibi reanchor <id> --subject <anchor>` | That side is missing or ambiguous. Find the unit and give its anchor. |
-| `hibi reanchor <id>` | The claim is fresh but a side was found only approximately. Refreshes the stored selector. |
+| `hibi reanchor <id>` | The claim is fresh but drifted: a side was found only approximately. Check what the side points to, then refresh the stored selector. |
 | `hibi reanchor <id> --note <text>` | As above, when the plain form would recreate a retired claim. |
 | `hibi providers` | A provider or sibling repository is not set up. Tell the user; setup is in their user config. |
 | `null` | Fresh, retired, or unavailable for a reason you cannot fix (not text, too large, provider error). |
 
-Plain `hibi status` lists only stale and expired claims. `hibi status <id>`
-shows one claim in any state.
+Plain `hibi status` lists stale, expired and drifted claims; the summary
+counts drifted claims inside `fresh`, as in `2 fresh (1 drifted)`.
+`hibi status <id>` shows one claim in any state.
 
 ## Anchors
 
@@ -89,7 +100,7 @@ shows one claim in any state.
 | `repo:api//src/lib.rs#timeout_secs` | A file in an allowed sibling repository |
 
 - `claim` and a new side in `reanchor` need an exact match (`selector_not_exact`
-  otherwise). `mark` accepts an approximately found side and prints its text so
+  otherwise). A quote that differs only in whitespace counts as exact. `mark` accepts an approximately found side and prints its text so
   you see what you marked.
 - A quote inside a code comment, including rustdoc, JSDoc and Javadoc, is
   refused (`quote_in_comment`): anchor the code the comment describes. A
@@ -124,7 +135,7 @@ EOF
 ```
 
 ```bash
-echo '["c1-1y9x", {"claim": "c1-dryh", "note": "checked against MAX_ATTEMPTS"}]' | hibi mark --stdin
+echo '["c1-zfv9", {"claim": "c1-dryh", "note": "checked against MAX_ATTEMPTS"}]' | hibi mark --stdin
 ```
 
 An anchor in a batch is a compact string or `{"loc": ..., "sel": {...}}`;

@@ -37,7 +37,7 @@ line from the walkthrough:
 
 ```json output
 {"evidence":[{"loc":"file:src/retry.rs","sel":{"pos":62,"prefix":"a download is tried before the client gives up.\n","quote":"pub const MAX_ATTEMPTS: u32 = 5;","suffix":"\n\n/// The delay before attempt `n`, in milliseco","symbol":"MAX_ATTEMPTS"}}],"id":"c1-bvy8mfb476vwm9ftpx44","note":null,"recheck":null,"statement":"The client gives up after 5 attempts.","subject":{"loc":"file:docs/retry.md","sel":{"pos":52,"prefix":"tries\n\nThe client retries a failed download.\nIt ","quote":"gives up after 5 attempts","suffix":".\nThe delay between attempts doubles each time, "}}}
-{"at":"2026-11-20T21:29:22Z","by":null,"id":"r1-peqhq128s20p7rrw1e2p","note":"The docs no longer state the attempt limit.","replacedBy":null,"retires":"c1-dryhtmnz5njjpp2ppy6t"}
+{"at":"2026-11-20T22:43:59Z","by":null,"id":"r1-h506gay6a3500pbj2y65","note":"The docs no longer state the attempt limit.","replacedBy":null,"retires":"c1-dryhtmnz5njjpp2ppy6t"}
 ```
 
 `hibi schema claim`, `hibi schema mark` and `hibi schema retirement` print

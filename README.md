@@ -145,7 +145,7 @@ c1-bvy8mfb476vwm9ftpx44  stale  The client gives up after 5 attempts.
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  variable "MAX_ATTEMPTS", line 2
   next: hibi mark c1-bvy8mfb476vwm9ftpx44
 
-Re-check each statement before running its next command.
+Re-check each stale or expired statement before running its next command.
 ```
 
 `next` assumes the statement still holds. It does not: the code says 3. The
@@ -161,7 +161,7 @@ hibi reanchor c1-bvy8 \
 
 ```text output
 c1-bvy8mfb476vwm9ftpx44 is retired and replaced by c1-dryhtmnz5njjpp2ppy6t
-  mark m1-jqkfdpc9r6xa87gh92gs, retirement r1-8drhdychv0qew0t6s13j
+  mark m1-3pmhdvgbb5j3dqhe5w0p, retirement r1-1ajjxsh1x57t8xf3s5sj
   subject  {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
   evidence 1  {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 3;","prefix":"a download is tried before the client gives up.\n","suffix":"\n\n/// The delay before attempt `n`, in milliseco","pos":62,"symbol":"MAX_ATTEMPTS"}}
 ```
@@ -196,7 +196,10 @@ command per claim.
 A claim is **fresh** when some mark's fingerprints equal the current
 fingerprint of every side, and its recheck period, if any, has not run out. It
 is **stale** when no mark matches, **expired** when a mark matches but the
-period ran out, and **retired** when it was retired.
+period ran out, and **retired** when it was retired. A fresh claim whose
+anchor was found only approximately, for example after its sentence was
+reworded, is **drifted**: still fresh, but `hibi status` lists it so that its
+anchor can be refreshed with `hibi reanchor`.
 
 ## Learn more
 

@@ -46,7 +46,10 @@ with reason `provider_not_registered`, no command is run, and `next` is
 `hibi providers`:
 
 ```text output
-c1-cbv9mtv2w2g3zh2bk056  stale  Downloads are retried at most 3 times.
+$ HIBI_CONFIG=none.toml hibi status
+1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
+
+c1-rnkwm7d1br3arbrh8tcs  stale  Downloads are retried at most 3 times.
   subject  ref:notes  unavailable (provider_not_registered)
   next: hibi providers
 ```
@@ -71,9 +74,9 @@ selector. What the empty selector matches is up to the provider; the
 reference provider answers it with every unit of the resource:
 
 ```text output
-$ hibi claim "Downloads are retried at most 3 times." --subject ref:notes --evidence "file:src/retry.rs#MAX_ATTEMPTS"
+$ HIBI_CONFIG=user.toml hibi claim "Downloads are retried at most 3 times." --subject ref:notes --evidence "file:src/retry.rs#MAX_ATTEMPTS"
 error: side_ambiguous: the subject (ref:notes): the selector matches 2 units: n1 (note): Downloads are retried at most 3 times.; n2 (note): The limit is set in src/retry.rs.
-  fix: Add a symbol, or a longer quote, so that the anchor matches one unit.
+  fix: Give a longer quote, or the unit's key, so that the anchor matches one unit.
 ```
 
 Give any other selector as JSON on standard input:
@@ -83,16 +86,30 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
 ```
 
 ```text output
-c1-cbv9mtv2w2g3zh2bk056  created  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", lines 2-3)
+c1-rnkwm7d1br3arbrh8tcs  created  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+```
+
+A selector key the provider did not list in `hello` is refused before
+anything is sent, and the remediation names the keys it accepts:
+
+```text output
+$ echo '[{"statement": "x", "subject": {"loc": "ref:notes", "sel": {"symbol": "n1"}}}]' | HIBI_CONFIG=user.toml hibi claim --stdin
+error: element 0: unsupported_selector: the subject (ref:notes): the provider does not allow the selector key symbol
+  fix: Use only the selector keys this provider accepts: key, quote.
 ```
 
 When the provider later serves different text for `n1`, the claim goes stale
 like any other:
 
 ```text output
-c1-cbv9mtv2w2g3zh2bk056  stale  Downloads are retried at most 3 times.
+$ HIBI_CONFIG=user.toml hibi status
+1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
+
+c1-rnkwm7d1br3arbrh8tcs  stale  Downloads are retried at most 3 times.
   subject  ref:notes  changed (fingerprint_differs)  note "Downloads are retried at most 4 times."
-  next: hibi mark c1-cbv9mtv2w2g3zh2bk056
+  next: hibi mark c1-rnkwm7d1br3arbrh8tcs
+
+Re-check each stale or expired statement before running its next command.
 ```
 
 A scope can name one external resource; its units come from the provider:
@@ -105,7 +122,7 @@ kinds = ["note"]
 ```
 
 ```text output
-$ hibi cover --scope notes
+$ HIBI_CONFIG=user.toml hibi cover --scope notes
 notes (ref:notes; note): 2 units, 1 covered, 0 excluded, 1 uncovered
   ref:notes
         -  note  The limit is set in src/retry.rs.

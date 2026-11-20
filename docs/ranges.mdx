@@ -21,8 +21,8 @@ untracked files. The range selects the base commit:
 Any other form is an error:
 
 ```text output
-$ hibi status --since main..faster-retry
-error: invalid_range: "main..faster-retry" is not a range hibi accepts
+$ hibi status --since main..tidy-retry
+error: invalid_range: "main..tidy-retry" is not a range hibi accepts
   fix: Use A, A.., A..HEAD, A... or A...HEAD, where A names a commit.
 ```
 
@@ -47,13 +47,13 @@ hibi status --since main
 
 ```text output
 3 claims: 1 fresh, 1 stale, 0 expired, 1 retired
-since main (base 0975387b5c7ae039d9730f55063277ccbe3f35a6)
+since main (base 48ee2b4d3b99b03c4015b641d56f939992d9f5b6)
 
 c1-rj6kbh7y1yw79ywz4msv  stale  The delay doubles each time, starting at 200 ms.
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  function "delay_ms", lines 5-7
   next: hibi mark c1-rj6kbh7y1yw79ywz4msv
 
-Re-check each statement before running its next command.
+Re-check each stale or expired statement before running its next command.
 ```
 
 The rewrite computes the same values, so the statement still holds:
@@ -77,7 +77,7 @@ hibi cover --since main
 ```
 
 ```text output
-since main (base 0975387b5c7ae039d9730f55063277ccbe3f35a6)
+since main (base 48ee2b4d3b99b03c4015b641d56f939992d9f5b6)
 docs (file:docs/**/*.md; sentence, list-item, table-row): 1 unit, 0 covered, 0 excluded, 1 uncovered
   file:docs/retry.md
         9  sentence  Each attempt times out after 10 seconds.
@@ -87,8 +87,8 @@ The counts cover only the kept units. Scopes on `repo:` and external schemes
 are not evaluated with `--since`, and say so:
 
 ```text output
-$ hibi cover --since main --scope notes
-since main (base 27d36e24f6664f4b630eb7dcd7ed47aef2f1e748)
+$ HIBI_CONFIG=user.toml hibi cover --since main --scope notes
+since main (base 4aea65d893fc31366b0352e693858ebdb682142d)
 notes (ref:notes; note): 0 units, 0 covered, 0 excluded, 0 uncovered
   not evaluated: --since works only for scopes on scheme "file"
 ```
