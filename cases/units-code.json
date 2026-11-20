@@ -390,8 +390,8 @@
         }
       ]
     },
-    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | v5-adjusted: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; Shape.name, Base.label and Cache.count become field; Color gains variants Red and Green on line 43",
-    "origin": "v5-adjusted"
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | adjusted by a later ruling: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; Shape.name, Base.label and Cache.count become field; Color gains variants Red and Green on line 43",
+    "origin": "spec-derived"
   },
   {
     "name": "tsx: jsx components, var with two declarators, class fields",
@@ -544,8 +544,8 @@
         }
       ]
     },
-    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | v5-adjusted: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; Panel.state and Props.title become field",
-    "origin": "v5-adjusted"
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | adjusted by a later ruling: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; Panel.state and Props.title become field",
+    "origin": "spec-derived"
   },
   {
     "name": "python: decorated definitions, assignments, nested classes, duplicate def",
@@ -768,8 +768,8 @@
         }
       ]
     },
-    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | v5-adjusted: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; the class-body assignments Cache.size, Cache.Entry.value, Point.x and Point.names become field",
-    "origin": "v5-adjusted"
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | adjusted by a later ruling: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; the class-body assignments Cache.size, Cache.Entry.value, Point.x and Point.names become field",
+    "origin": "spec-derived"
   },
   {
     "name": "rust: impl naming, trait and mod members, struct and enum members, an outer attribute in its item's unit, use as a statement",
@@ -1112,8 +1112,8 @@
         }
       ]
     },
-    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | v5-adjusted: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; and Rust outer attributes belong to the item they precede: the statement for `#[derive(Debug)]` (107..123) is removed and struct:Cache starts there on line 7; Cache gains field size, Bits fields i and f, Mode variants Fast and Slow; the associated consts Store.LIMIT and Cache.EMPTY become field",
-    "origin": "v5-adjusted"
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | adjusted by a later ruling: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; and Rust outer attributes belong to the item they precede: the statement for `#[derive(Debug)]` (107..123) is removed and struct:Cache starts there on line 7; Cache gains field size, Bits fields i and f, Mode variants Fast and Slow; the associated consts Store.LIMIT and Cache.EMPTY become field",
+    "origin": "spec-derived"
   },
   {
     "name": "go: grouped and single specs, var_spec_list groups, method receivers, duplicate init",
@@ -1326,8 +1326,8 @@
         }
       ]
     },
-    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | v5-adjusted: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; struct type Cache gains field items on line 35",
-    "origin": "v5-adjusted"
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | adjusted by a later ruling: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; struct type Cache gains field items on line 35",
+    "origin": "spec-derived"
   },
   {
     "name": "java: field declarators, overloads, enum body declarations, record, annotation type",
@@ -1630,8 +1630,8 @@
         }
       ]
     },
-    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | v5-adjusted: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; the field declarators Cache.x, y, z, NAME, Cache.Entry.value, Store.LIMIT, Mode.level and Marker.DEFAULT become field; Mode gains variants FAST and SLOW; the record Point gains components x and y as field; and the annotation element `String value();` is method:Marker.value (ruling on annotation_type_element_declaration)",
-    "origin": "v5-adjusted"
+    "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source | adjusted by a later ruling: ruling on SPEC 6.4: every named member declared directly in the body of a named container is a unit, `field` is the kind of every data member of a class-like container and `variable` only of module-, namespace- or file-level bindings, enum members are `variant`; the field declarators Cache.x, y, z, NAME, Cache.Entry.value, Store.LIMIT, Mode.level and Marker.DEFAULT become field; Mode gains variants FAST and SLOW; the record Point gains components x and y as field; and the annotation element `String value();` is method:Marker.value (ruling on annotation_type_element_declaration)",
+    "origin": "spec-derived"
   },
   {
     "name": "python with a syntax error: class text, block units",
@@ -1695,7 +1695,7 @@
       ]
     },
     "source": "written for v5 from SPEC sections 6.1, 6.4-6.6; expected values derived by hand from the fixture source",
-    "origin": "computed"
+    "origin": "spec-derived"
   },
   {
     "name": "typescript: html_comment at the top level is a comment, not a statement",
@@ -1739,7 +1739,7 @@
       ]
     },
     "source": "written for v5 from SPEC sections 6.4 and 8.4 and the ruling that html_comment is a comment kind; expected values derived by hand from the fixture source",
-    "origin": "computed"
+    "origin": "spec-derived"
   },
   {
     "name": "rust: blank lines and a comment before the first item; the file unit still spans [0, len)",
@@ -1773,7 +1773,7 @@
       ]
     },
     "source": "written for v5 from SPEC sections 6.2 (the file unit has range [0, len)) and 6.4; expected values derived by hand from the fixture bytes",
-    "origin": "computed"
+    "origin": "spec-derived"
   },
   {
     "name": "typescript: interface, enum and class members, decorators before a method, no units in literals",

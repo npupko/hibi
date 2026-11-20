@@ -92,7 +92,7 @@ SPEC section 16.1 names the function each file binds. The shapes are:
 | `bitap.json` | `{text, pattern, loc, locByte}` | `{index, indexByte}`, -1 for no match, or `{error: "PatternTooLong"}` |
 | `fuzzy-locate.json` | `{text, quote: {exact, prefix, suffix}, bias, biasByte}` | `{found: false}` or `{found: true, start, end, startByte, endByte}` |
 | `locate.json` | `{text, quote: {exact, prefix, suffix}, position?: {start, end, startByte, endByte}}` | `{status: "found" or "ambiguous", how, start, end, startByte, endByte}` or `{status: "missing"}` |
-| `quote-selector.json` | `{text, start, end, startByte, endByte}` | `{exact, prefix, suffix, position: {start, end, startByte, endByte}}` or `{error: "empty span"}` |
+| `quote-selector.json` | `{text, start, end, startByte, endByte}` | `{exact, prefix, suffix, position: {start, end, startByte, endByte}}` or `{error: "empty span"}` or `{error: "span longer than 2048 characters"}` |
 | `regions.json` | `{text, path}` or `{fixture, path}` | array of `{kind, text, start, end, startByte, endByte, line, headingPath}` |
 | `duration.json` | `{start, duration}` | `{instant}` or `{error: "invalid_duration"}` |
 | `recheck-boundary.json` | `{from, duration, now}` | `{expired}` |
@@ -150,7 +150,8 @@ The `error` values are labels, not v4's messages.
 |---|---|---|
 | `PatternTooLong` | SPEC section 7.3 | `matchMain` throws `Bitap pattern too long` |
 | `invalid_duration` | SPEC section 9.4 | `addDuration` throws `not an ISO 8601 duration: …` |
-| `empty span` | SPEC section 16.1, "fails on a span that is empty after trimming". The SPEC names no error code for it. | `buildSelectorBundle` throws `refusing to anchor an empty span` |
+| `empty span` | SPEC section 7.4, error `EmptySpan` of `quote_selector`: "If `quote` is empty after trimming WS, the result is the error `EmptySpan`." The CLI reports it as `invalid_anchor` (section 16.1). | `buildSelectorBundle` throws `refusing to anchor an empty span` |
+| `span longer than 2048 characters` | SPEC section 7.4, error `TooLong` of `quote_selector`: a span longer than `MAX_QUOTE_CHARS` (2,048) characters. The empty check runs first. | none: v4 had no length limit |
 
 ## Cases changed for v5 (SPEC section 16.2)
 
@@ -254,7 +255,7 @@ This is the list from the extraction, with what v5 does now.
     have an error budget of 0.** Kept.
 14. **Ambiguous results carry the earliest tied range.** Kept.
 
-## Files added for v5 (SPEC section 16.3)
+## Files added for v5 (SPEC section 16.1)
 
 These files were not extracted from v4. Their cases, and the cases added to
 extracted files (next section), use four more `origin` values.
@@ -276,8 +277,9 @@ extracted files (next section), use four more `origin` values.
 | `freshness.json` | `{recheck, retired, now, marks: [{at, sides: [fingerprint]}], sides}`: the claim's `recheck`, whether it is retired, `now`, its marks, and the current resolution of each side as `{unit: <fingerprint>}`, `{units: 0}` (no unit), `{units: 2}` (several), `{error: <provider error code or "failed">}`, `{noProvider: "scheme_not_declared" or "provider_not_registered"}` or `{invalidUnit: true}`. A retired claim has no `sides`. | `{state, mark, expiresAt, sides: [{state, reason}]}`: the claim state, the reference mark as an index into `input.marks` (`null` for none, `{greaterIdOf: [indexes]}` for a tie on `at`), `expiresAt` of SPEC section 15.2, and each side's state and reason |
 | `coverage.json` | `{loc, units: [{key, kind, parent}], kinds, resolved, exclude: [{resource, unit}]}`: one resource, its unit list, the scope's kinds, the keys that claim sides resolve to, and the scope's exclusions in declaration order | `{covered, excluded, uncovered, matched}`: the scope units by status, each list in unit order, and the number of units each exclusion excluded |
 
-The `resolve.json` expectations were derived by hand from SPEC section 6.7
-and the fixture text: which units, `approx`, `refuse`, and the span of the
+The `resolve.json` cases are `spec-derived`. Their expectations were derived
+by hand from SPEC section 6.7 and the fixture text, in the steps each
+`source` lists: which units, `approx`, `refuse`, and the span of the
 stored quote (the input quote's located span, or the unit's default quote).
 A script then cut the 48-character prefix and suffix and the byte `pos` from
 that span. Nothing was copied from the implementation's output. The test
@@ -290,16 +292,17 @@ under Bun, with NFC from `String.prototype.normalize` and the WS set of SPEC
 section 4.1 written out as a character class. The `ast-v1` streams are
 copied from `ast-node.json`, or written for the case.
 
-The `units-code.json` expectations were derived by hand from the fixture
-sources, SPEC section 6.4 and the grammars' `grammar.js` and
+The `units-code.json` cases are `spec-derived`. Their expectations were
+derived by hand from the fixture sources, SPEC section 6.4 and the grammars' `grammar.js` and
 `node-types.json`, without running a parser, and then compared with the
 implementation. The binding also checks every content key against the
 unit's own fingerprint: `<kind>:` plus the first 12 hex digits of its digest,
 with `~n` on the n-th duplicate in source order.
 
 Rulings on section 6.4 made after these cases were written changed six of
-them. Each is marked `v5-adjusted` and its `source` names the ruling and the
-edit:
+them. They stay `spec-derived`, because the new values were derived by hand
+as well. Each `source` names the ruling and the edit after
+`adjusted by a later ruling:`.
 
 | case | ruling | edit |
 |---|---|---|
@@ -330,8 +333,10 @@ from SPEC sections 14.2 to 14.5 and from the answer schemas of the vendor's
 OpenAPI document (`https://api.typesafe.ai/openapi.json`, read on
 2026-11-20). No case was recorded from the live Jev API. Every case has
 origin `synthetic`, and its `source` names the SPEC sections and schemas it
-was written from. SPEC section 16.3 asks for recorded pairs, so these files
-are a stand-in until someone with a `TYPESAFE_API_KEY` records real ones.
+was written from. SPEC section 16.3 names request and response pairs
+recorded from the live judge API as the one kind of case data still
+missing, and these hand-written files stand in for them until someone with
+a `TYPESAFE_API_KEY` records real ones.
 
 | file | `input` | `expected` |
 |---|---|---|
@@ -365,6 +370,7 @@ case exercised. Each one was checked to fail when its step is changed.
 | `fuzzy-locate.json` | `bias is clamped to len(text) - 1: a candidate exactly at the distance limit is found`, `bias is clamped to len(text) - 1: a candidate one past the distance limit is not found` | `spec-derived` | `bias = clamp(pos, 0, len(text) - 1)` (section 7.2) |
 | `bitap.json` | `equal exact matches at equal distance on both sides of loc: the left one wins` | `independent` | the left edge `max(1, 2 * loc - best)` after a match right of `loc` is inclusive (section 7.3) |
 | `bitap.json` | `the only exact occurrence is more than 40000 characters from loc: no match` | `independent` | the initial threshold is the minimum of the exact-match scores and `THRESHOLD`, never more (section 7.3) |
+| `quote-selector.json` | `a span of exactly 2048 characters is valid`, `a span of 2049 characters is refused as too long`, `a whitespace span of 2049 characters is empty, not too long` | `spec-derived` | `MAX_QUOTE_CHARS` and the order of the `EmptySpan` and `TooLong` checks (section 7.4) |
 | `regions.json` | `four-backtick fence is not closed by a three-backtick line` | `spec-derived` | a fence closes only on a run of its marker at least as long as the opener (section 6.3) |
 | `regions.json` | `a fence line with an info string does not close an open fence` | `spec-derived` | a closing fence holds only the marker character (section 6.3) |
 | `regions.json` | `BOM before --- frontmatter does not prevent recognition` | `spec-derived` | a leading U+FEFF does not prevent frontmatter recognition (section 6.3) |
