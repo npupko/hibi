@@ -51,8 +51,9 @@ that claims point at.
   `TYPESAFE_API_KEY`. They never send the text of an ignored file or of a
   sibling repository you did not allow.
 - **Reading files you did not offer.** A sibling repository is read only
-  when your user config allows it, and only the files that repository
-  tracks. A path through a symbolic link is treated as missing.
+  when your user config allows it, and only the files that git lists there:
+  tracked files, and untracked files that are not ignored. A path through a
+  symbolic link is treated as missing.
 
 **What is trusted:**
 
