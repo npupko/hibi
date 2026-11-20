@@ -381,6 +381,115 @@ fn members_are_units_with_their_own_fingerprints() {
     }
 }
 
+/// A default quote is never inside a comment (audit of section 6.7): no
+/// unit of a file with a parse tree starts inside a comment node, so the
+/// "first line starts with a comment" fallback is never taken, and every
+/// unit's own completed selector resolves to exactly that unit, neither
+/// refused nor approximate. Checked on every fixture under `cases/` and on
+/// inputs with comments in every position, in every class.
+#[test]
+fn default_quotes_are_never_in_comments_and_round_trip() {
+    let crafted: &[(&str, &str)] = &[
+        (
+            "c.rs",
+            "// a\n/* b */ #[derive(Debug)] /* c */ struct S; // d\n#[cfg(x)] // e\nfn f() {}\n/// doc\n#[inline]\n/* k */ fn g() {}\nimpl S { /* m */ fn h() {} // n\n}\nenum E { /* p */ A, // q\n#[x] B }\n#[cfg(test)] /* r */ use std::fmt;\n",
+        ),
+        (
+            "c.ts",
+            "/* a */ export const x = 1; // b\nclass C { /* c */ @d /* e */ m() {} /** f */ p = 1; }\ninterface I { /* g */ q: number; // h\n}\nenum F { /* i */ A, B /* j */ }\n",
+        ),
+        (
+            "c.tsx",
+            "const v = <div>{/* a */}</div>; // b\n/** c */ function F() { return <p>{x}</p>; }\n",
+        ),
+        (
+            "c.py",
+            "# a\nx = 1  # b\nclass C:  # c\n    # d\n    y = 2\n    def m(self):  # e\n        pass\n@dec  # f\ndef g():\n    pass\n",
+        ),
+        (
+            "c.go",
+            "package p // a\n/* b */ func F() {}\ntype T struct { /* c */ A int // d\n\tB string\n}\nvar ( /* e */ v = 1 )\n",
+        ),
+        (
+            "C.java",
+            "/** a */ class C { /* b */ int x; // c\n  @A /* d */ void m() {}\n  enum E { /* e */ P, Q }\n}\n",
+        ),
+        (
+            "c.md",
+            "<!-- a -->\n// not a comment\nText here. More text.\n\n# H // x\n",
+        ),
+        ("c.txt", "# comment-like\n// x\n\n/* y */ z\n"),
+        ("c.cfg", "; a\n# b\nkey = 1 // c\n"),
+    ];
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    let mut files: Vec<String> = Vec::new();
+    for (path, text) in crafted {
+        write(root, path, text);
+        files.push((*path).to_owned());
+    }
+    // Every fixture file under cases/fixtures.
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../cases/fixtures");
+    let mut stack = vec![fixtures.clone()];
+    while let Some(dir) = stack.pop() {
+        for entry in fs::read_dir(&dir).unwrap() {
+            let p = entry.unwrap().path();
+            if p.is_dir() {
+                stack.push(p);
+            } else {
+                let rel = p
+                    .strip_prefix(&fixtures)
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_owned();
+                let dest = format!("fx/{rel}");
+                write(root, &dest, fs::read(&p).unwrap());
+                files.push(dest);
+            }
+        }
+    }
+    let mut checked = 0;
+    for path in &files {
+        let l = format!("file:{path}");
+        let mut p = wt(root);
+        let units = match p.units(&loc(&l), None) {
+            Ok(u) => u,
+            Err(e) => panic!("{path}: {e}"),
+        };
+        // Comment spans of a file with a parse tree.
+        let text = fs::read_to_string(root.join(path))
+            .unwrap()
+            .replace("\r\n", "\n");
+        let class = hibi::code::Class::from_path(path);
+        let comments = hibi::code::parse(&text, class)
+            .filter(|t| !t.root_node().has_error())
+            .map(|t| hibi::code::comment_spans(t.root_node()))
+            .unwrap_or_default();
+        for u in units.iter().filter(|u| u.kind != "file") {
+            let start = u.range.unwrap().start;
+            assert!(
+                !comments.iter().any(|&(s, e)| s <= start && start < e),
+                "{path}: unit {} starts inside a comment",
+                u.key
+            );
+            let got = resolve(&mut p, &l, serde_json::to_value(&u.sel).unwrap()).unwrap();
+            let keys: Vec<&str> = got.iter().map(|g| g.key.as_str()).collect();
+            assert_eq!(keys, [u.key.as_str()], "{path}: {} with {:?}", u.key, u.sel);
+            assert!(
+                got[0].refuse.is_none() && !got[0].approx,
+                "{path}: {} with {:?}: {:?}",
+                u.key,
+                u.sel,
+                got[0]
+            );
+            assert_eq!(got[0].sel, u.sel, "{path}: {}", u.key);
+            checked += 1;
+        }
+    }
+    assert!(checked > 800, "{checked} units checked");
+}
+
 #[test]
 fn r15_reflowing_a_paragraph_keeps_sentence_fingerprints() {
     let tmp = tempfile::tempdir().unwrap();
