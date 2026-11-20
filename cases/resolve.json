@@ -2115,6 +2115,60 @@
     "origin": "spec-derived"
   },
   {
+    "name": "reflow: a quote that differs only in whitespace is found, not approx, and kept as it now is",
+    "input": {
+      "path": "docs/reflow.md",
+      "text": "Pro costs $29 per\nmonth for each seat. Teams cost more.\n",
+      "sel": {
+        "quote": "Pro costs $29 per month for each seat."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "Pro costs $29 per\nmonth for each seat.",
+            "prefix": "",
+            "suffix": " Teams cost more.\n",
+            "pos": 0
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "reflow: a reflow plus a changed word is approx and stores the default quote",
+    "input": {
+      "path": "docs/reflow.md",
+      "text": "Pro costs $30 per\nmonth for each seat. Teams cost more.\n",
+      "sel": {
+        "quote": "Pro costs $29 per month for each seat."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "Pro costs $30 per",
+            "prefix": "",
+            "suffix": "\nmonth for each seat. Teams cost more.\n",
+            "pos": 0
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
     "name": "quote limit: an exact quote of 2048 characters is kept whole",
     "input": {
       "path": "conf/long.txt.cfg",
@@ -2196,7 +2250,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "decoding: a quote with CR LF is found fuzzily in the LF text",
+    "name": "decoding: a quote with CR LF equals the LF text after normalize and spans two sentences",
     "input": {
       "path": "crlf.md",
       "text": "Hello world.\r\nSecond line here.\r\n",
@@ -2208,8 +2262,8 @@
       "units": [
         {
           "key": "sentence:*",
-          "approx": true,
-          "refuse": null,
+          "approx": false,
+          "refuse": "quote_spans_units",
           "sel": {
             "quote": "Hello world.",
             "prefix": "",

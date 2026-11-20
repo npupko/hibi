@@ -477,10 +477,22 @@ impl Doc {
             sel.suffix.as_deref().unwrap_or_default(),
             pos,
         ) {
-            Located::Found { how, span } => Located::Found {
-                how,
-                span: shift(span),
-            },
+            // A located span equal to the quote after `normalize` counts as
+            // exact, whatever step of section 7 found it (ruling on section
+            // 6.7): a reflow that moves a line break inside the quote is
+            // not an uncertain anchor. Only a difference beyond whitespace
+            // leaves the result fuzzy.
+            Located::Found { how, span } => {
+                let span = shift(span);
+                let how = if how == How::Fuzzy
+                    && text::normalize(&self.text[span.start..span.end]) == text::normalize(quote)
+                {
+                    How::Exact
+                } else {
+                    how
+                };
+                Located::Found { how, span }
+            }
             Located::Ambiguous { span, ties } => Located::Ambiguous {
                 span: shift(span),
                 ties: ties.into_iter().map(shift).collect(),
