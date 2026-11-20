@@ -1,0 +1,197 @@
+[
+  {
+    "name": "rfc8785: primitive data types (sections 3.2.2 and 3.2.4)",
+    "input": {
+      "json": "{\n  \"numbers\": [333333333.33333329, 1E30, 4.50,\n              2e-3, 0.000000000000000000000000001],\n  \"string\": \"\\u20ac$\\u000F\\u000aA'\\u0042\\u0022\\u005c\\\\\\\"\\/\",\n  \"literals\": [null, true, false]\n}",
+      "record": null
+    },
+    "expected": {
+      "canonical": "{\"literals\":[null,true,false],\"numbers\":[333333333.3333333,1e+30,4.5,0.002,1e-27],\"string\":\"€$\\u000f\\nA'B\\\"\\\\\\\\\\\"/\"}",
+      "utf8": "7b226c69746572616c73223a5b6e756c6c2c747275652c66616c73655d2c226e756d62657273223a5b3333333333333333332e333333333333332c31652b33302c342e352c302e3030322c31652d32375d2c22737472696e67223a22e282ac245c75303030665c6e4127425c225c5c5c5c5c222f227d"
+    },
+    "source": "RFC 8785 section 3.2.2 input; expected bytes are the hexadecimal listing of section 3.2.4",
+    "origin": "rfc8785"
+  },
+  {
+    "name": "rfc8785: property sorting by UTF-16 code units (section 3.2.3)",
+    "input": {
+      "json": "{\n  \"\\u20ac\": \"Euro Sign\",\n  \"\\r\": \"Carriage Return\",\n  \"\\ufb33\": \"Hebrew Letter Dalet With Dagesh\",\n  \"1\": \"One\",\n  \"\\ud83d\\ude00\": \"Emoji: Grinning Face\",\n  \"\\u0080\": \"Control\",\n  \"\\u00f6\": \"Latin Small Letter O With Diaeresis\"\n}",
+      "record": null
+    },
+    "expected": {
+      "canonical": "{\"\\r\":\"Carriage Return\",\"1\":\"One\",\"\":\"Control\",\"ö\":\"Latin Small Letter O With Diaeresis\",\"€\":\"Euro Sign\",\"😀\":\"Emoji: Grinning Face\",\"דּ\":\"Hebrew Letter Dalet With Dagesh\"}",
+      "utf8": "7b225c72223a2243617272696167652052657475726e222c2231223a224f6e65222c22c280223a22436f6e74726f6c222c22c3b6223a224c6174696e20536d616c6c204c6574746572204f205769746820446961657265736973222c22e282ac223a224575726f205369676e222c22f09f9880223a22456d6f6a693a204772696e6e696e672046616365222c22efacb3223a22486562726577204c65747465722044616c6574205769746820446167657368227d"
+    },
+    "source": "RFC 8785 section 3.2.3 input and expected property order",
+    "origin": "rfc8785"
+  },
+  {
+    "name": "rfc8785: number serialization samples (appendix B)",
+    "input": {
+      "json": "[0, -0, 5e-324, -5e-324, 1.7976931348623157e+308, -1.7976931348623157e+308, 9007199254740992, -9007199254740992, 295147905179352830000, 9.999999999999997e+22, 1e+23, 1.0000000000000001e+23, 999999999999999700000, 999999999999999900000, 1e+21, 9.999999999999997e-7, 0.000001, 333333333.3333332, 333333333.33333325, 333333333.3333333, 333333333.3333334, 333333333.33333343, -0.0000033333333333333333]",
+      "record": null
+    },
+    "expected": {
+      "canonical": "[0,0,5e-324,-5e-324,1.7976931348623157e+308,-1.7976931348623157e+308,9007199254740992,-9007199254740992,295147905179352830000,9.999999999999997e+22,1e+23,1.0000000000000001e+23,999999999999999700000,999999999999999900000,1e+21,9.999999999999997e-7,0.000001,333333333.3333332,333333333.33333325,333333333.3333333,333333333.3333334,333333333.33333343,-0.0000033333333333333333]",
+      "utf8": "5b302c302c35652d3332342c2d35652d3332342c312e37393736393331333438363233313537652b3330382c2d312e37393736393331333438363233313537652b3330382c393030373139393235343734303939322c2d393030373139393235343734303939322c3239353134373930353137393335323833303030302c392e393939393939393939393939393937652b32322c31652b32332c312e30303030303030303030303030303031652b32332c3939393939393939393939393939393730303030302c3939393939393939393939393939393930303030302c31652b32312c392e393939393939393939393939393937652d372c302e3030303030312c3333333333333333332e333333333333322c3333333333333333332e33333333333332352c3333333333333333332e333333333333332c3333333333333333332e333333333333342c3333333333333333332e33333333333334332c2d302e303030303033333333333333333333333333333333335d"
+    },
+    "source": "RFC 8785 appendix B: the JSON representation column, read back and serialized (NaN and Infinity rows omitted: not JSON)",
+    "origin": "rfc8785"
+  },
+  {
+    "name": "nested arrays and objects keep array order and sort keys at every level",
+    "input": {
+      "json": "{\"b\":[{\"z\":1,\"a\":[3,2,1]},[]],\"a\":{},\"aa\":\"\",\"\":null}",
+      "record": null
+    },
+    "expected": {
+      "canonical": "{\"\":null,\"a\":{},\"aa\":\"\",\"b\":[{\"a\":[3,2,1],\"z\":1},[]]}",
+      "utf8": "7b22223a6e756c6c2c2261223a7b7d2c226161223a22222c2262223a5b7b2261223a5b332c322c315d2c227a223a317d2c5b5d5d7d"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "control characters use \\u escapes, other non-ASCII stays raw",
+    "input": {
+      "json": "\"\\u0000\\u0001\\b\\t\\n\\f\\r\\u001f\\u007f\\u0080 \\u2028\\u2029 \\ufeff \\ud834\\udd1e \\\"\\\\ /\"",
+      "record": null
+    },
+    "expected": {
+      "canonical": "\"\\u0000\\u0001\\b\\t\\n\\f\\r\\u001f    ﻿ 𝄞 \\\"\\\\ /\"",
+      "utf8": "225c75303030305c75303030315c625c745c6e5c665c725c75303031667fc28020e280a8e280a920efbbbf20f09d849e205c225c5c202f22"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "record: claim: quote with context, no evidence, no recheck, no note",
+    "input": {
+      "json": "{\n  \"note\": null,\n  \"recheck\": null,\n  \"evidence\": [],\n  \"subject\": {\n    \"loc\": \"file:docs/retry.md\",\n    \"sel\": {\n      \"quote\": \"Retries are capped at 5.\",\n      \"prefix\": \"## Retries\\n\\n\",\n      \"suffix\": \"\\n\\nThe cap is configurable.\",\n      \"pos\": 12\n    }\n  },\n  \"statement\": \"Retries are capped at 5.\",\n  \"id\": \"c1-jch28x5k55zqkmymy20x\"\n}",
+      "record": "claim"
+    },
+    "expected": {
+      "canonical": "{\"evidence\":[],\"id\":\"c1-jch28x5k55zqkmymy20x\",\"note\":null,\"recheck\":null,\"statement\":\"Retries are capped at 5.\",\"subject\":{\"loc\":\"file:docs/retry.md\",\"sel\":{\"pos\":12,\"prefix\":\"## Retries\\n\\n\",\"quote\":\"Retries are capped at 5.\",\"suffix\":\"\\n\\nThe cap is configurable.\"}}}",
+      "utf8": "7b2265766964656e6365223a5b5d2c226964223a2263312d6a6368323878356b35357a716b6d796d79323078222c226e6f7465223a6e756c6c2c227265636865636b223a6e756c6c2c2273746174656d656e74223a2252657472696573206172652063617070656420617420352e222c227375626a656374223a7b226c6f63223a2266696c653a646f63732f72657472792e6d64222c2273656c223a7b22706f73223a31322c22707265666978223a22232320526574726965735c6e5c6e222c2271756f7465223a2252657472696573206172652063617070656420617420352e222c22737566666978223a225c6e5c6e5468652063617020697320636f6e666967757261626c652e227d7d7d"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "record: claim: symbol and quote evidence, recheck and note",
+    "input": {
+      "json": "{\n  \"note\": \"Re-check when the cache backend changes.\",\n  \"recheck\": \"P90D\",\n  \"evidence\": [\n    {\n      \"loc\": \"file:src/cache.rs\",\n      \"sel\": {\n        \"symbol\": \"Cache.ttl\",\n        \"quote\": \"fn ttl(&self) -> Duration {\",\n        \"prefix\": \"\",\n        \"suffix\": \"\\n        Duration::from_secs(3600)\",\n        \"pos\": 512\n      }\n    },\n    {\n      \"loc\": \"repo:api//config/cache.toml\",\n      \"sel\": {\n        \"quote\": \"ttl = 3600\",\n        \"prefix\": \"[cache]\\n\",\n        \"suffix\": \"\\n\",\n        \"pos\": 8\n      }\n    }\n  ],\n  \"subject\": {\n    \"loc\": \"file:README.md\",\n    \"sel\": {\n      \"quote\": \"expires entries after one hour\",\n      \"prefix\": \"The cache \",\n      \"suffix\": \".\",\n      \"pos\": 1043\n    }\n  },\n  \"statement\": \"The cache expires entries after one hour.\",\n  \"id\": \"c1-bdt0gcr2cfbm2170gp7y\"\n}",
+      "record": "claim"
+    },
+    "expected": {
+      "canonical": "{\"evidence\":[{\"loc\":\"file:src/cache.rs\",\"sel\":{\"pos\":512,\"prefix\":\"\",\"quote\":\"fn ttl(&self) -> Duration {\",\"suffix\":\"\\n        Duration::from_secs(3600)\",\"symbol\":\"Cache.ttl\"}},{\"loc\":\"repo:api//config/cache.toml\",\"sel\":{\"pos\":8,\"prefix\":\"[cache]\\n\",\"quote\":\"ttl = 3600\",\"suffix\":\"\\n\"}}],\"id\":\"c1-bdt0gcr2cfbm2170gp7y\",\"note\":\"Re-check when the cache backend changes.\",\"recheck\":\"P90D\",\"statement\":\"The cache expires entries after one hour.\",\"subject\":{\"loc\":\"file:README.md\",\"sel\":{\"pos\":1043,\"prefix\":\"The cache \",\"quote\":\"expires entries after one hour\",\"suffix\":\".\"}}}",
+      "utf8": "7b2265766964656e6365223a5b7b226c6f63223a2266696c653a7372632f63616368652e7273222c2273656c223a7b22706f73223a3531322c22707265666978223a22222c2271756f7465223a22666e2074746c282673656c6629202d3e204475726174696f6e207b222c22737566666978223a225c6e20202020202020204475726174696f6e3a3a66726f6d5f73656373283336303029222c2273796d626f6c223a2243616368652e74746c227d7d2c7b226c6f63223a227265706f3a6170692f2f636f6e6669672f63616368652e746f6d6c222c2273656c223a7b22706f73223a382c22707265666978223a225b63616368655d5c6e222c2271756f7465223a2274746c203d2033363030222c22737566666978223a225c6e227d7d5d2c226964223a2263312d62647430676372326366626d3231373067703779222c226e6f7465223a2252652d636865636b207768656e20746865206361636865206261636b656e64206368616e6765732e222c227265636865636b223a2250393044222c2273746174656d656e74223a22546865206361636865206578706972657320656e7472696573206166746572206f6e6520686f75722e222c227375626a656374223a7b226c6f63223a2266696c653a524541444d452e6d64222c2273656c223a7b22706f73223a313034332c22707265666978223a2254686520636163686520222c2271756f7465223a226578706972657320656e7472696573206166746572206f6e6520686f7572222c22737566666978223a222e227d7d7d"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "record: claim: external scheme with a key selector and an empty selector",
+    "input": {
+      "json": "{\n  \"note\": null,\n  \"recheck\": \"P1Y2M3DT4H5M6S\",\n  \"evidence\": [\n    {\n      \"loc\": \"file:src/auth.ts\",\n      \"sel\": {}\n    }\n  ],\n  \"subject\": {\n    \"loc\": \"archctl:model\",\n    \"sel\": {\n      \"key\": \"component/auth\"\n    }\n  },\n  \"statement\": \"Auth issues and verifies session tokens.\",\n  \"id\": \"c1-7r44xzhyh29t0j6wxsd5\"\n}",
+      "record": "claim"
+    },
+    "expected": {
+      "canonical": "{\"evidence\":[{\"loc\":\"file:src/auth.ts\",\"sel\":{}}],\"id\":\"c1-7r44xzhyh29t0j6wxsd5\",\"note\":null,\"recheck\":\"P1Y2M3DT4H5M6S\",\"statement\":\"Auth issues and verifies session tokens.\",\"subject\":{\"loc\":\"archctl:model\",\"sel\":{\"key\":\"component/auth\"}}}",
+      "utf8": "7b2265766964656e6365223a5b7b226c6f63223a2266696c653a7372632f617574682e7473222c2273656c223a7b7d7d5d2c226964223a2263312d37723434787a687968323974306a367778736435222c226e6f7465223a6e756c6c2c227265636865636b223a22503159324d3344543448354d3653222c2273746174656d656e74223a22417574682069737375657320616e642076657269666965732073657373696f6e20746f6b656e732e222c227375626a656374223a7b226c6f63223a226172636863746c3a6d6f64656c222c2273656c223a7b226b6579223a22636f6d706f6e656e742f61757468227d7d7d"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "record: claim: non-ASCII text, escapes and characters outside the BMP",
+    "input": {
+      "json": "{\n  \"note\": \"é stays decomposed; U+2028  and U+FEFF﻿ stay raw\",\n  \"recheck\": null,\n  \"evidence\": [\n    {\n      \"loc\": \"file:src/日本/設定.py\",\n      \"sel\": {\n        \"symbol\": \"設定.TIMEOUT\"\n      }\n    }\n  ],\n  \"subject\": {\n    \"loc\": \"file:docs/fr/délai.md\",\n    \"sel\": {\n      \"quote\": \"délai est « 5 s »\",\n      \"prefix\": \"😀😀 Le \",\n      \"suffix\": \" — 🚀 ok\\ttab\",\n      \"pos\": 9\n    }\n  },\n  \"statement\": \"Le délai est « 5 s » — 🚀 ok\\ttab \\\"quoted\\\" \\\\ back\",\n  \"id\": \"c1-0y6cdz8efmzt55vrmxyb\"\n}",
+      "record": "claim"
+    },
+    "expected": {
+      "canonical": "{\"evidence\":[{\"loc\":\"file:src/日本/設定.py\",\"sel\":{\"symbol\":\"設定.TIMEOUT\"}}],\"id\":\"c1-0y6cdz8efmzt55vrmxyb\",\"note\":\"é stays decomposed; U+2028  and U+FEFF﻿ stay raw\",\"recheck\":null,\"statement\":\"Le délai est « 5 s » — 🚀 ok\\ttab \\\"quoted\\\" \\\\ back\",\"subject\":{\"loc\":\"file:docs/fr/délai.md\",\"sel\":{\"pos\":9,\"prefix\":\"😀😀 Le \",\"quote\":\"délai est « 5 s »\",\"suffix\":\" — 🚀 ok\\ttab\"}}}",
+      "utf8": "7b2265766964656e6365223a5b7b226c6f63223a2266696c653a7372632fe697a5e69cac2fe8a8ade5ae9a2e7079222c2273656c223a7b2273796d626f6c223a22e8a8ade5ae9a2e54494d454f5554227d7d5d2c226964223a2263312d30793663647a3865666d7a74353576726d787962222c226e6f7465223a2265cc81207374617973206465636f6d706f7365643b20552b32303238e280a820616e6420552b46454646efbbbf207374617920726177222c227265636865636b223a6e756c6c2c2273746174656d656e74223a224c652064c3a96c61692065737420c2ab2035207320c2bb20e2809420f09f9a80206f6b5c74746162205c2271756f7465645c22205c5c206261636b222c227375626a656374223a7b226c6f63223a2266696c653a646f63732f66722f64c3a96c61692e6d64222c2273656c223a7b22706f73223a392c22707265666978223a22f09f9880f09f9880204c6520222c2271756f7465223a2264c3a96c61692065737420c2ab2035207320c2bb222c22737566666978223a2220e2809420f09f9a80206f6b5c74746162227d7d7d"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "record: claim: same body with a different note is a different claim",
+    "input": {
+      "json": "{\n  \"note\": \"second claim\",\n  \"recheck\": null,\n  \"evidence\": [],\n  \"subject\": {\n    \"loc\": \"file:docs/retry.md\",\n    \"sel\": {\n      \"quote\": \"Retries are capped at 5.\",\n      \"prefix\": \"## Retries\\n\\n\",\n      \"suffix\": \"\\n\\nThe cap is configurable.\",\n      \"pos\": 12\n    }\n  },\n  \"statement\": \"Retries are capped at 5.\",\n  \"id\": \"c1-wtrj734shs40eg2tvk5d\"\n}",
+      "record": "claim"
+    },
+    "expected": {
+      "canonical": "{\"evidence\":[],\"id\":\"c1-wtrj734shs40eg2tvk5d\",\"note\":\"second claim\",\"recheck\":null,\"statement\":\"Retries are capped at 5.\",\"subject\":{\"loc\":\"file:docs/retry.md\",\"sel\":{\"pos\":12,\"prefix\":\"## Retries\\n\\n\",\"quote\":\"Retries are capped at 5.\",\"suffix\":\"\\n\\nThe cap is configurable.\"}}}",
+      "utf8": "7b2265766964656e6365223a5b5d2c226964223a2263312d7774726a373334736873343065673274766b3564222c226e6f7465223a227365636f6e6420636c61696d222c227265636865636b223a6e756c6c2c2273746174656d656e74223a2252657472696573206172652063617070656420617420352e222c227375626a656374223a7b226c6f63223a2266696c653a646f63732f72657472792e6d64222c2273656c223a7b22706f73223a31322c22707265666978223a22232320526574726965735c6e5c6e222c2271756f7465223a2252657472696573206172652063617070656420617420352e222c22737566666978223a225c6e5c6e5468652063617020697320636f6e666967757261626c652e227d7d7d"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "record: mark: one side, no by, no note",
+    "input": {
+      "json": "{\n  \"note\": null,\n  \"sides\": [\n    {\n      \"loc\": \"file:docs/retry.md\",\n      \"fp\": \"b3:prose-v1:0123456789abcdef0123456789abcdef\"\n    }\n  ],\n  \"by\": null,\n  \"at\": \"2026-11-20T18:04:11Z\",\n  \"claim\": \"c1-jch28x5k55zqkmymy20x\",\n  \"id\": \"m1-v9kg1wfyr3yygpsmjcm3\"\n}",
+      "record": "mark"
+    },
+    "expected": {
+      "canonical": "{\"at\":\"2026-11-20T18:04:11Z\",\"by\":null,\"claim\":\"c1-jch28x5k55zqkmymy20x\",\"id\":\"m1-v9kg1wfyr3yygpsmjcm3\",\"note\":null,\"sides\":[{\"fp\":\"b3:prose-v1:0123456789abcdef0123456789abcdef\",\"loc\":\"file:docs/retry.md\"}]}",
+      "utf8": "7b226174223a22323032362d31312d32305431383a30343a31315a222c226279223a6e756c6c2c22636c61696d223a2263312d6a6368323878356b35357a716b6d796d79323078222c226964223a226d312d76396b6731776679723379796770736d6a636d33222c226e6f7465223a6e756c6c2c227369646573223a5b7b226670223a2262333a70726f73652d76313a3031323334353637383961626364656630313233343536373839616263646566222c226c6f63223a2266696c653a646f63732f72657472792e6d64227d5d7d"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "record: mark: three sides, by and note",
+    "input": {
+      "json": "{\n  \"sides\": [\n    {\n      \"loc\": \"file:README.md\",\n      \"fp\": \"b3:prose-v1:ffffffffffffffffffffffffffffffff\"\n    },\n    {\n      \"loc\": \"file:src/cache.rs\",\n      \"fp\": \"b3:ast-v1:00000000000000000000000000000000\"\n    },\n    {\n      \"loc\": \"repo:api//config/cache.toml\",\n      \"fp\": \"b3:ext-profile-2:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1\"\n    }\n  ],\n  \"note\": \"checked against 5.0.0\",\n  \"by\": \"agent:claude\",\n  \"at\": \"2026-01-31T00:00:00Z\",\n  \"claim\": \"c1-bdt0gcr2cfbm2170gp7y\",\n  \"id\": \"m1-yd7rd2nab92b0hv4pe0b\"\n}",
+      "record": "mark"
+    },
+    "expected": {
+      "canonical": "{\"at\":\"2026-01-31T00:00:00Z\",\"by\":\"agent:claude\",\"claim\":\"c1-bdt0gcr2cfbm2170gp7y\",\"id\":\"m1-yd7rd2nab92b0hv4pe0b\",\"note\":\"checked against 5.0.0\",\"sides\":[{\"fp\":\"b3:prose-v1:ffffffffffffffffffffffffffffffff\",\"loc\":\"file:README.md\"},{\"fp\":\"b3:ast-v1:00000000000000000000000000000000\",\"loc\":\"file:src/cache.rs\"},{\"fp\":\"b3:ext-profile-2:a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1\",\"loc\":\"repo:api//config/cache.toml\"}]}",
+      "utf8": "7b226174223a22323032362d30312d33315430303a30303a30305a222c226279223a226167656e743a636c61756465222c22636c61696d223a2263312d62647430676372326366626d3231373067703779222c226964223a226d312d7964377264326e61623932623068763470653062222c226e6f7465223a22636865636b656420616761696e737420352e302e30222c227369646573223a5b7b226670223a2262333a70726f73652d76313a6666666666666666666666666666666666666666666666666666666666666666222c226c6f63223a2266696c653a524541444d452e6d64227d2c7b226670223a2262333a6173742d76313a3030303030303030303030303030303030303030303030303030303030303030222c226c6f63223a2266696c653a7372632f63616368652e7273227d2c7b226670223a2262333a6578742d70726f66696c652d323a61316131613161316131613161316131613161316131613161316131613161316131613161316131613161316131613161316131613161316131613161316131222c226c6f63223a227265706f3a6170692f2f636f6e6669672f63616368652e746f6d6c227d5d7d"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "record: mark: same claim and sides, one second later, is a different mark",
+    "input": {
+      "json": "{\n  \"note\": null,\n  \"sides\": [\n    {\n      \"loc\": \"file:docs/retry.md\",\n      \"fp\": \"b3:prose-v1:0123456789abcdef0123456789abcdef\"\n    }\n  ],\n  \"by\": null,\n  \"at\": \"2026-11-20T18:04:12Z\",\n  \"claim\": \"c1-jch28x5k55zqkmymy20x\",\n  \"id\": \"m1-81vpmce33f4meqehma41\"\n}",
+      "record": "mark"
+    },
+    "expected": {
+      "canonical": "{\"at\":\"2026-11-20T18:04:12Z\",\"by\":null,\"claim\":\"c1-jch28x5k55zqkmymy20x\",\"id\":\"m1-81vpmce33f4meqehma41\",\"note\":null,\"sides\":[{\"fp\":\"b3:prose-v1:0123456789abcdef0123456789abcdef\",\"loc\":\"file:docs/retry.md\"}]}",
+      "utf8": "7b226174223a22323032362d31312d32305431383a30343a31325a222c226279223a6e756c6c2c22636c61696d223a2263312d6a6368323878356b35357a716b6d796d79323078222c226964223a226d312d383176706d6365333366346d657165686d613431222c226e6f7465223a6e756c6c2c227369646573223a5b7b226670223a2262333a70726f73652d76313a3031323334353637383961626364656630313233343536373839616263646566222c226c6f63223a2266696c653a646f63732f72657472792e6d64227d5d7d"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "record: retirement: no replacement",
+    "input": {
+      "json": "{\n  \"note\": \"the cap was removed\",\n  \"by\": \"nick\",\n  \"at\": \"2026-11-21T09:00:00Z\",\n  \"replacedBy\": null,\n  \"retires\": \"c1-jch28x5k55zqkmymy20x\",\n  \"id\": \"r1-p6nmyhtx09g2avk2vsfb\"\n}",
+      "record": "retirement"
+    },
+    "expected": {
+      "canonical": "{\"at\":\"2026-11-21T09:00:00Z\",\"by\":\"nick\",\"id\":\"r1-p6nmyhtx09g2avk2vsfb\",\"note\":\"the cap was removed\",\"replacedBy\":null,\"retires\":\"c1-jch28x5k55zqkmymy20x\"}",
+      "utf8": "7b226174223a22323032362d31312d32315430393a30303a30305a222c226279223a226e69636b222c226964223a2272312d70366e6d796874783039673261766b3276736662222c226e6f7465223a2274686520636170207761732072656d6f766564222c227265706c616365644279223a6e756c6c2c2272657469726573223a2263312d6a6368323878356b35357a716b6d796d79323078227d"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  },
+  {
+    "name": "record: retirement: replaced by another claim",
+    "input": {
+      "json": "{\n  \"note\": null,\n  \"by\": null,\n  \"at\": \"9999-12-31T23:59:59Z\",\n  \"replacedBy\": \"c1-bdt0gcr2cfbm2170gp7y\",\n  \"retires\": \"c1-jch28x5k55zqkmymy20x\",\n  \"id\": \"r1-3sh1hjw68pay2vnvf86j\"\n}",
+      "record": "retirement"
+    },
+    "expected": {
+      "canonical": "{\"at\":\"9999-12-31T23:59:59Z\",\"by\":null,\"id\":\"r1-3sh1hjw68pay2vnvf86j\",\"note\":null,\"replacedBy\":\"c1-bdt0gcr2cfbm2170gp7y\",\"retires\":\"c1-jch28x5k55zqkmymy20x\"}",
+      "utf8": "7b226174223a22393939392d31322d33315432333a35393a35395a222c226279223a6e756c6c2c226964223a2272312d33736831686a77363870617932766e766638366a222c226e6f7465223a6e756c6c2c227265706c616365644279223a2263312d62647430676372326366626d3231373067703779222c2272657469726573223a2263312d6a6368323878356b35357a716b6d796d79323078227d"
+    },
+    "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
+    "origin": "independent"
+  }
+]

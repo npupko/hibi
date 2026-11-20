@@ -1,0 +1,22 @@
+[package]
+name = "hibi-provider-reference"
+description = "The hibi reference provider: serves scheme `ref` from a fixture file (section 13.5)"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# No default features: the reference provider needs the protocol types and
+# the `prose-v1` fingerprint only.
+hibi.workspace = true
+clap.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+
+[lints]
+workspace = true

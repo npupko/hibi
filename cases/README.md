@@ -253,3 +253,25 @@ This is the list from the extraction, with what v5 does now.
 13. **The Bitap threshold is inclusive, and quotes of one or two characters
     have an error budget of 0.** Kept.
 14. **Ambiguous results carry the earliest tied range.** Kept.
+
+## Files added for v5 (SPEC section 16.3)
+
+These files were not extracted from v4. Their cases use two more `origin`
+values.
+
+| origin | meaning |
+|---|---|
+| `rfc8785` | Input and expected value are taken from RFC 8785 itself. |
+| `independent` | `expected` was computed by implementations that share no code with the Rust crate: the npm packages `canonicalize` 5.1.0 (JCS) and `@noble/hashes` 2.4.0 (pure-JavaScript BLAKE3), with the 100-bit base32 step written bit by bit. |
+
+| File | `input` | `expected` |
+|---|---|---|
+| `canon.json` | `{json, record}`: JSON text, and `null` or the record type (`claim`, `mark`, `retirement`) it must deserialize as | `{canonical, utf8}`: the RFC 8785 serialization as a string and as hex UTF-8 bytes |
+| `ids.json` | `{kind, body}`: a record type and a record body without `id` | `{canonical, blake3, id}`: the canonical body, the 64 hex digits of its BLAKE3 digest, and the id of SPEC section 3.5 |
+
+The three `rfc8785` cases of `canon.json` are the primitive-types sample of
+RFC 8785 section 3.2.2 with the bytes of section 3.2.4, the sorting sample of
+section 3.2.3, and the number samples of appendix B (the NaN and Infinity
+rows are left out because they are not JSON). The record cases of
+`canon.json` are the records of `ids.json` written with indentation and keys
+in reverse order.
