@@ -10,6 +10,20 @@
 //! id, resource class and hibi version) and `judge` (judge answers, keyed by
 //! the key of section 14.6). This module stores the text it is given; the
 //! file provider and the judge own the JSON inside it.
+//!
+//! Concurrency: the database stays in SQLite's default rollback journal
+//! (`DELETE`); hibi never switches it to WAL. Every lock this module takes
+//! is taken from outside any transaction (`BEGIN IMMEDIATE` when opening,
+//! single autocommit statements afterwards), which is the case where SQLite
+//! runs the busy handler instead of returning `SQLITE_BUSY` at once
+//! (<https://www.sqlite.org/c3ref/busy_handler.html>: the handler is skipped
+//! only when waiting could deadlock, which needs a read transaction that
+//! tries to become a write transaction). WAL mode has documented cases that
+//! return `SQLITE_BUSY` regardless of the busy handler, among them opening
+//! the database while its last connection is closing
+//! (<https://www.sqlite.org/wal.html>, section 9), so with WAL two hibi
+//! processes opening the cache at once could not both be guaranteed to
+//! succeed (section 11.3).
 
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
@@ -127,45 +141,33 @@ impl Cache {
             Connection::open(path).map_err(|e| unavailable(format!("cannot be opened: {e}")))?;
         conn.busy_timeout(BUSY_TIMEOUT)
             .map_err(|e| unavailable(format!("cannot be opened: {e}")))?;
-        let created = {
-            let tx = conn
-                .transaction_with_behavior(TransactionBehavior::Immediate)
-                .map_err(|e| unavailable(format!("cannot be opened: {e}")))?;
-            let version: i64 = tx
-                .query_row("PRAGMA user_version", [], |r| r.get(0))
-                .map_err(|e| unavailable(format!("cannot be read: {e}")))?;
-            let created = match version {
-                0 => {
-                    tx.execute_batch(SCHEMA)
-                        .map_err(|e| unavailable(format!("cannot be created: {e}")))?;
-                    true
-                }
-                SCHEMA_VERSION => false,
-                other => {
-                    // Dropping the transaction rolls it back: nothing changed.
-                    return Err(unavailable(format!(
-                        "has user_version {other}, written by another hibi version"
-                    )));
-                }
-            };
-            tx.execute("DELETE FROM units WHERE engine <> ?1", params![engine])
-                .map_err(|e| unavailable(format!("cannot be written: {e}")))?;
-            tx.commit()
-                .map_err(|e| unavailable(format!("cannot be written: {e}")))?;
-            created
-        };
-        if created {
-            // `journal_mode` cannot change inside a transaction. The mode is
-            // persistent, so only the creator sets it.
-            let mode: String = conn
-                .query_row("PRAGMA journal_mode = WAL", [], |r| r.get(0))
-                .map_err(|e| unavailable(format!("cannot be configured: {e}")))?;
-            if !mode.eq_ignore_ascii_case("wal") {
+        // The schema is created, and other engines' rows deleted, in one
+        // write transaction started with BEGIN IMMEDIATE, so racing openers
+        // wait in the busy handler and exactly one of them creates the
+        // tables. The journal mode is left at SQLite's default (see the
+        // module documentation).
+        let tx = conn
+            .transaction_with_behavior(TransactionBehavior::Immediate)
+            .map_err(|e| unavailable(format!("cannot be opened: {e}")))?;
+        let version: i64 = tx
+            .query_row("PRAGMA user_version", [], |r| r.get(0))
+            .map_err(|e| unavailable(format!("cannot be read: {e}")))?;
+        match version {
+            0 => tx
+                .execute_batch(SCHEMA)
+                .map_err(|e| unavailable(format!("cannot be created: {e}")))?,
+            SCHEMA_VERSION => {}
+            other => {
+                // Dropping the transaction rolls it back: nothing changed.
                 return Err(unavailable(format!(
-                    "stays in journal mode {mode} instead of WAL"
+                    "has user_version {other}, written by another hibi version"
                 )));
             }
         }
+        tx.execute("DELETE FROM units WHERE engine <> ?1", params![engine])
+            .map_err(|e| unavailable(format!("cannot be written: {e}")))?;
+        tx.commit()
+            .map_err(|e| unavailable(format!("cannot be written: {e}")))?;
         Ok(Cache {
             conn,
             engine: engine.to_owned(),
@@ -272,7 +274,7 @@ mod tests {
     }
 
     #[test]
-    fn schema_version_and_wal() {
+    fn schema_version_and_rollback_journal() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join(FILE_NAME);
         drop(Cache::open(&path).unwrap());
@@ -281,7 +283,7 @@ mod tests {
         let mode: String = c
             .query_row("PRAGMA journal_mode", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(mode, "wal");
+        assert_eq!(mode, "delete", "never WAL: see the module documentation");
     }
 
     #[test]
