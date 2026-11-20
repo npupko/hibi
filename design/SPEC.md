@@ -1314,10 +1314,21 @@ sibling repository directory where stated. A non-zero exit is `git_failed`
 with git's standard error in the message, except where stated.
 
 `MIN_GIT` is 2.45.0. Once per run, before any other git call, the `git`
-module runs `git --version` (with no other argument) and parses the version.
-An older git is the error `git_too_old`, whose message gives the version found
-and the version required. A `git` that cannot be started is
-`not_a_git_repository` where git is required.
+module runs `git --version` (with no other argument) and parses its output:
+after the prefix `git version `, the first three dot-separated integers are
+major, minor and patch (`git version 2.54.0 (Apple Git-157)` is 2.54.0). A
+missing third integer counts as 0. Output that does not parse counts as too
+old.
+
+What a missing or too-old git does depends on who needs it:
+
+| Need | git cannot be started | git older than `MIN_GIT` |
+|---|---|---|
+| A command that requires git: `init`, `cover`, any `--since`, `triage`, `suggest-evidence`, `status --judge-order` | error `not_a_git_repository` | error `git_too_old`, naming the version found and the version required |
+| A `repo:` side in any other command | the side is `unavailable` with `repo_not_found` | the same, plus one warning `git_too_old` for the run |
+
+In both columns no further git command is run. The judge commands fail this
+way before any network contact.
 
 | Purpose | Arguments |
 |---|---|
@@ -1351,8 +1362,10 @@ outside the threat model, as it is for git itself.
 Only `rev-parse --show-toplevel` and the file list are run in a sibling
 repository.
 
-Git is needed by `init`, by `cover`, by `--since`, and to resolve a `repo:`
-locator. Every other use of hibi MUST work when `git` is not installed.
+Git is needed by `init`, by `cover`, by `--since`, by the judge commands
+(`triage`, `suggest-evidence`, `status --judge-order`, section 14.2), and to
+resolve a `repo:` locator. Every other use of hibi MUST work when `git` is
+not installed.
 
 ---
 
@@ -1399,8 +1412,9 @@ Rules:
   Failing 1 or 3 gives `repo_not_found`. Failing 2, 4 or 5 gives
   `repo_not_allowed`. Nothing is read from any directory in either case. The
   remediation for a failed 2 prints the exact lines to add to the user
-  config, with the suggested location as `path`. Without `git`, every `repo:`
-  side is `repo_not_found`.
+  config, with the suggested location as `path`. Without `git`, or with a
+  git older than `MIN_GIT`, every `repo:` side is `repo_not_found`
+  (section 10.4).
 - `MAX_CONFIG_BYTES` is 1,048,576. A larger `hibi.toml` is `invalid_config`.
 - `version` other than 1 is `unsupported_store_version`.
 - A scheme table names a scheme. It never names a command. A `command` key or
@@ -1851,7 +1865,9 @@ ranks and labels.
 
 `triage`, `suggest-evidence` and `status --judge-order` need the environment
 variable `TYPESAFE_API_KEY`. When it is unset or empty they fail with
-`judge_unavailable` before doing any other work. This is intended for
+`judge_unavailable` before doing any other work. With the key set they next
+check git (section 10.4) and fail with `not_a_git_repository` or `git_too_old`
+before any network contact. This is intended for
 `status --judge-order` as well: the flag asks for the judge, so without the
 key the command fails and the caller runs `status` without the flag. No other
 command reads the variable or contacts the network.
@@ -2026,8 +2042,10 @@ JSON envelope:
 sentence or one command that fixes the cause. `index` appears only for
 standard-input batches and is the position of the offending element.
 `warnings` entries are `{code, message}` with codes `orphan_record`,
-`unknown_replacement` (section 12.3) and `cache_unavailable` (the cache could
-not be opened in a run that would have used it, section 11.3).
+`unknown_replacement` (section 12.3), `cache_unavailable` (the cache could
+not be opened in a run that would have used it, section 11.3) and
+`git_too_old` (a `repo:` side could not be resolved because git is older than
+`MIN_GIT`, section 10.4). The list is closed.
 
 `next`: where a result carries `next`, it is one command line the caller can
 run, or `null`. Arguments are quoted for a POSIX shell. A part the caller must
@@ -2077,12 +2095,19 @@ ClaimView:
 | A side is `unavailable` with `scheme_not_declared`, `provider_not_registered` or `provider_failed` | `hibi providers` |
 | A side is `unavailable` with `repo_not_allowed` | `hibi providers` |
 | A side is `unavailable` with `repo_not_found`, `not_text`, `too_large` or `provider_error` | `null` |
-| A side is `approx` | `hibi reanchor <id>`. If the claim rebuilt from the completed selectors would be a retired claim, `hibi reanchor <id> --note <text>` instead, because the plain command would fail with `claim_retired`. |
+| The claim is `fresh` and a side is `approx` | `hibi reanchor <id>`. If the claim rebuilt from the completed selectors would be a retired claim, `hibi reanchor <id> --note <text>` instead, because the plain command would fail with `claim_retired`. |
 | Otherwise (`expired`, or sides `changed` or `profile_mismatch`) | `hibi mark <id>` |
 
-`hibi mark` in `next` means: re-check the statement, then mark. If the
+A stale or expired claim with an `approx` side falls through to the last
+row: `next` is `hibi mark <id>`, and the mark output then suggests `reanchor`
+(section 15.3). The `approx` row never applies to a claim that is not fresh,
+because `reanchor` writes a mark and would clear the claim without a re-check.
+
+Every `next` that ends in a write producing a mark (`hibi mark` and
+`hibi reanchor`) means: re-check the statement first, then run it. If the
 statement is no longer true the caller fixes the text or retires the claim.
-The human output says so once per run.
+The human output says so once per run, and the JSON result of `status`
+carries the same sentence once in `nextNote`.
 
 ### 15.3 Commands
 
@@ -2163,7 +2188,7 @@ JSON:
 {"ok":true,"command":"status","now":"2026-11-20T18:04:11Z","snapshot":"b3:...",
  "since":{"range":"main...","base":"<commit>"},
  "summary":{"claims":0,"fresh":0,"stale":0,"expired":0,"retired":0},
- "claims":[ <ClaimView> ],"warnings":[]}
+ "claims":[ <ClaimView> ],"nextNote":"Re-check each statement before running its next command.","warnings":[]}
 ```
 
 `since` is `null` without `--since`. Claims are ordered by id, or as
@@ -2548,12 +2573,13 @@ Each row is a choice the plan left open or marked illustrative.
 | 56 | `render` returns `context` as a list of strings. | A heading that contains " > " survives. |
 | 57 | Section 2.7: the schema files and the CLI reference are written by two cargo examples in `hibi-cli`; the reference lives at `plugins/hibi-cli/reference/cli.md`. | Generators that are not shipped and not subcommands. |
 | 58 | Deleting the cache changes no output except judge probabilities. | Jev is not deterministic; the cache is its only source of repeatability. |
-| 59 | Ruling: minimum git is 2.45.0, checked once per run; older is `git_too_old`. | `safe.bareRepository` and `GIT_NO_LAZY_FETCH` must be honoured, not ignored. |
+| 59 | Ruling: minimum git is 2.45.0, checked once per run; older is error `git_too_old` for commands that require git, and `repo_not_found` plus a warning for a `repo:` side elsewhere. | `safe.bareRepository` and `GIT_NO_LAZY_FETCH` must be honoured, not ignored. |
 | 60 | Ruling: judge commands send file text only from tracked or untracked-and-not-ignored paths of the root or an allowed sibling. They need git. | Ignored files often hold secrets. |
 | 61 | User-config sibling entries are `[[repo]]` tables with absolute `root`, `alias` and `path`. | An alias is allowed for one repository, not for every clone that names it. |
 | 62 | `MAX_SHARD_BYTES` is 64 MiB (`store_corrupt`); `MAX_CONFIG_BYTES` is 1 MiB (`invalid_config`, `invalid_user_config`). | Bounded reads of repository-controlled files. |
 | 63 | A scope-matched path that is a symbolic link is listed under the scope's `unavailable` items with reason `resource_not_found`. | No new reason code; nothing is dropped silently. |
 | 64 | An unknown cache `user_version` leaves the database untouched. | Another hibi version may own it. |
+| 65 | Ruling: `next` suggests `reanchor` for an approximate side only on a fresh claim; `status` output carries `nextNote`. | Following `next` must never clear a stale claim without a re-check. |
 | 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
 | 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
 | 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
@@ -2777,8 +2803,9 @@ Verification section in order.
   `claim_retired` and writes nothing.
 - R55. `mark` on a claim with an `approx` side succeeds, keeps the claim id,
   and its output shows `approx: true` with the unit and text for that side.
-  `status` gives a `reanchor` command as `next` for that claim when no
-  earlier row of the table in section 15.2 applies. Editing the quoted line
+  `status` gives a `reanchor` command as `next` for a `fresh` claim with an
+  `approx` side when no earlier row of the table in section 15.2 applies, and
+  `hibi mark <id>` for a stale or expired claim with an `approx` side. Editing the quoted line
   of a declaration anchored by symbol does not make the side `approx`.
 - R56. `hibi providers` without `--check` starts no child process other than
   `git`.
@@ -2790,9 +2817,14 @@ Verification section in order.
 - R58. The CI report job exits 0 when the repository's own store has stale
   claims or uncovered units.
 - R59. `plugins/hibi-cli/reference/cli.md` equals the output of its generator.
-- R60. With a `git` older than 2.45.0 first on `PATH`, every command that
-  needs git fails with `git_too_old` naming both versions, and runs no other
-  git command.
+- R60. With a `git` older than 2.45.0 first on `PATH`: `init`, `cover`, any
+  `--since` and the judge commands fail with `git_too_old` naming both
+  versions; in every other command a `repo:` side is `unavailable` with
+  `repo_not_found` and the run carries warning `git_too_old`; no git command
+  other than `git --version` is run. `git version 2.54.0 (Apple Git-157)`
+  parses as 2.54.0 and `git version 2.45` as 2.45.0.
+- R64. With `git` absent from `PATH` and `TYPESAFE_API_KEY` set, the judge
+  commands fail with `not_a_git_repository` and open no network connection.
 - R61. `status --judge-order`, `triage` and `suggest-evidence` put no text of
   an ignored file, and no text from a sibling repository that is not allowed,
   into any request body.
