@@ -18,19 +18,13 @@ mod harness;
 
 mod canon;
 mod duration;
+mod locate;
 mod text;
 
 /// Case files that no test loads yet, because the module they bind belongs
 /// to a unit that has not landed. R1 fails if a file listed here does not
 /// exist or is bound in `bindings!`. This list MUST be empty at release.
 const PENDING: &[&str] = &[
-    // locate (section 7, and quote_selector of section 16.1)
-    "error-budget.json",
-    "within-budget.json",
-    "bitap.json",
-    "fuzzy-locate.json",
-    "locate.json",
-    "quote-selector.json",
     // prose (section 6.3)
     "regions.json",
     // code (section 8.4)
@@ -77,6 +71,12 @@ bindings! {
     file "normalize.json" => normalize_json, text::normalize;
     file "levenshtein.json" => levenshtein_json, text::levenshtein;
     file "similarity.json" => similarity_json, text::similarity;
+    file "error-budget.json" => error_budget_json, locate::error_budget;
+    file "within-budget.json" => within_budget_json, locate::within_budget;
+    file "bitap.json" => bitap_json, locate::bitap;
+    file "fuzzy-locate.json" => fuzzy_locate_json, locate::fuzzy;
+    file "locate.json" => locate_json, locate::locate;
+    file "quote-selector.json" => quote_selector_json, locate::quote_selector;
     file "duration.json" => duration_json, duration::duration;
     file "recheck-boundary.json" => recheck_boundary_json, duration::recheck_boundary;
 }
