@@ -5291,7 +5291,11 @@ Rules for the Side keys:
   of both sources once each. (hibi keeps only the first 20 units of each
   source, so a unit with the marked content that the provider also
   returned beyond its first 20 is counted twice.) Such a unit is a
-  candidate like any other: it resolves nothing. A provider that cannot
+  candidate like any other: it resolves nothing. The message of the
+  `side_missing` error of `mark`, of `claim` on a claim that exists and of
+  `reanchor` for a stored side lists the same candidates in the same
+  order, each with its anchor, as
+  `<n> candidates, each a guess to check before use: ...`. A provider that cannot
   list units, or whose listing fails, adds none. A `selector_not_found`
   side for which nothing is found, and a `missing` side with any other
   reason, has no `candidates` key.

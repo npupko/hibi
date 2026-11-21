@@ -358,19 +358,10 @@ pub fn claim_view(
                 _ => None,
             };
             let first = by_content.get(index).and_then(Option::as_ref);
-            let mut seen: Vec<&str> = Vec::new();
-            let mut listed: Vec<Candidate> = Vec::new();
-            for (u, select) in first
-                .into_iter()
-                .chain(r.candidates())
-                .flat_map(Candidates::shown)
-            {
-                if seen.contains(&u.key.as_str()) {
-                    continue;
-                }
-                seen.push(&u.key);
-                if listed.len() < super::MAX_CANDIDATES {
-                    listed.push(Candidate {
+            let all = Candidates::merged(first, r.candidates());
+            let candidates = all.as_ref().map(|c| {
+                c.shown()
+                    .map(|(u, select)| Candidate {
                         key: u.key.clone(),
                         kind: u.kind.clone(),
                         label: u.label.clone(),
@@ -379,27 +370,10 @@ pub fn claim_view(
                         text: u.text.as_deref().map(|t| excerpt(t, TEXT_EXCERPT_CHARS)),
                         anchor: select.to_owned(),
                         same_fingerprint: marked_fp.as_ref() == Some(&u.fp),
-                    });
-                }
-            }
-            // Every unit either source holds, counted once. Only the
-            // first units of each source are kept, so a unit with the
-            // marked content that the provider also returned beyond those
-            // is counted twice.
-            let total = match (first, r.candidates()) {
-                (Some(f), Some(p)) => {
-                    p.total + f.total
-                        - f.units
-                            .iter()
-                            .filter(|u| p.units.iter().any(|x| x.key == u.key))
-                            .count()
-                }
-                (Some(c), None) | (None, Some(c)) => c.total,
-                (None, None) => 0,
-            };
-            let any = first.is_some() || r.candidates().is_some();
-            let candidates = any.then_some(listed);
-            let total = any.then_some(total);
+                    })
+                    .collect::<Vec<_>>()
+            });
+            let total = all.as_ref().map(|c| c.total);
             Side {
                 index,
                 role: Role::of(index),

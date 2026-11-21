@@ -15,9 +15,12 @@ use crate::model::{Locator, SelectorKey, Timestamp, parse_compact, same_quote};
 use crate::provider::{Providers, Unit};
 use crate::store::{Batch, Ledger, Store};
 
+use super::fresh::{Evaluation, content_wanted};
 use super::fresh::{Index, ViewOptions, accepted, claim_view, evaluate, next_command};
 use super::input::{AnchorInput, ClaimInput, MarkInput, ReanchorInput, RetireInput};
-use super::resolve::{Once, Resolved, describe_unit, resolve_anchors};
+use super::resolve::{
+    Candidates, Once, Resolved, content_candidates, describe_unit, resolve_anchors,
+};
 use super::run_warnings;
 use super::types::{
     Accepted, ClaimView, NEXT_NOTE, Nullable, Reason, SideState, TEXT_EXCERPT_CHARS, Warning,
@@ -124,8 +127,57 @@ fn side_name(index: usize) -> String {
 /// did not resolve to one unit. `unknown_scheme` and `unsupported_selector`
 /// are reported instead for a new anchor.
 fn unresolved_error(index: usize, anchor: &Anchor, r: &Resolved, new: bool) -> Option<Error> {
+    unresolved_error_with(index, anchor, r, new, None)
+}
+
+/// The error of side `side` of the stored claim `claim`, when that side
+/// does not resolve to one unit; `number` is how the message names the
+/// side. Its candidates are the list `status` shows for the side: the
+/// units with the marked content first, then the provider's.
+fn stored_side_error(
+    providers: &mut Providers,
+    claim: &Claim,
+    eval: &Evaluation<'_>,
+    rs: &[Resolved],
+    side: usize,
+    number: usize,
+) -> Option<Error> {
+    let r = rs.get(side)?;
+    r.failure()?;
+    let anchor = claim.sides().nth(side)?;
+    let mut wanted = content_wanted(claim, eval);
+    for (i, w) in wanted.iter_mut().enumerate() {
+        if i != side {
+            *w = None;
+        }
+    }
+    let first = content_candidates(providers, &wanted)
+        .into_iter()
+        .nth(side)
+        .flatten();
+    unresolved_error_with(number, anchor, r, false, first.as_ref())
+}
+
+/// [`stored_side_error`] for the first side of `claim` that fails.
+fn stored_failure(
+    providers: &mut Providers,
+    claim: &Claim,
+    eval: &Evaluation<'_>,
+    rs: &[Resolved],
+) -> Option<Error> {
+    let side = rs.iter().position(|r| r.failure().is_some())?;
+    stored_side_error(providers, claim, eval, rs, side, side)
+}
+
+fn unresolved_error_with(
+    index: usize,
+    anchor: &Anchor,
+    r: &Resolved,
+    new: bool,
+    by_content: Option<&Candidates>,
+) -> Option<Error> {
     let (state, reason) = r.failure()?;
-    let detail = r.failure_message().unwrap_or_default();
+    let detail = r.failure_message_with(by_content).unwrap_or_default();
     let what = format!("{} ({})", side_name(index), anchor.loc);
     if new {
         if let Resolved::KeyNotAllowed { key } = r {
@@ -696,28 +748,29 @@ fn claim_elements(
                 );
                 continue;
             };
-            let failure = c
-                .sides()
-                .zip(rs)
-                .enumerate()
-                .find_map(|(n, (a, r))| unresolved_error(n, a, r, false));
-            if let Some(e) = failure {
-                let e = Error::new(
-                    e.code,
-                    format!(
-                        "this is the claim {id}, and its stored anchor does not resolve: {}",
-                        e.message
-                    ),
-                );
-                let e = match evaluate(c, index.marks_of(id), false, rs, now) {
-                    Ok(eval) => match next_command(c, &eval) {
+            if rs.iter().any(|r| r.failure().is_some()) {
+                let eval = match evaluate(c, index.marks_of(id), false, rs, now) {
+                    Ok(eval) => eval,
+                    Err(e) => {
+                        errors.push(e.with_index(b.index));
+                        continue;
+                    }
+                };
+                if let Some(e) = stored_failure(providers, c, &eval, rs) {
+                    let e = Error::new(
+                        e.code,
+                        format!(
+                            "this is the claim {id}, and its stored anchor does not resolve: {}",
+                            e.message
+                        ),
+                    );
+                    let e = match next_command(c, &eval) {
                         Some(next) => e.with_remediation(next),
                         None => e,
-                    },
-                    Err(_) => e,
-                };
-                errors.push(e.with_index(b.index));
-                continue;
+                    };
+                    errors.push(e.with_index(b.index));
+                    continue;
+                }
             }
             Some(
                 &candidates[candidates
@@ -912,15 +965,15 @@ fn mark_elements(
             continue;
         };
         let rs: Vec<Resolved> = resolved.by_ref().take(claim.side_count()).collect();
-        let failure = claim
-            .sides()
-            .zip(&rs)
-            .enumerate()
-            .find_map(|(n, (a, r))| unresolved_error(n, a, r, false));
-        if let Some(e) = failure {
-            // The remediation is the claim's `next` (section 15.2).
+        let failure = if rs.iter().any(|r| r.failure().is_some()) {
             let eval = evaluate(claim, index.marks_of(claim.id.as_str()), false, &rs, now)
                 .map_err(|e| vec![e])?;
+            stored_failure(providers, claim, &eval, &rs).map(|e| (e, eval))
+        } else {
+            None
+        };
+        if let Some((e, eval)) = failure {
+            // The remediation is the claim's `next` (section 15.2).
             // Where the table gives no command, the error keeps its own
             // remediation: the cause and what the author can do.
             let e = match next_command(claim, &eval) {
@@ -1105,16 +1158,14 @@ pub fn reanchor(
     let mut once = Once::default();
     let old_anchors: Vec<&Anchor> = old.sides().collect();
     let old_resolved = once.resolve(providers, &old_anchors);
-    let before = accepted(
+    let old_eval = evaluate(
         old,
-        &evaluate(
-            old,
-            index.marks_of(old.id.as_str()),
-            false,
-            &old_resolved,
-            now,
-        )?,
-    );
+        index.marks_of(old.id.as_str()),
+        false,
+        &old_resolved,
+        now,
+    )?;
+    let before = accepted(old, &old_eval);
 
     // Step 3.
     // A kept side has the old claim's stored anchor: `once` gives it the
@@ -1127,9 +1178,10 @@ pub fn reanchor(
     for (((anchor, new), r), n) in plan.iter().zip(&resolved).zip(numbers.iter().copied()) {
         if *new {
             units.push(check_new(n, anchor, r).map_err(|e| advise(providers, &anchor.loc, r, e))?);
-        } else if let Some(e) = unresolved_error(n, anchor, r, false) {
+        } else if let Some(e) = stored_side_error(providers, old, &old_eval, &old_resolved, n, n) {
             // A kept side that no longer resolves to one unit has to be
-            // replaced, with an anchor the caller chooses.
+            // replaced, with an anchor the caller chooses. `n` is its
+            // position in the old claim, and `r` is that side's resolution.
             return Err(match r.failure() {
                 Some((SideState::Missing | SideState::Ambiguous, _))
                 | Some((_, Reason::SelectorRefused)) => {
@@ -1192,12 +1244,8 @@ pub fn reanchor(
         // own stored anchors resolve exactly in this run.
         let same_anchors: Vec<&Anchor> = same.sides().collect();
         let rs = once.resolve(providers, &same_anchors);
-        let failure = same
-            .sides()
-            .zip(&rs)
-            .enumerate()
-            .find_map(|(n, (a, r))| unresolved_error(n, a, r, false));
-        if let Some(e) = failure {
+        let eval = evaluate(same, index.marks_of(same.id.as_str()), false, &rs, now)?;
+        if let Some(e) = stored_failure(providers, same, &eval, &rs) {
             let e = Error::new(
                 e.code,
                 format!(
@@ -1205,7 +1253,6 @@ pub fn reanchor(
                     old.id, same.id, e.message
                 ),
             );
-            let eval = evaluate(same, index.marks_of(same.id.as_str()), false, &rs, now)?;
             return Err(match next_command(same, &eval) {
                 Some(next) => e.with_remediation(next),
                 None => e,

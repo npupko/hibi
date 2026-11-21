@@ -513,6 +513,38 @@ fn units_with_the_marked_content_are_the_first_candidates() {
     );
     // A side that resolves has none.
     assert!(v.sides[0].candidates.is_none());
+    // `mark` and a `reanchor` that keeps the side name the same candidate.
+    let renamed = r#"note "first": {"loc":"u:b","sel":{"key":"renamed"}}"#;
+    let errors = engine::mark(
+        &f.store,
+        &mut f.p,
+        &no_git(),
+        &[MarkInput::new(f.id.as_str())],
+        false,
+        now(),
+    )
+    .unwrap_err();
+    assert_eq!(errors[0].code, hibi::Code::SideMissing);
+    assert!(
+        errors[0].message.ends_with(&format!(
+            "the selector matches no unit; 1 candidate, each a guess to check before use: {renamed}"
+        )),
+        "{}",
+        errors[0]
+    );
+    let e = engine::reanchor(
+        &f.store,
+        &mut f.p,
+        &no_git(),
+        &engine::ReanchorInput {
+            claim: f.id.to_string(),
+            statement: Some("S2".into()),
+            ..engine::ReanchorInput::default()
+        },
+        now(),
+    )
+    .unwrap_err();
+    assert!(e.message.ends_with(renamed), "{e}");
 
     // With a guess of the provider as well: the unit with the marked
     // content first, then the guess.
@@ -533,7 +565,7 @@ fn units_with_the_marked_content_are_the_first_candidates() {
     assert_eq!(keys, [("renamed", true), ("other", false)]);
     assert_eq!(side.candidates_total, Some(2));
 
-    // Still a candidate: `mark` is refused.
+    // Still a candidate: `mark` is refused, with the list in that order.
     let errors = engine::mark(
         &f.store,
         &mut f.p,
@@ -544,6 +576,13 @@ fn units_with_the_marked_content_are_the_first_candidates() {
     )
     .unwrap_err();
     assert_eq!(errors[0].code, hibi::Code::SideMissing);
+    let message = &errors[0].message;
+    assert!(message.contains("2 candidates, each a guess"), "{message}");
+    let (first, second) = (
+        message.find(r#""key":"renamed""#).unwrap(),
+        message.find(r#""key":"other""#).unwrap(),
+    );
+    assert!(first < second, "{message}");
 }
 
 /// A stored side that matches very many units shows twenty candidates

@@ -36,6 +36,37 @@ pub struct Candidates {
 }
 
 impl Candidates {
+    /// The one list a side shows (section 15.2): the units of `first`,
+    /// which have the marked content, then those of `second`, which the
+    /// provider returned; a unit once, by its key; at most
+    /// [`MAX_CANDIDATES`]. `total` counts the units of both once each, as
+    /// far as the kept units tell. `None` when both are `None`.
+    pub fn merged(first: Option<&Candidates>, second: Option<&Candidates>) -> Option<Candidates> {
+        let (first, second) = match (first, second) {
+            (None, None) => return None,
+            (Some(c), None) | (None, Some(c)) => return Some(c.clone()),
+            (Some(f), Some(s)) => (f, s),
+        };
+        let mut units: Vec<Unit> = Vec::new();
+        let mut anchors: Vec<String> = Vec::new();
+        for (u, anchor) in first.shown().chain(second.shown()) {
+            if units.len() < MAX_CANDIDATES && !units.iter().any(|x| x.key == u.key) {
+                units.push(u.clone());
+                anchors.push(anchor.to_owned());
+            }
+        }
+        let twice = first
+            .units
+            .iter()
+            .filter(|u| second.units.iter().any(|x| x.key == u.key))
+            .count();
+        Some(Candidates {
+            units,
+            anchors,
+            total: first.total + second.total - twice,
+        })
+    }
+
     /// The shown candidates with their anchor strings.
     pub fn shown(&self) -> impl Iterator<Item = (&Unit, &str)> {
         self.units
@@ -150,6 +181,20 @@ impl Resolved {
 
     /// A sentence about the failure, for error messages.
     pub fn failure_message(&self) -> Option<String> {
+        self.failure_message_with(None)
+    }
+
+    /// [`failure_message`](Self::failure_message) for a stored side, with
+    /// the units of the resource that have the marked content
+    /// ([`content_candidates`]) listed first, as `status` lists them.
+    pub fn failure_message_with(&self, by_content: Option<&Candidates>) -> Option<String> {
+        let units = |n: usize| {
+            if n == 1 {
+                "1 candidate".to_owned()
+            } else {
+                format!("{n} candidates")
+            }
+        };
         match self {
             Resolved::One(_) => None,
             Resolved::Several(c) => Some(format!(
@@ -157,16 +202,22 @@ impl Resolved {
                 c.total,
                 c.describe()
             )),
-            Resolved::NotExact(c) => Some(format!(
-                "the anchor matches no unit exactly; {} found by similarity, each a guess to check before use: {}",
-                if c.total == 1 {
-                    "1 unit was".to_owned()
-                } else {
-                    format!("{} units were", c.total)
-                },
-                c.describe()
-            )),
-            Resolved::NotFound => Some("the selector matches no unit".to_owned()),
+            Resolved::NotExact(c) => {
+                let all = Candidates::merged(by_content, Some(c)).unwrap_or_else(|| c.clone());
+                Some(format!(
+                    "the anchor matches no unit exactly; {}, each a guess to check before use: {}",
+                    units(all.total),
+                    all.describe()
+                ))
+            }
+            Resolved::NotFound => Some(match by_content {
+                None => "the selector matches no unit".to_owned(),
+                Some(c) => format!(
+                    "the selector matches no unit; {}, each a guess to check before use: {}",
+                    units(c.total),
+                    c.describe()
+                ),
+            }),
             Resolved::KeyNotAllowed { key } => Some(format!(
                 "the provider does not allow the selector key {key}"
             )),

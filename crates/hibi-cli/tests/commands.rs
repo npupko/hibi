@@ -2393,7 +2393,18 @@ fn a_method_of_a_renamed_class_is_offered_first_by_its_content() {
         s(&view["next"]),
         format!("hibi reanchor {id} --evidence 1=<anchor>")
     );
-    assert_eq!(refused(&repo, &["mark", &id])["code"], "side_missing");
+    // The error of `mark` lists the same candidates in the same order.
+    let e = refused(&repo, &["mark", &id]);
+    assert_eq!(e["code"], "side_missing");
+    let message = s(&e["message"]);
+    let anchors: Vec<&str> = candidates.iter().map(|c| s(&c["anchor"])).collect();
+    let mut at = 0;
+    for anchor in anchors {
+        let found = message[at..]
+            .find(anchor)
+            .unwrap_or_else(|| panic!("{anchor}: {message}"));
+        at += found + anchor.len();
+    }
 }
 
 /// Text from a file reaches a terminal without control characters, except
