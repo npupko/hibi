@@ -1759,7 +1759,9 @@ path rule above then applies to a path that the list contains.
 - When git is not usable for the root, the path rule and the private-path
   rule alone decide. An ignored file is then readable.
 - A revision source does not use the file list: the tree entry of the commit
-  decides, with the private-path rule.
+  decides, with the private-path rule. The tree entries are read once for a
+  batch of anchors. When that read fails, every anchor of the batch fails
+  with `unavailable`, whatever its locator, a `repo:` locator included.
 
 Accepted limit: the check-then-open race. The file list is read, the path
 components are examined, and the file is opened in separate steps that are
@@ -1782,7 +1784,8 @@ the empty list.
 
 ## 7. Locating a quote
 
-`locate(text, sel)` finds the stored quote in the current text. Inputs: the
+`locate(text, sel)` finds the stored quote in the current text. An empty
+quote gives `missing`. Inputs: the
 text, `quote`, `prefix` (default empty), `suffix` (default empty), `pos`
 (default 0). The algorithm works on character indices. `pos` is converted from
 a byte offset to the index of the character at or before it, and results are
@@ -3152,8 +3155,11 @@ The value of the `units` column is one of two forms:
 
 ```json
 [{"key":"file","kind":"file","parent":null,"label":"...","range":{"start":0,"end":412,"line":1,"endLine":18},"fp":"...","sel":{}},
- {"key":"...","kind":"sentence","parent":"file","label":"...","range":{"start":0,"end":57,"line":1,"endLine":1},"fp":"...","sel":{"...":"..."}}]
+ {"key":"...","kind":"sentence","parent":"file","label":"...","range":{"start":0,"end":57,"line":1,"endLine":1},"fp":"...","sel":{}}]
 ```
+
+Every cached unit has `sel` equal to `{}`. Completed selectors are not
+cached.
 
 Offsets in `range` refer to the text after CRLF replacement (section 4).
 
@@ -4101,7 +4107,7 @@ The runner reports:
 
 | Key | Meaning |
 |---|---|
-| `hello` | The `result` of the first `hello` step of the run that got one, or `null` |
+| `hello` | The `result` of the first `hello` step of the run whose response matched its `expect`, or `null` |
 | `passed` | Cases that ran to the end and passed. Skipped cases are not counted. |
 | `failed` | Cases that failed |
 | `skipped` | Cases that were skipped |
@@ -4839,6 +4845,7 @@ Side:
 | `markedFp` | fingerprint in the reference mark or `null` |
 | `candidates` | array of UnitRef, present only when `state` is `ambiguous` |
 | `text` | current unit text, present only with `--detail` |
+| `remediation` | string or `null`. For a side whose state is not `same`, the sentence the human output prints for that side: what is wrong with it and what the caller can do. `null` for a `same` side. Present in every ClaimView, so in the output of `status`, `claim`, `mark` and `reanchor`. |
 
 Rules for the Side keys:
 
@@ -5231,7 +5238,10 @@ Standard input is read after the root is found, for `claim --stdin` and
 For each element, in order:
 
 1. Validate the fields. The scheme of every locator MUST be `file`, `repo` or
-   listed in `hibi.toml` (`unknown_scheme`).
+   listed in `hibi.toml` (`unknown_scheme`). A `recheck` that does not parse
+   or that overflows (section 9.4) is `invalid_duration` here, before any
+   anchor is resolved, so it is reported in place of a side error of the same
+   element.
 2. Resolve every anchor and apply the write checks, first that applies: a
    selector key the provider does not allow (section 2.5), such as `key` on a
    `file:` locator: `unsupported_selector`, without sending it.
@@ -5250,8 +5260,7 @@ For each element, in order:
    have equal completed selectors are `invalid_argument`. The subject is not
    compared with the evidence.
 3. Build the claim from the completed selectors (section 5.4) and derive its
-   id. A `recheck` that fails section 9.4 is
-   `invalid_duration`. A `recheck` MUST also be longer than zero: a duration
+   id. A `recheck` MUST be longer than zero: a duration
    whose components are all zero, such as `P0D` or `PT0S`, is
    `invalid_duration`. Then find the target of the mark by the same-claim
    rule below. If the built claim's id is that of a retired claim and the
@@ -5533,7 +5542,9 @@ Builds a new claim from the old one:
    value is checked by section 9.4 and any other `--note` value is the new
    note. A note with the text `none` therefore cannot be set. The `recheck`
    of the new claim MUST be longer than zero, as in `claim`: `--recheck P0D`
-   is `invalid_duration`.
+   is `invalid_duration`. Both checks, section 9.4 and longer than zero, are
+   applied to the `recheck` the new claim has, also when it is inherited
+   unchanged from the old claim.
 2. Sides: `--subject` replaces the subject. `--evidence <n>=<anchor>` replaces
    evidence number `n` (1-based). `--drop-evidence <n>` removes it (numbers
    refer to the old list). `--add-evidence` appends. Every side not replaced
@@ -5608,6 +5619,8 @@ more than once, by its id or by prefixes that resolve to it, counts once.
 MUST resolve to a live claim other than those being retired
 (`invalid_argument` otherwise): an id that names no claim, a retired claim,
 and one of the claims being retired are all refused, and nothing is written.
+A prefix that matches several claims is `ambiguous_id`, as for every id
+argument (section 3.6).
 For a retired replacement the remediation is `hibi list <id>` with the id of
 that claim. No provider is contacted. `--note none`
 stores the text `none`.
@@ -6122,7 +6135,11 @@ are:
 
 ### 16.2 Where v5 differs from the recorded behaviour
 
-These cases have `origin: "v5-adjusted"`. The list is a record, not a task.
+The cases named here hold the value this specification requires where the
+earlier implementation gave another value or counted in another unit. The
+list is a record, not a task. A case has `origin: "v5-adjusted"` when its
+expected value was changed, and keeps `origin: "computed"` when only the
+binding fields or the input changed. The origin of each group is stated.
 
 **`ast-v1` (section 8.4).** In `ast-equivalence.json`, `semanticHashEqual` is
 `true` for:
@@ -6134,34 +6151,39 @@ These cases have `origin: "v5-adjusted"`. The list is a record, not a task.
   `rust fn: trailing-comma`, `go fn: trailing-comma` (a comma before a closing
   delimiter is skipped).
 
-`tsx fn: prettier-jsx` is `false`: parentheses count.
+`tsx fn: prettier-jsx` is `false`: parentheses count. These cases are
+`v5-adjusted`.
 
 In `ast-node.json`, `expected.semanticStream` has no comment tokens (function
 cases under `fixtures/ast/<language>/`) and no comma directly before a
 closing delimiter (the function cases of the `trailing-comma` fixtures and
 the `[struct RetryOptions {]` cases under `fixtures/ast/rust/`). The `source`
-of each such case lists the removed tokens.
+of each such case lists the removed tokens. These cases are `v5-adjusted`.
 
 **Characters instead of UTF-16 units (section 4.1).**
 
 - `levenshtein.json`: `unit-sensitive: two different emoji are one substitution`
-  and `unit-sensitive: ASCII letter vs emoji is one substitution`.
-- `bitap.json`: `unit-sensitive: index after an emoji is in UTF-16 units`:
-  only `indexByte` is binding.
-- `quote-selector.json`: `non-ascii: context of 48 characters, all in the BMP`,
-  and the case with characters outside the Basic Multilingual Plane.
-- `locate.json` (`non-ascii:` cases) and `regions.json` (`non-ascii offsets`):
-  the byte fields are binding.
+  (`computed`) and `unit-sensitive: ASCII letter vs emoji is one substitution`
+  (`v5-adjusted`).
+- `bitap.json`: `unit-sensitive: index after an emoji is in UTF-16 units`
+  (`computed`): only `indexByte` is binding.
+- `quote-selector.json`: `non-ascii: context of 48 characters, all in the BMP`
+  (`computed`) and `non-ascii: context of 48 characters outside the BMP`
+  (`v5-adjusted`).
+- `locate.json` (`non-ascii:` cases) and `regions.json` (`non-ascii offsets`),
+  all `computed`: the byte fields are binding.
 
 **Whitespace set (section 4.1).** `normalize.json`:
-`BOM U+FEFF is not whitespace` and `NEL U+0085 is whitespace`.
+`BOM U+FEFF is not whitespace` and `NEL U+0085 is whitespace`, both
+`v5-adjusted`.
 `no Unicode normalization: decomposed e-acute stays decomposed` is unchanged:
 `text::normalize` does not apply NFC. NFC is a step of `prose-v1` only and is
 tested in `fingerprint.json`.
 
 **CRLF (section 4.2).** `prose::split` receives text without CRLF.
 `regions.json`: `frontmatter in .md (former CRLF case, fed as LF)` and
-`multi-line units (former CRLF case, fed as LF)`.
+`multi-line units (former CRLF case, fed as LF)`, both `computed` from the
+LF input.
 
 **Code units (section 6.4).** Some cases of `units-code.json` were changed by
 rulings on section 6.4 made after they were written: outer attributes belong
@@ -6324,7 +6346,8 @@ Each row is a choice the plan left open or marked illustrative.
 
 Platforms and tools:
 
-- Windows and Linux. Every test ran on macOS only. The store code on Windows
+- Windows and Linux. Tests were run on macOS only; CI has never run. The
+  store code on Windows
   has no no-follow open flag and relies on a metadata check; the directory
   `fsync` is skipped; the symbolic-link tests are Unix only. `etcetera`
   0.11.0 does not read `XDG_CONFIG_HOME` or `XDG_CACHE_HOME` on Windows (read
