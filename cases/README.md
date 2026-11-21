@@ -333,6 +333,14 @@ and Java (`depth.py`, `depth.java`), and for Go a case showing that the cap
 cannot be reached, because a field's struct type is not a container
 (`nested-struct.go`).
 
+Cases added for the ruling on shared declarations, `spec-derived`, derived
+by hand: `go: grouped const, var and type specs are units of their own; a
+spec without an expression is a unit` (`fixtures/units/shared.go`) and
+`rust: the leading attribute of an extern block with several items belongs
+to its items, not to a statement` (`fixtures/units/shared.rs`). units-code
+has no fingerprints, so the fingerprint effects of that ruling are pinned by
+unit tests in `code.rs`.
+
 `resolve.json` also pins, by hand-derived cases: completed selectors whose
 context is the unit's scope (the unit's range widened over adjacent
 whitespace, `,` and `;`) when the symbol is unique, so that every completed

@@ -194,7 +194,7 @@ fn node_text<'t>(node: Node<'_>, text: &'t str) -> &'t str {
 /// the only comma of a one-element tuple (see [`tuple_kinds`]). `text` is
 /// the source the tree was parsed from.
 pub fn semantic_stream(node: Node<'_>, text: &str) -> Vec<String> {
-    stream_walk(node, text, &HashSet::new()).0
+    stream_walk(node, text, &HashSet::new(), None).0
 }
 
 #[cfg(test)]
@@ -227,10 +227,15 @@ enum Step<'t> {
 /// pre-order walk visits a subtree contiguously, and the skip rules for the
 /// nodes inside a subtree depend only on that subtree. (A marked node is
 /// never itself a skipped node or a trailing comma.)
+///
+/// `omit`, when given, drops a node with its subtree as the walk reaches
+/// it, after the trailing-comma decisions of its parent; it lets a test
+/// compute a stream with parts left out by a direct walk.
 fn stream_walk(
     node: Node<'_>,
     text: &str,
     marks: &HashSet<usize>,
+    omit: Option<&dyn Fn(Node<'_>) -> bool>,
 ) -> (Vec<String>, HashMap<usize, (usize, usize)>) {
     let mut out = Vec::new();
     let mut ranges = HashMap::new();
@@ -252,7 +257,7 @@ fn stream_walk(
                 continue;
             }
         };
-        if is_skipped(n) {
+        if is_skipped(n) || omit.is_some_and(|f| f(n)) {
             continue;
         }
         if marks.contains(&n.id()) {
@@ -774,6 +779,17 @@ struct Found<'t> {
     /// The leading attributes or decorators that belong to the unit
     /// (ruling on section 6.4), in source order.
     lead: Vec<Node<'t>>,
+    /// The declaration that declares this unit together with others: the
+    /// outermost wrapper through which two or more units of this body were
+    /// discovered (ruling on section 8.4). Its parts outside its first to
+    /// last declarator units are shared by all of them.
+    shared: Option<Node<'t>>,
+    /// The leading nodes of `shared` (a Rust extern block's attributes).
+    shared_lead: Vec<Node<'t>>,
+    /// Go: for a `const_spec` without an expression, the nearest preceding
+    /// `const_spec` of the same block that has one (implicit repetition,
+    /// ruling on section 8.4).
+    repeats: Option<Node<'t>>,
 }
 
 /// A container body to visit.
@@ -793,6 +809,13 @@ struct Body<'t> {
 /// is not searched: deeper declarations stay part of it (ruling on section
 /// 6.4). This bounds the work of fingerprinting nested containers.
 pub const MAX_CONTAINER_DEPTH: usize = 32;
+
+/// The most tokens of shared declaration parts that a unit's stream takes
+/// in (ruling on section 8.4). When the parts of a declaration outside its
+/// declarator units are longer, each of its units has its own stream only;
+/// a repeated Go `const_spec` longer than this is left out. This bounds the
+/// work of fingerprinting declarations with many declarators.
+pub const MAX_SHARED_TOKENS: usize = 256;
 
 /// The node kind that, in a run immediately before a unit node, belongs to
 /// that unit (ruling on section 6.4): Rust outer attributes and TypeScript
@@ -863,9 +886,10 @@ fn code_units(root: Node<'_>, text: &str, class: Class) -> CodeFile {
     // statement of its own. A lead node is not given leads itself, so a
     // run with no item after it stays as statements.
     let lead = lead_kind(class);
+    // The leads of a shared declaration belong to its units as well.
     let mut absorbed: HashSet<usize> = found
         .iter()
-        .flat_map(|f| f.lead.iter().map(|n| n.id()))
+        .flat_map(|f| f.lead.iter().chain(&f.shared_lead).map(|n| n.id()))
         .collect();
     let mut cursor = root.walk();
     let candidates: Vec<(Node<'_>, Vec<Node<'_>>)> = root
@@ -912,25 +936,81 @@ fn code_units(root: Node<'_>, text: &str, class: Class) -> CodeFile {
 
     // One walk of the root gives every unit's stream as a slice of the
     // root's stream, so nested containers are not walked once per level.
-    let marks: HashSet<usize> = all
+    // Shared declarations, their leads and repeated Go specs are marked too.
+    let mut marks: HashSet<usize> = all
         .iter()
         .flat_map(|(n, l, _)| l.iter().chain(std::iter::once(n)).map(|x| x.id()))
         .collect();
-    let (root_stream, ranges) = stream_walk(root, text, &marks);
+    for f in &found {
+        marks.extend(f.shared.iter().chain(&f.shared_lead).map(|n| n.id()));
+        marks.extend(f.repeats.map(|n| n.id()));
+    }
+    let (root_stream, ranges) = stream_walk(root, text, &marks, None);
+
+    // The token range of a unit node with its leads: one slice, because
+    // only comment nodes, which emit nothing, lie between them.
+    let span = |n: &Node<'_>, lead: &[Node<'_>]| -> Option<(usize, usize)> {
+        let (s, _) = *ranges.get(&lead.first().unwrap_or(n).id())?;
+        let (_, e) = *ranges.get(&n.id())?;
+        Some((s, e))
+    };
+    // For each shared declaration: the first token of its first declarator
+    // unit and the end of its last.
+    let mut declarators: HashMap<usize, (usize, usize)> = HashMap::new();
+    for f in &found {
+        if let (Some(w), Some((s, e))) = (f.shared, span(&f.unit_node, &f.lead)) {
+            let r = declarators.entry(w.id()).or_insert((s, e));
+            *r = (r.0.min(s), r.1.max(e));
+        }
+    }
+    // The token ranges whose concatenation is a unit's stream (ruling on
+    // section 8.4): the shared declaration's tokens before its first
+    // declarator unit, the repeated Go spec, the unit's own, and the
+    // declaration's tokens after its last declarator unit. The shared parts
+    // are left out when longer than MAX_SHARED_TOKENS.
+    let pieces = |node: &Node<'_>, lead: &[Node<'_>], f: Option<&Found<'_>>| {
+        let own = span(node, lead)?;
+        let Some(f) = f else {
+            return Some(vec![own]);
+        };
+        let mut pieces = Vec::with_capacity(4);
+        let mut after = None;
+        if let Some(w) = f.shared {
+            let (ws, we) = span(&w, &f.shared_lead)?;
+            let (first, last) = declarators[&w.id()];
+            if (first - ws) + (we - last) <= MAX_SHARED_TOKENS {
+                pieces.push((ws, first));
+                after = Some((last, we));
+            }
+        }
+        if let Some(r) = f.repeats {
+            let (s, e) = *ranges.get(&r.id())?;
+            if e - s <= MAX_SHARED_TOKENS {
+                pieces.push((s, e));
+            }
+        }
+        pieces.push(own);
+        pieces.extend(after);
+        Some(pieces)
+    };
 
     let mut decl_pos = vec![0; found.len()];
     let mut units: Vec<CodeUnit> = Vec::with_capacity(all.len());
     for (node, lead, src) in &all {
-        // The stream of a unit with leads is the leads' streams followed by
-        // the unit node's, in source order: one slice, because only comment
-        // nodes, which emit nothing, lie between them.
-        let first = lead.first().unwrap_or(node);
-        let fp = match (ranges.get(&first.id()), ranges.get(&node.id())) {
-            (Some(&(s, _)), Some(&(_, e))) => {
-                count_work(e - s);
-                fingerprint::ast_v1(class.name(), &root_stream[s..e])
+        let f = match src {
+            Src::Decl(i) => Some(&found[*i]),
+            _ => None,
+        };
+        let fp = match pieces(node, lead, f) {
+            Some(pieces) => {
+                let stream: Vec<&str> = pieces
+                    .iter()
+                    .flat_map(|&(s, e)| root_stream[s..e].iter().map(String::as_str))
+                    .collect();
+                count_work(stream.len());
+                fingerprint::ast_v1(class.name(), &stream)
             }
-            _ => {
+            None => {
                 let mut stream = Vec::new();
                 for n in lead.iter().chain(std::iter::once(node)) {
                     stream.extend(semantic_stream(*n, text));
@@ -1028,6 +1108,9 @@ fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
         pending.reverse();
         let mut members: Vec<(usize, Vec<Node<'t>>)> = Vec::new();
         let mut nested: Vec<Body<'t>> = Vec::new();
+        // Go: the last `const_spec` with an expression, with the id of the
+        // block it is in. Candidates come in source order.
+        let mut last_valued: Option<(Option<usize>, Node<'t>)> = None;
         while let Some((node, chain, top)) = pending.pop() {
             let kind = node.kind();
             let wrapper = wrappers.contains(&kind) || is_namespace_statement(class, node);
@@ -1039,6 +1122,15 @@ fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
                 let children: Vec<Node<'t>> = node.named_children(&mut cursor).collect();
                 pending.extend(children.into_iter().rev().map(|c| (c, sub.clone(), top)));
                 continue;
+            }
+            let mut repeats = None;
+            if class == Class::Go && kind == "const_spec" {
+                let block = chain.last().map(|w| w.id());
+                if node.child_by_field_name("value").is_some() {
+                    last_valued = Some((block, node));
+                } else {
+                    repeats = last_valued.filter(|&(b, _)| b == block).map(|(_, n)| n);
+                }
             }
             let Some(d) = declaration(class, kind) else {
                 continue;
@@ -1084,6 +1176,9 @@ fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
                 parent: body.container,
                 top,
                 lead: Vec::new(),
+                shared: None,
+                shared_lead: Vec::new(),
+                repeats,
             });
             members.push((index, chain));
             // A declaration at depth MAX_CONTAINER_DEPTH is a unit, but its
@@ -1103,6 +1198,7 @@ fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
         // Unit nodes: climb through a wrapper while this is the only
         // declaration discovered through it.
         let mut through: HashMap<usize, usize> = HashMap::new();
+        let mut shared_lead: HashMap<usize, Vec<Node<'t>>> = HashMap::new();
         for (_, chain) in &members {
             for w in chain {
                 *through.entry(w.id()).or_default() += 1;
@@ -1119,6 +1215,15 @@ fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
             }
             found[*index].unit_node = unit_node;
             found[*index].lead = leading(unit_node, class);
+            // The outermost wrapper counts the most declarations, so it is
+            // the declaration when any wrapper of the chain is shared.
+            if let Some(&w) = chain.first().filter(|w| through[&w.id()] >= 2) {
+                let lead = shared_lead
+                    .entry(w.id())
+                    .or_insert_with(|| leading(w, class));
+                found[*index].shared = Some(w);
+                found[*index].shared_lead = lead.clone();
+            }
         }
         // Visit nested bodies in source order.
         bodies.extend(nested.into_iter().rev());
@@ -1262,13 +1367,69 @@ mod tests {
         }
     }
 
-    /// The one-walk fingerprints equal the fingerprints of each unit's own
-    /// stream (leads, then the unit node), on every units-code fixture.
+    /// The stream of a discovered unit by the rules of section 8.4, from
+    /// direct walks rather than slices of the root's stream: its leads and
+    /// unit node; before them, the repeated Go spec; and, for a declarator
+    /// of a shared declaration, the declaration's walk (after its leads)
+    /// with every node that lies between its first and last declarator
+    /// units left out, except the unit itself and the nodes around it.
+    fn direct_stream(d: &Found<'_>, found: &[Found<'_>], text: &str) -> Vec<String> {
+        let walk = |n: &Node<'_>| semantic_stream(*n, text);
+        let own: Vec<String> = d.lead.iter().chain([&d.unit_node]).flat_map(walk).collect();
+        let rep: Vec<String> = d
+            .repeats
+            .iter()
+            .map(walk)
+            .find(|s| s.len() <= MAX_SHARED_TOKENS)
+            .unwrap_or_default();
+        let Some(w) = d.shared else {
+            return [rep, own].concat();
+        };
+        let group = || found.iter().filter(|f| f.shared == Some(w));
+        let first = group()
+            .map(|f| f.lead.first().unwrap_or(&f.unit_node).start_byte())
+            .min()
+            .unwrap();
+        let last = group().map(|f| f.unit_node.end_byte()).max().unwrap();
+        let (own_start, own_end) = (
+            d.lead.first().unwrap_or(&d.unit_node).start_byte(),
+            d.unit_node.end_byte(),
+        );
+        let mut around = HashSet::new();
+        let mut p = d.unit_node.parent();
+        while let Some(n) = p.filter(|n| n.id() != w.id()) {
+            around.insert(n.id());
+            p = n.parent();
+        }
+        let inside_own = |n: Node<'_>| own_start <= n.start_byte() && n.end_byte() <= own_end;
+        let middle = |n: Node<'_>| {
+            first <= n.start_byte()
+                && n.end_byte() <= last
+                && !around.contains(&n.id())
+                && !inside_own(n)
+        };
+        let before = |n: Node<'_>| first <= n.start_byte() && !around.contains(&n.id());
+        let lead: Vec<String> = d.shared_lead.iter().flat_map(walk).collect();
+        let none = HashSet::new();
+        let prefix = [lead.clone(), stream_walk(w, text, &none, Some(&before)).0].concat();
+        let whole = [lead, stream_walk(w, text, &none, Some(&middle)).0].concat();
+        let suffix = whole[prefix.len() + own.len()..].to_vec();
+        assert_eq!(whole[prefix.len()..prefix.len() + own.len()], own[..]);
+        if prefix.len() + suffix.len() > MAX_SHARED_TOKENS {
+            [rep, own].concat()
+        } else {
+            [prefix, rep, own, suffix].concat()
+        }
+    }
+
+    /// The one-walk fingerprints equal the fingerprints of each unit's
+    /// stream computed by direct walks (see [`direct_stream`]), on every
+    /// units-code fixture.
     #[test]
     fn slice_fingerprints_equal_direct_streams() {
         let dir =
             std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../cases/fixtures/units");
-        let mut checked = 0;
+        let (mut checked, mut shared, mut repeated) = (0, 0, 0);
         for entry in std::fs::read_dir(dir).unwrap() {
             let path = entry.unwrap().path();
             let text = std::fs::read_to_string(&path).unwrap();
@@ -1287,10 +1448,9 @@ mod tests {
                 let found = discover(root, &text, class);
                 let f = code_units(root, &text, class);
                 for d in &found {
-                    let mut stream = Vec::new();
-                    for n in d.lead.iter().chain(std::iter::once(&d.unit_node)) {
-                        stream.extend(semantic_stream(*n, &text));
-                    }
+                    let stream = direct_stream(d, &found, &text);
+                    shared += usize::from(d.shared.is_some());
+                    repeated += usize::from(d.repeats.is_some());
                     let start = d.lead.first().unwrap_or(&d.unit_node).start_byte();
                     let u = f
                         .units
@@ -1313,6 +1473,7 @@ mod tests {
             }
         }
         assert!(checked > 100, "{checked}");
+        assert!(shared > 10 && repeated > 0, "{shared} {repeated}");
     }
 
     /// Ruling 14: a struct with 5,000 fields and an enum with 5,000
@@ -1482,6 +1643,241 @@ mod tests {
         // A TypeScript tuple type is not tuple-like: `[number,]` is `[number]`.
         let ts = |src: &str| fp_of(src, Class::Typescript, "type:A");
         assert_eq!(ts("type A = [number,];"), ts("type A = [number];"));
+    }
+
+    /// Ruling on section 8.4: the parts of a declaration outside its
+    /// declarator units (type, modifiers, keyword, annotations) reach every
+    /// declarator; editing one declarator, or adding one, leaves the others.
+    #[test]
+    fn shared_declaration_parts_reach_every_declarator() {
+        let java = |src: &str, key: &str| fp_of(&format!("class K {{ {src} }}"), Class::Java, key);
+        for key in ["field:K.a", "field:K.b"] {
+            assert_ne!(java("int a, b = 2;", key), java("long a, b = 2;", key));
+            assert_ne!(java("int a, b = 2;", key), java("@A int a, b = 2;", key));
+        }
+        assert_eq!(
+            java("int a, b = 2;", "field:K.a"),
+            java("int a, b = 3;", "field:K.a")
+        );
+        assert_ne!(
+            java("int a, b = 2;", "field:K.b"),
+            java("int a, b = 3;", "field:K.b")
+        );
+
+        for class in [Class::Typescript, Class::Tsx] {
+            let ts = |src: &str, key: &str| fp_of(src, class, key);
+            for key in ["variable:a", "variable:b"] {
+                assert_ne!(ts("const a = 1, b = 2;", key), ts("let a = 1, b = 2;", key));
+                assert_ne!(
+                    ts("const a = 1, b = 2;", key),
+                    ts("export const a = 1, b = 2;", key)
+                );
+            }
+            assert_eq!(
+                ts("const a = 1, b = 2;", "variable:a"),
+                ts("const a = 1, b = 3;", "variable:a")
+            );
+            assert_eq!(
+                ts("const a = 1, b = 2;", "variable:b"),
+                ts("const a = 0, c = 5, b = 2;", "variable:b")
+            );
+        }
+
+        let go = |src: &str, key: &str| fp_of(&format!("package p\n\n{src}\n"), Class::Go, key);
+        let vars = "var (\n\ta = 1\n\tb = 2\n)";
+        assert_eq!(
+            go(vars, "variable:a"),
+            go("var (\n\ta = 1\n\tc = 3\n\tb = 2\n)", "variable:a")
+        );
+        assert_eq!(
+            go(vars, "variable:a"),
+            go("var (\n\ta = 1\n\tb = 5\n)", "variable:a")
+        );
+        assert_ne!(
+            go(vars, "variable:b"),
+            go("var (\n\ta = 1\n\tb = 5\n)", "variable:b")
+        );
+        // The group's parentheses are shared: `a` grouped is not `a` alone.
+        assert_ne!(
+            go(vars, "variable:a"),
+            go("var a = 1\nvar b = 2", "variable:a")
+        );
+        let types = "type (\n\tT int\n\tU string\n)";
+        assert_eq!(
+            go(types, "type:T"),
+            go("type (\n\tT int\n\tU bool\n)", "type:T")
+        );
+    }
+
+    /// Ruling on section 8.4: a Rust extern block with several items is
+    /// shared by them: its ABI string and leading attributes reach every
+    /// item, and the attributes are not a statement.
+    #[test]
+    fn extern_block_parts_reach_every_item() {
+        let rs = |src: &str, key: &str| fp_of(src, Class::Rust, key);
+        let base = "#[link(name = \"m\")]\nextern \"C\" {\n    fn cos(x: f64) -> f64;\n    fn sin(x: f64) -> f64;\n}\n";
+        for key in ["function:cos", "function:sin"] {
+            assert_ne!(rs(base, key), rs(&base.replace("\"C\"", "\"system\""), key));
+            assert_ne!(rs(base, key), rs(&base.replace("\"m\"", "\"n\""), key));
+        }
+        assert_eq!(
+            rs(base, "function:cos"),
+            rs(&base.replace("sin(x: f64)", "sin(y: f64)"), "function:cos")
+        );
+        assert!(
+            code(base, Class::Rust)
+                .units
+                .iter()
+                .all(|u| u.kind != "statement")
+        );
+    }
+
+    /// Ruling on section 8.4: a Go `const_spec` without an expression takes
+    /// in the stream of the nearest preceding spec of its block that has
+    /// one.
+    #[test]
+    fn go_implicit_repetition_reaches_repeating_specs() {
+        let go = |src: &str, key: &str| {
+            fp_of(&format!("package p\n\nconst (\n{src}\n)\n"), Class::Go, key)
+        };
+        let base = "\tA = iota * 10\n\tB\n\tC";
+        let edited = "\tA = iota * 100\n\tB\n\tC";
+        for key in ["variable:B", "variable:C"] {
+            assert_ne!(go(base, key), go(edited, key));
+        }
+        assert_eq!(
+            go(base, "variable:C"),
+            go("\tA = iota * 10\n\tD\n\tC", "variable:C")
+        );
+        // The nearest spec with an expression, not the first one.
+        let two = "\tA = iota\n\tB = iota * 2\n\tC";
+        assert_eq!(
+            go(two, "variable:C"),
+            go("\tA = iota + 7\n\tB = iota * 2\n\tC", "variable:C")
+        );
+        assert_ne!(
+            go(two, "variable:C"),
+            go("\tA = iota\n\tB = iota * 3\n\tC", "variable:C")
+        );
+    }
+
+    /// `const {p0, ..., p(k-1)} = <value>, a = 1, b = 2;` in TypeScript.
+    fn destructured(k: usize, value: &str, keyword: &str) -> String {
+        let names: Vec<String> = (0..k).map(|i| format!("p{i}")).collect();
+        format!(
+            "{keyword} {{{}}} = {value}, a = 1, b = 2;\n",
+            names.join(", ")
+        )
+    }
+
+    /// MAX_SHARED_TOKENS: shared parts of exactly 256 tokens are kept, 257
+    /// are left out. The shared tokens of `destructured(k, value)` are
+    /// `lexical_declaration`, the keyword, the destructuring declarator
+    /// (`variable_declarator`, `object_pattern`, `{`, k names, k - 1
+    /// commas, `}`, `=` and the value) and its comma before `a`, and `;`
+    /// after `b`: 2k + 8 plus the value's tokens. `o` is one token,
+    /// `o.q` four (`member_expression`, `o`, `.`, `q`).
+    #[test]
+    fn shared_parts_are_capped() {
+        let fp = |k: usize, value: &str, keyword: &str| {
+            fp_of(
+                &destructured(k, value, keyword),
+                Class::Typescript,
+                "variable:b",
+            )
+        };
+        assert_eq!(2 * 122 + 8 + 4, MAX_SHARED_TOKENS);
+        assert_ne!(fp(122, "o.q", "const"), fp(122, "o.q", "let"));
+        assert_eq!(2 * 124 + 8 + 1, MAX_SHARED_TOKENS + 1);
+        assert_eq!(fp(124, "o", "const"), fp(124, "o", "let"));
+        // Over the cap the unit's stream is its own.
+        let own = [
+            "variable_declarator",
+            "identifier:b",
+            "=:=",
+            "number:2",
+            "=2",
+        ];
+        assert_eq!(
+            fp(124, "o", "const"),
+            fingerprint::ast_v1("typescript", &own)
+        );
+    }
+
+    /// MAX_SHARED_TOKENS for a repeated Go spec. `A = e` with e a sum of m
+    /// operands has the stream `const_spec`, `A`, `=`, `expression_list`,
+    /// then m - 1 `binary_expression` and m - 1 `+` tokens and one token
+    /// per identifier operand, two per `int_literal` (its text and `=`):
+    /// with m identifiers 3m + 2 tokens, one more per literal.
+    #[test]
+    fn repeated_spec_is_capped() {
+        let sum = |literals: usize, m: usize, last: &str| {
+            let mut ops: Vec<String> = (0..literals).map(|i| i.to_string()).collect();
+            ops.extend((literals..m - 1).map(|_| "x".to_owned()));
+            ops.push(last.to_owned());
+            ops.join(" + ")
+        };
+        let fp = |e: String| {
+            fp_of(
+                &format!("package p\n\nconst (\n\tA = {e}\n\tB\n)\n"),
+                Class::Go,
+                "variable:B",
+            )
+        };
+        assert_eq!(3 * 84 + 2 + 2, MAX_SHARED_TOKENS);
+        assert_ne!(fp(sum(2, 84, "x")), fp(sum(2, 84, "y")));
+        assert_eq!(3 * 85 + 2, MAX_SHARED_TOKENS + 1);
+        assert_eq!(fp(sum(0, 85, "x")), fp(sum(0, 85, "y")));
+    }
+
+    /// The shared parts and repeated specs keep the work linear: thousands
+    /// of declarators in one declaration, in TypeScript, Java and Go, a Go
+    /// constant group where every spec repeats the first, and a shared
+    /// prefix that grows with the number of declarators (a destructuring
+    /// declarator before them), which the cap leaves out.
+    #[test]
+    fn shared_declarations_stay_linear() {
+        let list = |n: usize, f: &dyn Fn(usize) -> String, sep: &str| {
+            (0..n).map(f).collect::<Vec<_>>().join(sep)
+        };
+        let ts = |n: usize| format!("const {};\n", list(n, &|i| format!("a{i} = {i}"), ", "));
+        let java = |n: usize| {
+            format!(
+                "class K {{ int {}; }}\n",
+                list(n, &|i| format!("a{i}"), ", ")
+            )
+        };
+        let go_var = |n: usize| {
+            format!(
+                "package p\n\nvar (\n{}\n)\n",
+                list(n, &|i| format!("\ta{i} = {i}"), "\n")
+            )
+        };
+        let go_iota = |n: usize| {
+            format!(
+                "package p\n\nconst (\n\tA = iota * 10\n{}\n)\n",
+                list(n, &|i| format!("\tB{i}"), "\n")
+            )
+        };
+        let crafted = |n: usize| {
+            format!(
+                "const {{{}}} = o, {};\n",
+                list(n, &|i| format!("p{i}"), ", "),
+                list(n, &|i| format!("a{i} = {i}"), ", ")
+            )
+        };
+        for (class, make, what) in [
+            (Class::Typescript, &ts as &dyn Fn(usize) -> String, "ts"),
+            (Class::Java, &java, "java"),
+            (Class::Go, &go_var, "go var"),
+            (Class::Go, &go_iota, "go iota"),
+            (Class::Typescript, &crafted, "crafted prefix"),
+        ] {
+            let (_, small) = with_work(&make(5000), class);
+            let (f, large) = with_work(&make(10000), class);
+            assert!(f.units.len() > 10000, "{what}");
+            assert_linear(small, large, what);
+        }
     }
 
     #[test]

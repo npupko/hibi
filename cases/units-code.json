@@ -4578,5 +4578,153 @@
     },
     "source": "written for v5 from SPEC section 6.4: the only Go containers are `type_spec` nodes, reached at the top level only, and a `field_declaration` has no container body, so the fields of `Inner` and `Deep` are not units and MAX_CONTAINER_DEPTH cannot be reached in Go; expected values derived by hand from the fixture and the grammars' grammar.js and node-types.json; a script converted the chosen texts to byte offsets and lines",
     "origin": "spec-derived"
+  },
+  {
+    "name": "go: grouped const, var and type specs are units of their own; a spec without an expression is a unit",
+    "input": {
+      "fixture": "fixtures/units/shared.go",
+      "path": "shared.go"
+    },
+    "expected": {
+      "class": "go",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 92,
+          "line": 1,
+          "endLine": 17
+        },
+        {
+          "kind": "statement",
+          "symbol": null,
+          "key": "statement:*",
+          "parent": "file",
+          "start": 0,
+          "end": 9,
+          "line": 1,
+          "endLine": 1
+        },
+        {
+          "kind": "variable",
+          "symbol": "A",
+          "key": "variable:A",
+          "parent": "file",
+          "start": 20,
+          "end": 33,
+          "line": 4,
+          "endLine": 4
+        },
+        {
+          "kind": "variable",
+          "symbol": "B",
+          "key": "variable:B",
+          "parent": "file",
+          "start": 35,
+          "end": 36,
+          "line": 5,
+          "endLine": 5
+        },
+        {
+          "kind": "variable",
+          "symbol": "C",
+          "key": "variable:C",
+          "parent": "file",
+          "start": 38,
+          "end": 39,
+          "line": 6,
+          "endLine": 6
+        },
+        {
+          "kind": "variable",
+          "symbol": "x",
+          "key": "variable:x",
+          "parent": "file",
+          "start": 50,
+          "end": 55,
+          "line": 10,
+          "endLine": 10
+        },
+        {
+          "kind": "variable",
+          "symbol": "y",
+          "key": "variable:y",
+          "parent": "file",
+          "start": 57,
+          "end": 62,
+          "line": 11,
+          "endLine": 11
+        },
+        {
+          "kind": "type",
+          "symbol": "T",
+          "key": "type:T",
+          "parent": "file",
+          "start": 74,
+          "end": 79,
+          "line": 15,
+          "endLine": 15
+        },
+        {
+          "kind": "type",
+          "symbol": "U",
+          "key": "type:U",
+          "parent": "file",
+          "start": 81,
+          "end": 89,
+          "line": 16,
+          "endLine": 16
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.4 and the ruling on section 8.4 (shared declaration parts change fingerprints only): each spec of a group of two or more is its own unit node, `B` and `C` (no expression) included; expected values derived by hand from the fixture and the grammars' grammar.js and node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "rust: the leading attribute of an extern block with several items belongs to its items, not to a statement",
+    "input": {
+      "fixture": "fixtures/units/shared.rs",
+      "path": "src/shared.rs"
+    },
+    "expected": {
+      "class": "rust",
+      "units": [
+        {
+          "kind": "file",
+          "symbol": null,
+          "key": "file",
+          "parent": null,
+          "start": 0,
+          "end": 89,
+          "line": 1,
+          "endLine": 5
+        },
+        {
+          "kind": "function",
+          "symbol": "cos",
+          "key": "function:cos",
+          "parent": "file",
+          "start": 37,
+          "end": 59,
+          "line": 3,
+          "endLine": 3
+        },
+        {
+          "kind": "function",
+          "symbol": "sin",
+          "key": "function:sin",
+          "parent": "file",
+          "start": 64,
+          "end": 86,
+          "line": 4,
+          "endLine": 4
+        }
+      ]
+    },
+    "source": "written for v5 from the ruling on SPEC 8.4 (an extern block with several items is the shared declaration of its items; its leading attributes reach every item and are not a statement); each item's range stays the item itself; expected values derived by hand from the fixture and the grammars' grammar.js and node-types.json; a script converted the chosen texts to byte offsets and lines",
+    "origin": "spec-derived"
   }
 ]
