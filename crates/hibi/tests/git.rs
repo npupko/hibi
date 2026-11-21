@@ -145,6 +145,43 @@ fn fixed_prefix(dir: &str) -> Vec<String> {
 /// (`/dev/null`): not a terminal, and end of file at once.
 const STDIN_CLOSED: &str = "tty=no null=yes bytes=0";
 
+/// Run the test `name` of this test binary again in a child process whose
+/// own standard input is an open pipe, and require that run to pass.
+/// Returns `true` in the first process, which then has nothing more to do,
+/// and `false` in the child, which runs the body of the test.
+///
+/// A test that asserts "git gets a closed standard input" would otherwise
+/// depend on how the tests were started: when the runner's standard input
+/// is `/dev/null` (a CI runner), a git that wrongly inherited it would
+/// look the same as one that was given `/dev/null`. In the child the
+/// inherited standard input is a pipe, so the two differ whatever the
+/// runner's own standard input is.
+fn rerun_with_open_stdin(name: &str) -> bool {
+    const MARK: &str = "HIBI_TEST_OPEN_STDIN";
+    if std::env::var_os(MARK).is_some() {
+        return false;
+    }
+    let mut child = Command::new(std::env::current_exe().unwrap())
+        .args([name, "--exact", "--nocapture", "--test-threads=1"])
+        .env(MARK, "1")
+        .stdin(std::process::Stdio::piped())
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .unwrap();
+    // Keep the write end open until the child has finished.
+    let keep_open = child.stdin.take();
+    let out = child.wait_with_output().unwrap();
+    drop(keep_open);
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    assert!(
+        out.status.success() && stdout.contains("1 passed"),
+        "{name} failed with an open pipe as standard input:\n{stdout}\n{}",
+        String::from_utf8_lossy(&out.stderr)
+    );
+    true
+}
+
 /// Run `f` on another thread and return its result; panic when it has not
 /// finished after `secs` seconds, so that a deadlock fails the test instead
 /// of blocking the suite.
@@ -206,6 +243,9 @@ fn sample_repo(dir: &Path) -> PathBuf {
 
 #[test]
 fn r44_every_invocation_carries_the_hardening() {
+    if rerun_with_open_stdin("r44_every_invocation_carries_the_hardening") {
+        return;
+    }
     let tmp = tempfile::tempdir().unwrap();
     let root = sample_repo(tmp.path());
     let log = tmp.path().join("log");
@@ -277,6 +317,9 @@ fn r44_every_invocation_carries_the_hardening() {
 /// arguments after the fixed ones, and standard input is closed for both.
 #[test]
 fn changed_paths_argv_and_closed_stdin() {
+    if rerun_with_open_stdin("changed_paths_argv_and_closed_stdin") {
+        return;
+    }
     let tmp = tempfile::tempdir().unwrap();
     let root = sample_repo(tmp.path());
     let log = tmp.path().join("log");

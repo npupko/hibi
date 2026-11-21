@@ -977,3 +977,50 @@ fn the_unsupported_protocol_case_passes_whether_the_provider_stays_or_exits() {
         .remove(0);
     assert!(!r.ok, "{r:?}");
 }
+
+/// The wait for the exit after end of input is the 2 seconds of section
+/// 13.6, measured: a provider that exits 3 seconds after its input closed
+/// fails, and the verdict comes when the 2 seconds are over. The wait is
+/// also the one the options carry, so that a shorter one can be tested.
+#[test]
+fn conformance_runner_waits_two_seconds_for_the_exit_and_no_longer() {
+    use hibi::provider::command::SHUTDOWN_GRACE;
+    let dir = tempfile::tempdir().unwrap();
+    let hello1 = hello().replace("@ID@", "1");
+    let run = |rest: &str, opts: &ConformanceOptions| {
+        let c = case(serde_json::json!({"name": "exit", "steps": [hello_step()], "end": "exit"}));
+        let script = format!("read l; echo '{hello1}'; read l; {rest}");
+        let argv: Vec<OsString> = vec!["sh".into(), "-c".into(), script.into()];
+        let started = Instant::now();
+        let r = run_conformance(&argv, &[c], opts).cases.remove(0);
+        (r, started.elapsed())
+    };
+    let default = ConformanceOptions::new(dir.path());
+    assert_eq!(default.grace, SHUTDOWN_GRACE);
+    assert_eq!(default.grace, Duration::from_secs(2));
+
+    // Exits with status 0, but a second too late for the default wait.
+    let (r, took) = run("sleep 3; exit 0", &default);
+    assert!(!r.ok, "{r:?}");
+    assert!(r.detail.unwrap().contains("did not exit within 2 s"));
+    assert!(
+        took >= Duration::from_millis(1900) && took < Duration::from_millis(2900),
+        "the verdict came after {took:?}"
+    );
+    // Within the wait it passes, and the verdict does not take the whole
+    // wait.
+    let (r, took) = run("sleep 1; exit 0", &default);
+    assert!(r.ok, "{r:?}");
+    assert!(took < Duration::from_millis(1900), "{took:?}");
+
+    // The wait given in the options is the one used.
+    let short = ConformanceOptions {
+        grace: Duration::from_millis(300),
+        ..ConformanceOptions::new(dir.path())
+    };
+    let (r, took) = run("sleep 1; exit 0", &short);
+    assert!(!r.ok, "{r:?}");
+    assert!(r.detail.unwrap().contains("did not exit within 300 ms"));
+    assert!(took < Duration::from_millis(900), "{took:?}");
+    assert!(run("exit 0", &short).0.ok);
+}

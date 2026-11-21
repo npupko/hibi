@@ -108,6 +108,9 @@ pub struct ConformanceOptions {
     pub root: PathBuf,
     /// How long each response may take.
     pub timeout: Duration,
+    /// How long the provider may take to exit after its standard input is
+    /// closed (section 13.6): [`SHUTDOWN_GRACE`] unless a test sets it.
+    pub grace: Duration,
     /// The directory of the fixture files cases name.
     pub fixtures: Option<PathBuf>,
 }
@@ -117,6 +120,7 @@ impl ConformanceOptions {
         ConformanceOptions {
             root: root.into(),
             timeout: DEFAULT_TIMEOUT,
+            grace: SHUTDOWN_GRACE,
             fixtures: None,
         }
     }
@@ -296,6 +300,7 @@ pub fn check_provider(
     let opts = ConformanceOptions {
         root: root.to_path_buf(),
         timeout: Duration::from_millis(registered.timeout_ms),
+        grace: SHUTDOWN_GRACE,
         fixtures: None,
     };
     Ok(ProviderCheck {
@@ -382,7 +387,7 @@ fn run_case(
             }
         }
     }
-    let end = process.finish(SHUTDOWN_GRACE);
+    let end = process.finish(opts.grace);
     if let Some(problem) = end.problem {
         return failed(&process, format!("after the last step: {problem}"));
     }
@@ -406,10 +411,19 @@ fn run_case(
         (Some(End::Exit), None) => failed(
             &process,
             format!(
-                "the provider did not exit within {} s after end of input",
-                SHUTDOWN_GRACE.as_secs()
+                "the provider did not exit within {} after end of input",
+                seconds(opts.grace)
             ),
         ),
+    }
+}
+
+/// `2 s`, or `300 ms` for a duration that is not whole seconds.
+fn seconds(d: Duration) -> String {
+    if d.subsec_nanos() == 0 {
+        format!("{} s", d.as_secs())
+    } else {
+        format!("{} ms", d.as_millis())
     }
 }
 
