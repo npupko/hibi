@@ -337,7 +337,9 @@ fn changed_expired_and_profile_mismatch_give_mark() {
 fn a_unit_found_by_similarity_never_resolves_a_side() {
     let mut f = fixture(None);
     // The marked unit under another key: the same content, moved or
-    // renamed. The provider can only guess that it is the one.
+    // renamed. The provider can only guess that it is the one. The unit is
+    // also found by its content, and it is listed once.
+    set(&f.worlds[1], "u:b", vec![unit("moved", "note", "first")]);
     f.worlds[1].borrow_mut().overrides.insert(
         anchor("u:b", key_sel("k")),
         Ok(vec![approx(unit("moved", "note", "first"))]),
@@ -424,6 +426,14 @@ fn a_unit_found_by_similarity_never_resolves_a_side() {
     assert_eq!(f.store.counts(), before);
 
     // A different content under the guess: not the same fingerprint.
+    set(
+        &f.worlds[1],
+        "u:b",
+        vec![
+            unit("renamed", "note", "first, reworded"),
+            unit("other", "note", "something else"),
+        ],
+    );
     f.worlds[1].borrow_mut().overrides.insert(
         anchor("u:b", key_sel("k")),
         Ok(vec![
@@ -463,6 +473,77 @@ fn a_unit_found_by_similarity_never_resolves_a_side() {
     assert_eq!(out.claim.next, None);
     assert_eq!(out.accepted.was, ClaimState::Stale);
     assert_eq!(out.accepted.sides[0].reason, Some(engine::Reason::NotExact));
+}
+
+/// Candidates by content: for a side whose stored selector finds nothing
+/// exactly, the units of the resource that have the fingerprint of the
+/// reference mark are listed first, then what the provider found by
+/// similarity. They are candidates only.
+#[test]
+fn units_with_the_marked_content_are_the_first_candidates() {
+    let mut f = fixture(None);
+    // The marked unit has another key now; the provider finds nothing.
+    set(
+        &f.worlds[1],
+        "u:b",
+        vec![
+            unit("other", "note", "something else"),
+            unit("renamed", "note", "first"),
+        ],
+    );
+    let v = view(&f.store, &mut f.p, &f.id);
+    assert_eq!(v.state, ClaimState::Stale);
+    let side = &v.sides[1];
+    assert_eq!(
+        (side.state, side.reason),
+        (
+            engine::SideState::Missing,
+            Some(engine::Reason::SelectorNotFound)
+        )
+    );
+    let cs = side.candidates.as_ref().unwrap();
+    assert_eq!(side.candidates_total, Some(1));
+    assert_eq!(cs[0].key, "renamed");
+    assert!(cs[0].same_fingerprint);
+    assert_eq!(cs[0].text.as_deref(), Some("first"));
+    assert_eq!(cs[0].anchor, r#"{"loc":"u:b","sel":{"key":"renamed"}}"#);
+    assert_eq!(
+        v.next,
+        Some(format!("hibi reanchor {} --evidence 1=<anchor>", f.id))
+    );
+    // A side that resolves has none.
+    assert!(v.sides[0].candidates.is_none());
+
+    // With a guess of the provider as well: the unit with the marked
+    // content first, then the guess.
+    f.worlds[1].borrow_mut().overrides.insert(
+        anchor("u:b", key_sel("k")),
+        Ok(vec![approx(unit("other", "note", "something else"))]),
+    );
+    let v = view(&f.store, &mut f.p, &f.id);
+    let side = &v.sides[1];
+    assert_eq!(side.reason, Some(engine::Reason::NotExact));
+    let keys: Vec<(&str, bool)> = side
+        .candidates
+        .as_ref()
+        .unwrap()
+        .iter()
+        .map(|c| (c.key.as_str(), c.same_fingerprint))
+        .collect();
+    assert_eq!(keys, [("renamed", true), ("other", false)]);
+    assert_eq!(side.candidates_total, Some(2));
+
+    // Still a candidate: `mark` is refused.
+    let errors = engine::mark(
+        &f.store,
+        &mut f.p,
+        &no_git(),
+        &[MarkInput::new(f.id.as_str())],
+        false,
+        now(),
+    )
+    .unwrap_err();
+    assert_eq!(errors[0].code, hibi::Code::SideMissing);
 }
 
 /// A stored side that matches very many units shows twenty candidates

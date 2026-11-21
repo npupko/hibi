@@ -387,6 +387,61 @@ pub fn resolve_with(provider: &mut dyn Provider, anchors: &[&Anchor]) -> Vec<Res
 
 /// Resolve anchors through the registry: one `resolve` call per scheme,
 /// schemes in ascending order. One result per anchor, in order.
+/// Candidates by content (section 9.2). For each `(anchor, marked)`: the
+/// units of the anchor's resource whose fingerprint equals `marked`, the
+/// side's fingerprint in the reference mark, with an anchor for each. Such
+/// a unit has the content that was marked, so it is the first thing to
+/// offer for a side whose stored anchor finds nothing exactly: a renamed
+/// class or constant is found this way when the provider's own search by
+/// similarity finds nothing or something else. It is still only a
+/// candidate. `None` when the provider cannot list units, the listing
+/// fails, or nothing matches. One `units` call per resource; the text of a
+/// shown unit that came without one is fetched with `render`.
+pub fn content_candidates(
+    providers: &mut Providers,
+    wanted: &[Option<(&Anchor, &crate::model::Fingerprint)>],
+) -> Vec<Option<Candidates>> {
+    let mut listing: HashMap<Locator, Option<Vec<Unit>>> = HashMap::new();
+    wanted
+        .iter()
+        .map(|w| {
+            let (anchor, marked) = (*w)?;
+            let provider = providers.provider_for_scheme(anchor.loc.scheme()).ok()?;
+            let info = provider.info().ok()?.clone();
+            if !info.capabilities.units {
+                return None;
+            }
+            let all = listing
+                .entry(anchor.loc.clone())
+                .or_insert_with(|| {
+                    provider
+                        .units(&anchor.loc, None)
+                        .ok()
+                        .filter(|units| validate_units(&info, units).is_ok())
+                })
+                .as_ref()?;
+            let mut same: Vec<Unit> = all.iter().filter(|u| &u.fp == marked).cloned().collect();
+            if same.is_empty() {
+                return None;
+            }
+            if info.capabilities.render {
+                for u in same.iter_mut().take(MAX_CANDIDATES) {
+                    if u.text.is_none() {
+                        u.text = provider.render(&anchor.loc, &u.key).ok().map(|r| r.text);
+                    }
+                }
+            }
+            Some(candidates_of(
+                provider,
+                &info,
+                &mut listing,
+                &anchor.loc,
+                same,
+            ))
+        })
+        .collect()
+}
+
 /// The resolutions of one run of a write command. An anchor is sent to its
 /// provider once, and every later question about it gets that answer: what
 /// a write accepts, what it compares and what it marks then rest on one

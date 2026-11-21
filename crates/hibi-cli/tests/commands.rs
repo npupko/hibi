@@ -1962,7 +1962,7 @@ fn r37_a_renamed_function_is_a_candidate_and_never_the_side() {
     let human = repo.human(&["--now", NOW, "status"]);
     for part in [
         "missing (not_exact)",
-        "1 candidate, found by similarity; each is a guess, read it before you anchor to it:",
+        "1 candidate; each is a guess, read it before you anchor to it:",
         "- function \"max_cache_size\", line ",
         "anchor: file:src/a.rs#max_cache_size",
     ] {
@@ -2364,6 +2364,36 @@ fn an_unreadable_git_file_list_is_resource_unavailable_without_repetition() {
 
     std::fs::write(&index, saved).unwrap();
     assert_eq!(repo.state(&id), "fresh");
+}
+
+/// A class is renamed. The method with the marked content is the first
+/// candidate, before a method of another class that only looks similar.
+#[test]
+fn a_method_of_a_renamed_class_is_offered_first_by_its_content() {
+    let repo = seeded();
+    let before = "class Alpha:\n    def run(self):\n        return 1\n\n\nclass Beta:\n    def run(self):\n        return 2\n";
+    repo.write("m.py", before);
+    let id = repo.claim("Alpha runs", CACHE_SUBJECT, &["file:m.py#Alpha.run"]);
+    repo.write("m.py", &before.replace("Alpha", "Gamma"));
+
+    let view = repo.view(&id);
+    let side = &view["sides"][1];
+    assert_eq!(side["state"], "missing");
+    let candidates = side["candidates"].as_array().unwrap();
+    assert_eq!(candidates[0]["key"], "method:Gamma.run");
+    assert_eq!(candidates[0]["anchor"], "file:m.py#Gamma.run");
+    assert_eq!(candidates[0]["sameFingerprint"], true);
+    assert!(s(&candidates[0]["text"]).contains("return 1"));
+    for c in &candidates[1..] {
+        assert_eq!(c["sameFingerprint"], false, "{c}");
+        assert_ne!(c["key"], "method:Gamma.run");
+    }
+    assert_eq!(side["candidatesTotal"], candidates.len());
+    assert_eq!(
+        s(&view["next"]),
+        format!("hibi reanchor {id} --evidence 1=<anchor>")
+    );
+    assert_eq!(refused(&repo, &["mark", &id])["code"], "side_missing");
 }
 
 /// R55: editing the quoted line of a declaration anchored by symbol does

@@ -10,10 +10,10 @@ use std::collections::{HashMap, HashSet};
 use crate::duration;
 use crate::error::Error;
 use crate::fingerprint::{Comparison, compare};
-use crate::model::{Claim, Mark, Timestamp};
+use crate::model::{Anchor, Claim, Mark, Timestamp};
 use crate::store::Ledger;
 
-use super::resolve::Resolved;
+use super::resolve::{Candidates, Resolved};
 use super::types::{
     Accepted, AcceptedSide, Candidate, ClaimState, ClaimView, DETAIL_CHARS, Reason, Role, Side,
     SideState, TEXT_EXCERPT_CHARS, UnitRef, excerpt, side_remediation,
@@ -302,11 +302,41 @@ pub fn next_command(claim: &Claim, eval: &Evaluation<'_>) -> Option<String> {
     Some(format!("hibi mark {id}"))
 }
 
-/// Build the ClaimView of section 15.2.
+/// For each side of a claim: what [`content_candidates`] is asked, or
+/// `None`. A side is asked for when it is `missing` because its stored
+/// selector finds nothing exactly (`selector_not_found`, `not_exact`) and
+/// the claim has a reference mark.
+///
+/// [`content_candidates`]: super::content_candidates
+pub fn content_wanted<'a>(
+    claim: &'a Claim,
+    eval: &'a Evaluation<'_>,
+) -> Vec<Option<(&'a Anchor, &'a crate::model::Fingerprint)>> {
+    claim
+        .sides()
+        .enumerate()
+        .map(|(i, anchor)| {
+            let (state, reason) = eval.sides.get(i)?;
+            let asked = *state == SideState::Missing
+                && matches!(
+                    reason,
+                    Some(Reason::SelectorNotFound) | Some(Reason::NotExact)
+                );
+            let mark = eval.reference?;
+            asked.then(|| (anchor, &mark.sides[i].fp))
+        })
+        .collect()
+}
+
+/// Build the ClaimView of section 15.2. `by_content` holds, per side, the
+/// candidates of [`content_candidates`](super::content_candidates); an
+/// empty slice means none were looked for. They are listed before the
+/// provider's own candidates; a unit is listed once.
 pub fn claim_view(
     claim: &Claim,
     eval: &Evaluation<'_>,
     resolved: &[Resolved],
+    by_content: &[Option<Candidates>],
     options: ViewOptions,
 ) -> ClaimView {
     let sides = eval
@@ -327,9 +357,20 @@ pub fn claim_view(
                 }
                 _ => None,
             };
-            let candidates = r.candidates().map(|c| {
-                c.shown()
-                    .map(|(u, select)| Candidate {
+            let first = by_content.get(index).and_then(Option::as_ref);
+            let mut seen: Vec<&str> = Vec::new();
+            let mut listed: Vec<Candidate> = Vec::new();
+            for (u, select) in first
+                .into_iter()
+                .chain(r.candidates())
+                .flat_map(Candidates::shown)
+            {
+                if seen.contains(&u.key.as_str()) {
+                    continue;
+                }
+                seen.push(&u.key);
+                if listed.len() < super::MAX_CANDIDATES {
+                    listed.push(Candidate {
                         key: u.key.clone(),
                         kind: u.kind.clone(),
                         label: u.label.clone(),
@@ -338,9 +379,20 @@ pub fn claim_view(
                         text: u.text.as_deref().map(|t| excerpt(t, TEXT_EXCERPT_CHARS)),
                         anchor: select.to_owned(),
                         same_fingerprint: marked_fp.as_ref() == Some(&u.fp),
-                    })
-                    .collect::<Vec<_>>()
-            });
+                    });
+                }
+            }
+            // Every unit either source holds, counted once.
+            let mut keys: Vec<&str> = first
+                .into_iter()
+                .chain(r.candidates())
+                .flat_map(|c| c.units.iter().map(|u| u.key.as_str()))
+                .collect();
+            keys.sort_unstable();
+            keys.dedup();
+            let any = first.is_some() || r.candidates().is_some();
+            let candidates = any.then_some(listed);
+            let total = any.then_some(keys.len());
             Side {
                 index,
                 role: Role::of(index),
@@ -355,7 +407,7 @@ pub fn claim_view(
                     _ => None,
                 },
                 detail: said.map(|m| excerpt(m, DETAIL_CHARS)),
-                candidates_total: r.candidates().map(|c| c.units.len()),
+                candidates_total: total,
                 candidates,
                 text,
             }

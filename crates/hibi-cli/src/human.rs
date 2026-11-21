@@ -166,14 +166,17 @@ fn side_lines(out: &mut String, side: &Side) {
         }
     }
     if let Some(candidates) = &side.candidates {
-        let guessed = side.reason == Some(hibi::engine::Reason::NotExact);
+        // Under a missing side: units with the marked content, and units
+        // the provider found by similarity. Under an ambiguous side: the
+        // units the stored anchor matches.
+        let guessed = side.state == SideState::Missing;
         let total = side.candidates_total.unwrap_or(candidates.len());
         let _ = writeln!(
             out,
             "    {}{}:",
             plural(total, "candidate", "candidates"),
             if guessed {
-                ", found by similarity; each is a guess, read it before you anchor to it"
+                "; each is a guess, read it before you anchor to it"
             } else {
                 "; the stored anchor matches each of them"
             }

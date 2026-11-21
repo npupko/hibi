@@ -11,7 +11,7 @@ c1-dccp96583661kgfj4rex  stale  Workers restart every night.
   marked 2026-11-20T12:00:00Z (m1-4bx4fmte0fvadk3a769w)
   subject  file:docs/ops.md  missing (not_exact)
     stored: quote "Workers are restarted nightly."
-    1 candidate, found by similarity; each is a guess, read it before you anchor to it:
+    1 candidate; each is a guess, read it before you anchor to it:
     - sentence "Workers are restarted every night.", line 3
       | Workers are restarted every night.
       anchor: {"loc":"file:docs/ops.md","sel":{"quote":"Workers are restarted every night.","prefix":"# Operations\n\n","suffix":" The queue is drained on shutdown.\n","pos":14}}

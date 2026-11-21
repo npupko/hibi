@@ -372,7 +372,7 @@ fn view_after(
         }
     }
     let eval = evaluate(claim, &marks, false, resolved, now)?;
-    Ok(claim_view(claim, &eval, resolved, options))
+    Ok(claim_view(claim, &eval, resolved, &[], options))
 }
 
 fn finish(errors: Vec<Error>, indexed: bool) -> Vec<Error> {

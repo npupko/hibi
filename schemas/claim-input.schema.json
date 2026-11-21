@@ -26,7 +26,7 @@
       ]
     },
     "AnchorInput": {
-      "description": "An anchor as a caller gives it: compact syntax (section 5.5) or the\nJSON object of section 5.3.",
+      "description": "An anchor as a caller gives it: compact syntax (section 5.5) or the\nJSON object of section 5.3. A string whose first character after white\nspace is `{` is that JSON object written as text, on the command line\nand in a standard-input document alike: it is how the `anchor` of a\ncandidate is given back.",
       "anyOf": [
         {
           "type": "string"

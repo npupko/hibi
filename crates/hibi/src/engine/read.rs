@@ -295,7 +295,11 @@ pub fn status(
             (None, None) => states.contains(&eval.state) && filter.keeps(claim),
         };
         if listed {
-            claims.push(claim_view(claim, eval, resolved, options));
+            // Only a listed claim is searched for units with the marked
+            // content.
+            let by_content =
+                super::content_candidates(providers, &super::fresh::content_wanted(claim, eval));
+            claims.push(claim_view(claim, eval, resolved, &by_content, options));
         }
     }
 
