@@ -284,6 +284,17 @@ pub fn check_provider(
     root: &Path,
     scheme: &str,
 ) -> Result<ProviderCheck, Error> {
+    // The built-in schemes are served by hibi itself. They have no provider
+    // command, and declaring them in hibi.toml is an error of the
+    // configuration, so the advice for an undeclared scheme does not fit.
+    if matches!(scheme, "file" | "repo") {
+        return Err(Error::invalid_argument(format!(
+            "the scheme {scheme:?} is served by hibi itself: it has no provider command to check"
+        ))
+        .with_remediation(
+            "Nothing to check: file and repo are built in and need no entry in .hibi/hibi.toml. hibi providers lists every scheme.",
+        ));
+    }
     if !config.schemes.contains_key(scheme) {
         return Err(Error::invalid_argument(format!(
             "the scheme {scheme:?} is not listed under [schemes] in .hibi/hibi.toml"

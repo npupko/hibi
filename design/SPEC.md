@@ -6500,10 +6500,18 @@ one of them: `failed` counts `ok: false`, `skipped` counts `skipped: true`,
 and `passed` is the rest. The human output adds the line
 `check <scheme>: <n> passed, <n> failed, <n> skipped` and one line per case
 with `passed`, `failed` or `skipped`, the name and the detail. A failing case
-does not make the command fail. A
-scheme that is not registered is `invalid_argument`, and so is a scheme that
-`hibi.toml` does not list (including `file` and `repo`); the remediation is
-`hibi providers` and nothing is started.
+does not make the command fail. Three arguments are `invalid_argument`,
+and nothing is started:
+
+- `file` or `repo`: the message is
+  `the scheme "<scheme>" is served by hibi itself: it has no provider command to check`
+  and the remediation
+  `Nothing to check: file and repo are built in and need no entry in .hibi/hibi.toml. hibi providers lists every scheme.`
+  (Declaring a built-in scheme in `hibi.toml` is `invalid_config`.)
+- another scheme that `hibi.toml` does not list: the remediation is
+  `Declare the scheme first: add [schemes.<scheme>] to .hibi/hibi.toml. hibi providers lists the declared schemes.`
+- a listed scheme that is not registered: the remediation is
+  `hibi providers`.
 
 **`hibi schema [<name>]`**
 

@@ -231,7 +231,7 @@ ambiguous has to be replaced with --subject or --evidence: `hibi status` \
 lists candidates with their anchors, and the anchor is yours to choose.
 
 The new claim's mark covers every side, also the ones you did not replace: \
-a kept side that changed since the last mark is marked as checked by this \
+a kept side that changed since the reference mark is marked as checked by this \
 command. The result lists those sides under \"accepted\", with the state the \
 old claim was in. When the new claim is a claim that already exists (the \
 same statement, recheck period and note, and sides on the same units), the \

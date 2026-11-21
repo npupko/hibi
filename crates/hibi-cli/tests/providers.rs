@@ -703,8 +703,25 @@ fn providers_lists_the_registration_and_check_runs_the_conformance_cases() {
     assert_eq!(out.code(), "invalid_argument", "{out:?}");
     let out = repo.run(&["providers", "--check", "nope"]);
     assert_eq!(out.code(), "invalid_argument", "{out:?}");
-    let out = repo.run(&["providers", "--check", "file"]);
-    assert_eq!(out.code(), "invalid_argument", "{out:?}");
+    // The built-in schemes: nothing to check, and no advice to declare
+    // them, which would make the configuration invalid.
+    for scheme in ["file", "repo"] {
+        let out = repo.run(&["providers", "--check", scheme]);
+        assert_eq!(out.code(), "invalid_argument", "{out:?}");
+        let e = out.err();
+        assert_eq!(
+            e["message"],
+            format!(
+                "the scheme {scheme:?} is served by hibi itself: it has no provider command to check"
+            )
+        );
+        let fix = e["remediation"].as_str().unwrap();
+        assert!(
+            fix.starts_with("Nothing to check: file and repo are built in"),
+            "{fix}"
+        );
+        assert!(!fix.contains("[schemes."), "{fix}");
+    }
 }
 
 /// R56: plain `hibi providers` starts no child process other than git, even
