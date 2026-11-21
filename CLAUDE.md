@@ -45,6 +45,14 @@ and `plugins/hibi-cli/` are the user documentation.
   definition. `crates/hibi-cli/tests/doc_commands.rs` checks this (R43). A
   block that shows output rather than commands is marked with the word
   `output` after the language, for example ```` ```text output ````.
+- Check the site with the Mintlify CLI, pinned because `mint@latest` failed
+  to install on 2026-11-21. Copy `docs/` to a scratch directory and run there:
+
+  ```bash
+  npx --yes mint@4.3.80 validate
+  npx --yes mint@4.3.80 broken-links
+  ```
+
 - The words listed in the spec's leftover rule (R42) do not appear outside
   `design/`, `cases/`, `CHANGELOG.md` and the generated release workflow.
 
