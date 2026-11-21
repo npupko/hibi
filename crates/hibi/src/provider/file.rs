@@ -692,8 +692,12 @@ impl Provider for FileProvider {
                 a.sel
                     .validate()
                     .map_err(|e| ProviderError::invalid_request(e.message))?;
+                // Error 8 for a symbol; error 9 for a symbol or the empty
+                // selector on code that does not parse (section 6.7).
                 if a.sel.symbol.is_some() {
                     doc.check_symbol(a.loc.as_str())?;
+                } else if a.sel.quote.is_none() {
+                    doc.check_parses(a.loc.as_str())?;
                 }
                 doc.resolve(&a.sel)
             })

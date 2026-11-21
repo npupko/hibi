@@ -9,10 +9,10 @@ use std::collections::{HashMap, HashSet};
 
 use crate::code::{self, Analysis, Class};
 use crate::fingerprint::{self, AST_V1};
-use crate::locate::{self, How, Located, Span};
+use crate::locate::{self, Span};
 use crate::model::{Fingerprint, MAX_QUOTE_CHARS, Selector};
 use crate::prose::{self, ProseClass};
-use crate::provider::{ProviderError, ProviderErrorCode, Range, Refuse, Rendered, Unit};
+use crate::provider::{Identity, ProviderError, ProviderErrorCode, Range, Refuse, Rendered, Unit};
 use crate::text;
 
 /// The most units one resource may have, the `file` unit included. A
@@ -80,17 +80,15 @@ pub(super) struct Doc {
     parents: Vec<Option<usize>>,
     /// The declarations of each symbol, in `units` order.
     symbols: HashMap<String, Vec<usize>>,
-    /// Per entry: true for a twin, a declaration whose completed selector
-    /// with the default quote and scope context another declaration of the
-    /// same symbol reproduces (ruling on section 6.7). Its context is cut
-    /// from the whole text. Filled on first use, once per document.
-    twins: OnceCell<Vec<bool>>,
+    /// The normalized text and its map back to the text (section 6.7).
+    /// Filled on first use.
+    norm: OnceCell<Norm>,
     /// Comment node ranges, when `tree`, sorted and disjoint. Filled on
     /// first use after a cache hit.
     comments: OnceCell<Vec<(usize, usize)>>,
-    /// The heading path of every entry (empty for the `file` unit and for
-    /// classes without prose units). Filled on first use after a cache hit.
-    headings: OnceCell<Vec<Vec<String>>>,
+    /// Per entry: heading path, piece and piece name of a prose unit
+    /// (section 6.7). Filled on first use.
+    prose: OnceCell<ProseIndex>,
     /// The line of the first parse error, for a code class without a
     /// tree. Filled on first use.
     error_line: OnceCell<Option<usize>>,
@@ -169,16 +167,16 @@ impl Doc {
         let mut raws = Vec::new();
         let mut tree = false;
         let comments = OnceCell::new();
-        let headings = OnceCell::new();
+        let mut regions: Option<Vec<prose::Region>> = None;
         if let Some(pc) = prose_class(class) {
             // Building stops as soon as the count passes the limit.
-            let regions = prose::split_at_most(&text, pc, MAX_UNITS_PER_RESOURCE - 1)
+            let split = prose::split_at_most(&text, pc, MAX_UNITS_PER_RESOURCE - 1)
                 .ok_or_else(too_many_units)?;
             raws.push(file(fingerprint::prose_v1(&text), &text));
-            let units = prose::units_from(&text, regions);
-            let mut paths = vec![Vec::new()];
+            let units = prose::units_from(&text, split);
+            let mut kept = Vec::with_capacity(units.len());
             for u in units {
-                paths.push(u.region.heading_path.clone());
+                kept.push(u.region.clone());
                 raws.push(Raw {
                     key: u.key,
                     kind: u.region.kind.as_str().into(),
@@ -191,7 +189,7 @@ impl Doc {
                     fp: u.fp,
                 });
             }
-            let _ = headings.set(paths);
+            regions = Some(kept);
         } else {
             let blocks = if class.is_code() {
                 match code::analyze_at_most(&text, class, MAX_UNITS_PER_RESOURCE)
@@ -238,7 +236,7 @@ impl Doc {
                 }));
             }
         }
-        Doc::finish(text, class, tree, raws, comments, headings)
+        Doc::finish(text, class, tree, raws, comments, regions)
     }
 
     fn finish(
@@ -247,7 +245,7 @@ impl Doc {
         tree: bool,
         raws: Vec<Raw>,
         comments: OnceCell<Vec<(usize, usize)>>,
-        headings: OnceCell<Vec<Vec<String>>>,
+        regions: Option<Vec<prose::Region>>,
     ) -> Result<Doc, ProviderError> {
         let mut doc = Doc {
             text,
@@ -256,9 +254,9 @@ impl Doc {
             entries: Vec::with_capacity(raws.len()),
             parents: Vec::new(),
             symbols: HashMap::new(),
-            twins: OnceCell::new(),
+            norm: OnceCell::new(),
             comments,
-            headings,
+            prose: OnceCell::new(),
             error_line: OnceCell::new(),
         };
         for r in raws {
@@ -282,7 +280,7 @@ impl Doc {
                     sel: Selector::empty(),
                     text: None,
                     approx: false,
-                    context_changed: false,
+                    identity: None,
                     refuse: None,
                 },
                 symbol: r.symbol,
@@ -292,9 +290,13 @@ impl Doc {
             doc.entries.push(entry);
         }
         doc.index();
-        for i in 0..doc.entries.len() {
-            let sel = doc.completed(i, None)?;
-            doc.entries[i].unit.sel = sel;
+        if let Some(regions) = regions {
+            let index = doc.prose_index_from(&regions);
+            let _ = doc.prose.set(index);
+        }
+        let sels = doc.printed()?;
+        for (e, sel) in doc.entries.iter_mut().zip(sels) {
+            e.unit.sel = sel;
         }
         Ok(doc)
     }
@@ -408,9 +410,9 @@ impl Doc {
             entries,
             parents: Vec::new(),
             symbols: HashMap::new(),
-            twins: OnceCell::new(),
+            norm: OnceCell::new(),
             comments: OnceCell::new(),
-            headings: OnceCell::new(),
+            prose: OnceCell::new(),
             error_line: OnceCell::new(),
         };
         doc.index();
@@ -425,20 +427,6 @@ impl Doc {
             code::parse(&self.text, self.class)
                 .map(|t| code::comment_spans(t.root_node()))
                 .unwrap_or_default()
-        })
-    }
-
-    fn headings(&self) -> &[Vec<String>] {
-        self.headings.get_or_init(|| {
-            let mut paths = vec![Vec::new(); self.entries.len()];
-            if let Some(pc) = prose_class(self.class) {
-                for (i, r) in prose::split(&self.text, pc).into_iter().enumerate() {
-                    if let Some(p) = paths.get_mut(i + 1) {
-                        *p = r.heading_path;
-                    }
-                }
-            }
-            paths
         })
     }
 
@@ -491,74 +479,6 @@ impl Doc {
         e.start + text::trim_end(q).len()
     }
 
-    /// The completed selector of entry `i` (section 6.7). `kept` is the span
-    /// `[L.start, L.end)` when the input quote is kept; otherwise the default
-    /// quote is used.
-    ///
-    /// The span is cut to its first `MAX_QUOTE_CHARS` characters, then
-    /// trailing WS is removed, so the quote is never dropped for its length
-    /// (ruling on section 6.7). A kept span is an exact hit of the input
-    /// quote, which is at most `MAX_QUOTE_CHARS` characters, and a default
-    /// quote is at most 120, so the cut is a guard. The span is never empty
-    /// after trimming: a kept span is the input quote, which is non-empty
-    /// after trimming (section 5.2), and a default quote starts at the
-    /// unit's first character, which is not WS. An empty span would be a
-    /// bug, so it is the error `internal`, not a selector without a quote.
-    fn completed(&self, i: usize, kept: Option<Span>) -> Result<Selector, ProviderError> {
-        let e = &self.entries[i];
-        if e.unit.kind == "file" {
-            return Ok(Selector::empty());
-        }
-        let default_end = |i| self.default_quote_end(i);
-        let (s, end, is_default) = match kept {
-            Some(span) => (span.start, span.end, false),
-            None => (e.start, default_end(i), true),
-        };
-        let span = &self.text[s..end];
-        let end = match span.char_indices().nth(MAX_QUOTE_CHARS) {
-            Some((b, _)) => s + text::trim_end(&span[..b]).len(),
-            None => end,
-        };
-        // The context comes from the text that resolving this selector will
-        // compare it with: a declaration's scope, whether its symbol is
-        // unique or not (both symbol branches locate there), so a stored
-        // context is compared with text of the same kind when a symbol
-        // later names several declarations. A twin, whose scope selector
-        // another declaration of its symbol reproduces, and every unit that
-        // is not a declaration, take it from the whole resource, which can
-        // still tell them apart. So the completed selector is a fixed point
-        // (rulings on section 6.7).
-        let scope_context = e.symbol.is_some()
-            && if is_default || (s, end) == (e.start, default_end(i)) {
-                !self.twins()[i]
-            } else {
-                !self.kept_twin(i, Span { start: s, end })
-            };
-        let (from, to) = if scope_context {
-            self.symbol_scope(i)
-        } else {
-            (0, self.text.len())
-        };
-        debug_assert!(from <= s && end <= to, "a kept span lies in its scope");
-        let q = locate::quote_selector(&self.text[from..to], s - from, end - from).map_err(|err| {
-            ProviderError::new(
-                ProviderErrorCode::Internal,
-                format!(
-                    "the completed selector of unit {:?} has no quote span ({err}) at {s}..{end}",
-                    e.unit.key
-                ),
-            )
-        })?;
-        Ok(Selector {
-            quote: Some(q.quote),
-            prefix: Some(q.prefix),
-            suffix: Some(q.suffix),
-            pos: Some((from + q.pos) as u64),
-            symbol: e.symbol.clone(),
-            key: None,
-        })
-    }
-
     /// The units of the resource, optionally of one kind, in order.
     pub(super) fn units(&self, kind: Option<&str>) -> Vec<Unit> {
         self.entries
@@ -578,7 +498,10 @@ impl Doc {
         };
         let e = &self.entries[i];
         let context = if prose_class(self.class).is_some() {
-            self.headings().get(i).cloned().unwrap_or_default()
+            self.prose()
+                .get(i)
+                .map(|p| p.raw_path.clone())
+                .unwrap_or_default()
         } else {
             e.unit
                 .parent
@@ -598,15 +521,8 @@ impl Doc {
     // Resolve (section 6.7)
     // -----------------------------------------------------------------------
 
-    /// `inside(L, u)`: `L` is found and exact, and the parts of its span
-    /// outside the unit consist only of whitespace, `,` and `;` (ruling on
-    /// section 6.7: copying a member line with its indentation or its
-    /// separator does not span another unit).
-    fn inside(&self, l: &Located, i: usize) -> bool {
-        matches!(l, Located::Found { how: How::Exact, span } if self.within(*span, i))
-    }
-
-    /// The parts of `span` outside unit `i` are only filler.
+    /// The parts of `span` outside unit `i` are only filler:
+    /// `inside(span, u)` of section 6.7.
     fn within(&self, span: Span, i: usize) -> bool {
         let e = &self.entries[i];
         let before = &self.text[span.start..span.start.max(e.start.min(span.end))];
@@ -614,10 +530,8 @@ impl Doc {
         before.chars().all(is_filler) && after.chars().all(is_filler)
     }
 
-    /// The text the one-declaration symbol path searches for unit `i`: its
-    /// range widened over the filler (whitespace, `,`, `;`) directly
-    /// before and after it, so that a quote copied with its indentation or
-    /// separator is found there, and kept, exactly as in the other paths.
+    /// `scope(u)`: the range of unit `i` widened over the filler directly
+    /// before and after it.
     fn symbol_scope(&self, i: usize) -> (usize, usize) {
         let e = &self.entries[i];
         let before = &self.text[..e.start];
@@ -627,8 +541,8 @@ impl Doc {
         (from, to)
     }
 
-    /// `span` without leading and trailing whitespace (unchanged when it is
-    /// all whitespace).
+    /// `core(span)`: `span` without leading and trailing whitespace
+    /// (unchanged when it is all whitespace).
     fn trimmed(&self, span: Span) -> Span {
         let t = &self.text[span.start..span.end];
         let lead = t.len() - text::trim_start(t).len();
@@ -642,11 +556,10 @@ impl Doc {
         }
     }
 
-    /// The innermost unit for a span, from the span with leading and
-    /// trailing whitespace ignored (ruling on section 6.7): among the units
-    /// other than `file` that contain its first byte, the smallest (the
-    /// earliest of equal ranges); if none, the first unit in source order
-    /// that intersects it; if none, the `file` unit.
+    /// The innermost unit for a span (section 6.7): among the units other
+    /// than `file` that contain the first byte of its core, the smallest
+    /// (the earliest of equal ranges); if none, the first unit in source
+    /// order that intersects it; if none, the `file` unit.
     ///
     /// Units nest and are sorted by start, then end descending, so the last
     /// unit that starts at or before the byte, or one of its ancestors, is
@@ -680,243 +593,17 @@ impl Doc {
         }
     }
 
-    /// The first unit of `candidates` (indices into the entries) that
-    /// contains the first byte of `span` with whitespace ignored.
-    fn containing(&self, candidates: &[usize], span: Span) -> Vec<usize> {
-        let s = self.trimmed(span);
-        candidates
-            .iter()
-            .copied()
-            .filter(|&i| {
-                let e = &self.entries[i];
-                e.start <= s.start && s.start < e.end
-            })
-            .collect()
-    }
-
-    /// `pick(L)` for an ambiguous result whose tied hits lie in one unit.
-    fn pick(&self, ties: &[Span]) -> Located {
-        let span = ties
-            .iter()
-            .copied()
-            .find(|&t| !self.in_comment(t))
-            .unwrap_or(ties[0]);
-        Located::Found {
-            how: How::Exact,
-            span,
-        }
-    }
-
-    fn locate_in(&self, from: usize, to: usize, sel: &Selector) -> Located {
-        let quote = sel.quote.as_deref().unwrap_or_default();
-        let pos = sel
-            .pos
-            .map_or(0, |p| usize::try_from(p).unwrap_or(usize::MAX))
-            .saturating_sub(from);
-        let shift = |s: Span| Span {
-            start: s.start + from,
-            end: s.end + from,
-        };
-        // A new anchor carries none of `prefix`, `suffix` and `pos`: nothing
-        // its author wrote can choose between exact hits, so context scoring
-        // and the position tie-break of section 7.1 step 3 are not used.
-        // Every exact hit is a candidate, whatever the quote's length
-        // (ruling on section 6.7). A selector with any of the three is
-        // stored and keeps the full cascade.
-        if sel.prefix.is_none() && sel.suffix.is_none() && sel.pos.is_none() {
-            let hits: Vec<Span> = self.text[from..to]
-                .match_indices(quote)
-                .map(|(b, _)| {
-                    shift(Span {
-                        start: b,
-                        end: b + quote.len(),
-                    })
-                })
-                .collect();
-            if hits.len() >= 2 {
-                return Located::Ambiguous {
-                    span: hits[0],
-                    ties: hits,
-                };
+    /// Unit `d` is `u` or holds it (the parent chain of `u` reaches `d`).
+    fn holds(&self, d: usize, mut u: usize) -> bool {
+        loop {
+            if u == d {
+                return true;
+            }
+            match self.parents[u] {
+                Some(p) => u = p,
+                None => return false,
             }
         }
-        match locate::locate(
-            &self.text[from..to],
-            quote,
-            sel.prefix.as_deref().unwrap_or_default(),
-            sel.suffix.as_deref().unwrap_or_default(),
-            pos,
-        ) {
-            // A located span equal to the quote after `normalize` counts as
-            // exact, whatever step of section 7 found it (ruling on section
-            // 6.7): a reflow that moves a line break inside the quote is
-            // not an uncertain anchor. Only a difference beyond whitespace
-            // leaves the result fuzzy.
-            Located::Found { how, span } => {
-                let span = shift(span);
-                let how = if how == How::Fuzzy
-                    && text::normalize(&self.text[span.start..span.end]) == text::normalize(quote)
-                {
-                    How::Exact
-                } else {
-                    how
-                };
-                Located::Found { how, span }
-            }
-            Located::Ambiguous { span, ties } => Located::Ambiguous {
-                span: shift(span),
-                ties: ties.into_iter().map(shift).collect(),
-            },
-            Located::Missing => Located::Missing,
-        }
-    }
-
-    /// One resolved unit with its text, `approx`, `refuse` and completed
-    /// selector. `l` is the final locate result, `None` without a quote.
-    fn out(
-        &self,
-        i: usize,
-        l: Option<&Located>,
-        approx: bool,
-        refuse: Option<Refuse>,
-        context_changed: bool,
-    ) -> Result<Unit, ProviderError> {
-        let e = &self.entries[i];
-        let kept = match l {
-            Some(l) if refuse.is_none() && self.inside(l, i) => l.span(),
-            _ => None,
-        };
-        let mut u = e.unit.clone();
-        u.sel = self.completed(i, kept)?;
-        u.text = Some(self.text[e.start..e.end].to_owned());
-        u.approx = approx;
-        u.refuse = refuse;
-        u.context_changed = context_changed;
-        Ok(u)
-    }
-
-    /// The window pairs through which a hit at `span` in unit `i` is
-    /// compared with a stored context: the windows `quote_selector` cuts
-    /// from `scope(i)` for a declaration (when the span lies in it), and
-    /// the ones it cuts from the whole text (section 6.7).
-    fn hit_windows(&self, i: usize, span: Span) -> [Option<(&str, &str)>; 2] {
-        let scope = self.entries[i].symbol.as_ref().and_then(|_| {
-            let (from, to) = self.symbol_scope(i);
-            (from <= span.start && span.end <= to)
-                .then(|| windows(&self.text[from..to], span.start - from, span.end - from))
-        });
-        [scope, Some(windows(&self.text, span.start, span.end))]
-    }
-
-    /// How the hit at `span` in unit `i` reproduces the stored context:
-    /// [`Match::Whole`] through its whole-text windows, else
-    /// [`Match::Scope`] through its scope windows (a declaration only),
-    /// else [`Match::None`]. A whole-text match ranks above a scope match:
-    /// a twin's context is cut from the whole text, and another copy can
-    /// reproduce it only through its scope windows, for example when the
-    /// twin starts the file and the other copy's scope starts with blank
-    /// lines (ruling on section 6.7).
-    fn reproduction(&self, i: usize, span: Span, c: &Context<'_>) -> Match {
-        if c.reproduced_by(windows(&self.text, span.start, span.end)) {
-            return Match::Whole;
-        }
-        if self.entries[i].symbol.is_some() {
-            let (from, to) = self.symbol_scope(i);
-            if from <= span.start
-                && span.end <= to
-                && c.reproduced_by(windows(
-                    &self.text[from..to],
-                    span.start - from,
-                    span.end - from,
-                ))
-            {
-                return Match::Scope;
-            }
-        }
-        Match::None
-    }
-
-    /// The context score of the hit at `span` in unit `i`: the higher of
-    /// its window pairs.
-    fn hit_score(&self, i: usize, span: Span, c: &Context<'_>) -> f64 {
-        self.hit_windows(i, span)
-            .into_iter()
-            .flatten()
-            .map(|w| c.score(w))
-            .fold(f64::MIN, f64::max)
-    }
-
-    /// The twins of the document (see `twins`). A declaration's default
-    /// selector with scope context is reproduced by another declaration of
-    /// its symbol when that one's default quote is the same and its scope
-    /// or whole-text windows equal the first one's scope windows after
-    /// `normalize`: keyed and counted once per document, linear in the
-    /// declarations of duplicated symbols.
-    fn twins(&self) -> &[bool] {
-        self.twins.get_or_init(|| {
-            type Key<'a> = (&'a str, String, String);
-            let mut twin = vec![false; self.entries.len()];
-            for group in self.symbols.values().filter(|g| g.len() > 1) {
-                let mut scope_keys: Vec<(usize, Key<'_>)> = Vec::with_capacity(group.len());
-                let mut by_scope: HashMap<Key<'_>, usize> = HashMap::new();
-                let mut by_whole: HashMap<Key<'_>, Vec<usize>> = HashMap::new();
-                for &i in group {
-                    let span = Span {
-                        start: self.entries[i].start,
-                        end: self.default_quote_end(i),
-                    };
-                    let quote = &self.text[span.start..span.end];
-                    let key =
-                        |(p, s): (&str, &str)| (quote, text::normalize(p), text::normalize(s));
-                    let [scope, whole] = self.hit_windows(i, span);
-                    let k = key(scope.expect("a default quote lies in its scope"));
-                    *by_scope.entry(k.clone()).or_default() += 1;
-                    by_whole
-                        .entry(key(whole.expect("whole-text windows always exist")))
-                        .or_default()
-                        .push(i);
-                    scope_keys.push((i, k));
-                }
-                for (i, k) in scope_keys {
-                    twin[i] = by_scope[&k] > 1
-                        || by_whole
-                            .get(&k)
-                            .is_some_and(|js| js.iter().any(|&j| j != i));
-                }
-            }
-            twin
-        })
-    }
-
-    /// A kept quote span of declaration `i` whose scope selector another
-    /// declaration of the same symbol reproduces at a hit of the quote.
-    fn kept_twin(&self, i: usize, span: Span) -> bool {
-        let Some(group) = self.entries[i]
-            .symbol
-            .as_ref()
-            .and_then(|s| self.symbols.get(s))
-            .filter(|g| g.len() > 1)
-        else {
-            return false;
-        };
-        let (from, to) = self.symbol_scope(i);
-        let (prefix, suffix) = windows(&self.text[from..to], span.start - from, span.end - from);
-        let c = Context {
-            prefix: Some(prefix),
-            suffix: Some(suffix),
-        };
-        let quote = &self.text[span.start..span.end];
-        group.iter().filter(|&&j| j != i).any(|&j| {
-            let (f, t) = self.symbol_scope(j);
-            self.text[f..t].match_indices(quote).any(|(b, _)| {
-                count_work(1);
-                let hit = Span {
-                    start: f + b,
-                    end: f + b + quote.len(),
-                };
-                self.reproduction(j, hit, &c) != Match::None
-            })
-        })
     }
 
     /// The errors of a selector with a `symbol` on a resource that has no
@@ -936,7 +623,14 @@ impl Doc {
                 ),
             ));
         }
-        if self.tree {
+        self.check_parses(loc)
+    }
+
+    /// Error 9 of section 6.7 for a selector with a symbol or the empty
+    /// selector: a code file that does not parse is `unavailable`, with the
+    /// line of its first error. Anything else passes.
+    pub(super) fn check_parses(&self, loc: &str) -> Result<(), ProviderError> {
+        if !self.class.is_code() || self.tree {
             return Ok(());
         }
         let line = self
@@ -954,502 +648,1137 @@ impl Doc {
         ))
     }
 
-    /// The branch for several declarations of one symbol, when the quote
-    /// has an exact hit in the scope of at least one of them (ruling on
-    /// section 6.7). The quote is located in each declaration's own scope,
-    /// and a stored context is compared through the windows its completed
-    /// selector could have been cut from.
-    ///
-    /// - One declaration with a hit: that one.
-    /// - A new anchor with hits in several: all of them (ambiguous).
-    /// - A stored anchor with hits in several: the one whose windows
-    ///   reproduce the stored `prefix` and `suffix`, when only one does;
-    ///   all of them (ambiguous) when several do. When none does, every one
-    ///   of them is a candidate (`approx`), the best context score first and
-    ///   equal scores in source order: similarity proposes and orders, it
-    ///   never resolves, and one guess alone could be the wrong copy.
-    ///
-    /// Whether a hit reproduces the context is an equality test without
-    /// allocation; scores are computed only when no declaration reproduces
-    /// it, so a stored anchor of one of many copies costs one pass over
-    /// their scopes.
-    ///
-    /// `None` when no scope holds an exact hit: the fuzzy step over the
-    /// whole text follows.
-    fn several(&self, s: &[usize], sel: &Selector) -> Result<Option<Vec<Unit>>, ProviderError> {
-        struct Found {
-            unit: usize,
-            reproduced: Option<(Match, Span)>,
-        }
-        let quote = sel.quote.as_deref().unwrap_or_default();
-        if quote.is_empty() {
-            return Ok(None);
-        }
-        let ctx = Context::of(sel);
-        let pos = sel.pos.map(|p| usize::try_from(p).unwrap_or(usize::MAX));
-        // The exact hits in the scope of declaration `u`.
-        let hits_of = |u: usize| {
-            let (from, to) = self.symbol_scope(u);
-            self.text[from..to].match_indices(quote).map(move |(b, _)| {
-                count_work(1);
-                Span {
-                    start: from + b,
-                    end: from + b + quote.len(),
-                }
-            })
-        };
-        // One pass over each scope. Of the hits that reproduce the stored
-        // context, the best match, then the one outside comments, then the
-        // one nearest the stored position, then the earliest: within one
-        // declaration the position may choose, as in the one-declaration
-        // path. Hits are kept only when a score is needed (below).
-        // Best match first, then outside comments, nearest `pos`, earliest.
-        type Rank = (std::cmp::Reverse<Match>, bool, usize, usize);
-        let mut d: Vec<Found> = Vec::new();
-        for &u in s {
-            let mut any = false;
-            let mut reproduced: Option<(Rank, Span)> = None;
-            for h in hits_of(u) {
-                any = true;
-                let Some(c) = &ctx else { continue };
-                let level = self.reproduction(u, h, c);
-                if level == Match::None {
-                    continue;
-                }
-                let key = (
-                    std::cmp::Reverse(level),
-                    self.in_comment(h),
-                    pos.map_or(0, |p| p.abs_diff(h.start)),
-                    h.start,
-                );
-                if reproduced.is_none_or(|(k, _)| key < k) {
-                    reproduced = Some((key, h));
-                }
-            }
-            if any {
-                d.push(Found {
-                    unit: u,
-                    reproduced: reproduced.map(|((level, ..), h)| (level.0, h)),
-                });
-            }
-        }
-        let at =
-            |u: usize, span: Span, approx: bool, changed: bool| -> Result<Unit, ProviderError> {
-                let l = Located::Found {
-                    how: How::Exact,
-                    span,
-                };
-                // A hit inside a scope can leave the unit only over filler, so
-                // `quote_spans_units` cannot occur here.
-                let refuse = self.in_comment(span).then_some(Refuse::QuoteInComment);
-                self.out(u, Some(&l), approx, refuse, changed)
-            };
-        let all = |d: &[Found]| -> Result<Vec<Unit>, ProviderError> {
-            d.iter()
-                .map(|f| self.out(f.unit, None, false, None, false))
-                .collect()
-        };
-        // The hit of a declaration chosen by score when it does not
-        // reproduce the stored context: the highest score, then outside
-        // comments, then the earliest.
-        let by_score = |f: &Found, c: &Context<'_>| -> (Span, f64) {
-            let mut best: Option<(Span, f64, bool)> = None;
-            for h in hits_of(f.unit) {
-                let score = self.hit_score(f.unit, h, c);
-                let outside = !self.in_comment(h);
-                let better =
-                    best.is_none_or(|(_, bs, bo)| score > bs || (score == bs && outside && !bo));
-                if better {
-                    best = Some((h, score, outside));
-                }
-            }
-            let (h, score, _) = best.expect("a declaration of D has a hit");
-            (h, score)
-        };
-        let Some(c) = ctx.as_ref() else {
-            return match d.len() {
-                0 => Ok(None),
-                1 => {
-                    let hits: Vec<Span> = hits_of(d[0].unit).collect();
-                    at(d[0].unit, pick_span(self, &hits), false, false).map(|u| Some(vec![u]))
-                }
-                _ => all(&d).map(Some),
-            };
-        };
-        if d.len() == 1 {
-            let f = &d[0];
-            let u = match f.reproduced {
-                Some((_, h)) => at(f.unit, h, false, false)?,
-                None => at(f.unit, by_score(f, c).0, false, true)?,
-            };
-            return Ok(Some(vec![u]));
-        }
-        if d.is_empty() {
-            return Ok(None);
-        }
-        // R: the declarations whose best hit reproduces the stored context
-        // with the best match found (whole text, else scope).
-        let best = d.iter().filter_map(|f| f.reproduced.map(|(m, _)| m)).max();
-        let r: Vec<&Found> = d
-            .iter()
-            .filter(|f| best.is_some() && f.reproduced.map(|(m, _)| m) == best)
-            .collect();
-        match r.len() {
-            1 => {
-                let (_, h) = r[0].reproduced.expect("filtered on reproduced");
-                return at(r[0].unit, h, false, false).map(|u| Some(vec![u]));
-            }
-            0 => {}
-            _ => return all(&d).map(Some),
-        }
-        // No declaration reproduces the stored context: every one with a
-        // hit is a candidate, the likeliest first. `d` is in source order
-        // and the sort is stable, so equal scores keep it.
-        let mut ranked: Vec<(usize, Span, f64)> = d
-            .iter()
-            .map(|f| {
-                let (h, score) = by_score(f, c);
-                (f.unit, h, score)
-            })
-            .collect();
-        ranked.sort_by(|a, b| b.2.total_cmp(&a.2));
-        ranked
-            .into_iter()
-            .map(|(u, h, _)| at(u, h, true, true))
-            .collect::<Result<_, _>>()
-            .map(Some)
+    // -- hits ---------------------------------------------------------------
+
+    /// The normalized text with its map back to the resource text, built on
+    /// first use.
+    fn norm(&self) -> &Norm {
+        self.norm.get_or_init(|| Norm::of(&self.text))
     }
 
-    /// A stored selector whose symbol names no declaration, when its quote
-    /// has two or more exact hits (ruling on section 6.7). Each hit is
-    /// compared with the stored context through the windows of its
-    /// innermost unit, the same windows that unit's completed selector is
-    /// cut from, instead of through whole-text windows only: a declaration
-    /// stored context was cut from its scope. Every unit found is a
-    /// candidate. The hits that reproduce the context, or else the hits
-    /// with the top score, give the units: one, or several (ambiguous).
-    /// Position does not choose. `None` with fewer than two hits.
-    fn missed_stored(
-        &self,
-        sel: &Selector,
-        c: &Context<'_>,
-    ) -> Result<Option<Vec<Unit>>, ProviderError> {
-        let quote = sel.quote.as_deref().unwrap_or_default();
-        if quote.is_empty() {
-            return Ok(None);
+    /// The hits of `quote` (section 6.7) whose span lies in `[from, to)` of
+    /// the resource text, left to right, without overlap, each with its
+    /// unit and whether it is exact.
+    fn hits_in(&self, quote: &str, from: usize, to: usize) -> Vec<Hit> {
+        let q = text::normalize(quote);
+        if q.is_empty() {
+            return Vec::new();
         }
-        let hits: Vec<Span> = self
-            .text
-            .match_indices(quote)
-            .map(|(b, _)| Span {
-                start: b,
-                end: b + quote.len(),
-            })
-            .collect();
-        if hits.len() < 2 {
-            return Ok(None);
-        }
-        let scored: Vec<(usize, Span, Match, f64)> = hits
-            .iter()
-            .map(|&h| {
+        let n = self.norm();
+        let nfrom = n.src.partition_point(|&s| (s as usize) < from);
+        let nto = n.src.partition_point(|&s| (s as usize) < to);
+        n.text[nfrom..nto]
+            .match_indices(q.as_str())
+            .map(|(b, _)| {
                 count_work(1);
-                let u = self.innermost(h);
-                (u, h, self.reproduction(u, h, c), self.hit_score(u, h, c))
+                let span = n.span(&self.text, nfrom + b, nfrom + b + q.len());
+                let unit = self.innermost(span);
+                Hit {
+                    span,
+                    unit,
+                    exact: self.within(span, unit),
+                }
             })
-            .collect();
-        let best = scored.iter().map(|x| x.2).max().unwrap_or(Match::None);
-        let top = scored
-            .iter()
-            .filter(|x| x.2 == best)
-            .map(|x| x.3)
-            .fold(f64::MIN, f64::max);
-        let mut seen: HashSet<usize> = HashSet::new();
-        let mut units: Vec<(usize, Span, bool)> = Vec::new();
-        for &(u, h, level, score) in &scored {
-            let wins = if best == Match::None {
-                score == top
-            } else {
-                level == best
-            };
-            if wins && seen.insert(u) {
-                units.push((u, h, level != Match::None));
+            .collect()
+    }
+
+    /// Every hit of `quote` in the resource.
+    fn hits(&self, quote: &str) -> Vec<Hit> {
+        self.hits_in(quote, 0, self.text.len())
+    }
+
+    /// `prefix(h, u)`: the last 48 characters of the normalized text of
+    /// unit `u` before the span.
+    fn prefix_window(&self, u: usize, span: Span) -> String {
+        let e = &self.entries[u];
+        let end = span.start.clamp(e.start, e.end);
+        text::trim(&last_normalized(&self.text[e.start..end], WINDOW_CHARS)).to_owned()
+    }
+
+    /// `suffix(h, u)`: the first 48 characters of the normalized text of
+    /// unit `u` after the span.
+    fn suffix_window(&self, u: usize, span: Span) -> String {
+        let e = &self.entries[u];
+        let start = span.end.clamp(e.start, e.end);
+        text::trim(&first_normalized(&self.text[start..e.end], WINDOW_CHARS)).to_owned()
+    }
+
+    /// The span reproduces the stored windows of `sel` in unit `u`: a
+    /// stored `prefix` or `suffix` equals, after `normalize`, the window
+    /// cut by the same rule; a window the selector lacks is not compared.
+    fn reproduces(&self, sel: &Selector, u: usize, span: Span) -> bool {
+        sel.prefix
+            .as_deref()
+            .is_none_or(|p| text::normalize(p) == self.prefix_window(u, span))
+            && sel
+                .suffix
+                .as_deref()
+                .is_none_or(|s| text::normalize(s) == self.suffix_window(u, span))
+    }
+
+    // -- containers ---------------------------------------------------------
+
+    /// Per entry: the heading keys above the unit, the piece it was cut
+    /// from, and whether that piece holds two or more units (`markdown` and
+    /// `prose` only). Filled on first use.
+    fn prose(&self) -> &[ProseInfo] {
+        &self.prose_index().info
+    }
+
+    /// [`Doc::prose`] with the lookups of `names`: the section paths that
+    /// some unit has, and the multi-unit pieces by heading path and name.
+    fn prose_index(&self) -> &ProseIndex {
+        self.prose.get_or_init(|| {
+            let regions = prose_class(self.class)
+                .map(|pc| prose::split(&self.text, pc))
+                .unwrap_or_default();
+            self.prose_index_from(&regions)
+        })
+    }
+
+    /// The prose index from the regions of the splitter, which are the
+    /// entries after the `file` unit, in order.
+    fn prose_index_from(&self, regions: &[prose::Region]) -> ProseIndex {
+        {
+            let info = self.prose_info(regions);
+            let mut sections: HashSet<Vec<String>> = HashSet::new();
+            let mut pieces: HashMap<(Vec<String>, String), Vec<usize>> = HashMap::new();
+            for p in info.iter().skip(1) {
+                sections.insert(p.path.clone());
+                if p.multi {
+                    let list = pieces.entry((p.path.clone(), p.name.clone())).or_default();
+                    if list.last() != Some(&p.piece) {
+                        list.push(p.piece);
+                    }
+                }
+            }
+            ProseIndex {
+                info,
+                sections,
+                pieces,
             }
         }
-        units
-            .into_iter()
-            .map(|(u, h, reproduces)| {
-                let l = Located::Found {
-                    how: How::Exact,
-                    span: h,
-                };
-                let refuse = if self.in_comment(h) {
-                    Some(Refuse::QuoteInComment)
-                } else if !self.within(h, u) {
-                    Some(Refuse::QuoteSpansUnits)
-                } else {
-                    None
-                };
-                self.out(u, Some(&l), true, refuse, !reproduces)
-            })
-            .collect::<Result<_, _>>()
-            .map(Some)
     }
+
+    fn prose_info(&self, regions: &[prose::Region]) -> Vec<ProseInfo> {
+        {
+            let mut info = vec![ProseInfo::default(); self.entries.len()];
+            let mut sizes: HashMap<usize, usize> = HashMap::new();
+            for r in regions {
+                *sizes.entry(r.piece).or_default() += 1;
+            }
+            // The text of each multi-unit piece: from its first unit's start
+            // to its last unit's end, and its first unit's index.
+            let mut spans: HashMap<usize, (usize, usize, usize)> = HashMap::new();
+            for (k, r) in regions.iter().enumerate() {
+                let s = spans.entry(r.piece).or_insert((r.start, r.end, k + 1));
+                s.1 = r.end;
+            }
+            for (k, r) in regions.iter().enumerate() {
+                let Some(slot) = info.get_mut(k + 1) else {
+                    continue;
+                };
+                let multi = sizes[&r.piece] > 1;
+                let name = if multi {
+                    let (start, end, first) = spans[&r.piece];
+                    let first = &regions[first - 1];
+                    if first.kind == prose::ProseKind::TableRow {
+                        first_normalized(first_cell(&self.text[start..end]), PIECE_NAME_CHARS)
+                    } else {
+                        first_normalized(&self.text[first.start..first.end], PIECE_NAME_CHARS)
+                    }
+                } else {
+                    String::new()
+                };
+                *slot = ProseInfo {
+                    raw_path: r.heading_path.clone(),
+                    path: r.heading_path.iter().map(|h| heading_key(h)).collect(),
+                    piece: r.piece,
+                    multi,
+                    name,
+                };
+            }
+            info
+        }
+    }
+
+    /// `within(h)` of section 6.7 for a hit in unit `u`.
+    fn within_of(&self, u: usize) -> Option<Vec<String>> {
+        if u == 0 {
+            return None;
+        }
+        if prose_class(self.class).is_some() {
+            let p = &self.prose()[u];
+            let mut w = p.path.clone();
+            if p.multi {
+                w.push(p.name.clone());
+            }
+            return (!w.is_empty()).then_some(w);
+        }
+        if !self.tree {
+            return None;
+        }
+        // The hit's unit when it is a declaration, else the innermost
+        // declaration holding it. The hit is inside its unit (filler
+        // allowed), so that declaration holds the hit.
+        let mut i = u;
+        loop {
+            if let Some(s) = &self.entries[i].symbol {
+                return Some(vec![s.clone()]);
+            }
+            i = self.parents[i]?;
+        }
+    }
+
+    /// `names(w)`: the containers a `within` list names now.
+    fn names(&self, w: &[String]) -> Vec<Container> {
+        let w: Vec<String> = w.iter().map(|x| text::normalize(x)).collect();
+        if prose_class(self.class).is_some() {
+            let index = self.prose_index();
+            let mut found = Vec::new();
+            if index.sections.contains(&w) {
+                found.push(Container::Section(w.clone()));
+            }
+            if let Some((name, path)) = w.split_last()
+                && let Some(pieces) = index.pieces.get(&(path.to_vec(), name.clone()))
+            {
+                found.extend(pieces.iter().map(|&p| Container::Piece(p)));
+            }
+            return found;
+        }
+        if !self.tree || w.len() != 1 {
+            return Vec::new();
+        }
+        self.symbols
+            .get(w[0].as_str())
+            .map(|d| d.iter().map(|&i| Container::Decl(i)).collect())
+            .unwrap_or_default()
+    }
+
+    /// Unit `u` is one of the units of container `c`.
+    fn in_container(&self, c: &Container, u: usize) -> bool {
+        match c {
+            Container::Section(path) => u != 0 && self.prose()[u].path == *path,
+            Container::Piece(piece) => u != 0 && self.prose()[u].piece == *piece,
+            Container::Decl(d) => self.holds(*d, u),
+        }
+    }
+
+    // -- completed and printed selectors -------------------------------------
+
+    /// The span of a quote as stored: the hit's span cut to
+    /// `MAX_QUOTE_CHARS` characters with trailing WS then removed. The
+    /// windows are cut around this span, so the stored selector finds its
+    /// own quote again.
+    fn stored_span(&self, span: Span) -> Span {
+        let q = &self.text[span.start..span.end];
+        match q.char_indices().nth(MAX_QUOTE_CHARS) {
+            Some((b, _)) => Span {
+                start: span.start,
+                end: span.start + text::trim_end(&q[..b]).len(),
+            },
+            None => span,
+        }
+    }
+
+    /// The quote of a hit as the resource has it, cut as
+    /// [`Doc::stored_span`] says.
+    fn quote_text(&self, span: Span) -> String {
+        let s = self.stored_span(span);
+        self.text[s.start..s.end].to_owned()
+    }
+
+    /// The completed selector of a quote-only anchor at an exact hit in
+    /// unit `u` (section 6.7).
+    fn quote_selector(&self, u: usize, span: Span) -> Selector {
+        let span = self.stored_span(span);
+        let within = self.within_of(u).filter(|w| self.names(w).len() == 1);
+        Selector {
+            quote: Some(self.text[span.start..span.end].to_owned()),
+            prefix: Some(self.prefix_window(u, span)),
+            suffix: Some(self.suffix_window(u, span)),
+            within,
+            ..Selector::default()
+        }
+    }
+
+    /// The completed selector of a symbol anchor resolved to declaration
+    /// `u`, at `hit` when its quote was found in it.
+    fn symbol_selector(&self, sel: &Selector, u: usize, hit: Option<Span>) -> Selector {
+        let symbol = sel.symbol.clone().expect("a symbol anchor");
+        let count = self.symbols.get(symbol.as_str()).map_or(0, Vec::len);
+        let windows = hit.filter(|_| sel.quote.is_some());
+        Selector {
+            quote: sel.quote.clone(),
+            prefix: windows.map(|h| self.prefix_window(u, h)),
+            suffix: windows.map(|h| self.suffix_window(u, h)),
+            symbol: Some(symbol),
+            count: (count >= 2).then_some(count as u64),
+            ..Selector::default()
+        }
+    }
+
+    /// The printed anchors of every unit (section 6.7), computed once when
+    /// the document is built: `{}` for `file`, `{symbol}` for a declaration
+    /// whose symbol is unique, `{symbol, count, quote}` with a line no other
+    /// copy has for one of several declarations, and a quote-only selector
+    /// for every other unit.
+    fn printed(&self) -> Result<Vec<Selector>, ProviderError> {
+        let mut out = vec![Selector::empty(); self.entries.len()];
+        for group in self.symbols.values() {
+            if group.len() == 1 {
+                let i = group[0];
+                out[i] = Selector {
+                    symbol: self.entries[i].symbol.clone(),
+                    ..Selector::default()
+                };
+            } else {
+                for (i, sel) in self.copy_anchors(group) {
+                    out[i] = sel;
+                }
+            }
+        }
+        let others: Vec<usize> = (1..self.entries.len())
+            .filter(|&i| self.entries[i].symbol.is_none())
+            .collect();
+        for (i, sel) in self.quote_anchors(&others)? {
+            out[i] = sel;
+        }
+        Ok(out)
+    }
+
+    /// The printed anchors of several declarations of one symbol: each with
+    /// `count` and as `quote` the first line of its text whose normalized
+    /// text occurs in no other declaration's normalized scope text.
+    /// Declarations whose normalized scope texts are equal are identical
+    /// twins and are found by hashing first; they have no such line and get
+    /// their first line.
+    fn copy_anchors(&self, group: &[usize]) -> Vec<(usize, Selector)> {
+        let scopes: Vec<String> = group
+            .iter()
+            .map(|&i| {
+                let (from, to) = self.symbol_scope(i);
+                text::normalize(&self.text[from..to])
+            })
+            .collect();
+        let mut same: HashMap<&str, usize> = HashMap::new();
+        for s in &scopes {
+            *same.entry(s.as_str()).or_default() += 1;
+        }
+        let symbol = self.entries[group[0]].symbol.clone();
+        group
+            .iter()
+            .enumerate()
+            .map(|(k, &i)| {
+                let e = &self.entries[i];
+                let unit_text = &self.text[e.start..e.end];
+                let mut offset = e.start;
+                let mut chosen: Option<Span> = None;
+                let mut first: Option<Span> = None;
+                for line in unit_text.split('\n') {
+                    let lead = line.len() - text::trim_start(line).len();
+                    let body = text::trim(line);
+                    let span = Span {
+                        start: offset + lead,
+                        end: offset + lead + body.len(),
+                    };
+                    offset += line.len() + 1;
+                    if body.is_empty() {
+                        continue;
+                    }
+                    first.get_or_insert(span);
+                    if same[scopes[k].as_str()] > 1 {
+                        break;
+                    }
+                    let needle = text::normalize(body);
+                    let elsewhere = scopes.iter().enumerate().any(|(j, s)| {
+                        j != k && {
+                            count_work(1);
+                            s.contains(needle.as_str())
+                        }
+                    });
+                    if !elsewhere {
+                        chosen = Some(span);
+                        break;
+                    }
+                }
+                let span = chosen.or(first).expect("a declaration has a line");
+                let sel = Selector {
+                    quote: Some(self.quote_text(span)),
+                    prefix: Some(self.prefix_window(i, span)),
+                    suffix: Some(self.suffix_window(i, span)),
+                    symbol: symbol.clone(),
+                    count: Some(group.len() as u64),
+                    ..Selector::default()
+                };
+                (i, sel)
+            })
+            .collect()
+    }
+
+    /// The printed anchors of units without a symbol: the first line as
+    /// the quote when its selector selects the unit alone, else the whole
+    /// unit text, else the first line (an indistinguishable twin).
+    ///
+    /// A first-line quote starts at its unit's start, so its stored prefix
+    /// is empty and only a hit at the start of a unit can reproduce it: the
+    /// units of the scope are sorted by the start of their normalized text
+    /// and searched by prefix, so the check is one sort per scope, not a
+    /// search of the text per unit.
+    fn quote_anchors(&self, units: &[usize]) -> Result<Vec<(usize, Selector)>, ProviderError> {
+        // The first-line selector of each unit and its scope.
+        let mut firsts: Vec<(usize, Selector, ScopeKey)> = Vec::with_capacity(units.len());
+        for &i in units {
+            let e = &self.entries[i];
+            let span = Span {
+                start: e.start,
+                end: self.default_quote_end(i),
+            };
+            if text::trim(&self.text[span.start..span.end]).is_empty() {
+                return Err(ProviderError::new(
+                    ProviderErrorCode::Internal,
+                    format!("unit {:?} has an empty first line", e.unit.key),
+                ));
+            }
+            let sel = self.quote_selector(i, span);
+            let key = match sel.within.as_deref().map(|w| self.names(w)) {
+                Some(mut c) if c.len() == 1 => ScopeKey::Container(c.remove(0)),
+                _ => ScopeKey::Whole,
+            };
+            firsts.push((i, sel, key));
+        }
+        // Per scope: the normalized starts of its units, sorted, equal
+        // starts counted once. Each unit is added to the scopes it belongs
+        // to in one pass.
+        let needed: HashSet<ScopeKey> = firsts.iter().map(|f| f.2.clone()).collect();
+        let mut starts: HashMap<ScopeKey, Vec<String>> = HashMap::new();
+        for v in 1..self.entries.len() {
+            let start = OnceCell::new();
+            for key in self.scope_keys(v) {
+                if needed.contains(&key) {
+                    count_work(1);
+                    let e = &self.entries[v];
+                    let s: &String = start
+                        .get_or_init(|| first_normalized(&self.text[e.start..e.end], START_CHARS));
+                    starts.entry(key).or_default().push(s.clone());
+                }
+            }
+        }
+        let groups: HashMap<ScopeKey, Vec<(String, usize)>> = starts
+            .into_iter()
+            .map(|(key, mut list)| {
+                list.sort();
+                let mut grouped: Vec<(String, usize)> = Vec::new();
+                for s in list {
+                    match grouped.last_mut() {
+                        Some((last, n)) if *last == s => *n += 1,
+                        _ => grouped.push((s, 1)),
+                    }
+                }
+                (key, grouped)
+            })
+            .collect();
+        // First lines that select their unit alone; the others try the whole
+        // unit text.
+        let mut out = Vec::with_capacity(firsts.len());
+        let mut fallback: Vec<(usize, Selector, ScopeKey)> = Vec::new();
+        for (i, sel, key) in firsts {
+            let nq = text::normalize(sel.quote.as_deref().unwrap_or_default());
+            let suffix = sel.suffix.clone().unwrap_or_default();
+            let members = groups.get(&key).map_or(&[][..], Vec::as_slice);
+            let lo = members.partition_point(|(s, _)| s.as_str() < nq.as_str());
+            let mut same = 0;
+            for (s, n) in &members[lo..] {
+                if !s.starts_with(nq.as_str()) {
+                    break;
+                }
+                count_work(1);
+                let rest = text::trim_start(&s[nq.len()..]);
+                let rest: String = rest.chars().take(WINDOW_CHARS).collect();
+                if text::trim(&rest) == suffix {
+                    same += n;
+                }
+            }
+            if same <= 1 {
+                out.push((i, sel));
+            } else {
+                fallback.push((i, sel, key));
+            }
+        }
+        if fallback.is_empty() {
+            return Ok(out);
+        }
+        // A whole-unit quote has empty windows, so only a unit with the same
+        // normalized text reproduces it: counted per scope by hashing.
+        let needed: HashSet<ScopeKey> = fallback.iter().map(|f| f.2.clone()).collect();
+        let mut whole: HashMap<ScopeKey, HashMap<String, usize>> = HashMap::new();
+        for v in 1..self.entries.len() {
+            let full = OnceCell::new();
+            for key in self.scope_keys(v) {
+                if needed.contains(&key) {
+                    count_work(1);
+                    let e = &self.entries[v];
+                    let t: &String =
+                        full.get_or_init(|| text::normalize(&self.text[e.start..e.end]));
+                    *whole.entry(key).or_default().entry(t.clone()).or_default() += 1;
+                }
+            }
+        }
+        for (i, sel, key) in fallback {
+            let e = &self.entries[i];
+            let span = Span {
+                start: e.start,
+                end: e.end,
+            };
+            let unit_text = &self.text[e.start..e.end];
+            let cut = unit_text.chars().nth(MAX_QUOTE_CHARS).is_some();
+            let alone = if cut {
+                // A quote cut to MAX_QUOTE_CHARS has a suffix window: rare,
+                // resolved directly.
+                self.selects(&self.quote_selector(i, span), i)
+            } else {
+                whole
+                    .get(&key)
+                    .and_then(|m| m.get(&text::normalize(unit_text)))
+                    .is_some_and(|&n| n == 1)
+            };
+            if alone {
+                out.push((i, self.quote_selector(i, span)));
+            } else {
+                out.push((i, sel));
+            }
+        }
+        Ok(out)
+    }
+
+    /// The scopes unit `v` belongs to: the whole resource, and its section
+    /// and piece (prose) or the declarations holding it (code).
+    fn scope_keys(&self, v: usize) -> Vec<ScopeKey> {
+        let mut keys = vec![ScopeKey::Whole];
+        if prose_class(self.class).is_some() {
+            let p = &self.prose()[v];
+            keys.push(ScopeKey::Container(Container::Section(p.path.clone())));
+            if p.multi {
+                keys.push(ScopeKey::Container(Container::Piece(p.piece)));
+            }
+        } else {
+            let mut a = Some(v);
+            while let Some(x) = a {
+                if self.entries[x].symbol.is_some() {
+                    keys.push(ScopeKey::Container(Container::Decl(x)));
+                }
+                a = self.parents[x];
+            }
+        }
+        keys
+    }
+
+    /// The selector resolves, as a stored selector, to unit `i` alone.
+    fn selects(&self, sel: &Selector, i: usize) -> bool {
+        matches!(self.resolve_stored(sel).as_slice(), [r] if r.unit == i && r.how == How::Resolved)
+    }
+
+    // -- resolution -----------------------------------------------------------
 
     /// `resolve(resource, sel)` of section 6.7. The selector has no `key`.
     pub(super) fn resolve(&self, sel: &Selector) -> Result<Vec<Unit>, ProviderError> {
-        let has_quote = sel.quote.is_some();
-        // The stored context, `None` for a new anchor.
-        let ctx = Context::of(sel);
-        if !has_quote && sel.symbol.is_none() {
-            return Ok(vec![self.out(0, None, false, None, false)?]);
+        if sel.quote.is_none() && sel.symbol.is_none() {
+            return Ok(vec![self.out(&Found::resolved(0), Selector::empty())?]);
         }
-        let mut missed = false;
-        if let Some(symbol) = &sel.symbol {
-            let s: &[usize] = self.symbols.get(symbol.as_str()).map_or(&[], Vec::as_slice);
-            if s.len() == 1 {
-                let i = s[0];
-                if !has_quote {
-                    return Ok(vec![self.out(i, None, false, None, false)?]);
-                }
-                let (from, to) = self.symbol_scope(i);
-                let mut l = self.locate_in(from, to, sel);
-                if let Located::Ambiguous { ties, .. } = &l {
-                    l = self.pick(ties);
-                }
-                let refuse = match &l {
-                    Located::Found { span, .. } if self.in_comment(*span) => {
-                        Some(Refuse::QuoteInComment)
-                    }
-                    _ => None,
-                };
-                // The symbol identifies the unit; a stored quote that is no
-                // longer in it is reported, not acted on.
-                let changed = ctx.is_some() && matches!(l, Located::Missing);
-                return Ok(vec![self.out(i, Some(&l), false, refuse, changed)?]);
-            }
-            if s.len() > 1 {
-                if has_quote {
-                    if let Some(units) = self.several(s, sel)? {
-                        return Ok(units);
-                    }
-                    let l = self.locate_in(0, self.text.len(), sel);
-                    if let Located::Found { how, span } = l {
-                        let c = self.containing(s, span);
-                        if c.len() == 1 {
-                            return Ok(vec![self.located(
-                                c[0],
-                                &l,
-                                how,
-                                span,
-                                false,
-                                ctx.as_ref(),
-                            )?]);
-                        }
-                    }
-                    return s
-                        .iter()
-                        .map(|&i| self.out(i, Some(&l), false, None, false))
-                        .collect::<Result<_, _>>();
-                }
-                return s
-                    .iter()
-                    .map(|&i| self.out(i, None, false, None, false))
-                    .collect::<Result<_, _>>();
-            }
-            missed = true;
-        }
-        if has_quote {
-            if missed
-                && let Some(c) = &ctx
-                && let Some(units) = self.missed_stored(sel, c)?
-            {
-                return Ok(units);
-            }
-            let mut l = self.locate_in(0, self.text.len(), sel);
-            match &l {
-                Located::Missing => return Ok(Vec::new()),
-                Located::Ambiguous { ties, .. } => {
-                    let mut u: Vec<usize> = Vec::new();
-                    let mut seen: HashSet<usize> = HashSet::new();
-                    for t in ties {
-                        let i = self.innermost(*t);
-                        if seen.insert(i) {
-                            u.push(i);
-                        }
-                    }
-                    // With a stored symbol that names no declaration, every
-                    // unit found through the quote is only a candidate.
-                    if u.len() > 1 {
-                        return u
-                            .into_iter()
-                            .map(|i| self.out(i, Some(&l), missed, None, false))
-                            .collect::<Result<_, _>>();
-                    }
-                    l = self.pick(ties);
-                }
-                Located::Found { .. } => {}
-            }
-            let Located::Found { how, span } = l else {
-                unreachable!("missing and ambiguous results returned above")
+        let stored = sel.prefix.is_some()
+            || sel.suffix.is_some()
+            || sel.within.is_some()
+            || sel.count.is_some();
+        let found = if stored {
+            self.resolve_stored(sel)
+        } else {
+            self.resolve_new(sel)
+        };
+        let alone = matches!(found.as_slice(), [f] if f.how != How::Candidate);
+        let mut units = Vec::with_capacity(found.len());
+        for f in &found {
+            let sel_out = if alone {
+                self.completed(sel, f)
+            } else {
+                self.entries[f.unit].unit.sel.clone()
             };
-            let i = self.innermost(span);
-            return Ok(vec![self.located(
-                i,
-                &l,
-                how,
-                span,
-                missed,
-                ctx.as_ref(),
-            )?]);
+            units.push(self.out(f, sel_out)?);
         }
-        Ok(Vec::new())
+        // A new anchor's completed selector must resolve back to its unit
+        // alone (section 6.7): otherwise the anchored text cannot be told
+        // apart from another place in its container.
+        if !stored
+            && let [u] = units.as_mut_slice()
+            && u.refuse.is_none()
+            && !u.approx
+            && u.identity.is_none()
+            && !self.selects(&u.sel, found[0].unit)
+        {
+            u.refuse = Some(Refuse::QuoteNotDistinguishable);
+        }
+        Ok(units)
     }
 
-    /// Unit `i` for a quote located once at `span` in the whole text, with
-    /// its refusals, `approx` and `contextChanged` (section 6.7). A stored
-    /// selector whose exact span is not inside `i` is `approx`: the
-    /// structure around the quote changed. `contextChanged` is set for a
-    /// stored selector located exactly whose context the unit's windows do
-    /// not reproduce.
-    fn located(
-        &self,
-        i: usize,
-        l: &Located,
-        how: How,
-        span: Span,
-        missed: bool,
-        ctx: Option<&Context<'_>>,
-    ) -> Result<Unit, ProviderError> {
-        let crosses = how == How::Exact && !self.within(span, i);
-        let refuse = if self.in_comment(span) {
+    /// The selector to store for a unit returned alone.
+    fn completed(&self, sel: &Selector, f: &Found) -> Selector {
+        if f.unit == 0 && sel.quote.is_none() {
+            return Selector::empty();
+        }
+        if sel.symbol.is_some() {
+            return self.symbol_selector(sel, f.unit, f.span);
+        }
+        match f.span {
+            Some(span) if f.how == How::Resolved && self.within(span, f.unit) => {
+                self.quote_selector(f.unit, span)
+            }
+            _ => self.entries[f.unit].unit.sel.clone(),
+        }
+    }
+
+    /// The unit object for a result.
+    fn out(&self, f: &Found, sel: Selector) -> Result<Unit, ProviderError> {
+        let e = &self.entries[f.unit];
+        let mut u = e.unit.clone();
+        u.sel = sel;
+        u.text = Some(self.text[e.start..e.end].to_owned());
+        u.approx = f.how == How::Candidate;
+        u.identity = (f.how == How::BySymbol).then_some(Identity::Symbol);
+        u.refuse = f.refuse;
+        Ok(u)
+    }
+
+    /// The declarations of `symbol`, in `units` order.
+    fn declarations(&self, symbol: &str) -> &[usize] {
+        self.symbols.get(symbol).map_or(&[], Vec::as_slice)
+    }
+
+    /// The hits of `quote` within `scope(u)`: the quote is in the
+    /// declaration, also where it runs over several of its members.
+    fn hits_in_scope(&self, quote: &str, u: usize) -> Vec<Hit> {
+        let (from, to) = self.symbol_scope(u);
+        self.hits_in(quote, from, to)
+    }
+
+    /// The hit of a stored symbol anchor in declaration `u`: one that
+    /// reproduces the stored windows, else the first outside comments, so
+    /// the completed selector is the one the anchor was made with.
+    fn symbol_hit(&self, sel: &Selector, u: usize, hits: &[Hit]) -> Option<Hit> {
+        hits.iter()
+            .find(|h| self.reproduces(sel, u, h.span))
+            .copied()
+            .or_else(|| self.first_outside_comments(hits))
+    }
+
+    /// `resolve_stored` of section 6.7.
+    fn resolve_stored(&self, sel: &Selector) -> Vec<Found> {
+        if let Some(symbol) = &sel.symbol {
+            let s = self.declarations(symbol);
+            let c = sel
+                .count
+                .map_or(1, |c| usize::try_from(c).unwrap_or(usize::MAX));
+            if s.len() != c {
+                // A3: the number of declarations changed.
+                let mut out: Vec<Found> = s.iter().map(|&u| Found::candidate(u)).collect();
+                if s.is_empty()
+                    && let Some(q) = &sel.quote
+                {
+                    out.extend(self.hit_units(&self.hits(q)));
+                }
+                return dedup(out);
+            }
+            if c == 1 {
+                // A1.
+                let u = s[0];
+                let Some(q) = &sel.quote else {
+                    return vec![Found::resolved(u)];
+                };
+                let hits = self.hits_in_scope(q, u);
+                if let Some(h) = self.symbol_hit(sel, u, &hits) {
+                    return vec![Found::resolved(u).at(h.span)];
+                }
+                let elsewhere: Vec<Hit> = self.hits(q).into_iter().filter(|h| h.exact).collect();
+                if !elsewhere.is_empty() {
+                    let mut out = vec![Found::candidate(u)];
+                    out.extend(self.hit_units(&elsewhere));
+                    return dedup(out);
+                }
+                return vec![Found {
+                    how: How::BySymbol,
+                    ..Found::resolved(u)
+                }];
+            }
+            // A2.
+            let Some(q) = &sel.quote else {
+                return s.iter().map(|&u| Found::candidate(u)).collect();
+            };
+            let mut d = Vec::new();
+            let mut r = Vec::new();
+            for &u in s {
+                let hits = self.hits_in_scope(q, u);
+                if hits.is_empty() {
+                    continue;
+                }
+                d.push(u);
+                if let Some(h) = hits.iter().find(|h| self.reproduces(sel, u, h.span)) {
+                    r.push(Found::resolved(u).at(h.span));
+                }
+            }
+            if r.len() == 1 {
+                return r;
+            }
+            let pool = if d.is_empty() { s } else { d.as_slice() };
+            return pool.iter().map(|&u| Found::candidate(u)).collect();
+        }
+        // P.
+        let q = sel.quote.as_deref().unwrap_or_default();
+        let scope = match &sel.within {
+            Some(w) => {
+                let mut c = self.names(w);
+                if c.len() != 1 {
+                    return self.candidates(q, None);
+                }
+                Some(c.remove(0))
+            }
+            None => None,
+        };
+        let hits = self.hits(q);
+        let in_scope = |h: &Hit| scope.as_ref().is_none_or(|c| self.in_container(c, h.unit));
+        let mut r: Vec<Found> = Vec::new();
+        for h in hits.iter().filter(|h| h.exact && in_scope(h)) {
+            if self.reproduces(sel, h.unit, h.span) && !r.iter().any(|f| f.unit == h.unit) {
+                r.push(Found::resolved(h.unit).at(h.span));
+            }
+        }
+        match r.len() {
+            1 => {
+                let mut f = r.remove(0);
+                f.refuse = f
+                    .span
+                    .filter(|&s| self.in_comment(s))
+                    .map(|_| Refuse::QuoteInComment);
+                vec![f]
+            }
+            0 => self.candidates(q, scope.as_ref()),
+            _ => r
+                .into_iter()
+                .map(|f| Found {
+                    how: How::Ambiguous,
+                    ..f
+                })
+                .collect(),
+        }
+    }
+
+    /// `candidates(scope)`: the units of the exact hits in scope, then of
+    /// the hits that cross units, then the similarity guess, each once, all
+    /// approximate.
+    fn candidates(&self, quote: &str, scope: Option<&Container>) -> Vec<Found> {
+        let hits = self.hits(quote);
+        let in_scope = |h: &Hit| scope.is_none_or(|c| self.in_container(c, h.unit));
+        let exact: Vec<Hit> = hits
+            .iter()
+            .filter(|h| h.exact && in_scope(h))
+            .cloned()
+            .collect();
+        let crossing: Vec<Hit> = hits
+            .iter()
+            .filter(|h| !h.exact && in_scope(h))
+            .cloned()
+            .collect();
+        let mut out = self.hit_units(&exact);
+        out.extend(self.hit_units(&crossing));
+        if let Some(u) = self.guess(quote, scope) {
+            out.push(Found::candidate(u));
+        }
+        dedup(out)
+    }
+
+    /// The distinct units of `hits`, in their order, as candidates.
+    fn hit_units(&self, hits: &[Hit]) -> Vec<Found> {
+        dedup(
+            hits.iter()
+                .map(|h| Found::candidate(h.unit).at(h.span))
+                .collect(),
+        )
+    }
+
+    /// The similarity guess in a scope: the unit of the fuzzy step of
+    /// section 7.2 on the scope's text, within the budget of section 7.1.
+    fn guess(&self, quote: &str, scope: Option<&Container>) -> Option<usize> {
+        let (from, to) = match scope {
+            None => (0, self.text.len()),
+            Some(Container::Decl(d)) => self.symbol_scope(*d),
+            Some(c) => {
+                let units: Vec<usize> = (1..self.entries.len())
+                    .filter(|&u| self.in_container(c, u))
+                    .collect();
+                let first = *units.first()?;
+                let last = *units.last()?;
+                (self.entries[first].start, self.entries[last].end)
+            }
+        };
+        let span = locate::fuzzy(&self.text[from..to], quote, "", "", 0)?;
+        let span = Span {
+            start: from + span.start,
+            end: from + span.end.min(to - from),
+        };
+        if span.start >= span.end || !locate::within_budget(&self.text[span.start..span.end], quote)
+        {
+            return None;
+        }
+        Some(self.innermost(span))
+    }
+
+    /// `resolve_new` of section 6.7: what the agent typed.
+    fn resolve_new(&self, sel: &Selector) -> Vec<Found> {
+        if let Some(symbol) = &sel.symbol {
+            let s = self.declarations(symbol);
+            match s.len() {
+                0 => {
+                    let q = sel.quote.as_deref().unwrap_or_default();
+                    return if q.is_empty() {
+                        Vec::new()
+                    } else {
+                        self.candidates(q, None)
+                    };
+                }
+                1 => {
+                    let u = s[0];
+                    let Some(q) = &sel.quote else {
+                        return vec![Found::resolved(u)];
+                    };
+                    let hits = self.hits_in_scope(q, u);
+                    return match self.first_outside_comments(&hits) {
+                        Some(h) => {
+                            let mut f = Found::resolved(u).at(h.span);
+                            f.refuse = self.in_comment(h.span).then_some(Refuse::QuoteInComment);
+                            vec![f]
+                        }
+                        None => vec![Found {
+                            how: How::BySymbol,
+                            ..Found::resolved(u)
+                        }],
+                    };
+                }
+                _ => {}
+            }
+            let Some(q) = &sel.quote else {
+                return s.iter().map(|&u| Found::ambiguous(u)).collect();
+            };
+            let mut d: Vec<(usize, Hit)> = Vec::new();
+            for &u in s {
+                let hits = self.hits_in_scope(q, u);
+                if let Some(h) = self.first_outside_comments(&hits) {
+                    d.push((u, h));
+                }
+            }
+            if let [(u, h)] = d.as_slice() {
+                let mut f = Found::resolved(*u).at(h.span);
+                f.refuse = self.in_comment(h.span).then_some(Refuse::QuoteInComment);
+                return vec![f];
+            }
+            let pool: Vec<usize> = if d.is_empty() {
+                s.to_vec()
+            } else {
+                d.iter().map(|(u, _)| *u).collect()
+            };
+            return pool.into_iter().map(Found::ambiguous).collect();
+        }
+        let q = sel.quote.as_deref().unwrap_or_default();
+        let hits = self.hits(q);
+        if hits.is_empty() {
+            return self
+                .guess(q, None)
+                .map(Found::candidate)
+                .into_iter()
+                .collect();
+        }
+        let mut units: Vec<usize> = Vec::new();
+        for h in &hits {
+            if !units.contains(&h.unit) {
+                units.push(h.unit);
+            }
+        }
+        if units.len() > 1 {
+            return units.into_iter().map(Found::ambiguous).collect();
+        }
+        let h = self
+            .first_outside_comments(&hits)
+            .expect("hits is not empty");
+        let mut f = Found::resolved(h.unit).at(h.span);
+        f.refuse = if self.in_comment(h.span) {
             Some(Refuse::QuoteInComment)
-        } else if crosses {
+        } else if !h.exact {
             Some(Refuse::QuoteSpansUnits)
         } else {
             None
         };
-        let approx = how == How::Fuzzy || missed || (ctx.is_some() && crosses);
-        let changed =
-            how == How::Exact && ctx.is_some_and(|c| self.reproduction(i, span, c) == Match::None);
-        self.out(i, Some(l), approx, refuse, changed)
+        vec![f]
+    }
+
+    /// The first hit that is not in a comment, or the first hit.
+    fn first_outside_comments(&self, hits: &[Hit]) -> Option<Hit> {
+        hits.iter()
+            .find(|h| !self.in_comment(h.span))
+            .or(hits.first())
+            .cloned()
     }
 }
 
-/// The hit `pick` chooses among exact hits in one unit: the earliest that is
-/// not in a comment, or the earliest.
-fn pick_span(doc: &Doc, hits: &[Span]) -> Span {
-    hits.iter()
-        .copied()
-        .find(|&h| !doc.in_comment(h))
-        .unwrap_or(hits[0])
+/// How a unit of an answer was found.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum How {
+    /// The unit the selector was made for.
+    Resolved,
+    /// Resolved by its symbol alone; the stored quote is gone (A1).
+    BySymbol,
+    /// One of several units the selector selects equally.
+    Ambiguous,
+    /// A candidate, `approx: true`.
+    Candidate,
 }
 
-/// How a hit reproduces a stored context, in increasing rank.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-enum Match {
-    None,
-    Scope,
+/// One unit of an answer, with the hit that found it when there is one.
+#[derive(Debug, Clone, Copy)]
+struct Found {
+    unit: usize,
+    how: How,
+    span: Option<Span>,
+    refuse: Option<Refuse>,
+}
+
+impl Found {
+    fn resolved(unit: usize) -> Self {
+        Found {
+            unit,
+            how: How::Resolved,
+            span: None,
+            refuse: None,
+        }
+    }
+
+    fn candidate(unit: usize) -> Self {
+        Found {
+            how: How::Candidate,
+            ..Found::resolved(unit)
+        }
+    }
+
+    fn ambiguous(unit: usize) -> Self {
+        Found {
+            how: How::Ambiguous,
+            ..Found::resolved(unit)
+        }
+    }
+
+    fn at(self, span: Span) -> Self {
+        Found {
+            span: Some(span),
+            ..self
+        }
+    }
+}
+
+/// The units of `found` with each unit kept once, at its first place.
+fn dedup(found: Vec<Found>) -> Vec<Found> {
+    let mut seen: HashSet<usize> = HashSet::new();
+    found.into_iter().filter(|f| seen.insert(f.unit)).collect()
+}
+
+/// A hit of a quote (section 6.7): its span, its unit and whether it lies
+/// inside that unit.
+#[derive(Debug, Clone, Copy)]
+struct Hit {
+    span: Span,
+    unit: usize,
+    exact: bool,
+}
+
+/// A container of section 6.7.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum Container {
+    /// The units whose heading path is exactly this path of heading keys.
+    Section(Vec<String>),
+    /// The units of one multi-unit piece, by its number.
+    Piece(usize),
+    /// A declaration unit and the units within its range.
+    Decl(usize),
+}
+
+/// The scope a printed quote-only selector is resolved in.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum ScopeKey {
     Whole,
+    Container(Container),
 }
 
-/// The stored context of a selector: its `prefix` and `suffix`.
-struct Context<'s> {
-    prefix: Option<&'s str>,
-    suffix: Option<&'s str>,
+/// The prose units' information with the lookups of `names`.
+#[derive(Debug)]
+struct ProseIndex {
+    info: Vec<ProseInfo>,
+    sections: HashSet<Vec<String>>,
+    pieces: HashMap<(Vec<String>, String), Vec<usize>>,
 }
 
-impl<'s> Context<'s> {
-    /// `None` for a new anchor, which has none of `prefix`, `suffix` and
-    /// `pos` (section 6.7).
-    fn of(sel: &'s Selector) -> Option<Self> {
-        (sel.prefix.is_some() || sel.suffix.is_some() || sel.pos.is_some()).then_some(Context {
-            prefix: sel.prefix.as_deref(),
-            suffix: sel.suffix.as_deref(),
-        })
-    }
-
-    /// The windows equal the stored context after `normalize`. A `prefix`
-    /// or `suffix` the selector does not carry is not compared.
-    fn reproduced_by(&self, (prefix, suffix): (&str, &str)) -> bool {
-        self.prefix.is_none_or(|p| same_normalized(prefix, p))
-            && self.suffix.is_none_or(|s| same_normalized(suffix, s))
-    }
-
-    /// The score of section 7.1 step 3 for one pair of windows. A missing
-    /// `prefix` or `suffix` counts as the empty string.
-    fn score(&self, (prefix, suffix): (&str, &str)) -> f64 {
-        text::similarity(prefix, self.prefix.unwrap_or_default())
-            + text::similarity(suffix, self.suffix.unwrap_or_default())
-    }
+/// What section 6.7 needs about a prose unit.
+#[derive(Debug, Clone, Default)]
+struct ProseInfo {
+    /// The heading texts above the unit, as written (for `render`).
+    raw_path: Vec<String>,
+    /// Their heading keys.
+    path: Vec<String>,
+    /// The piece the unit was cut from.
+    piece: usize,
+    /// The piece holds two or more units.
+    multi: bool,
+    /// The piece's name, when `multi`.
+    name: String,
 }
 
-/// The context windows `quote_selector` (section 7.4) cuts around
-/// `[start, end)` of `ctx`: up to `CONTEXT` characters before and after,
-/// borrowed rather than copied.
-fn windows(ctx: &str, start: usize, end: usize) -> (&str, &str) {
-    let before = &ctx[..start];
-    let from = before
-        .char_indices()
-        .rev()
-        .nth(locate::CONTEXT - 1)
-        .map_or(0, |(b, _)| b);
-    let after = &ctx[end..];
-    let to = after
-        .char_indices()
-        .nth(locate::CONTEXT)
-        .map_or(after.len(), |(b, _)| b);
-    (&before[from..], &after[..to])
+/// `normalize(text)` with, for each of its bytes, the byte of the resource
+/// text its character came from.
+#[derive(Debug)]
+struct Norm {
+    text: String,
+    src: Vec<u32>,
 }
 
-/// `normalize(a) == normalize(b)` without building either string.
-fn same_normalized(a: &str, b: &str) -> bool {
-    // Equal bytes are the common case (an unchanged anchor, identical
-    // copies) and need no character walk.
-    a == b || Normalized::new(a).eq(Normalized::new(b))
-}
-
-/// The characters of `normalize(s)` (section 4.1): every run of WS becomes
-/// one space, and leading and trailing WS go.
-struct Normalized<'a> {
-    chars: std::str::Chars<'a>,
-    started: bool,
-    pending_space: bool,
-    held: Option<char>,
-}
-
-impl<'a> Normalized<'a> {
-    fn new(s: &'a str) -> Self {
-        Normalized {
-            chars: s.chars(),
-            started: false,
-            pending_space: false,
-            held: None,
-        }
-    }
-}
-
-impl Iterator for Normalized<'_> {
-    type Item = char;
-
-    fn next(&mut self) -> Option<char> {
-        if let Some(c) = self.held.take() {
-            return Some(c);
-        }
-        loop {
-            let c = self.chars.next()?;
+impl Norm {
+    fn of(text: &str) -> Self {
+        let mut out = String::with_capacity(text.len());
+        let mut src: Vec<u32> = Vec::with_capacity(text.len());
+        let mut pending: Option<usize> = None;
+        for (b, c) in text.char_indices() {
             if text::is_ws(c) {
-                self.pending_space = self.started;
+                if !out.is_empty() && pending.is_none() {
+                    pending = Some(b);
+                }
                 continue;
             }
-            self.started = true;
-            if self.pending_space {
-                self.pending_space = false;
-                self.held = Some(c);
-                return Some(' ');
+            if let Some(p) = pending.take() {
+                out.push(' ');
+                src.push(p as u32);
             }
-            return Some(c);
+            out.push(c);
+            src.extend(std::iter::repeat_n(b as u32, c.len_utf8()));
+        }
+        Norm { text: out, src }
+    }
+
+    /// The span of the resource text that normalized bytes `[from, to)`
+    /// came from: from the first matched character to the end of the last.
+    fn span(&self, text: &str, from: usize, to: usize) -> Span {
+        let start = self.src[from] as usize;
+        let last = self.src[to - 1] as usize;
+        let len = text[last..].chars().next().map_or(0, char::len_utf8);
+        Span {
+            start,
+            end: last + len,
         }
     }
+}
+
+/// Characters of a stored `prefix` or `suffix` window.
+const WINDOW_CHARS: usize = 48;
+
+/// Characters of a piece's name.
+const PIECE_NAME_CHARS: usize = 120;
+
+/// Characters of a unit's normalized start compared when printed anchors
+/// are checked: a first-line quote (at most 120) and its suffix window.
+const START_CHARS: usize = DEFAULT_QUOTE_CHARS + 1 + WINDOW_CHARS + 1;
+
+/// The first `n` characters of `normalize(s)`.
+fn first_normalized(s: &str, n: usize) -> String {
+    let mut out = String::new();
+    let mut count = 0;
+    let mut pending = false;
+    for c in s.chars() {
+        if count == n {
+            break;
+        }
+        if text::is_ws(c) {
+            pending = count > 0;
+            continue;
+        }
+        if pending {
+            out.push(' ');
+            count += 1;
+            pending = false;
+            if count == n {
+                break;
+            }
+        }
+        out.push(c);
+        count += 1;
+    }
+    out
+}
+
+/// The last `n` characters of `normalize(s)`.
+fn last_normalized(s: &str, n: usize) -> String {
+    let mut rev: Vec<char> = Vec::new();
+    let mut pending = false;
+    for c in s.chars().rev() {
+        if rev.len() == n {
+            break;
+        }
+        if text::is_ws(c) {
+            pending = !rev.is_empty();
+            continue;
+        }
+        if pending {
+            rev.push(' ');
+            pending = false;
+            if rev.len() == n {
+                break;
+            }
+        }
+        rev.push(c);
+    }
+    rev.into_iter().rev().collect()
+}
+
+/// The heading key of a heading text (section 6.7): links and images
+/// replaced by their text, `` ` ``, `*`, `_` and `~` removed, normalized.
+fn heading_key(h: &str) -> String {
+    let mut out = String::with_capacity(h.len());
+    let chars: Vec<char> = h.chars().collect();
+    let mut i = 0;
+    while i < chars.len() {
+        let c = chars[i];
+        let image = c == '!' && chars.get(i + 1) == Some(&'[');
+        if c == '[' || image {
+            let open = if image { i + 1 } else { i };
+            if let Some(close) = (open + 1..chars.len()).find(|&k| chars[k] == ']') {
+                let target = match chars.get(close + 1) {
+                    Some('(') => (close + 2..chars.len()).find(|&k| chars[k] == ')'),
+                    Some('[') => (close + 2..chars.len()).find(|&k| chars[k] == ']'),
+                    _ => None,
+                };
+                if let Some(end) = target {
+                    out.extend(&chars[open + 1..close]);
+                    i = end + 1;
+                    continue;
+                }
+            }
+        }
+        if !matches!(c, '`' | '*' | '_' | '~') {
+            out.push(c);
+        }
+        i += 1;
+    }
+    text::normalize(&out)
+}
+
+/// The first cell of a table row: the text between its first `|` and the
+/// next `|`.
+fn first_cell(row: &str) -> &str {
+    let Some(open) = row.find('|') else {
+        return row;
+    };
+    let rest = &row[open + 1..];
+    &rest[..rest.find('|').unwrap_or(rest.len())]
 }
 
 #[cfg(test)]
@@ -1531,9 +1860,11 @@ mod tests {
                 s
             };
             let (r, work) = with_work(|| doc.resolve(&sel).unwrap());
-            // A new anchor gives every copy; the stored anchor of a twin
-            // has whole-text context and resolves to its own copy.
-            assert_eq!(r.len(), if stored { 1 } else { n });
+            // A new anchor gives every copy (ambiguous); the printed anchor
+            // of an identical twin cannot tell the copies apart, so every
+            // copy is a candidate (section 6.7, A2).
+            assert_eq!(r.len(), n);
+            assert_eq!(r.iter().all(|u| u.approx), stored);
             work
         };
         for stored in [false, true] {
@@ -1725,41 +2056,35 @@ mod tests {
         let doc = Doc::build(t.clone(), Class::Text).unwrap();
         let i = 1;
         assert_eq!(doc.entries[i].unit.kind, "block");
-        let sel = doc
-            .completed(
-                i,
-                Some(Span {
-                    start: 0,
-                    end: t.len() - 1,
-                }),
-            )
-            .unwrap();
-        // The 2,048th character is the space: cut there, then trimmed.
-        let quote = sel.quote.unwrap();
+        let sel = doc.quote_selector(
+            i,
+            Span {
+                start: 0,
+                end: t.len() - 1,
+            },
+        );
+        // The 2,048th character is the space: cut there, then trimmed. The
+        // windows are cut around the stored quote, inside the unit.
+        let quote = sel.quote.clone().unwrap();
         assert_eq!(quote, "a".repeat(MAX_QUOTE_CHARS - 1));
-        assert_eq!(sel.pos, Some(0));
         assert_eq!(sel.prefix.as_deref(), Some(""));
-        assert_eq!(sel.suffix.unwrap(), format!(" {}\n", "b".repeat(10)));
+        assert_eq!(sel.suffix.as_deref(), Some("bbbbbbbbbb"));
+        assert!(
+            doc.selects(&sel, i),
+            "a cut quote's selector finds its unit"
+        );
         // A span of exactly MAX_QUOTE_CHARS characters is kept whole.
         let t = format!("{}\n", "c".repeat(MAX_QUOTE_CHARS));
         let doc = Doc::build(t.clone(), Class::Text).unwrap();
-        let sel = doc
-            .completed(
-                1,
-                Some(Span {
-                    start: 0,
-                    end: MAX_QUOTE_CHARS,
-                }),
-            )
-            .unwrap();
+        let sel = doc.quote_selector(
+            1,
+            Span {
+                start: 0,
+                end: MAX_QUOTE_CHARS,
+            },
+        );
         assert_eq!(sel.quote.unwrap().len(), MAX_QUOTE_CHARS);
-        // An empty span is a bug: internal, not a selector without a quote.
-        let t = "x  y\n".to_owned();
-        let doc = Doc::build(t, Class::Text).unwrap();
-        let err = doc
-            .completed(1, Some(Span { start: 1, end: 3 }))
-            .unwrap_err();
-        assert_eq!(err.code, ProviderErrorCode::Internal);
+        assert_eq!(sel.suffix.as_deref(), Some(""));
     }
 
     #[test]

@@ -280,16 +280,17 @@ extracted files (next section), use four more `origin` values.
 | `ids.json` | `{kind, body}`: a record type and a record body without `id` | `{canonical, blake3, id}`: the canonical body, the 64 hex digits of its BLAKE3 digest, and the id of SPEC section 3.5 |
 | `fingerprint.json` | `{profile: "prose-v1", text}` or `{profile: "ast-v1", class, stream}` | `{fingerprint}`: the string of SPEC section 8 |
 | `units-code.json` | `{fixture, path}`: a file under `fixtures/units/` and a path whose extension selects the class | `{class, units}`: the class after the parse-error fallback, and every unit in source order (start ascending, then end descending) as `{kind, symbol, key, parent, start, end, line, endLine}`. `endLine` is the line of the unit's last character. A content key (`statement`, `block`) is written `<kind>:*`, with `~n` for a duplicate, and matches any 12 lower-case hex digits there. |
-| `resolve.json` | `{path, fixture or text, sel}`: the locator path (its extension selects the class), the file's content from a file under `fixtures/resolve/` or inline (inline text keeps CR LF and a BOM byte for byte), and the selector. With neither `fixture` nor `text` the file does not exist. | `{units}`, every unit `resolve` returns in order as `{key, approx, contextChanged, refuse, sel}`, where `refuse` is `null` when absent and `sel` is the completed selector; or `{error}` with a provider error code. Content keys are written `<kind>:*` as in `units-code.json`. |
+| `resolve.json` | `{path, fixture or text, sel}`: the locator path (its extension selects the class), the file's content from a file under `fixtures/resolve/` or inline (inline text keeps CR LF and a BOM byte for byte), and the selector. With neither `fixture` nor `text` the file does not exist. | `{units}`, every unit `resolve` returns in order as `{key, approx, identity, refuse, sel}`, where `identity` and `refuse` are `null` when absent and `sel` is the completed selector of a unit returned alone and the printed anchor of every other unit; or `{error}` with a provider error code. Content keys are written `<kind>:*` as in `units-code.json`. |
 | `freshness.json` | `{recheck, retired, now, marks: [{at, sides: [fingerprint]}], sides}`: the claim's `recheck`, whether it is retired, `now`, its marks, and the current resolution of each side as `{unit: <fingerprint>}`, `{units: 0}` (no unit), `{units: 2}` (several), `{error: <provider error code or "failed">}`, `{noProvider: "scheme_not_declared" or "provider_not_registered"}` or `{invalidUnit: true}`. A retired claim has no `sides`. | `{state, mark, expiresAt, sides: [{state, reason}]}`: the claim state, the reference mark as an index into `input.marks` (`null` for none, `{greaterIdOf: [indexes]}` for a tie on `at`), `expiresAt` of SPEC section 15.2, and each side's state and reason |
 | `coverage.json` | `{loc, units: [{key, kind, parent}], kinds, resolved, exclude: [{resource, unit}]}`: one resource, its unit list, the scope's kinds, the keys that claim sides resolve to, and the scope's exclusions in declaration order | `{covered, excluded, uncovered, matched}`: the scope units by status, each list in unit order, and the number of units each exclusion excluded |
 
 The `resolve.json` cases are `spec-derived`. Their expectations were derived
-by hand from SPEC section 6.7 and the fixture text, in the steps each
-`source` lists: which units, `approx`, `refuse`, and the span of the
-stored quote (the input quote's located span, or the unit's default quote).
-A script then cut the 48-character prefix and suffix and the byte `pos` from
-that span. Nothing was copied from the implementation's output. The test
+by hand from SPEC section 6.7 and the text, in the steps each `source`
+lists: which units, `approx`, `identity`, `refuse` and `within`, and the
+span of each quote inside its unit. A script then cut the in-unit windows
+(the last and first 48 characters of the normalized unit text before and
+after the quote, trimmed) from that span. Nothing was copied from the
+implementation's output. The test
 resolves each case through `FileProvider` on a temporary working tree, then
 again without a cache and twice through a cache, and requires the same
 answer every time (R40, R53).
@@ -348,54 +349,29 @@ to its items, not to a statement` (`fixtures/units/shared.rs`). units-code
 has no fingerprints, so the fingerprint effects of that ruling are pinned by
 unit tests in `code.rs`.
 
-`resolve.json` also pins, by hand-derived cases: completed selectors whose
-context is the unit's scope (the unit's range widened over adjacent
-whitespace, `,` and `;`) when the symbol is unique, so that every completed
-selector is a fixed point; the spanning refusal in the several-declarations
-branch; quotes whose edges outside the member are only whitespace, `,` or
-`;`; the innermost-unit boundaries (a unit's end is exclusive, the first
-intersecting unit when none contains the quote's start); new anchors at the
-first and last line; and the reflow rule.
+`resolve.json` was rewritten for the identity rule of SPEC section 6.7
+(decision 142). It pins every branch of `resolve_new` and `resolve_stored`,
+the printed anchors, and the scenarios the rule was designed against (each
+case is named after its scenario). These groups of the earlier rule were
+removed, because the rule they pinned no longer exists:
 
-For the ruling that similarity proposes and never resolves, `resolve.json`
-pins that a stored symbol which names no declaration makes every unit the
-quote finds `approx`, one unit or the several units of tied hits, and the
-moved-function case (`fixtures/resolve/report.py`: `def threshold` moved to
-another module, its call in `main` is found by the fuzzy step). For the
-ruling on symbols where there are none, a selector with a symbol is
-`invalid_selector` on markdown, prose and text, and `unavailable` on a code
-file that does not parse; these replace four earlier cases that resolved
-such selectors through the quote or found nothing.
+- context scoring of stored anchors (`stored anchor:` cases where the
+  stored prefix, suffix or position chose between equal hits): windows are
+  now cut inside the unit and either reproduce or not, and no position is
+  stored;
+- `duplicated declarations` and `twin declarations` cases with scope and
+  whole-text contexts: duplicated symbols are now resolved by `count` and
+  the quote's in-unit windows, and identical twins cannot be told apart;
+- candidates ordered by context score and the `stored context:` cases of
+  `contextChanged`: there is no score and no `contextChanged`;
+- the `missed symbol:` case and the moved-function case on `report.py`: a
+  symbol that names nothing gives every declaration of it (none) and the
+  units of its quote's exact hits, and the engine adds candidates by content;
+- default quotes in completed selectors: a typed `#name` stores no quote.
 
-For the rulings on declarations that share a symbol, a declaration's
-completed selector takes its context from the declaration's scope, unless
-another declaration of the same symbol has the same scope text after
-`normalize` (a twin), which takes it from the whole text; the expected
-selectors of the earlier overload and duplicate cases changed with them.
-`twin declarations` cases pin two identical Go `init` functions and one
-method in two `impl` blocks: a new anchor gives both, and each stored anchor
-resolves to its own copy. New `duplicated declarations` cases pin, at 2, 3 and 23 copies of one
-method, that a new anchor gives every copy, that an anchor stored while the
-symbol was unique follows the original copy, and that an anchor stored after
-the duplication resolves to its own copy; with identical bodies the stored
-anchor gives every copy. Further cases pin that every copy is a candidate
-(`approx`), the closest stored context first, for an edited `@overload`
-stub (including an `int` stub changed to `float`, where the unchanged `str`
-stub comes first), an edited `impl` block and an edited module-level
-redefinition, and that a property setter stays exact. The case `stored
-anchor: a short quote is narrowed by pos` became `... with only pos does not
-narrow them`: position never chooses between declarations of one symbol.
-
-Every expected unit carries `contextChanged`. Cases named `stored context:`
-pin it: a quoted value that now stands only in another sentence, and an
-edited neighbour sentence, give the unit with `contextChanged: true`; a
-quote split by a new blank line spans two units and is `approx` and
-refused; for a symbol that names one declaration it is set when the stored
-quote is gone, not when the fuzzy step finds it. The candidates of edited
-duplicates and the edited property setter carry it as well. A case named
-`missed symbol:` pins that a renamed class whose method has an identical
-copy elsewhere yields both methods, and `twin declarations:` cases pin two
-`def run():` that differ only after their first 48 characters.
+The cases kept from the earlier file (the empty selector, symbols, quotes,
+refusals, members, boundaries, decoding, errors) were derived again for the
+new selector shape.
 
 The `freshness.json` and `coverage.json` cases are `spec-derived`: each
 `expected` was written by hand from SPEC sections 9.2, 9.3 and 10.2, and

@@ -1,5 +1,5 @@
 {
-  "name": "resolve by quote ignores prefix, suffix and pos",
+  "name": "resolve by quote ignores prefix, suffix and within",
   "fixture": "notes.json",
   "steps": [
     {
@@ -32,7 +32,9 @@
             "quote": "configurable",
             "prefix": "nothing like this",
             "suffix": "x",
-            "pos": 999
+            "within": [
+              "nothing like this"
+            ]
           }
         }
       },

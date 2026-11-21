@@ -5,15 +5,22 @@
   "type": "object",
   "properties": {
     "approx": {
-      "description": "In `resolve`: found by approximation or fallback.",
-      "type": "boolean"
-    },
-    "contextChanged": {
-      "description": "In `resolve`, for a stored selector: the quote was located exactly\nbut the stored `prefix` and `suffix` are not reproduced there, or,\nfor a symbol that names one declaration, the quote is not found in it\nat all, neither exactly nor by the fuzzy step.",
+      "description": "In `resolve`: the unit is a candidate, not the unit the selector was\nmade for.",
       "type": "boolean"
     },
     "fp": {
       "$ref": "#/$defs/Fingerprint"
+    },
+    "identity": {
+      "description": "In `resolve`: `symbol` when the unit is resolved by its symbol alone\nbecause the selector's stored quote is no longer in the resource.",
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Identity"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "key": {
       "description": "Unique within the resource. Stable while the unit is the same unit.",
@@ -82,6 +89,16 @@
       "type": "string",
       "pattern": "^b3:[a-z][a-z0-9-]*:[0-9a-f]{32,64}$"
     },
+    "Identity": {
+      "description": "How a unit returned without `approx` was resolved, when not by its full\nselector (section 6.7).",
+      "oneOf": [
+        {
+          "description": "By its symbol alone: the selector's stored quote is no longer in the\nresource.",
+          "type": "string",
+          "const": "symbol"
+        }
+      ]
+    },
     "Range": {
       "description": "A unit's place in a text resource (section 4.2): UTF-8 byte offsets,\n`start` inclusive, `end` exclusive, 1-based lines.",
       "type": "object",
@@ -116,30 +133,39 @@
     },
     "Refuse": {
       "description": "Why a resolution must not be used to create a claim or replace a side.",
-      "type": "string",
-      "enum": [
-        "quote_spans_units",
-        "quote_in_comment"
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "quote_spans_units",
+            "quote_in_comment"
+          ]
+        },
+        {
+          "description": "The anchored text is identical, with identical in-unit windows, to\nanother place in the same container (section 6.7).",
+          "type": "string",
+          "const": "quote_not_distinguishable"
+        }
       ]
     },
     "Selector": {
       "description": "A selector (spec section 5.2). No key may be null.",
       "type": "object",
       "properties": {
+        "count": {
+          "description": "How many declarations the symbol named when the anchor was made,\nstored only when that was two or more.",
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 9007199254740991,
+          "minimum": 2
+        },
         "key": {
           "description": "A unit key, for providers that address units by key.",
           "type": "string",
           "minLength": 1
         },
-        "pos": {
-          "description": "Byte offset of the quote when it was recorded. A hint only.",
-          "type": "integer",
-          "format": "uint64",
-          "maximum": 9007199254740991,
-          "minimum": 0
-        },
         "prefix": {
-          "description": "Up to 48 characters that preceded the quote.",
+          "description": "Up to 48 characters of the unit's own text before the quote.",
           "type": "string",
           "maxLength": 48
         },
@@ -150,25 +176,37 @@
           "minLength": 1
         },
         "suffix": {
-          "description": "Up to 48 characters that followed the quote.",
+          "description": "Up to 48 characters of the unit's own text after the quote.",
           "type": "string",
           "maxLength": 48
         },
         "symbol": {
-          "description": "Declaration path in a code resource.",
+          "description": "Declaration path in a code resource, as typed.",
           "type": "string",
           "minLength": 1
+        },
+        "within": {
+          "description": "The container of the unit when the anchor was made: a heading path\nand piece name, or a declaration's symbol. Added by hibi.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1
         }
       },
       "additionalProperties": false,
       "dependentRequired": {
-        "pos": [
-          "quote"
+        "count": [
+          "symbol"
         ],
         "prefix": [
           "quote"
         ],
         "suffix": [
+          "quote"
+        ],
+        "within": [
           "quote"
         ]
       }

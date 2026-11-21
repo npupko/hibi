@@ -106,6 +106,9 @@ pub struct Range {
 pub enum Refuse {
     QuoteSpansUnits,
     QuoteInComment,
+    /// The anchored text is identical, with identical in-unit windows, to
+    /// another place in the same container (section 6.7).
+    QuoteNotDistinguishable,
 }
 
 impl Refuse {
@@ -113,8 +116,19 @@ impl Refuse {
         match self {
             Refuse::QuoteSpansUnits => "quote_spans_units",
             Refuse::QuoteInComment => "quote_in_comment",
+            Refuse::QuoteNotDistinguishable => "quote_not_distinguishable",
         }
     }
+}
+
+/// How a unit returned without `approx` was resolved, when not by its full
+/// selector (section 6.7).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum Identity {
+    /// By its symbol alone: the selector's stored quote is no longer in the
+    /// resource.
+    Symbol,
 }
 
 fn is_false(b: &bool) -> bool {
@@ -144,15 +158,14 @@ pub struct Unit {
     /// The unit's content. In `resolve` only.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
-    /// In `resolve`: found by approximation or fallback.
+    /// In `resolve`: the unit is a candidate, not the unit the selector was
+    /// made for.
     #[serde(default, skip_serializing_if = "is_false")]
     pub approx: bool,
-    /// In `resolve`, for a stored selector: the quote was located exactly
-    /// but the stored `prefix` and `suffix` are not reproduced there, or,
-    /// for a symbol that names one declaration, the quote is not found in it
-    /// at all, neither exactly nor by the fuzzy step.
-    #[serde(default, skip_serializing_if = "is_false")]
-    pub context_changed: bool,
+    /// In `resolve`: `symbol` when the unit is resolved by its symbol alone
+    /// because the selector's stored quote is no longer in the resource.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub identity: Option<Identity>,
     /// In `resolve`: must not be used to create a claim or replace a side.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub refuse: Option<Refuse>,

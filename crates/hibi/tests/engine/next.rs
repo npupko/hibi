@@ -597,7 +597,7 @@ fn units_with_the_marked_content_are_the_first_candidates() {
 }
 
 fn moved_context(mut u: Unit) -> Unit {
-    u.context_changed = true;
+    u.identity = Some(hibi::provider::Identity::Symbol);
     u
 }
 

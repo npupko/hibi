@@ -20,8 +20,12 @@ use crate::duration;
 use crate::error::{Code, Error};
 use crate::text;
 
-/// The largest `pos` value: 2^53 - 1 (section 3.1).
-pub const MAX_POS: u64 = (1 << 53) - 1;
+/// The largest `count` of a selector: 2^53 - 1 (sections 3.1 and 5.2).
+pub const MAX_COUNT: u64 = (1 << 53) - 1;
+
+/// The most strings in a selector's `within`: six heading levels and a piece
+/// (section 5.2).
+pub const MAX_WITHIN: usize = 7;
 
 /// The most characters a stored `prefix` or `suffix` holds (section 5.2).
 pub const MAX_CONTEXT_CHARS: usize = 48;
@@ -307,7 +311,7 @@ impl Locator {
 #[serde(deny_unknown_fields)]
 #[schemars(
     description = "A selector (spec section 5.2). No key may be null.",
-    extend("dependentRequired" = {"prefix": ["quote"], "suffix": ["quote"], "pos": ["quote"]})
+    extend("dependentRequired" = {"prefix": ["quote"], "suffix": ["quote"], "within": ["quote"], "count": ["symbol"]})
 )]
 pub struct Selector {
     /// Text that occurs in the unit. At most 2,048 characters, and not
@@ -315,22 +319,28 @@ pub struct Selector {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(with = "String", length(min = 1, max = 2048))]
     pub quote: Option<String>,
-    /// Up to 48 characters that preceded the quote.
+    /// Up to 48 characters of the unit's own text before the quote.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(with = "String", length(max = 48))]
     pub prefix: Option<String>,
-    /// Up to 48 characters that followed the quote.
+    /// Up to 48 characters of the unit's own text after the quote.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(with = "String", length(max = 48))]
     pub suffix: Option<String>,
-    /// Byte offset of the quote when it was recorded. A hint only.
+    /// The container of the unit when the anchor was made: a heading path
+    /// and piece name, or a declaration's symbol. Added by hibi.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    #[schemars(with = "u64", range(max = 9_007_199_254_740_991u64))]
-    pub pos: Option<u64>,
-    /// Declaration path in a code resource.
+    #[schemars(with = "Vec<String>", length(min = 1, max = 7))]
+    pub within: Option<Vec<String>>,
+    /// Declaration path in a code resource, as typed.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(with = "String", length(min = 1))]
     pub symbol: Option<String>,
+    /// How many declarations the symbol named when the anchor was made,
+    /// stored only when that was two or more.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[schemars(with = "u64", range(min = 2, max = 9_007_199_254_740_991u64))]
+    pub count: Option<u64>,
     /// A unit key, for providers that address units by key.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(with = "String", length(min = 1))]
@@ -357,9 +367,11 @@ struct SelectorWire {
     #[serde(default, deserialize_with = "present")]
     suffix: Option<String>,
     #[serde(default, deserialize_with = "present")]
-    pos: Option<u64>,
+    within: Option<Vec<String>>,
     #[serde(default, deserialize_with = "present")]
     symbol: Option<String>,
+    #[serde(default, deserialize_with = "present")]
+    count: Option<u64>,
     #[serde(default, deserialize_with = "present")]
     key: Option<String>,
 }
@@ -378,8 +390,9 @@ impl TryFrom<SelectorWire> for Selector {
             quote: w.quote,
             prefix: w.prefix,
             suffix: w.suffix,
-            pos: w.pos,
+            within: w.within,
             symbol: w.symbol,
+            count: w.count,
             key: w.key,
         };
         sel.validate().map_err(|e| e.message)?;
@@ -393,8 +406,9 @@ impl TryFrom<SelectorWire> for Selector {
 )]
 #[serde(rename_all = "lowercase")]
 pub enum SelectorKey {
-    /// `quote`, with `prefix`, `suffix` and `pos`.
+    /// `quote`, with `prefix`, `suffix` and `within`.
     Quote,
+    /// `symbol`, with `count`.
     Symbol,
     Key,
 }
@@ -425,12 +439,15 @@ impl Selector {
             for (name, present) in [
                 ("prefix", self.prefix.is_some()),
                 ("suffix", self.suffix.is_some()),
-                ("pos", self.pos.is_some()),
+                ("within", self.within.is_some()),
             ] {
                 if present {
                     return bad(format!("{name} is allowed only together with quote"));
                 }
             }
+        }
+        if self.symbol.is_none() && self.count.is_some() {
+            return bad("count is allowed only together with symbol".into());
         }
         if let Some(q) = &self.quote {
             if text::trim(q).is_empty() {
@@ -451,10 +468,23 @@ impl Selector {
                 ));
             }
         }
-        if let Some(pos) = self.pos
-            && pos > MAX_POS
+        if let Some(within) = &self.within {
+            if within.is_empty() || within.len() > MAX_WITHIN {
+                return bad(format!("within holds 1 to {MAX_WITHIN} strings"));
+            }
+            if within
+                .iter()
+                .any(|w| w.chars().nth(MAX_QUOTE_CHARS).is_some())
+            {
+                return bad(format!(
+                    "a within string is longer than {MAX_QUOTE_CHARS} characters"
+                ));
+            }
+        }
+        if let Some(count) = self.count
+            && !(2..=MAX_COUNT).contains(&count)
         {
-            return bad(format!("pos is larger than {MAX_POS}"));
+            return bad(format!("count is not from 2 to {MAX_COUNT}"));
         }
         for (name, value) in [("symbol", &self.symbol), ("key", &self.key)] {
             if let Some(v) = value
@@ -467,7 +497,7 @@ impl Selector {
     }
 
     /// The provider-facing keys this selector uses: `quote` (also for
-    /// `prefix`, `suffix`, `pos`), `symbol`, `key`.
+    /// `prefix`, `suffix`, `within`), `symbol` (also for `count`), `key`.
     pub fn keys(&self) -> Vec<SelectorKey> {
         let mut keys = Vec::new();
         if self.quote.is_some() {
@@ -485,12 +515,13 @@ impl Selector {
     /// The allowed-keys rule of section 2.5, used both for a selector a
     /// provider returns and before a selector is sent to a provider:
     /// `allowed` is the provider's `ProviderInfo.selectors`; listing `quote`
-    /// also allows `prefix`, `suffix` and `pos`; `{}` is always allowed.
+    /// also allows `prefix`, `suffix` and `within`, and listing `symbol`
+    /// allows `count`; `{}` is always allowed.
     ///
     /// Returns the first key of this selector that `allowed` does not cover,
     /// or `None` when every key is allowed. The selector must already be
-    /// valid by section 5.2 (so `prefix`, `suffix` and `pos` come with a
-    /// quote).
+    /// valid by section 5.2 (so `prefix`, `suffix` and `within` come with a
+    /// quote, and `count` with a symbol).
     pub fn disallowed_key(&self, allowed: &[SelectorKey]) -> Option<SelectorKey> {
         self.keys().into_iter().find(|k| !allowed.contains(k))
     }
@@ -1407,31 +1438,38 @@ mod tests {
         let ok = |j: &str| serde_json::from_str::<Selector>(j).unwrap();
         let bad = |j: &str| serde_json::from_str::<Selector>(j).unwrap_err();
         assert!(ok("{}").is_empty());
-        ok(r#"{"quote":" x ","prefix":"","suffix":"s","pos":3,"symbol":"A.b"}"#);
+        ok(r#"{"quote":" x ","prefix":"","suffix":"s","within":["A"],"symbol":"A.b","count":2}"#);
         ok(r#"{"key":"k"}"#);
         bad(r#"{"quote":null}"#);
         bad(r#"{"quote":"   "}"#);
         bad(r#"{"quote":""}"#);
         bad(r#"{"prefix":"a"}"#);
         bad(r#"{"pos":1}"#);
+        bad(r#"{"quote":"x","pos":1}"#);
+        bad(r#"{"within":["a"]}"#);
+        bad(r#"{"count":2}"#);
+        bad(r#"{"quote":"x","within":[]}"#);
+        bad(r#"{"quote":"x","within":["1","2","3","4","5","6","7","8"]}"#);
+        bad(r#"{"symbol":"a","count":1}"#);
+        bad(r#"{"symbol":"a","count":9007199254740992}"#);
+        ok(r#"{"symbol":"a","count":9007199254740991}"#);
+        ok(r#"{"quote":"x","within":["A","B"],"prefix":"","suffix":""}"#);
         bad(r#"{"symbol":""}"#);
         bad(r#"{"key":""}"#);
         bad(r#"{"other":"x"}"#);
-        bad(r#"{"quote":"x","pos":-1}"#);
-        bad(r#"{"quote":"x","pos":1.5}"#);
-        bad(r#"{"quote":"x","pos":9007199254740992}"#);
-        ok(r#"{"quote":"x","pos":9007199254740991}"#);
+        bad(r#"{"symbol":"a","count":-1}"#);
+        bad(r#"{"symbol":"a","count":2.5}"#);
         let p48: String = "é".repeat(48);
         ok(&format!(r#"{{"quote":"x","prefix":"{p48}"}}"#));
         bad(&format!(r#"{{"quote":"x","prefix":"{p48}a"}}"#));
         let s = Selector {
-            quote: Some("q".into()),
-            pos: Some(4),
+            symbol: Some("f".into()),
+            count: Some(2),
             ..Selector::default()
         };
         assert_eq!(
             serde_json::to_string(&s).unwrap(),
-            r#"{"quote":"q","pos":4}"#
+            r#"{"symbol":"f","count":2}"#
         );
     }
 
@@ -1441,7 +1479,7 @@ mod tests {
         let sel = |j: &str| serde_json::from_str::<Selector>(j).unwrap();
         assert!(sel("{}").is_allowed_by(&[]));
         assert_eq!(
-            sel(r#"{"quote":"q","prefix":"p","pos":1}"#).disallowed_key(&[Quote]),
+            sel(r#"{"quote":"q","prefix":"p","within":["w"]}"#).disallowed_key(&[Quote]),
             None
         );
         assert_eq!(
@@ -1852,7 +1890,8 @@ mod tests {
         let selectors: Vec<Selector> = [
             "{}",
             r#"{"quote":"q"}"#,
-            r#"{"quote":" q ","prefix":"","suffix":"s","pos":3}"#,
+            r#"{"quote":" q ","prefix":"","suffix":"s","within":["A"]}"#,
+            r#"{"symbol":"A.b","count":2}"#,
             r#"{"symbol":"A.b","quote":"x"}"#,
             r#"{"key":"k"}"#,
         ]
@@ -1864,14 +1903,18 @@ mod tests {
                 ..Selector::default()
             },
             Selector {
-                pos: Some(1),
+                within: Some(vec!["a".into()]),
+                ..Selector::default()
+            },
+            Selector {
+                count: Some(2),
                 ..Selector::default()
             },
             Selector::quote(" \n"),
             Selector::quote("q".repeat(MAX_QUOTE_CHARS + 1)),
             Selector {
-                quote: Some("q".into()),
-                pos: Some(MAX_POS + 1),
+                symbol: Some("s".into()),
+                count: Some(MAX_COUNT + 1),
                 ..Selector::default()
             },
             Selector {

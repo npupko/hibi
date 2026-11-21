@@ -54,6 +54,10 @@ pub struct Region {
     pub end_line: usize,
     /// Heading texts above the unit, outermost first (step 6).
     pub heading_path: Vec<String>,
+    /// The piece the region was cut from: a fenced block, a heading, or a
+    /// paragraph, list item or table row (steps 4 and 5), numbered in
+    /// source order. Regions of one piece share it (section 6.7).
+    pub piece: usize,
 }
 
 /// A prose unit with its `prose-v1` fingerprint and its key (section 6.6,
@@ -418,11 +422,13 @@ pub fn split_at_most(text: &str, class: ProseClass, max_regions: usize) -> Optio
     let mut stack: Vec<(usize, String)> = Vec::new();
     let path = |stack: &Vec<(usize, String)>| stack.iter().map(|(_, h)| h.clone()).collect();
     // Push one region; false once there are more than `max_regions`.
+    let mut piece = 0;
     let emit = |out: &mut Vec<Region>,
                 kind: ProseKind,
                 s: usize,
                 e: usize,
-                heading_path: Vec<String>|
+                heading_path: Vec<String>,
+                piece: usize|
      -> bool {
         if let Some((s, e)) = trim_span(text, s, e) {
             count_work(1);
@@ -433,6 +439,7 @@ pub fn split_at_most(text: &str, class: ProseClass, max_regions: usize) -> Optio
                 line: line_of(&lines, s),
                 end_line: line_of(&lines, e - 1),
                 heading_path,
+                piece,
             });
         }
         out.len() <= max_regions
@@ -442,7 +449,8 @@ pub fn split_at_most(text: &str, class: ProseClass, max_regions: usize) -> Optio
             continue;
         };
         if fenced {
-            if !emit(&mut out, ProseKind::Fenced, bs, be, path(&stack)) {
+            piece += 1;
+            if !emit(&mut out, ProseKind::Fenced, bs, be, path(&stack), piece) {
                 return None;
             }
             continue;
@@ -466,6 +474,7 @@ pub fn split_at_most(text: &str, class: ProseClass, max_regions: usize) -> Optio
             if is_table_separator(trim(first_line)) {
                 continue;
             }
+            piece += 1;
             let kind = if heading(first_line).is_some() {
                 ProseKind::Heading
             } else if list_marker(first_line).is_some() {
@@ -480,7 +489,7 @@ pub fn split_at_most(text: &str, class: ProseClass, max_regions: usize) -> Optio
                 while stack.last().is_some_and(|(l, _)| *l >= level) {
                     stack.pop();
                 }
-                if !emit(&mut out, kind, ps, pe, path(&stack)) {
+                if !emit(&mut out, kind, ps, pe, path(&stack), piece) {
                     return None;
                 }
                 stack.push((level, own));
@@ -492,12 +501,12 @@ pub fn split_at_most(text: &str, class: ProseClass, max_regions: usize) -> Optio
             // past the regions still allowed is enough to pass the limit.
             let limit = max_regions.saturating_sub(out.len()).saturating_add(1);
             for cut in sentence_cuts(p, kind, limit) {
-                if !emit(&mut out, kind, ps + from, ps + cut, path(&stack)) {
+                if !emit(&mut out, kind, ps + from, ps + cut, path(&stack), piece) {
                     return None;
                 }
                 from = cut;
             }
-            if !emit(&mut out, kind, ps + from, pe, path(&stack)) {
+            if !emit(&mut out, kind, ps + from, pe, path(&stack), piece) {
                 return None;
             }
         }

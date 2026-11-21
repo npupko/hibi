@@ -310,7 +310,7 @@ pub fn unit(key: &str, kind: &str, text: &str) -> Unit {
         sel: key_sel(key),
         text: Some(text.into()),
         approx: false,
-        context_changed: false,
+        identity: None,
         refuse: None,
     }
 }

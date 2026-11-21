@@ -1,0 +1,27 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+assertion_line: 435
+expression: "shots(&repo,\n&[&[\"retire\", &cache, \"--note\", \"section removed\"],\n&[\"retire\", &cache, &workers, \"--replaced-by\", &timeout], &[\"status\"],])"
+---
+$ hibi retire c1-h11mnkp70sgmegp55r2g --note 'section removed'
+exit status: 0
+---- standard output ----
+c1-h11mnkp70sgmegp55r2g  retired  r1-wveg779vk04kv85t4ev0
+---- standard error ----
+(empty)
+
+$ hibi retire c1-h11mnkp70sgmegp55r2g c1-50f8z81fqkasb0v2kvve --replaced-by c1-e13xqv8fwny8vjfg87rj
+exit status: 0
+---- standard output ----
+c1-h11mnkp70sgmegp55r2g  already retired
+c1-50f8z81fqkasb0v2kvve  retired  r1-r0qr903emnstdz0xvnsa
+---- standard error ----
+(empty)
+
+$ hibi status
+exit status: 0
+---- standard output ----
+3 claims: 1 fresh, 0 stale, 0 expired, 2 retired
+nothing stale
+---- standard error ----
+(empty)

@@ -482,7 +482,6 @@ mod tests {
             quote: Some(q.quote),
             prefix: Some(q.prefix),
             suffix: Some(q.suffix),
-            pos: Some(q.pos as u64),
             ..Default::default()
         };
         sel.validate().unwrap();

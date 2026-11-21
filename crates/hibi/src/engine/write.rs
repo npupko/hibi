@@ -339,13 +339,18 @@ fn check_new<'r>(index: usize, anchor: &Anchor, r: &'r Resolved) -> Result<&'r U
                 Code::QuoteInComment,
                 "the quote lies wholly or partly inside a code comment",
             ),
+            crate::provider::Refuse::QuoteNotDistinguishable => (
+                Code::SideAmbiguous,
+                "the quoted text is identical, with identical text around it in its unit, to another place in the same container, so a stored anchor could not tell them apart; quote a longer passage, or in code anchor #<symbol>::<line>",
+            ),
         };
         return Err(Error::new(code, format!("{what}: {why}")));
     }
     // The caller asked for text that the resolved unit does not hold: the
-    // symbol found the unit and the provider replaced the quote.
+    // symbol found the unit and the quote is not in it.
+    let quote_gone = unit.identity == Some(crate::provider::Identity::Symbol);
     if let (Some(asked), Some(completed)) = (&anchor.sel.quote, &unit.sel.quote)
-        && !same_quote(asked, completed)
+        && (quote_gone || !same_quote(asked, completed))
     {
         let text = unit.text.as_deref().map_or_else(String::new, |t| {
             format!(", text {:?}", excerpt(t, TEXT_EXCERPT_CHARS))
@@ -391,7 +396,7 @@ fn as_stored(r: &Resolved) -> Resolved {
         Resolved::One(u) => {
             let mut u = u.clone();
             u.refuse = None;
-            u.context_changed = false;
+            u.identity = None;
             Resolved::One(u)
         }
         other => other.clone(),

@@ -10,8 +10,7 @@
           "sel": {
             "quote": "Retries are capped at 5.",
             "prefix": "## Retries\n\n",
-            "suffix": "\n\nThe cap is configurable.",
-            "pos": 12
+            "suffix": "\n\nThe cap is configurable."
           }
         },
         "evidence": [],
@@ -20,9 +19,9 @@
       }
     },
     "expected": {
-      "canonical": "{\"evidence\":[],\"note\":null,\"recheck\":null,\"statement\":\"Retries are capped at 5.\",\"subject\":{\"loc\":\"file:docs/retry.md\",\"sel\":{\"pos\":12,\"prefix\":\"## Retries\\n\\n\",\"quote\":\"Retries are capped at 5.\",\"suffix\":\"\\n\\nThe cap is configurable.\"}}}",
-      "blake3": "93222474b3297f79d3d4f081d0f6a5dfbe94ac95653ba90677a8fca4fa54d498",
-      "id": "c1-jch28x5k55zqkmymy20x"
+      "canonical": "{\"evidence\":[],\"note\":null,\"recheck\":null,\"statement\":\"Retries are capped at 5.\",\"subject\":{\"loc\":\"file:docs/retry.md\",\"sel\":{\"prefix\":\"## Retries\\n\\n\",\"quote\":\"Retries are capped at 5.\",\"suffix\":\"\\n\\nThe cap is configurable.\"}}}",
+      "blake3": "4ecde1c2b66ac3a51daa9003841a5c2b060270df95bded3854a958f74c709a07",
+      "id": "c1-9v6y3gnpdb1ta7daj01r"
     },
     "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
     "origin": "independent"
@@ -38,8 +37,7 @@
           "sel": {
             "quote": "expires entries after one hour",
             "prefix": "The cache ",
-            "suffix": ".",
-            "pos": 1043
+            "suffix": "."
           }
         },
         "evidence": [
@@ -49,8 +47,7 @@
               "symbol": "Cache.ttl",
               "quote": "fn ttl(&self) -> Duration {",
               "prefix": "",
-              "suffix": "\n        Duration::from_secs(3600)",
-              "pos": 512
+              "suffix": "\n        Duration::from_secs(3600)"
             }
           },
           {
@@ -58,8 +55,7 @@
             "sel": {
               "quote": "ttl = 3600",
               "prefix": "[cache]\n",
-              "suffix": "\n",
-              "pos": 8
+              "suffix": "\n"
             }
           }
         ],
@@ -68,9 +64,9 @@
       }
     },
     "expected": {
-      "canonical": "{\"evidence\":[{\"loc\":\"file:src/cache.rs\",\"sel\":{\"pos\":512,\"prefix\":\"\",\"quote\":\"fn ttl(&self) -> Duration {\",\"suffix\":\"\\n        Duration::from_secs(3600)\",\"symbol\":\"Cache.ttl\"}},{\"loc\":\"repo:api//config/cache.toml\",\"sel\":{\"pos\":8,\"prefix\":\"[cache]\\n\",\"quote\":\"ttl = 3600\",\"suffix\":\"\\n\"}}],\"note\":\"Re-check when the cache backend changes.\",\"recheck\":\"P90D\",\"statement\":\"The cache expires entries after one hour.\",\"subject\":{\"loc\":\"file:README.md\",\"sel\":{\"pos\":1043,\"prefix\":\"The cache \",\"quote\":\"expires entries after one hour\",\"suffix\":\".\"}}}",
-      "blake3": "5b7408330263d74104e0858fe5cad6769bb822b5bd9d7cdfc15d8e8803d71ce1",
-      "id": "c1-bdt0gcr2cfbm2170gp7y"
+      "canonical": "{\"evidence\":[{\"loc\":\"file:src/cache.rs\",\"sel\":{\"prefix\":\"\",\"quote\":\"fn ttl(&self) -> Duration {\",\"suffix\":\"\\n        Duration::from_secs(3600)\",\"symbol\":\"Cache.ttl\"}},{\"loc\":\"repo:api//config/cache.toml\",\"sel\":{\"prefix\":\"[cache]\\n\",\"quote\":\"ttl = 3600\",\"suffix\":\"\\n\"}}],\"note\":\"Re-check when the cache backend changes.\",\"recheck\":\"P90D\",\"statement\":\"The cache expires entries after one hour.\",\"subject\":{\"loc\":\"file:README.md\",\"sel\":{\"prefix\":\"The cache \",\"quote\":\"expires entries after one hour\",\"suffix\":\".\"}}}",
+      "blake3": "22b717033905995364c793b0a9f8c060ef57bddc62c7322863875e26e5a36b2b",
+      "id": "c1-4avhe0ss0pcn6s67jera"
     },
     "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
     "origin": "independent"
@@ -116,8 +112,7 @@
           "sel": {
             "quote": "délai est « 5 s »",
             "prefix": "😀😀 Le ",
-            "suffix": " — 🚀 ok\ttab",
-            "pos": 9
+            "suffix": " — 🚀 ok\ttab"
           }
         },
         "evidence": [
@@ -133,9 +128,9 @@
       }
     },
     "expected": {
-      "canonical": "{\"evidence\":[{\"loc\":\"file:src/日本/設定.py\",\"sel\":{\"symbol\":\"設定.TIMEOUT\"}}],\"note\":\"é stays decomposed; U+2028  and U+FEFF﻿ stay raw\",\"recheck\":null,\"statement\":\"Le délai est « 5 s » — 🚀 ok\\ttab \\\"quoted\\\" \\\\ back\",\"subject\":{\"loc\":\"file:docs/fr/délai.md\",\"sel\":{\"pos\":9,\"prefix\":\"😀😀 Le \",\"quote\":\"délai est « 5 s »\",\"suffix\":\" — 🚀 ok\\ttab\"}}}",
-      "blake3": "078cc6fd0e7d3fa29778a77cb79facf4fdd120c59a4a7fb07df50946386065ae",
-      "id": "c1-0y6cdz8efmzt55vrmxyb"
+      "canonical": "{\"evidence\":[{\"loc\":\"file:src/日本/設定.py\",\"sel\":{\"symbol\":\"設定.TIMEOUT\"}}],\"note\":\"é stays decomposed; U+2028  and U+FEFF﻿ stay raw\",\"recheck\":null,\"statement\":\"Le délai est « 5 s » — 🚀 ok\\ttab \\\"quoted\\\" \\\\ back\",\"subject\":{\"loc\":\"file:docs/fr/délai.md\",\"sel\":{\"prefix\":\"😀😀 Le \",\"quote\":\"délai est « 5 s »\",\"suffix\":\" — 🚀 ok\\ttab\"}}}",
+      "blake3": "42de2dda45f989302d738465cba8f639c51eb41a5eb361dfc1aff180ef4942a1",
+      "id": "c1-8bf2vpj5z64k0bbkghjw"
     },
     "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
     "origin": "independent"
@@ -151,8 +146,7 @@
           "sel": {
             "quote": "Retries are capped at 5.",
             "prefix": "## Retries\n\n",
-            "suffix": "\n\nThe cap is configurable.",
-            "pos": 12
+            "suffix": "\n\nThe cap is configurable."
           }
         },
         "evidence": [],
@@ -161,9 +155,9 @@
       }
     },
     "expected": {
-      "canonical": "{\"evidence\":[],\"note\":\"second claim\",\"recheck\":null,\"statement\":\"Retries are capped at 5.\",\"subject\":{\"loc\":\"file:docs/retry.md\",\"sel\":{\"pos\":12,\"prefix\":\"## Retries\\n\\n\",\"quote\":\"Retries are capped at 5.\",\"suffix\":\"\\n\\nThe cap is configurable.\"}}}",
-      "blake3": "e6b1238c998e4807405adccadafcabc90f3b86d2207b895986ef87f1499c68ea",
-      "id": "c1-wtrj734shs40eg2tvk5d"
+      "canonical": "{\"evidence\":[],\"note\":\"second claim\",\"recheck\":null,\"statement\":\"Retries are capped at 5.\",\"subject\":{\"loc\":\"file:docs/retry.md\",\"sel\":{\"prefix\":\"## Retries\\n\\n\",\"quote\":\"Retries are capped at 5.\",\"suffix\":\"\\n\\nThe cap is configurable.\"}}}",
+      "blake3": "4b0df05bbeafbaee116ddf9e7d8f66cee70f411a53502a17c9a3b6529f8f842a",
+      "id": "c1-9c6z0pxynyxew4bdvyf7"
     },
     "source": "computed: canonicalize 5.1.0 (npm), @noble/hashes 2.4.0 blake3 (npm)",
     "origin": "independent"

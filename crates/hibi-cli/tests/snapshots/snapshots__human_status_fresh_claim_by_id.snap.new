@@ -1,0 +1,14 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+assertion_line: 246
+expression: "shot(&repo, &[\"status\", &cache])"
+---
+$ hibi status c1-h11mnkp70sgmegp55r2g
+exit status: 0
+---- standard output ----
+2 claims: 2 fresh, 0 stale, 0 expired, 0 retired
+
+c1-h11mnkp70sgmegp55r2g  fresh  The cache holds 64 entries.
+  marked 2026-11-20T12:00:00Z (m1-0jseyppy3zdpd0gvx6v6)
+---- standard error ----
+(empty)

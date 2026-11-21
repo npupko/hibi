@@ -1705,7 +1705,6 @@ fn a_new_anchor_whose_quote_is_not_in_the_resolved_unit_is_refused() {
             symbol: Some("delay_ms".into()),
             prefix: Some(String::new()),
             suffix: Some(String::new()),
-            pos: Some(0),
             ..Selector::default()
         },
         ..unit("function:delay_ms", "function", body)
@@ -1829,7 +1828,6 @@ fn an_ambiguous_new_anchor_lists_each_candidate_with_an_anchor() {
             symbol: Some("max_size".into()),
             prefix: Some(String::new()),
             suffix: Some(String::new()),
-            pos: Some(pos),
             ..Selector::default()
         },
         ..at(
@@ -1864,14 +1862,13 @@ fn an_ambiguous_new_anchor_lists_each_candidate_with_an_anchor() {
     let m = &errors[0].message;
     assert!(m.contains("matches 2 units"), "{m}");
     // The same symbol twice: each candidate comes with its full anchor.
-    for (line, pos, text) in [(1, 0, "return 1"), (31, 30, "return 2")] {
+    for (line, text) in [(1, "return 1"), (31, "return 2")] {
         assert!(
             m.contains(&format!(
                 "function \"def max_size(): {text}\", line {line}: "
             )),
             "{m}"
         );
-        assert!(m.contains(&format!("\"pos\":{pos}")), "{m}");
     }
     assert!(
         m.contains(r#"{"loc":"file:dup.py","sel":{"quote":"def max_size(): return 1""#),
@@ -1886,13 +1883,12 @@ fn an_ambiguous_new_anchor_lists_each_candidate_with_an_anchor() {
 
 /// A sentence unit whose completed selector is a quote with context, as
 /// the file provider gives it.
-fn quoted(key: &str, text: &str, quote: &str, prefix: &str, pos: u64) -> Unit {
+fn quoted(key: &str, text: &str, quote: &str, prefix: &str, _pos: u64) -> Unit {
     Unit {
         sel: Selector {
             quote: Some(quote.into()),
             prefix: Some(prefix.into()),
             suffix: Some(String::new()),
-            pos: Some(pos),
             ..Selector::default()
         },
         ..unit(key, "sentence", text)

@@ -332,14 +332,18 @@
         {
           "type": "string",
           "enum": [
-            "symbol",
             "key"
           ]
         },
         {
-          "description": "`quote`, with `prefix`, `suffix` and `pos`.",
+          "description": "`quote`, with `prefix`, `suffix` and `within`.",
           "type": "string",
           "const": "quote"
+        },
+        {
+          "description": "`symbol`, with `count`.",
+          "type": "string",
+          "const": "symbol"
         }
       ]
     },

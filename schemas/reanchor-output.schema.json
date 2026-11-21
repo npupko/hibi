@@ -359,20 +359,20 @@
       "description": "A selector (spec section 5.2). No key may be null.",
       "type": "object",
       "properties": {
+        "count": {
+          "description": "How many declarations the symbol named when the anchor was made,\nstored only when that was two or more.",
+          "type": "integer",
+          "format": "uint64",
+          "maximum": 9007199254740991,
+          "minimum": 2
+        },
         "key": {
           "description": "A unit key, for providers that address units by key.",
           "type": "string",
           "minLength": 1
         },
-        "pos": {
-          "description": "Byte offset of the quote when it was recorded. A hint only.",
-          "type": "integer",
-          "format": "uint64",
-          "maximum": 9007199254740991,
-          "minimum": 0
-        },
         "prefix": {
-          "description": "Up to 48 characters that preceded the quote.",
+          "description": "Up to 48 characters of the unit's own text before the quote.",
           "type": "string",
           "maxLength": 48
         },
@@ -383,25 +383,37 @@
           "minLength": 1
         },
         "suffix": {
-          "description": "Up to 48 characters that followed the quote.",
+          "description": "Up to 48 characters of the unit's own text after the quote.",
           "type": "string",
           "maxLength": 48
         },
         "symbol": {
-          "description": "Declaration path in a code resource.",
+          "description": "Declaration path in a code resource, as typed.",
           "type": "string",
           "minLength": 1
+        },
+        "within": {
+          "description": "The container of the unit when the anchor was made: a heading path\nand piece name, or a declaration's symbol. Added by hibi.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 7,
+          "minItems": 1
         }
       },
       "additionalProperties": false,
       "dependentRequired": {
-        "pos": [
-          "quote"
+        "count": [
+          "symbol"
         ],
         "prefix": [
           "quote"
         ],
         "suffix": [
+          "quote"
+        ],
+        "within": [
           "quote"
         ]
       }

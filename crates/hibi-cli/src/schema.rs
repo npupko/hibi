@@ -260,8 +260,8 @@ mod tests {
     #[test]
     fn the_schemas_carry_the_limits_that_validation_enforces() {
         use hibi::model::{
-            CLAIM_ID_ARGUMENT_PATTERN, DURATION_PATTERN, MAX_CONTEXT_CHARS, MAX_POS,
-            MAX_QUOTE_CHARS,
+            CLAIM_ID_ARGUMENT_PATTERN, DURATION_PATTERN, MAX_CONTEXT_CHARS, MAX_COUNT,
+            MAX_QUOTE_CHARS, MAX_WITHIN,
         };
         let get = |name: &str, pointer: &str| -> serde_json::Value {
             serde_json::to_value(schema(name).unwrap())
@@ -285,12 +285,15 @@ mod tests {
             assert_eq!(p("quote/maxLength"), MAX_QUOTE_CHARS, "{name}");
             assert_eq!(p("prefix/maxLength"), MAX_CONTEXT_CHARS, "{name}");
             assert_eq!(p("suffix/maxLength"), MAX_CONTEXT_CHARS, "{name}");
-            assert_eq!(p("pos/maximum"), MAX_POS, "{name}");
+            assert_eq!(p("count/minimum"), 2, "{name}");
+            assert_eq!(p("count/maximum"), MAX_COUNT, "{name}");
+            assert_eq!(p("within/minItems"), 1, "{name}");
+            assert_eq!(p("within/maxItems"), MAX_WITHIN, "{name}");
             assert_eq!(p("symbol/minLength"), 1, "{name}");
             assert_eq!(p("key/minLength"), 1, "{name}");
             assert_eq!(
                 get(name, &format!("{at}/dependentRequired")),
-                serde_json::json!({"prefix": ["quote"], "suffix": ["quote"], "pos": ["quote"]}),
+                serde_json::json!({"prefix": ["quote"], "suffix": ["quote"], "within": ["quote"], "count": ["symbol"]}),
                 "{name}"
             );
             assert_eq!(get(name, &format!("{at}/additionalProperties")), false);

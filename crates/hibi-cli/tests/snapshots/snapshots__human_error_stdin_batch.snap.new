@@ -1,0 +1,15 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+assertion_line: 578
+expression: "format!(\"stdin: {batch}\\n{}\", render(&repo, &args, &out))"
+---
+stdin: [{"statement":"The cache holds 64 entries.","subject":"file:docs/guide.md::The cache holds 64 entries."},{"statement":"Workers restart at noon.","subject":"file:docs/ops.md::Workers are restarted at noon sharp."},{"recheck":"90 days","statement":"Requests time out.","subject":"file:docs/guide.md::Requests time out after 30 seconds."}]
+$ hibi claim --stdin
+exit status: 1
+---- standard output ----
+(empty)
+---- standard error ----
+error: element 1: selector_not_exact: the subject (file:docs/ops.md): the anchor matches no unit exactly; 1 candidate, each a guess to check before use: sentence "Workers are restarted nightly.", line 3: {"loc":"file:docs/ops.md","sel":{"quote":"Workers are restarted nightly.","prefix":"","suffix":"","within":["Operations","Workers are restarted nightly."]}}
+  fix: Give a quote that occurs exactly in the unit you mean; the candidates in the message have an anchor each.
+error: element 2: invalid_duration: "90 days" is not a duration: it must start with P
+  fix: Write the duration as P[nY][nM][nW][nD][T[nH][nM][nS]] with whole numbers, for example P90D.

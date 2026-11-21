@@ -517,20 +517,33 @@ fn completed_selectors_are_fixed_points() {
                 sels.push(json!({"quote": q}));
                 if let Some(s) = &u.sel.symbol {
                     sels.push(json!({"symbol": s, "quote": q}));
-                    // A stored anchor with whole-text context at the
-                    // quote's first place in the unit, as a twin's anchor
-                    // is stored: it can name one copy of a line that
-                    // several copies share.
-                    if let Some(at) = unit_text.find(&q) {
-                        let b = r.start + at;
-                        let before: Vec<char> = text[..b].chars().collect();
-                        let prefix: String =
-                            before[before.len().saturating_sub(48)..].iter().collect();
-                        let suffix: String = text[b + q.len()..].chars().take(48).collect();
-                        sels.push(json!({"symbol": s, "quote": q, "prefix": prefix, "suffix": suffix, "pos": b}));
-                    }
                 }
             }
+        }
+        // Every unit's printed anchor selects that unit alone, or, for units
+        // that cannot be told apart, a list that holds it.
+        let own: Vec<Anchor> = units
+            .iter()
+            .map(|u| Anchor::new(loc(&l), u.sel.clone()))
+            .collect();
+        for (u, got) in units.iter().zip(p.resolve(&own)) {
+            // A whole-file anchor on code that does not parse is
+            // `unavailable` (section 6.7, error 9).
+            let got = match got {
+                Err(e) if u.kind == "file" && e.code == ProviderErrorCode::Unavailable => continue,
+                got => got.unwrap(),
+            };
+            let alone = got.len() == 1
+                && got[0].key == u.key
+                && !got[0].approx
+                && got[0].identity.is_none();
+            if !alone && (got.len() < 2 || !got.iter().any(|g| g.key == u.key)) {
+                failures.push(format!(
+                    "{path}: the printed anchor of {} gives {:?}",
+                    u.key, got
+                ));
+            }
+            checked += 1;
         }
         let anchors: Vec<Anchor> = sels
             .iter()
@@ -556,7 +569,7 @@ fn completed_selectors_are_fixed_points() {
                 && again[0].key == first.key
                 && again[0].sel == first.sel
                 && !again[0].approx
-                && !again[0].context_changed
+                && again[0].identity.is_none()
                 && again[0].refuse.is_none();
             if !ok && failures.len() < 10 {
                 failures.push(format!(
@@ -669,6 +682,16 @@ fn default_quotes_are_never_in_comments_and_round_trip() {
             );
             let got = resolve(&mut p, &l, serde_json::to_value(&u.sel).unwrap()).unwrap();
             let keys: Vec<&str> = got.iter().map(|g| g.key.as_str()).collect();
+            // Identical units cannot be told apart (section 6.7, stated
+            // limits): their printed anchor selects all of them.
+            let r = u.range.unwrap();
+            let own = hibi::text::normalize(&text[r.start..r.end]);
+            let same_text =
+                |g: &Unit| g.text.as_deref().map(hibi::text::normalize) == Some(own.clone());
+            if got.len() > 1 && keys.contains(&u.key.as_str()) && got.iter().all(same_text) {
+                checked += 1;
+                continue;
+            }
             assert_eq!(keys, [u.key.as_str()], "{path}: {} with {:?}", u.key, u.sel);
             assert!(
                 got[0].refuse.is_none() && !got[0].approx,
@@ -1881,7 +1904,7 @@ fn a_symbol_on_a_class_without_symbols_is_invalid_selector() {
         ),
         (
             "file:docs/limiter.md",
-            json!({"symbol": "Backoff", "quote": "Wait twice", "prefix": "", "suffix": " as", "pos": 11}),
+            json!({"symbol": "Backoff", "quote": "Wait twice", "prefix": "", "suffix": " as"}),
         ),
         ("file:notes.txt", json!({"symbol": "Backoff"})),
         ("file:limits.cfg", json!({"symbol": "backoff"})),

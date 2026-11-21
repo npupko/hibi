@@ -11,6 +11,7 @@ use crate::duration;
 use crate::error::Error;
 use crate::fingerprint::{Comparison, compare};
 use crate::model::{Anchor, Claim, Mark, Timestamp};
+use crate::provider::Identity;
 use crate::store::Ledger;
 
 use super::resolve::{Candidates, Resolved};
@@ -143,14 +144,14 @@ pub const QUOTE_GONE: &str = "the stored quote is no longer in this unit";
 pub fn corroborate(claim: &Claim, marks: &[&Mark], resolved: &mut [Resolved]) {
     for (i, (anchor, r)) in claim.sides().zip(resolved.iter_mut()).enumerate() {
         let Resolved::One(unit) = r else { continue };
-        if !unit.context_changed {
+        if unit.identity != Some(Identity::Symbol) {
             continue;
         }
         let marked = marks.iter().any(|m| {
             m.check_against(claim).is_ok() && m.sides.get(i).is_some_and(|s| s.fp == unit.fp)
         });
         if marked {
-            unit.context_changed = false;
+            unit.identity = None;
         } else if anchor.sel.symbol.is_none() {
             let select = super::types::escape_controls(
                 &serde_json::to_string(&Anchor::new(anchor.loc.clone(), unit.sel.clone()))
@@ -416,7 +417,9 @@ pub fn claim_view(
                 }
                 // Left set by `corroborate` for a unit that its symbol
                 // names and its stored quote is no longer in.
-                Resolved::One(u) if u.context_changed && *state == SideState::Changed => {
+                Resolved::One(u)
+                    if u.identity == Some(Identity::Symbol) && *state == SideState::Changed =>
+                {
                     Some(QUOTE_GONE)
                 }
                 // Which of the two causes of `not_exact` it is.
