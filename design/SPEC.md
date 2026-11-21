@@ -1035,7 +1035,10 @@ its resolution fails with `too_large` (section 9.2).
 `MAX_CODE_FILE_BYTES` is 2,097,152 (2 MiB). A file of a code class
 (`typescript`, `tsx`, `python`, `rust`, `go`, `java`) longer than that fails
 with `too_large` as well. A file of exactly 2,097,152 bytes is accepted. The
-classes `markdown`, `prose` and `text` have the limit `MAX_FILE_BYTES` only.
+size is checked before the file is read or parsed, in the working tree and
+at a revision (section 6.8). The message is `<loc> has <n> bytes, more than
+the limit of 2097152 bytes for a code file`. The classes `markdown`, `prose`
+and `text` have the limit `MAX_FILE_BYTES` only.
 
 `MAX_UNITS_PER_RESOURCE` is 100,000. It counts every unit of a resource, the
 `file` unit included. A resource with exactly 100,000 units is accepted. A
@@ -1597,6 +1600,27 @@ Definitions:
      example after a reflow that moved a line break, is therefore not
      `approx`, can be kept, and can be refused with `quote_spans_units`.
 - When a quote is given, `find` always runs. Nothing below skips it.
+- Twin: a declaration unit `u` is a twin when another declaration unit with
+  the same symbol has a scope whose text equals the text of `scope(u)` after
+  `normalize`. Two identical `func init() {}` in one Go file are twins, and
+  so are two identical methods in two `impl` blocks of one type.
+- Hits in a scope: the exact, non-overlapping hits of the quote in the text
+  of `scope(u)`, left to right, as in section 7.1 step 1.
+- Windows of a hit `h` in `scope(u)`: its scope windows are the `prefix` and
+  `suffix` that `quote_selector` (section 7.4) gives for `h` in the text of
+  `scope(u)`; its whole-text windows are the ones it gives for `h` in the
+  whole resource text.
+- `h` reproduces the stored context of `sel` when its scope windows, or its
+  whole-text windows, equal `sel.prefix` and `sel.suffix` after `normalize`.
+  A `prefix` or `suffix` that `sel` does not have is not compared.
+- `score(h)`: the higher of the two scores of section 7.1 step 3,
+  `similarity(prefix window, sel.prefix) + similarity(suffix window,
+  sel.suffix)`, one for each pair of windows. A `prefix` or `suffix` that
+  `sel` does not have counts as the empty string.
+- Best hit `h(u)` of a unit `u` with hits in its scope: of those hits, one
+  that reproduces the stored context before one that does not, then the
+  higher `score`, then one that is not `in_comment`, then the earliest. For
+  a new anchor only the last two apply.
 
 ```
 resolve(resource, sel):
@@ -1613,7 +1637,9 @@ resolve(resource, sel):
           -> [u] with approx = false               ; the symbol identifies the unit
                       refuse = quote_in_comment if L.status == found and in_comment(L)
       if |S| > 1:
-          if sel.quote:
+          if not sel.quote                         -> S       (ambiguous)
+          D = units u of S with a hit in scope(u), in the order of S
+          if |D| == 0:
               L = find(text, sel)
               if L.status == found:
                   C = units of S whose range contains the first byte of core(L)
@@ -1621,7 +1647,16 @@ resolve(resource, sel):
                       -> [C[0]] with approx = (L.how == fuzzy)
                                      refuse = quote_in_comment  if in_comment(L)
                                               quote_spans_units if L.how == exact and not inside(L, C[0])
-          -> S                                     (ambiguous)
+              -> S                                 (ambiguous)
+          ; for each u of D, L(u) is found, exact, at the best hit h(u)
+          if |D| == 1                              -> [D[0]]
+          if sel is a new anchor                   -> D       (ambiguous)
+          R = units u of D whose h(u) reproduces the stored context
+          if |R| == 1                              -> [R[0]]
+          if |R| == 0 and one unit u of D has a score(h(u)) higher than every other
+                                                   -> [u] with approx = true
+          -> D                                     (ambiguous)
+          ; a unit returned alone above has refuse = quote_in_comment if in_comment(L(u))
       missed = true                                ; |S| == 0
   if sel.quote:
       L = find(text, sel)
@@ -1641,18 +1676,31 @@ resolve(resource, sel):
 Where two `refuse` values are listed, the first whose condition holds is
 reported: a quote that touches a comment is `quote_in_comment` also when it
 spans units. `quote_spans_units` is reported in every branch that chooses a
-unit from the located span: the branch for several declarations of one
-symbol and the branch without a matching symbol. In the branch where the
-symbol matches exactly one declaration the quote is searched in `scope(u)`
-only, so an exact hit cannot reach outside `u` except over filler, and
-`quote_spans_units` cannot occur there.
+unit from a span located in the whole text: the branch for several
+declarations of one symbol when no scope holds a hit, and the branch without
+a matching symbol. Where the quote is located in `scope(u)` (one
+declaration, or the units of `D`), an exact hit cannot reach outside `u`
+except over filler, and `quote_spans_units` cannot occur.
 
 A new anchor never has one of several exact hits chosen for it by position.
 When its exact hits lie in two or more units, every one of those units is
-returned and the side is ambiguous (`U`, or `S` in the branch for several
-declarations). When they all lie in one unit, `pick` chooses the hit, and
-the unit is the same whichever hit is chosen. A stored selector keeps the
-full cascade of section 7.1, the position tie-break included.
+returned and the side is ambiguous (`U`, or `D` in the branch for several
+declarations). When they all lie in one unit, `pick` or the best hit chooses
+the hit, and the unit is the same whichever hit is chosen. A stored selector
+keeps the full cascade of section 7.1, the position tie-break included,
+except between declarations of one symbol.
+
+**Declarations of one symbol.** When a symbol names several declarations,
+each one is compared in its own scope, and position never chooses between
+them. The stored context of a declaration was cut from its scope, or from
+the whole text for a twin (Completed selector, below), so each hit is
+compared through both pairs of windows: an anchor stored while its symbol
+was unique still finds the declaration it was taken from after copies of
+it appear, and twins are told apart by the text around them. Equality after
+`normalize` lets the comparison ignore the indentation and line breaks that
+change around a declaration when its neighbours change. When no declaration
+reproduces the stored context, the closest one is only proposed:
+similarity proposes, it never resolves.
 
 **When `approx` is set.** A unit is returned with `approx: true` in exactly
 these cases:
@@ -1663,8 +1711,11 @@ these cases:
   of `U` when exact hits tie in two or more units.
 - The quote is found only by the fuzzy step: `L.how` is `fuzzy` after rule 3
   of `find`. This holds in the branch without a symbol and in the branch for
-  several declarations of one symbol when the hit lies in exactly one of
-  them.
+  several declarations of one symbol when no scope holds a hit and the hit
+  lies in exactly one of them.
+- In the branch for several declarations of one symbol, a stored selector
+  whose context no unit of `D` reproduces, when one unit of `D` has a
+  strictly higher `score` than every other: that unit is a candidate.
 
 A unit is returned with `approx: false` in every other case:
 
@@ -1674,7 +1725,9 @@ A unit is returned with `approx: false` in every other case:
   step;
 - the unit of a quote hit that is exact, or equal to the quote after
   `normalize` (rule 3 of `find`), when no symbol was missed;
-- every unit of `S`, and every unit of `U` when no symbol was missed.
+- the one unit of `D`, and the one unit of `R`;
+- every unit of `S` and of `D`, and every unit of `U` when no symbol was
+  missed.
 
 A unit with `approx: true` never resolves a side. It is a candidate: the side
 is `missing` with reason `not_exact` (section 9.2). In one answer either
@@ -1755,9 +1808,12 @@ selector to store. It is a function of the resource text, `u`, and the final
   (section 5.2). A default quote has at most 120 characters, and a kept span
   is longer than the input quote, which error 7 above limits, only by
   whitespace.
-- Context text. When `u` is a declaration unit whose symbol no other unit of
-  the resource has, the context text is the text of `scope(u)`. For every
-  other unit it is the whole resource text.
+- Context text. When `u` is a declaration unit, the context text is the text
+  of `scope(u)`, unless `u` is a twin. For a twin, and for every unit that
+  is not a declaration, the context text is the whole resource text. A
+  declaration's context therefore does not depend on whether its symbol is
+  unique: an anchor stored while the symbol was unique is compared with text
+  of the same kind after the symbol is duplicated.
 - `prefix` is the 48 characters of the context text before the span (fewer
   at the start of the context text), `suffix` the 48 after it (fewer at the
   end of the context text), `pos` the span's start byte in the resource
@@ -1773,9 +1829,12 @@ selector to store. It is a function of the resource text, `u`, and the final
 completed selector of `u` against the same resource text returns exactly
 `[u]`, with `approx` false, no `refuse`, and the same completed selector.
 The context text exists for this. A selector whose symbol matches one
-declaration is searched in `scope(u)` only, so its `prefix` and `suffix` are
-cut from that text: context cut from the whole resource would not be found
-again at the edges of the scope. The accepted limit at the end of this
+declaration is searched in `scope(u)` only, and with several declarations
+each hit is compared through its scope windows, so a declaration's `prefix`
+and `suffix` are cut from `scope(u)`: context cut from the whole resource
+would not be found again at the edges of the scope. A twin's scope windows
+equal its twin's, so its context is cut from the whole text and its own
+whole-text windows reproduce it. The accepted limit at the end of this
 section is the exception.
 
 `units` (section 13.3) returns for each unit the completed selector built with
@@ -1787,17 +1846,24 @@ container therefore comes before its members, and a unit with leading nodes
 is placed by the start of its first leading node. A `kind` filter keeps this
 order. This is the source order that section 6.6 uses to number duplicate
 keys, and the order of every list of units that `resolve` returns from one
-of the ambiguous exits above is the order of `S`, or the order in which the
-tied hits first reach each unit of `U`.
+of the ambiguous exits above is the order of `S` (and of `D`, a part of it),
+or the order in which the tied hits first reach each unit of `U`.
 
-Accepted limit: identical duplicate units. Two units that are not found by
-a unique symbol (prose units, `block` units, `statement` units, and
-declarations that share a symbol) whose stored quotes are identical and have
-identical 48-character context on both sides cannot be told apart by
-`prefix` and `suffix`. Section 7.1 step 3 scores their hits equally. A
-stored quote of `AMBIGUOUS_MIN` or more characters then reports `ambiguous`
-for either unit, and the fixed-point rule does not hold for them. This is
-accepted: the text gives no way to tell such units apart.
+Accepted limit: identical duplicate units. Two units whose stored quotes are
+identical and whose 48-character context on both sides is identical cannot
+be told apart by `prefix` and `suffix`, and the fixed-point rule does not
+hold for them:
+
+- Twins with identical whole-text context (after `normalize`): both
+  reproduce the stored context of either, so the result is `D`, ambiguous,
+  whatever the length of the quote. Position never chooses between
+  declarations of one symbol.
+- Units that are not declarations (prose units, `block` units, `statement`
+  units) with identical context: section 7.1 step 3 scores their hits
+  equally, and a stored quote of `AMBIGUOUS_MIN` or more characters reports
+  `ambiguous` for either unit.
+
+This is accepted: the text gives no way to tell such units apart.
 
 ### 6.8 Sources
 
@@ -6555,7 +6621,8 @@ quote, and a symbol with a quote, its cases pin:
   exact hit is a candidate, so a quote tied in several units gives every such
   unit, whatever its length (cases named `new anchor:`);
 - a stored anchor: the context scores and the position choose between hits
-  as section 7.1 says (cases named `stored anchor:`);
+  as section 7.1 says, except between declarations of one symbol (cases
+  named `stored anchor:`);
 - the completed selector of a unit resolves to that unit again, including
   hits on the first and the last line of a file;
 - a located span equal to the quote after `normalize` is exact: it is not
@@ -6571,6 +6638,13 @@ quote, and a symbol with a quote, its cases pin:
 - a symbol that names several declarations, with and without a quote that
   narrows them (cases named `python duplicate symbol:` and the TypeScript
   overload cases);
+- declarations of one symbol compared in their own scopes: at 2, 3 and 23
+  copies, a new anchor gives every copy, an anchor stored while the symbol
+  was unique follows the original, and an anchor stored after the
+  duplication resolves to its own copy; an edited copy whose context no
+  scope reproduces is a candidate (`approx`), and a quote found in one scope
+  only stays exact (cases named `duplicated declarations`); twins resolve
+  through their whole-text context (cases named `twin declarations:`);
 - decoding: CRLF becomes LF and a leading U+FEFF belongs to the first unit
   (cases named `decoding:`);
 - the default quote, including its 120-character cut;
@@ -6857,6 +6931,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 129 | A side that is not exact covers no unit, and a claim with such a side is not sent to the judge and is listed first. | It has no resolved unit. |
 | 130 | Accepted limit: text stored in the ledger stays in the ledger. A claim's stored quote, prefix and suffix are printed by `list` and `status` even after the file is later ignored. | hibi never reads the ignored file; the stored text was committed when the claim was made. |
 | 131 | CI has eight jobs: it also lints the library with features off, builds and tests each single feature, and checks the minimum Rust version with `--locked`. | Every feature set must build and pass. |
+| 132 | Ruling: declarations of one symbol are compared in their own scopes. A declaration's stored context is cut from its scope, or from the whole text when another declaration of the symbol has the same scope text after `normalize` (a twin). With several declarations, the declaration whose scope or whole-text windows reproduce the stored context after `normalize` resolves; with none, the strictly best context score is a candidate (`approx`); otherwise every declaration with a hit is returned. Position never chooses between them. | An anchor stored while a symbol was unique silently followed the last duplicate once copies appeared: its short scope context was scored against whole-text windows, and the copy at the end of the file, with the shortest windows, won as an exact resolution. |
 | 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
 | 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
 | 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
@@ -7237,10 +7312,11 @@ Verification section in order.
   as a file or as a symbolic link, is never written through.
   (`r48_linked_config_is_refused`,
   `r48_symbolic_links_are_refused_and_never_written_through`.)
-- R49. A file longer than `MAX_FILE_BYTES` reports `too_large` and is not
+- R49. A file longer than `MAX_FILE_BYTES`, or a file of a code class longer
+  than `MAX_CODE_FILE_BYTES`, reports `too_large` in both sources and is not
   parsed. A source file nested 100,000 levels deep is processed or reported
   as class `text` without a crash.
-  (`r49_size_cap`,
+  (`r49_size_cap`, `code_files_have_a_lower_size_cap`,
   `r49_deep_nesting_does_not_overflow`.)
 - R50. A provider that returns a `sel` with an unknown key, an invalid
   fingerprint, or two units with one key gets `provider_error` for the
@@ -7646,4 +7722,15 @@ Each of these has a test, named in parentheses.
   (`a_too_large_or_binary_file_says_the_limit_and_the_way_out`,
   `a_code_file_that_does_not_parse_is_resource_unavailable_for_a_symbol`,
   `an_unreadable_git_file_list_is_resource_unavailable_without_repetition`.)
+- R133. When a symbol names several declarations, an anchor stored while the
+  symbol was unique resolves to the declaration it was taken from, a new
+  anchor gives every declaration whose scope holds the quote, the completed
+  selector of every declaration, twins included, resolves to it, and an
+  edited declaration whose context no scope reproduces is returned only as
+  a candidate. Position never chooses between them, and the work is linear
+  in the declarations and their hits.
+  (`cases/resolve.json`: the cases named "duplicated declarations" and
+  "twin declarations: ..."; `default_quotes_are_never_in_comments_and_round_trip`,
+  `many_declarations_of_one_symbol_resolve_in_linear_work`,
+  `a_candidate_anchor_selects_one_unit_of_the_whole_resource`.)
 
