@@ -977,6 +977,11 @@ pub fn reanchor(
         }
     }
     // Each side: its anchor, and whether it is new (replaced or added).
+    // `numbers` holds, for each side, the number a message names it by: a
+    // kept or replaced side keeps its number in the old claim's list, which
+    // is the number `--evidence` takes; an added one has its number in the
+    // new list.
+    let mut numbers: Vec<usize> = vec![0];
     let mut plan: Vec<(Anchor, bool)> = Vec::new();
     plan.push(match &input.subject {
         Some(a) => (a.parse()?, true),
@@ -987,12 +992,14 @@ pub fn reanchor(
         if input.drop_evidence.contains(&n) {
             continue;
         }
+        numbers.push(n);
         match input.evidence.iter().find(|(m, _)| *m == n) {
             Some((_, a)) => plan.push((a.parse()?, true)),
             None => plan.push((kept.clone(), false)),
         }
     }
     for a in &input.add_evidence {
+        numbers.push(plan.len());
         plan.push((a.parse()?, true));
     }
 
@@ -1016,7 +1023,7 @@ pub fn reanchor(
     let resolved = resolve_anchors(providers, &anchors);
     let warnings = run_warnings(&ledger, git, anchors.iter().copied())?;
     let mut units: Vec<&Unit> = Vec::with_capacity(plan.len());
-    for (n, ((anchor, new), r)) in plan.iter().zip(&resolved).enumerate() {
+    for (((anchor, new), r), n) in plan.iter().zip(&resolved).zip(numbers.iter().copied()) {
         if *new {
             units.push(check_new(n, anchor, r).map_err(|e| advise(providers, &anchor.loc, e))?);
         } else if let Some(e) = unresolved_error(n, anchor, r, false) {

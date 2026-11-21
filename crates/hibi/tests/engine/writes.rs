@@ -872,6 +872,58 @@ fn reanchor_keeps_a_refused_side_and_fails_on_a_guessed_one() {
     assert_eq!((store.appends.get(), store.counts()), before);
 }
 
+/// Section 15.3 step 2: evidence numbers refer to the old claim's list.
+/// A kept side that fails is named by its old number, also when a lower
+/// number is dropped in the same command, so that the suggested command
+/// addresses that side.
+#[test]
+fn reanchor_names_a_failing_kept_side_by_its_old_evidence_number() {
+    let (w, mut p, store) = setup();
+    let old = wide(&store, &mut p);
+    assert_eq!(
+        store.ledger().claim(old.as_str()).unwrap().evidence.len(),
+        3
+    );
+    // Evidence 3 (key k4) is gone.
+    {
+        let mut world = w.borrow_mut();
+        let units = world.resources.get_mut("t:a").unwrap().as_mut().unwrap();
+        units.retain(|u| u.key != "k4");
+    }
+    let before = (store.appends.get(), store.counts());
+    let e = reanchor(
+        &store,
+        &mut p,
+        ReanchorInput {
+            claim: old.to_string(),
+            drop_evidence: vec![1],
+            ..ReanchorInput::default()
+        },
+    )
+    .unwrap_err();
+    assert_eq!(e.code, Code::SideMissing);
+    assert!(e.message.starts_with("evidence 3 (t:a)"), "{}", e.message);
+    assert_eq!(
+        e.remediation,
+        Some(format!("hibi reanchor {old} --evidence 3=<anchor>"))
+    );
+    assert_eq!((store.appends.get(), store.counts()), before);
+
+    // The suggested command, with the same drop, goes through.
+    let out = reanchor(
+        &store,
+        &mut p,
+        ReanchorInput {
+            claim: old.to_string(),
+            drop_evidence: vec![1],
+            evidence: vec![(3, json_anchor("t:a", key_sel("k1")))],
+            ..ReanchorInput::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(out.claim.sides.len(), 3);
+}
+
 /// R54: a reanchor whose result equals a retired claim fails with
 /// `claim_retired`, writes nothing, and names the `--note` command with
 /// the caller's other arguments repeated.
