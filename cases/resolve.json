@@ -1149,7 +1149,7 @@
           "sel": {
             "quote": "export function f(a: string): void;",
             "prefix": "",
-            "suffix": "\nexport function f(a: number): void;\nexport func",
+            "suffix": "\n",
             "pos": 0,
             "symbol": "f"
           }
@@ -1160,8 +1160,8 @@
           "refuse": null,
           "sel": {
             "quote": "export function f(a: number): void;",
-            "prefix": "export function f(a: string): void;\n",
-            "suffix": "\nexport function f(a: any) {\n  return a;\n}\n\nfunc",
+            "prefix": ";\n",
+            "suffix": "\n",
             "pos": 36,
             "symbol": "f"
           }
@@ -1172,8 +1172,8 @@
           "refuse": null,
           "sel": {
             "quote": "export function f(a: any) {",
-            "prefix": "ing): void;\nexport function f(a: number): void;\n",
-            "suffix": "\n  return a;\n}\n\nfunction g(a /* first */, b) {\n ",
+            "prefix": ";\n",
+            "suffix": "\n  return a;\n}\n\n",
             "pos": 72,
             "symbol": "f"
           }
@@ -1201,8 +1201,8 @@
           "refuse": null,
           "sel": {
             "quote": "a: number",
-            "prefix": " function f(a: string): void;\nexport function f(",
-            "suffix": "): void;\nexport function f(a: any) {\n  return a;",
+            "prefix": ";\nexport function f(",
+            "suffix": "): void;\n",
             "pos": 54,
             "symbol": "f"
           }
@@ -1230,8 +1230,8 @@
           "refuse": null,
           "sel": {
             "quote": "export function f(a: number): void;",
-            "prefix": "export function f(a: string): void;\n",
-            "suffix": "\nexport function f(a: any) {\n  return a;\n}\n\nfunc",
+            "prefix": ";\n",
+            "suffix": "\n",
             "pos": 36,
             "symbol": "f"
           }
@@ -1260,7 +1260,7 @@
           "sel": {
             "quote": "export function f(a: string): void;",
             "prefix": "",
-            "suffix": "\nexport function f(a: number): void;\nexport func",
+            "suffix": "\n",
             "pos": 0,
             "symbol": "f"
           }
@@ -1271,8 +1271,8 @@
           "refuse": null,
           "sel": {
             "quote": "export function f(a: number): void;",
-            "prefix": "export function f(a: string): void;\n",
-            "suffix": "\nexport function f(a: any) {\n  return a;\n}\n\nfunc",
+            "prefix": ";\n",
+            "suffix": "\n",
             "pos": 36,
             "symbol": "f"
           }
@@ -1283,8 +1283,8 @@
           "refuse": null,
           "sel": {
             "quote": "export function f(a: any) {",
-            "prefix": "ing): void;\nexport function f(a: number): void;\n",
-            "suffix": "\n  return a;\n}\n\nfunction g(a /* first */, b) {\n ",
+            "prefix": ";\n",
+            "suffix": "\n  return a;\n}\n\n",
             "pos": 72,
             "symbol": "f"
           }
@@ -1313,7 +1313,7 @@
           "sel": {
             "quote": "export function f(a: string): void;",
             "prefix": "",
-            "suffix": "\nexport function f(a: number): void;\nexport func",
+            "suffix": "\n",
             "pos": 0,
             "symbol": "f"
           }
@@ -1324,8 +1324,8 @@
           "refuse": null,
           "sel": {
             "quote": "export function f(a: number): void;",
-            "prefix": "export function f(a: string): void;\n",
-            "suffix": "\nexport function f(a: any) {\n  return a;\n}\n\nfunc",
+            "prefix": ";\n",
+            "suffix": "\n",
             "pos": 36,
             "symbol": "f"
           }
@@ -1336,8 +1336,8 @@
           "refuse": null,
           "sel": {
             "quote": "export function f(a: any) {",
-            "prefix": "ing): void;\nexport function f(a: number): void;\n",
-            "suffix": "\n  return a;\n}\n\nfunction g(a /* first */, b) {\n ",
+            "prefix": ";\n",
+            "suffix": "\n  return a;\n}\n\n",
             "pos": 72,
             "symbol": "f"
           }
@@ -1348,7 +1348,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "typescript: stored anchor: an empty stored prefix makes the hit at the text start win",
+    "name": "typescript: stored anchor: only the first overload's scope reproduces the empty stored prefix",
     "input": {
       "path": "src/over.ts",
       "fixture": "fixtures/resolve/over.ts",
@@ -1367,7 +1367,7 @@
           "sel": {
             "quote": "export function f(a: ",
             "prefix": "",
-            "suffix": "string): void;\nexport function f(a: number): voi",
+            "suffix": "string): void;\n",
             "pos": 0,
             "symbol": "f"
           }
@@ -1396,7 +1396,7 @@
           "sel": {
             "quote": "export function f(a: string): void;",
             "prefix": "",
-            "suffix": "\nexport function f(a: number): void;\nexport func",
+            "suffix": "\n",
             "pos": 0,
             "symbol": "f"
           }
@@ -1407,8 +1407,8 @@
           "refuse": null,
           "sel": {
             "quote": "export function f(a: number): void;",
-            "prefix": "export function f(a: string): void;\n",
-            "suffix": "\nexport function f(a: any) {\n  return a;\n}\n\nfunc",
+            "prefix": ";\n",
+            "suffix": "\n",
             "pos": 36,
             "symbol": "f"
           }
@@ -1419,8 +1419,8 @@
           "refuse": null,
           "sel": {
             "quote": "export function f(a: any) {",
-            "prefix": "ing): void;\nexport function f(a: number): void;\n",
-            "suffix": "\n  return a;\n}\n\nfunction g(a /* first */, b) {\n ",
+            "prefix": ";\n",
+            "suffix": "\n  return a;\n}\n\n",
             "pos": 72,
             "symbol": "f"
           }
@@ -1589,7 +1589,7 @@
           "sel": {
             "quote": "export function f(a: string): void;",
             "prefix": "",
-            "suffix": "\nexport function f(a: number): void;\nexport func",
+            "suffix": "\n",
             "pos": 0,
             "symbol": "f"
           }
@@ -2602,8 +2602,8 @@
           "refuse": "quote_spans_units",
           "sel": {
             "quote": "export function f(a: any) {",
-            "prefix": "ing): void;\nexport function f(a: number): void;\n",
-            "suffix": "\n  return a;\n}\n\nfunction g(a /* first */, b) {\n ",
+            "prefix": ";\n",
+            "suffix": "\n  return a;\n}\n\n",
             "pos": 72,
             "symbol": "f"
           }
@@ -2770,7 +2770,7 @@
           "refuse": null,
           "sel": {
             "quote": "function f(a: number)",
-            "prefix": "function f(a: string): void;",
+            "prefix": ";",
             "suffix": ": void;\n",
             "pos": 28,
             "symbol": "f"
@@ -2799,7 +2799,7 @@
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "function f(a: any) {",
-            "prefix": "function f(a: string): void;\n",
+            "prefix": ";\n",
             "suffix": "\n  return a; // the input\n}\n",
             "pos": 29,
             "symbol": "f"
@@ -2828,7 +2828,7 @@
           "sel": {
             "quote": "def max_size():",
             "prefix": "",
-            "suffix": "\n    return 1\n\n\ndef max_size():\n    return 2\n",
+            "suffix": "\n    return 1\n\n\n",
             "pos": 0,
             "symbol": "max_size"
           }
@@ -2839,7 +2839,7 @@
           "refuse": null,
           "sel": {
             "quote": "def max_size():",
-            "prefix": "def max_size():\n    return 1\n\n\n",
+            "prefix": "\n\n\n",
             "suffix": "\n    return 2\n",
             "pos": 31,
             "symbol": "max_size"
@@ -2869,7 +2869,7 @@
           "sel": {
             "quote": "def max_size():",
             "prefix": "",
-            "suffix": "\n    return 1\n\n\ndef max_size():\n    return 2\n",
+            "suffix": "\n    return 1\n\n\n",
             "pos": 0,
             "symbol": "max_size"
           }
@@ -2880,7 +2880,7 @@
           "refuse": null,
           "sel": {
             "quote": "def max_size():",
-            "prefix": "def max_size():\n    return 1\n\n\n",
+            "prefix": "\n\n\n",
             "suffix": "\n    return 2\n",
             "pos": 31,
             "symbol": "max_size"
@@ -2892,7 +2892,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "python duplicate symbol: stored anchor: a short quote is narrowed by pos to one declaration",
+    "name": "python duplicate symbol: stored anchor: a short quote with only pos does not narrow them",
     "input": {
       "path": "dup.py",
       "fixture": "fixtures/resolve/dup.py",
@@ -2905,14 +2905,26 @@
     "expected": {
       "units": [
         {
+          "key": "function:max_size",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def max_size():",
+            "prefix": "",
+            "suffix": "\n    return 1\n\n\n",
+            "pos": 0,
+            "symbol": "max_size"
+          }
+        },
+        {
           "key": "function:max_size~2",
           "approx": false,
           "refuse": null,
           "sel": {
-            "quote": "return",
-            "prefix": " max_size():\n    return 1\n\n\ndef max_size():\n    ",
-            "suffix": " 2\n",
-            "pos": 51,
+            "quote": "def max_size():",
+            "prefix": "\n\n\n",
+            "suffix": "\n    return 2\n",
+            "pos": 31,
             "symbol": "max_size"
           }
         }
@@ -2939,10 +2951,1365 @@
           "refuse": null,
           "sel": {
             "quote": "return 2",
-            "prefix": " max_size():\n    return 1\n\n\ndef max_size():\n    ",
+            "prefix": "\n\n\ndef max_size():\n    ",
             "suffix": "\n",
             "pos": 51,
             "symbol": "max_size"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations (2): a new anchor with the symbol gives every declaration",
+    "input": {
+      "path": "p.py",
+      "text": "class P:\n    def v(self):\n        return 0\n\n    def v(self):\n        return 1\n\n",
+      "sel": {
+        "symbol": "P.v"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:P.v",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n    ",
+            "suffix": "\n        return 0\n\n    ",
+            "pos": 13,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 1\n\n",
+            "pos": 48,
+            "symbol": "P.v"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations (2): a new anchor with a quote in every one gives every declaration",
+    "input": {
+      "path": "p.py",
+      "text": "class P:\n    def v(self):\n        return 0\n\n    def v(self):\n        return 1\n\n",
+      "sel": {
+        "symbol": "P.v",
+        "quote": "def v(self):"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:P.v",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n    ",
+            "suffix": "\n        return 0\n\n    ",
+            "pos": 13,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 1\n\n",
+            "pos": 48,
+            "symbol": "P.v"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations (2): an anchor stored while the symbol was unique follows the original",
+    "input": {
+      "path": "p.py",
+      "text": "class P:\n    def v(self):\n        return 0\n\n    def v(self):\n        return 1\n\n",
+      "sel": {
+        "quote": "def v(self):",
+        "prefix": "\n    ",
+        "suffix": "\n        return 0\n\n",
+        "pos": 13,
+        "symbol": "P.v"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:P.v",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n    ",
+            "suffix": "\n        return 0\n\n    ",
+            "pos": 13,
+            "symbol": "P.v"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations (2): an anchor stored after the duplication resolves to its declaration",
+    "input": {
+      "path": "p.py",
+      "text": "class P:\n    def v(self):\n        return 0\n\n    def v(self):\n        return 1\n\n",
+      "sel": {
+        "quote": "def v(self):",
+        "prefix": "\n\n    ",
+        "suffix": "\n        return 1\n\n",
+        "pos": 48,
+        "symbol": "P.v"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:P.v~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 1\n\n",
+            "pos": 48,
+            "symbol": "P.v"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations (3): a new anchor with the symbol gives every declaration",
+    "input": {
+      "path": "p.py",
+      "text": "class P:\n    def v(self):\n        return 0\n\n    def v(self):\n        return 1\n\n    def v(self):\n        return 2\n\n",
+      "sel": {
+        "symbol": "P.v"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:P.v",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n    ",
+            "suffix": "\n        return 0\n\n    ",
+            "pos": 13,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 1\n\n    ",
+            "pos": 48,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~3",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 2\n\n",
+            "pos": 83,
+            "symbol": "P.v"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations (3): a new anchor with a quote in every one gives every declaration",
+    "input": {
+      "path": "p.py",
+      "text": "class P:\n    def v(self):\n        return 0\n\n    def v(self):\n        return 1\n\n    def v(self):\n        return 2\n\n",
+      "sel": {
+        "symbol": "P.v",
+        "quote": "def v(self):"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:P.v",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n    ",
+            "suffix": "\n        return 0\n\n    ",
+            "pos": 13,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 1\n\n    ",
+            "pos": 48,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~3",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 2\n\n",
+            "pos": 83,
+            "symbol": "P.v"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations (3): an anchor stored while the symbol was unique follows the original",
+    "input": {
+      "path": "p.py",
+      "text": "class P:\n    def v(self):\n        return 0\n\n    def v(self):\n        return 1\n\n    def v(self):\n        return 2\n\n",
+      "sel": {
+        "quote": "def v(self):",
+        "prefix": "\n    ",
+        "suffix": "\n        return 0\n\n",
+        "pos": 13,
+        "symbol": "P.v"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:P.v",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n    ",
+            "suffix": "\n        return 0\n\n    ",
+            "pos": 13,
+            "symbol": "P.v"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations (3): an anchor stored after the duplication resolves to its declaration",
+    "input": {
+      "path": "p.py",
+      "text": "class P:\n    def v(self):\n        return 0\n\n    def v(self):\n        return 1\n\n    def v(self):\n        return 2\n\n",
+      "sel": {
+        "quote": "def v(self):",
+        "prefix": "\n\n    ",
+        "suffix": "\n        return 1\n\n    ",
+        "pos": 48,
+        "symbol": "P.v"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:P.v~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 1\n\n    ",
+            "pos": 48,
+            "symbol": "P.v"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations (23): a new anchor with the symbol gives every declaration",
+    "input": {
+      "path": "p.py",
+      "text": "class P:\n    def v(self):\n        return 0\n\n    def v(self):\n        return 1\n\n    def v(self):\n        return 2\n\n    def v(self):\n        return 3\n\n    def v(self):\n        return 4\n\n    def v(self):\n        return 5\n\n    def v(self):\n        return 6\n\n    def v(self):\n        return 7\n\n    def v(self):\n        return 8\n\n    def v(self):\n        return 9\n\n    def v(self):\n        return 10\n\n    def v(self):\n        return 11\n\n    def v(self):\n        return 12\n\n    def v(self):\n        return 13\n\n    def v(self):\n        return 14\n\n    def v(self):\n        return 15\n\n    def v(self):\n        return 16\n\n    def v(self):\n        return 17\n\n    def v(self):\n        return 18\n\n    def v(self):\n        return 19\n\n    def v(self):\n        return 20\n\n    def v(self):\n        return 21\n\n    def v(self):\n        return 22\n\n",
+      "sel": {
+        "symbol": "P.v"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:P.v",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n    ",
+            "suffix": "\n        return 0\n\n    ",
+            "pos": 13,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 1\n\n    ",
+            "pos": 48,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~3",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 2\n\n    ",
+            "pos": 83,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~4",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 3\n\n    ",
+            "pos": 118,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~5",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 4\n\n    ",
+            "pos": 153,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~6",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 5\n\n    ",
+            "pos": 188,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~7",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 6\n\n    ",
+            "pos": 223,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~8",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 7\n\n    ",
+            "pos": 258,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~9",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 8\n\n    ",
+            "pos": 293,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~10",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 9\n\n    ",
+            "pos": 328,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~11",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 10\n\n    ",
+            "pos": 363,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~12",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 11\n\n    ",
+            "pos": 399,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~13",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 12\n\n    ",
+            "pos": 435,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~14",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 13\n\n    ",
+            "pos": 471,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~15",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 14\n\n    ",
+            "pos": 507,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~16",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 15\n\n    ",
+            "pos": 543,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~17",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 16\n\n    ",
+            "pos": 579,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~18",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 17\n\n    ",
+            "pos": 615,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~19",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 18\n\n    ",
+            "pos": 651,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~20",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 19\n\n    ",
+            "pos": 687,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~21",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 20\n\n    ",
+            "pos": 723,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~22",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 21\n\n    ",
+            "pos": 759,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~23",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 22\n\n",
+            "pos": 795,
+            "symbol": "P.v"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations (23): a new anchor with a quote in every one gives every declaration",
+    "input": {
+      "path": "p.py",
+      "text": "class P:\n    def v(self):\n        return 0\n\n    def v(self):\n        return 1\n\n    def v(self):\n        return 2\n\n    def v(self):\n        return 3\n\n    def v(self):\n        return 4\n\n    def v(self):\n        return 5\n\n    def v(self):\n        return 6\n\n    def v(self):\n        return 7\n\n    def v(self):\n        return 8\n\n    def v(self):\n        return 9\n\n    def v(self):\n        return 10\n\n    def v(self):\n        return 11\n\n    def v(self):\n        return 12\n\n    def v(self):\n        return 13\n\n    def v(self):\n        return 14\n\n    def v(self):\n        return 15\n\n    def v(self):\n        return 16\n\n    def v(self):\n        return 17\n\n    def v(self):\n        return 18\n\n    def v(self):\n        return 19\n\n    def v(self):\n        return 20\n\n    def v(self):\n        return 21\n\n    def v(self):\n        return 22\n\n",
+      "sel": {
+        "symbol": "P.v",
+        "quote": "def v(self):"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:P.v",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n    ",
+            "suffix": "\n        return 0\n\n    ",
+            "pos": 13,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 1\n\n    ",
+            "pos": 48,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~3",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 2\n\n    ",
+            "pos": 83,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~4",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 3\n\n    ",
+            "pos": 118,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~5",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 4\n\n    ",
+            "pos": 153,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~6",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 5\n\n    ",
+            "pos": 188,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~7",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 6\n\n    ",
+            "pos": 223,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~8",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 7\n\n    ",
+            "pos": 258,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~9",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 8\n\n    ",
+            "pos": 293,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~10",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 9\n\n    ",
+            "pos": 328,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~11",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 10\n\n    ",
+            "pos": 363,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~12",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 11\n\n    ",
+            "pos": 399,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~13",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 12\n\n    ",
+            "pos": 435,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~14",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 13\n\n    ",
+            "pos": 471,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~15",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 14\n\n    ",
+            "pos": 507,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~16",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 15\n\n    ",
+            "pos": 543,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~17",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 16\n\n    ",
+            "pos": 579,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~18",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 17\n\n    ",
+            "pos": 615,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~19",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 18\n\n    ",
+            "pos": 651,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~20",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 19\n\n    ",
+            "pos": 687,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~21",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 20\n\n    ",
+            "pos": 723,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~22",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 21\n\n    ",
+            "pos": 759,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~23",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 22\n\n",
+            "pos": 795,
+            "symbol": "P.v"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations (23): an anchor stored while the symbol was unique follows the original",
+    "input": {
+      "path": "p.py",
+      "text": "class P:\n    def v(self):\n        return 0\n\n    def v(self):\n        return 1\n\n    def v(self):\n        return 2\n\n    def v(self):\n        return 3\n\n    def v(self):\n        return 4\n\n    def v(self):\n        return 5\n\n    def v(self):\n        return 6\n\n    def v(self):\n        return 7\n\n    def v(self):\n        return 8\n\n    def v(self):\n        return 9\n\n    def v(self):\n        return 10\n\n    def v(self):\n        return 11\n\n    def v(self):\n        return 12\n\n    def v(self):\n        return 13\n\n    def v(self):\n        return 14\n\n    def v(self):\n        return 15\n\n    def v(self):\n        return 16\n\n    def v(self):\n        return 17\n\n    def v(self):\n        return 18\n\n    def v(self):\n        return 19\n\n    def v(self):\n        return 20\n\n    def v(self):\n        return 21\n\n    def v(self):\n        return 22\n\n",
+      "sel": {
+        "quote": "def v(self):",
+        "prefix": "\n    ",
+        "suffix": "\n        return 0\n\n",
+        "pos": 13,
+        "symbol": "P.v"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:P.v",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n    ",
+            "suffix": "\n        return 0\n\n    ",
+            "pos": 13,
+            "symbol": "P.v"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations (23): an anchor stored after the duplication resolves to its declaration",
+    "input": {
+      "path": "p.py",
+      "text": "class P:\n    def v(self):\n        return 0\n\n    def v(self):\n        return 1\n\n    def v(self):\n        return 2\n\n    def v(self):\n        return 3\n\n    def v(self):\n        return 4\n\n    def v(self):\n        return 5\n\n    def v(self):\n        return 6\n\n    def v(self):\n        return 7\n\n    def v(self):\n        return 8\n\n    def v(self):\n        return 9\n\n    def v(self):\n        return 10\n\n    def v(self):\n        return 11\n\n    def v(self):\n        return 12\n\n    def v(self):\n        return 13\n\n    def v(self):\n        return 14\n\n    def v(self):\n        return 15\n\n    def v(self):\n        return 16\n\n    def v(self):\n        return 17\n\n    def v(self):\n        return 18\n\n    def v(self):\n        return 19\n\n    def v(self):\n        return 20\n\n    def v(self):\n        return 21\n\n    def v(self):\n        return 22\n\n",
+      "sel": {
+        "quote": "def v(self):",
+        "prefix": "\n\n    ",
+        "suffix": "\n        return 11\n\n    ",
+        "pos": 399,
+        "symbol": "P.v"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:P.v~12",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "\n\n    ",
+            "suffix": "\n        return 11\n\n    ",
+            "pos": 399,
+            "symbol": "P.v"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations (3, identical bodies): an anchor stored while the symbol was unique gives all",
+    "input": {
+      "path": "p.py",
+      "text": "class P:\n    def v(self):\n        return 0\n\n    def v(self):\n        return 0\n\n    def v(self):\n        return 0\n\n",
+      "sel": {
+        "quote": "def v(self):",
+        "prefix": "\n    ",
+        "suffix": "\n        return 0\n\n",
+        "pos": 13,
+        "symbol": "P.v"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:P.v",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "class P:\n    ",
+            "suffix": "\n        return 0\n\n    def v(self):\n        retu",
+            "pos": 13,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "class P:\n    def v(self):\n        return 0\n\n    ",
+            "suffix": "\n        return 0\n\n    def v(self):\n        retu",
+            "pos": 48,
+            "symbol": "P.v"
+          }
+        },
+        {
+          "key": "method:P.v~3",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def v(self):",
+            "prefix": "eturn 0\n\n    def v(self):\n        return 0\n\n    ",
+            "suffix": "\n        return 0\n\n",
+            "pos": 83,
+            "symbol": "P.v"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "twin declarations: two identical Go init functions: a new anchor gives both",
+    "input": {
+      "path": "init.go",
+      "text": "package p\n\nfunc init() {}\n\nvar x = 1\n\nfunc init() {}\n",
+      "sel": {
+        "symbol": "init"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:init",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "func init() {}",
+            "prefix": "package p\n\n",
+            "suffix": "\n\nvar x = 1\n\nfunc init() {}\n",
+            "pos": 11,
+            "symbol": "init"
+          }
+        },
+        {
+          "key": "function:init~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "func init() {}",
+            "prefix": "package p\n\nfunc init() {}\n\nvar x = 1\n\n",
+            "suffix": "\n",
+            "pos": 38,
+            "symbol": "init"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "twin declarations: two identical Go init functions: the stored anchor of copy 1 resolves to it",
+    "input": {
+      "path": "init.go",
+      "text": "package p\n\nfunc init() {}\n\nvar x = 1\n\nfunc init() {}\n",
+      "sel": {
+        "quote": "func init() {}",
+        "prefix": "package p\n\n",
+        "suffix": "\n\nvar x = 1\n\nfunc init() {}\n",
+        "pos": 11,
+        "symbol": "init"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:init",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "func init() {}",
+            "prefix": "package p\n\n",
+            "suffix": "\n\nvar x = 1\n\nfunc init() {}\n",
+            "pos": 11,
+            "symbol": "init"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "twin declarations: two identical Go init functions: the stored anchor of copy 2 resolves to it",
+    "input": {
+      "path": "init.go",
+      "text": "package p\n\nfunc init() {}\n\nvar x = 1\n\nfunc init() {}\n",
+      "sel": {
+        "quote": "func init() {}",
+        "prefix": "package p\n\nfunc init() {}\n\nvar x = 1\n\n",
+        "suffix": "\n",
+        "pos": 38,
+        "symbol": "init"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:init~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "func init() {}",
+            "prefix": "package p\n\nfunc init() {}\n\nvar x = 1\n\n",
+            "suffix": "\n",
+            "pos": 38,
+            "symbol": "init"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "twin declarations: one method in two impl blocks: a new anchor gives both",
+    "input": {
+      "path": "src/a.rs",
+      "text": "struct A;\n\n#[cfg(unix)]\nimpl A {\n    fn run(&self) -> u8 { 1 }\n}\n\n#[cfg(windows)]\nimpl A {\n    fn run(&self) -> u8 { 1 }\n}\n",
+      "sel": {
+        "symbol": "A.run"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:A.run",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "fn run(&self) -> u8 { 1 }",
+            "prefix": "struct A;\n\n#[cfg(unix)]\nimpl A {\n    ",
+            "suffix": "\n}\n\n#[cfg(windows)]\nimpl A {\n    fn run(&self) -",
+            "pos": 37,
+            "symbol": "A.run"
+          }
+        },
+        {
+          "key": "method:A.run~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "fn run(&self) -> u8 { 1 }",
+            "prefix": "lf) -> u8 { 1 }\n}\n\n#[cfg(windows)]\nimpl A {\n    ",
+            "suffix": "\n}\n",
+            "pos": 95,
+            "symbol": "A.run"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "twin declarations: one method in two impl blocks: the stored anchor of copy 1 resolves to it",
+    "input": {
+      "path": "src/a.rs",
+      "text": "struct A;\n\n#[cfg(unix)]\nimpl A {\n    fn run(&self) -> u8 { 1 }\n}\n\n#[cfg(windows)]\nimpl A {\n    fn run(&self) -> u8 { 1 }\n}\n",
+      "sel": {
+        "quote": "fn run(&self) -> u8 { 1 }",
+        "prefix": "struct A;\n\n#[cfg(unix)]\nimpl A {\n    ",
+        "suffix": "\n}\n\n#[cfg(windows)]\nimpl A {\n    fn run(&self) -",
+        "pos": 37,
+        "symbol": "A.run"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:A.run",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "fn run(&self) -> u8 { 1 }",
+            "prefix": "struct A;\n\n#[cfg(unix)]\nimpl A {\n    ",
+            "suffix": "\n}\n\n#[cfg(windows)]\nimpl A {\n    fn run(&self) -",
+            "pos": 37,
+            "symbol": "A.run"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "twin declarations: one method in two impl blocks: the stored anchor of copy 2 resolves to it",
+    "input": {
+      "path": "src/a.rs",
+      "text": "struct A;\n\n#[cfg(unix)]\nimpl A {\n    fn run(&self) -> u8 { 1 }\n}\n\n#[cfg(windows)]\nimpl A {\n    fn run(&self) -> u8 { 1 }\n}\n",
+      "sel": {
+        "quote": "fn run(&self) -> u8 { 1 }",
+        "prefix": "lf) -> u8 { 1 }\n}\n\n#[cfg(windows)]\nimpl A {\n    ",
+        "suffix": "\n}\n",
+        "pos": 95,
+        "symbol": "A.run"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:A.run~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "fn run(&self) -> u8 { 1 }",
+            "prefix": "lf) -> u8 { 1 }\n}\n\n#[cfg(windows)]\nimpl A {\n    ",
+            "suffix": "\n}\n",
+            "pos": 95,
+            "symbol": "A.run"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations: an @overload stub whose signature changed is a candidate, approx",
+    "input": {
+      "path": "parse.py",
+      "text": "from typing import overload\n\n\n@overload\ndef parse(x: int) -> int: ...\n@overload\ndef parse(x: bytes) -> str: ...\ndef parse(x):\n    return x\n",
+      "sel": {
+        "quote": "@overload",
+        "prefix": "\n",
+        "suffix": "\ndef parse(x: str) -> str: ...\n",
+        "pos": 70,
+        "symbol": "parse"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:parse~2",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "@overload",
+            "prefix": "\n",
+            "suffix": "\ndef parse(x: bytes) -> str: ...\n",
+            "pos": 70,
+            "symbol": "parse"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations: an impl block whose first method signature changed is a candidate, approx",
+    "input": {
+      "path": "src/foo.rs",
+      "text": "struct Foo;\n\nimpl Foo {\n    fn new() -> Foo { Foo }\n}\n\nimpl Foo {\n    fn len(&self) -> u64 { 0 }\n}\n",
+      "sel": {
+        "quote": "impl Foo {",
+        "prefix": "\n\n",
+        "suffix": "\n    fn len(&self) -> usize { 0 }\n}\n",
+        "pos": 55,
+        "symbol": "impl Foo"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "impl:impl Foo~2",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "impl Foo {",
+            "prefix": "\n\n",
+            "suffix": "\n    fn len(&self) -> u64 { 0 }\n}\n",
+            "pos": 55,
+            "symbol": "impl Foo"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations: a redefinition whose body changed is a candidate, approx",
+    "input": {
+      "path": "home.py",
+      "text": "def home():\n    return \"C:/Users\"\n\n\ndef home():\n    return \"/srv/home\"\n",
+      "sel": {
+        "quote": "def home():",
+        "prefix": "\n\n\n",
+        "suffix": "\n    return \"/home\"\n",
+        "pos": 36,
+        "symbol": "home"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:home~2",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "def home():",
+            "prefix": "\n\n\n",
+            "suffix": "\n    return \"/srv/home\"\n",
+            "pos": 36,
+            "symbol": "home"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations: a property setter whose body changed stays exact",
+    "input": {
+      "path": "prop.py",
+      "text": "class P:\n    @property\n    def v(self):\n        return self._v\n\n    @v.setter\n    def v(self, x):\n        self._v = int(x)\n",
+      "sel": {
+        "quote": "@v.setter",
+        "prefix": "\n\n    ",
+        "suffix": "\n    def v(self, x):\n        self._v = x\n",
+        "pos": 68,
+        "symbol": "P.v"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:P.v~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "@v.setter",
+            "prefix": "\n\n    ",
+            "suffix": "\n    def v(self, x):\n        self._v = int(x)\n",
+            "pos": 68,
+            "symbol": "P.v"
           }
         }
       ]

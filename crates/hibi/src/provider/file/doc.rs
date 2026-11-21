@@ -78,10 +78,11 @@ pub(super) struct Doc {
     /// Per entry: the index of its parent entry (`None` for the `file`
     /// unit). Units nest, so the parent chain is the containment chain.
     parents: Vec<Option<usize>>,
-    /// Per entry: true when it has a symbol that no other entry has. Such a
-    /// unit is resolved through the one-declaration symbol path, which
-    /// locates within the unit's own text (section 6.7).
-    unique_symbol: Vec<bool>,
+    /// Per entry: true for a declaration whose scope text equals, after
+    /// `normalize`, the scope text of another declaration with the same
+    /// symbol. Its context is cut from the whole text, which can still
+    /// tell the twins apart (ruling on section 6.7).
+    twin_scope: Vec<bool>,
     /// Comment node ranges, when `tree`, sorted and disjoint. Filled on
     /// first use after a cache hit.
     comments: OnceCell<Vec<(usize, usize)>>,
@@ -252,7 +253,7 @@ impl Doc {
             tree,
             entries: Vec::with_capacity(raws.len()),
             parents: Vec::new(),
-            unique_symbol: Vec::new(),
+            twin_scope: Vec::new(),
             comments,
             headings,
             error_line: OnceCell::new(),
@@ -294,16 +295,33 @@ impl Doc {
         Ok(doc)
     }
 
-    /// Fill `parents` and `unique_symbol` from the entries.
+    /// Fill `parents` and `twin_scope` from the entries.
     fn index(&mut self) {
         let mut by_key: HashMap<&str, usize> = HashMap::with_capacity(self.entries.len());
-        let mut symbols: HashMap<&str, usize> = HashMap::new();
+        let mut by_symbol: HashMap<&str, Vec<usize>> = HashMap::new();
         for (i, e) in self.entries.iter().enumerate() {
             by_key.insert(e.unit.key.as_str(), i);
             if let Some(s) = &e.symbol {
-                *symbols.entry(s.as_str()).or_default() += 1;
+                by_symbol.entry(s.as_str()).or_default().push(i);
             }
         }
+        // Declarations of one symbol do not nest, so their scopes overlap
+        // only in filler and hashing them is linear in the text.
+        let mut twin_scope = vec![false; self.entries.len()];
+        for group in by_symbol.values().filter(|g| g.len() > 1) {
+            let mut seen: HashMap<blake3::Hash, usize> = HashMap::new();
+            for &i in group {
+                let (from, to) = self.symbol_scope(i);
+                let h = blake3::hash(text::normalize(&self.text[from..to]).as_bytes());
+                if let Some(&j) = seen.get(&h) {
+                    twin_scope[i] = true;
+                    twin_scope[j] = true;
+                } else {
+                    seen.insert(h, i);
+                }
+            }
+        }
+        self.twin_scope = twin_scope;
         self.parents = self
             .entries
             .iter()
@@ -313,11 +331,6 @@ impl Doc {
                     .as_deref()
                     .and_then(|p| by_key.get(p).copied())
             })
-            .collect();
-        self.unique_symbol = self
-            .entries
-            .iter()
-            .map(|e| e.symbol.as_deref().is_some_and(|s| symbols[s] == 1))
             .collect();
     }
 
@@ -406,7 +419,7 @@ impl Doc {
             tree,
             entries,
             parents: Vec::new(),
-            unique_symbol: Vec::new(),
+            twin_scope: Vec::new(),
             comments: OnceCell::new(),
             headings: OnceCell::new(),
             error_line: OnceCell::new(),
@@ -517,12 +530,15 @@ impl Doc {
             None => end,
         };
         // The context comes from the text that resolving this selector will
-        // search: the unit's scope when its symbol is unique (the
-        // one-declaration symbol path locates there), the whole resource
-        // otherwise. So the completed selector is a fixed point: resolving
-        // it against the same text gives the same unit and selector
-        // (ruling on section 6.7).
-        let (from, to) = if self.unique_symbol[i] {
+        // compare it with: a declaration's scope, whether its symbol is
+        // unique or not (both symbol branches locate there), so a stored
+        // context is compared with text of the same kind when a symbol
+        // later names several declarations. A declaration whose scope text
+        // another declaration of its symbol repeats, and every unit that is
+        // not a declaration, take it from the whole resource, which can
+        // still tell them apart. So the completed selector is a fixed point
+        // (rulings on section 6.7).
+        let (from, to) = if e.symbol.is_some() && !self.twin_scope[i] {
             self.symbol_scope(i)
         } else {
             (0, self.text.len())
@@ -816,6 +832,133 @@ impl Doc {
         ))
     }
 
+    /// The branch for several declarations of one symbol, when the quote
+    /// has an exact hit in the scope of at least one of them (ruling on
+    /// section 6.7). The quote is located in each declaration's own scope,
+    /// so a stored context, which is always cut from a scope, is compared
+    /// with text of the same kind, whatever the declarations around it.
+    ///
+    /// - One declaration with a hit: that one.
+    /// - A new anchor with hits in several: all of them (ambiguous).
+    /// - A stored anchor with hits in several: the one whose scope
+    ///   reproduces the stored `prefix` and `suffix` exactly, when only one
+    ///   does. When none does, the one with the strictly highest context
+    ///   score is a candidate (`approx`): similarity proposes, it never
+    ///   resolves. Otherwise all of them (ambiguous).
+    ///
+    /// `None` when no scope holds an exact hit: the fuzzy step over the
+    /// whole text follows.
+    fn several(&self, s: &[usize], sel: &Selector) -> Result<Option<Vec<Unit>>, ProviderError> {
+        struct Hit {
+            unit: usize,
+            span: Span,
+            exact_context: bool,
+            score: f64,
+            in_comment: bool,
+        }
+        let quote = sel.quote.as_deref().unwrap_or_default();
+        if quote.is_empty() {
+            return Ok(None);
+        }
+        let stored = sel.prefix.is_some() || sel.suffix.is_some() || sel.pos.is_some();
+        let prefix = sel.prefix.as_deref().unwrap_or_default();
+        let suffix = sel.suffix.as_deref().unwrap_or_default();
+        // A scope reproduces a stored context when the two are equal after
+        // `normalize`, as a quote equal after `normalize` is exact (rule 3
+        // of `find`): indentation and line breaks around a declaration
+        // change when its neighbours do. A context the selector does not
+        // carry constrains nothing.
+        let reproduces = |window: &str, stored: Option<&str>| {
+            stored.is_none_or(|s| text::normalize(window) == text::normalize(s))
+        };
+        // The best hit of each declaration: an exact context first, then
+        // the higher score, then a hit outside comments, then the earliest.
+        let rank = |h: &Hit| (h.exact_context, h.score, !h.in_comment);
+        let mut hits: Vec<Hit> = Vec::new();
+        for &u in s {
+            let (from, to) = self.symbol_scope(u);
+            let scope = &self.text[from..to];
+            let mut best: Option<Hit> = None;
+            for (b, _) in scope.match_indices(quote) {
+                count_work(1);
+                let span = Span {
+                    start: from + b,
+                    end: from + b + quote.len(),
+                };
+                // The stored context was cut from a scope or from the whole
+                // text (see `completed`), so both windows of the hit are
+                // compared with it: either one reproducing it is enough, and
+                // the score is the higher of the two.
+                let (exact_context, score) = if stored {
+                    let mut exact = false;
+                    let mut score = f64::MIN;
+                    for (ctx, at) in [(scope, b), (self.text.as_str(), from + b)] {
+                        let q =
+                            locate::quote_selector(ctx, at, at + quote.len()).map_err(|err| {
+                                ProviderError::new(
+                                    ProviderErrorCode::Internal,
+                                    format!("the context of a quote hit cannot be cut ({err})"),
+                                )
+                            })?;
+                        exact |= reproduces(&q.prefix, sel.prefix.as_deref())
+                            && reproduces(&q.suffix, sel.suffix.as_deref());
+                        score = score.max(
+                            text::similarity(&q.prefix, prefix)
+                                + text::similarity(&q.suffix, suffix),
+                        );
+                    }
+                    (exact, score)
+                } else {
+                    (false, 0.0)
+                };
+                let hit = Hit {
+                    unit: u,
+                    span,
+                    exact_context,
+                    score,
+                    in_comment: self.in_comment(span),
+                };
+                if best.as_ref().is_none_or(|b| rank(&hit) > rank(b)) {
+                    best = Some(hit);
+                }
+            }
+            hits.extend(best);
+        }
+        let one = |h: &Hit, approx: bool| -> Result<Vec<Unit>, ProviderError> {
+            let l = Located::Found {
+                how: How::Exact,
+                span: h.span,
+            };
+            // A hit inside a scope can leave the unit only over filler, so
+            // `quote_spans_units` cannot occur here.
+            let refuse = h.in_comment.then_some(Refuse::QuoteInComment);
+            Ok(vec![self.out(h.unit, Some(&l), approx, refuse)?])
+        };
+        let all = |hits: &[Hit]| -> Result<Vec<Unit>, ProviderError> {
+            hits.iter()
+                .map(|h| self.out(h.unit, None, false, None))
+                .collect()
+        };
+        match hits.len() {
+            0 => return Ok(None),
+            1 => return one(&hits[0], false).map(Some),
+            _ if !stored => return all(&hits).map(Some),
+            _ => {}
+        }
+        let exact: Vec<&Hit> = hits.iter().filter(|h| h.exact_context).collect();
+        match exact.len() {
+            1 => return one(exact[0], false).map(Some),
+            0 => {}
+            _ => return all(&hits).map(Some),
+        }
+        let top = hits.iter().map(|h| h.score).fold(f64::MIN, f64::max);
+        let at_top: Vec<&Hit> = hits.iter().filter(|h| h.score == top).collect();
+        if at_top.len() == 1 {
+            return one(at_top[0], true).map(Some);
+        }
+        all(&hits).map(Some)
+    }
+
     /// `resolve(resource, sel)` of section 6.7. The selector has no `key`.
     pub(super) fn resolve(&self, sel: &Selector) -> Result<Vec<Unit>, ProviderError> {
         let has_quote = sel.quote.is_some();
@@ -847,6 +990,9 @@ impl Doc {
             }
             if s.len() > 1 {
                 if has_quote {
+                    if let Some(units) = self.several(&s, sel)? {
+                        return Ok(units);
+                    }
                     let l = self.locate_in(0, self.text.len(), sel);
                     if let Located::Found { how, span } = l {
                         let c = self.containing(&s, span);
@@ -985,6 +1131,39 @@ mod tests {
             work
         };
         assert_linear(within(2000), within(4000), "ties within one unit");
+    }
+
+    /// The branch for several declarations of one symbol locates the quote
+    /// in each declaration's scope once: linear in the declarations and
+    /// their hits, for new and stored anchors.
+    #[test]
+    fn many_declarations_of_one_symbol_resolve_in_linear_work() {
+        let run = |n: usize, stored: bool| {
+            let t = format!(
+                "class P:\n{}",
+                "    def v(self):\n        return 0\n\n".repeat(n)
+            );
+            let doc = Doc::build(t, Class::Python).unwrap();
+            let sel = if stored {
+                doc.entries[2].unit.sel.clone()
+            } else {
+                let mut s = Selector::quote("def v(self):");
+                s.symbol = Some("P.v".into());
+                s
+            };
+            let (r, work) = with_work(|| doc.resolve(&sel).unwrap());
+            // A new anchor gives every copy; the stored anchor of a twin
+            // has whole-text context and resolves to its own copy.
+            assert_eq!(r.len(), if stored { 1 } else { n });
+            work
+        };
+        for stored in [false, true] {
+            assert_linear(
+                run(1000, stored),
+                run(2000, stored),
+                "declarations of one symbol",
+            );
+        }
     }
 
     /// Limit 8: default quotes for many units with comments cost linear
