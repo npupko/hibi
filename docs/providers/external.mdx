@@ -50,7 +50,7 @@ $ HIBI_CONFIG=none.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T03:02:34Z (m1-mha0ka4z0safgnbcw30b)
+  marked 2026-11-21T04:17:14Z (m1-w0h6hsa3nv1zvn4g5g9k)
   subject  ref:notes  unavailable (provider_not_registered)
     the user config has no provider command for scheme ref
   next: hibi providers
@@ -91,7 +91,7 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
 ```
 
 ```text output
-c1-regrhf1hta0k48q82xea  created  m1-mha0ka4z0safgnbcw30b  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-regrhf1hta0k48q82xea  created  m1-w0h6hsa3nv1zvn4g5g9k  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 A selector key the provider did not list in `hello` is refused before
@@ -111,7 +111,7 @@ $ HIBI_CONFIG=user.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T03:02:34Z (m1-mha0ka4z0safgnbcw30b)
+  marked 2026-11-21T04:17:14Z (m1-w0h6hsa3nv1zvn4g5g9k)
   subject  ref:notes  changed (fingerprint_differs)  note "Downloads are retried at most 4 times."
   next: hibi mark c1-regrhf1hta0k48q82xea
 
@@ -279,14 +279,20 @@ An error is `{"code": <string>, "message": <string>}`.
 | `not_found` | The resource does not exist | `missing` (`resource_not_found`) |
 | `not_text` | The resource is not text the provider can read | `unavailable` (`not_text`) |
 | `too_large` | The resource exceeds a size limit of the provider | `unavailable` (`too_large`) |
-| `invalid_locator` | The locator is not valid for this provider, for example a scheme it does not serve or an opaque part it cannot parse | `unavailable` (`provider_error`) |
-| `invalid_selector` | The selector has a key the provider does not accept | `unavailable` (`provider_error`) |
+| `invalid_locator` | The locator is not valid for this provider, for example a scheme it does not serve or an opaque part it cannot parse | On a stored anchor `unavailable` (`selector_refused`); on a new anchor the command fails with `invalid_anchor` |
+| `invalid_selector` | The selector has a key the provider does not accept | On a stored anchor `unavailable` (`selector_refused`); on a new anchor the command fails with `invalid_anchor` |
 | `invalid_request` | The line or its params cannot be read (see above) | `unavailable` (`provider_error`) |
 | `unknown_method` | The method is not implemented | `unavailable` (`provider_error`) |
-| `unavailable` | The resource exists but cannot be read now | `unavailable` (`provider_error`) |
+| `unavailable` | The resource exists but cannot be read now | `unavailable` (`resource_unavailable`) |
 | `internal` | Anything else | `unavailable` (`provider_error`) |
 | `unsupported_protocol` | `hello` only: the provider speaks none of the offered versions | The provider is unusable for the run |
 | `unknown_unit` | `render` only: no unit has that key | The side cannot be rendered |
+
+`invalid_locator` and `invalid_selector` say that the anchor is wrong for the
+resource, not that the provider failed. On a stored anchor the side's
+`detail` holds your message and its `next` is the `hibi reanchor` template.
+With `unavailable`, your message is both the side's `detail` and its
+`remediation`, so end it with what the user can do.
 
 An unknown code is treated as `internal`. After answering `hello` with
 `unsupported_protocol`, a provider may keep running or exit; hibi never sends

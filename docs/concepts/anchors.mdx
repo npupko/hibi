@@ -98,16 +98,46 @@ error: side_ambiguous: the subject (file:docs/cache.md): the anchor matches 2 un
 
 1. A `symbol` that names exactly one declaration selects it. The quote then
    only decides which text the stored selector keeps.
-2. Without a symbol, the quote is searched. One exact occurrence selects the
+2. A `symbol` that names several declarations, such as Python `@overload`
+   stubs or a function defined twice, is compared with each of them. The
+   quote and the context stored around it are looked for in each
+   declaration. The one declaration that reproduces them exactly is
+   selected, so an anchor stored while the symbol was unique keeps
+   following that declaration after copies appear. When none reproduces
+   them and one is closer than the others, that one is a candidate, for
+   example a stub whose signature changed. Otherwise the side is
+   `ambiguous`. The position in the file never chooses.
+3. Without a symbol, the quote is searched. One exact occurrence selects the
    unit that contains it. Several exact occurrences are told apart by the
    similarity of the 48 characters before and after them. A tie goes to the
    occurrence nearest `pos` when the quote is under 8 characters, and is
    `ambiguous` otherwise.
-3. Anything else resolves to no unit. When a symbol names no declaration, or
+4. Anything else resolves to no unit. When a symbol names no declaration, or
    the quote has no exact occurrence, the side is `missing` with reason
    `not_exact`. The units that the quote still finds, exactly or by a fuzzy
    search near `pos` with up to 40% of its characters changed (at most 256),
    are listed as **candidates**.
+
+A claim on `def limit()` in `src/queue.py` stays fresh after a second
+`def limit()` with another body is added above it, and follows the original,
+now on lines 4-5:
+
+```text output
+$ hibi status --detail c1-5eaf
+4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
+
+c1-5eaf6x2yrjb6xrkx2yqe  fresh  The queue holds 100 jobs.
+  marked 2026-11-21T04:20:23Z (m1-bbktvyzqnjrvgpmewc1j)
+  subject  file:README.md  same  sentence "The limit is applied per worker.", line 5
+    | The limit is applied per worker.
+  evidence 1  file:src/queue.py  same  function "limit", lines 4-5
+    | def limit():
+    |     return 100
+```
+
+Two declarations of one symbol that are identical, byte for byte, and have
+identical text around them cannot be told apart. A side anchored to either
+is `ambiguous`. Make them differ, or anchor the code that contains them.
 
 Similarity proposes and never resolves. A candidate is never used as the
 side's unit: the claim is stale, `mark` refuses it, and `next` asks you for
@@ -118,11 +148,14 @@ exact [fingerprint](/concepts/fingerprints) equality.
 The anchor of a candidate, and of each unit an ambiguity error lists, is
 `<loc>#<symbol>` when that symbol occurs once in the whole file, and the
 unit's full anchor as JSON otherwise. At most 20 are listed, with the count
-of all of them. Two Python functions with the same name give JSON anchors:
+of all of them. A new anchor whose symbol names several declarations is
+`ambiguous` and lists every one; each listed anchor carries context cut from
+that declaration's own surroundings. Two Python functions with the same name
+give JSON anchors:
 
 ```text output
 $ hibi claim "x" --subject "file:README.md::A job runs" --evidence "file:src/jobs.py#run"
-error: side_ambiguous: evidence 1 (file:src/jobs.py): the anchor matches 2 units; use one of these anchors: function "run", line 1: {"loc":"file:src/jobs.py","sel":{"quote":"def run(job):","prefix":"","suffix":"\n    return job\n\ndef run(job, retries):\n    retu","pos":0,"symbol":"run"}}; function "run", line 4: {"loc":"file:src/jobs.py","sel":{"quote":"def run(job, retries):","prefix":"def run(job):\n    return job\n\n","suffix":"\n    return job\n\ndef limit():\n    return 100\n","pos":30,"symbol":"run"}}
+error: side_ambiguous: evidence 1 (file:src/jobs.py): the anchor matches 2 units; use one of these anchors: function "run", line 1: {"loc":"file:src/jobs.py","sel":{"quote":"def run(job):","prefix":"","suffix":"\n    return job\n\n","pos":0,"symbol":"run"}}; function "run", line 4: {"loc":"file:src/jobs.py","sel":{"quote":"def run(job, retries):","prefix":"\n\n","suffix":"\n    return job\n\n","pos":30,"symbol":"run"}}
   fix: Give a symbol, or a longer quote, so that the anchor matches one unit.
 ```
 
@@ -172,8 +205,8 @@ text file it is refused:
 
 ```text output
 $ hibi claim "x" --subject "file:README.md#Jobs"
-error: side_unavailable: the subject (file:README.md) cannot be evaluated (provider_error): invalid_selector: file:README.md is a markdown file, and this kind of file has no symbols; anchor it with a quote instead
-  fix: The provider gave an answer hibi cannot use. Run hibi providers --check <scheme> to see what it gets wrong; for a claim that exists, retire it if the resource is gone for good.
+error: invalid_anchor: the subject (file:README.md): file:README.md is a markdown file, and this kind of file has no symbols; anchor it with a quote instead
+  fix: Change the anchor as the message says. hibi claim --help describes the anchor forms.
 ```
 
 `mark` and a `reanchor` that keeps a side make the same check on the stored
@@ -199,7 +232,7 @@ and can be anchored:
 
 ```text output
 $ hibi claim "Jobs run at most 3 times." --subject "file:src/jobs.py#Job::Jobs run at most 3 times" --evidence "file:src/jobs.py#Job.retries"
-c1-qvbjt2ph1pgeyxqzpj2w  created  m1-51y7ns6yqshjqd3yhcxg  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
+c1-qvbjt2ph1pgeyxqzpj2w  created  m1-s74e3b2z2w577d5jt1by  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
 ```
 
 ## Renames
@@ -214,7 +247,7 @@ $ hibi status
 3 claims: 1 fresh, 2 stale, 0 expired, 0 retired
 
 c1-3mz8p0vyhcqppgjbvtyh  stale  limit returns 100.
-  marked 2026-11-21T03:02:37Z (m1-3z49wcqtezmqxv079va9)
+  marked 2026-11-21T04:17:17Z (m1-da0wgcz2hb5pj1ha4yzd)
   evidence 1  file:src/jobs.py  missing (not_exact)
     stored: symbol limit, quote "def limit():"
     1 candidate, found by similarity; each is a guess, read it before you anchor to it:
@@ -224,7 +257,7 @@ c1-3mz8p0vyhcqppgjbvtyh  stale  limit returns 100.
   next: hibi reanchor c1-3mz8p0vyhcqppgjbvtyh --evidence 1=<anchor>
 
 c1-wza47tv2t7g9czrk16x4  stale  The queue holds 100 jobs.
-  marked 2026-11-21T03:02:37Z (m1-pgeyq4fc6h6zqygpprwr)
+  marked 2026-11-21T04:17:17Z (m1-mw6py7trnfqqht89y2qz)
   evidence 1  file:src/jobs.py  missing (not_exact)
     stored: symbol limit, quote "def limit():"
     1 candidate, found by similarity; each is a guess, read it before you anchor to it:
@@ -242,7 +275,7 @@ holds, anchor to it:
 ```text output
 $ hibi reanchor c1-3mz8 --statement 'queue_limit returns 100.' --evidence 1=file:src/jobs.py#queue_limit
 c1-3mz8p0vyhcqppgjbvtyh is retired and replaced by the new claim c1-gnn5034a914fjregkzbx
-  mark m1-q3mk3srtcm4fg9wbd4nm, retirement r1-a4s37vkr889wxn3394tz
+  mark m1-sp8ffyqgs7t0pn1m1xhw, retirement r1-ed5hq4avvf4d7ng9st4k
   was stale: evidence 1 file:src/jobs.py missing (not_exact); now marked
   subject file:README.md (sentence "The limit is applied per worker.", line 5)
     {"loc":"file:README.md","sel":{"quote":"The limit is applied per worker.","prefix":"runs at most 3 times.\nThe queue holds 100 jobs.\n","suffix":"\n","pos":62}}
@@ -259,7 +292,7 @@ $ hibi status
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
 c1-5hktdkt5a4dmvmc90eec  stale  At most 100 jobs are queued.
-  marked 2026-11-21T03:02:33Z (m1-hamjasm0fsybm4f695gv)
+  marked 2026-11-21T04:25:05Z (m1-wbqvcdbbgztd9rp2v87m)
   evidence 1  file:src/jobs.py  missing (selector_not_found)
     stored: symbol JOB_LIMIT, quote "JOB_LIMIT = 100"
   next: hibi reanchor c1-5hktdkt5a4dmvmc90eec --evidence 1=<anchor>
@@ -278,7 +311,7 @@ $ hibi status
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
 c1-d0a4yrq9pmv59dc0ggqa  stale  The request timeout is stored in whole seconds.
-  marked 2026-11-21T03:02:33Z (m1-tq37c74va7cma8cpfr4s)
+  marked 2026-11-21T04:25:05Z (m1-q7msyvy1q1gv2zer63c3)
   evidence 1  file:src/config.rs  missing (not_exact)
     stored: symbol Config.timeout_secs, quote "pub timeout_secs: u32"
     1 candidate, found by similarity; each is a guess, read it before you anchor to it:

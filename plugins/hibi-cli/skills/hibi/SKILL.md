@@ -71,13 +71,24 @@ Ask the user before each of these steps; they change the repository.
 3. **Re-check** the statement against what you read. Decide whether it still
    holds. Never run `next` without this step, and never mark claims in bulk
    without having read each change.
-4. **A side not found exactly.** A side whose anchor is not found exactly is
-   `missing` with reason `not_exact`, and lists `candidates`: units found by
-   similarity, each with an `anchor` that selects it. A candidate is a guess.
-   Read it. If it is the unit the claim is about, re-check the statement
-   against it, then `hibi reanchor <id> --subject <anchor>` or
-   `--evidence <n>=<anchor>` with that anchor. If none is right, find the
-   unit and give its anchor. `mark` refuses such a claim (`side_missing`).
+4. **A side that is missing, ambiguous or unavailable.** Act on its `reason`:
+
+   | `reason` | What to do |
+   |---|---|
+   | `not_exact` | The stored anchor is not found exactly. `candidates` lists units found by similarity, each with an `anchor` that selects it. A candidate is a guess: read it. If it is the unit the claim is about, re-check the statement against it, then run `next` with that anchor. If none is right, find the unit yourself. |
+   | `selector_not_found` | No candidate: the unit was rewritten or removed. Find it with `git diff` or `git log -p`, re-check, and re-anchor. If it is gone, ask the user before you retire. |
+   | `resource_not_found` | The file was moved, renamed or deleted. Find the new path, for example with `git log --stat -- <old path>`, then re-anchor; if it was deleted, ask the user before you retire. |
+   | `several_units` | The anchor matches several units, listed in `candidates`. Choose the one the statement is about and re-anchor to its `anchor`. |
+   | `selector_refused` | The provider refuses the stored anchor; `detail` says why. Re-anchor the side with an anchor the message allows, or ask the user before you retire. |
+   | `resource_unavailable` | The resource cannot be read now; `detail` says why, for example a syntax error on line 7. Fix the cause if your change made it, then run `hibi status` again. Do not mark. |
+   | `too_large`, `not_text` | The file is over a size limit (2 MiB for code, 8 MiB for other files, 100,000 units) or is not UTF-8. Anchor the statement to another file, or ask the user before you retire. |
+   | `profile_mismatch` | The fingerprint profile changed, for example a whole code file that no longer parses. If the file has a syntax error, fix it and run `hibi status` again. Otherwise re-check and mark. |
+   | `provider_not_registered`, `provider_failed`, `repo_not_allowed` | `next` is `hibi providers`. Run it and tell the user: providers and sibling repositories are set up in their user config. |
+   | `scheme_not_declared` | The scheme is no longer declared in `.hibi/hibi.toml`. Ask the user whether to declare it again or retire the claim. |
+   | `repo_not_found`, `provider_error` | The sibling repository is missing, or the provider answered with an error. `remediation` says what to do; tell the user. |
+
+   `mark` refuses a claim with a side that is missing, ambiguous or refused:
+   it never follows a candidate.
 5. **Record what you found.**
    - Still holds: `hibi mark <id>`.
    - Holds, but the subject moved or matches several units:
@@ -116,8 +127,8 @@ or `null`:
 | `next` | Meaning |
 |---|---|
 | `hibi mark <id>` | A side changed or the period expired. Read the change, re-check, then mark, or repair or retire. |
-| `hibi reanchor <id> --subject <anchor>` | The subject is missing or ambiguous. Read the candidates, choose the unit, and give its anchor. |
-| `hibi reanchor <id> --evidence <n>=<anchor>` | Evidence number n is missing or ambiguous. Read the candidates, choose the unit, and give its anchor. |
+| `hibi reanchor <id> --subject <anchor>` | The subject is missing or ambiguous, or its stored anchor is refused. Read the candidates, choose the unit, and give its anchor. |
+| `hibi reanchor <id> --evidence <n>=<anchor>` | Evidence number n is missing or ambiguous, or its stored anchor is refused. Read the candidates, choose the unit, and give its anchor. |
 | `hibi providers` | A provider or sibling repository is not set up. Tell the user; setup is in their user config. |
 | `null` | Fresh, retired, or unavailable for a reason no command fixes. The side's `remediation` says what to do, for example fix a syntax error or declare a scheme. |
 
@@ -169,7 +180,12 @@ Rules for a new anchor (in `claim`, and a replaced or added side in
   otherwise the anchor is `selector_not_exact`. A doc comment above the
   declaration is outside it.
 - A `#symbol` works only in code. On a markdown, prose or text file it is
-  refused: "this kind of file has no symbols; anchor it with a quote".
+  refused (`invalid_anchor`): "this kind of file has no symbols; anchor it
+  with a quote".
+- A `#symbol` that several declarations share (overloads, a function
+  defined twice) is `side_ambiguous`, and the error lists each one with a
+  JSON anchor that selects it alone. A claim stored while the symbol was
+  unique keeps following its declaration after copies appear.
 - A quote inside a code comment, including rustdoc, JSDoc and Javadoc, is
   refused (`quote_in_comment`): anchor the code the comment describes. A
   Python docstring is a string and can be quoted.

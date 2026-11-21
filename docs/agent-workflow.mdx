@@ -94,7 +94,7 @@ applies:
 | Condition | `next` |
 |---|---|
 | Fresh or retired | `null` |
-| A side is missing or ambiguous | `hibi reanchor <id> --subject <anchor>` or `--evidence <n>=<anchor>`, one option per such side |
+| A side is missing or ambiguous, or the provider refuses its stored anchor (`selector_refused`) | `hibi reanchor <id> --subject <anchor>` or `--evidence <n>=<anchor>`, one option per such side |
 | A side is unavailable because its provider is not registered or failed, or a sibling repository is not allowed | `hibi providers` |
 | A side is unavailable because its scheme is not declared, a sibling repository was not found, the file is not text or too large, the provider answered with an error, or the resource cannot be read now | `null`; the side's `remediation` says what to do |
 | Otherwise: expired, a side changed, or a side is unavailable with `profile_mismatch` | `hibi mark <id>` |
@@ -111,7 +111,7 @@ $ hibi status
 4 claims: 1 fresh, 1 stale, 1 expired, 1 retired
 
 c1-6exasfv5q6wh17yqtfmn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T03:02:32Z (m1-h68x0anbcwam1bettg8g)
+  marked 2026-11-21T04:17:12Z (m1-hr5kerchfz19a9kcsvep)
   subject  file:docs/retry.md  missing (not_exact)
     stored: quote "The delay between attempts doubles each time, starting at 200 ms."
     1 candidate, found by similarity; each is a guess, read it before you anchor to it:
@@ -141,7 +141,7 @@ subject to it with a quote of your own:
 ```text output
 $ hibi reanchor c1-6exa --subject 'file:docs/retry.md::doubles every time'
 c1-6exasfv5q6wh17yqtfmn is retired and replaced by the new claim c1-mdm107xhmdkbrfbr7awv
-  mark m1-1z7f6akkx7qgx56m2dww, retirement r1-w0qvjrt1nnv022vswjc1
+  mark m1-05a1t0hxz5nfbqyvxf08, retirement r1-6ahfdk6rz16m3zh2evfk
   was stale: subject file:docs/retry.md missing (not_exact); now marked
   subject file:docs/retry.md (sentence "The delay between attempts doubles every time, starting at …", line 5)
     {"loc":"file:docs/retry.md","sel":{"quote":"doubles every time","prefix":"up after 3 attempts.\nThe delay between attempts ","suffix":", starting at 200 ms.\n\n## Timeouts\n\nEach attempt","pos":117}}

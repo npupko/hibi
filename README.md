@@ -128,7 +128,7 @@ hibi claim "The client gives up after 5 attempts." \
 ```
 
 ```text output
-c1-dbv50xcvkr3wg5jnbtfw  created  m1-dca40cngrya262q84gvf  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-dbv50xcvkr3wg5jnbtfw  created  m1-mntzc6v9qrd88gke0f3d  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 Now someone changes `MAX_ATTEMPTS` to 3. In the next session the agent asks
@@ -142,7 +142,7 @@ hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-dbv50xcvkr3wg5jnbtfw  stale  The client gives up after 5 attempts.
-  marked 2026-11-21T03:02:30Z (m1-dca40cngrya262q84gvf)
+  marked 2026-11-21T04:17:11Z (m1-mntzc6v9qrd88gke0f3d)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  variable "MAX_ATTEMPTS", line 2
   next: hibi mark c1-dbv50xcvkr3wg5jnbtfw
 
@@ -162,7 +162,7 @@ hibi reanchor c1-dbv5 \
 
 ```text output
 c1-dbv50xcvkr3wg5jnbtfw is retired and replaced by the new claim c1-24t09j90dg85esm4e3e9
-  mark m1-b2qj09a23xjkd6n0xrzc, retirement r1-q9h7ffty4qnze1cnqjv7
+  mark m1-vehdk5h23hc2xe3eyvm0, retirement r1-j3aa61jedcv2kp65b7dg
   was stale: subject file:docs/retry.md missing (not_exact); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked
   subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4)
     {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}

@@ -32,13 +32,27 @@ run, so its units are blocks, and a side whose anchor has a symbol is
 error (see
 [fingerprints](/concepts/fingerprints#a-file-that-does-not-parse)). A
 `#symbol` on a markdown, prose or text file is refused, because such a file
-has no declarations. A file that is not valid UTF-8 is not read, and a side on
-it is `unavailable` with reason `not_text`. A code file larger than 2 MiB, or
-any other file larger than 8 MiB, is `unavailable` with reason `too_large`,
-as is a file with more than 100,000 units. A symbolic link
-anywhere in the path is not followed: the file counts as not found, and a side
+has no declarations: a new anchor fails with `invalid_anchor`, and a stored
+one makes the side `unavailable` with reason `selector_refused`. A file that
+is not valid UTF-8 is not read, and a side on it is `unavailable` with reason
+`not_text`. A code file larger than 2 MiB, or any other file larger than
+8 MiB, is `unavailable` with reason `too_large`, as is a file with more than
+100,000 units. A symbolic link anywhere in the path is not followed: the file counts as not found, and a side
 on it is `missing` with reason `resource_not_found`. CRLF line endings are
 read as LF.
+
+A claim on `src/grow.rs#SMALL`, after the file grew past 2 MiB:
+
+```text output
+$ hibi status
+1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
+
+c1-9v8cr7r83ptv9es2rwv7  stale  SMALL is 1.
+  marked 2026-11-21T04:20:22Z (m1-wfk3m9jh9mgtdw9vsxd2)
+  evidence 1  file:src/grow.rs  unavailable (too_large)
+    too_large: file:src/grow.rs has 2457830 bytes, more than the limit of 2097152 bytes for a code file
+    The resource is over a size limit: 8 MiB for markdown, prose and text, 2 MiB for a code file, or 100,000 units in one resource. Anchor a smaller file; for a claim that exists, retire it; in a scope, add an exclusion for the resource.
+```
 
 When git can be used, a `file:` path must also be in the root's git file
 list: tracked, or untracked and not ignored, compared byte for byte. A path

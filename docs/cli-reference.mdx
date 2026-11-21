@@ -57,7 +57,7 @@ one sentence or one command, or `null`.
 | `usage` | Unknown command or option, missing argument, or options that cannot be combined |
 | `invalid_argument` | A well-formed argument with an unacceptable value |
 | `invalid_json` | Standard input is not the expected JSON |
-| `invalid_anchor` | A locator, selector or compact anchor does not parse |
+| `invalid_anchor` | A locator, selector or compact anchor does not parse, or the provider refuses a new anchor for the resource, for example a `#symbol` on a markdown file |
 | `invalid_duration` | A `recheck` duration does not parse, is zero, or runs past the year 9999 |
 | `invalid_time` | `--now` does not parse or is later than 9999-12-30T22:00:00Z |
 | `invalid_range` | A `--since` range is not one of the accepted forms |

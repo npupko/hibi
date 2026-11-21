@@ -54,6 +54,7 @@ Consequences:
 | `unavailable` | `scheme_not_declared` | The locator's scheme is not declared in `.hibi/hibi.toml`, for example after its declaration was removed |
 | `unavailable` | `provider_not_registered` | The scheme is declared, but your user config has no command for it. No command is run. |
 | `unavailable` | `provider_failed` | The provider command could not start, timed out, broke the protocol or was killed |
+| `unavailable` | `selector_refused` | The provider refuses the stored anchor for this resource; `detail` holds its message, and `next` is the `hibi reanchor` template |
 | `unavailable` | `provider_error` | The provider answered with an error, or returned a unit hibi rejects |
 | `unavailable` | `not_text`, `too_large` | The file is not valid UTF-8, or is too large: a code file over 2 MiB, another file over 8 MiB, or more than 100,000 units |
 | `unavailable` | `repo_not_found`, `repo_not_allowed` | A sibling repository could not be used (see [configuration](/configuration#sibling-repositories)) |
@@ -73,16 +74,16 @@ $ HIBI_CONFIG=user.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T03:02:34Z (m1-mha0ka4z0safgnbcw30b)
+  marked 2026-11-21T04:17:14Z (m1-w0h6hsa3nv1zvn4g5g9k)
   subject  ref:notes  unavailable (scheme_not_declared)
     the scheme ref is not declared in .hibi/hibi.toml
     Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim.
 ```
 
 The reference mark, against which side states are reported, is the newest
-matching mark if any mark matches, otherwise the newest mark. Marks with the
-same time, to the second, are ordered by id, so of two marks made within one
-second either can count as the newest. The text output
+matching mark if any mark matches. If none matches, it is the mark that
+matches the most sides as they resolve now, and of those the newest. Marks
+with the same time, to the second, are ordered by id. The text output
 of `status` names it, with its time, under each listed claim, together with
 the recheck period and when it runs out. For a side that is missing or
 ambiguous it also prints the stored symbol, quote or key, so you can see what
