@@ -205,12 +205,12 @@ pub fn side_of_error(code: ProviderErrorCode) -> (SideState, Reason) {
         C::RepoNotAllowed => (SideState::Unavailable, Reason::RepoNotAllowed),
         // The resource exists but cannot be read now.
         C::Unavailable => (SideState::Unavailable, Reason::ResourceUnavailable),
-        C::InvalidRequest
-        | C::UnknownMethod
-        | C::InvalidLocator
-        | C::InvalidSelector
-        | C::UnknownUnit
-        | C::Internal => (SideState::Unavailable, Reason::ProviderError),
+        // The provider refuses the anchor: the anchor is wrong for this
+        // resource, the provider did not fail.
+        C::InvalidLocator | C::InvalidSelector => (SideState::Unavailable, Reason::SelectorRefused),
+        C::InvalidRequest | C::UnknownMethod | C::UnknownUnit | C::Internal => {
+            (SideState::Unavailable, Reason::ProviderError)
+        }
     }
 }
 
@@ -224,9 +224,13 @@ pub fn reason_of_no_provider(np: NoProvider) -> Reason {
 
 pub(crate) fn failed_from_error(e: &ProviderError) -> Resolved {
     let (state, reason) = side_of_error(e.code);
-    // For a resource that cannot be read now the message is the provider's
-    // own sentence, which the side's remediation quotes.
-    let message = if reason == Reason::ResourceUnavailable {
+    // For a resource that cannot be read now, and for an anchor the provider
+    // refuses, the message is the provider's own sentence: the side's
+    // remediation or the error message quotes it.
+    let message = if matches!(
+        reason,
+        Reason::ResourceUnavailable | Reason::SelectorRefused
+    ) {
         e.message.clone()
     } else {
         e.to_string()

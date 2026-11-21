@@ -2269,6 +2269,72 @@ fn a_code_file_that_does_not_parse_is_resource_unavailable_for_a_symbol() {
     assert_eq!(v["claims"][0]["claim"]["sides"][0]["reason"], Value::Null);
 }
 
+/// A symbol on a file that has no symbols is the caller's anchor being
+/// wrong: `invalid_anchor` with what the file provider said, and no advice
+/// to check the provider.
+#[test]
+fn a_symbol_on_a_markdown_file_is_invalid_anchor() {
+    let repo = seeded();
+    let e = refused(&repo, &["claim", "s", "--subject", "file:docs/a.md#Guide"]);
+    assert_eq!(e["code"], "invalid_anchor");
+    let message = s(&e["message"]);
+    assert!(
+        message.starts_with("the subject (file:docs/a.md): "),
+        "{message}"
+    );
+    assert!(message.contains("no symbols"), "{message}");
+    assert!(!message.contains("provider_error"), "{message}");
+    assert!(!message.contains("invalid_selector"), "{message}");
+    assert!(s(&e["remediation"]).starts_with("Change the anchor"), "{e}");
+    assert!(!s(&e["remediation"]).contains("hibi providers"), "{e}");
+}
+
+/// Section 9.3: a claim that is not fresh is reported against the mark
+/// that matches the most sides now. A second mark in the same second as
+/// the first does not make the side it covers look changed.
+#[test]
+fn a_stale_claim_is_reported_against_the_mark_that_matches_the_most_sides() {
+    let repo = seeded();
+    let id = repo.claim("Cache size", CACHE_SUBJECT, &[LIMIT_EVIDENCE]);
+    repo.write(
+        "src/a.rs",
+        &CODE.replace("max_entries = 64", "max_entries = 128"),
+    );
+    // The second mark, in the same second as the first.
+    let v = j(&repo, &["mark", &id]);
+    let second = id_of(&v["marks"][0]["mark"], "m1-");
+    assert_eq!(repo.records("marks").len(), 2);
+    assert_eq!(repo.state(&id), "fresh");
+
+    // The subject sentence is deleted. The evidence is as the second mark
+    // has it, whichever of the two ids is greater.
+    repo.write("docs/a.md", "# Guide\n\nThe retry count is 3.\n");
+    let view = repo.view(&id);
+    assert_eq!(view["state"], "stale");
+    assert_eq!(view["mark"], second.as_str());
+    assert_eq!(
+        sides(&view),
+        json!([
+            ["missing", "selector_not_found", false],
+            ["same", null, false]
+        ])
+    );
+    assert_eq!(view["sides"][1]["fp"], view["sides"][1]["markedFp"]);
+
+    // The other way round: the evidence goes back to what the first mark
+    // has, and the first mark is the reference.
+    repo.write("src/a.rs", CODE);
+    let view = repo.view(&id);
+    assert_ne!(view["mark"], second.as_str());
+    assert_eq!(
+        sides(&view),
+        json!([
+            ["missing", "selector_not_found", false],
+            ["same", null, false]
+        ])
+    );
+}
+
 /// R55: editing the quoted line of a declaration anchored by symbol does
 /// not lose the side; the symbol identifies the unit exactly.
 #[test]

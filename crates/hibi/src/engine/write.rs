@@ -137,6 +137,15 @@ fn unresolved_error(index: usize, anchor: &Anchor, r: &Resolved, new: bool) -> O
         if reason == Reason::SchemeNotDeclared {
             return Some(Error::new(Code::UnknownScheme, format!("{what}: {detail}")));
         }
+        // The provider refuses the anchor: the caller's anchor is wrong
+        // for this resource. The message is the provider's own.
+        if reason == Reason::SelectorRefused {
+            return Some(
+                Error::new(Code::InvalidAnchor, format!("{what}: {detail}")).with_remediation(
+                    "Change the anchor as the message says. hibi claim --help describes the anchor forms.",
+                ),
+            );
+        }
     }
     // A new anchor that was found only by similarity: the caller asked for
     // text or a symbol that is not there.
@@ -1030,7 +1039,8 @@ pub fn reanchor(
             // A kept side that no longer resolves to one unit has to be
             // replaced, with an anchor the caller chooses.
             return Err(match r.failure() {
-                Some((SideState::Missing | SideState::Ambiguous, _)) => {
+                Some((SideState::Missing | SideState::Ambiguous, _))
+                | Some((_, Reason::SelectorRefused)) => {
                     let option = if n == 0 {
                         "--subject <anchor>".to_owned()
                     } else {

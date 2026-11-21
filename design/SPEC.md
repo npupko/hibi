@@ -2432,6 +2432,7 @@ and every engine-side check appears once.
 | Provider | Error `repo_not_found` | `unavailable` | `repo_not_found` |
 | Provider | Error `repo_not_allowed` | `unavailable` | `repo_not_allowed` |
 | Provider | Error `unavailable` | `unavailable` | `resource_unavailable` |
+| Provider | Error `invalid_selector` or `invalid_locator` | `unavailable` | `selector_refused` |
 | Provider | Any other error code | `unavailable` | `provider_error` |
 | Engine | A `resolve` call returns a number of answers other than the number of anchors sent. This holds for every anchor of the call. | `unavailable` | `provider_error` |
 | Engine | A returned unit fails validation (section 2.5) | `unavailable` | `provider_error` |
@@ -2443,11 +2444,15 @@ and every engine-side check appears once.
 `unsupported_protocol` means the provider is unusable (section 13.4), so it
 maps to `provider_failed`, the same as `failed`. The other error codes of
 section 13.4 that have no row of their own (`invalid_request`,
-`unknown_method`, `invalid_locator`, `invalid_selector`, `unknown_unit`,
-`internal`) map to `provider_error`. `unavailable` means that the resource
-exists and cannot be read now (section 13.4). It maps to
-`resource_unavailable`, and the side carries the provider's message in
-`detail` and `remediation` (section 15.2).
+`unknown_method`, `unknown_unit`, `internal`) map to `provider_error`.
+`unavailable` means that the resource exists and cannot be read now
+(section 13.4). It maps to `resource_unavailable`, and the side carries the
+provider's message in `detail` and `remediation` (section 15.2).
+`invalid_selector` and `invalid_locator` mean that the provider refuses the
+anchor for this resource: the anchor is wrong, the provider did not fail.
+For a stored anchor they map to `selector_refused`, with the provider's
+message in `detail`; for a new anchor the command fails with
+`invalid_anchor` and that message (section 15.4).
 
 Similarity proposes, it never resolves. A unit that a provider returns with
 `approx: true` was found by similarity, and it never resolves a side:
@@ -2490,8 +2495,9 @@ Side states are exactly `same`, `changed`, `missing`, `ambiguous`,
 The closed list of reasons, in this order: `scheme_not_declared`,
 `provider_not_registered`, `provider_failed`, `resource_not_found`,
 `not_text`, `too_large`, `repo_not_found`, `repo_not_allowed`,
-`provider_error`, `resource_unavailable`, `selector_not_found`, `not_exact`,
-`several_units`, `no_mark`, `fingerprint_differs`, `profile_mismatch`.
+`provider_error`, `resource_unavailable`, `selector_refused`,
+`selector_not_found`, `not_exact`, `several_units`, `no_mark`,
+`fingerprint_differs`, `profile_mismatch`.
 
 ### 9.3 Claim states
 
@@ -2543,8 +2549,13 @@ reference mark. The same holds for every other failure of `add` by
 section 9.4.
 
 The reference mark, used to report side states: the matching mark with the
-latest `at` if any mark matches, otherwise the mark with the latest `at`. Ties
-on `at` go to the greater id. If the claim has no mark there is none.
+latest `at` if any mark matches, with ties on `at` going to the greater id.
+If no mark matches, it is the mark that matches the most sides as they
+resolve now, that is, the mark with the most sides whose fingerprint equals
+the current fingerprint of the side's unit; a side without a unit matches no
+mark. Ties go to the later `at`, then to the greater id. So a side that some
+recent mark covers is not reported as `changed` because another mark is as
+recent or has a greater id. If the claim has no mark there is none.
 
 For a retired claim no mark can match, because no side is resolved. Its
 reference mark is the mark with the latest `at` (ties to the greater id), or
@@ -5214,6 +5225,7 @@ The `remediation` of an `unavailable` side:
 | `provider_not_registered`, `provider_failed`, `repo_not_allowed`, `repo_not_found` | The command `hibi providers` |
 | `scheme_not_declared` | `Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim.` |
 | `too_large`, `not_text`, `provider_error` | One sentence that states the limit or the cause and what the caller can do. The three sentences are given under `side_unavailable` below. |
+| `selector_refused` | `The stored anchor is no longer accepted for this resource. Give the side another anchor with hibi reanchor, or retire the claim.` The provider's message is in `detail`. |
 | `resource_unavailable` | `<message>. Run the command again once that is fixed.`, where `<message>` is the message of the provider's error, cut to `DETAIL_CHARS` (500) characters, with every full stop and space at its end removed |
 | `profile_mismatch` | `null` |
 
@@ -5267,7 +5279,7 @@ in the run.
 | Condition | `next` |
 |---|---|
 | `fresh` or `retired` | `null` |
-| A side is `missing` or `ambiguous` | `hibi reanchor <id>` with `--subject <anchor>` or `--evidence <n>=<anchor>` for each such side |
+| A side is `missing` or `ambiguous`, or `unavailable` with `selector_refused` | `hibi reanchor <id>` with `--subject <anchor>` or `--evidence <n>=<anchor>` for each such side |
 | A side is `unavailable` with `provider_not_registered`, `provider_failed` or `repo_not_allowed` | `hibi providers` |
 | A side is `unavailable` with `scheme_not_declared`, `repo_not_found`, `not_text`, `too_large`, `provider_error` or `resource_unavailable` | `null` |
 | Otherwise (`expired`, or sides `changed` or `profile_mismatch`) | `hibi mark <id>` |
@@ -6304,7 +6316,7 @@ Closed list. Every error carries one of these codes.
 | `usage` | Unknown command or option, missing argument, arguments that cannot be combined, or an option value that does not parse: `--format`, `--state`, `--limit`, `--drop-evidence`, `--evidence <n>=<anchor>`, the shell of `completions`. Also a `reanchor` evidence number that is named twice or does not exist. |
 | `invalid_argument` | A well-formed argument with an unacceptable value. Also two evidence sides of one claim that are the same anchor (section 15.3). |
 | `invalid_json` | Standard input is not the expected JSON |
-| `invalid_anchor` | A locator, selector or compact anchor does not parse |
+| `invalid_anchor` | A locator, selector or compact anchor does not parse; or the provider refuses a new anchor for its resource (provider error `invalid_selector` or `invalid_locator`, section 9.2). The message is then the side and the provider's message, and the remediation is `Change the anchor as the message says. hibi claim --help describes the anchor forms.` |
 | `invalid_duration` | Section 9.4. Also a `recheck` that is zero, such as `P0D` or `PT0S` (section 15.3). |
 | `invalid_time` | `--now` does not parse, or is a time outside `0000-01-01T00:00:00Z` to `9999-12-30T22:00:00Z` (section 15.1). Reported by every command. |
 | `invalid_range` | Section 10.3 |

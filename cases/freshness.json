@@ -1038,7 +1038,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "9.2: provider error invalid_locator: unavailable, provider_error",
+    "name": "9.2: provider error invalid_locator: unavailable, selector_refused",
     "input": {
       "recheck": null,
       "retired": false,
@@ -1064,7 +1064,7 @@
       "sides": [
         {
           "state": "unavailable",
-          "reason": "provider_error"
+          "reason": "selector_refused"
         }
       ]
     },
@@ -1072,7 +1072,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "9.2: provider error invalid_selector: unavailable, provider_error",
+    "name": "9.2: provider error invalid_selector: unavailable, selector_refused",
     "input": {
       "recheck": null,
       "retired": false,
@@ -1098,7 +1098,7 @@
       "sides": [
         {
           "state": "unavailable",
-          "reason": "provider_error"
+          "reason": "selector_refused"
         }
       ]
     },
@@ -1273,6 +1273,207 @@
       ]
     },
     "source": "SPEC 9.3 and 9.4: the mark matches. add(mark.at, P1D) would be 10000-01-01T12:00:00Z, past 9999-12-31T23:59:59Z, so the expiry is never reached and row 4 holds for every now: fresh. 15.2: expiresAt is add(markedAt, recheck), which has no value here: null.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "not fresh: the reference is the mark that matches the most sides, not the latest",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        {
+          "at": "2026-02-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:cccccccccccccccccccccccccccccccc",
+            "b3:prose-v1:dddddddddddddddddddddddddddddddd"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "units": 0
+        },
+        {
+          "unit": "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "missing",
+          "reason": "selector_not_found"
+        },
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3: the reference mark of a claim that is not fresh is the mark that matches the most sides as they resolve now; ties go to the later at, then the greater id. The earlier mark matches the second side; the later mark matches none.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "not fresh, marks tied on at: the mark that matches more sides, first of the two",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:cccccccccccccccccccccccccccccccc",
+            "b3:prose-v1:dddddddddddddddddddddddddddddddd"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "units": 0
+        },
+        {
+          "unit": "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 0,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "missing",
+          "reason": "selector_not_found"
+        },
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3: the reference mark of a claim that is not fresh is the mark that matches the most sides as they resolve now; ties go to the later at, then the greater id. The ids do not decide: this case and the next give the matching mark both positions.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "not fresh, marks tied on at: the mark that matches more sides, second of the two",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:cccccccccccccccccccccccccccccccc",
+            "b3:prose-v1:dddddddddddddddddddddddddddddddd"
+          ]
+        },
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "units": 0
+        },
+        {
+          "unit": "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": 1,
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "missing",
+          "reason": "selector_not_found"
+        },
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3: the reference mark of a claim that is not fresh is the mark that matches the most sides as they resolve now; ties go to the later at, then the greater id. The ids do not decide: this case and the previous one give the matching mark both positions.",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "not fresh, marks tied on matched sides and on at: the greater id",
+    "input": {
+      "recheck": null,
+      "retired": false,
+      "now": "2026-11-20T18:04:11Z",
+      "marks": [
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        },
+        {
+          "at": "2026-01-01T00:00:00Z",
+          "sides": [
+            "b3:prose-v1:cccccccccccccccccccccccccccccccc",
+            "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          ]
+        }
+      ],
+      "sides": [
+        {
+          "units": 0
+        },
+        {
+          "unit": "b3:prose-v1:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ]
+    },
+    "expected": {
+      "state": "stale",
+      "mark": {
+        "greaterIdOf": [
+          0,
+          1
+        ]
+      },
+      "expiresAt": null,
+      "sides": [
+        {
+          "state": "missing",
+          "reason": "selector_not_found"
+        },
+        {
+          "state": "same",
+          "reason": null
+        }
+      ]
+    },
+    "source": "SPEC 9.3: the reference mark of a claim that is not fresh is the mark that matches the most sides as they resolve now; ties go to the later at, then the greater id. Both marks match the second side only.",
     "origin": "spec-derived"
   }
 ]

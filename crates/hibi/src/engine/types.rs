@@ -95,6 +95,7 @@ closed_enum!(
         RepoNotAllowed => "repo_not_allowed",
         ProviderError => "provider_error",
         ResourceUnavailable => "resource_unavailable",
+        SelectorRefused => "selector_refused",
         SelectorNotFound => "selector_not_found",
         NotExact => "not_exact",
         SeveralUnits => "several_units",
@@ -139,6 +140,9 @@ pub fn unavailable_remediation(reason: Reason) -> Option<&'static str> {
         }
         Reason::NotText => {
             "The resource is not UTF-8 text, so it has no units. Anchor a text file; for a claim that exists, retire it; in a scope, add an exclusion for the resource."
+        }
+        Reason::SelectorRefused => {
+            "The stored anchor is no longer accepted for this resource. Give the side another anchor with hibi reanchor, or retire the claim."
         }
         Reason::SchemeNotDeclared => {
             "Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim."

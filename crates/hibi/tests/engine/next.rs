@@ -139,6 +139,106 @@ fn a_scheme_that_is_no_longer_declared_has_no_next() {
     assert!(side.detail.as_deref().unwrap().contains('v'), "{side:?}");
 }
 
+/// An anchor the provider refuses (`invalid_selector`, `invalid_locator`)
+/// is the anchor being wrong for the resource, not the provider failing. A
+/// stored side is `unavailable` with reason `selector_refused`, says what
+/// the provider said, and asks for another anchor; a new anchor is
+/// `invalid_anchor` with the provider's message.
+#[test]
+fn an_anchor_the_provider_refuses_is_not_a_provider_fault() {
+    for code in [C::InvalidSelector, C::InvalidLocator] {
+        let mut f = fixture(None);
+        set_err_message(&f.worlds[1], "u:b", code, "u:b has no symbols; use a quote");
+        let v = view(&f.store, &mut f.p, &f.id);
+        let next = format!("hibi reanchor {} --evidence 1=<anchor>", f.id);
+        assert_eq!(
+            (v.state, v.next.clone()),
+            (ClaimState::Stale, Some(next.clone()))
+        );
+        let side = &v.sides[1];
+        assert_eq!(
+            (side.state, side.reason),
+            (
+                engine::SideState::Unavailable,
+                Some(engine::Reason::SelectorRefused)
+            ),
+            "{code}"
+        );
+        assert_eq!(
+            side.detail.as_deref(),
+            Some("u:b has no symbols; use a quote")
+        );
+        assert_eq!(
+            side.remediation.as_deref(),
+            Some(
+                "The stored anchor is no longer accepted for this resource. Give the side another anchor with hibi reanchor, or retire the claim."
+            )
+        );
+
+        let before = f.store.counts();
+        let errors = engine::mark(
+            &f.store,
+            &mut f.p,
+            &no_git(),
+            &[MarkInput::new(f.id.as_str())],
+            false,
+            now(),
+        )
+        .unwrap_err();
+        assert_eq!(errors[0].code, hibi::Code::SideUnavailable);
+        assert!(
+            errors[0].message.contains("selector_refused"),
+            "{}",
+            errors[0]
+        );
+        assert_eq!(errors[0].remediation, Some(next.clone()));
+        // A `reanchor` that keeps the side names the same command.
+        let e = engine::reanchor(
+            &f.store,
+            &mut f.p,
+            &no_git(),
+            &engine::ReanchorInput {
+                claim: f.id.to_string(),
+                statement: Some("S2".into()),
+                ..engine::ReanchorInput::default()
+            },
+            now(),
+        )
+        .unwrap_err();
+        assert_eq!(e.code, hibi::Code::SideUnavailable);
+        assert_eq!(e.remediation, Some(next));
+
+        // A new anchor: the caller's mistake, in the provider's words.
+        let errors = engine::claim(
+            &f.store,
+            &mut f.p,
+            &no_git(),
+            &[engine::ClaimInput {
+                subject: json_anchor("u:b", key_sel("k")),
+                ..claim_input("Another", "u:b", &[])
+            }],
+            false,
+            now(),
+        )
+        .unwrap_err();
+        assert_eq!(errors[0].code, hibi::Code::InvalidAnchor, "{code}");
+        assert_eq!(
+            errors[0].message,
+            "the subject (u:b): u:b has no symbols; use a quote"
+        );
+        assert!(
+            errors[0]
+                .remediation
+                .as_deref()
+                .unwrap()
+                .starts_with("Change the anchor"),
+            "{}",
+            errors[0]
+        );
+        assert_eq!(f.store.counts(), before);
+    }
+}
+
 /// What a provider said when it failed is on the side, cut to a bounded
 /// length; a resource that cannot be read now has its own reason, no
 /// `next`, and a remediation that quotes the provider.

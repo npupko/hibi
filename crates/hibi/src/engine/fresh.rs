@@ -96,6 +96,27 @@ fn latest<'m>(marks: impl Iterator<Item = &'m Mark>) -> Option<&'m Mark> {
     marks.max_by(|a, b| a.at.cmp(&b.at).then_with(|| a.id.cmp(&b.id)))
 }
 
+/// The mark a claim that is not fresh is reported against (section 9.3):
+/// the one that matches the most sides as they resolve now, that is, the
+/// most sides whose current fingerprint equals the mark's. Ties go to the
+/// later `at`, then to the greater id. Reporting against the latest mark
+/// alone would show a side as changed that an equally recent mark covers.
+fn closest<'m>(marks: impl Iterator<Item = &'m Mark>, resolved: &[Resolved]) -> Option<&'m Mark> {
+    let matched = |m: &Mark| {
+        m.sides
+            .iter()
+            .zip(resolved)
+            .filter(|(s, r)| r.unit().is_some_and(|u| u.fp == s.fp))
+            .count()
+    };
+    marks.max_by(|a, b| {
+        matched(a)
+            .cmp(&matched(b))
+            .then_with(|| a.at.cmp(&b.at))
+            .then_with(|| a.id.cmp(&b.id))
+    })
+}
+
 /// Evaluate a claim by sections 9.2 and 9.3.
 ///
 /// `marks` are the claim's marks; a mark that does not fit the claim (wrong
@@ -134,7 +155,8 @@ pub fn evaluate<'m>(
         .copied()
         .filter(|m| mark_matches(m, resolved))
         .collect();
-    let reference = latest(matching.iter().copied()).or_else(|| latest(marks.iter().copied()));
+    let reference =
+        latest(matching.iter().copied()).or_else(|| closest(marks.iter().copied(), resolved));
     let recheck = claim
         .recheck
         .as_deref()
@@ -238,8 +260,12 @@ pub fn next_command(claim: &Claim, eval: &Evaluation<'_>) -> Option<String> {
         return None;
     }
     let mut reanchor = String::new();
-    for (i, (state, _)) in eval.sides.iter().enumerate() {
-        if matches!(state, SideState::Missing | SideState::Ambiguous) {
+    for (i, (state, reason)) in eval.sides.iter().enumerate() {
+        // A side whose stored anchor the provider no longer accepts needs
+        // another anchor too.
+        if matches!(state, SideState::Missing | SideState::Ambiguous)
+            || *reason == Some(Reason::SelectorRefused)
+        {
             if i == 0 {
                 reanchor.push_str(" --subject <anchor>");
             } else {

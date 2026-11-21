@@ -327,6 +327,7 @@
         "repo_not_allowed",
         "provider_error",
         "resource_unavailable",
+        "selector_refused",
         "selector_not_found",
         "not_exact",
         "several_units",
