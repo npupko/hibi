@@ -88,6 +88,9 @@ pub(super) struct Doc {
     /// The heading path of every entry (empty for the `file` unit and for
     /// classes without prose units). Filled on first use after a cache hit.
     headings: OnceCell<Vec<Vec<String>>>,
+    /// The line of the first parse error, for a code class without a
+    /// tree. Filled on first use.
+    error_line: OnceCell<Option<usize>>,
 }
 
 /// The first `LABEL_CHARS` characters of `normalize(s)`, without
@@ -252,6 +255,7 @@ impl Doc {
             unique_symbol: Vec::new(),
             comments,
             headings,
+            error_line: OnceCell::new(),
         };
         for r in raws {
             let label = match &r.symbol {
@@ -405,6 +409,7 @@ impl Doc {
             unique_symbol: Vec::new(),
             comments: OnceCell::new(),
             headings: OnceCell::new(),
+            error_line: OnceCell::new(),
         };
         doc.index();
         Some(doc)
@@ -776,6 +781,41 @@ impl Doc {
         Ok(u)
     }
 
+    /// The errors of a selector with a `symbol` on a resource that has no
+    /// declarations to search (ruling on section 6.7). A class without
+    /// symbols (markdown, prose, text) is `invalid_selector`: no anchor
+    /// there can name a declaration. A file of a code class that does not
+    /// parse is `unavailable`: its declarations come back when the syntax
+    /// error is fixed, so a stored symbol anchor is neither resolved
+    /// against text blocks nor reported as a broken provider.
+    pub(super) fn check_symbol(&self, loc: &str) -> Result<(), ProviderError> {
+        if !self.class.is_code() {
+            return Err(ProviderError::new(
+                ProviderErrorCode::InvalidSelector,
+                format!(
+                    "{loc} is a {} file, and this kind of file has no symbols; anchor it with a quote instead",
+                    self.class.name()
+                ),
+            ));
+        }
+        if self.tree {
+            return Ok(());
+        }
+        let line = self
+            .error_line
+            .get_or_init(|| code::first_error_line(&self.text, self.class));
+        let at = line.map_or(String::new(), |l| {
+            format!(" (the first error is on line {l})")
+        });
+        Err(ProviderError::new(
+            ProviderErrorCode::Unavailable,
+            format!(
+                "{loc} does not parse as {}{at}, so its declarations cannot be found; fix the syntax error and run the command again",
+                self.class.name()
+            ),
+        ))
+    }
+
     /// `resolve(resource, sel)` of section 6.7. The selector has no `key`.
     pub(super) fn resolve(&self, sel: &Selector) -> Result<Vec<Unit>, ProviderError> {
         let has_quote = sel.quote.is_some();
@@ -853,10 +893,12 @@ impl Doc {
                             u.push(i);
                         }
                     }
+                    // With a stored symbol that names no declaration, every
+                    // unit found through the quote is only a candidate.
                     if u.len() > 1 {
                         return u
                             .into_iter()
-                            .map(|i| self.out(i, Some(&l), false, None))
+                            .map(|i| self.out(i, Some(&l), missed, None))
                             .collect::<Result<_, _>>();
                     }
                     l = self.pick(ties);

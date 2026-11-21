@@ -586,6 +586,9 @@ impl Provider for FileProvider {
                 a.sel
                     .validate()
                     .map_err(|e| ProviderError::invalid_request(e.message))?;
+                if a.sel.symbol.is_some() {
+                    doc.check_symbol(a.loc.as_str())?;
+                }
                 doc.resolve(&a.sel)
             })
             .collect()

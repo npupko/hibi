@@ -833,6 +833,47 @@
     "origin": "spec-derived"
   },
   {
+    "name": "rust: a missed symbol and a quote that ties in two units: both, approx",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "Cache.gone",
+        "quote": "-> u32 { 1 }"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:Cache.get",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn get(&self) -> u32 { 1 }",
+            "prefix": "\n    ",
+            "suffix": "\n    ",
+            "pos": 248,
+            "symbol": "Cache.get"
+          }
+        },
+        {
+          "key": "method:Cache.put",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn put(&self) -> u32 { 1 }",
+            "prefix": "\n    ",
+            "suffix": "\n",
+            "pos": 283,
+            "symbol": "Cache.put"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
     "name": "rust: renamed container: the member's path misses, the quote finds it, approx",
     "input": {
       "path": "src/lib.rs",
@@ -1670,7 +1711,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "python with a syntax error: text fallback has no symbols: missed, the quote finds a block, approx",
+    "name": "python with a syntax error: a symbol and a quote: unavailable, not resolved against the text blocks",
     "input": {
       "path": "broken.py",
       "fixture": "fixtures/resolve/broken.py",
@@ -1680,19 +1721,41 @@
       }
     },
     "expected": {
-      "units": [
-        {
-          "key": "block:*",
-          "approx": true,
-          "refuse": null,
-          "sel": {
-            "quote": "pass",
-            "prefix": "def f(:\n    ",
-            "suffix": "\n\nx = 1\n",
-            "pos": 12
-          }
-        }
-      ]
+      "error": "unavailable"
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python with a syntax error: a symbol alone: unavailable",
+    "input": {
+      "path": "broken.py",
+      "fixture": "fixtures/resolve/broken.py",
+      "sel": {
+        "symbol": "f"
+      }
+    },
+    "expected": {
+      "error": "unavailable"
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python with a syntax error: a stored symbol anchor: unavailable",
+    "input": {
+      "path": "broken.py",
+      "fixture": "fixtures/resolve/broken.py",
+      "sel": {
+        "symbol": "f",
+        "quote": "def f(x):",
+        "prefix": "",
+        "suffix": "\n    pass",
+        "pos": 0
+      }
+    },
+    "expected": {
+      "error": "unavailable"
     },
     "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
     "origin": "spec-derived"
@@ -1717,6 +1780,38 @@
             "prefix": "def f(:\n    pass\n\n",
             "suffix": "\n",
             "pos": 18
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python: a moved function: the symbol misses, the fuzzy step finds its call in main, approx",
+    "input": {
+      "path": "report.py",
+      "fixture": "fixtures/resolve/report.py",
+      "sel": {
+        "symbol": "threshold",
+        "quote": "def threshold(values, n):",
+        "prefix": "",
+        "suffix": "\n    return sorted(values)[-n]",
+        "pos": 0
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:main",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "def main(values):",
+            "prefix": "\n\n\n",
+            "suffix": "\n    cut = threshold(values, 3)\n    return [v fo",
+            "pos": 31,
+            "symbol": "main"
           }
         }
       ]
@@ -2117,7 +2212,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "markdown: a symbol on prose finds nothing",
+    "name": "markdown: a symbol: invalid_selector",
     "input": {
       "path": "docs/pricing.md",
       "fixture": "fixtures/resolve/pricing.md",
@@ -2126,13 +2221,13 @@
       }
     },
     "expected": {
-      "units": []
+      "error": "invalid_selector"
     },
     "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
     "origin": "spec-derived"
   },
   {
-    "name": "markdown: a symbol on prose with a quote: missed, approx, no symbol stored",
+    "name": "markdown: a symbol and a quote: invalid_selector",
     "input": {
       "path": "docs/pricing.md",
       "fixture": "fixtures/resolve/pricing.md",
@@ -2142,19 +2237,7 @@
       }
     },
     "expected": {
-      "units": [
-        {
-          "key": "sentence:*",
-          "approx": true,
-          "refuse": null,
-          "sel": {
-            "quote": "$29/month",
-            "prefix": "--\ntitle: Pricing page\n---\n# Pricing\n\nPro costs ",
-            "suffix": ". Teams cost $99/month.\n\nSame sentence here. Oth",
-            "pos": 49
-          }
-        }
-      ]
+      "error": "invalid_selector"
     },
     "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
     "origin": "spec-derived"
@@ -2264,7 +2347,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "text: a symbol finds nothing",
+    "name": "text: a symbol: invalid_selector",
     "input": {
       "path": "conf/notes.cfg",
       "fixture": "fixtures/resolve/notes.cfg",
@@ -2273,7 +2356,7 @@
       }
     },
     "expected": {
-      "units": []
+      "error": "invalid_selector"
     },
     "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
     "origin": "spec-derived"

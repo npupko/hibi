@@ -692,10 +692,15 @@ fn a_syntax_error_makes_the_file_text() {
     assert_eq!(kinds, ["file", "block", "block"]);
     assert!(units.iter().all(|u| u.fp.profile() == "prose-v1"));
     assert!(units.iter().all(|u| u.sel.symbol.is_none()));
-    assert!(
-        resolve(&mut wt(tmp.path()), "file:bad.py", json!({"symbol": "f"}))
-            .unwrap()
-            .is_empty()
+    // A symbol cannot be looked up while the file does not parse (ruling on
+    // section 6.7).
+    assert_eq!(
+        code_of(resolve(
+            &mut wt(tmp.path()),
+            "file:bad.py",
+            json!({"symbol": "f"})
+        )),
+        ProviderErrorCode::Unavailable
     );
 }
 
@@ -1704,4 +1709,156 @@ fn an_invalid_selector_built_in_rust_is_invalid_request() {
         .resolve(&[Anchor::new(loc("file:a.md"), sel)])
         .remove(0);
     assert_eq!(r.unwrap_err().code, ProviderErrorCode::InvalidRequest);
+}
+
+// ---------------------------------------------------------------------------
+// Symbols on resources without declarations (ruling on section 6.7)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn a_symbol_on_a_class_without_symbols_is_invalid_selector() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    write(
+        root,
+        "docs/limiter.md",
+        "# Backoff\n\nWait twice as long each time.\n",
+    );
+    write(root, "notes.txt", "Backoff waits.\n");
+    write(root, "limits.cfg", "backoff = 2\n");
+    for (l, s) in [
+        ("file:docs/limiter.md", json!({"symbol": "Backoff::wait"})),
+        ("file:docs/limiter.md", json!({"symbol": "Backoff"})),
+        (
+            "file:docs/limiter.md",
+            json!({"symbol": "Backoff", "quote": "Wait twice"}),
+        ),
+        (
+            "file:docs/limiter.md",
+            json!({"symbol": "Backoff", "quote": "Wait twice", "prefix": "", "suffix": " as", "pos": 11}),
+        ),
+        ("file:notes.txt", json!({"symbol": "Backoff"})),
+        ("file:limits.cfg", json!({"symbol": "backoff"})),
+    ] {
+        let e = resolve(&mut wt(root), l, s.clone()).unwrap_err();
+        assert_eq!(e.code, ProviderErrorCode::InvalidSelector, "{l} {s}");
+        assert!(
+            e.message.contains("has no symbols") && e.message.contains("quote"),
+            "{l} {s}: {}",
+            e.message
+        );
+    }
+    // Without the symbol the quote resolves as usual.
+    let u = one(
+        &mut wt(root),
+        "file:docs/limiter.md",
+        json!({"quote": "Wait twice"}),
+    );
+    assert!(!u.approx);
+}
+
+#[test]
+fn a_symbol_anchor_on_a_code_file_that_does_not_parse_is_unavailable() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    let good = "pub fn wait(n: u32) -> u32 {\n    n * 2\n}\n\npub fn other() {}\n";
+    write(root, "src/limiter.rs", good);
+    // The stored anchor: symbol, quote and context, from the parsed file.
+    let stored = one(
+        &mut wt(root),
+        "file:src/limiter.rs",
+        json!({"symbol": "wait", "quote": "n * 2"}),
+    )
+    .sel;
+    assert_eq!(stored.symbol.as_deref(), Some("wait"));
+    let stored = serde_json::to_value(&stored).unwrap();
+
+    // A temporary syntax error on line 4: the file falls back to text, but a
+    // symbol anchor is not resolved against its blocks.
+    let broken = "pub fn wait(n: u32) -> u32 {\n    n * 2\n}\n\npub fn other( {}\n";
+    write(root, "src/limiter.rs", broken);
+    let rows = Rc::new(Rows::default());
+    for (what, s) in [
+        ("stored", stored.clone()),
+        (
+            "new with a quote",
+            json!({"symbol": "wait", "quote": "n * 2"}),
+        ),
+        ("symbol alone", json!({"symbol": "wait"})),
+        ("a symbol that never existed", json!({"symbol": "gone"})),
+    ] {
+        // Without a cache, through an empty cache and through a filled one.
+        for p in [
+            &mut wt(root),
+            &mut cached(root, &rows),
+            &mut cached(root, &rows),
+        ] {
+            let e = resolve(p, "file:src/limiter.rs", s.clone()).unwrap_err();
+            assert_eq!(e.code, ProviderErrorCode::Unavailable, "{what}");
+            assert!(
+                e.message.contains("does not parse")
+                    && e.message.contains("line 5")
+                    && e.message.contains("fix the syntax error"),
+                "{what}: {}",
+                e.message
+            );
+        }
+    }
+    assert_eq!(rows.0.borrow().len(), 1, "the text fallback was cached");
+    // A quote-only anchor still resolves against the text blocks.
+    let u = one(
+        &mut cached(root, &rows),
+        "file:src/limiter.rs",
+        json!({"quote": "n * 2"}),
+    );
+    assert!(u.key.starts_with("block:") && !u.approx, "{u:?}");
+
+    // Fixed again: the stored anchor resolves to its declaration, unchanged.
+    write(root, "src/limiter.rs", good);
+    let u = one(&mut wt(root), "file:src/limiter.rs", stored.clone());
+    assert_eq!(u.key, "function:wait");
+    assert!(!u.approx);
+    assert_eq!(serde_json::to_value(&u.sel).unwrap(), stored);
+}
+
+#[test]
+fn a_missed_symbol_only_proposes_candidates() {
+    // Ruling on section 6.7: similarity proposes, it never resolves. With a
+    // stored symbol that names no declaration, every unit found through the
+    // quote is approx, one unit or several; a unique symbol and an exact
+    // quote without a symbol are not.
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    write(
+        root,
+        "src/m.rs",
+        "fn a() -> u32 { 1 }\nfn b() -> u32 { 1 }\nfn c() { other() }\n",
+    );
+    let units = resolve(
+        &mut wt(root),
+        "file:src/m.rs",
+        json!({"symbol": "gone", "quote": "-> u32 { 1 }"}),
+    )
+    .unwrap();
+    let keys: Vec<(&str, bool)> = units.iter().map(|u| (u.key.as_str(), u.approx)).collect();
+    assert_eq!(keys, [("function:a", true), ("function:b", true)]);
+    let units = resolve(
+        &mut wt(root),
+        "file:src/m.rs",
+        json!({"quote": "-> u32 { 1 }"}),
+    )
+    .unwrap();
+    assert!(units.iter().all(|u| !u.approx));
+    let u = one(
+        &mut wt(root),
+        "file:src/m.rs",
+        json!({"symbol": "gone", "quote": "fn c() { other() }"}),
+    );
+    assert_eq!((u.key.as_str(), u.approx), ("function:c", true));
+    let u = one(
+        &mut wt(root),
+        "file:src/m.rs",
+        json!({"symbol": "c", "quote": "fn c() { another() }"}),
+    );
+    assert_eq!((u.key.as_str(), u.approx), ("function:c", false));
 }

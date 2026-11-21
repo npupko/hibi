@@ -357,6 +357,16 @@ branch; quotes whose edges outside the member are only whitespace, `,` or
 intersecting unit when none contains the quote's start); new anchors at the
 first and last line; and the reflow rule.
 
+For the ruling that similarity proposes and never resolves, `resolve.json`
+pins that a stored symbol which names no declaration makes every unit the
+quote finds `approx`, one unit or the several units of tied hits, and the
+moved-function case (`fixtures/resolve/report.py`: `def threshold` moved to
+another module, its call in `main` is found by the fuzzy step). For the
+ruling on symbols where there are none, a selector with a symbol is
+`invalid_selector` on markdown, prose and text, and `unavailable` on a code
+file that does not parse; these replace four earlier cases that resolved
+such selectors through the quote or found nothing.
+
 The `freshness.json` and `coverage.json` cases are `spec-derived`: each
 `expected` was written by hand from SPEC sections 9.2, 9.3 and 10.2, and
 `source` gives the rule applied. They bind `engine::evaluate`, and
