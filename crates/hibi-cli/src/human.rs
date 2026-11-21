@@ -40,43 +40,50 @@ pub fn plain(text: &str) -> String {
         .collect()
 }
 
-/// For each of `texts`, the line to show under a candidate. Usually the
-/// text on one line, cut to [`LINE_TEXT_CHARS`]. Where that would be the
-/// same for two candidates whose texts differ, the first line on which the
-/// text differs from the other one is shown instead, with its number in
-/// the unit, so that near-identical candidates can be told apart.
-fn candidate_lines(texts: &[Option<&str>]) -> Vec<Option<String>> {
-    let short: Vec<Option<String>> = texts
+/// For each candidate, given its text and its line range, the line to show
+/// under it. Usually the text on one line, cut to [`LINE_TEXT_CHARS`].
+/// Where that would be the same for several candidates, each of them shows
+/// instead the first of its lines that differs from the line at that place
+/// in every other one of them, with its number in the unit; a candidate
+/// that has no such line (its text equals another's, or each of its lines
+/// is shared with one of the others) shows where it stands in the
+/// resource. So no two candidates print the same line.
+fn candidate_lines(candidates: &[(Option<&str>, Option<(usize, usize)>)]) -> Vec<Option<String>> {
+    let short: Vec<Option<String>> = candidates
         .iter()
-        .map(|t| t.map(|t| one_line(t, LINE_TEXT_CHARS)))
+        .map(|(t, _)| t.map(|t| one_line(t, LINE_TEXT_CHARS)))
         .collect();
-    texts
+    candidates
         .iter()
         .enumerate()
-        .map(|(i, text)| {
+        .map(|(i, (text, range))| {
             let text = (*text)?;
-            let twin = texts.iter().enumerate().find_map(|(j, other)| {
-                let other = (*other)?;
-                (j != i && short[j] == short[i] && other != text).then_some(other)
-            });
-            let Some(twin) = twin else {
+            let others: Vec<&str> = candidates
+                .iter()
+                .enumerate()
+                .filter(|(j, _)| *j != i && short[*j] == short[i])
+                .filter_map(|(_, (t, _))| *t)
+                .collect();
+            if others.is_empty() {
                 return short[i].clone();
-            };
-            let mut theirs = twin.lines();
-            for (n, line) in text.lines().enumerate() {
-                if theirs.next() != Some(line) {
-                    return Some(format!(
-                        "line {} of the unit: {}",
-                        n + 1,
-                        one_line(line, LINE_TEXT_CHARS)
-                    ));
-                }
             }
-            // This text is the beginning of the other one.
-            Some(format!(
-                "ends after line {} of the unit",
-                text.lines().count()
-            ))
+            let own = text.lines().enumerate().find(|(n, line)| {
+                others
+                    .iter()
+                    .all(|other| other.lines().nth(*n) != Some(*line))
+            });
+            match (own, range) {
+                (Some((n, line)), _) => Some(format!(
+                    "line {} of the unit: {}",
+                    n + 1,
+                    one_line(line, LINE_TEXT_CHARS)
+                )),
+                (None, Some((from, to))) if to > from => {
+                    Some(format!("lines {from}-{to} of the resource"))
+                }
+                (None, Some((from, _))) => Some(format!("line {from} of the resource")),
+                (None, None) => short[i].clone(),
+            }
         })
         .collect()
 }
@@ -236,7 +243,15 @@ fn side_lines(out: &mut String, side: &Side, detail: bool) {
                 "; the stored anchor matches each of them"
             }
         );
-        let texts: Vec<Option<&str>> = candidates.iter().map(|c| c.text.as_deref()).collect();
+        let texts: Vec<(Option<&str>, Option<(usize, usize)>)> = candidates
+            .iter()
+            .map(|c| {
+                (
+                    c.text.as_deref(),
+                    c.line.map(|from| (from, c.end_line.unwrap_or(from))),
+                )
+            })
+            .collect();
         let shown = candidate_lines(&texts);
         for (c, shown) in candidates.iter().zip(shown) {
             let label = c.label.as_deref().unwrap_or(&c.key);
@@ -803,17 +818,38 @@ mod tests {
         let head = "x".repeat(150);
         let a = format!("{head}\nsecond line\nreturn 1");
         let b = format!("{head}\nsecond line\nreturn 2");
-        let c = format!("{head}\nsecond line");
-        let lines = candidate_lines(&[Some(&a), Some(&b), Some("short"), None]);
+        let c = format!("{head}\nsecond line\nreturn 3");
+        let cut = format!("{head}\nsecond line");
+        let at = |n: usize| Some((n, n + 2));
+        let lines = candidate_lines(&[
+            (Some(&a), at(1)),
+            (Some(&b), at(10)),
+            (Some(&c), at(20)),
+            (Some("short"), at(30)),
+            (None, None),
+        ]);
+        // Three candidates: each its own line, not the second's twice.
         assert_eq!(lines[0].as_deref(), Some("line 3 of the unit: return 1"));
         assert_eq!(lines[1].as_deref(), Some("line 3 of the unit: return 2"));
-        assert_eq!(lines[2].as_deref(), Some("short"));
-        assert_eq!(lines[3], None);
-        let lines = candidate_lines(&[Some(&c), Some(&a)]);
-        assert_eq!(lines[0].as_deref(), Some("ends after line 2 of the unit"));
-        // The same text twice is printed as it is.
-        let lines = candidate_lines(&[Some("same"), Some("same")]);
+        assert_eq!(lines[2].as_deref(), Some("line 3 of the unit: return 3"));
+        assert_eq!(lines[3].as_deref(), Some("short"));
+        assert_eq!(lines[4], None);
+        // No line of its own: the place in the resource.
+        let lines = candidate_lines(&[(Some(&cut), at(1)), (Some(&a), at(10))]);
+        assert_eq!(lines[0].as_deref(), Some("lines 1-3 of the resource"));
+        assert_eq!(lines[1].as_deref(), Some("line 3 of the unit: return 1"));
+        // The same text twice: the two places.
+        let lines = candidate_lines(&[(Some("same"), Some((4, 4))), (Some("same"), Some((9, 9)))]);
+        assert_eq!(lines[0].as_deref(), Some("line 4 of the resource"));
+        assert_eq!(lines[1].as_deref(), Some("line 9 of the resource"));
+        // Without a range the text is all there is.
+        let lines = candidate_lines(&[(Some("same"), None), (Some("same"), None)]);
         assert_eq!(lines[0].as_deref(), Some("same"));
+        let mut all: Vec<&Option<String>> = Vec::new();
+        for l in &candidate_lines(&[(Some(&a), at(1)), (Some(&b), at(10)), (Some(&c), at(20))]) {
+            assert!(!all.contains(&l), "{l:?} twice");
+            all.push(l);
+        }
     }
 
     #[test]
