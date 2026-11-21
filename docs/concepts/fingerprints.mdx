@@ -91,7 +91,7 @@ $ hibi status --loc "file:src/sum.ts"
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
 c1-nvz527nzmpttbc4zknmg  stale  sum returns both numbers.
-  marked 2026-11-21T08:44:37Z (m1-gmnapa8a5zkbrt5kb0wd)
+  marked 2026-11-21T09:26:41Z (m1-jd03853zhh91ccafthnz)
   evidence 1  file:src/sum.ts  changed (fingerprint_differs)  function "sum", lines 1-3
     | export function sum(a: number, b: number) {
     |   return ([a, b]);
@@ -104,24 +104,86 @@ Re-check each statement before running its next command. If it no longer holds, 
 ## A file that does not parse
 
 A code file whose syntax the built-in grammar cannot parse cannot be
-anchored until it parses. Every side on it, whatever its anchor (a symbol, a
+anchored until it parses. Every side on it, whatever its anchor (a name, a
 quote or the whole file), is `unavailable` with reason
-`resource_unavailable`, a new anchor on it fails, and `cover` lists the file
-as unavailable. The message names the first error line, the side's
+`resource_unavailable`. The message names the first error line, the side's
 `remediation` repeats it, and `next` is `null`, because no hibi command
-fixes a syntax error:
+fixes a syntax error. Here `src/size.ts` has a claim on the whole file and
+one on a quote inside the declaration `SIZE`, and a syntax error was added
+on line 2:
 
 ```text output
-c1-nvz527nzmpttbc4zknmg  stale  sum returns both numbers.
-  marked 2026-11-21T08:44:37Z (m1-gmnapa8a5zkbrt5kb0wd)
-  evidence 1  file:src/sum.ts  unavailable (resource_unavailable)
-    file:src/sum.ts does not parse as typescript (the first error is on line 2), so its declarations cannot be found; fix the syntax error. Run the command again once that is fixed.
+$ hibi status --loc file:src/size.ts
+8 claims: 3 fresh, 3 stale, 0 expired, 2 retired
+
+c1-2vf3dkpm7tpddr20b5xt  stale  size.ts sets the size.
+  marked 2026-11-21T09:27:15Z (m1-g87sxk6nem75wy38fse5)
+  evidence 1  file:src/size.ts  unavailable (resource_unavailable)
+    file:src/size.ts does not parse as typescript (the first error is on line 2), so its units cannot be read; fix the syntax error. Run the command again once that is fixed.
+
+c1-vtb62xhvg0pbcwzanh60  stale  The size is 8.
+  marked 2026-11-21T09:27:15Z (m1-bpfdps4wavgsy1wy7hvy)
+  evidence 1  file:src/size.ts  unavailable (resource_unavailable)
+    file:src/size.ts does not parse as typescript (the first error is on line 2), so its units cannot be read; fix the syntax error. Run the command again once that is fixed.
 ```
 
-Fix the syntax error and every side on the file is resolved again. If the
-file will never parse, for example because it uses syntax the grammar does
-not know, exclude it from the scope in `.hibi/hibi.toml` and anchor its
-statements elsewhere.
+A quote on top-level code, outside every declaration, is no different:
+
+```text output
+$ hibi status --loc file:src/ready.ts
+8 claims: 3 fresh, 3 stale, 0 expired, 2 retired
+
+c1-ppk8y3bdgc2fp2xv7are  stale  The module logs ready.
+  marked 2026-11-21T09:27:15Z (m1-6betqtjym5qn9wmb7eks)
+  evidence 1  file:src/ready.ts  unavailable (resource_unavailable)
+    file:src/ready.ts does not parse as typescript (the first error is on line 3), so its units cannot be read; fix the syntax error. Run the command again once that is fixed.
+```
+
+A new anchor on such a file fails:
+
+```text output
+$ hibi claim 'SIZE is 8.' --subject 'file:README.md::A job runs at most 3 times.' --evidence 'file:src/size.ts#SIZE'
+error: side_unavailable: evidence 1 (file:src/size.ts) cannot be evaluated (resource_unavailable): file:src/size.ts does not parse as typescript (the first error is on line 2), so its units cannot be read; fix the syntax error
+  fix: file:src/size.ts does not parse as typescript (the first error is on line 2), so its units cannot be read; fix the syntax error. Run the command again once that is fixed.
+```
+
+`cover` reads no units from it and lists it as unavailable:
+
+```text output
+$ hibi cover --scope code
+code (file:src/*.ts; variable, statement): 0 units, 0 covered, 0 excluded, 0 uncovered
+  unavailable: file:src/ready.ts (resource_unavailable)
+  unavailable: file:src/size.ts (resource_unavailable)
+```
+
+Fix the syntax error and every side on the file resolves again, with the
+marks it had:
+
+```text output
+$ hibi status --state fresh --state stale --loc "file:src/*.ts"
+8 claims: 6 fresh, 0 stale, 0 expired, 2 retired
+
+c1-2vf3dkpm7tpddr20b5xt  fresh  size.ts sets the size.
+  marked 2026-11-21T09:27:15Z (m1-g87sxk6nem75wy38fse5)
+
+c1-ppk8y3bdgc2fp2xv7are  fresh  The module logs ready.
+  marked 2026-11-21T09:27:15Z (m1-6betqtjym5qn9wmb7eks)
+
+c1-vtb62xhvg0pbcwzanh60  fresh  The size is 8.
+  marked 2026-11-21T09:27:15Z (m1-bpfdps4wavgsy1wy7hvy)
+```
+
+If a file will never parse, for example because it uses syntax the grammar
+does not know, exclude it from the scope in `.hibi/hibi.toml` and anchor its
+statements elsewhere. An exclusion without `unit` means the file is not read
+at all (see [coverage](/coverage#exclusions)):
+
+```text output
+$ hibi cover --scope code
+code (file:src/*.ts; variable, statement): 0 units, 0 covered, 0 excluded, 0 uncovered
+  excluded: file:src/ready.ts (1 resource): generated, does not parse yet
+  unavailable: file:src/size.ts (resource_unavailable)
+```
 
 Two fingerprints of different profiles are never compared.
 `profile_mismatch` occurs when a later hibi ships a new profile version, and
@@ -134,7 +196,7 @@ anchor. Renaming `src/lim.rs` to `src/lim.py` gives:
 
 ```text output
 c1-219y84z69sqmxdvykwmp  stale  The cache holds 64 entries.
-  marked 2026-11-21T08:44:43Z (m1-3k994d27c47g8sny99tx)
+  marked 2026-11-21T09:26:55Z (m1-2fd1he13hjwhfgtf0fbn)
   evidence 1  file:src/lim.rs  missing (resource_not_found)
     stored: symbol LIMIT
   next: hibi reanchor c1-219y84z69sqmxdvykwmp --evidence 1=<anchor>

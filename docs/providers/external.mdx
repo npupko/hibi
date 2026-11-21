@@ -50,7 +50,7 @@ $ HIBI_CONFIG=none.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T08:49:17Z (m1-hcx8k9x68n3bah0p62q2)
+  marked 2026-11-21T09:26:42Z (m1-qywq8qjzd5ehckmpn1p8)
   subject  ref:notes  unavailable (provider_not_registered)
     the user config has no provider command for scheme ref
   next: hibi providers
@@ -91,7 +91,7 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
 ```
 
 ```text output
-c1-kh88fbb9hctgd1v08923  created  m1-hcx8k9x68n3bah0p62q2  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-kh88fbb9hctgd1v08923  created  m1-qywq8qjzd5ehckmpn1p8  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 A selector key the provider did not list in `hello` is refused before
@@ -111,7 +111,7 @@ $ HIBI_CONFIG=user.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T08:49:17Z (m1-hcx8k9x68n3bah0p62q2)
+  marked 2026-11-21T09:26:42Z (m1-qywq8qjzd5ehckmpn1p8)
   subject  ref:notes  changed (fingerprint_differs)  note "Downloads are retried at most 4 times."
     | Downloads are retried at most 4 times.
   next: hibi mark c1-kh88fbb9hctgd1v08923

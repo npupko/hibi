@@ -146,7 +146,11 @@ Ask the user before each of these steps; they change the repository.
    `{ resource = "file:docs/retry.md", unit = "sentence:0863e2920c1f", reason = "a pointer, not a statement" }`.
    A prose unit's key comes from its content, so the exclusion stops
    matching when that sentence is reworded, and `cover` lists it again.
-   Leave out `unit` to exclude a whole file.
+   Leave out `unit` to exclude a whole file: it is then not read at all, its
+   units are not counted, it is not listed as unavailable, and a claim on it
+   does not show as covered in that scope. That is the remedy, with the
+   user's agreement, for a file `cover` lists as unavailable for good (does
+   not parse, too large, not text).
 
 Pass `--by agent:claude` (or set `HIBI_BY`) so marks record who checked.
 

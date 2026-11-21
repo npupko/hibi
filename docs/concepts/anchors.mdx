@@ -75,7 +75,7 @@ the declaration instead:
 
 ```text output
 $ hibi claim 'The delay doubles each time.' --subject 'file:docs/errors.md::The log keeps every attempt.' --evidence 'file:src/backoff.py::BASE_MS * 2 ** n'
-c1-xhtwpvbhz6139jcwdjw2  created  m1-vmmcz2xxm8jtz6npcf1v  subject file:docs/errors.md (sentence "The log keeps every attempt.", line 4); evidence 1 file:src/backoff.py (function "delay", lines 3-4)
+c1-xhtwpvbhz6139jcwdjw2  created  m1-vb9hbs26rh4vh76jx2af  subject file:docs/errors.md (sentence "The log keeps every attempt.", line 4); evidence 1 file:src/backoff.py (function "delay", lines 3-4)
   note: evidence 1 (file:src/backoff.py) tracks the quoted text in its place. To follow the declaration delay instead, anchor file:src/backoff.py#delay::BASE_MS * 2 ** n
 ```
 
@@ -191,7 +191,7 @@ $ hibi status c1-ywv7
 2 claims: 0 fresh, 2 stale, 0 expired, 0 retired
 
 c1-ywv7p0f3s3cac76pdkkk  stale  Each attempt times out after 30 seconds.
-  marked 2026-11-21T08:50:58Z (m1-8mx26f39wnhgntwsc3m6)
+  marked 2026-11-21T09:26:52Z (m1-gpqbc4x27zy7gz661xmz)
   subject  file:docs/timeouts.md  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: quote "30 s"
@@ -215,7 +215,7 @@ $ hibi status c1-e3q2
 3 claims: 0 fresh, 3 stale, 0 expired, 0 retired
 
 c1-e3q2sbq694y144250gf3  stale  Retries stop after the fifth failure.
-  marked 2026-11-21T08:50:58Z (m1-6vxgvrpkfqc7323wvmj3)
+  marked 2026-11-21T09:26:52Z (m1-9pw49ydtfxcm3f8mfbfc)
   subject  file:docs/errors.md  changed (fingerprint_differs)  sentence "Retries stop after the fifth failed attempt, and the error …", line 3
     | Retries stop after the fifth failed attempt, and the error that the last attempt returned is passed on to the caller unchanged, with no wrapping at all.
   next: hibi mark c1-e3q2sbq694y144250gf3
@@ -235,7 +235,7 @@ $ hibi status c1-7sf7
 2 claims: 0 fresh, 2 stale, 0 expired, 0 retired
 
 c1-7sf7sk1725e0bwb1wk47  stale  Retries stop after the fifth failure.
-  marked 2026-11-21T08:50:58Z (m1-pa37xhypcq0h58dceevd)
+  marked 2026-11-21T09:26:52Z (m1-nh5kz928kbd032wadg6f)
   subject  file:docs/timeouts.md  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: quote "Retries stop after the fifth failed attempt"
@@ -256,7 +256,7 @@ $ hibi status c1-tskx
 5 claims: 1 fresh, 4 stale, 0 expired, 0 retired
 
 c1-tskxsxpgvbthdkkfsmze  stale  The queue holds 100 jobs.
-  marked 2026-11-21T08:50:59Z (m1-djk8qbcwe2n3nj49cddw)
+  marked 2026-11-21T09:26:53Z (m1-h6qaabjf4z78s4z2grpc)
   subject  file:docs/limits.md  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: quote "The queue holds 100 jobs."
@@ -278,7 +278,7 @@ $ hibi status c1-xhtw
 8 claims: 2 fresh, 5 stale, 0 expired, 1 retired
 
 c1-xhtwpvbhz6139jcwdjw2  stale  The delay doubles each time.
-  marked 2026-11-21T08:50:59Z (m1-vmmcz2xxm8jtz6npcf1v)
+  marked 2026-11-21T09:26:53Z (m1-vb9hbs26rh4vh76jx2af)
   evidence 1  file:src/backoff.py  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: quote "BASE_MS * 2 ** n"
@@ -302,7 +302,7 @@ $ hibi status c1-4zg3
 6 claims: 1 fresh, 5 stale, 0 expired, 0 retired
 
 c1-4zg3720m08zgd08ssq7z  stale  The client waits between attempts.
-  marked 2026-11-21T08:50:59Z (m1-7wk5xbd4tz083mqx0yxc)
+  marked 2026-11-21T09:26:53Z (m1-6km1j9jarap59chkzt12)
   evidence 1  file:src/wait.py  changed (fingerprint_differs)  function "wait", lines 3-5
     the stored quote is no longer in this unit
     | def wait(n):
@@ -315,7 +315,7 @@ Re-check each statement before running its next command. If it no longer holds, 
 
 ```text output
 $ hibi mark c1-4zg3
-error: selector_not_exact: evidence 1 (file:src/wait.py): the stored quote is no longer in this unit, function:wait (function) at line 3: wait; a mark would keep the stale quote
+error: selector_not_exact: evidence 1 (file:src/wait.py): the stored quote is no longer in this unit, function "wait", lines 3-5; a mark would keep the stale quote
   fix: hibi reanchor c1-4zg3720m08zgd08ssq7z --evidence 1=<anchor>
 ```
 
@@ -334,7 +334,7 @@ $ hibi status c1-6dt3
 11 claims: 4 fresh, 6 stale, 0 expired, 1 retired
 
 c1-6dt3nyqbmd889g7v7z00  stale  wait sleeps first.
-  marked 2026-11-21T08:50:59Z (m1-5v10w59h5xzpr9r8tw0z)
+  marked 2026-11-21T09:26:54Z (m1-axzygkq3cvam83xany9w)
   evidence 1  file:src/w2.py  missing (not_exact)
     the name and the quoted text now point to different units: the first candidate has the name, the others hold the quoted text
     stored: symbol wait, quote "time.sleep(BACKOFF)"
@@ -363,7 +363,7 @@ $ hibi status --detail c1-p48c
 4 claims: 2 fresh, 2 stale, 0 expired, 0 retired
 
 c1-p48cbmnzaq2e1hbc0n3h  stale  The queue holds 100 jobs.
-  marked 2026-11-21T08:49:19Z (m1-z6ze6v6y08kd7y60y3kb)
+  marked 2026-11-21T09:26:50Z (m1-nf54tshbvem32agz5gej)
   subject  file:README.md  same  sentence "The limit is applied per worker.", line 5
     | The limit is applied per worker.
   evidence 1  file:src/queue.py  ambiguous (several_units)
@@ -394,7 +394,7 @@ $ hibi status c1-mr16
 3 claims: 2 fresh, 1 stale, 0 expired, 0 retired
 
 c1-mr16t1770q4fk2e1fvd4  stale  Parsing an int gives an int.
-  marked 2026-11-21T08:49:19Z (m1-h7ge9fjrjcwyqwndf9b7)
+  marked 2026-11-21T09:26:50Z (m1-5vmtb22s0td84e3b1s3q)
   evidence 1  file:src/parse.py  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: symbol parse, quote "def parse(x: int) -> int: ..."
@@ -459,7 +459,7 @@ $ hibi status c1-d55y
 10 claims: 3 fresh, 6 stale, 0 expired, 1 retired
 
 c1-d55y4047ex5fw3w2d52y  stale  Old entries are evicted first.
-  marked 2026-11-21T08:50:59Z (m1-wyqx5mzxc5jqzp50wv9f)
+  marked 2026-11-21T09:26:54Z (m1-v09z0y8b2h4w42fphaag)
   subject  file:docs/evict.md  ambiguous (several_units)
     stored: quote "Old entries are evicted first."
     2 candidates; the stored anchor matches each of them:
@@ -488,7 +488,7 @@ lists every one. Two Python functions with the same name give JSON anchors:
 
 ```text output
 $ hibi claim "x" --subject "file:README.md::A job runs" --evidence "file:src/jobs.py#run"
-error: side_ambiguous: evidence 1 (file:src/jobs.py): the anchor matches 2 units; use one of these anchors: function "run", line 1: {"loc":"file:src/jobs.py","sel":{"quote":"def run(job):","prefix":"","suffix":"return job","symbol":"run","count":2}}; function "run", line 4: {"loc":"file:src/jobs.py","sel":{"quote":"def run(job, retries):","prefix":"","suffix":"return job","symbol":"run","count":2}}
+error: side_ambiguous: evidence 1 (file:src/jobs.py): the anchor matches 2 units; use one of these anchors: function "run", lines 1-2: {"loc":"file:src/jobs.py","sel":{"quote":"def run(job):","prefix":"","suffix":"return job","symbol":"run","count":2}}; function "run", lines 4-5: {"loc":"file:src/jobs.py","sel":{"quote":"def run(job, retries):","prefix":"","suffix":"return job","symbol":"run","count":2}}
   fix: Give a symbol, or a longer quote, so that the anchor matches one unit.
 ```
 
@@ -540,7 +540,7 @@ the quote lies in a comment inside it):
 
 ```text output
 $ hibi claim "x" --subject "file:docs/cache.md::holds 64 entries" --evidence "file:src/cache.rs#Cache::Settings read at start-up"
-error: selector_not_exact: evidence 1 (file:src/cache.rs): the quote "Settings read at start-up" does not occur in the unit the anchor resolves to; found struct:Cache (struct) at line 2: Cache, text "pub struct Cache {\n    pub limit: u32,\n}"
+error: selector_not_exact: evidence 1 (file:src/cache.rs): the quote "Settings read at start-up" does not occur in the unit the anchor resolves to; found struct "Cache", lines 2-4, text "pub struct Cache {\n    pub limit: u32,\n}"
   fix: Quote text that occurs in that unit, or leave the quote out to anchor the whole unit.
 ```
 
@@ -598,7 +598,7 @@ and can be anchored:
 
 ```text output
 $ hibi claim "Jobs run at most 3 times." --subject "file:src/jobs.py#Job::Jobs run at most 3 times" --evidence "file:src/jobs.py#Job.retries"
-c1-v78ang0ag8ks41t5fdpb  created  m1-0sxrrdhsdwh306spy4h7  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
+c1-v78ang0ag8ks41t5fdpb  created  m1-cvs73ejqqc5etz6sezxd  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
 ```
 
 ## Renames
@@ -614,13 +614,13 @@ $ hibi status
 3 claims: 1 fresh, 2 stale, 0 expired, 0 retired
 
 c1-80hy5a7k2p7j8zb9y6k7  stale  The queue holds 100 jobs.
-  marked 2026-11-21T08:54:20Z (m1-9v5qmgj71bg7zx3tvrrh)
+  marked 2026-11-21T09:27:14Z (m1-cgjramw2awhj4dv7cjay)
   evidence 1  file:src/jobs.py  missing (selector_not_found)
     stored: symbol limit
   next: hibi reanchor c1-80hy5a7k2p7j8zb9y6k7 --evidence 1=<anchor>
 
 c1-v848jxj1f7b5scyn9gv9  stale  limit returns 100.
-  marked 2026-11-21T08:54:20Z (m1-a0era0da28ghtrgzy3r0)
+  marked 2026-11-21T09:27:14Z (m1-xcmthhkepptp7fdcgm3w)
   evidence 1  file:src/jobs.py  missing (selector_not_found)
     stored: symbol limit
   next: hibi reanchor c1-v848jxj1f7b5scyn9gv9 --evidence 1=<anchor>
@@ -634,7 +634,7 @@ and the statement still holds, anchor to it:
 ```text output
 $ hibi reanchor c1-v848 --statement 'queue_limit returns 100.' --evidence 1=file:src/jobs.py#queue_limit
 c1-v848jxj1f7b5scyn9gv9 is retired and replaced by the new claim c1-vfgr71xf7tynknj8b0rb
-  mark m1-62hz363tjn5dntp9w06q, retirement r1-8s7chrcf77qx0qq7qtbp
+  mark m1-v7ysh7w8ce58sxqx3cpc, retirement r1-fj51fqrnbbrdp7k3xx5k
   was stale: evidence 1 file:src/jobs.py missing (selector_not_found); now marked: make sure you re-checked it
   subject file:README.md (sentence "The limit is applied per worker.", line 5)
     {"loc":"file:README.md","sel":{"quote":"The limit is applied per worker.","prefix":"","suffix":"","within":["Jobs","A job runs at most 3 times."]}}
@@ -655,7 +655,7 @@ $ hibi status
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
 c1-796bxye5q996vzq2w0y9  stale  The request timeout is stored in whole seconds.
-  marked 2026-11-21T08:44:37Z (m1-1tvh90een18kkqkwy2ew)
+  marked 2026-11-21T09:26:41Z (m1-qgfka5fz9x9ve23b90ty)
   evidence 1  file:src/config.rs  missing (selector_not_found)
     stored: symbol Config.timeout_secs
     1 candidate; each is a guess, read it before you anchor to it:

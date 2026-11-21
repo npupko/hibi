@@ -26,7 +26,7 @@ exclude = [
 | `name` | Required, unique, lower-case letters, digits and `-` |
 | `resource` | Required. For `file:` and `repo:`, a glob over the paths git lists (tracked files, and untracked files that are not ignored): `*` within a path segment, `**` across segments, `?`, `[...]`, `{a,b}`. Paths under `.hibi/` never match. For an external scheme, one exact locator. |
 | `kinds` | Required, not empty. The [unit kinds](/providers/file#unit-kinds) that must be covered. For a `file:` or `repo:` scope, a kind the file provider does not have is `invalid_config`; for an external scheme, a kind the provider did not list in `hello` gives the warning `unknown_kind`. |
-| `exclude` | Optional. Each entry has a `resource` pattern, an optional `unit` holding one exact unit key (in the JSON output of `cover`, at `scopes[].items[].unit.key`; the text output prints no keys), and a required `reason`. Without `unit`, the entry excludes every unit of the matching resources. |
+| `exclude` | Optional. Each entry has a `resource` pattern, an optional `unit` holding one exact unit key (in the JSON output of `cover`, at `scopes[].items[].unit.key`; the text output prints no keys), and a required `reason`. Without `unit`, the matching resources are not read at all; see [exclusions](#exclusions). |
 
 ## What counts as covered
 
@@ -37,7 +37,9 @@ claim's state does not matter: a stale claim still covers, because its anchor
 still points at the unit. Retired claims cover nothing.
 
 A unit of a scope is `covered` when some side covers it, `excluded` when it is
-not covered and an exclusion matches it, and `uncovered` otherwise.
+not covered and an exclusion with that `unit` matches it, and `uncovered`
+otherwise. A resource matched by an exclusion without `unit` has no units in
+the scope at all.
 
 ## Running `cover`
 
@@ -53,23 +55,6 @@ docs (file:docs/**/*.md; sentence, list-item, table-row): 3 units, 0 covered, 0 
         5  sentence  The delay between attempts doubles each time, starting at 200 ms.
 ```
 
-With the exclusions above, in a later state of the same repository where
-`docs/retry.md` ends with the sentence "See the FAQ for more.":
-
-```text output
-docs (file:docs/**/*.md; sentence, list-item, table-row): 5 units, 2 covered, 2 excluded, 1 uncovered
-  file:docs/retry.md
-        3  sentence  The client retries a failed download.
-  excluded: file:docs/changelog.md (1 unit): release notes, not claims
-  excluded: file:docs/retry.md unit sentence:0863e2920c1f (1 unit): a pointer, not a statement
-```
-
-Every exclusion is printed with its reason and the number of units it
-matched, so an exclusion is never hidden. The key of a prose unit is made from
-its content, so when the excluded sentence changes, the exclusion stops
-matching and the sentence is listed again. The JSON result reports this as
-`"matched": 0`.
-
 | Option | Effect |
 |---|---|
 | `--scope <name>` | Report only this scope. Repeat for several. |
@@ -78,6 +63,40 @@ matching and the sentence is listed again. The JSON result reports this as
 
 `cover` needs git, because it lists files with git. A repository without any
 scope gets the error `no_scopes`.
+
+## Exclusions
+
+With the exclusions above, in a later state of the same repository where
+`docs/retry.md` ends with the sentence "See the FAQ for more.":
+
+```text output
+docs (file:docs/**/*.md; sentence, list-item, table-row): 4 units, 2 covered, 1 excluded, 1 uncovered
+  file:docs/retry.md
+        3  sentence  The client retries a failed download.
+  excluded: file:docs/changelog.md (1 resource): release notes, not claims
+  excluded: file:docs/retry.md unit sentence:0863e2920c1f (1 unit): a pointer, not a statement
+```
+
+Every exclusion is printed with its reason and what it matched, so an
+exclusion is never hidden:
+
+- **An exclusion with `unit`** matches that one unit, and counts units
+  ("(1 unit)"). The unit is `excluded` only while no claim covers it. The key
+  of a prose unit is made from its content, so when the excluded sentence
+  changes, the exclusion stops matching and the sentence is listed again.
+  The JSON result reports this as `"matched": 0`.
+- **An exclusion without `unit`** matches whole resources, and counts
+  resources ("(1 resource)"). A matched resource is not read at all: its
+  units are not units of the scope, so they appear in no count, it is never
+  listed as unavailable, and a claim on one of its units does not show as
+  covered in that scope. Here `docs/changelog.md` is such a resource, so the
+  scope has 4 units, not 5.
+
+Excluding a whole file is therefore the remedy for a file that cannot be
+read and will not become readable: a code file that does not parse, a file
+that is too large, or one that is not text (see
+[fingerprints](/concepts/fingerprints#a-file-that-does-not-parse)). Agree on
+every exclusion with the people who maintain the scope.
 
 ## From an uncovered unit to a claim
 
@@ -104,14 +123,15 @@ A file that matches a scope but cannot be read (not UTF-8, a code file that
 does not parse, a code file larger than 2 MiB or another file larger than
 8 MiB, a symbolic link) or an external resource whose provider fails is listed as
 unavailable, with the reason. Such a resource is never counted as covered and
-never dropped silently. Here `docs/bad.md` is not valid UTF-8 and
+never dropped silently. To stop reading one for good, exclude it without
+`unit`. Here `docs/bad.md` is not valid UTF-8 and
 `docs/link.md` is a symbolic link:
 
 ```text output
-docs (file:docs/**/*.md; sentence, list-item, table-row): 5 units, 2 covered, 2 excluded, 1 uncovered
+docs (file:docs/**/*.md; sentence, list-item, table-row): 4 units, 2 covered, 1 excluded, 1 uncovered
   file:docs/retry.md
         3  sentence  The client retries a failed download.
-  excluded: file:docs/changelog.md (1 unit): release notes, not claims
+  excluded: file:docs/changelog.md (1 resource): release notes, not claims
   excluded: file:docs/retry.md unit sentence:0863e2920c1f (1 unit): a pointer, not a statement
   unavailable: file:docs/bad.md (not_text)
   unavailable: file:docs/link.md (resource_not_found)
