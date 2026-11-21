@@ -97,14 +97,9 @@ impl Candidates {
         let mut lines: Vec<String> = self
             .selectable()
             .map(|(u, anchor)| {
-                let label = u.label.as_deref().unwrap_or(&u.key);
-                let line = u
-                    .range
-                    .map_or_else(String::new, |r| format!(", line {}", r.line));
                 format!(
-                    "{} {}{line}: {}",
-                    u.kind,
-                    quoted(&super::types::excerpt(label, 80)),
+                    "{}: {}",
+                    describe_unit(u),
                     anchor.unwrap_or("identical to another candidate, no anchor selects it alone")
                 )
             })
@@ -307,16 +302,23 @@ impl Resolved {
     }
 }
 
-/// Key, kind, and label or line of a unit, for messages.
+/// A unit as every message and the text output name it:
+/// `<kind> "<label>", lines <a>-<b>`, with `line <a>` for a unit on one
+/// line and nothing after the label for a unit without a range. The label
+/// (the key when the unit has none) is cut to 80 characters and written
+/// by [`quoted`].
 pub(crate) fn describe_unit(u: &Unit) -> String {
-    let mut s = format!("{} ({})", u.key, u.kind);
-    if let Some(r) = u.range {
-        s.push_str(&format!(" at line {}", r.line));
-    }
-    if let Some(l) = &u.label {
-        s.push_str(&format!(": {l}"));
-    }
-    s
+    let label = u.label.as_deref().unwrap_or(&u.key);
+    let lines = match u.range {
+        Some(r) if r.end_line > r.line => format!(", lines {}-{}", r.line, r.end_line),
+        Some(r) => format!(", line {}", r.line),
+        None => String::new(),
+    };
+    format!(
+        "{} {}{lines}",
+        u.kind,
+        quoted(&super::types::excerpt(label, 80))
+    )
 }
 
 /// The side state and reason of a provider error code (sections 9.2 and

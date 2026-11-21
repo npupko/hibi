@@ -40,11 +40,11 @@ fn a_symbol_naming_two_declarations_is_ambiguous_and_each_candidate_can_be_picke
     let message = text(&e["message"]);
     assert!(message.contains("matches 2 units"), "{message}");
     assert!(
-        message.contains("function \"max_size\", line 1: "),
+        message.contains("function \"max_size\", lines 1-2: "),
         "{message}"
     );
     assert!(
-        message.contains("function \"max_size\", line 9: "),
+        message.contains("function \"max_size\", lines 9-10: "),
         "{message}"
     );
     assert_eq!(

@@ -5431,7 +5431,7 @@ in the run.
 | Condition | `next` |
 |---|---|
 | `fresh` or `retired` | `null` |
-| A side is `missing` or `ambiguous`, or `unavailable` with `selector_refused` | `hibi reanchor <id>` with `--subject <anchor>` or `--evidence <n>=<anchor>` for each such side |
+| A side is `missing` or `ambiguous`, or `unavailable` with `selector_refused`, or `changed` with its unit resolved by its symbol alone because the stored quote is gone (`identity: "symbol"`, section 9.2; the side's `detail` says so) | `hibi reanchor <id>` with `--subject <anchor>` or `--evidence <n>=<anchor>` for each such side |
 | A side is `unavailable` with `provider_not_registered`, `provider_failed` or `repo_not_allowed` | `hibi providers` |
 | A side is `unavailable` with `scheme_not_declared`, `repo_not_found`, `not_text`, `too_large`, `provider_error` or `resource_unavailable` | `null` |
 | Otherwise (`expired`, or sides `changed` or `profile_mismatch`) | `hibi mark <id>` |
@@ -5932,9 +5932,11 @@ replaced or added side in `reanchor`:
 - `side_ambiguous`. The message lists the units the anchor matched, in the
   form
   `the anchor matches <n> units; use one of these anchors: <candidate>; <candidate>`,
-  where each candidate is `<kind> "<label>", line <n>: <anchor>`. `<label>`
-  is the unit's label, or its key when it has none, cut to 80 characters;
-  `, line <n>` is omitted for a unit without a range. `<anchor>` selects
+  where each candidate is `<unit>: <anchor>`. `<unit>` is the one form in
+  which every message names a unit: `<kind> "<label>", lines <a>-<b>`, with
+  `line <a>` for a unit on one line and nothing after the label for a unit
+  without a range. `<label>` is the unit's label, or its key when it has
+  none, cut to 80 characters. `<anchor>` selects
   that unit, and no other unit of the resource, when given back as an anchor
   argument: it is the compact form `<locator>#<symbol>` when the locator is
   on scheme `file` or `repo` and the candidate's symbol is unique in the

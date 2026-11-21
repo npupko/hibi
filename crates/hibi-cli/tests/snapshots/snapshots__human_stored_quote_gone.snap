@@ -26,7 +26,7 @@ exit status: 1
 ---- standard output ----
 (empty)
 ---- standard error ----
-error: selector_not_exact: evidence 1 (file:src/cache.rs): the stored quote is no longer in this unit, function:limit (function) at line 1: limit; a mark would keep the stale quote
+error: selector_not_exact: evidence 1 (file:src/cache.rs): the stored quote is no longer in this unit, function "limit", lines 1-4; a mark would keep the stale quote
   fix: hibi reanchor c1-h11mnkp70sgmegp55r2g --evidence 1=<anchor>
 
 $ hibi reanchor c1-h11mnkp70sgmegp55r2g --evidence '1=file:src/cache.rs#limit::let max_entries = 128;'
