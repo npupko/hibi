@@ -1,2 +1,5 @@
 target/
 .claude/
+
+# Pending insta snapshots: review, then accept or delete them.
+*.snap.new
