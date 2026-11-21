@@ -66,14 +66,24 @@ claims as part of `fresh`, for example `4 claims: 2 fresh (1 drifted), 0 stale,
 1 expired, 1 retired`.
 
 The reference mark, against which side states are reported, is the newest
-matching mark if any mark matches, otherwise the newest mark.
+matching mark if any mark matches, otherwise the newest mark. The text output
+of `status` names it, with its time, under each listed claim, together with
+the recheck period and when it runs out. For a side that is missing or
+ambiguous it also prints the stored symbol, quote or key, so you can see what
+the anchor was looking for.
 
 ## Recheck periods
 
 `--recheck` takes an ISO 8601 duration with whole numbers: `P90D`, `P6M`,
 `P1Y`, `P2W`, `PT12H`. Years and months move the calendar date, using the
 last day of a shorter month; weeks, days, hours, minutes and seconds add fixed
-seconds. A period of zero, such as `P0D`, is `invalid_duration`.
+seconds. A period of zero is refused:
+
+```text output
+$ hibi claim "x" --subject "file:docs/cache.md::holds 64 entries" --recheck P0D
+error: invalid_duration: the recheck period "P0D" is zero; it must be longer than zero
+  fix: Give a period longer than zero, for example P90D, or leave the recheck period out.
+```
 
 ```bash
 hibi claim "Each attempt times out after 10 seconds." \
@@ -91,10 +101,10 @@ $ hibi status
 4 claims: 2 fresh, 0 stale, 1 expired, 1 retired
 
 c1-zfv9r5t784m0vnty4fv9  expired  Each attempt times out after 10 seconds.
-  recheck P90D ran out at 2026-10-30T09:00:00Z
+  marked 2026-08-01T09:00:00Z (m1-w0yyhnc63nzdvsk0kjb9), recheck P90D ran out at 2026-10-30T09:00:00Z
   next: hibi mark c1-zfv9r5t784m0vnty4fv9
 
-Re-check each stale or expired statement before running its next command.
+Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
 ## The current time

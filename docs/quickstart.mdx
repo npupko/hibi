@@ -116,7 +116,7 @@ pub fn delay_ms(n: u32) -> u64 {
     ```
 
     ```text output
-    c1-bvy8mfb476vwm9ftpx44  created  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+    c1-bvy8mfb476vwm9ftpx44  created  m1-an892wx2j0x095m74hrv  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
     ```
 
     `claim` writes the claim and its first mark. The claim is fresh:
@@ -141,10 +141,11 @@ pub fn delay_ms(n: u32) -> u64 {
     1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
     c1-bvy8mfb476vwm9ftpx44  stale  The client gives up after 5 attempts.
+      marked 2026-11-20T23:56:57Z (m1-an892wx2j0x095m74hrv)
       evidence 1  file:src/retry.rs  changed (fingerprint_differs)  variable "MAX_ATTEMPTS", line 2
       next: hibi mark c1-bvy8mfb476vwm9ftpx44
 
-    Re-check each stale or expired statement before running its next command.
+    Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
     ```
 
     Only the side that changed is listed. `next` is the command to run if a
@@ -163,10 +164,13 @@ pub fn delay_ms(n: u32) -> u64 {
     ```
 
     ```text output
-    c1-bvy8mfb476vwm9ftpx44 is retired and replaced by c1-dryhtmnz5njjpp2ppy6t
-      mark m1-3pmhdvgbb5j3dqhe5w0p, retirement r1-1ajjxsh1x57t8xf3s5sj
-      subject  {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
-      evidence 1  {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 3;","prefix":"a download is tried before the client gives up.\n","suffix":"\n\n/// The delay before attempt `n`, in milliseco","pos":62,"symbol":"MAX_ATTEMPTS"}}
+    c1-bvy8mfb476vwm9ftpx44 is retired and replaced by the new claim c1-dryhtmnz5njjpp2ppy6t
+      mark m1-2mdbntw45xcr0zb9t40d, retirement r1-4epjc5bb19dcn76ytcxz
+      was stale: subject file:docs/retry.md changed (fingerprint_differs); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked
+      subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4)
+        {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
+      evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+        {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 3;","prefix":"a download is tried before the client gives up.\n","suffix":"\n\n/// The delay before attempt `n`, in milliseco","pos":62,"symbol":"MAX_ATTEMPTS"}}
     ```
 
     ```bash
@@ -194,7 +198,7 @@ and `--help` (text). `--format human` or
 piped:
 
 ```json output
-{"ok":true,"command":"status","now":"2026-11-20T22:43:55Z","snapshot":"b3:dcb0641dbd2b9c4eb444eaec2581ed9d7b3d75749d433dae0b0368f8fc0621b4","since":null,"summary":{"claims":2,"fresh":1,"drifted":0,"stale":0,"expired":0,"retired":1},"claims":[],"nextNote":"Re-check each statement before running its next command. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command.","warnings":[]}
+{"ok":true,"command":"status","now":"2026-11-20T23:56:58Z","snapshot":"b3:44cf975fec3bb9d7e360a0bd04d8ab0ebac9a6e9c7cd614907b293483386088a","since":null,"summary":{"claims":2,"fresh":1,"drifted":0,"stale":0,"expired":0,"retired":1},"claims":[],"nextNote":"Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command.","warnings":[]}
 ```
 
 `hibi schema status-output` prints the JSON Schema of that object. Every

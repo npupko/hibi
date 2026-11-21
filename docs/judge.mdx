@@ -72,10 +72,10 @@ error: judge_unavailable: TYPESAFE_API_KEY is not set; the judge commands need i
   fix: Set TYPESAFE_API_KEY, or run the command without the judge.
 ```
 
-Plain `hibi status` needs no key. With the key set, the commands next check
-git, and fail with `not_a_git_repository` or `git_too_old` before any network
-contact when the root is not the top level of a git work tree or git is older
-than 2.45.0.
+Plain `hibi status` needs no key. With the key set, the commands next find
+the root, then check git, then read the configuration, all before any network
+contact. They fail with `not_a_git_repository` or `git_too_old` when the root
+is not the top level of a git work tree or git is older than 2.45.0.
 
 ## Results
 

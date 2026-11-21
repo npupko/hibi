@@ -50,6 +50,7 @@ $ HIBI_CONFIG=none.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-rnkwm7d1br3arbrh8tcs  stale  Downloads are retried at most 3 times.
+  marked 2026-11-20T23:57:03Z (m1-98ydw5w0k5c0tymzxhbz)
   subject  ref:notes  unavailable (provider_not_registered)
   next: hibi providers
 ```
@@ -67,6 +68,9 @@ scheme ref: not registered. To register it, add to the user config:
     command = ["<program>", "<argument>"]
 ```
 
+In JSON, each scheme and each sibling repository in the result has a
+`remediation` field holding those lines, or `null` when nothing is missing.
+
 ## Using provider units in claims
 
 A compact anchor on an external scheme is the locator alone, with the empty
@@ -75,7 +79,7 @@ reference provider answers it with every unit of the resource:
 
 ```text output
 $ HIBI_CONFIG=user.toml hibi claim "Downloads are retried at most 3 times." --subject ref:notes --evidence "file:src/retry.rs#MAX_ATTEMPTS"
-error: side_ambiguous: the subject (ref:notes): the selector matches 2 units: n1 (note): Downloads are retried at most 3 times.; n2 (note): The limit is set in src/retry.rs.
+error: side_ambiguous: the subject (ref:notes): the anchor matches 2 units; use one of these anchors: note "Downloads are retried at most 3 times.": {"loc":"ref:notes","sel":{"key":"n1"}}; note "The limit is set in src/retry.rs.": {"loc":"ref:notes","sel":{"key":"n2"}}
   fix: Give a longer quote, or the unit's key, so that the anchor matches one unit.
 ```
 
@@ -86,7 +90,7 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
 ```
 
 ```text output
-c1-rnkwm7d1br3arbrh8tcs  created  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-rnkwm7d1br3arbrh8tcs  created  m1-98ydw5w0k5c0tymzxhbz  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 A selector key the provider did not list in `hello` is refused before
@@ -106,10 +110,11 @@ $ HIBI_CONFIG=user.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-rnkwm7d1br3arbrh8tcs  stale  Downloads are retried at most 3 times.
+  marked 2026-11-20T23:57:03Z (m1-98ydw5w0k5c0tymzxhbz)
   subject  ref:notes  changed (fingerprint_differs)  note "Downloads are retried at most 4 times."
   next: hibi mark c1-rnkwm7d1br3arbrh8tcs
 
-Re-check each stale or expired statement before running its next command.
+Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
 A scope can name one external resource; its units come from the provider:

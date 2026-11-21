@@ -153,7 +153,7 @@ Every command accepts these:
 |---|---|
 | `--root <dir>` | Use this directory as the root instead of searching upward from the working directory for `.hibi/hibi.toml` |
 | `--format human` or `--format json` | Output format. Default: JSON when standard output is not a terminal, text when it is. |
-| `--now <timestamp>` | Use this instant as the current time. RFC 3339 with any offset; a fraction of a second is dropped. |
+| `--now <timestamp>` | Use this instant as the current time. RFC 3339 with any offset; a fraction of a second is dropped. The latest accepted instant is `9999-12-30T22:00:00Z`. |
 | `--no-cache` | Do not read or write the cache |
 
 `hibi completions <shell>` prints a completion script for `bash`, `zsh`,

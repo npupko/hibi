@@ -58,7 +58,7 @@ one sentence or one command, or `null`.
 | `invalid_argument` | A well-formed argument with an unacceptable value |
 | `invalid_json` | Standard input is not the expected JSON |
 | `invalid_anchor` | A locator, selector or compact anchor does not parse |
-| `invalid_duration` | A `recheck` duration does not parse |
+| `invalid_duration` | A `recheck` duration does not parse, is zero, or runs past the year 9999 |
 | `invalid_time` | `--now` does not parse |
 | `invalid_range` | A `--since` range is not one of the accepted forms |
 | `not_initialized` | No `.hibi/hibi.toml` was found |
@@ -69,6 +69,7 @@ one sentence or one command, or `null`.
 | `invalid_config` | `.hibi/hibi.toml` does not parse or breaks a rule |
 | `invalid_user_config` | The user config does not parse or breaks a rule |
 | `store_corrupt` | A shard is damaged, misplaced, larger than 64 MiB or a symbolic link, or the shards hold more than 256 MiB together |
+| `store_full` | A write would make a shard larger than 64 MiB or the store larger than 256 MiB; nothing was written |
 | `store_locked` | Another hibi process held the write lock for 10 seconds |
 | `io_error` | A file operation failed |
 | `git_failed` | A git command failed |

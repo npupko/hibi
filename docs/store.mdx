@@ -73,6 +73,11 @@ writes a temporary file, syncs it to disk and renames it over the shard.
 Claim shards are written before mark shards, so a crash can leave at worst a
 claim without its mark, which reads as stale.
 
+A write that would make a shard larger than 64 MiB, or all shards together
+larger than 256 MiB, is refused with `store_full` before anything is
+written. Retired claims stay in the store by design, so a store does not
+shrink.
+
 ## Damage and refusals
 
 | Finding | Result |

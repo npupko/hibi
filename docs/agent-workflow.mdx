@@ -30,7 +30,8 @@ when it cannot decide.
     Read the statement and the current text of its sides. Decide whether the
     statement still holds. `next` is what to run when it does; it is not a
     verdict. hibi prints the reminder once per run: "Re-check each stale or
-    expired statement before running its next command."
+    expired statement before running its next command. If it no longer holds,
+    fix the text or the code, or retire the claim with hibi retire."
   </Step>
   <Step title="Refresh each drifted claim">
     A drifted claim is fresh: every side still has a fingerprint that a mark
@@ -99,10 +100,13 @@ to "doubles every time"; the meaning is unchanged, so the claim is marked:
 
 ```text output
 $ hibi mark c1-rj6k --by agent:claude
-c1-rj6kbh7y1yw79ywz4msv  marked  m1-6hmnmnarybw4ns6nc2c4
+c1-rj6kbh7y1yw79ywz4msv  marked  m1-3wsdvcvh1ykhahdzx1c3
+  was stale: subject file:docs/retry.md changed (fingerprint_differs); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked
   subject  file:docs/retry.md  same, found approximately  sentence "The delay between attempts doubles every time, starting at …", line 5
     | The delay between attempts doubles every time, starting at 200 ms.
   next: hibi reanchor c1-rj6kbh7y1yw79ywz4msv
+
+A next command here only brings a stored anchor up to date. Look at what the anchor points to now, then run it.
 ```
 
 `mark` prints the text of every approximately found side, so you see exactly
@@ -114,14 +118,15 @@ $ hibi status
 4 claims: 2 fresh (1 drifted), 0 stale, 1 expired, 1 retired
 
 c1-rj6kbh7y1yw79ywz4msv  fresh  The delay doubles each time, starting at 200 ms.
+  marked 2026-11-20T23:57:00Z (m1-3wsdvcvh1ykhahdzx1c3)
   subject  file:docs/retry.md  same, found approximately  sentence "The delay between attempts doubles every time, starting at …", line 5
   next: hibi reanchor c1-rj6kbh7y1yw79ywz4msv
 
 c1-zfv9r5t784m0vnty4fv9  expired  Each attempt times out after 10 seconds.
-  recheck P90D ran out at 2026-10-30T09:00:00Z
+  marked 2026-08-01T09:00:00Z (m1-w0yyhnc63nzdvsk0kjb9), recheck P90D ran out at 2026-10-30T09:00:00Z
   next: hibi mark c1-zfv9r5t784m0vnty4fv9
 
-Re-check each stale or expired statement before running its next command.
+Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 
 A fresh claim is listed because its anchor drifted. The statement still holds: look at what the anchor points to now, then run its reanchor command.
 ```
@@ -140,11 +145,15 @@ prints one JSON object. The fields an agent reads from `status`:
 | `claims[].state` | `fresh`, `stale`, `expired` or `retired` |
 | `claims[].sides[]` | One entry per side: `index` (0 for the subject, n for evidence n), `role`, `anchor`, `state`, `reason`, `approx`, `unit`, `fp` and `markedFp`, plus `candidates` when ambiguous and `text` with `--detail` |
 | `claims[].next` | The command to run after a successful re-check, or `null` |
-| `nextNote` | The two reminders: re-check a stale or expired statement before running its `next`, and for a drifted fresh claim, look at what the anchor points to now before running its `reanchor` |
+| `nextNote` | The reminders: re-check a statement before running its `next`; when it no longer holds, fix the text or the code, or retire the claim; and for a drifted fresh claim, look at what the anchor points to now before running its `reanchor` |
 
-Every write that adds a mark (`claim`, `mark`, `reanchor`) also reports the
-claim's state before the write and which sides had changed, and every result
-that carries a `next` also carries `nextNote`.
+Every write that adds a mark to an existing claim (`claim` on an existing
+claim, `mark`, `reanchor`) reports what it accepted:
+`"accepted": {"was": <state before>, "sides": [{"index", "role", "loc", "state", "reason"}]}`,
+listing the sides that were not `same`; for a new claim `accepted` is `null`.
+In text this is a line such as
+`was stale: evidence 1 file:src/cache.rs changed (fingerprint_differs); now marked`.
+Every result that carries a `next` also carries `nextNote`.
 
 Errors are `{"ok": false, "errors": [{"code", "message", "remediation"}]}` with
 exit status 1. `remediation` is one sentence or one command that fixes the
@@ -154,8 +163,17 @@ cause.
 
 `claim` and `mark` read a JSON array from standard input with `--stdin`. A
 batch is written all or nothing: if any element fails, nothing is written and
-every error of every failing element is reported in the same run, each with
-the element's `index`.
+every failing element is reported in the same run, each with its `index`:
+
+```text output
+$ echo '[{"statement":"a","subject":"file:docs/nope.md"},{"statement":"b","subject":"file:docs/cache.md::The cache"},{"statement":"c","subject":"file:docs/cache.md::holds 64 entries","recheck":"P0D"}]' | hibi claim --stdin
+error: element 0: side_missing: the subject (file:docs/nope.md) resolves to no unit (resource_not_found): not_found: file:docs/nope.md: no such file
+  fix: Point the anchor at text that exists in the resource.
+error: element 1: side_ambiguous: the subject (file:docs/cache.md): the anchor matches 2 units; use one of these anchors: sentence "The cache holds 64 entries.", line 3: {"loc":"file:docs/cache.md","sel":{"quote":"The cache holds 64 entries.","prefix":"# Cache\n\n","suffix":"\nOld entries are evicted first.\nThe cache is cle","pos":9}}; sentence "The cache is cleared on restart.", line 5: {"loc":"file:docs/cache.md","sel":{"quote":"The cache is cleared on restart.","prefix":"olds 64 entries.\nOld entries are evicted first.\n","suffix":"\n","pos":68}}
+  fix: Give a symbol, or a longer quote, so that the anchor matches one unit.
+error: element 2: invalid_duration: the recheck period "P0D" is zero; it must be longer than zero
+  fix: Give a period longer than zero, for example P90D, or leave the recheck period out.
+```
 
 ```bash
 echo '["c1-zfv9", {"claim": "c1-r0gt", "note": "checked against delay_ms"}]' | hibi mark --stdin

@@ -45,7 +45,8 @@ locator alone, with the empty selector.
 Some anchors cannot be written in compact form: a path that contains `#` or
 `::`, and any selector other than the empty one for an external scheme (such
 as a `key`). Give those as an object `{"loc": ..., "sel": {...}}`. An anchor
-option whose value starts with `{` is read as such an object, and in a
+option whose value starts with `{` is read as such an object, also after the
+`n=` of `reanchor --evidence`, and in a
 `hibi claim --stdin` document an anchor is either a compact string or an
 object. This example assumes the scheme `ref` is declared in `.hibi/hibi.toml`
 and its provider is registered in your user config (see
@@ -64,8 +65,10 @@ position, and the symbol when the unit is a declaration. This is what
 `reanchor` printed for the walkthrough's claim:
 
 ```text output
-  subject  {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
-  evidence 1  {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 3;","prefix":"a download is tried before the client gives up.\n","suffix":"\n\n/// The delay before attempt `n`, in milliseco","pos":62,"symbol":"MAX_ATTEMPTS"}}
+  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4)
+    {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
+  evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+    {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 3;","prefix":"a download is tried before the client gives up.\n","suffix":"\n\n/// The delay before attempt `n`, in milliseco","pos":62,"symbol":"MAX_ATTEMPTS"}}
 ```
 
 The evidence was given as `#MAX_ATTEMPTS` only; hibi added the first line of
@@ -79,8 +82,15 @@ paragraph was re-wrapped, counts as an exact occurrence.
 **A new anchor**, as you type it, has a quote but no stored context. Every
 exact occurrence of the quote is a candidate and nothing chooses between
 them. Occurrences inside one unit resolve to that unit. Occurrences in more
-than one unit are `side_ambiguous`, whatever the length of the quote, and you
-make the quote longer or add a symbol.
+than one unit are `side_ambiguous`, whatever the length of the quote. The
+error lists every candidate with an anchor that selects it, so you can pass
+one of those, make the quote longer, or add a symbol:
+
+```text output
+$ hibi claim "x" --subject "file:docs/cache.md::The cache"
+error: side_ambiguous: the subject (file:docs/cache.md): the anchor matches 2 units; use one of these anchors: sentence "The cache holds 64 entries.", line 3: {"loc":"file:docs/cache.md","sel":{"quote":"The cache holds 64 entries.","prefix":"# Cache\n\n","suffix":"\nOld entries are evicted first.\nThe cache is cle","pos":9}}; sentence "The cache is cleared on restart.", line 5: {"loc":"file:docs/cache.md","sel":{"quote":"The cache is cleared on restart.","prefix":"olds 64 entries.\nOld entries are evicted first.\n","suffix":"\n","pos":68}}
+  fix: Give a symbol, or a longer quote, so that the anchor matches one unit.
+```
 
 **A stored anchor** is resolved on every later run:
 
@@ -117,7 +127,14 @@ error: side_missing: the subject (file:docs/retry.md) resolves to no unit (selec
 
 With `#symbol::quote`, the quote must occur inside that declaration. A quote
 that is not found there, such as text from a doc comment written above the
-declaration, makes the anchor `selector_not_exact`.
+declaration, makes the anchor `selector_not_exact` (or `quote_in_comment` when
+the quote lies in a comment inside it):
+
+```text output
+$ hibi claim "x" --subject "file:docs/cache.md::holds 64 entries" --evidence "file:src/cache.rs#Cache::Settings read at start-up"
+error: selector_not_exact: evidence 1 (file:src/cache.rs): the quote "Settings read at start-up" does not occur in the unit the anchor resolves to; found struct:Cache (struct) at line 2: Cache, text "pub struct Cache {\n    pub limit: u32,\n}"
+  fix: Quote text that occurs in that unit, or leave the quote out to anchor the whole unit.
+```
 
 A quote must lie inside one unit:
 
@@ -150,7 +167,7 @@ and can be anchored:
 
 ```text output
 $ hibi claim "Jobs run at most 3 times." --subject "file:src/jobs.py#Job::Jobs run at most 3 times" --evidence "file:src/jobs.py#Job.retries"
-c1-jbtb7avwkaqq3hdcwyrx  created  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
+c1-jbtb7avwkaqq3hdcwyrx  created  m1-1bfxgacabk47bvyq5833  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
 ```
 
 ## Renames
@@ -167,10 +184,12 @@ $ hibi status
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
 c1-nr0np8r4490t2adadse5  stale  At most 100 jobs are queued.
+  marked 2026-11-20T23:57:02Z (m1-6gmtk27wnn4hcp8tq6s5)
   evidence 1  file:src/jobs.py  missing (selector_not_found)
+    stored: symbol JOB_LIMIT, quote "JOB_LIMIT = 100"
   next: hibi reanchor c1-nr0np8r4490t2adadse5 --evidence 1=<anchor>
 
-Re-check each stale or expired statement before running its next command.
+Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
 A rename of an enclosing container (a struct, class or module) changes a
@@ -184,6 +203,7 @@ $ hibi status
 4 claims: 4 fresh (1 drifted), 0 stale, 0 expired, 0 retired
 
 c1-0m5jkh4kmdjbmejs6jyd  fresh  The request timeout is stored in whole seconds.
+  marked 2026-11-20T23:57:02Z (m1-1c2byr1yxveyxnhzd875)
   evidence 1  file:src/config.rs  same, found approximately  field "Settings.timeout_secs", line 5
   next: hibi reanchor c1-0m5jkh4kmdjbmejs6jyd
 

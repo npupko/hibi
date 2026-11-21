@@ -128,7 +128,7 @@ hibi claim "The client gives up after 5 attempts." \
 ```
 
 ```text output
-c1-bvy8mfb476vwm9ftpx44  created  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-bvy8mfb476vwm9ftpx44  created  m1-an892wx2j0x095m74hrv  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 Now someone changes `MAX_ATTEMPTS` to 3. In the next session the agent asks
@@ -142,10 +142,11 @@ hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-bvy8mfb476vwm9ftpx44  stale  The client gives up after 5 attempts.
+  marked 2026-11-20T23:56:57Z (m1-an892wx2j0x095m74hrv)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  variable "MAX_ATTEMPTS", line 2
   next: hibi mark c1-bvy8mfb476vwm9ftpx44
 
-Re-check each stale or expired statement before running its next command.
+Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
 `next` assumes the statement still holds. It does not: the code says 3. The
@@ -160,10 +161,13 @@ hibi reanchor c1-bvy8 \
 ```
 
 ```text output
-c1-bvy8mfb476vwm9ftpx44 is retired and replaced by c1-dryhtmnz5njjpp2ppy6t
-  mark m1-3pmhdvgbb5j3dqhe5w0p, retirement r1-1ajjxsh1x57t8xf3s5sj
-  subject  {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
-  evidence 1  {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 3;","prefix":"a download is tried before the client gives up.\n","suffix":"\n\n/// The delay before attempt `n`, in milliseco","pos":62,"symbol":"MAX_ATTEMPTS"}}
+c1-bvy8mfb476vwm9ftpx44 is retired and replaced by the new claim c1-dryhtmnz5njjpp2ppy6t
+  mark m1-2mdbntw45xcr0zb9t40d, retirement r1-4epjc5bb19dcn76ytcxz
+  was stale: subject file:docs/retry.md changed (fingerprint_differs); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked
+  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4)
+    {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
+  evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+    {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 3;","prefix":"a download is tried before the client gives up.\n","suffix":"\n\n/// The delay before attempt `n`, in milliseco","pos":62,"symbol":"MAX_ATTEMPTS"}}
 ```
 
 ```bash

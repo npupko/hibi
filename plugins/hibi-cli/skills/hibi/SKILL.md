@@ -88,7 +88,9 @@ Ask the user before each of these steps; they change the repository.
 4. **Claim.** After you check a new statement, record it:
    `hibi claim "<statement>" --subject <anchor> --evidence <anchor>`.
    Running the same claim again, even after text near the quote changed,
-   marks the existing live claim (`created: false`) instead of adding one.
+   marks the existing live claim (`created: false`) instead of adding one,
+   and reports what it was before (`accepted.was`, for example `stale`).
+   Re-check before you do that, as for `mark`.
 5. **Cover.** `hibi cover` (or `--since main...`) lists units of the declared
    scopes that no claim covers. Claim the checkable ones. To exclude one unit,
    with the user's agreement, add an entry with its key from the `cover`
