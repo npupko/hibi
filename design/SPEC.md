@@ -4167,8 +4167,8 @@ is the side result of a `resolve` that fails with the code (section 9.2).
 | `invalid_request` | Malformed request or params. The file provider also returns it for a selector that is invalid by section 5.2. | `unavailable`, `provider_error` |
 | `unknown_method` | Method not implemented | `unavailable`, `provider_error` |
 | `unsupported_protocol` | `hello` only | the provider is unusable: `unavailable`, `provider_failed` |
-| `invalid_locator` | The locator is not valid for this provider | `unavailable`, `provider_error` |
-| `invalid_selector` | The selector has keys the provider does not accept | `unavailable`, `provider_error` |
+| `invalid_locator` | The locator is not valid for this provider | for a stored anchor `unavailable`, `selector_refused`; for a new anchor the CLI error `invalid_anchor` (section 9.2) |
+| `invalid_selector` | The selector has keys the provider does not accept | for a stored anchor `unavailable`, `selector_refused`; for a new anchor the CLI error `invalid_anchor` (section 9.2) |
 | `not_found` | The resource does not exist | `missing`, `resource_not_found` |
 | `not_text` | The resource is not text the provider can read | `unavailable`, `not_text` |
 | `too_large` | The resource exceeds a size limit of the provider | `unavailable`, `too_large` |
@@ -5183,7 +5183,9 @@ Rules for the Side keys:
   engine found. For `scheme_not_declared` it is
   `the scheme <scheme> is not declared in .hibi/hibi.toml`, and for
   `provider_not_registered` it is
-  `the user config has no provider command for scheme <scheme>`. It is
+  `the user config has no provider command for scheme <scheme>`. For
+  `selector_refused` it is the message of the provider's error
+  `invalid_selector` or `invalid_locator`, without the error code. It is
   `null` for `unavailable` with `profile_mismatch`, for `unavailable` with
   `provider_error` when the cause is a stored selector key the provider
   does not allow (the anchor is not sent, section 9.2), and for every other
@@ -6439,7 +6441,7 @@ panics counts as a failing case and does not stop the other cases.
 | `fingerprint.json` | `fingerprint::prose_v1(text)` (with NFC) and `fingerprint::ast_v1(class, stream)`: the complete fingerprint string | 8.3, 8.4 |
 | `units-code.json` | `code::analyze(text, class)`, with the class taken from `input.path`: the class after the parse-error fallback and every unit in source order as `kind`, `symbol`, `key`, `parent`, `start`, `end`, `line`, `endLine`. See "Code cases" and "Content keys and `endLine`" below. | 6.1, 6.4 to 6.6 |
 | `resolve.json` | `resolve` of the file provider on a working tree that holds only the case's file: the returned units in order as `key`, `approx`, `refuse` (`null` when absent) and the completed selector `sel`, or the provider error code. `approx` is the field of the unit object of section 13.3 as the provider returns it; what the engine makes of an `approx` unit (section 9.2) is not bound by this file. The file's content is a file under `fixtures/resolve/` or inline text, written byte for byte; with neither, the file does not exist. The same anchor is resolved twice without a cache and twice through a cache (empty, then filled), and the four answers MUST be equal. See "Resolve cases" below. | 6.7 |
-| `freshness.json` | `engine::evaluate`: the claim state, the reference mark, `expiresAt`, and each side's state and reason, for a table of marks, side resolutions and `now`. A side resolution of the input is one unit with a fingerprint, no unit, two units, a provider error code or `failed`, a missing provider (`scheme_not_declared` or `provider_not_registered`), or an invalid unit. | 9.2, 9.3, 15.2 |
+| `freshness.json` | `engine::evaluate`: the claim state, the reference mark, `expiresAt`, and each side's state and reason, for a table of marks, side resolutions and `now`. A side resolution of the input is one unit with a fingerprint, no unit, two units, a provider error code or `failed`, a missing provider (`scheme_not_declared` or `provider_not_registered`), or an invalid unit. The expected reference mark is the index of a mark of the input, `null`, or `{"greaterIdOf": [indexes]}` where only the ids decide. The cases cover the reference mark of a claim that is not fresh: the mark that matches the most sides, with marks at different and at equal `at`. | 9.2, 9.3, 15.2 |
 | `coverage.json` | `engine::covered_keys` and `engine::classify`: the units of a scope that are covered, excluded and uncovered, and the number of units each exclusion matched | 10.2 |
 | `judge/triage.json`, `judge/suggest-evidence.json`, `judge/order.json` | The request body built by the functions of `judge::questions` equals `expected.request`. `judge::read_answer` reads each answer of `input.response` as `expected.answers` says, where `null` is an unusable answer. `triage.json` also binds the band (`judge::Band`) and the evidence label (`judge::EvidenceLabel`) of each unit; `suggest-evidence.json` also binds `fits` per candidate and `noneFits`. | 14.2 to 14.5 |
 | `provider/protocol/` | The conformance cases that every provider MUST pass. They use no fixture. The same cases are compiled into hibi for `hibi providers --check`, and a test requires the compiled-in cases to equal the files of this directory. | 13.6, 15.3 |
@@ -6828,7 +6830,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 102 | `--now` is validated for every command and accepts 0000-01-01T00:00:00Z to 9999-12-30T22:00:00Z. | The upper bound is the time library's largest instant; the error names the range. |
 | 103 | `retire` collapses a claim named twice; `--replaced-by` must name a live claim. | One retirement per claim; a replacement that is itself retired points nowhere. |
 | 104 | An unknown kind is `invalid_config` for a scope on `file` or `repo`, and warning `unknown_kind` for a scope on another scheme. | hibi knows the file provider's kinds; only the provider knows the others. A misspelled kind would select nothing. |
-| 105 | `side_unavailable` carries a remediation for every reason: `hibi providers`, or a sentence naming the limit or cause and the way out. `scheme_not_declared` has `next` `null` and its own sentence; `resource_unavailable` has `next` `null` and carries the provider's message. `judge_failed` remediation is chosen by cause; a 404 points at `HIBI_JEV_URL`. | A remediation must say something the caller can act on. |
+| 105 | `side_unavailable` carries a remediation for every reason: `hibi providers`, or a sentence naming the limit or cause and the way out. `scheme_not_declared` has `next` `null` and its own sentence; `resource_unavailable` has `next` `null` and carries the provider's message; `selector_refused` has the reanchor template as `next` and a sentence saying to reanchor or retire. `judge_failed` remediation is chosen by cause; a 404 points at `HIBI_JEV_URL`. | A remediation must say something the caller can act on. |
 | 106 | `MAX_UNITS_PER_RESOURCE` is 100,000, the `file` unit included. | Bounded memory and output per resource. |
 | 107 | With a usable git, a `file:` path is read only when the root's file list has it. `.git/` and `.hibi/` are never read. A failing file list is `unavailable`. `.hibi/` is dropped from sibling file lists as well. | An ignored file such as `.env` is never opened or printed. |
 | 108 | A completed selector is a fixed point: resolving it returns the same selector. For a unit with a unique symbol, prefix and suffix are cut from the unit's scope. A completed quote is cut to `MAX_QUOTE_CHARS`, never dropped; an empty span is `internal`. | The stored selector, and so the claim id, does not change on a second pass. |
@@ -6848,7 +6850,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 122 | In the file provider a stored symbol that names no declaration makes every unit the quote finds approximate, exact ties included; a quote found only by the fuzzy step is approximate; a unique symbol, and an exact or whitespace-equal quote hit, are exact. | The symbol was the identity; without it the quote is only a guess at where the declaration went. |
 | 123 | At most `MAX_CANDIDATES` (20) candidates are shown, with `candidatesTotal`. Candidate text is cut to 240 characters. A candidate's anchor is `<loc>#<symbol>` only when the symbol is unique in the whole resource, and a JSON anchor otherwise. `next` uses the `<anchor>` placeholder and never a candidate. | Bounded output; an anchor that is offered must select one unit; the caller chooses. |
 | 124 | Sides carry `detail` and `remediation`. | The JSON holds what the human output prints. |
-| 125 | Provider error `unavailable` maps to the side reason `resource_unavailable`, with `next` `null` and the provider's message as remediation. | The resource exists and cannot be read; that is not a broken provider. |
+| 125 | Provider error `unavailable` maps to the side reason `resource_unavailable`, with `next` `null` and the provider's message as remediation. Provider errors `invalid_selector` and `invalid_locator` map to `selector_refused` for a stored anchor and to the CLI error `invalid_anchor` for a new one. | The resource exists and cannot be read, or the anchor is wrong for the resource; neither is a broken provider. |
 | 126 | A symbol on a resource class that has no symbols is `invalid_selector`. A symbol on a code file that does not parse is `unavailable`, naming the first error line. | A symbol anchor must not be resolved against text blocks while the file is broken. |
 | 127 | `reanchor` applies the same-claim rule and reports `merged`; `claim_retired` and `no_change` are checked first, and a kept side is not compared by quote. | Re-anchoring onto a claim that already exists must not create a second one. |
 | 128 | Unit building stops as soon as the count passes `MAX_UNITS_PER_RESOURCE`; the message gives the limit, not a count. | The work is bounded as well as the result. |
@@ -7617,4 +7619,31 @@ Each of these has a test, named in parentheses.
   `redact_knows_the_json_written_key_with_escaped_slashes`.)
 - R128. The overflow message of a `recheck` writes the instant with `Z`.
   (`the_overflow_message_writes_the_instant_with_z`.)
+- R129. The reference mark of a claim that is not fresh is the mark that
+  matches the most sides as they resolve now; ties go to the later `at`,
+  then to the greater id. A mark written in the same second as an earlier
+  one does not make the side it covers look `changed`.
+  (`cases/freshness.json`: the four cases named "not fresh: ...";
+  `a_stale_claim_is_reported_against_the_mark_that_matches_the_most_sides`.)
+- R130. A provider error `invalid_selector` or `invalid_locator` is the
+  anchor being wrong, not the provider failing. For a stored anchor the side
+  is `unavailable` with reason `selector_refused`, `detail` is the
+  provider's message, `next` is the reanchor template, and `mark` and a
+  `reanchor` that keeps the side fail with that template as remediation.
+  For a new anchor the command fails with `invalid_anchor` and the
+  provider's message, and does not point at `hibi providers`.
+  (`an_anchor_the_provider_refuses_is_not_a_provider_fault`,
+  `a_symbol_on_a_markdown_file_is_invalid_anchor`,
+  `every_provider_error_code_maps_by_the_table`, `cases/freshness.json`.)
+- R131. When a kept side fails in `reanchor`, the message and the
+  remediation name it by its evidence number in the old claim, also when a
+  lower number is dropped in the same command.
+  (`reanchor_names_a_failing_kept_side_by_its_old_evidence_number`.)
+- R132. The `too_large` remediation names the three limits `MAX_FILE_BYTES`,
+  `MAX_CODE_FILE_BYTES` and `MAX_UNITS_PER_RESOURCE` with their values, and
+  the `resource_unavailable` remediation says once when to run the command
+  again.
+  (`a_too_large_or_binary_file_says_the_limit_and_the_way_out`,
+  `a_code_file_that_does_not_parse_is_resource_unavailable_for_a_symbol`,
+  `an_unreadable_git_file_list_is_resource_unavailable_without_repetition`.)
 
