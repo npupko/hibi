@@ -157,7 +157,10 @@ fn fail(format: Format, command: &str, errors: Vec<Error>) -> ExitCode {
 /// section 15.1).
 pub fn run(args: &[OsString]) -> ExitCode {
     // For the test of the panic report only: there is no other way to make
-    // a correct binary panic. Not in the help or the reference.
+    // a correct binary panic. Compiled into debug builds only, which is
+    // what `cargo test` runs: a release build has no such code and does
+    // not read the variable.
+    #[cfg(debug_assertions)]
     if std::env::var_os(PANIC_TRIGGER).is_some_and(|v| v == "1") {
         panic!("{PANIC_TRIGGER} is 1, which asks for this panic to test how one is reported");
     }
@@ -203,8 +206,9 @@ pub fn run(args: &[OsString]) -> ExitCode {
     }
 }
 
-/// The environment variable that makes [`run`] panic when its value is `1`.
-/// Only the test of the panic report sets it.
+/// The environment variable that makes [`run`] panic when its value is `1`,
+/// in a debug build. Only the test of the panic report sets it.
+#[cfg(debug_assertions)]
 const PANIC_TRIGGER: &str = "HIBI_TEST_PANIC";
 
 /// The text and place of the first panic of this process, kept by the

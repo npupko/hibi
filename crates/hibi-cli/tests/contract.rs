@@ -305,6 +305,7 @@ fn every_output_schema_describes_the_real_output_of_its_command() {
 /// The `error` schema describes a real failure: `ok` is the constant
 /// `false`, the envelope is closed, `errors` has at least one entry, and
 /// `remediation` is required and may be `null`.
+#[cfg(debug_assertions)]
 #[test]
 fn the_error_schema_describes_a_real_failure() {
     let repo = Repo::new();
@@ -374,6 +375,7 @@ fn schema_titles_are_readable_names() {
 
 /// A panic in JSON format is one `internal` error on standard output with
 /// exit status 1, and nothing on standard error.
+#[cfg(debug_assertions)]
 #[test]
 fn a_panic_in_json_format_is_one_internal_error_and_standard_error_is_empty() {
     let repo = Repo::new();
@@ -399,6 +401,7 @@ fn a_panic_in_json_format_is_one_internal_error_and_standard_error_is_empty() {
 
 /// In human format the same panic is one error in the usual form on
 /// standard error, without the panic message of the standard library.
+#[cfg(debug_assertions)]
 #[test]
 fn a_panic_in_human_format_is_one_error_line_on_standard_error() {
     let repo = Repo::new();
@@ -413,6 +416,22 @@ fn a_panic_in_human_format_is_one_error_line_on_standard_error() {
     assert!(out.stderr.contains("HIBI_TEST_PANIC"), "{out:?}");
     assert!(!out.stderr.contains("panicked at"), "{out:?}");
     assert!(!out.stderr.contains("RUST_BACKTRACE"), "{out:?}");
+}
+
+/// The trigger exists in debug builds only, which is what `cargo test`
+/// builds. This test is compiled when the tests are built without debug
+/// assertions (`cargo test --release`), where the binary is a release
+/// build: the variable does nothing there.
+#[cfg(not(debug_assertions))]
+#[test]
+fn a_release_build_ignores_the_panic_trigger() {
+    let repo = Repo::new();
+    let out = repo
+        .hibi()
+        .env("HIBI_TEST_PANIC", "1")
+        .args(["--format", "json", "status"])
+        .run();
+    out.ok();
 }
 
 /// The trigger is the exact value `1`, and no help text names it.
