@@ -271,6 +271,9 @@ Rules for a new anchor (in `claim`, and a replaced or added side in
 - A quote inside a code comment, including rustdoc, JSDoc and Javadoc, is
   refused (`quote_in_comment`): anchor the code the comment describes. A
   Python docstring is a string and can be quoted.
+- Quote whole lines or whole tokens. A quote is matched as text, so one that
+  ends inside a number or a word still matches after an edit (`A = 1` still
+  occurs in `A = 10`).
 - A quote must lie inside one unit (`quote_spans_units`). A quote copied from
   a member line may keep its indentation and a trailing `,` or `;`.
 - A `file:` path must be one git lists (tracked, or untracked and not

@@ -69,6 +69,10 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
   claim is about. A whole sentence is a good quote; a short phrase works when
   it occurs once in its paragraph.
 
+Quote whole lines or whole tokens. A quote is matched as text, so a quote
+that ends inside a number or a word still matches after an edit: `A = 1`
+still occurs in `A = 10`, and the side is then only `changed`, not gone.
+
 A bare quote on a line inside a function follows the text, not the
 function. `claim` accepts it and prints a note with the anchor that follows
 the declaration instead:
