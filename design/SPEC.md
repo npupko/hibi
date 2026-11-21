@@ -112,6 +112,12 @@ The crate's tests MUST build and pass with all features off as well as with
 the default features. A test target or a case binding (section 16) that
 needs a feature is compiled only when that feature is on.
 
+The crate MUST also build, and its tests MUST build and pass, with the
+default features off and one feature named: `file`, `git-store`, `command`,
+`cache` and `judge` in turn. With `judge` named, `cache` is on as well,
+because `judge` requires it. The CI job `features` makes these five builds
+and test runs (section 2.7).
+
 ### 2.3 Modules
 
 "Depends on" lists the other modules of the crate that the module's
@@ -146,7 +152,7 @@ public is re-exported from `engine`:
 | Submodule | Owns |
 |---|---|
 | `engine::types` | States, reasons, warnings and the shared output objects of section 15.2 |
-| `engine::resolve` | Side resolution through `Providers` (sections 2.5 and 9.2) |
+| `engine::resolve` | Side resolution through `Providers` (sections 2.5 and 9.2); the candidates of an anchor that is ambiguous or was found only by similarity, with the limit `MAX_CANDIDATES` (20) |
 | `engine::fresh` | Freshness (section 9) and the `next` suggestion (section 15.2) |
 | `engine::cover` | Coverage and `cover --since` (section 10) |
 | `engine::input` | Inputs of the write commands and the standard-input documents |
@@ -172,6 +178,7 @@ change of this file:
 | `model::MAX_CONTEXT_CHARS` | 48 | 5.2 |
 | `model::MAX_QUOTE_CHARS` | 2,048 | 5.2 |
 | `provider::file::MAX_FILE_BYTES` | 8,388,608 | 6.1 |
+| `provider::file::MAX_CODE_FILE_BYTES` | 2,097,152 | 6.1 |
 | `provider::file::MAX_UNITS_PER_RESOURCE` | 100,000 | 6 |
 | `store::git_text::MAX_STORE_BYTES` | 268,435,456, which is 4 times `MAX_SHARD_BYTES` | 12 |
 | `provider::MAX_LINE_BYTES` | 16,777,216 | 13.1 |
@@ -265,7 +272,13 @@ is restarted. `FileProvider::info` never fails.
 
 `resolve` returns, per anchor, an error or a list of units. An absent resource
 is the error `not_found`. An empty list means the resource exists and the
-selector found nothing. Several units mean the selector is ambiguous.
+selector found nothing. One unit whose `approx` is `false` resolves the
+anchor to that unit. Several units, none of them with `approx` `true`, mean
+the selector is ambiguous. A list in which at least one unit has `approx`
+`true` resolves nothing, whatever its length: the provider found those
+units by similarity, so the side is `missing` with reason `not_exact` and
+every unit of the list is a candidate (section 9.2). A candidate is never
+used as the unit of a side.
 `ProviderError.code` is one of the codes of section 13.4, or `failed`, which
 only `CommandProvider` produces and which never appears on the wire: the
 process could not be started, timed out, broke the protocol or was killed.
@@ -419,7 +432,7 @@ These files are part of the release tree and are bound by this section.
 | `plugins/hibi-cli/` skill and cookbook, `docs/*.mdx`, `README.md` | Every `hibi` command line in a fenced code block of `README.md`, of a `docs/**/*.mdx` file or of a `plugins/**/*.md` file other than the generated CLI reference MUST parse with the clap definition of the binary (requirement R43). The test `r43_every_hibi_command_in_the_docs_parses` in `crates/hibi-cli/tests/doc_commands.rs` checks it, as described below. |
 | `docs/` | The Mintlify site, configured in `docs/docs.json`. It is checked with the Mintlify CLI at the pinned version 4.3.80, in a copy of `docs/`: `npx --yes mint@4.3.80 validate` and `npx --yes mint@4.3.80 broken-links`. No CI job runs this check. |
 | `plugins/hibi-cli/.claude-plugin/plugin.json` | Its `version` MUST equal the workspace version. The test `plugin_manifest_version_equals_the_workspace_version` in `crates/hibi-cli/tests/plugin.rs` fails otherwise. release-plz does not write this file: the release pull request sets the version in it. |
-| `.github/workflows/ci.yml` | Runs on every pull request and on every push to `main`, with read-only repository permission. Seven jobs, described below. |
+| `.github/workflows/ci.yml` | Runs on every pull request and on every push to `main`, with read-only repository permission. Eight jobs, described below. |
 | Release | release-plz and `cargo-dist`, described below. |
 | `scripts/install.sh` | Installs the `hibi` binary from a GitHub Release, as described below. It downloads the release archive for the platform and the archive's `.sha256` file and nothing else. |
 | Versioning | One version for the whole workspace and one root `CHANGELOG.md`, both maintained by release-plz from conventional commits. `CHANGELOG.md` restarts at the first v5 release with one note that the earlier TypeScript line ended at 0.7.0. |
@@ -435,9 +448,10 @@ The CI jobs of `ci.yml`:
 | Job | What it runs |
 |---|---|
 | `fmt` | `cargo fmt --all --check` |
-| `clippy` | `cargo clippy --workspace --all-targets -- -D warnings` |
+| `clippy` | `cargo clippy --workspace --all-targets -- -D warnings`, then `cargo clippy -p hibi --no-default-features --all-targets -- -D warnings`, which lints the library with all features off. The second command names the package for the reason given for the `test` job. |
 | `test` | `cargo test --workspace`, then `cargo build -p hibi --no-default-features`, then `cargo test -p hibi --no-default-features`. The last two name the package: `hibi-cli` enables every library feature, so a `--workspace` build would turn the features on again. |
-| `msrv` | `cargo check --workspace --all-targets` with the toolchain of the minimum supported Rust version (section 2.1) |
+| `features` (single features) | One step with a loop over `file`, `git-store`, `command`, `cache`, `judge`, in this order. For each feature `<f>` it runs `cargo build -p hibi --no-default-features --features <f>`, then `cargo test -p hibi --no-default-features --features <f>`. The step stops at the first command that fails. The five runs are one job, not a matrix, so they share one runner, one cache entry and one target directory. |
+| `msrv` | `cargo check --workspace --all-targets --locked` with the toolchain of the minimum supported Rust version (section 2.1). `--locked` fails the job when `Cargo.lock` would have to change, so the check uses the committed dependency versions. |
 | `schemas` (schema drift) | Runs the schema generator, then `git add --all schemas/` and `git diff --exit-code HEAD -- schemas/`. A changed, new or removed schema file fails the job. |
 | `cli-reference` (CLI-reference drift) | The same for the CLI reference file and its generator: `git add --all` and `git diff --exit-code HEAD --` on `plugins/hibi-cli/skills/hibi/references/cli-reference.md`. |
 | `report` | Builds `hibi-cli`, then runs `hibi status --format human` and `hibi cover --format human` on the repository's own store and prints the result and the exit status of each. When the repository has no `.hibi/` directory each step prints a notice and succeeds. |
@@ -1009,17 +1023,32 @@ segment counts: `dir.md/file` is `text`, `a.d.ts` is `typescript`,
 
 A file of a code class whose parse tree has an error (the root node's
 `has_error()` is true) is handled as class `text` for that read. This is the
-only fallback. It applies to the whole file.
+only fallback. It applies to the whole file. A selector with a `symbol` is
+not resolved against the units of such a read: it fails with `unavailable`
+(section 6.7, error 9).
 
 Every resource of every class also has exactly one unit of kind `file`.
 
 `MAX_FILE_BYTES` is 8,388,608 (8 MiB). A file longer than that is not read:
 its resolution fails with `too_large` (section 9.2).
 
+`MAX_CODE_FILE_BYTES` is 2,097,152 (2 MiB). A file of a code class
+(`typescript`, `tsx`, `python`, `rust`, `go`, `java`) longer than that fails
+with `too_large` as well. A file of exactly 2,097,152 bytes is accepted. The
+classes `markdown`, `prose` and `text` have the limit `MAX_FILE_BYTES` only.
+
 `MAX_UNITS_PER_RESOURCE` is 100,000. It counts every unit of a resource, the
 `file` unit included. A resource with exactly 100,000 units is accepted. A
 resource with more units fails with `too_large` in `resolve`, `units` and
 `render` (section 6.7), and no part of its unit list is returned.
+
+Unit building stops as soon as the count passes `MAX_UNITS_PER_RESOURCE`. No
+unit past the limit is built, fingerprinted or kept, in any class: the prose
+splitter stops at the first region past the limit, the scan for `block` units
+stops at the first block past it, and for a code resource the count is
+checked before any unit is fingerprinted. The number of units of an
+over-limit resource is therefore not known, and the message does not state
+it. The message is `the resource has more than 100000 units, the limit`.
 
 Every walk over a parse tree in this file (discovery in section 6.4, the
 semantic stream in section 8.4, the comment lookup in section 6.7) MUST be
@@ -1481,22 +1510,44 @@ is reported:
    scheme:
    the path does not name a readable file by section 6.8: `not_found`. Any
    other failure to read it is `unavailable`.
-4. The file is longer than `MAX_FILE_BYTES`: `too_large`.
+4. The file is longer than `MAX_FILE_BYTES`, or it is of a code class and
+   longer than `MAX_CODE_FILE_BYTES` (section 6.1): `too_large`.
 5. The file is not valid UTF-8: `not_text`.
 6. The selector has a `key`: `invalid_selector`.
 7. The selector is not valid by section 5.2 in any other way, for example
    `prefix` without `quote`, or a quote longer than 2,048 characters:
    `invalid_request`.
+8. The selector has a `symbol` and the class of the resource is `markdown`,
+   `prose` or `text`: `invalid_selector`. These classes have no symbols, so
+   no anchor there can name a declaration. The message is
+   `<loc> is a <class> file, and this kind of file has no symbols; anchor it with a quote instead`,
+   where `<loc>` is the locator and `<class>` the class name of section 6.1.
+9. The selector has a `symbol`, the resource is of a code class and its parse
+   tree has an error (section 6.1): `unavailable`. The message is
+   `<loc> does not parse as <class> (the first error is on line <n>), so its declarations cannot be found; fix the syntax error and run the command again`.
+   `<n>` is the 1-based line on which the first error node or missing node of
+   the parse tree, in source order, starts. When the tree has no such node
+   the part in parentheses, with the space before it, is left out.
 
-Errors 1 to 5 are errors of the resource, so they win over errors 6 and 7 of
+Errors 1 to 5 are errors of the resource, so they win over errors 6 to 9 of
 the selector: a selector with a `key` on an absent file is `not_found`.
 `units` and `render` report errors 1 to 5 in the same order. In a batch each
 anchor gets its own result or error.
 
 A resource with more than `MAX_UNITS_PER_RESOURCE` units (section 6.1) fails
 with `too_large`. This is an error of the resource as well: it is reported
-after error 5 and before errors 6 and 7, and `units` and `render` report it
+after error 5 and before errors 6 to 9, and `units` and `render` report it
 too.
+
+Errors 8 and 9 apply to every selector with a `symbol`: with or without a
+quote, a new anchor or a stored selector, and whether or not the symbol ever
+named a declaration. They apply to `resolve` only. A selector without a
+`symbol` on a code file that does not parse resolves against the `block`
+units of the `text` fallback. A stored symbol anchor on such a file
+is therefore neither resolved against text blocks nor reported as missing:
+its side is `unavailable` with reason `resource_unavailable` (section 13.4)
+until the file parses again, and then the stored selector resolves to its
+declaration unchanged.
 
 If building a completed selector fails (below), the resolution of that
 anchor fails with the provider error `internal`.
@@ -1552,7 +1603,7 @@ resolve(resource, sel):
   if sel has neither quote nor symbol              -> [file unit]
   missed = false
   if sel.symbol:
-      S = declaration units whose symbol == sel.symbol   (empty without code units)
+      S = declaration units whose symbol == sel.symbol   ; errors 8 and 9 ensure code units
       if |S| == 1:
           u = S[0]
           if not sel.quote                         -> [u]
@@ -1577,7 +1628,8 @@ resolve(resource, sel):
       if L.status == missing                       -> []
       if L.status == ambiguous:
           U = distinct innermost units of the tied hits
-          if |U| > 1                               -> U       (ambiguous)
+          if |U| > 1                               -> U with approx = missed
+                                                   ; ambiguous when not missed
           L = pick(L)
       u = innermost unit for [L.start, L.end)
       -> [u] with approx = (L.how == fuzzy) or missed
@@ -1602,6 +1654,32 @@ declarations). When they all lie in one unit, `pick` chooses the hit, and
 the unit is the same whichever hit is chosen. A stored selector keeps the
 full cascade of section 7.1, the position tie-break included.
 
+**When `approx` is set.** A unit is returned with `approx: true` in exactly
+these cases:
+
+- The selector has a `symbol` that names no declaration (`missed`). Every
+  unit that the quote then finds is approximate, whatever `L.how` is: the one
+  unit of the last branch, also when the quote hit is exact, and every unit
+  of `U` when exact hits tie in two or more units.
+- The quote is found only by the fuzzy step: `L.how` is `fuzzy` after rule 3
+  of `find`. This holds in the branch without a symbol and in the branch for
+  several declarations of one symbol when the hit lies in exactly one of
+  them.
+
+A unit is returned with `approx: false` in every other case:
+
+- the `file` unit of a selector with neither quote nor symbol;
+- the unit of a symbol that matches exactly one declaration, with or without
+  a quote, also when the quote is not found or is found only by the fuzzy
+  step;
+- the unit of a quote hit that is exact, or equal to the quote after
+  `normalize` (rule 3 of `find`), when no symbol was missed;
+- every unit of `S`, and every unit of `U` when no symbol was missed.
+
+A unit with `approx: true` never resolves a side. It is a candidate: the side
+is `missing` with reason `not_exact` (section 9.2). In one answer either
+every unit is approximate or none is.
+
 `approx` is `false` and `refuse` is absent unless stated. `refuse` tells the
 engine that this resolution MUST NOT be used to create a claim or replace a
 side (section 15.3). It has no effect on freshness or coverage. A quote inside
@@ -1611,7 +1689,7 @@ are comments and cannot be anchored. A Python docstring is a string and can.
 The user documentation MUST say so.
 
 In the path where a symbol matches exactly one declaration, a quote that is
-not found, or found only approximately, does not make the side `approx`. It
+not found, or found only approximately, does not make the unit `approx`. It
 only decides whether the completed selector keeps the quote.
 
 **Members.** Members of named containers are units (section 6.4), so the
@@ -1629,14 +1707,22 @@ member over more than filler (`High = 9,` and the closing `}` of the enum on
 the next line) is refused with `quote_spans_units`.
 
 **Renames (resolution of the plan's open question on symbol anchors).** hibi
-keeps no alias record. A symbol that no longer exists falls back to the quote.
-If the quote finds the declaration under its new name, the side resolves with
-`approx: true`. A rename changes the declaration's own fingerprint, so that
-side reports `changed` and the claim is stale until someone re-checks it and
-runs `reanchor`, which stores the new symbol. A rename of an enclosing
-container changes the member's path but not the member's fingerprint; such a
-side reports `same` with `approx: true`, the claim stays fresh, and `status`
-suggests `reanchor`.
+keeps no alias record. A symbol that no longer exists falls back to the quote,
+and every unit the quote finds is returned with `approx: true`. If the quote
+finds the declaration under its new name, that declaration is a candidate. It
+does not resolve the side: the side is `missing` with reason `not_exact`, and
+the claim is not fresh until someone checks the candidate and runs `reanchor`
+with the candidate's `anchor`, which stores the new symbol (section 9.2).
+hibi never points a claim at a renamed declaration by itself. A rename
+changes the declaration's own fingerprint, so its candidate has
+`sameFingerprint: false`. A rename of an enclosing container changes the
+member's path but not the member's fingerprint, so the member's candidate has
+`sameFingerprint: true` when that fingerprint equals the side's fingerprint
+in the reference mark. The quote can
+also find a unit that is not the renamed declaration, for example the body of
+a caller that the fuzzy step matches after the declaration was moved to
+another file. That unit is a candidate in the same way, which is why a
+candidate is a guess to check and never a resolution.
 
 **Completed selector.** For each returned unit `u` the provider returns the
 selector to store. It is a function of the resource text, `u`, and the final
@@ -1772,6 +1858,20 @@ that the rules above exclude. The open itself does not follow a symbolic
 link in the last component (section 12.7), and what it opened must be a
 regular file. This is accepted: hibi does not defend against a process that
 writes to the working tree while it runs.
+
+Accepted limit: text already stored in the ledger. hibi never reads an
+ignored file, but the rules of this section decide only what is read. They
+do not remove what the store holds. A claim's stored selector holds text of
+the file as it was when the claim was made or last reanchored: the `quote`
+(at most 2,048 characters), the `prefix` and the `suffix` (at most 48
+characters each). When the file is ignored later, its sides are `missing`
+with reason `resource_not_found`, and nothing more is read from it, but the
+stored `quote`, `prefix` and `suffix` stay in the ledger and are printed:
+by `hibi list <id>` in the stored record, and by `status` in the `anchor` of
+each side and, for a side that is `missing` or `ambiguous`, in the `stored:`
+line of the human output (the quote, cut to 80 characters). This is
+accepted: ignoring a file stops hibi from reading it and does not edit the
+records that were written while it was readable.
 
 ### 6.9 Render
 
@@ -2059,7 +2159,11 @@ fingerprints with different profiles are never compared: the side reports
 `unavailable` with reason `profile_mismatch` (section 9.2). This is the only
 effect of a profile mismatch. It happens when a later hibi ships a new profile
 version, when a code file that parsed at mark time no longer parses (or the
-reverse), and when a file's class changes.
+reverse), and when a file's class changes. A side whose stored selector has a
+`symbol` is the exception to the second case: on a code file that does not
+parse it fails with the provider error `unavailable` before any fingerprint
+is compared (section 6.7, error 9), so it reports `unavailable` with reason
+`resource_unavailable` and not `profile_mismatch`.
 
 ### 8.3 `prose-v1`
 
@@ -2246,7 +2350,8 @@ shared-declaration rules in section 6.4, requires a new profile name
 
 There is no partial tree hashing. A code file either parses without error and
 all its units use `ast-v1`, or it is class `text` for that read and all its
-units use `prose-v1`.
+units use `prose-v1`. A selector with a `symbol` is not resolved against
+those `prose-v1` units (section 6.7, error 9).
 
 ---
 
@@ -2277,6 +2382,15 @@ per anchor, in the order of the list:
    (section 2.5) is not part of the call. When no anchor of the group is left
    to send, `resolve` is not called.
 
+Candidate anchors. For an answer of two or more units, and for an answer in
+which at least one unit has `approx: true` (section 9.2), the engine writes
+one anchor string per shown candidate (section 15.2). To decide whether a
+symbol is unique in the resource, it asks the provider for the unit list of
+that resource with `units`, when the provider has the capability `units`.
+One `resolve` call leads to at most one such `units` call per resource. A
+`units` call that fails is not an error of the run: no symbol of that
+resource counts as unique.
+
 `status`, `mark`, `claim`, `reanchor` and `cover` each make one pass over
 all the sides they need: `status` and `cover` over every side of every live
 claim, `mark` and `claim` over every side of every element of the batch,
@@ -2284,7 +2398,7 @@ claim, `mark` and `claim` over every side of every element of the batch,
 part of any pass. `--since` adds one `resolve` call to the provider that
 reads the base commit (section 10.3), with the same rules 3 and 4.
 
-Two commands make one more pass each, under the same rules:
+Two commands make more passes, under the same rules:
 
 - `claim` makes a second pass over the stored anchors of the live claims
   that section 9.5 compares with the elements of the batch. The pass covers
@@ -2293,6 +2407,10 @@ Two commands make one more pass each, under the same rules:
 - `reanchor` makes a pass over the stored anchors of the old claim before
   the pass over the sides of the new claim. The `accepted` object of the
   result (section 15.2) is computed from it.
+- `reanchor` makes a pass, after the pass over the sides of the new claim,
+  over the stored anchors of the live claims that section 9.5 compares with
+  the new claim. The pass covers all those claims at once. When there is no
+  such claim, no provider is called.
 
 ### 9.2 Side resolution and side states
 
@@ -2313,18 +2431,47 @@ and every engine-side check appears once.
 | Provider | Error `too_large` | `unavailable` | `too_large` |
 | Provider | Error `repo_not_found` | `unavailable` | `repo_not_found` |
 | Provider | Error `repo_not_allowed` | `unavailable` | `repo_not_allowed` |
+| Provider | Error `unavailable` | `unavailable` | `resource_unavailable` |
 | Provider | Any other error code | `unavailable` | `provider_error` |
 | Engine | A `resolve` call returns a number of answers other than the number of anchors sent. This holds for every anchor of the call. | `unavailable` | `provider_error` |
 | Engine | A returned unit fails validation (section 2.5) | `unavailable` | `provider_error` |
 | Provider | No unit | `missing` | `selector_not_found` |
-| Provider | Several units | `ambiguous` | `several_units` |
-| Provider | One unit | by the next table | |
+| Provider | One or more units, at least one of them with `approx: true` (section 2.5) | `missing` | `not_exact` |
+| Provider | Two or more units, none of them with `approx: true` | `ambiguous` | `several_units` |
+| Provider | One unit, with `approx` false | by the next table | |
 
 `unsupported_protocol` means the provider is unusable (section 13.4), so it
 maps to `provider_failed`, the same as `failed`. The other error codes of
 section 13.4 that have no row of their own (`invalid_request`,
 `unknown_method`, `invalid_locator`, `invalid_selector`, `unknown_unit`,
-`unavailable`, `internal`) map to `provider_error`.
+`internal`) map to `provider_error`. `unavailable` means that the resource
+exists and cannot be read now (section 13.4). It maps to
+`resource_unavailable`, and the side carries the provider's message in
+`detail` and `remediation` (section 15.2).
+
+Similarity proposes, it never resolves. A unit that a provider returns with
+`approx: true` was found by similarity, and it never resolves a side:
+
+- When the answer holds at least one unit with `approx: true`, no unit of
+  the answer is the side's unit. This holds when the answer is exactly one
+  unit, when every unit of it is approximate, and when it mixes approximate
+  units with units whose `approx` is false.
+- The side is `missing` with reason `not_exact`. It has no unit and no
+  fingerprint.
+- Every unit of the answer is a candidate of the side (section 15.2). The
+  units of an answer that is `ambiguous` are candidates too.
+- A candidate takes no part in any state. Its fingerprint is not compared
+  with a mark to give a side state or a claim state (section 9.3); the
+  `sameFingerprint` of a candidate (section 15.2) only reports whether it
+  equals the marked fingerprint. A candidate covers no unit (section 10.2)
+  and is never sent to the judge (section 14.5).
+- The returned units are validated first: an answer with a unit that fails
+  validation is `provider_error`, whatever the `approx` of its units.
+
+A side resolves exactly when its answer falls on the last row: one unit,
+with `approx` false. `mark`, and a kept side of `reanchor`, fail with
+`side_missing` for a side that is `missing` with reason `not_exact`; a new
+anchor with that answer fails with `selector_not_exact` (section 15.3).
 
 For one unit with fingerprint `fp`, given the reference mark `M`
 (section 9.3):
@@ -2340,6 +2487,12 @@ Side states are exactly `same`, `changed`, `missing`, `ambiguous`,
 `unavailable`. The reasons above are a closed list. The reason is absent
 (`null` in JSON) exactly when the state is `same`.
 
+The closed list of reasons, in this order: `scheme_not_declared`,
+`provider_not_registered`, `provider_failed`, `resource_not_found`,
+`not_text`, `too_large`, `repo_not_found`, `repo_not_allowed`,
+`provider_error`, `resource_unavailable`, `selector_not_found`, `not_exact`,
+`several_units`, `no_mark`, `fingerprint_differs`, `profile_mismatch`.
+
 ### 9.3 Claim states
 
 Only marks that fit the claim take part in the evaluation. A mark fits when
@@ -2350,7 +2503,12 @@ the reference mark, and it is not an error. In the rest of this section
 "mark" means a mark that fits.
 
 A mark matches when every side resolves to `unit(fp)` with `fp` equal to that
-mark's fingerprint for the side.
+mark's fingerprint for the side. A side resolves to a unit only by the last
+row of the first table of section 9.2: one unit, with `approx` false. A side
+on any other row of that table has no unit, so no mark matches a claim that
+has such a side. This includes a side that is `missing` with reason
+`not_exact`: a claim is `fresh` or `expired` only when every side resolves
+exactly.
 
 | Order | Condition | State |
 |---|---|---|
@@ -2392,18 +2550,15 @@ For a retired claim no mark can match, because no side is resolved. Its
 reference mark is the mark with the latest `at` (ties to the greater id), or
 none when it has no mark.
 
-Drifted claims. A claim is drifted when both of these hold:
-
-1. its state is `fresh`;
-2. at least one of its sides resolves to exactly one unit whose `approx` is
-   `true` (section 2.5).
-
-Drifted is not a claim state: a drifted claim reports `state: "fresh"`. Its
-statement is still covered by a matching mark; only a stored selector is out
-of date. The `next` of a drifted claim is always a `hibi reanchor` command
-(section 15.2). A claim that is `stale`, `expired` or `retired` is never
-drifted, whatever the `approx` of its sides. `status` lists drifted claims in
-its default selection and counts them in `summary.drifted` (section 15.3).
+Sides found by similarity. A live claim with a side that is `missing` with
+reason `not_exact` is `stale`, whatever the fingerprints of the candidates.
+This holds also when a candidate has the marked fingerprint, and also when
+the time of the `recheck` has passed: the claim is `stale`, not `expired`.
+The `next` of such a claim is a `hibi reanchor` command in which each anchor
+to give is written as `<anchor>`; it never contains a candidate
+(section 15.2). The four claim states are the only classification of a
+claim: `status` selects claims by state, and its `summary` counts by state
+(section 15.3).
 
 ### 9.4 Durations
 
@@ -2477,7 +2632,8 @@ the write checks (section 15.3).
       locators of the two sides are equal.
    3. At every position, the stored anchor of `E`, resolved in this run,
       gives exactly one unit, and the key of that unit equals the key of the
-      unit the element's anchor resolved to.
+      unit the element's anchor resolved to. Exactly one unit means the last
+      row of the first table of section 9.2: one unit, with `approx` false.
    4. At every position, the `symbol` of the stored selector of `E` equals
       the `symbol` of the completed selector of `N`. Two absent symbols are
       equal.
@@ -2502,7 +2658,9 @@ What is not compared:
   are (condition 3).
 - A retired claim is never the same claim as `N`. A stored anchor that
   resolves to no unit, to several units, or to a unit with another key
-  fails condition 3.
+  fails condition 3. So does a stored anchor whose side is `missing` with
+  reason `not_exact`: a candidate is never the unit of condition 3, also
+  when its key is the key of the unit the element's anchor resolved to.
 
 Conditions 1 and 2 need no resolution. The live claims that meet them for at
 least one element are resolved in one pass (section 9.1), each claim once.
@@ -2518,6 +2676,40 @@ An element that marks an existing claim `E` by rule 3:
 
 Two elements of one batch that are the same existing claim both mark it;
 section 15.2 says when their marks are one record.
+
+`reanchor` applies the same rule to the claim it builds. Let `O` be the old
+claim and `N` the claim that step 4 of `reanchor` builds (section 15.3).
+
+1. When the id of `N` is the id of `O`, the command fails with `no_change`.
+   When the id of `N` is the id of a retired claim, the command fails with
+   `claim_retired`. Both checks are made before anything is compared, so a
+   live claim that is the same claim as `N` does not prevent
+   `claim_retired`.
+2. When the id of `N` is the id of a live claim other than `O`, that claim
+   is the target. Nothing is compared.
+3. Otherwise `N` is compared with every live claim other than `O` that was
+   in the store when the command read it, by conditions 1 to 5 above, with
+   `N` in the place of the claim an element builds. For condition 5, the
+   anchor as the caller gave it is the anchor of a replaced or added side.
+   A kept side has no anchor from the caller, so its `quote` is not
+   compared. The live claims that meet conditions 1 and 2 are resolved in
+   one pass (section 9.1), each claim once.
+4. When at least one live claim is the same claim as `N`, the one with the
+   smallest id (ids compared as byte strings) is the target. When none is,
+   `N` is written as a new claim.
+
+With a target (rules 2 and 4), `reanchor`:
+
+- does not write `N`, and reports `merged: true` and the id of the target
+  as `new`;
+- writes a mark on the target with `at = now` and, for each side, the
+  locator of the target and the fingerprint of the unit that side of `N`
+  resolved to. By condition 3 that unit has the key of the unit the stored
+  anchor of the target resolves to;
+- retires `O` with `replacedBy` set to the id of the target;
+- leaves the stored anchors of the target unchanged.
+
+Without a target the result has `merged: false`.
 
 ---
 
@@ -2597,6 +2789,22 @@ resolves to exactly one unit covers that unit and every ancestor of it by the
 resource's unit list, and at a key already visited. The claim's state does not
 matter: a stale claim still covers.
 
+Exactly one unit means the last row of the first table of section 9.2: one
+unit, with `approx` false. A side on any other row of that table covers
+nothing:
+
+- a side that is `missing` with reason `not_exact` covers none of its
+  candidates, also when the answer holds exactly one unit and also when a
+  candidate has the marked fingerprint;
+- a side that is `ambiguous` covers none of the units its anchor matches;
+- a side that is `missing` for another reason, or `unavailable` for a
+  reason of that table, has no unit to cover.
+
+The second table of section 9.2 does not matter. Marks are not read: a side
+that resolves exactly covers its unit whether its state is `same`, `changed`
+or `unavailable` with reason `profile_mismatch`, and also when the claim has
+no mark.
+
 A scope unit is `covered` when some side covers it, `excluded` when not
 covered and an exclusion matches, otherwise `uncovered`. A covered unit is
 never counted as excluded, whatever the exclusions say.
@@ -2607,7 +2815,8 @@ counted.
 
 A resource whose units cannot be listed is reported under `unavailable` in
 the output with the reason of section 9.2 (`provider_failed`, `not_text`,
-`too_large`, and so on). A path that matches a scope and that section 6.8
+`too_large`, and so on). A `units` call that fails with the error
+`unavailable` gives the reason `resource_unavailable`. A path that matches a scope and that section 6.8
 does not accept, such as a symbolic link, is reported there with reason
 `resource_not_found`. Such resources are never counted as covered and never
 dropped silently. A unit list that fails the validation of section 2.5 puts
@@ -2678,6 +2887,12 @@ fingerprint. A resource absent at the base has no base units. Scopes on
 `skipped: "since_unsupported"`, with all four counts 0, with empty `items`
 and `unavailable`, and with its exclusions listed with `matched: 0`.
 
+Which units are kept does not depend on any claim side. Among the kept
+units, covered is decided as in plain `cover` (section 10.2): a side that is
+`missing` with reason `not_exact` covers no unit, so a kept unit that only
+such a side points at as a candidate is counted and listed as uncovered,
+unless an exclusion matches it.
+
 For each resource of a `file` scope that is a changed path:
 
 1. List its units in the working tree. If that fails, the resource is
@@ -2706,6 +2921,19 @@ when its state is `stale` and at least one of its sides meets all of:
    section 6.8), gives exactly one unit;
 3. resolved against the working tree it does not give exactly one unit, or
    gives a unit whose fingerprint differs from the one at the base.
+
+Exactly one unit means, in conditions 2 and 3, the last row of the first
+table of section 9.2: one unit, with `approx` false. A side that is `missing`
+with reason `not_exact` does not give exactly one unit:
+
+- at the base commit, such a side does not meet condition 2, so it never
+  makes its claim listed;
+- in the working tree, such a side meets condition 3. A side that gave
+  exactly one unit at the base and is found only by similarity in the
+  working tree therefore makes its claim listed, when condition 1 holds.
+
+The fingerprint of a candidate is not compared with the fingerprint at the
+base.
 
 A claim that was already stale before the range and has no such side is not
 listed. `expired` claims are never listed. `--since` cannot be combined with
@@ -2961,7 +3189,7 @@ the error; later steps are not run.
 
 | Step | Check | Failure |
 |---|---|---|
-| 1 | `.hibi` and `.hibi/hibi.toml` are not symbolic links, and `.hibi/hibi.toml`, when it exists, is a regular file (section 12.3). Both are decided from metadata read without following a symbolic link, before the file is opened. The file is then opened without following a symbolic link (section 12.7) | `store_corrupt` |
+| 1 | `.hibi` and `.hibi/hibi.toml` are not symbolic links, `.hibi`, when it exists, is a directory, and `.hibi/hibi.toml`, when it exists, is a regular file (section 12.3). All of this is decided from metadata read without following a symbolic link, before the file is opened. The file is then opened without following a symbolic link (section 12.7) | `store_corrupt` |
 | 2 | `.hibi/hibi.toml` exists | `not_initialized` |
 | 3 | It is at most `MAX_CONFIG_BYTES` long and valid UTF-8 | `invalid_config` |
 | 4 | It is valid TOML. A key or table defined twice is not valid TOML. | `invalid_config` |
@@ -2975,6 +3203,11 @@ version does not know is therefore `unsupported_store_version`, not
 `invalid_config`. The message of a failed step 6 names the scheme and says
 that the provider command is registered in the user config under
 `[providers.<scheme>]`.
+
+In step 1, `.hibi` is checked before `.hibi/hibi.toml`. A `.hibi` that
+exists and is not a directory (a regular file, a FIFO, a socket or a device)
+is `store_corrupt` with the message `.hibi is not a directory`. A `.hibi`
+that does not exist fails step 2 with `not_initialized`.
 
 In step 1, a `.hibi/hibi.toml` that exists and is not a regular file (a
 directory, a FIFO, a socket or a device) is `store_corrupt` with the message
@@ -3155,11 +3388,11 @@ The value of the `units` column is one of two forms:
 
 ```json
 [{"key":"file","kind":"file","parent":null,"label":"...","range":{"start":0,"end":412,"line":1,"endLine":18},"fp":"...","sel":{}},
- {"key":"...","kind":"sentence","parent":"file","label":"...","range":{"start":0,"end":57,"line":1,"endLine":1},"fp":"...","sel":{}}]
+ {"key":"...","kind":"sentence","parent":"file","label":"...","range":{"start":0,"end":57,"line":1,"endLine":1},"fp":"...","sel":{"quote":"...","prefix":"","suffix":"...","pos":0}}]
 ```
 
-Every cached unit has `sel` equal to `{}`. Completed selectors are not
-cached.
+A cached unit holds its completed selector built with the default quote
+(section 6.7). The `file` unit's is `{}`.
 
 Offsets in `range` refer to the text after CRLF replacement (section 4).
 
@@ -3179,7 +3412,8 @@ A row is used only when it is exactly what a writer writes for the text
 being read. For bytes that are valid UTF-8, a row is invalid when any of
 these holds, where the text is the text after CRLF replacement:
 
-1. The value does not parse as JSON, is not an array, or is an empty array.
+1. The value does not parse as JSON, is not an array, is an empty array, or
+   is an array of more than `MAX_UNITS_PER_RESOURCE` elements (section 6).
    The value `not_text` is such a value.
 2. An element is not an object with exactly the seven keys listed above. An
    element with a key `text`, `approx`, `refuse` or any other key, or without
@@ -3328,7 +3562,7 @@ because a union merge can produce both. It keeps one record per id.
 | The 32 shard files together are longer than `MAX_STORE_BYTES` (268,435,456, 256 MiB, 4 times `MAX_SHARD_BYTES`) | `store_corrupt`. A total of exactly `MAX_STORE_BYTES` bytes is not refused for its size. |
 | A mark or retirement names a claim that is not in the store | Warning `orphan_record`. The record is ignored. |
 | `replacedBy` names a claim that is not in the store | Warning `unknown_replacement`. The retirement stands. |
-| `.hibi`, `.hibi/claims` or `.hibi/marks` exists and is not a directory, or `.hibi/hibi.toml`, `.hibi/.lock` or a shard file exists and is not a regular file | `store_corrupt` |
+| `.hibi`, `.hibi/claims` or `.hibi/marks` exists and is not a directory, or `.hibi/hibi.toml`, `.hibi/.lock` or a shard file exists and is not a regular file | `store_corrupt`. The message is `<path> is not a directory` or `<path> is not a regular file`, with the path written from `.hibi`, as in `.hibi is not a directory`. |
 | A non-empty shard file does not end with U+000A, or contains an empty line | `store_corrupt`, naming file and line |
 | A line of a marks shard has an `id` that starts with neither `m1-` nor `r1-` | `store_corrupt`, naming file and line |
 | A mark whose claim is in the store breaks a rule of section 3.3 that needs the claim: its number of sides differs from the claim's, or a side's `loc` differs from the locator of the claim's side at that position | `store_corrupt` |
@@ -3524,6 +3758,14 @@ store. Step 2 accepts any entry named `hibi.toml` and does not follow a
 symbolic link in that last component; what the entry is, is checked when the
 file is read (section 11.1), so a `hibi.toml` that is a symbolic link is
 `store_corrupt`, and so is a `hibi.toml` that is not a regular file.
+
+A `.hibi` that is not a directory (a regular file, for example) holds no
+entry `hibi.toml`. Discovery therefore does not take its directory as the
+root and goes on to the ancestors, and a command given that directory with
+`--root` fails with `not_initialized`. `init` in that directory fails with
+`store_corrupt` at step 2 of section 12.6 and leaves the entry as it is. A
+caller of the library that reads `hibi.toml` or opens the store under such a
+root gets `store_corrupt` (sections 11.1 and 12.3).
 
 The `legacy_store` check reads nothing but the type of `.claims` and changes
 no file. It is made again when the store is opened.
@@ -3725,8 +3967,11 @@ envelope and makes the provider unusable (section 13.1):
 | `null` id | Allowed only together with the error `invalid_request`. A `null` id with a `result`, or with any other error code, breaks the envelope. |
 | Match | `id` MUST equal the id of the request hibi sent. hibi sends only well-formed requests, so a well-formed response with a `null` id is also a mismatch and makes the provider unusable. |
 
-`result` may be any JSON value as far as the envelope goes. Its shape is
-checked per method (section 13.3).
+`result` may be any JSON value as far as the envelope goes: an object, an
+array, a string, a number, a boolean or `null`. The schema
+`provider-response` accepts any JSON value for `result`, in a response and in
+an inner response of a `batch`. Its shape is checked per method
+(section 13.3).
 
 Both sides MUST ignore object keys they do not know, with one exception: a
 selector (`sel`) is closed, in requests and in responses. hibi rejects a
@@ -3773,8 +4018,10 @@ exit, with any status.
 ```
 
 `units` has zero entries (the resource exists and the selector found
-nothing), one (resolved) or several (ambiguous). A resource that does not
-exist is error `not_found`, never an empty list.
+nothing), one (resolved) or several (ambiguous). This reading holds when no
+unit of the answer has `approx: true`; an answer with such a unit resolves
+nothing (see "Unit object" below). A resource that does not exist is error
+`not_found`, never an empty list.
 
 hibi does not write a `resolve` whose selector has a key the provider does
 not allow (section 2.5). The call is answered locally with the error
@@ -3880,6 +4127,14 @@ provider unusable.
 | `approx` | boolean | no (default false) | In `resolve`: the selector did not match exactly and the unit was found by approximation or fallback |
 | `refuse` | string | no | In `resolve`: this resolution must not be used to create a claim or replace a side. One of `quote_spans_units`, `quote_in_comment`. |
 
+What hibi does with `approx`. A unit with `approx: true` never resolves a
+side. When any unit of a `resolve` answer has `approx: true`, whether the
+answer has one unit or several, the side is `missing` with reason
+`not_exact`, and every unit of the answer is offered as a candidate
+(section 9.2). hibi never uses such a unit as the side's unit, in any
+command. An answer of exactly one unit resolves the side only when that
+unit's `approx` is `false` or absent.
+
 hibi does not validate `text`. A `resolve` unit without `text` is accepted
 and is treated as a unit whose text is not known: outputs that would show the
 text omit it. A `units` answer whose units carry `text` is accepted. hibi does
@@ -3909,12 +4164,19 @@ is the side result of a `resolve` that fails with the code (section 9.2).
 | `repo_not_found` | File provider only, section 11.1 | `unavailable`, `repo_not_found` |
 | `repo_not_allowed` | File provider only, section 11.1 | `unavailable`, `repo_not_allowed` |
 | `unknown_unit` | `render` only | none: the side cannot be rendered (section 14.5) |
-| `unavailable` | The resource exists but cannot be read now | `unavailable`, `provider_error` |
+| `unavailable` | The resource exists but cannot be read now | `unavailable`, `resource_unavailable` |
 | `internal` | Anything else | `unavailable`, `provider_error` |
 
 An unknown code is treated as `internal`. `failed` is not a wire code
 (section 2.5): a provider that sends the code `failed` is read as having sent
 `internal`.
+
+For `unavailable` the `message` of the error is what the user is shown: the
+side's `detail` is the message cut to 500 characters, and its `remediation`
+is that cut message without trailing `.` and spaces, followed by
+`. Run the command again once that is fixed.` (section 15.2). A provider SHOULD therefore write the message of an
+`unavailable` error as one sentence that names the resource, the cause and
+what to fix.
 
 Three codes are also produced by hibi itself, without an error on the wire:
 
@@ -3928,6 +4190,8 @@ Three codes are also produced by hibi itself, without an error on the wire:
 returns it when a resource cannot be read for a reason that is neither
 absence nor size nor encoding:
 
+- a selector with a `symbol` is resolved on a file of a code class that does
+  not parse (section 6.7, error 9);
 - reading a file of the working tree fails with an input or output error
   other than "no such file" or "not a directory" (those two are `not_found`);
 - a resource is read at a revision (`--since`, section 10.3) and git is not
@@ -4200,7 +4464,13 @@ these checks in this order and fails at the first one that does not hold:
 
 1. The key. When `TYPESAFE_API_KEY` is unset or empty the command fails with
    `judge_unavailable` before doing any other work, including root
-   discovery, so the result is the same outside a repository.
+   discovery, so the result is the same outside a repository. The message
+   says which of the two holds. It is
+   `TYPESAFE_API_KEY is not set; the judge commands need it` when the
+   variable is unset, and
+   `TYPESAFE_API_KEY is empty; the judge commands need it` when it is set
+   to the empty string. A value that holds only white space is not empty:
+   it is taken as a key.
 2. The endpoint (section 14.2). When it is not allowed the command fails
    with `invalid_argument`, also before any other work.
 3. The root. It is found as section 12.5 says, and the refusals of that
@@ -4239,7 +4509,8 @@ impl Judge {
 }
 ```
 
-`key` that is `None` or empty is `judge_unavailable`. `endpoint` that is
+`key` that is `None` or empty is `judge_unavailable`, with the message of
+step 1 for `None` (not set) or for the empty string (empty). `endpoint` that is
 `None` or empty means the default URL of section 14.2. The key is checked
 first. The constructor contacts nothing. Every judge function takes a
 `Judge`, so none can run without a key. Every judge function of the library
@@ -4452,7 +4723,10 @@ State: `{"task":"hibi-order-v1","statement":<statement>}`.
 The content of a side is the `text` of `render` for its resolved unit. A side
 cannot be rendered when it does not resolve to one unit, when its provider
 has `render: false`, when `render` fails, or when it is a `file:` or `repo:`
-side whose path is not in a file list (section 14.2). Stale claims are listed
+side whose path is not in a file list (section 14.2). A side that is
+`missing` with reason `not_exact` (section 9.2) does not resolve to one unit:
+it cannot be rendered, and its candidates are never rendered and never sent.
+Stale claims are listed
 in
 ascending order of the answer (most likely broken first); claims with a side
 that cannot be rendered are not sent and come first, by id. The answer is
@@ -4464,6 +4738,10 @@ The complete order of the listed claims with the flag:
 1. stale claims with a side that cannot be rendered, by id;
 2. the other stale claims, by the answer ascending, ties by id;
 3. every listed claim that is not stale (fresh, expired or retired), by id.
+
+A stale claim with a side that is `missing` with reason `not_exact` is in
+group 1, in id order among the other claims of that group. No request is
+made for it, also when every other side of it can be rendered.
 
 Only stale claims are sent. Claims of group 3 appear when the selection
 includes them, for example with `--state fresh`, and always come after every
@@ -4631,10 +4909,19 @@ The key is redacted from every error. No `judge_failed` error holds the key
 or the `Authorization` header value, in its message or in its remediation,
 whatever the peer answered:
 
-- Redaction replaces every occurrence of the key with `[redacted]`. Three
-  forms of the key are replaced: the value as it is set, the value with
-  leading and trailing white space removed, and the value as a JSON string
-  writes it (with `"`, `\` and control characters escaped).
+- Redaction replaces every occurrence of the key with `[redacted]`. Six
+  forms of the key are replaced. For the value as it is set, and for the
+  value with leading and trailing white space removed, the forms are:
+  1. the value itself;
+  2. the value as a JSON string writes it (with `"`, `\` and control
+     characters escaped);
+  3. the form of item 2 with every `/` written as `\/`, which JSON allows.
+
+  A form that is empty is not looked for. The forms are replaced longest
+  first, so that a form is replaced whole before a shorter form inside it.
+- No other encoding of the key is looked for. Text that holds the key
+  percent-encoded, in base64, or with `\uXXXX` escapes for characters that
+  need none is not redacted.
 - When a replaced occurrence is directly preceded by `Bearer` (compared
   without regard to ASCII case) and at least one space or tab, the word and
   the white space are removed with it, so the whole header value becomes
@@ -4839,32 +5126,99 @@ Side:
 | `anchor` | Anchor |
 | `state` | side state |
 | `reason` | reason code or `null` |
-| `approx` | boolean |
 | `unit` | UnitRef or `null` |
 | `fp` | current fingerprint or `null` |
 | `markedFp` | fingerprint in the reference mark or `null` |
-| `candidates` | array of UnitRef, present only when `state` is `ambiguous` |
+| `remediation` | string or `null` |
+| `detail` | string or `null` |
+| `candidates` | array of Candidate, present only when `state` is `ambiguous`, or `missing` with reason `not_exact` |
+| `candidatesTotal` | integer, present exactly when `candidates` is present |
 | `text` | current unit text, present only with `--detail` |
-| `remediation` | string or `null`. Set only for a side whose state is `unavailable`, by its reason: for `too_large`, `not_text` and `provider_error` one sentence that states the limit or the cause and what the caller can do (the human output prints the same sentence under the side); for `scheme_not_declared`, `provider_not_registered`, `provider_failed`, `repo_not_allowed` and `repo_not_found` the command `hibi providers`. `null` for `unavailable` with `profile_mismatch` and for every other state (`same`, `changed`, `missing`, `ambiguous`), where the claim's `next` says what to do. Present in every ClaimView, so in the output of `status`, `claim`, `mark` and `reanchor`. |
+
+The keys from `index` to `detail` are always present, in every ClaimView,
+so in the output of `status`, `claim`, `mark` and `reanchor`. A Side has no
+key `approx`: a unit that a provider found by similarity (`approx: true` in
+the provider's answer, section 2.5) is never the unit of a side. It is a
+candidate.
+
+Candidate, one unit that the stored anchor of the side could mean:
+
+| Key | Type |
+|---|---|
+| `key`, `kind`, `label`, `line`, `endLine` | as in UnitRef |
+| `text` | the unit text cut to 240 characters, or `null` when the provider returned the unit without text |
+| `anchor` | string: an anchor argument that selects this unit and no other unit of the resource |
+| `sameFingerprint` | boolean |
+
+All eight keys are always present.
 
 Rules for the Side keys:
 
 - `reason` is `null` exactly when `state` is `same`.
-- `unit` and `fp` are set when the side resolves to exactly one unit, whatever
-  its state (`same`, `changed`, or `unavailable` with `profile_mismatch`).
-  They are `null` in every other case.
-- `approx` is the `approx` of that one unit, and `false` when the side does
-  not resolve to exactly one unit.
+- `unit` and `fp` are set when the side resolves exactly to one unit,
+  whatever its state (`same`, `changed`, or `unavailable` with
+  `profile_mismatch`). They are `null` in every other case, which includes a
+  `missing` side with reason `not_exact`.
 - `markedFp` is the fingerprint the reference mark (section 9.3) holds for
   this side. It is `null` only when the claim has no reference mark. It is
   set also when the side is `missing`, `ambiguous` or `unavailable`.
-- `candidates` holds the units the provider returned, in the provider's
-  order.
+- `remediation` is set only for a side whose state is `unavailable`, by its
+  reason, as the table below gives it. It is `null` for every other state
+  (`same`, `changed`, `missing`, `ambiguous`), where the claim's `next` says
+  what to do.
+- `detail` is set only for a side whose state is `unavailable` and whose
+  resolution failed with a message. It is that message, cut to
+  `DETAIL_CHARS` (500) characters: what the provider answered, or what the
+  engine found. For `scheme_not_declared` it is
+  `the scheme <scheme> is not declared in .hibi/hibi.toml`, and for
+  `provider_not_registered` it is
+  `the user config has no provider command for scheme <scheme>`. It is
+  `null` for `unavailable` with `profile_mismatch`, for `unavailable` with
+  `provider_error` when the cause is a stored selector key the provider
+  does not allow (the anchor is not sent, section 9.2), and for every other
+  state.
+- `candidates` holds units the provider returned for the stored anchor, in
+  the provider's order: the first `MAX_CANDIDATES` (20) of them.
+  `candidatesTotal` is the number of units the provider returned, so it is
+  greater than the length of `candidates` when the provider returned more
+  than 20. For an `ambiguous` side they are the units the stored anchor
+  matches. For a `missing` side with reason `not_exact` they are the units
+  of an answer in which at least one unit has `approx: true`; every unit of
+  such an answer is a candidate, also when the answer holds one unit. A
+  `missing` side with another reason has no `candidates` key.
+- A candidate is a guess for the caller to read. No command takes a
+  candidate as the unit of a side, and no `next` and no remediation that is
+  a command contains a candidate or its anchor.
+- The `anchor` of a candidate is the compact form `<locator>#<symbol>`
+  (section 5.5) when all of these hold: the locator is a `file:` or `repo:`
+  locator; the locator contains no `#`, and no `::` after its scheme; the
+  completed selector of the candidate has a `symbol`, and that symbol
+  contains neither `#` nor `::`; the provider offers `units`, and exactly
+  one unit in its list of all units of the resource has that `symbol`. In
+  every other case it is the JSON object `{"loc": ..., "sel": {...}}` with
+  the candidate's completed selector, on one line. The rule is applied to
+  each candidate by itself: a symbol is used alone only when it is unique in
+  the whole resource, not only among the candidates, so one side can list
+  anchors of both forms.
+- `sameFingerprint` is `true` when the fingerprint of the candidate equals
+  `markedFp`: the candidate has the content that was marked, at another
+  place or under another name. It is `false` in every other case, also when
+  the claim has no reference mark.
 - `text` is the whole unit text. It is absent without `--detail`, and absent
   when the side has no unit or the provider returned the unit without text.
-  The one exception to "only with `--detail`" is the output of `mark`
-  (section 15.3): there every `approx` side carries `text` cut to 240
-  characters.
+
+The `remediation` of an `unavailable` side:
+
+| Reason | `remediation` |
+|---|---|
+| `provider_not_registered`, `provider_failed`, `repo_not_allowed`, `repo_not_found` | The command `hibi providers` |
+| `scheme_not_declared` | `Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim.` |
+| `too_large`, `not_text`, `provider_error` | One sentence that states the limit or the cause and what the caller can do. The three sentences are given under `side_unavailable` below. |
+| `resource_unavailable` | `<message>. Run the command again once that is fixed.`, where `<message>` is the message of the provider's error, cut to `DETAIL_CHARS` (500) characters, with every full stop and space at its end removed |
+| `profile_mismatch` | `null` |
+
+The human output prints the `detail` and the `remediation` under the side
+(section 15.3).
 
 ClaimView:
 
@@ -4899,46 +5253,48 @@ The ClaimView of a retired claim:
 
 A ClaimView in the output of `claim`, `mark` or `reanchor` is evaluated at
 `now` as if the records of the command were already stored: the claim's marks
-are the stored ones plus the mark the command writes. In the output of
-`claim` and `reanchor` every side has `approx: false`, because the stored
-selector is the completed one. In the output of `mark` a side keeps its
-`approx`. The one exception in `claim` is an element that marks an existing
-claim by rule 3 of section 9.5: its ClaimView is the view of that existing
-claim with its stored anchors as they resolve in the run, so a side keeps
-its `approx`, and `next` can be a `hibi reanchor` command. The state of a
-ClaimView in the output of `claim`, `mark` or `reanchor` is always `fresh`.
+are the stored ones plus the mark the command writes. These commands write
+only when every side resolves exactly to one unit, so in such a ClaimView
+every side has a `unit`, no side has `candidates`, the state is always
+`fresh` and `next` is always `null`. For a `claim` element that marks an
+existing claim by rule 3 of section 9.5, and for a `reanchor` that is merged
+into an existing claim by the same-claim rule (section 15.3), the ClaimView
+is the view of that existing claim with its stored anchors as they resolve
+in the run.
 
 `next` for a claim, first rule that applies:
 
 | Condition | `next` |
 |---|---|
-| `fresh` with no side `approx`, or `retired` | `null` |
+| `fresh` or `retired` | `null` |
 | A side is `missing` or `ambiguous` | `hibi reanchor <id>` with `--subject <anchor>` or `--evidence <n>=<anchor>` for each such side |
-| A side is `unavailable` with `scheme_not_declared`, `provider_not_registered` or `provider_failed` | `hibi providers` |
-| A side is `unavailable` with `repo_not_allowed` | `hibi providers` |
-| A side is `unavailable` with `repo_not_found`, `not_text`, `too_large` or `provider_error` | `null` |
-| The claim is `fresh` and a side is `approx` | `hibi reanchor <id>`. If the claim rebuilt from the completed selectors would be a retired claim, `hibi reanchor <id> --note <text>` instead, because the plain command would fail with `claim_retired`. |
+| A side is `unavailable` with `provider_not_registered`, `provider_failed` or `repo_not_allowed` | `hibi providers` |
+| A side is `unavailable` with `scheme_not_declared`, `repo_not_found`, `not_text`, `too_large`, `provider_error` or `resource_unavailable` | `null` |
 | Otherwise (`expired`, or sides `changed` or `profile_mismatch`) | `hibi mark <id>` |
 
 In the second row the options follow the sides in index order, `n` is the
-side's index (evidence numbers start at 1), and `<anchor>` and `<text>` are
-written literally, as parts the caller supplies (section 15.1). `<id>` is the
+side's index (evidence numbers start at 1), and `<anchor>` is written
+literally, as a part the caller supplies (section 15.1). `<id>` is the
 full claim id.
 
-A stale or expired claim with an `approx` side falls through to the last
-row: `next` is `hibi mark <id>`, and the mark output then suggests `reanchor`
-(section 15.3). The `approx` row never applies to a claim that is not fresh,
-because `reanchor` writes a mark and would clear the claim without a re-check.
+A `missing` side with reason `not_exact` falls on the second row like every
+other `missing` side. Its `next` is the same template with `<anchor>`: it
+never contains a candidate or the anchor of a candidate. The caller reads
+the `candidates` of the side, decides which unit the statement is about, and
+puts the anchor of that unit in the place of `<anchor>`.
 
-A drifted claim (section 9.3) always falls on the sixth row: it is `fresh`,
-every side resolves to one unit, and a side is `approx`. Its `next` is
-`hibi reanchor <id>` or `hibi reanchor <id> --note <text>`.
+In the fourth row no command fits. The `remediation` of the side says what
+to do: for `scheme_not_declared` its own sentence, for
+`resource_unavailable` the provider's message, for `repo_not_found` the
+command `hibi providers`, and for the other three reasons the sentence of
+the reason (the table of the Side above).
+
+A claim that is `fresh` has every side `same`, so the first row needs no
+look at the sides.
 
 Every `next` that ends in a write producing a mark (`hibi mark` and
 `hibi reanchor`) means: re-check the statement first, then run it. If the
 statement is no longer true the caller fixes the text or retires the claim.
-For a drifted claim the statement still holds, and the caller looks at what
-the anchor points to before running the `reanchor` command.
 
 `nextNote`. The JSON results of `status`, `claim`, `mark` and `reanchor`
 each carry the key `nextNote` once, at the top level of the result. It is
@@ -4946,11 +5302,11 @@ always present, whatever the claims of the result are, and its value is
 always the constant `NEXT_NOTE`, this one line:
 
 ```text
-Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command.
+Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A candidate listed under a side is a guess at where its unit went: read it before you anchor to it.
 ```
 
-It says how to read `next` and `accepted`. The sentences of the human
-output are those of section 15.3.
+It says how to read `next` and the `candidates` of a side. The sentence of
+the human output is the one of section 15.3.
 
 Accepted. A write that produces a mark makes its claim `fresh` whatever
 state the claim was in. `accepted` is the record of what the write took
@@ -4998,8 +5354,10 @@ Example, a claim whose first evidence side changed since its last mark:
 ```
 
 `merged`. The result of `reanchor` carries the boolean `merged`, always
-present. It is `true` when the id of the new claim is the id of a claim that
-was already in the store: no claim is written, that claim gets the mark, and
+present. It is `true` when the mark goes to a claim that was already in the
+store: a live claim whose id is the id of the new claim, or a live claim
+that is the same claim as the new one by the same-claim rule
+(section 15.3). No claim is written, that claim gets the mark, and
 the old claim is retired with `replacedBy` naming it. It is `false` when the
 new claim is written by this command.
 
@@ -5026,34 +5384,45 @@ Errors of the commands that resolve sides (`claim`, `mark`, `reanchor`).
 The error object is the one of section 15.1; these rules fix its
 `remediation`:
 
-- `side_ambiguous` for a new anchor. A new anchor is every anchor of
-  `claim` and a replaced or added side of `reanchor`. When it resolves to
-  several units the message lists every candidate, so that the caller can
-  pick one without a second command:
+- Candidates in a message. A new anchor is every anchor of `claim` and a
+  replaced or added side of `reanchor`. A stored anchor is every side in
+  `mark` and a kept side of `reanchor`. When an anchor of either sort
+  resolves to several units, or is found only by similarity, the message
+  lists the units, so that the caller can pick one without a second
+  command:
 
   ```text
-  <side> (<locator>): the anchor matches <n> units; use one of these anchors: <candidate>; <candidate>
+  <side> (<locator>): the anchor matches <n> units; use one of these anchors: <candidates>
+  <side> (<locator>): the anchor matches no unit exactly; <found> found by similarity, each a guess to check before use: <candidates>
+  <side> (<locator>) resolves to no unit (not_exact): the anchor matches no unit exactly; <found> found by similarity, each a guess to check before use: <candidates>
   ```
 
-  `<side>` is `the subject` or `evidence <n>`. The candidates are in the
-  provider's order, joined with `; `. Each `<candidate>` is
-  `<kind> "<label>", line <line>: <anchor>`:
+  The first message is that of `side_ambiguous`, for a new and for a stored
+  anchor. The second is that of `selector_not_exact` for a new anchor that
+  was found only by similarity. The third is that of `side_missing` for a
+  stored anchor that was found only by similarity. `<side>` is
+  `the subject` or `evidence <n>`. `<n>` is the number of units the
+  provider returned. `<found>` is `1 unit was`, or `<n> units were` for any
+  other number. `<candidates>` lists the first `MAX_CANDIDATES` (20) units
+  in the provider's order, joined with `; `. When the provider returned
+  more, `; and <m> more` follows, where `<m>` is the number of units that
+  are not listed. Each candidate is `<kind> "<label>", line <line>: <anchor>`:
 
   - `<label>` is the unit's label, or the unit's key when it has no label,
     cut to 80 characters and written in double quotes.
   - `, line <line>` gives the first line of the unit and is left out for a
     unit without a range.
-  - `<anchor>` is an anchor that selects that candidate. It is the compact
-    form `<locator>#<symbol>` (section 5.5) when the locator is a `file:` or
-    `repo:` locator, the completed selector of every candidate has a
-    `symbol`, and no two candidates have the same `symbol`. In every other
-    case it is the JSON object `{"loc": ..., "sel": {...}}` with the
-    candidate's completed selector, whose context and position tell the
-    candidates apart.
+  - `<anchor>` is the `anchor` of the Candidate as the rules for the Side
+    keys above give it: `<locator>#<symbol>` when the symbol is unique in
+    the whole resource, and the JSON object with the candidate's completed
+    selector otherwise.
 
-  For a stored anchor (`mark`, and a kept side of `reanchor`) the message
-  does not list candidates; the `candidates` of the Side in `status` do.
-- `side_ambiguous` and `unsupported_selector` in `claim` and `reanchor`.
+  The other messages of `side_missing` are
+  `<side> (<locator>) resolves to no unit (<reason>): <what was found>`,
+  where `<what was found>` is `the selector matches no unit` for
+  `selector_not_found` and the provider's error for `resource_not_found`.
+- `side_ambiguous` and `unsupported_selector` for a new anchor, in `claim`
+  and `reanchor`.
   The `remediation` is built from the selector keys the provider of the
   side's locator accepts (`selectors` of its `info`, section 2.5), so that a
   provider is never told to use a key it does not accept.
@@ -5075,9 +5444,15 @@ The error object is the one of section 15.1; these rules fix its
     `This provider accepts only the empty selector.`
   - When the provider's `info` cannot be obtained, both codes keep the
     remediation of section 15.4.
+- `selector_not_exact` for a new anchor that was found only by similarity.
+  When the provider's answer for a new anchor holds a unit with
+  `approx: true`, nothing resolves and the write fails with
+  `selector_not_exact`. The message is the second one above and lists what
+  was found. The `remediation` is the general one of the code:
+  `Give a quote that occurs exactly in the unit you mean.`
 - `selector_not_exact` for a quote that is not in the resolved unit. This
-  is a write check on a new anchor, made after the `approx` and `refuse`
-  checks (section 15.3). When the anchor as the caller gave it has a
+  is a write check on a new anchor that resolved exactly to one unit, made
+  after the `refuse` check (section 15.3). When the anchor as the caller gave it has a
   `quote`, the resolved unit's completed selector has a `quote`, and the two
   are not equal after `normalize` (section 4.3), the write fails with
   `selector_not_exact`. This is the case of an anchor with a `symbol` and a
@@ -5089,11 +5464,20 @@ The error object is the one of section 15.1; these rules fix its
   Two quotes that differ only in whitespace are equal. A stored anchor is
   not checked this way: in `mark`, and for a kept side of `reanchor`, it
   keeps resolving by its symbol.
-- `side_unavailable`. The message gives the reason code of section 9.2. In
-  `claim` and `reanchor` the `remediation` is
-  `hibi providers` when the reason is `scheme_not_declared`,
+- `side_unavailable`. The message is
+  `<side> (<locator>) cannot be evaluated (<reason>): <what was said>`,
+  with the reason code of section 9.2 and what the provider answered or the
+  engine found. The `remediation` is the one the Side carries for that
+  reason (the table of the Side above): the command
+  `hibi providers` when the reason is
   `provider_not_registered`, `provider_failed`, `repo_not_allowed` or
-  `repo_not_found`. For the other reasons it is a sentence that gives the
+  `repo_not_found`; for `scheme_not_declared` the sentence
+  `Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim.`;
+  for `resource_unavailable` the provider's message followed by
+  `Run the command again once that is fixed.`. A new anchor on a scheme that
+  is not declared fails with `unknown_scheme` before it is resolved, so
+  `scheme_not_declared` reaches this error only for a stored anchor. For the
+  other reasons the `remediation` is a sentence that gives the
   cause or the limit and what the caller can do:
   - `too_large`: "The resource is over the size limit: 8 MiB, or 100,000
     units in one resource. Anchor a smaller file; for a claim that exists,
@@ -5105,14 +5489,25 @@ The error object is the one of section 15.1; these rules fix its
     providers --check <scheme> to see what it gets wrong; for a claim that
     exists, retire it if the resource is gone for good."
   In human `status` output the sentence is printed under such a side.
-- `mark`. When a side of a claim does not resolve to one unit, the error
-  code comes from the first such side in index order (`side_missing`,
+- `mark`. When a side of a claim does not resolve exactly to one unit, the
+  error code comes from the first such side in index order (`side_missing`,
   `side_ambiguous` or `side_unavailable`), and the `remediation` is the
   claim's `next` by the table above, computed from the state the claim has
   before the mark. It names every side that is `missing` or `ambiguous`, for
-  example `hibi reanchor <id> --subject <anchor>`. When that `next` is `null`
+  example `hibi reanchor <id> --subject <anchor>`. A side that is `missing`
+  with reason `not_exact` fails this way with `side_missing`: its message
+  lists the candidates, and its remediation is that template, which holds no
+  candidate. When that `next` is `null`
   the error keeps the remediation of its own code, which for
-  `side_unavailable` is the sentence above.
+  `side_unavailable` is the remediation above.
+- `reanchor`, a kept side. A kept side that is `missing` or `ambiguous`
+  fails with `side_missing` or `side_ambiguous`, also when it is `missing`
+  with reason `not_exact`. The `remediation` is
+  `hibi reanchor <id> --subject <anchor>` for the subject and
+  `hibi reanchor <id> --evidence <n>=<anchor>` for evidence number `n`, with
+  the full id of the old claim: it names the one side the error is about,
+  and `<anchor>` is written literally. A kept side that is `unavailable`
+  fails with `side_unavailable` and the remediation above.
 - `claim_retired` from `mark`, and from `reanchor` when the old claim is
   retired. No command makes a retired claim writable, so the `remediation`
   points at where to look instead:
@@ -5146,6 +5541,23 @@ array of `--stdin`.
   parses. A compact anchor string is not parsed in pass 1. An element with
   a wrong shape does not stop the command: pass 2 still runs for every
   other element.
+- The message of a pass 1 error on an element is worded in terms of the
+  input format. It does not repeat the position of the element, which is
+  the `index`, and it names no type of the implementation. With `<format>`
+  standing for
+  `a claim element is an object with statement and subject, and optionally evidence, recheck, note and by`
+  in `claim --stdin`, and for
+  `a mark element is a claim id string, or an object with claim and optionally note and by`
+  in `mark --stdin`:
+  - an element of the wrong JSON type: `found <type>; <format>`, where
+    `<type>` is `null`, `a boolean`, `a number`, `a string` or `an array`
+    (a string is a valid element of `mark --stdin`);
+  - an object with a missing, mistyped or unknown key:
+    `<format>: <what is wrong>`;
+  - an anchor value of `claim --stdin`: `<side>: <what is wrong>`, where
+    `<side>` is `subject` or `evidence <n>` with `n` counted from 1. For a
+    value that is neither a string nor an object, `<what is wrong>` is
+    `an anchor is a compact string or an object with loc and sel`.
 - Pass 2 applies the checks of the command (section 15.3) to every element
   that passed pass 1. Each failing element reports one error, its first
   failing check, with its `index`. A failure in one element does not stop
@@ -5154,7 +5566,7 @@ array of `--stdin`.
   each element with a wrong shape together with the pass 2 error of each
   other element that fails a check, one error per failing element, ordered
   by `index`. For example, a `claim --stdin` array whose element 0 names a
-  unit that does not exist, whose element 1 has an unknown key, whose
+  file that does not exist, whose element 1 has an unknown key, whose
   element 2 has a `recheck` that does not parse, whose element 3 is valid
   and whose element 4 has an anchor object that does not parse reports
   `side_missing` with `index` 0, `invalid_json` with `index` 1,
@@ -5241,12 +5653,18 @@ For each element, in order:
    listed in `hibi.toml` (`unknown_scheme`). A `recheck` that does not parse
    or that overflows (section 9.4) is `invalid_duration` here, before any
    anchor is resolved, so it is reported in place of a side error of the same
-   element.
+   element. The message of the overflow is
+   `adding the duration to <now> goes past 9999-12-31T23:59:59Z`, where
+   `<now>` is written as the outputs write an instant, with `Z`, for example
+   `2026-11-20T18:04:11Z`.
 2. Resolve every anchor and apply the write checks, first that applies: a
    selector key the provider does not allow (section 2.5), such as `key` on a
    `file:` locator: `unsupported_selector`, without sending it.
+   An answer in which at least one unit has `approx: true`, whether it holds
+   one unit or several: `selector_not_exact`. Nothing resolves, and the
+   message lists the units of the answer as candidates (section 15.2).
    Missing: `side_missing`. Several units: `side_ambiguous`. Unavailable:
-   `side_unavailable`. One unit with `approx`: `selector_not_exact`. One unit
+   `side_unavailable`. One unit
    with `refuse`: the error code equal to the `refuse` value
    (`quote_spans_units` or `quote_in_comment`). One unit, when the anchor
    gave a `quote` and the `quote` of the unit's completed selector is not the
@@ -5304,16 +5722,26 @@ follows the reason code as section 15.2 states under `side_unavailable`.
 The message and remediation of the other write checks, here and for every
 replaced or added side in `reanchor`:
 
-- `side_ambiguous`. The message lists every unit the anchor matched, in the
+- `side_ambiguous`. The message lists the units the anchor matched, in the
   form
   `the anchor matches <n> units; use one of these anchors: <candidate>; <candidate>`,
   where each candidate is `<kind> "<label>", line <n>: <anchor>`. `<label>`
   is the unit's label, or its key when it has none, cut to 80 characters;
   `, line <n>` is omitted for a unit without a range. `<anchor>` selects
-  that unit when given back as an anchor argument: it is the compact form
-  `<locator>#<symbol>` when the locator is on scheme `file` or `repo`, every
-  candidate has a symbol and no two candidates have the same symbol, and
-  otherwise the unit's completed anchor as a JSON object.
+  that unit, and no other unit of the resource, when given back as an anchor
+  argument: it is the compact form `<locator>#<symbol>` when the locator is
+  on scheme `file` or `repo` and the candidate's symbol is unique in the
+  whole resource, and otherwise the unit's completed anchor as a JSON
+  object (section 15.2 gives the rule in full). At most `MAX_CANDIDATES`
+  (20) units are listed; when the anchor matched more, the list ends with
+  `; and <m> more`.
+- `selector_not_exact` for an anchor found only by similarity. The message
+  is
+  `the anchor matches no unit exactly; <found> found by similarity, each a guess to check before use: <candidate>; <candidate>`,
+  with `<found>` being `1 unit was` or `<n> units were`, and the candidates
+  written and limited as for `side_ambiguous`. The remediation is
+  `Give a quote that occurs exactly in the unit you mean.` The caller reads
+  the candidates and, when one of them is the unit meant, gives its anchor.
 - The remediation of `side_ambiguous` and of `unsupported_selector` is built
   from the selector keys the provider of the locator accepts (section 2.5).
   For `side_ambiguous` it is `Give <ways>, so that the anchor matches one unit.`,
@@ -5373,9 +5801,6 @@ Human: one line per claim:
 ```
 <id>  created|marked  <mark id>  <role> <locator> (<kind> "<label>", line <n>); ...
   was <state>: <role> <locator> <side state> (<reason>); ...; now marked
-  next: <next>
-
-A next command here only brings a stored anchor up to date. Look at what the anchor points to now, then run it.
 ```
 
 - The first line names every side, joined by `; `. `<role>` is `subject` or
@@ -5385,10 +5810,9 @@ A next command here only brings a stored anchor up to date. Look at what the anc
   omitted when the reason is `null`, and the part from `:` to the last side
   is omitted when `sides` is empty. `mark` and `reanchor` print the same
   line.
-- The `next` line is printed when the ClaimView's `next` is not `null`.
-- The closing sentence is printed once, after an empty line, when the `next`
-  of at least one entry is a `hibi mark` or `hibi reanchor` command. `mark`
-  and `reanchor` print the same sentence under the same condition.
+- No `next` line follows: the `next` of the ClaimView
+  is always `null` in the output of `claim`, `mark` and `reanchor`
+  (section 15.2).
 
 **`hibi status [<claim-id>]... [--since <range>] [--loc <glob>]... [--state <state>]... [--detail] [--judge-order]`**
 
@@ -5398,12 +5822,9 @@ Evaluates freshness. Selection:
 - Otherwise all claims, filtered by `--state` and by `--loc` (keep a claim
   when any side's locator matches any glob; the
   glob is matched against the whole locator string). Without `--state` the
-  default selection applies: every `stale` claim, every `expired` claim, and
-  every `fresh` claim that drifted. A claim drifted when at least one of its
-  sides resolves to one unit with `approx`: the claim holds, its stored
-  selector is out of date, and its `next` is a `hibi reanchor` command
-  (section 15.2). With `--state`, exactly the claims in the named states are
-  kept; `--state fresh` keeps every fresh claim, drifted or not.
+  default selection applies: every `stale` claim and every `expired` claim.
+  With `--state`, exactly the claims in the named states are
+  kept.
 - With `--since`: the claims of section 10.3, further filtered by `--loc`.
   `--since` with `--state` or with ids is `usage`. The argument parser
   reports it, before any argument value is read: a range that does not parse
@@ -5411,15 +5832,16 @@ Evaluates freshness. Selection:
   `invalid_range`, and the remediation is `hibi status --help`.
 
 `summary` always counts every claim in the store, before filtering.
-`claims` is the sum of `fresh`, `stale`, `expired` and `retired`. `drifted`
-counts the fresh claims that drifted; they are also counted in `fresh`.
+`claims` is the sum of `fresh`, `stale`, `expired` and `retired`. These five
+keys are the whole `summary`. A claim with a side that was found only by
+similarity is `stale` (section 9.3) and is counted there.
 
 JSON:
 
 ```json
 {"ok":true,"command":"status","now":"2026-11-20T18:04:11Z","snapshot":"b3:...",
  "since":{"range":"main...","base":"<commit>"},
- "summary":{"claims":0,"fresh":0,"drifted":0,"stale":0,"expired":0,"retired":0},
+ "summary":{"claims":0,"fresh":0,"stale":0,"expired":0,"retired":0},
  "claims":[ <ClaimView> ],"nextNote":"<the text below>","warnings":[]}
 ```
 
@@ -5429,31 +5851,34 @@ output of `status`, `claim`, `mark` and `reanchor`, and is always this text
 (`NEXT_NOTE`), on one line:
 
 ```
-Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command.
+Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A candidate listed under a side is a guess at where its unit went: read it before you anchor to it.
 ```
 
 Human:
 
 ```
-<n> claims: <n> fresh (<n> drifted), <n> stale, <n> expired, <n> retired
+<n> claims: <n> fresh, <n> stale, <n> expired, <n> retired
 since <range> (base <commit>)
 
 <id>  <state>  <statement>
   marked <markedAt> (<mark id>), recheck <recheck> ran out at <expiresAt>
-  <role>  <locator>  <side state> (<reason>), found approximately  <kind> "<label>", line <n>
+  <role>  <locator>  <side state> (<reason>)  <kind> "<label>", line <n>
+    <detail>
+    <remediation>
     stored: symbol <symbol>, quote "<quote>", key <key>
-    candidate: <kind> "<label>", line <n>
+    <n> candidates, found by similarity; each is a guess, read it before you anchor to it:
+    - <kind> "<label>", line <n>; same content as at the last mark
+      | <the candidate's text on one line>
+      anchor: <anchor>
+    and <n> more
     | <one line of the unit text>
   next: <next>
 
-Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
-
-A fresh claim is listed because its anchor drifted. The statement still holds: look at what the anchor points to now, then run its reanchor command.
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
 - The summary line is always printed. The word is `claim` when the count
-  is 1. ` (<n> drifted)` is printed only when `summary.drifted` is greater
-  than 0. The `since` line is printed only with `--since`.
+  is 1. The `since` line is printed only with `--since`.
 - When no claim is listed, the next and last line is `nothing stale` if the
   caller gave no id, no `--state`, no `--loc` and no `--since`, and
   `no claim matches` otherwise.
@@ -5464,23 +5889,41 @@ A fresh claim is listed because its anchor drifted. The statement still holds: l
   `  never marked` for a claim without a mark. The part from `, recheck` on
   is printed when the claim has a `recheck` and `expiresAt` is not `null`;
   its verb is `ran out` for an `expired` claim and `runs out` otherwise.
-- A side line is printed for each side that is not `same`, that is `approx`,
+- A side line is printed for each side that is not `same`
   or that carries `text` (every resolved side with `--detail`). `<role>` is
   `subject` or `evidence <n>`. ` (<reason>)` is omitted when the reason is
-  `null`, `, found approximately` is printed only for an `approx` side, and
+  `null`, and
   the unit is omitted when the side has none. The unit shows `lines <a>-<b>`
-  when it spans several lines. `candidate` lines are printed for an
-  `ambiguous` side, and the `|` lines are the side's `text`.
+  when it spans several lines. The `|` lines at the end of the side are the
+  side's `text`, one for each line of it.
+- The `<detail>` line is the side's `detail`, put on one line and cut to 300
+  characters. It is printed when `detail` is not `null` and the reason is
+  not `resource_unavailable`, whose `remediation` already holds what the
+  provider said. The `<remediation>` line is the side's `remediation`. It is
+  printed when `remediation` is not `null` and is not the command
+  `hibi providers`, which the `next` line gives where it applies.
 - The `stored` line is printed for a `missing` or `ambiguous` side. It gives
   what the stored selector holds of `symbol`, `quote` and `key`, in this
   order, joined by `, `, with the quote put on one line and cut to 80
   characters. It is omitted when the stored selector has none of the three.
+- The candidate lines are printed for a side that has `candidates`. The
+  first of them gives `candidatesTotal`, with the word `candidate` when the
+  count is 1. For a `missing` side with reason `not_exact` it continues as
+  shown above. For an `ambiguous` side it is
+  `<n> candidates; the stored anchor matches each of them:`. Each candidate
+  of `candidates` then has up to three lines. The `-` line gives the kind,
+  the label (or the key when the unit has no label) put on one line and cut
+  to 60 characters, and the first line of the unit; `, line <n>` is omitted
+  for a unit without a range, and `; same content as at the last mark` is
+  printed only when `sameFingerprint` is `true`. The `|` line is the
+  candidate's `text` put on one line and cut to 100 characters, and is
+  omitted when `text` is `null`. The `anchor:` line is the candidate's
+  `anchor`, complete. `and <n> more` is printed when `candidatesTotal` is
+  greater than the number of candidates listed, with the difference.
 - The `next` line is omitted when `next` is `null`.
-- The two closing sentences are each printed at most once, each after an
-  empty line. The first is printed when a listed claim that is not `fresh`
-  has a `next` that is a `hibi mark` or `hibi reanchor` command. The second
-  is printed when a listed `fresh` claim has such a `next`. The human output
-  does not print the value of `nextNote`.
+- The closing sentence is printed at most once, after an empty line, when a
+  listed claim has a `next` that is a `hibi mark` or `hibi reanchor`
+  command. The human output does not print the value of `nextNote`.
 
 **`hibi mark <claim-id>... [--note <text>] [--by <text>]`**
 **`hibi mark --stdin`**
@@ -5495,8 +5938,10 @@ of the other elements. No other mark argument is allowed with
 For each claim: `claim_retired` if retired; resolve every side; a side that is
 `missing`, `ambiguous` or `unavailable` for a reason other than
 `profile_mismatch` fails with `side_missing`, `side_ambiguous` or
-`side_unavailable`. A side that resolves with `approx` is accepted: the
-caller has just re-checked the claim and is trusted. `refuse` is not checked
+`side_unavailable`. A side that the provider finds only by similarity is
+`missing` with reason `not_exact` and fails with `side_missing`: a unit
+found by similarity does not count as found, and `mark` never takes a
+candidate. `refuse` is not checked
 here. Otherwise build a mark with `at = now` and the current fingerprints.
 All or nothing, as for `claim`.
 
@@ -5504,7 +5949,10 @@ Remediation of these errors: for `side_missing`, `side_ambiguous` and
 `side_unavailable` it is the `next` of the claim by the table of section
 15.2, evaluated on the current resolution, so `hibi reanchor <id>` with one
 option per missing or ambiguous side, or `hibi providers`, or, when that
-`next` is `null`, the remediation of the error's own code (section 15.2). For `claim_retired`, in `mark` and for a
+`next` is `null`, the remediation of the error's own code (section 15.2).
+For a `not_exact` side the message lists the candidates with their anchors
+and the remediation is the `hibi reanchor` template with `<anchor>`
+(section 15.2). For `claim_retired`, in `mark` and for a
 retired old claim in `reanchor`, it points to where the claim went: a
 retired claim cannot be marked or re-anchored. When a retirement of the
 claim has a `replacedBy`, the remediation is
@@ -5516,21 +5964,13 @@ Naming the same claim twice, as arguments or as elements, gives one entry of
 `marks` per mention. Two of them with the same `by` and `note` build the same
 mark, which is written once.
 
-In the output every `approx` side carries `approx: true`, its `unit` and its
-`text` (cut to 240 characters) whether or not `--detail` is given, so the
-caller sees what was marked. The ClaimView's `next` is then the `reanchor`
-command of section 15.2, which refreshes the selector.
-
 JSON: `marks`: array of `{claim, mark, accepted, claimView}`, one entry per
 input in input order, and `nextNote`. `accepted` is the object described for
 `claim`: the state the claim had before this mark and its sides that were not
 `same` then.
 
 Human: per claim the line `<id>  marked  <mark id>`, then the `was` line
-described for `claim`, then one side line in the form of `status` for each
-`approx` side, with its `|` text lines, then the `next` line when `next` is
-not `null`. The closing sentence described for `claim` follows under the same
-condition.
+described for `claim`.
 
 **`hibi reanchor <claim-id> [--statement <text>] [--subject <anchor>] [--evidence <n>=<anchor>]... [--add-evidence <anchor>]... [--drop-evidence <n>]... [--recheck <duration|none>] [--note <text|none>] [--by <text>]`**
 
@@ -5553,14 +5993,19 @@ Builds a new claim from the old one:
    exist, is `usage`. So is an `--evidence` value that is not
    `<n>=<anchor>` and a `--drop-evidence` value that is not a non-negative
    integer.
-3. Every resulting side MUST resolve to exactly one unit; a replaced or added
+3. Every resulting side MUST resolve exactly to one unit; a replaced or added
    side is subject to the write checks of `claim` step 2, including
    `selector_not_exact` in both of its cases, with the messages and
-   remediations given there; a kept side may be `approx` and its `refuse` is
-   not checked. A kept side that does not resolve to one unit fails with
-   `side_missing`, `side_ambiguous` or `side_unavailable`; for a kept side
-   the remediation of `side_ambiguous` is also built from the provider's
-   selector keys. Step 4 refreshes the selector of a kept `approx` side.
+   remediations given there; the `refuse` of a kept side is
+   not checked. A kept side that does not resolve exactly to one unit fails
+   with `side_missing`, `side_ambiguous` or `side_unavailable`. A kept side
+   that the provider finds only by similarity is `missing` with reason
+   `not_exact` and fails with `side_missing`. A kept side that is missing
+   or ambiguous has to be replaced with an anchor the caller chooses: the
+   remediation is `hibi reanchor <id> --subject <anchor>` or
+   `hibi reanchor <id> --evidence <n>=<anchor>` for that side
+   (section 15.2), and the message lists the candidates when the provider
+   returned any.
 4. Each side's stored selector becomes the completed selector of its resolved
    unit. This refreshes quote, context, position and symbol. Two evidence
    sides of the result, kept or new, with equal locators, the same unit and
@@ -5575,9 +6020,18 @@ Builds a new claim from the old one:
    and retire the live one.) If it equals another live claim, that claim gets
    the mark and the old claim is retired with `replacedBy` naming it: the
    old claim is merged into the existing one, no claim is written, and the
-   result has `merged: true`.
+   result has `merged: true`. If no claim in the store has the new id, the
+   same-claim rule of `claim` is applied to the new claim: when a live
+   claim other than the old one is the same claim as the new one, the old
+   claim is merged into that claim in the same way, and when several are,
+   into the one with the smallest id. In this rule a replaced or added
+   side is compared by `quote` when its anchor gave a `quote`, and a kept
+   side is never compared by `quote`. The stored anchors of the claim that
+   gets the mark are not changed.
 6. Append the new claim, a mark for it (`at = now`), and a retirement of the
-   old claim with `replacedBy` set to the new id, in one `append`.
+   old claim with `replacedBy` set to the new id, in one `append`. When the
+   old claim is merged into an existing claim, no claim is appended, and
+   the mark and `replacedBy` name that claim.
 
 Fails with `claim_retired` when the old claim is retired; the remediation is
 then the pointer described for `mark`: the claim that replaced it, or
@@ -5588,7 +6042,8 @@ since the old claim's last mark: this write marks it as checked. `accepted`
 reports that.
 
 JSON: `old`, `new`, `mark`, `retirement` (ids), `merged`, `accepted`, `claim`
-(ClaimView of the new claim) and `nextNote`. `merged` is `true` when `new` is
+(ClaimView of the claim `new`) and `nextNote`. `new` is the id of the claim
+that got the mark. `merged` is `true` when `new` is
 a claim that was in the store before this run, and `false` when this run
 wrote it. `accepted` is the object described for `claim`, for the old claim:
 its state before this write, evaluated at `now` from its stored marks and
@@ -5603,13 +6058,12 @@ Human:
   was <state>: <role> <locator> <side state> (<reason>); ...; now marked
   <role> <locator> (<kind> "<label>", line <n>)
     <the side's stored anchor as JSON>
-  next: <next>
 ```
 
 The first line is `<old id> is retired and merged into the existing claim <new id>`
-when `merged` is `true`. The `was` line, the `next` line and the closing
-sentence follow the rules given for `claim`. The two side lines are printed
-for every side of the new claim.
+when `merged` is `true`. The `was` line follows the rule given for `claim`.
+The two side lines are printed
+for every side of the claim `new`.
 
 **`hibi retire <claim-id>... [--replaced-by <claim-id>] [--note <text>] [--by <text>]`**
 
@@ -5872,10 +6326,10 @@ Closed list. Every error carries one of these codes.
 | `claim_retired` | A write on a retired claim. From `mark`, and from `reanchor` on a retired old claim, the remediation names the claim that replaced it, or is `hibi list <id>` (section 15.3). |
 | `no_change` | `reanchor` would produce the same claim |
 | `unknown_scheme` | A new anchor uses a scheme that is not declared |
-| `side_missing` | An anchor resolves to no unit |
-| `side_ambiguous` | An anchor resolves to several units. The message lists them; for a new anchor each unit is listed with an anchor that selects it (section 15.3). |
+| `side_missing` | An anchor resolves to no unit. This includes a stored anchor (in `mark`, or a kept side in `reanchor`) that was found only by similarity: the reason is then `not_exact` and the message lists the candidates (section 15.2). |
+| `side_ambiguous` | An anchor resolves to several units. The message lists at most `MAX_CANDIDATES` (20) of them, each with an anchor that selects it, for a new and for a stored anchor (section 15.2). |
 | `side_unavailable` | An anchor cannot be evaluated. The message gives the reason code. |
-| `selector_not_exact` | A new anchor (in `claim`, or a replaced or added side in `reanchor`) resolved only approximately, or its quote does not occur in the unit it resolved to. The message shows what was found. |
+| `selector_not_exact` | A new anchor (in `claim`, or a replaced or added side in `reanchor`) was found only by similarity, or its quote does not occur in the unit it resolved to. The message shows what was found; in the first case it lists the candidates, each with an anchor that selects it. |
 | `quote_spans_units` | A quote reaches outside one unit |
 | `quote_in_comment` | A quote lies wholly or partly inside a code comment. Remediation: anchor the code the comment describes. |
 | `unsupported_selector` | A new anchor has a selector key its provider does not allow, such as `key` on a `file:` locator |
@@ -5935,8 +6389,12 @@ this specification and the fixture text, and nothing was copied from the
 output of an implementation. The `source` of each starts with
 `written for v5 from` and gives the derivation. A case of these files whose
 expected value was changed by a later ruling keeps the origin `spec-derived`,
-because the new value was derived by hand as well; its `source` names the
-ruling and the edit after `adjusted by a later ruling:`.
+because the new value was derived by hand as well. In `units-code.json` the
+`source` of such a case names the ruling and the edit after
+`adjusted by a later ruling:`. In `resolve.json` the cases changed by the
+rulings on section 6.7 (a unit found by similarity is `approx`, and a symbol
+needs a resource with declarations) carry the common `source` text of the
+file, and the name of each states the result the ruling requires.
 
 This specification states no number of cases for any file, and no test
 checks one. The tests check these three things about quantity: every case
@@ -5967,8 +6425,8 @@ panics counts as a failing case and does not stop the other cases.
 | `ids.json` | Id derivation: the canonical form of `input.body`, the 64 hex digits of its BLAKE3 digest, and the id. The body with the expected `id` added deserializes as a record of `input.kind`, and the id derived from that record equals the expected id. | 3.5 |
 | `fingerprint.json` | `fingerprint::prose_v1(text)` (with NFC) and `fingerprint::ast_v1(class, stream)`: the complete fingerprint string | 8.3, 8.4 |
 | `units-code.json` | `code::analyze(text, class)`, with the class taken from `input.path`: the class after the parse-error fallback and every unit in source order as `kind`, `symbol`, `key`, `parent`, `start`, `end`, `line`, `endLine`. See "Code cases" and "Content keys and `endLine`" below. | 6.1, 6.4 to 6.6 |
-| `resolve.json` | `resolve` of the file provider on a working tree that holds only the case's file: the returned units in order as `key`, `approx`, `refuse` (`null` when absent) and the completed selector `sel`, or the provider error code. The file's content is a file under `fixtures/resolve/` or inline text, written byte for byte; with neither, the file does not exist. The same anchor is resolved twice without a cache and twice through a cache (empty, then filled), and the four answers MUST be equal. See "Resolve cases" below. | 6.7 |
-| `freshness.json` | `engine::evaluate`: the claim state, the reference mark, `expiresAt`, and each side's state and reason, for a table of marks, side resolutions and `now` | 9.2, 9.3, 15.2 |
+| `resolve.json` | `resolve` of the file provider on a working tree that holds only the case's file: the returned units in order as `key`, `approx`, `refuse` (`null` when absent) and the completed selector `sel`, or the provider error code. `approx` is the field of the unit object of section 13.3 as the provider returns it; what the engine makes of an `approx` unit (section 9.2) is not bound by this file. The file's content is a file under `fixtures/resolve/` or inline text, written byte for byte; with neither, the file does not exist. The same anchor is resolved twice without a cache and twice through a cache (empty, then filled), and the four answers MUST be equal. See "Resolve cases" below. | 6.7 |
+| `freshness.json` | `engine::evaluate`: the claim state, the reference mark, `expiresAt`, and each side's state and reason, for a table of marks, side resolutions and `now`. A side resolution of the input is one unit with a fingerprint, no unit, two units, a provider error code or `failed`, a missing provider (`scheme_not_declared` or `provider_not_registered`), or an invalid unit. | 9.2, 9.3, 15.2 |
 | `coverage.json` | `engine::covered_keys` and `engine::classify`: the units of a scope that are covered, excluded and uncovered, and the number of units each exclusion matched | 10.2 |
 | `judge/triage.json`, `judge/suggest-evidence.json`, `judge/order.json` | The request body built by the functions of `judge::questions` equals `expected.request`. `judge::read_answer` reads each answer of `input.response` as `expected.answers` says, where `null` is an unusable answer. `triage.json` also binds the band (`judge::Band`) and the evidence label (`judge::EvidenceLabel`) of each unit; `suggest-evidence.json` also binds `fits` per candidate and `noneFits`. | 14.2 to 14.5 |
 | `provider/protocol/` | The conformance cases that every provider MUST pass. They use no fixture. The same cases are compiled into hibi for `hibi providers --check`, and a test requires the compiled-in cases to equal the files of this directory. | 13.6, 15.3 |
@@ -6074,8 +6532,8 @@ comment stands between the two (section 8.4).
 
 **Resolve cases.** `resolve.json` covers every branch of `resolve`
 (section 6.7) on the fixtures `fixtures/resolve/lib.rs`, `shapes.rs`,
-`over.ts`, `geo.py`, `dup.py`, `broken.py`, `pricing.md` and `notes.cfg` and
-on inline text. Besides the branches for the empty selector, a symbol, a
+`over.ts`, `geo.py`, `dup.py`, `broken.py`, `report.py`, `pricing.md` and
+`notes.cfg` and on inline text. Besides the branches for the empty selector, a symbol, a
 quote, and a symbol with a quote, its cases pin:
 
 - a new anchor (a selector with none of `prefix`, `suffix` and `pos`): every
@@ -6101,6 +6559,32 @@ quote, and a symbol with a quote, its cases pin:
 - decoding: CRLF becomes LF and a leading U+FEFF belongs to the first unit
   (cases named `decoding:`);
 - the default quote, including its 120-character cut;
+- which units are `approx`. A symbol that names exactly one declaration
+  gives that unit with `approx` `false`, also when its quote is found only
+  by the fuzzy step or not at all. A quote without a symbol that is found
+  only by the fuzzy step gives its unit with `approx` `true`. A symbol that
+  names no declaration makes every unit the quote finds `approx`: one unit
+  (`rust: renamed declaration: the symbol misses, the quote finds it, approx`
+  and
+  `rust: renamed container: the member's path misses, the quote finds it, approx`)
+  or the several units of tied exact hits
+  (`rust: a missed symbol and a quote that ties in two units: both, approx`);
+- a moved function
+  (`python: a moved function: the symbol misses, the fuzzy step finds its call in main, approx`,
+  on `report.py`): the stored symbol `threshold` names no declaration of the
+  file, the fuzzy step finds the stored quote at the call of `threshold`
+  in the function `main`, and the one unit returned is `function:main` with
+  `approx` `true`;
+- a selector with a `symbol` on a resource that has no declarations: the
+  error `invalid_selector` on a markdown file and on a file of class `text`,
+  with and without a quote (`markdown: a symbol: invalid_selector`,
+  `markdown: a symbol and a quote: invalid_selector`,
+  `text: a symbol: invalid_selector`), and the error `unavailable` on a file
+  of a code class that does not parse, for a symbol alone, a symbol with a
+  quote, and a stored anchor (the three cases named
+  `python with a syntax error: ...: unavailable` on `broken.py`). A selector
+  without a symbol on `broken.py` resolves against the `block` units of the
+  class `text`;
 - the errors `not_found` for a missing resource and `invalid_selector` for a
   selector with `key`.
 
@@ -6196,6 +6680,19 @@ in the prose of their block, the table separator row without a leading pipe,
 sentence splitting inside table cells, the inclusive Bitap threshold, and
 ambiguous results carrying the earliest tied range.
 
+Two more groups of cases keep the form they were recorded in and are binding
+in that form:
+
+- The instants of `duration.json` and `recheck-boundary.json` that are
+  written with milliseconds (such as `.000Z`, three of them with a nonzero
+  fraction) and the one duration start with a `+02:00` offset. The rule of
+  section 3.1, second precision and `Z` only, binds stored `at` fields and
+  `now`. It does not bind `duration::parse` and `duration::add`, which accept
+  any instant and keep the fraction (section 9.4).
+- The Rust streams of the `ast-v1` cases, which were recorded with
+  `tree-sitter-rust` 0.24.0. Section 2.6 pins 0.24.2, and every Rust case
+  passes with 0.24.2.
+
 ### 16.3 Case data that is still missing
 
 Every file and directory that this specification adds exists and is listed
@@ -6205,6 +6702,11 @@ sections 14.3 to 14.5 recorded from the live judge API. The files under
 
 No case file exercises the bounded Levenshtein computation of section 7.1 at
 its cap. Unit tests of the `locate` and `text` modules cover it.
+
+No case of `freshness.json` gives a side a unit found by similarity, so no
+case file binds the side reason `not_exact`, the candidates of a side or
+their `sameFingerprint`. The tests in `crates/hibi/tests/engine/` and
+`crates/hibi-cli/tests/` cover them.
 
 `cargo test` with the default features MUST load and run every case file. A
 case file that no test loads is an error in the test suite. An implementer
@@ -6224,9 +6726,9 @@ Each row is a choice the plan left open or marked illustrative.
 | 2 | Ruling from the lead: `ast-v1` is v4's semantic pre-order walk with two exclusions, comment nodes and a comma directly before a closing delimiter. This narrows the plan's "reformatting stales nothing" to whitespace, line breaks, comments and trailing commas. A formatter change to semicolons, quote style or parentheses stales the claim. The only comma of a tuple-like node (Rust `tuple_expression`, `tuple_type`, `tuple_pattern`; Python `tuple`, `tuple_pattern`, `subscript`) is not skipped. | Operators and keywords are anonymous tokens and must count, so punctuation cannot be dropped wholesale. |
 | 3 | A code file with any parse error is handled as plain text for that read. | One rule with no partial trees; the resulting profile change is reported, not hidden. |
 | 4 | A profile mismatch reports the side as `unavailable` with reason `profile_mismatch`, and `mark` accepts such a side. | It is visibly not a content change, and one re-check clears it. |
-| 5 | No alias record for renames. A missing symbol falls back to the quote and is flagged `approx`; `reanchor` stores the new symbol. | A rename changes the declaration's fingerprint, so a re-check is needed anyway. |
+| 5 | No alias record for renames. A symbol that names no declaration falls back to the quote; every unit the quote then finds is approximate and is a candidate, never a resolution. `reanchor` with the candidate's anchor stores the new symbol. | Superseded in part by decision 120. A rename changes the declaration's fingerprint, so a re-check is needed anyway. |
 | 6 | Stored selectors are completed by the provider (symbol, quote, context, position). | Every stored anchor can be re-found by two independent means. |
-| 7 | Ruling: a new anchor (in `claim`, or a replaced or added side in `reanchor`) must resolve exactly. `mark` and kept `reanchor` sides accept an approximate resolution. | A new record should not start with a stale selector; a re-check by a trusted agent must not be blocked or forced into a new claim id. |
+| 7 | A new anchor (in `claim`, or a replaced or added side in `reanchor`) must resolve exactly (`selector_not_exact`). A stored anchor that resolves only approximately does not resolve at all (decision 120). | A new record should not start with a stale selector. |
 | 8 | Unit keys: `<kind>:<symbol>` for declarations, `<kind>:<12 hex of fingerprint>` for content units, `~n` for duplicates. | Stable without storing anything. |
 | 9 | Extra unit kinds `file`, `statement`, `block`. | Every byte of every text file belongs to a unit, so every quote resolves. |
 | 10 | Files with no grammar are split into blank-line-separated blocks. | Finer than whole-file, needs no grammar. |
@@ -6255,12 +6757,12 @@ Each row is a choice the plan left open or marked illustrative.
 | 44 | CRLF is replaced by LF once, when the file provider decodes a file. | Units, quotes and fingerprints then never contain a line-ending U+000D, and the pure functions stay free of the rule. |
 | 45 | Ruling: an absent resource is the provider error `not_found`; an empty unit list means the selector found nothing; provider error codes map one to one onto side reasons. | The engine must tell `resource_not_found` from `selector_not_found` through the trait alone. |
 | 46 | A resolved unit can carry `refuse` (`quote_spans_units`, `quote_in_comment`). | The provider knows the located span; the engine only needs the verdict. |
-| 47 | Ruling: `locate` always runs when a quote is given. With a symbol that matches one declaration the quote is located inside that declaration only and the side is never `approx`; the quote only decides the completed selector. | The symbol identifies the unit. The stored selector, and so the claim id, is the same in every implementation. |
+| 47 | Ruling: `locate` always runs when a quote is given. With a symbol that matches one declaration the quote is located inside that declaration only and the unit is never `approx`; the quote only decides the completed selector. | The symbol identifies the unit. The stored selector, and so the claim id, is the same in every implementation. |
 | 48 | Ruling: every git call carries `safe.bareRepository=explicit` and `core.fsmonitor=false`; `hibi.toml` only names sibling aliases and the user config supplies their directories, per repository; the directory must be a git top level outside the root and not above it; `repo:` paths are read only when that repository lists them. Reason `repo_not_allowed`. Resolving `repo:` needs git. | A cloned `hibi.toml` must not cause command execution or reads of files the user did not offer. Same rule as provider commands. |
 | 49 | Ruling: `claim` and `reanchor` refuse a quote that touches a code comment. The default quote stops before a comment. | `ast-v1` ignores comments, so such a claim could never go stale. |
 | 50 | Ruling: `reanchor` fails with `claim_retired` when the rebuilt claim is a retired one. When it is another live claim, that claim is marked and the old one retired. | Otherwise nothing live would remain. |
-| 51 | `MAX_FILE_BYTES` is 8 MiB; larger files report `too_large`, as does a resource with more than `MAX_UNITS_PER_RESOURCE` (100,000) units. Tree walks are iterative, with no depth limit; declaration discovery stops at `MAX_CONTAINER_DEPTH` (32) nested containers. | Bounded memory; no stack overflow on deeply nested input. |
-| 52 | Ruling (replaces the earlier one): `mark` accepts approximate sides, shows the unit and text it marked, and suggests `reanchor`. | Plan decision 1: the agent is trusted and has just re-checked. |
+| 51 | `MAX_FILE_BYTES` is 8 MiB; larger files report `too_large`, as does a file of a code class longer than `MAX_CODE_FILE_BYTES` (2 MiB) and a resource with more than `MAX_UNITS_PER_RESOURCE` (100,000) units. Tree walks are iterative, with no depth limit; declaration discovery stops at `MAX_CONTAINER_DEPTH` (32) nested containers. | Bounded memory; no stack overflow on deeply nested input. |
+| 52 | `mark`, and a kept side of `reanchor`, fail with `side_missing` on a side found only by similarity. | Decision 120. The earlier rule, that `mark` accepts approximate sides, is withdrawn. |
 | 53 | Store paths that are symbolic links are `store_corrupt`. A locator path with a symbolic link in any component is `not_found`, in the working tree and in a revision. | hibi never writes or reads through a link it did not create. |
 | 54 | `hibi providers` starts a provider only with `--check`. | Listing configuration should run nothing. |
 | 55 | `triage` sends prose units of kind `sentence`, `list-item`, `table-row` and `heading` from the file provider; other uncovered units, units outside the file lists and units that cannot be rendered are counted as skipped. | The plan limits triage to prose regions; a fenced block is code. |
@@ -6273,7 +6775,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 62 | `MAX_SHARD_BYTES` is 64 MiB and `MAX_STORE_BYTES` is 256 MiB: `store_corrupt` on read, `store_full` on write, refused before anything is written. `MAX_CONFIG_BYTES` is 1 MiB (`invalid_config`, `invalid_user_config`). | Bounded reads of repository-controlled files; a write can never produce a store that every later read refuses. |
 | 63 | A scope-matched path that is a symbolic link is listed under the scope's `unavailable` items with reason `resource_not_found`. | No new reason code; nothing is dropped silently. |
 | 64 | An unknown cache `user_version` leaves the database untouched. | Another hibi version may own it. |
-| 65 | `next` suggests `reanchor` for an approximate side only on a fresh claim. `status`, `claim`, `mark` and `reanchor` carry `nextNote`, the constant `NEXT_NOTE`. | Following `next` must never clear a stale claim without a re-check. |
+| 65 | `next` is `null` for every fresh claim and never contains a candidate. `status`, `claim`, `mark` and `reanchor` carry `nextNote`, the constant `NEXT_NOTE`. | Following `next` must never clear a stale claim without a re-check, and must never choose a unit for the caller. |
 | 66 | Every named member declared directly in the body of a named container is a unit. Kinds `field` and `variant` are added (22 kinds). In a class-like container a function is `method` and a variable is `field`. | A claim on one field must not go stale when a sibling field changes. |
 | 67 | Rust attributes and TypeScript member decorators that precede a unit belong to its range and fingerprint, also for a statement. Rust `foreign_mod_item` is a wrapper. | An attribute change is a change of the item; an extern block has no name. |
 | 68 | Symbols of Rust impl types and Go receivers use one normalisation function (whitespace removed, one space kept between word characters). | The symbol is stable under reformatting and stays readable. |
@@ -6307,13 +6809,13 @@ Each row is a choice the plan left open or marked illustrative.
 | 96 | `recheck` must be longer than zero; a zero duration is `invalid_duration`, also in a stored record. | A zero period would expire the claim at the instant of every mark. |
 | 97 | `claim` marks an existing live claim with equal statement, recheck, note, locators, resolved units and symbols (section 9.5). The quote counts only when the caller gave one. The smallest id wins. | Running a claim command again after an edit near the quote must not create a duplicate. |
 | 98 | Writes that produce a mark report `accepted {was, sides}`; `reanchor` reports `merged`. | A write makes a claim fresh; the result records what state it accepted. |
-| 99 | `status` lists drifted fresh claims by default and counts them in `summary.drifted`. | Every claim whose `next` asks for something is shown. |
+| 99 | Default `status` selects stale and expired claims. `summary` has no `drifted` count. | Decision 120: there are no fresh claims with an approximate side. |
 | 100 | Two evidence anchors that complete to the same stored anchor and unit are `invalid_argument`; the subject may repeat as evidence. A quote given with a symbol on a new anchor must occur in that unit (`selector_not_exact`). | A repeated side adds nothing; a quote outside the named unit is a mistake. |
 | 101 | An anchor argument that starts with `{` is a JSON anchor, also in the `n=` forms. | Paths with `#` or `::` and external selectors can be given without standard input. |
 | 102 | `--now` is validated for every command and accepts 0000-01-01T00:00:00Z to 9999-12-30T22:00:00Z. | The upper bound is the time library's largest instant; the error names the range. |
 | 103 | `retire` collapses a claim named twice; `--replaced-by` must name a live claim. | One retirement per claim; a replacement that is itself retired points nowhere. |
 | 104 | An unknown kind is `invalid_config` for a scope on `file` or `repo`, and warning `unknown_kind` for a scope on another scheme. | hibi knows the file provider's kinds; only the provider knows the others. A misspelled kind would select nothing. |
-| 105 | `side_unavailable` carries a remediation for every reason: `hibi providers`, or a sentence naming the limit or cause and the way out. `judge_failed` remediation is chosen by cause; a 404 points at `HIBI_JEV_URL`. | A remediation must say something the caller can act on. |
+| 105 | `side_unavailable` carries a remediation for every reason: `hibi providers`, or a sentence naming the limit or cause and the way out. `scheme_not_declared` has `next` `null` and its own sentence; `resource_unavailable` has `next` `null` and carries the provider's message. `judge_failed` remediation is chosen by cause; a 404 points at `HIBI_JEV_URL`. | A remediation must say something the caller can act on. |
 | 106 | `MAX_UNITS_PER_RESOURCE` is 100,000, the `file` unit included. | Bounded memory and output per resource. |
 | 107 | With a usable git, a `file:` path is read only when the root's file list has it. `.git/` and `.hibi/` are never read. A failing file list is `unavailable`. `.hibi/` is dropped from sibling file lists as well. | An ignored file such as `.env` is never opened or printed. |
 | 108 | A completed selector is a fixed point: resolving it returns the same selector. For a unit with a unique symbol, prefix and suffix are cut from the unit's scope. A completed quote is cut to `MAX_QUOTE_CHARS`, never dropped; an empty span is `internal`. | The stored selector, and so the claim id, does not change on a second pass. |
@@ -6328,6 +6830,18 @@ Each row is a choice the plan left open or marked illustrative.
 | 117 | A judge command checks the key, the endpoint, the root, git, then the configuration. The key is redacted from every `judge_failed` error; a usable response is parsed as written; the cache stores typed answer fields only. A key that cannot be put in a header is not sent and not retried. | The git refusal is the same whether or not the configuration parses; an echoed key cannot reach output or cache. |
 | 118 | Schemas of output envelopes are closed, carry the limits and patterns that validation enforces, and the config schemas come from the parsing types. | A schema accepts exactly what hibi accepts. |
 | 119 | `hibi-provider-reference` is kept out of releases by `[package.metadata.dist] dist = false`. CI drift jobs compare with `git add --all` and `git diff --exit-code HEAD`; the report job never fails; only pull request runs are cancelled. `plugin.json` carries the workspace version. | A removed generated file is drift too; a release run is never cancelled. |
+| 120 | Similarity proposes, it never resolves. A unit a provider returns with `approx: true` never resolves a side: the side is `missing` with reason `not_exact`, and the approximate units are `candidates`. A claim is fresh only when every side resolves exactly. `mark` and a kept `reanchor` side fail with `side_missing`. Sides have no `approx` field, and there are no drifted claims. This supersedes decisions 5, 7, 47, 52, 65 and 99 where they let an approximate unit stand for a side, and the earlier rule that `mark` accepts approximate sides. | The earlier flow, followed exactly, could re-point a claim at an unrelated unit: an approximate match was marked, its fingerprint became the claim's, and the claim then never went stale. |
+| 121 | An answer that holds any approximate unit is `not_exact`, also when it holds exact units as well. | A mix means the selector did not identify one unit. |
+| 122 | In the file provider a stored symbol that names no declaration makes every unit the quote finds approximate, exact ties included; a quote found only by the fuzzy step is approximate; a unique symbol, and an exact or whitespace-equal quote hit, are exact. | The symbol was the identity; without it the quote is only a guess at where the declaration went. |
+| 123 | At most `MAX_CANDIDATES` (20) candidates are shown, with `candidatesTotal`. Candidate text is cut to 240 characters. A candidate's anchor is `<loc>#<symbol>` only when the symbol is unique in the whole resource, and a JSON anchor otherwise. `next` uses the `<anchor>` placeholder and never a candidate. | Bounded output; an anchor that is offered must select one unit; the caller chooses. |
+| 124 | Sides carry `detail` and `remediation`. | The JSON holds what the human output prints. |
+| 125 | Provider error `unavailable` maps to the side reason `resource_unavailable`, with `next` `null` and the provider's message as remediation. | The resource exists and cannot be read; that is not a broken provider. |
+| 126 | A symbol on a resource class that has no symbols is `invalid_selector`. A symbol on a code file that does not parse is `unavailable`, naming the first error line. | A symbol anchor must not be resolved against text blocks while the file is broken. |
+| 127 | `reanchor` applies the same-claim rule and reports `merged`; `claim_retired` and `no_change` are checked first, and a kept side is not compared by quote. | Re-anchoring onto a claim that already exists must not create a second one. |
+| 128 | Unit building stops as soon as the count passes `MAX_UNITS_PER_RESOURCE`; the message gives the limit, not a count. | The work is bounded as well as the result. |
+| 129 | A side that is not exact covers no unit, and a claim with such a side is not sent to the judge and is listed first. | It has no resolved unit. |
+| 130 | Accepted limit: text stored in the ledger stays in the ledger. A claim's stored quote, prefix and suffix are printed by `list` and `status` even after the file is later ignored. | hibi never reads the ignored file; the stored text was committed when the claim was made. |
+| 131 | CI has eight jobs: it also lints the library with features off, builds and tests each single feature, and checks the minimum Rust version with `--locked`. | Every feature set must build and pass. |
 | 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
 | 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
 | 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
@@ -6368,8 +6882,8 @@ Platforms and tools:
 - Release prerequisite. The repository carries tags `v0.1.1` to `v0.7.0` of
   the earlier line. release-plz's first run is expected to fail while they
   are the newest tags, unless a tag `v5.0.0` is created by hand on the first
-  release commit. This was not tried, and neither `release-plz.toml` nor
-  `CONTRIBUTING.md` states it.
+  release commit. This was not tried. `CONTRIBUTING.md` states the
+  prerequisite.
 - musl builds.
 - Which SQLite version `rusqlite` 0.43.0 bundles (advisory RUSTSEC-2026-0459
   needs SQLite 3.54.0 or later).
@@ -6390,6 +6904,14 @@ Judge:
   usable answers.
 
 Behaviour stated in this file that no test or case covers:
+
+- `MAX_CODE_FILE_BYTES` (section 6.1). The constant is decided and was not in
+  the code when this file was written, so no test asserts its value.
+- A side that is not exact covering no unit in `cover`, `status --since` with
+  such a side, and `--judge-order` with such a side (sections 10 and 14.5).
+  No case file can express a `not_exact` side.
+- The `detail` and `remediation` lines, the ambiguous-side candidate header
+  and `and <n> more` in human output have no snapshot.
 
 - A leading U+FEFF in a code file, in a `text` file, and before markdown
   frontmatter (section 4.2). The code-file rule rests on tree-sitter skipping
@@ -6440,31 +6962,52 @@ Verification section in order.
   (`r1_every_case_file_is_loaded`.)
 - R2. The reference provider passes every case in `cases/provider/protocol/`
   and `cases/provider/reference/`.
+  (`r2_protocol_cases`,
+  `r2_reference_cases`,
+  `r2_compiled_in_protocol_cases`.)
 - R3. For every record in `cases/canon.json` and `cases/ids.json` the
   canonical bytes and the id equal the expected values.
+  (`canon_json`, `ids_json`.)
 - R4. `locate` returns the expected status, `how` and byte range for every
   case in `cases/locate.json`.
+  (`locate_json`.)
 - R5. The prose splitter returns the expected units for every case in
   `cases/regions.json`.
+  (`regions_json`.)
 - R6. `hibi schema <name>` equals `schemas/<name>.schema.json` for every name.
+  (`r6_every_schema_file_equals_the_command_output`.)
 
 **Merging (V2)**
 
 - R7. From one base commit, two branches each run `hibi claim` for claims that
   fall in the same shard. `git merge` of one into the other completes without
   conflict.
+  (`r7_r8_two_branches_claim_in_one_shard_and_merge_without_conflict`,
+  `r7_r8_the_same_mark_written_on_both_branches_counts_once`,
+  `r7_r8_branches_merge_without_conflict_and_load_every_record`.)
 - R8. After that merge `hibi status` exits 0 and `summary.claims` equals the
   number of claims added on both branches plus those in the base.
+  (`r7_r8_two_branches_claim_in_one_shard_and_merge_without_conflict`,
+  `r7_r8_the_same_mark_written_on_both_branches_counts_once`,
+  `r7_r8_branches_merge_without_conflict_and_load_every_record`.)
 - R9. A shard with unsorted lines and a duplicated line loads without error,
   and the next write to it leaves it sorted without duplicates.
+  (`r9_an_unsorted_shard_with_a_duplicate_loads_and_the_next_write_sorts_it`,
+  `r9_a_mark_sorts_an_unsorted_marks_shard`,
+  `r9_unsorted_and_duplicate_lines`.)
 
 **Concurrent writes (V3)**
 
 - R10. Two `hibi claim` processes started at the same time on one working
   tree both exit 0, both claims and both marks are in the store, and every
   shard file passes the read checks of section 12.3.
+  (`r10_two_claim_processes_at_the_same_time`,
+  `r10_eight_claim_processes_on_one_shard`,
+  `r10_threads_with_separate_handles`,
+  `r10_two_processes_append_at_once`.)
 - R11. Killing a `hibi claim` process at any point leaves a store that loads
   without `store_corrupt` and contains no mark without its claim.
+  (`r11_killed_writer_leaves_a_loadable_store`.)
 
 **Fingerprints (V4)**
 
@@ -6473,19 +7016,39 @@ Verification section in order.
   closing delimiter (except the only comma of a Rust or Python tuple-like
   node) in a source file of each of the six classes leaves
   every claim anchored in it `fresh`.
+  (`r12_r13_r14_typescript`,
+  `r12_r13_r14_tsx`,
+  `r12_r13_r14_python`,
+  `r12_r13_r14_rust`.)
 - R13. Changing a literal inside an anchored declaration makes its claims
   `stale` with that side `changed`.
+  (`r12_r13_r14_typescript`,
+  `r12_r13_r14_tsx`,
+  `r12_r13_r14_python`,
+  `r12_r13_r14_rust`.)
 - R14. Restoring the file to its earlier content makes those claims `fresh`
   without a new mark.
+  (`r12_r13_r14_typescript`,
+  `r12_r13_r14_tsx`,
+  `r12_r13_r14_python`,
+  `r12_r13_r14_rust`.)
 - R15. Reflowing a paragraph (line breaks and spaces only) leaves claims on
   its sentences `fresh`; changing a word makes them `stale`.
+  (`r15_reflow_keeps_sentences_fresh_and_a_changed_word_stales_one`,
+  `r15_reflowing_a_paragraph_keeps_sentence_fingerprints`.)
 - R16. No code path compares a similarity score when computing a side state or
   a claim state.
+  (`r16_no_similarity_in_any_state_computation`.)
 - R17. A mark with profile `ast-v1` compared with a current `prose-v1`
   fingerprint reports `unavailable` with reason `profile_mismatch`, never
   `changed`.
+  (`r17_profile_mismatch_is_unavailable`.)
 - R18. A claim with `recheck` is `fresh` one second before
   `add(mark.at, recheck)` and `expired` at that instant, under `--now`.
+  (`r18_recheck_boundary_under_now`,
+  `r18_now_accepts_an_offset_and_a_fraction`,
+  `r18_a_bad_now_is_invalid_time`,
+  `r18_recheck_boundary_is_inclusive`.)
 
 **Ranges (V5)**
 
@@ -6494,32 +7057,57 @@ Verification section in order.
   claims anchored to that function. A claim that was already stale at the
   base, anchored to another function of the same file that the branch did not
   touch, is not listed.
+  (`r19_status_since_lists_exactly_the_claims_the_range_invalidated`,
+  `r19_the_three_dot_forms_use_the_merge_base`,
+  `r19_r20_uncommitted_and_untracked_changes_count`,
+  `r19_status_since_lists_the_claims_the_range_invalidated`.)
 - R20. On the same branch `hibi cover --since <base>` lists exactly the units
   of the new section.
+  (`r20_cover_since_lists_exactly_the_units_of_the_new_section`,
+  `r19_r20_uncommitted_and_untracked_changes_count`,
+  `r20_cover_since_keeps_only_new_or_changed_units`.)
 - R21. `--since A..B` with `B` other than `HEAD` fails with `invalid_range`.
+  (`r21_other_range_forms_are_invalid_range`,
+  `r21_ranges`.)
 
 **Judge (V6)**
 
 - R22. With `TYPESAFE_API_KEY` unset, `init`, `claim`, `status`, `mark`,
   `reanchor`, `retire`, `cover`, `list`, `providers`, `schema`, `completions`
   and `version` behave as specified and open no network connection.
-- R23. With it unset, `triage`, `suggest-evidence` and `status --judge-order`
-  exit 1 with `judge_unavailable`.
+  (`r22_every_other_command_works_without_a_key_and_contacts_no_judge`,
+  `r22_only_the_judge_module_uses_the_network`.)
+- R23. With it unset or empty, `triage`, `suggest-evidence` and
+  `status --judge-order` exit 1 with `judge_unavailable`, and the message
+  says whether the key is not set or is empty.
+  (`r23_judge_commands_without_a_key_are_judge_unavailable`,
+  `r23_without_the_key_nothing_is_contacted`.)
 - R24. A judge request body contains the model id `jev-1.14.0` and one
   question per item.
+  (`r24_triage_sends_the_pinned_model_and_one_question_pair_per_unit`.)
 - R25. A second identical judge run with a warm cache sends no request.
+  (`r25_a_warm_cache_sends_no_request`.)
 - R26. A request that fails on every attempt, or once with a status that is
   not retried, makes the command fail with `judge_failed` and prints no
   ranking.
+  (`r26_a_failing_judge_is_judge_failed_with_no_ranking`,
+  `r26_three_failures_fail_the_command_with_no_ranking`.)
 - R27. No judge command changes any file under `.hibi/`.
+  (`r27_no_judge_command_changes_hibi`.)
 
 **Providers (V7)**
 
 - R28. With a scheme listed in `hibi.toml` and no user registration, a claim
   side on that scheme reports `unavailable` with reason
   `provider_not_registered`, and no child process other than `git` is started.
+  (`r28_a_listed_scheme_without_registration_is_unavailable_and_starts_nothing`,
+  `r28_a_scheme_that_is_not_listed_is_unknown`,
+  `r28_provider_not_registered_starts_nothing`,
+  `r28_no_process_is_started_without_need`.)
 - R29. A `command` key in `hibi.toml` is rejected with `invalid_config` and
   nothing is run.
+  (`r29_a_command_key_in_hibi_toml_is_invalid_config_and_runs_nothing`,
+  `r29_command_key_is_rejected`.)
 - R30. A provider that exceeds the timeout (the write of the request
   included), exceeds the line limit, prints a non-JSON line, writes output
   when no request is outstanding, exits or closes its output without
@@ -6530,6 +7118,7 @@ Verification section in order.
   `an_exit_is_noticed_while_a_grandchild_holds_the_output`.)
 - R31. A provider process is started at most once per scheme per run and
   receives `hello` first.
+  (`r31_one_start_per_run_and_hello_first`.)
 
 **Store and commands**
 
@@ -6539,6 +7128,10 @@ Verification section in order.
   A judge command run without `TYPESAFE_API_KEY` is the exception: it fails
   with `judge_unavailable` first (section 14.1). An empty `.claims/`
   directory is refused; a regular file named `.claims` is not.
+  (`r32_a_store_next_to_a_legacy_store_is_refused`,
+  `r32_a_legacy_store_alone_is_refused_and_init_creates_nothing`,
+  `r32_a_judge_command_without_a_key_is_refused_in_a_legacy_root`,
+  `r32_legacy_store_is_refused_without_changes`.)
 - R33. `claim --stdin` and `mark --stdin` with any invalid element write
   nothing and report every failing element with its `index`, malformed
   elements together with elements that fail a check, ordered by `index`.
@@ -6546,26 +7139,46 @@ Verification section in order.
   `a_batch_reports_malformed_elements_together_with_the_other_failures`.)
 - R34. Every failing run exits 1 and, in `json` format, prints one object with
   `ok: false` and a code from section 15.4. No run exits with another status.
+  (`r34_every_failure_exits_1_with_one_error_object`,
+  `r34_an_ambiguous_id_prefix_is_ambiguous_id`,
+  `r34_help_exits_0`.)
 - R35. Every stale or expired claim in `status` output has a `next` that
   follows the table in section 15.2.
+  (`r35_every_stale_or_expired_claim_has_the_next_of_the_table`,
+  `r35_every_listed_claim_follows_the_table`.)
 - R36. `reanchor` writes a new claim, a mark and a retirement of the old claim
   with `replacedBy`, and the old claim then reports `retired`.
-- R37. A renamed function whose claim has a quote reports `changed` with
-  `approx: true`; the claim is `stale` and its `next` is `hibi mark <id>`.
-  After `mark` the claim is `fresh` with the side still `approx`, and `next`
-  is `hibi reanchor <id>`.
+  (`r36_reanchor_with_a_new_statement_replaces_the_claim`,
+  `r36_reanchor_with_a_new_subject_replaces_the_claim`,
+  `r36_reanchor_writes_claim_mark_and_retirement`.)
+- R37. A renamed function whose claim has a quote is found only by
+  similarity: the side is `missing` with reason `not_exact` and no unit, the
+  renamed declaration is its candidate with anchor `<loc>#<new symbol>`, the
+  claim is `stale`, `next` is the `reanchor` template with `<anchor>`, `mark`
+  fails with `side_missing`, and `reanchor` with the candidate's anchor
+  stores the new symbol.
+  (`r37_a_renamed_function_is_a_candidate_and_never_the_side`.)
 - R38. `cover` reports a unit as covered when a live claim side resolves to it
   or to a unit nested in it, and reports every exclusion with its reason and
   match count.
+  (`r38_a_claim_covers_its_unit_and_every_enclosing_unit`,
+  `r38_a_stale_claim_covers_and_a_retired_claim_does_not`,
+  `r38_exclusions_are_reported_with_reason_and_match_count`,
+  `r38_limit_scope_selection_and_scope_errors`.)
 - R39. `status`, `list`, `mark`, `claim`, `reanchor` and `retire` work with
   `git` absent from `PATH` for claims that have no `repo:` side.
+  (`r39_commands_that_do_not_need_git_work_without_git`,
+  `r39_a_repo_side_without_git_is_repo_not_found`.)
 - R40. Deleting the cache database changes no output of any command that
   does not call the judge.
+  (`r40_the_cache_changes_no_output`,
+  `r40_no_cache_cold_cache_and_warm_cache_agree`.)
 
 **Release tree (V8, V9)**
 
-- R41. `git ls-files` on the release tree shows no `.ts` file, `package.json`,
-  `bun.lock`, `.claims/` path or `action.yml`.
+- R41. `git ls-files` on the release tree shows no `.ts` file outside
+  `cases/`, and no `package.json`, `bun.lock`, `.claims/` path or
+  `action.yml`. (Checked by inspection; no test.)
 - R42. A search of the release tree outside `design/` and `cases/` for
   `attest`, `--fail-on`, `bunx`, `supersede`, `archive` and `v4` finds matches
   only in the changelog note. `v4` counts only when it is not followed by a
@@ -6574,6 +7187,7 @@ Verification section in order.
   the release tooling. `design/` and `cases/` are excluded because they
   define and test behaviour carried over from the earlier version and have to
   name it.
+  (`r42_no_tracked_file_names_a_leftover_term`.)
 - R43. Every `hibi` command line in a fenced code block of `README.md`,
   `docs/**/*.mdx` and `plugins/**/*.md`, other than the generated CLI
   reference and blocks marked `output`, parses with the clap definition.
@@ -6586,70 +7200,109 @@ Verification section in order.
   `-c core.fsmonitor=false` and `-c core.untrackedCache=false` in its
   arguments, and `git --version` runs once and first. (Test with a recording
   `git` first on `PATH`.)
+  (`r44_every_git_call_carries_the_fixed_options`,
+  `r44_every_invocation_carries_the_hardening`.)
 - R45. A `[repos]` alias with no matching `[[repo]]` entry in the user config
   makes its sides `unavailable` with `repo_not_allowed`, whatever location
   `hibi.toml` suggests, and no file is opened. So does a user-config
   directory that is the root, inside it, an ancestor of it, or not a git top
   level.
+  (`r45_refused_siblings_open_nothing`.)
 - R46. A `repo:` path that the sibling repository's file list does not
   contain reports `missing` with `resource_not_found`, even when the file
   exists on disk.
+  (`r46_r47_allowed_sibling_reads_only_listed_regular_files`.)
 - R47. A locator path with a symbolic link in any component reports `missing`
   with `resource_not_found`, in the working tree and at a base commit.
+  (`r47_symbolic_links_in_the_working_tree`,
+  `r46_r47_allowed_sibling_reads_only_listed_regular_files`.)
 - R48. A store in which `.hibi`, `hibi.toml`, a shard directory, a shard file
   or the lock is a symbolic link fails with `store_corrupt` before any write,
   in every command including `init`. A temp file name that already exists,
   as a file or as a symbolic link, is never written through.
+  (`r48_linked_config_is_refused`,
+  `r48_symbolic_links_are_refused_and_never_written_through`.)
 - R49. A file longer than `MAX_FILE_BYTES` reports `too_large` and is not
   parsed. A source file nested 100,000 levels deep is processed or reported
   as class `text` without a crash.
+  (`r49_size_cap`,
+  `r49_deep_nesting_does_not_overflow`.)
 - R50. A provider that returns a `sel` with an unknown key, an invalid
   fingerprint, or two units with one key gets `provider_error` for the
   affected side or resource. A `parent` chain with a cycle terminates.
+  (`r50_a_parent_cycle_from_a_real_provider_terminates`,
+  `r50_invalid_units_are_provider_errors_for_the_affected_side`,
+  `r50_duplicate_keys_in_units_and_parent_cycles`,
+  `r50_the_parent_walk_terminates`.)
 - R51. `resolve` on an absent resource reports `resource_not_found`; on an
   existing resource with a selector that finds nothing it reports
   `selector_not_found`. This holds for the file provider and for the
   reference provider through the wire.
+  (`r51_through_command_provider`,
+  `r51_side_reasons_through_the_wire`,
+  `r51_absent_resource_and_selector_that_finds_nothing`,
+  `r51_missing_resource_versus_no_unit_and_other_errors`.)
 
 **Write rules**
 
 - R52. `claim`, and `reanchor` for a replaced or added side, with a quote
   that lies in or overlaps a code comment fail with `quote_in_comment` and
   write nothing.
+  (`r52_claim_with_a_quote_in_a_comment_is_refused`,
+  `r52_reanchor_with_a_quote_in_a_comment_is_refused`.)
 - R53. The same input anchors on the same file contents give the same claim
   id on every run, for every combination in `cases/resolve.json`.
+  (`r53_claiming_again_gives_the_same_id_and_a_second_mark`.)
 - R54. `reanchor` whose result equals a retired claim fails with
   `claim_retired` and writes nothing.
-- R55. `mark` on a claim with an `approx` side succeeds, keeps the claim id,
-  and its output shows `approx: true` with the unit and text for that side.
-  `status` gives a `reanchor` command as `next` for a `fresh` claim with an
-  `approx` side when no earlier row of the table in section 15.2 applies, and
-  `hibi mark <id>` for a stale or expired claim with an `approx` side. Editing the quoted line
-  of a declaration anchored by symbol does not make the side `approx`.
+  (`r54_reanchor_back_to_a_retired_claim_is_refused`,
+  `r54_reanchor_onto_a_retired_claim_fails`.)
+- R55. `mark` on a claim with a side found only by similarity fails with
+  `side_missing` and writes nothing. The side lists the unit as a candidate
+  with its text, an anchor and `sameFingerprint`. `reanchor` with that anchor
+  gives a fresh claim. Editing the quoted line of a declaration anchored by a
+  unique symbol keeps the side resolved.
+  (`r55_a_reworded_sentence_is_a_candidate_and_mark_is_refused`,
+  `r55_editing_the_quoted_line_under_a_symbol_keeps_the_side`.)
 - R56. `hibi providers` without `--check` starts no child process other than
   `git`.
+  (`r56_plain_providers_starts_nothing_and_check_starts_the_provider`.)
 
 **Repository deliverables (section 2.7)**
 
-- R57. CI has the seven jobs of section 2.7, and the schema and CLI-reference
-  jobs fail when a generated file differs from the committed one.
+- R57. CI has the eight jobs of section 2.7, and the schema and CLI-reference
+  jobs fail when a generated file differs from the committed one. (Checked by
+  inspection of the workflow; no test.)
 - R58. The CI report job passes whatever hibi's exit status is, and so when
-  the repository's own store has stale claims or uncovered units.
+  the repository's own store has stale claims or uncovered units. (A property
+  of the CI job itself; no test.)
 - R59. `plugins/hibi-cli/skills/hibi/references/cli-reference.md` equals the
   output of its generator.
+  (`r59_the_cli_reference_equals_the_generator_output`.)
 - R60. With a `git` older than 2.45.0 first on `PATH`: `init`, `cover`, any
   `--since` and the judge commands fail with `git_too_old` naming both
   versions; in every other command a `repo:` side is `unavailable` with
   `repo_not_found` and the run carries warning `git_too_old`; no git command
   other than `git --version` is run. `git version 2.54.0 (Apple Git-157)`
   parses as 2.54.0 and `git version 2.45` as 2.45.0.
+  (`r60_commands_that_need_git_fail_with_git_too_old`,
+  `r60_a_repo_side_with_an_old_git_is_repo_not_found_with_a_warning`,
+  `r60_old_missing_or_unparsable_git`.)
 - R64. With `git` absent from `PATH` and `TYPESAFE_API_KEY` set, the judge
   commands fail with `not_a_git_repository` and open no network connection.
+  (`r64_judge_commands_with_a_key_and_no_git_are_not_a_git_repository`,
+  `r64_without_usable_git_nothing_is_contacted`.)
 - R61. `status --judge-order`, `triage` and `suggest-evidence` put no text of
   an ignored file, and no text from a sibling repository that is not allowed,
   into any request body.
+  (`r61_ignored_files_are_never_sent`,
+  `r61_ignored_text_is_never_sent`.)
 - R62. A selector with a key the provider does not allow is never written to
   a provider's standard input.
+  (`r62_an_unsupported_selector_key_is_never_sent_to_the_provider`,
+  `r62_a_selector_key_the_provider_did_not_list_is_never_sent`,
+  `r62_a_disallowed_stored_key_is_never_sent`,
+  `r62_a_disallowed_key_never_reaches_standard_input`.)
 - R63. A shard longer than `MAX_SHARD_BYTES`, or shard files longer in total
   than `MAX_STORE_BYTES`, fail with `store_corrupt`; exactly at either limit
   is not refused for size. A `hibi.toml` longer than `MAX_CONFIG_BYTES` fails
@@ -6770,10 +7423,12 @@ Each of these has a test, named in parentheses.
   `a_write_reports_what_it_accepted`,
   `a_merge_is_reported_and_a_retired_claim_points_to_its_replacement`.)
 - R94. An ambiguous new anchor lists each candidate with an anchor that
-  selects it. A quote given with a symbol must occur in that declaration.
+  selects one unit of the whole resource. A quote given with a symbol must
+  occur in that declaration.
   (`an_ambiguous_new_anchor_lists_each_candidate_with_an_anchor`,
   `a_symbol_naming_two_declarations_is_ambiguous_and_each_candidate_can_be_picked`,
   `a_quote_in_two_units_is_ambiguous_with_an_anchor_per_candidate`,
+  `a_candidate_anchor_selects_one_unit_of_the_whole_resource`,
   `a_new_anchor_whose_quote_is_not_in_the_resolved_unit_is_refused`,
   `a_quote_given_with_a_symbol_must_occur_in_that_declaration`.)
 - R95. An anchor argument that starts with `{` is read as a JSON anchor,
@@ -6815,11 +7470,16 @@ Each of these has a test, named in parentheses.
   `read_blobs_does_not_block_on_standard_error`,
   `read_blobs_failure_keeps_the_end_of_standard_error`.)
 - R104. A resource with more than 100,000 units is `too_large`; exactly
-  100,000 is accepted. (`unit_count_cap`.)
+  100,000 is accepted. Unit building stops as soon as the count passes the
+  limit. (`unit_count_cap`,
+  `building_stops_as_soon_as_the_unit_count_passes_the_limit`,
+  `splitting_stops_as_soon_as_the_region_count_passes_the_limit`.)
 - R105. With a usable git, an ignored file and paths under `.git/` and
   `.hibi/` are `not_found`; without git the ignored file is read. A failing
-  file list is `unavailable`. The text of an ignored file is never printed
-  or sent to the judge.
+  file list is `unavailable`. hibi never reads an ignored file, so nothing
+  read from it after it became ignored is printed or sent to the judge. Text
+  that a claim stored while the file was listed (quote, prefix, suffix) stays
+  in the ledger and is still printed (section 6.8).
   (`file_reads_follow_the_root_file_list_when_git_is_usable`,
   `a_failing_file_list_is_unavailable`, `r61_ignored_text_is_never_sent`.)
 - R106. Every completed selector resolves to itself, and no default quote
@@ -6881,9 +7541,67 @@ Each of these has a test, named in parentheses.
   `the_schemas_carry_the_limits_that_validation_enforces`.)
 - R116. The plugin manifest's version equals the workspace version.
   (`plugin_manifest_version_equals_the_workspace_version`.)
-- R117. A side that is `unavailable` carries a `remediation` by its reason,
-  in the errors of `claim`, `mark` and `reanchor` and in every ClaimView;
-  a side in any other state has `null`.
+- R117. A side that is not `same` carries `detail` and `remediation` by its
+  reason, in the errors of `claim`, `mark` and `reanchor` and in every
+  ClaimView. `scheme_not_declared` has `next` `null` and its own sentence;
+  `resource_unavailable` has `next` `null` and the provider's message.
   (`an_unavailable_side_says_the_cause_and_the_way_out`,
-  `a_too_large_or_binary_file_says_the_limit_and_the_way_out`.)
+  `a_too_large_or_binary_file_says_the_limit_and_the_way_out`,
+  `a_scheme_that_is_no_longer_declared_has_no_next`,
+  `a_side_that_cannot_be_evaluated_says_what_the_provider_said`.)
+
+**Similarity proposes, never resolves (decision 120)**
+
+Each of these has a test, named in parentheses.
+
+- R118. A unit a provider returns with `approx: true` never resolves a side,
+  whatever its content: the side is `missing` with reason `not_exact`, the
+  unit is a candidate with `sameFingerprint`, the claim is `stale`, `next` is
+  the `reanchor` template with `<anchor>`, and `mark` fails with
+  `side_missing`. A claim with `recheck` whose side is found only by
+  similarity is `stale`, never `fresh` or `expired`.
+  (`a_unit_found_by_similarity_never_resolves_a_side`,
+  `a_guess_does_not_keep_a_claim_expired_or_fresh`.)
+- R119. In the file provider a symbol that names no declaration makes every
+  unit the quote finds approximate, tied exact hits included; a unique symbol
+  with a changed quote, and an exact quote hit, are exact.
+  (`a_missed_symbol_only_proposes_candidates`.)
+- R120. A function moved to another file is `missing` until the caller
+  anchors it; nothing in the old file is taken for it.
+  (`a_function_moved_to_another_file_is_missing_until_the_caller_anchors_it`.)
+- R121. A side shows at most 20 candidates and the total. The text of a
+  candidate is cut to 240 characters.
+  (`a_side_shows_at_most_twenty_candidates_and_the_total`,
+  `at_most_twenty_candidates_are_shown_with_the_total`,
+  `the_text_of_a_candidate_is_cut_to_240_characters`.)
+- R122. In `reanchor` a kept side with `refuse` is accepted and a kept side
+  found only by similarity fails with `side_missing`. A new anchor, or a
+  replaced side, that resolves only approximately fails with
+  `selector_not_exact`.
+  (`reanchor_keeps_a_refused_side_and_fails_on_a_guessed_one`,
+  `claim_write_checks`, `reanchor_errors_write_nothing`.)
+- R123. `reanchor` onto a claim that is the same claim under another id
+  marks that claim and reports `merged`.
+  (`reanchor_onto_the_same_claim_under_another_id_merges`,
+  `reanchor_onto_another_live_claim_marks_it`.)
+- R124. A side has no `approx` field; a `same` side has no `candidates` and a
+  `null` `detail`. The status summary has the keys `claims`, `fresh`,
+  `stale`, `expired` and `retired` only, and the default selection is the
+  stale and the expired claims.
+  (`one_unit_with_the_marked_fingerprint_is_same`, `status_json_shape`,
+  `status_selection_summary_and_order`,
+  `status_selects_by_state_by_locator_and_by_id`.)
+- R125. Provider error `unavailable` gives the side reason
+  `resource_unavailable`. (`every_provider_error_code_maps_by_the_table`,
+  `cases/freshness.json`.)
+- R126. A symbol on a markdown, prose or text file is `invalid_selector`. A
+  stored symbol anchor on a code file with a syntax error is `unavailable`
+  and resolves to its declaration again once the file parses.
+  (`a_symbol_on_a_class_without_symbols_is_invalid_selector`,
+  `a_symbol_anchor_on_a_code_file_that_does_not_parse_is_unavailable`.)
+- R127. The judge key written with escaped slashes is redacted from errors.
+  (`key_leak_an_echoed_header_with_escaped_slashes_is_redacted_from_errors`,
+  `redact_knows_the_json_written_key_with_escaped_slashes`.)
+- R128. The overflow message of a `recheck` writes the instant with `Z`.
+  (`the_overflow_message_writes_the_instant_with_z`.)
 
