@@ -321,6 +321,27 @@ fixture is also read as TSX), and `rust: modules 33 deep` for
 variant line resolves to that member, a quote on the header line to the
 container.
 
+Cases added for later rulings, `spec-derived`, derived by hand the same
+way: `java: a varargs record component is a field named by its declarator`
+(`fixtures/units/record-varargs.java`); member forms that already worked:
+TypeScript and TSX member names and construct signatures
+(`member-names.ts`, read as both classes), Java initializer blocks and
+enum-constant body fields (`initializers.java`), Go type sets and embedded
+generic fields (`type-sets.go`), Python augmented and multi-name assignments
+in a class body (`class-statements.py`); `MAX_CONTAINER_DEPTH` for Python
+and Java (`depth.py`, `depth.java`), and for Go a case showing that the cap
+cannot be reached, because a field's struct type is not a container
+(`nested-struct.go`).
+
+`resolve.json` also pins, by hand-derived cases: completed selectors whose
+context is the unit's scope (the unit's range widened over adjacent
+whitespace, `,` and `;`) when the symbol is unique, so that every completed
+selector is a fixed point; the spanning refusal in the several-declarations
+branch; quotes whose edges outside the member are only whitespace, `,` or
+`;`; the innermost-unit boundaries (a unit's end is exclusive, the first
+intersecting unit when none contains the quote's start); new anchors at the
+first and last line; and the reflow rule.
+
 The `freshness.json` and `coverage.json` cases are `spec-derived`: each
 `expected` was written by hand from SPEC sections 9.2, 9.3 and 10.2, and
 `source` gives the rule applied. They bind `engine::evaluate`, and
@@ -390,6 +411,8 @@ case exercised. Each one was checked to fail when its step is changed.
 | `regions.json` | `list marker needs whitespace after it` | `spec-derived` | a list marker needs WS after it (section 6.3) |
 | `regions.json` | `endLine of multi-line units` | `spec-derived` | `endLine` is the line of the unit's last character (sections 6.2 and 6.3); these new `regions.json` cases carry `endLine`, which the binding compares when present |
 | `ast-node.json` | the eight `pins: ... is a content literal` cases (`fixtures/ast/pins/`) | `spec-derived` | `raw_string_literal`, `char_literal`, `float_literal` (Rust), `rune_literal`, `float_literal`, `imaginary_literal`, `raw_string_literal` (Go) and `float` (Python) push `=` and the normalized text (section 8.4) |
+| `ast-equivalence.json` | the thirteen `pins: rust …` and `pins: python …` cases on `fixtures/ast/tuples/` (`(u8,)` vs `(u8)`, tuple pattern, tuple expression, call arguments, two-element tuple, tuple struct fields; `x[1,]`, two-element subscript, tuple pattern, case pattern, call arguments, tuple, list) | `spec-derived` | the only `,` of a tuple-like node (Rust `tuple_expression`, `tuple_type`, `tuple_pattern`; Python `tuple`, `tuple_pattern`, `subscript`) is kept before the closing delimiter; any other trailing comma is still skipped (section 8.4) |
+| `ast-node.json` | `pins: rust the comma of (u8,) is in the stream`, `pins: rust the comma of (1,) is in the stream`, `pins: python the comma of x[1,] is in the stream`, `pins: python the comma of (1,) is in the stream` | `spec-derived` | the same rule, shown in the stream (section 8.4) |
 | `ast-equivalence.json` | `pins: rust a comma before > is skipped`, `pins: rust a comma before ] is skipped`, `pins: rust a comma followed by a comment and then ) is skipped`, `pins: rust a changed element is not skipped (control)` | `spec-derived` | the trailing-comma rule for `>` and `]`, and its "not counting comment nodes" clause (section 8.4) |
 
 The `spec-derived` values were also computed by section 7.2 written in
