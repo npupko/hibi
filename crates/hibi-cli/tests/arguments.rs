@@ -161,17 +161,41 @@ fn selector_advice_comes_from_the_provider() {
         reference_provider().to_string_lossy(),
         notes_fixture().to_string_lossy()
     ));
-    // The same sentence twice, with the same text around it.
-    let block = "Padding sentence number one that is quite long indeed, really.\n\nThe cap is 5.\n\nPadding sentence number two that is quite long indeed, really.\n\n";
-    repo.write("docs/a.md", &block.repeat(2));
+    // The same words in two different sentences.
+    repo.write(
+        "docs/a.md",
+        "# Caps\n\nThe upload cap is 5.\n\nThe download cap is 5.\n",
+    );
 
     // The file provider accepts a quote and a symbol, but the units of a
     // markdown file have no symbol: only the quote is advised.
-    let e = repo.fail(&["claim", "S", "--subject", "file:docs/a.md::The cap is 5."]);
+    let e = repo.fail(&["claim", "S", "--subject", "file:docs/a.md::cap is 5."]);
     assert_eq!(e["code"], "side_ambiguous");
     assert_eq!(
         e["remediation"],
         "Give a longer quote, so that the anchor matches one unit."
+    );
+    // The same sentence twice with the same text around it: no quote tells
+    // the two apart, and the advice does not say that one would.
+    let block = "Padding sentence number one that is quite long indeed, really.\n\nThe cap is 5.\n\nPadding sentence number two that is quite long indeed, really.\n\n";
+    repo.write("docs/twins.md", &block.repeat(2));
+    let e = repo.fail(&[
+        "claim",
+        "S",
+        "--subject",
+        "file:docs/twins.md::The cap is 5.",
+    ]);
+    assert_eq!(e["code"], "side_ambiguous");
+    assert!(
+        e["message"]
+            .as_str()
+            .unwrap()
+            .contains("matches 2 units that cannot be told apart: "),
+        "{e}"
+    );
+    assert_eq!(
+        e["remediation"],
+        "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them (the #name of the enclosing declaration, or the whole file), or take one out of a scope with an exclusion that names its key."
     );
     // The units of a code file have symbols.
     repo.write(
