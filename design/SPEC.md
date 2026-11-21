@@ -833,7 +833,7 @@ it depends on the class of the resource (section 6.1):
 | Class | Units that contain a leading U+FEFF |
 |---|---|
 | Every class | The `file` unit, whose range is `[0, len)`. |
-| `prose`, `markdown` | Also the first prose unit, when that unit starts at offset 0. U+FEFF is not WS, so trimming does not remove it from the unit: the unit's text, default quote and fingerprint include it. When a `markdown` text starts with frontmatter the U+FEFF lies in the frontmatter (section 6.3), which is in no prose unit. |
+| `prose`, `markdown` | Also the first prose unit, when that unit starts at offset 0. U+FEFF is not WS, so trimming does not remove it from the unit: the unit's text, printed anchor's first line and fingerprint include it. When a `markdown` text starts with frontmatter the U+FEFF lies in the frontmatter (section 6.3), which is in no prose unit. |
 | `text`, and a code class handled as `text` after a parse error | Also the first `block` unit, for the same reason, when the first line is not empty after trimming. |
 | A code class (`typescript`, `tsx`, `python`, `rust`, `go`, `java`) parsed without error | No other unit. It belongs only to the `file` unit: the parser skips a leading U+FEFF, so no declaration or `statement` unit starts before the first token. |
 
@@ -1842,6 +1842,10 @@ hits, then crossing hits, then the similarity guess.
   followed.
 - A renamed or deleted container (heading, piece or declaration) makes its
   claims candidates until they are re-anchored.
+- A renamed function claimed by name alone (`#name`, no quote) yields no
+  candidate: the name is gone, the stored selector holds no quote to search
+  for, and the function's fingerprint covers its name, so no unit's
+  fingerprint equals a mark's.
 - Editing the first sentence of a paragraph, the first unit of a list item or
   the first cell of a table row renames its piece, which turns the claims on
   that piece's other units into candidates (content-equal units are listed
@@ -1946,10 +1950,15 @@ the empty list.
 
 ## 7. Locating a quote
 
-`locate(text, sel)` finds the stored quote in the current text. An empty
+`locate(text, sel)` finds a quote in a text. An empty
 quote gives `missing`. Inputs: the
 text, `quote`, `prefix` (default empty), `suffix` (default empty), `pos`
-(default 0). The algorithm works on character indices. `pos` is converted from
+(default 0). `pos` is an argument of the algorithms of this section, an
+offset that places the search; it is not a selector key (section 5.2 has
+none). The file provider uses only the fuzzy step (section 7.2), for the
+similarity guess of section 6.7, and `within_budget`; no provider uses
+`locate` (section 7.1) or `quote_selector` (section 7.4), which are kept
+with their cases. The algorithm works on character indices. `pos` is converted from
 a byte offset to the index of the character at or before it, and results are
 converted back to byte offsets. Output: `status` (`found`, `ambiguous`,
 `missing`), `how` (`exact`, `fuzzy`), `start`, `end`.
@@ -2036,9 +2045,8 @@ same value with either method. Because `max` is at most `ERROR_CAP`, its cost
 is proportional to `min(len(a), len(b)) * max`. `similarity` (section 4.3)
 needs the distance itself and uses the full computation.
 
-The file provider wraps `locate` with two rules of its own, for a new anchor
-and for a located span that equals the quote after `normalize`
-(section 6.7).
+The file provider does not use `locate`: it finds a quote by its hits after
+`normalize`, and resolves only as section 6.7 says.
 
 ### 7.2 Fuzzy step
 
@@ -2171,10 +2179,11 @@ MUST be corrected.
 
 ### 7.4 `quote_selector`
 
-`quote_selector(text, start, end)` builds the stored form of a quote from a
-byte span of the text: the `quote`, `prefix`, `suffix` and `pos` of a selector
-(section 5.2). The file provider uses it for the completed selector (section
-6.7). `cases/quote-selector.json` binds it.
+`quote_selector(text, start, end)` returns a quote from a byte span of the
+text, with the `CONTEXT` characters of the text on each side of it and the
+span's start offset `pos`. No provider uses it: the file provider cuts its
+windows inside the unit (section 6.7), and no selector stores an offset
+(section 5.2). `cases/quote-selector.json` binds it.
 
 1. Clamp the span to the text. `start` becomes the largest character boundary
    at or before `min(start, len(text))`. `end` becomes the smallest character
@@ -2186,8 +2195,8 @@ byte span of the text: the `quote`, `prefix`, `suffix` and `pos` of a selector
 4. Otherwise, if `quote` is longer than `MAX_QUOTE_CHARS` (2,048) characters,
    the result is the error `TooLong`. A quote of exactly 2,048 characters is
    accepted. The limit is the same one that applies to the `quote` of a
-   selector, so every selector that `quote_selector` returns is a valid
-   selector.
+   selector, so every quote that `quote_selector` returns is a valid
+   selector quote.
 5. Otherwise the result is `quote`; `prefix`, the last `CONTEXT` characters of
    the text before `start` (all of them when there are fewer); `suffix`, the
    first `CONTEXT` characters of the text from `end` (all of them when there
@@ -3488,8 +3497,8 @@ The value of the `units` column is one of two forms:
  {"key":"...","kind":"sentence","parent":"file","label":"...","range":{"start":0,"end":57,"line":1,"endLine":1},"fp":"...","sel":{"quote":"...","prefix":"","suffix":"","within":["..."]}}]
 ```
 
-A cached unit holds its completed selector built with the default quote
-(section 6.7). The `file` unit's is `{}`.
+A cached unit holds its printed anchor (section 6.7). The `file` unit's is
+`{}`.
 
 Offsets in `range` refer to the text after CRLF replacement (section 4).
 
@@ -5863,9 +5872,9 @@ For each element, in order:
    in it: a quote given together with a symbol MUST occur inside that
    declaration.
    When every anchor of the element passed these checks: two evidence sides
-   with equal locators that resolve to the same unit (equal unit key) and
-   have equal completed selectors are `invalid_argument`. The subject is not
-   compared with the evidence.
+   with equal locators that resolve to the same unit (equal unit key) are
+   `invalid_argument`, however their anchors are written; selectors are not
+   compared. The subject is not compared with the evidence.
 3. Build the claim from the completed selectors (section 5.4) and derive its
    id. A `recheck` MUST be longer than zero: a duration
    whose components are all zero, such as `P0D` or `PT0S`, is
@@ -6237,9 +6246,10 @@ Builds a new claim from the old one:
    (section 15.2), and the message lists the candidates when the provider
    returned any.
 4. Each side's stored selector becomes the completed selector of its resolved
-   unit. This refreshes quote, context, position and symbol. Two evidence
-   sides of the result, kept or new, with equal locators, the same unit and
-   equal completed selectors are `invalid_argument`, as in `claim` step 2.
+   unit. This refreshes the symbol, `count`, quote, windows and `within`.
+   Two evidence sides of the result, kept or new, with equal locators that
+   resolve to the same unit are `invalid_argument`, as in `claim` step 2;
+   selectors are not compared.
 5. If the new claim id equals the old one: `no_change`, with the remediation
    `The stored anchors are up to date. To record a new check, run hibi mark <id>`.
    If it equals the id
@@ -6668,7 +6678,7 @@ panics counts as a failing case and does not stop the other cases.
 | `bitap.json` | `locate::match_main`. The label `PatternTooLong` is its error for a pattern over 32 characters. | 7.3 |
 | `fuzzy-locate.json` | `locate::fuzzy` | 7.2 |
 | `locate.json` | `locate::locate`: the status, and for a `found` or `ambiguous` result `how` and the byte range. The list of tied hits of an `ambiguous` result is not compared. | 7.1 |
-| `quote-selector.json` | `locate::quote_selector(text, start, end)`: clamps the range to the text and returns the quote, the 48-character prefix and suffix, and the position. A span that is empty after trimming is its error `EmptySpan`, labelled `empty span` in the data. A span longer than 2,048 characters is its error `TooLong`, labelled `span longer than 2048 characters` in the data. The test compares the label of the returned error with `expected.error`. The file provider reports either error as the provider error `internal` (section 6.7). See "Quote-limit cases" below. | 6.7, 7.4 |
+| `quote-selector.json` | `locate::quote_selector(text, start, end)`: clamps the range to the text and returns the quote, the 48-character prefix and suffix, and the position. A span that is empty after trimming is its error `EmptySpan`, labelled `empty span` in the data. A span longer than 2,048 characters is its error `TooLong`, labelled `span longer than 2048 characters` in the data. The test compares the label of the returned error with `expected.error`. No provider uses this function (section 7.4). See "Quote-limit cases" below. | 6.7, 7.4 |
 | `regions.json` | `prose::split(text, class)`. The class comes from `input.path` by section 6.1, that is from the lower-cased extension: `notes.txt` is `prose`, `README.MD` and any `.md` or `.mdx` path are `markdown`, and `path: null` is `prose`. Each unit is compared by `kind`, `text` (the slice of the document at the unit's byte range), `startByte`, `endByte`, `line` and `headingPath`, and by `endLine` when the expected unit has that key. | 6.3 |
 | `duration.json`, `recheck-boundary.json` | `duration::parse`, `duration::add`, and the comparison `now >= add(from, duration)`. Inputs may carry a fraction of a second or an offset; the functions keep full precision (section 9.4). The label `invalid_duration` is the parse error. | 9.3, 9.4 |
 | `ast-node.json` | `code::smallest_named_node(root, start, end)` and `code::semantic_stream(node)` | 8.4 |
@@ -6727,16 +6737,17 @@ transport policy (sections 14.2, 14.6 and 14.7) are tested against a local
 scripted server, not by case files. Recorded request and response pairs from
 the live API do not exist (section 16.3).
 
-**Quote-limit cases.** `MAX_QUOTE_CHARS` (2,048, section 7) is pinned in two
-files, by `spec-derived` cases:
+**Quote-limit cases.** `MAX_QUOTE_CHARS` (2,048, section 7) is pinned by
+`spec-derived` cases and one unit test:
 
 - `quote-selector.json`: `a span of exactly 2048 characters is valid`,
   `a span of 2049 characters is refused as too long` (the error `TooLong`),
   and `a whitespace span of 2049 characters is empty, not too long` (the
   error `EmptySpan`, which pins the order of the two checks of section 7.4).
-- `resolve.json`: `quote limit: an exact quote of 2048 characters is kept whole`
-  and
-  `quote limit: a fuzzy match of a 2048-character quote stores the default quote`.
+- the unit test `completed_quote_is_cut_to_the_limit_and_never_dropped` of
+  the file provider: a quote-only anchor's quote is cut to 2,048 characters
+  and trimmed, and a span of exactly 2,048 characters is kept whole
+  (section 6.7). `resolve.json` has no quote-limit case since decision 142.
 
 **Code cases.** `units-code.json` has, for each of the six code classes, a
 case on a general fixture (`fixtures/units/typescript.ts`, `tsx.tsx`,
@@ -6964,7 +6975,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 3 | A code file with any parse error is handled as plain text for that read. | One rule with no partial trees; the resulting profile change is reported, not hidden. |
 | 4 | A profile mismatch reports the side as `unavailable` with reason `profile_mismatch`, and `mark` accepts such a side. | It is visibly not a content change, and one re-check clears it. |
 | 5 | No alias record for renames. A symbol that names no declaration falls back to the quote; every unit the quote then finds is approximate and is a candidate, never a resolution. `reanchor` with the candidate's anchor stores the new symbol. | Superseded in part by decision 120. A rename changes the declaration's fingerprint, so a re-check is needed anyway. |
-| 6 | Stored selectors are completed by the provider (symbol, quote, context, position). | Every stored anchor can be re-found by two independent means. |
+| 6 | Stored selectors are completed by the provider (symbol, quote, context, position). Since decision 142 a completed selector holds the symbol as typed and `count`, or the quote with its in-unit windows and `within`; no position. | Every stored anchor can be re-found by two independent means. |
 | 7 | A new anchor (in `claim`, or a replaced or added side in `reanchor`) must resolve exactly (`selector_not_exact`). A stored anchor that resolves only approximately does not resolve at all (decision 120). | A new record should not start with a stale selector. |
 | 8 | Unit keys: `<kind>:<symbol>` for declarations, `<kind>:<12 hex of fingerprint>` for content units, `~n` for duplicates. | Stable without storing anything. |
 | 9 | Extra unit kinds `file`, `statement`, `block`. | Every byte of every text file belongs to a unit, so every quote resolves. |
@@ -6996,7 +7007,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 46 | A resolved unit can carry `refuse` (`quote_spans_units`, `quote_in_comment`). | The provider knows the located span; the engine only needs the verdict. |
 | 47 | Ruling: `locate` always runs when a quote is given. With a symbol that matches one declaration the quote is located inside that declaration only and the unit is never `approx`; the quote only decides the completed selector. | The symbol identifies the unit. The stored selector, and so the claim id, is the same in every implementation. |
 | 48 | Ruling: every git call carries `safe.bareRepository=explicit` and `core.fsmonitor=false`; `hibi.toml` only names sibling aliases and the user config supplies their directories, per repository; the directory must be a git top level outside the root and not above it; `repo:` paths are read only when that repository lists them. Reason `repo_not_allowed`. Resolving `repo:` needs git. | A cloned `hibi.toml` must not cause command execution or reads of files the user did not offer. Same rule as provider commands. |
-| 49 | Ruling: `claim` and `reanchor` refuse a quote that touches a code comment. The default quote stops before a comment. | `ast-v1` ignores comments, so such a claim could never go stale. |
+| 49 | Ruling: `claim` and `reanchor` refuse a quote that touches a code comment. The default quote stops before a comment; since decision 142 this is the first line of a printed anchor, and stored selectors hold no default quote. | `ast-v1` ignores comments, so such a claim could never go stale. |
 | 50 | Ruling: `reanchor` fails with `claim_retired` when the rebuilt claim is a retired one. When it is another live claim, that claim is marked and the old one retired. | Otherwise nothing live would remain. |
 | 51 | `MAX_FILE_BYTES` is 8 MiB; larger files report `too_large`, as does a file of a code class longer than `MAX_CODE_FILE_BYTES` (2 MiB) and a resource with more than `MAX_UNITS_PER_RESOURCE` (100,000) units. Tree walks are iterative, with no depth limit; declaration discovery stops at `MAX_CONTAINER_DEPTH` (32) nested containers. | Bounded memory; no stack overflow on deeply nested input. |
 | 52 | `mark`, and a kept side of `reanchor`, fail with `side_missing` on a side found only by similarity. | Decision 120. The earlier rule, that `mark` accepts approximate sides, is withdrawn. |
@@ -7018,7 +7029,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 68 | Symbols of Rust impl types and Go receivers use one normalisation function (whitespace removed, one space kept between word characters). | The symbol is stable under reformatting and stays readable. |
 | 69 | `html_comment` is a comment kind, and a `jsx_expression` that holds only comments is skipped in `ast-v1`. | A JSX comment must not stale a claim. |
 | 70 | Prose splitting: `+++` frontmatter, a leading U+FEFF ignored when recognising frontmatter, CommonMark fence closing, thematic breaks with spaces, a closing `#` run removed only after whitespace. Tag-only lines, indented code, HTML comments and setext headings keep the earlier behaviour. | Closer to CommonMark where the rule is local to one line. |
-| 71 | Default quote: when the unit's first line starts with a comment the whole line is used; trailing whitespace is removed again after the 120-character cut. | A default quote is never empty and never ends in whitespace. |
+| 71 | Default quote (since decision 142, the first line of a printed anchor): when the unit's first line starts with a comment the whole line is used; trailing whitespace is removed again after the 120-character cut. | A default quote is never empty and never ends in whitespace. |
 | 72 | File-provider error order: resource errors before selector errors; a `key` selector is `invalid_selector`, any other invalid selector `invalid_request`. | One deterministic error when several apply. |
 | 73 | A selector quote is at most 2,048 characters (`MAX_QUOTE_CHARS`); `quote_selector` returns `TooLong` above it. | Bounds the cost of locating; every selector hibi builds is valid. |
 | 74 | `note` and `by` are stored trimmed, and `null` when empty; a reader rejects any other stored form. Constructors run the same validation as readers. `replacedBy` must differ from `retires`. | Ids do not depend on stray whitespace; no record can be written that cannot be read. |
@@ -7047,7 +7058,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 97 | `claim` marks an existing live claim with equal statement, recheck, note, locators, resolved units and symbols (section 9.5). The quote counts only when the caller gave one. The smallest id wins. | Running a claim command again after an edit near the quote must not create a duplicate. |
 | 98 | Writes that produce a mark report `accepted {was, sides}`; `reanchor` reports `merged`. | A write makes a claim fresh; the result records what state it accepted. |
 | 99 | Default `status` selects stale and expired claims. `summary` has no `drifted` count. | Decision 120: there are no fresh claims with an approximate side. |
-| 100 | Two evidence anchors that complete to the same stored anchor and unit are `invalid_argument`; the subject may repeat as evidence. A quote given with a symbol on a new anchor must occur in that unit (`selector_not_exact`). | A repeated side adds nothing; a quote outside the named unit is a mistake. |
+| 100 | Two evidence anchors that resolve to the same unit are `invalid_argument`, however they are written (decision 143; earlier: that complete to the same stored anchor and unit); the subject may repeat as evidence. A quote given with a symbol on a new anchor must occur in that unit (`selector_not_exact`). | A repeated side adds nothing; a quote outside the named unit is a mistake. |
 | 101 | An anchor argument that starts with `{` is a JSON anchor, also in the `n=` forms. | Paths with `#` or `::` and external selectors can be given without standard input. |
 | 102 | `--now` is validated for every command and accepts 0000-01-01T00:00:00Z to 9999-12-30T22:00:00Z. | The upper bound is the time library's largest instant; the error names the range. |
 | 103 | `retire` collapses a claim named twice; `--replaced-by` must name a live claim. | One retirement per claim; a replacement that is itself retired points nowhere. |
@@ -7057,7 +7068,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 107 | With a usable git, a `file:` path is read only when the root's file list has it. `.git/` and `.hibi/` are never read. A failing file list is `unavailable`. `.hibi/` is dropped from sibling file lists as well. | An ignored file such as `.env` is never opened or printed. |
 | 108 | A completed selector is a fixed point: resolving it returns the same selector. For a unit with a unique symbol, prefix and suffix are cut from the unit's scope. A completed quote is cut to `MAX_QUOTE_CHARS`, never dropped; an empty span is `internal`. | The stored selector, and so the claim id, does not change on a second pass. |
 | 109 | `inside` allows whitespace, `,` and `;` outside the unit, and the innermost unit is taken from the span without its outer whitespace. A located span equal to the quote after `normalize` is exact. | A member copied with its indentation or separator is that member; a reflow is not an uncertain anchor. |
-| 110 | A new anchor (no prefix, suffix or pos) treats every exact hit as a candidate; position never chooses for it. | Nothing its author wrote can choose between the hits. |
+| 110 | A new anchor (no `prefix`, `suffix`, `within` or `count`, section 6.7) treats every exact hit as a candidate; position never chooses for it. | Nothing its author wrote can choose between the hits. |
 | 111 | `ast-v1`: a declarator takes in the shared parts of its declaration, up to `MAX_SHARED_TOKENS` (256); items of an extern block take in the block's parts; a Go const spec without an expression takes in the spec it repeats. | A change to a shared type or modifier changes every declarator it applies to. |
 | 112 | Accepted limits: two identical units with identical context cannot be told apart; a file can be replaced between the path checks and the open. | Both need state hibi does not keep; the open itself does not follow a final symbolic link. |
 | 113 | The cache stays in SQLite's rollback journal and never sets WAL. A `units` row is used only when it is exactly what a writer writes for the text; a `not_text` row is never believed; a row over `MAX_CACHE_ROW_BYTES` (8 MiB) is not written. | WAL returns `SQLITE_BUSY` in documented cases that a busy timeout does not cover; the cache must never change a result. |
@@ -7069,7 +7080,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 119 | `hibi-provider-reference` is kept out of releases by `[package.metadata.dist] dist = false`. CI drift jobs compare with `git add --all` and `git diff --exit-code HEAD`; the report job never fails; only pull request runs are cancelled. `plugin.json` carries the workspace version. | A removed generated file is drift too; a release run is never cancelled. |
 | 120 | Similarity proposes, it never resolves. A unit a provider returns with `approx: true` never resolves a side: the side is `missing` with reason `not_exact`, and the approximate units are `candidates`. A claim is fresh only when every side resolves exactly. `mark` and a kept `reanchor` side fail with `side_missing`. Sides have no `approx` field, and there are no drifted claims. This supersedes decisions 5, 7, 47, 52, 65 and 99 where they let an approximate unit stand for a side, and the earlier rule that `mark` accepts approximate sides. | The earlier flow, followed exactly, could re-point a claim at an unrelated unit: an approximate match was marked, its fingerprint became the claim's, and the claim then never went stale. |
 | 121 | An answer that holds any approximate unit is `not_exact`, also when it holds exact units as well. | A mix means the selector did not identify one unit. |
-| 122 | In the file provider a stored symbol that names no declaration makes every unit the quote finds approximate, exact ties included; a quote found only by the fuzzy step is approximate; a unique symbol, and an exact or whitespace-equal quote hit, are exact. | The symbol was the identity; without it the quote is only a guess at where the declaration went. |
+| 122 | In the file provider a stored symbol that names no declaration makes every unit the quote finds approximate, exact ties included; a quote found only by the fuzzy step is approximate; a unique symbol, and an exact or whitespace-equal quote hit, are exact. Superseded in part by decision 142: an exact quote hit resolves only where section 6.7 says, and is otherwise a candidate. | The symbol was the identity; without it the quote is only a guess at where the declaration went. |
 | 123 | At most `MAX_CANDIDATES` (20) candidates are shown, with `candidatesTotal`. Candidate text is cut to 240 characters. A candidate's anchor is `<loc>#<symbol>` only when the symbol is unique in the whole resource, and a JSON anchor otherwise. `next` uses the `<anchor>` placeholder and never a candidate. | Bounded output; an anchor that is offered must select one unit; the caller chooses. |
 | 124 | Sides carry `detail` and `remediation`. | The JSON holds what the human output prints. |
 | 125 | Provider error `unavailable` maps to the side reason `resource_unavailable`, with `next` `null` and the provider's message as remediation. Provider errors `invalid_selector` and `invalid_locator` map to `selector_refused` for a stored anchor and to the CLI error `invalid_anchor` for a new one. | The resource exists and cannot be read, or the anchor is wrong for the resource; neither is a broken provider. |
@@ -7079,15 +7090,15 @@ Each row is a choice the plan left open or marked illustrative.
 | 129 | A side that is not exact covers no unit, and a claim with such a side is not sent to the judge and is listed first. | It has no resolved unit. |
 | 130 | Accepted limit: text stored in the ledger stays in the ledger. A claim's stored quote, prefix and suffix are printed by `list` and `status` even after the file is later ignored. | hibi never reads the ignored file; the stored text was committed when the claim was made. |
 | 131 | CI has eight jobs: it also lints the library with features off, builds and tests each single feature, and checks the minimum Rust version with `--locked`. | Every feature set must build and pass. |
-| 132 | Ruling: declarations of one symbol are compared in their own scopes. A declaration's stored context is cut from its scope, or from the whole text when another declaration of the symbol has the same scope text after `normalize` (a twin). With several declarations, the one declaration whose scope or whole-text windows reproduce the stored context after `normalize` resolves; when several reproduce it, every declaration with a hit is returned; when none does, every declaration with a hit is a candidate (`approx`), ordered by context score, best first. Position never chooses between them. | An anchor stored while a symbol was unique silently followed the last duplicate once copies appeared: its short scope context was scored against whole-text windows, and the copy at the end of the file, with the shortest windows, won as an exact resolution. A single best-scoring candidate was tried first and replaced: after a claimed `int` stub of two `@overload` stubs became `float`, the unchanged `str` stub scored higher and was the only candidate, and one wrong guess is worse than a list. |
+| 132 | Superseded by decision 142: declarations of one symbol are told apart by `count` and the quote's in-unit windows, and there is no context score. Earlier ruling: declarations of one symbol are compared in their own scopes. A declaration's stored context is cut from its scope, or from the whole text when another declaration of the symbol has the same scope text after `normalize` (a twin). With several declarations, the one declaration whose scope or whole-text windows reproduce the stored context after `normalize` resolves; when several reproduce it, every declaration with a hit is returned; when none does, every declaration with a hit is a candidate (`approx`), ordered by context score, best first. Position never chooses between them. | An anchor stored while a symbol was unique silently followed the last duplicate once copies appeared: its short scope context was scored against whole-text windows, and the copy at the end of the file, with the shortest windows, won as an exact resolution. A single best-scoring candidate was tried first and replaced: after a claimed `int` stub of two `@overload` stubs became `float`, the unchanged `str` stub scored higher and was the only candidate, and one wrong guess is worse than a list. |
 | 133 | A write on a claim that exists reads that claim's stored anchors, each resolved once in the run. `claim` on the live claim with the built id fails when a stored anchor does not resolve exactly; such a claim is never the same claim for another; `reanchor` does not merge into it and never marks a kept side that did not resolve. | An anchor the caller gives may reach the unit while the stored anchor no longer does; a mark may not rest on that, nor on a provider's second, different answer. |
 | 134 | For a `missing` side (`not_exact`, `selector_not_found`) `status` lists first the units of the resource with the fingerprint of the reference mark, then the provider's candidates. They are candidates only. | A renamed container or a moved unit keeps its content; the provider's search by similarity may find nothing or something else. |
 | 135 | `cover` reads item text with `render` by key for the listed items only, and a resolution keeps at most `MAX_CANDIDATES` units. | Work and memory are bounded by the listed items, not by the square of the units of a resource of identical units. |
 | 136 | In a standard-input document a string that starts with `{` is a JSON anchor, as on the command line. | A candidate's `anchor` is a string and has to be usable in a batch. |
 | 137 | Human output drops control characters except newline and tab. Advice names what applies: the scheme in the `provider_error` remediation, a symbol only where the units have one, the provider's selector keys for `selector_not_exact`; every `invalid_argument` has a remediation. The `accepted` line reminds the caller of the re-check. Near-identical candidates show the line where they differ. | Text for a terminal must be safe, and advice must be something the caller can do. |
-| 138 | A stored selector reports `contextChanged` when its quote is found exactly but the stored context around it is not; a stored span that crosses units is `approx`. The missed-symbol branch compares hits through each hit's own unit windows, like with like. | An exact quote can land on another unit when the quoted words move ("30 s" now in the retry sentence), or cross units when a blank line splits a sentence; the side showed `changed` or resolved to the first unit, and after a mark the original sentence could change unseen. Scoring a scope-cut context against whole-text windows offered only one of two identical methods after a class rename. |
-| 139 | Twins are decided by the selector, not by the scope text, and a whole-text match ranks above a scope match. | Two `def run():` whose bodies shared their first 48 characters got equal scope selectors, and both printed anchors came back ambiguous when pasted. The rank keeps a twin at the start of the file a fixed point; an inserted copy with the same first 48 characters can take a unique-era anchor, and its differing fingerprint makes that visible. |
-| 140 | The file provider keeps up to four analysed documents between calls, keyed by the exact bytes and the class; resolution compares contexts without allocating and computes similarity scores only when no declaration reproduces the stored context. | `cover` rendering 100 items of an 80,000-unit file took 34 s and analysed the file 100 times; resolving one of 4,000 identical functions scored every copy with Levenshtein and took twice as long as before the duplicated-symbol rules. |
+| 138 | Superseded by decision 142, which removes `contextChanged`: a quote found exactly whose in-unit windows are not reproduced is a candidate, and a stored span that crosses units is still a candidate (`approx`). The missed-symbol branch is A3 of section 6.7. | An exact quote can land on another unit when the quoted words move ("30 s" now in the retry sentence), or cross units when a blank line splits a sentence; the side showed `changed` or resolved to the first unit, and after a mark the original sentence could change unseen. Scoring a scope-cut context against whole-text windows offered only one of two identical methods after a class rename. |
+| 139 | Superseded by decision 142: identical twins cannot be told apart and are returned together; there is no whole-text match and no rank. Earlier: twins are decided by the selector, not by the scope text, and a whole-text match ranks above a scope match. | Two `def run():` whose bodies shared their first 48 characters got equal scope selectors, and both printed anchors came back ambiguous when pasted. The rank keeps a twin at the start of the file a fixed point; an inserted copy with the same first 48 characters can take a unique-era anchor, and its differing fingerprint makes that visible. |
+| 140 | The file provider keeps up to four analysed documents between calls, keyed by the exact bytes and the class; resolution compares contexts without allocating and computes similarity scores only when no declaration reproduces the stored context. Since decision 142 there are no context scores; the four-document memo stays. | `cover` rendering 100 items of an 80,000-unit file took 34 s and analysed the file 100 times; resolving one of 4,000 identical functions scored every copy with Levenshtein and took twice as long as before the duplicated-symbol rules. |
 | 141 | Superseded by decisions 142 and 143: no fingerprint is evidence of identity. | The rule let a claim follow an identical copy once the original was edited. |
 | 142 | Identity of a stored anchor (section 6.7): a side is resolved only by its symbol and the number of declarations it named (`count`), or by its quote with in-unit windows (`prefix`, `suffix` cut inside the unit) in its container (`within`: a heading path and piece name, or a declaration). Everything else is a candidate. Stored selectors hold no default quotes and no `pos`; printed anchors select their unit alone; `identity: "symbol"` marks a unit its symbol names after its stored quote is gone; `quote_not_distinguishable` refuses a new anchor whose completed selector would not select its unit. Supersedes decisions 132, 138 and 139 and the corroboration of decision 141, and removes `contextChanged`. | A claim could follow an identical copy silently: a fingerprint equal to a mark was taken as identity, and duplicated symbols re-bound. Context windows that reached into neighbouring units changed with unrelated edits, and position chose between equal hits. The rule was designed with the verifier until no scenario could make a candidate resolve. |
 | 143 | The engine adds no identity rule to the provider's answer. A unit resolved by its symbol alone, the stored quote gone, is `changed`, asks for a new anchor, and is refused by `mark`. Candidates and ambiguity lists print the provider's printed anchor; units with the same printed anchor are listed as a group without an anchor. The same claim, and repeated evidence, are decided by the units the sides resolve to. A quote that cannot be told apart is `quote_not_distinguishable`. A bare quote inside a declaration gets a note. | Identity belongs to one place; a mark must not keep a stale quote; what cannot be selected must not be offered; two ways to write an anchor name one side. |
@@ -7660,13 +7671,15 @@ Each of these has a test, named in parentheses.
   `fresh` with `expiresAt` `null`.
   (`an_expiry_past_the_last_instant_is_never_reached`, `cases/freshness.json`.)
 - R91. A zero `recheck` is `invalid_duration` in `claim`, in `reanchor` and
-  in a stored record. Two evidence anchors that complete to the same anchor
-  are `invalid_argument`; the subject may repeat as evidence.
+  in a stored record. Two evidence anchors that resolve to the same unit are
+  `invalid_argument`, however they are written; the subject may repeat as
+  evidence.
   (`a_zero_recheck_period_is_invalid`,
   `duplicate_evidence_anchors_are_refused`,
   `a_zero_recheck_and_a_repeated_evidence_anchor_are_refused`.)
-- R92. A claim made again after an edit near its quote marks the existing
-  live claim and creates none; among several matches the smallest id is
+- R92. A claim made again whose sides resolve to the units of a live
+  claim's sides, for example after an edit outside the quoted unit, marks
+  that claim and creates none; among several matches the smallest id is
   taken. (`claim_again_after_an_edit_near_the_quote_marks_the_existing_claim`,
   `claim_matches_by_resolved_unit_and_prefers_the_smallest_id`,
   `claiming_again_after_an_edit_near_the_quote_creates_no_duplicate`.)
@@ -7736,8 +7749,8 @@ Each of these has a test, named in parentheses.
   in the ledger and is still printed (section 6.8).
   (`file_reads_follow_the_root_file_list_when_git_is_usable`,
   `a_failing_file_list_is_unavailable`, `r61_ignored_text_is_never_sent`.)
-- R106. Every completed selector resolves to itself, and no default quote
-  starts in a comment. A completed quote is cut to the limit, never dropped.
+- R106. Every completed selector resolves to itself, and no printed
+  anchor's first-line quote starts in a comment. A completed quote is cut to the limit, never dropped.
   (`completed_selectors_are_fixed_points`,
   `default_quotes_are_never_in_comments_and_round_trip`,
   `completed_quote_is_cut_to_the_limit_and_never_dropped`.)
@@ -7885,16 +7898,16 @@ Each of these has a test, named in parentheses.
   (`a_too_large_or_binary_file_says_the_limit_and_the_way_out`,
   `a_code_file_that_does_not_parse_is_resource_unavailable_for_a_symbol`,
   `an_unreadable_git_file_list_is_resource_unavailable_without_repetition`.)
-- R133. When a symbol names several declarations, an anchor stored while the
-  symbol was unique resolves to the declaration it was taken from, a new
-  anchor gives every declaration whose scope holds the quote, the completed
-  selector of every declaration, twins included, resolves to it, and when
-  an edited declaration's context no scope reproduces, every declaration
-  with the quote is returned as a candidate, the closest context first.
-  Position never chooses between them, and the work is linear in the
-  declarations and their hits.
-  (`cases/resolve.json`: the cases named "duplicated declarations" and
-  "twin declarations: ..."; `default_quotes_are_never_in_comments_and_round_trip`,
+- R133. When a symbol names several declarations, a new anchor gives every
+  declaration whose scope holds the quote; a stored anchor with `count`
+  resolves only to the one declaration whose hit reproduces its in-unit
+  windows, and is otherwise, or when the number of declarations changed,
+  a list of candidates; the printed anchor of every declaration selects it
+  alone, and identical twins are returned together. Position never chooses
+  between them, and the work is linear in the declarations and their hits.
+  (`cases/resolve.json`: the cases named "... stored: ..." on duplicated
+  declarations and the Go twin `init` cases;
+  `default_quotes_are_never_in_comments_and_round_trip`,
   `many_declarations_of_one_symbol_resolve_in_linear_work`,
   `a_candidate_anchor_selects_one_unit_of_the_whole_resource`.)
 - R134. A write on a claim that exists rests on that claim's stored
