@@ -39,7 +39,17 @@ pub fn timeout() -> u32 {
 const CACHE_SUBJECT: &str = "file:docs/a.md::The cache holds 64 entries.";
 const TIMEOUT_SUBJECT: &str = "file:docs/a.md::Requests time out after 30 seconds.";
 const RETRY_SUBJECT: &str = "file:docs/a.md::The retry count is 3.";
+/// A function by its name and one of its lines. An edit of that line makes
+/// the side ask for a new anchor; an edit of another line of the function
+/// (as [`limit_edited`] makes) leaves the anchor good and the side changed.
 const LIMIT_EVIDENCE: &str = "file:src/a.rs#limit::let max_entries = 64;";
+
+/// [`CODE`] with `limit` changed on a line the anchor does not quote.
+fn limit_edited() -> String {
+    let edited = CODE.replace("    max_entries\n", "    max_entries * 2\n");
+    assert_ne!(edited, CODE);
+    edited
+}
 
 /// A repository with a store, `docs/a.md` and `src/a.rs`.
 fn seeded() -> Repo {
@@ -338,20 +348,25 @@ fn claim_reports_a_fresh_claim_view_with_completed_selectors() {
     assert_eq!(v["warnings"], json!([]));
     assert_eq!(v["claims"].as_array().unwrap().len(), 1);
     let entry = &v["claims"][0];
-    assert_eq!(keys(entry), ["accepted", "claim", "created", "id", "mark"]);
+    assert_eq!(
+        keys(entry),
+        ["accepted", "claim", "created", "id", "mark", "notes"]
+    );
     assert_eq!(entry["accepted"], Value::Null);
+    assert_eq!(entry["notes"], json!([]));
     assert!(v["nextNote"].is_string());
     let id = id_of(&entry["id"], "c1-");
     assert_eq!(entry["created"], true);
     let mark = id_of(&entry["mark"], "m1-");
 
     // The ClaimView, whole. The stored anchors are the completed selectors
-    // (quote, prefix, suffix, pos, and the symbol of a declaration), not
-    // the compact text that was typed. In prose the context is the text
-    // around the quote in the file. For a declaration whose symbol is
-    // unique it is cut at the unit's scope: the unit and the whitespace,
-    // `,` and `;` directly around it. `pos` is a byte offset in the file
-    // in both.
+    // of section 6.7, not the compact text that was typed. A quote keeps
+    // the text before and after it inside its own unit (`prefix`, `suffix`,
+    // empty where the quote reaches the unit's edge) and, in prose, the
+    // container it stands in (`within`: the heading path, and the name of
+    // a paragraph of several sentences). A typed `#name::<line>` keeps the
+    // name and the line with its surroundings inside the declaration. No
+    // selector holds a position.
     assert_eq!(
         entry["claim"],
         json!({
@@ -369,9 +384,9 @@ fn claim_reports_a_fresh_claim_view_with_completed_selectors() {
                     "role": "subject",
                     "anchor": {"loc": "file:docs/a.md", "sel": {
                         "quote": "The cache holds 64 entries.",
-                        "prefix": "# Guide\n\n",
-                        "suffix": " Requests time out after 30 seconds.\n\nThe retry ",
-                        "pos": 9
+                        "prefix": "",
+                        "suffix": "",
+                        "within": ["Guide", "The cache holds 64 entries."]
                     }},
                     "state": "same",
                     "reason": null,
@@ -387,9 +402,8 @@ fn claim_reports_a_fresh_claim_view_with_completed_selectors() {
                     "role": "evidence",
                     "anchor": {"loc": "file:src/a.rs", "sel": {
                         "quote": "let max_entries = 64;",
-                        "prefix": "\npub fn limit() -> u32 {\n    ",
-                        "suffix": " // max entries note\n    max_entries\n}\n\n",
-                        "pos": 58,
+                        "prefix": "pub fn limit() -> u32 {",
+                        "suffix": "// max entries note max_entries }",
                         "symbol": "limit"
                     }},
                     "state": "same",
@@ -463,28 +477,49 @@ fn claim_completes_a_symbol_a_bare_quote_and_a_whole_file() {
         json!({"loc": "file:docs/a.md", "sel": {}})
     );
     assert_eq!(view["sides"][0]["unit"]["kind"], "file");
-    // A symbol without a quote gets the default quote: the first line of
-    // the declaration.
+    // A typed name alone stores the name: no default quote.
     assert_eq!(
         view["sides"][1]["anchor"],
-        json!({"loc": "file:src/a.rs", "sel": {
-            "quote": "pub fn timeout() -> u32 {",
-            "prefix": "\n\n",
-            "suffix": "\n    30\n}\n",
-            "pos": 119,
-            "symbol": "timeout"
-        }})
+        json!({"loc": "file:src/a.rs", "sel": {"symbol": "timeout"}})
     );
-    // A quote without a symbol gets the symbol of the unit it lies in.
+    // A quote without a symbol stores no symbol: it tracks the text in its
+    // place, with the declaration as its container.
     assert_eq!(
         view["sides"][2]["anchor"],
         json!({"loc": "file:src/a.rs", "sel": {
             "quote": "max_entries = 64",
-            "prefix": "\npub fn limit() -> u32 {\n    let ",
-            "suffix": "; // max entries note\n    max_entries\n}\n\n",
-            "pos": 62,
-            "symbol": "limit"
+            "prefix": "pub fn limit() -> u32 { let",
+            "suffix": "; // max entries note max_entries }",
+            "within": ["limit"]
         }})
+    );
+    // The claim says so, and names the anchor that follows the declaration.
+    assert_eq!(
+        v["claims"][0]["notes"],
+        json!([
+            "evidence 2 (file:src/a.rs) tracks the quoted text in its place. To follow the declaration limit instead, anchor file:src/a.rs#limit::max_entries = 64"
+        ])
+    );
+    let human = repo.human(&[
+        "--now",
+        NOW,
+        "claim",
+        "Timeouts, again",
+        "--subject",
+        "file:docs/a.md::The retry count is 3.",
+        "--evidence",
+        "file:src/a.rs::max_entries = 64",
+    ]);
+    assert!(
+        human.stdout.contains("\n  note: evidence 1 (file:src/a.rs) tracks the quoted text in its place. To follow the declaration limit instead, anchor file:src/a.rs#limit::max_entries = 64\n"),
+        "{}",
+        human.stdout
+    );
+    // A quote in prose gets no note.
+    assert!(
+        !human.stdout.contains("note: the subject"),
+        "{}",
+        human.stdout
     );
     assert_eq!(view["sides"][2]["index"], 2);
     assert_eq!(view["sides"][2]["role"], "evidence");
@@ -971,9 +1006,7 @@ fn r35_every_stale_or_expired_claim_has_the_next_of_the_table() {
     );
     repo.write(
         "src/a.rs",
-        &CODE
-            .replace("max_entries = 64", "max_entries = 128")
-            .replace("fn timeout", "fn time_out"),
+        &limit_edited().replace("fn timeout", "fn time_out"),
     );
     repo.write("src/c.rs", &CACHE_CODE.replace("Cache", "Store"));
 
@@ -1063,11 +1096,12 @@ fn r35_every_stale_or_expired_claim_has_the_next_of_the_table() {
     assert_eq!(candidates[1]["line"], 13);
     assert_eq!(candidates[0]["label"], "The retry count is 3.");
     assert_eq!(c["sides"][0]["candidatesTotal"], 2);
-    // Each candidate carries an anchor that selects it alone.
-    assert_ne!(candidates[0]["anchor"], candidates[1]["anchor"]);
+    // The two sentences are identical where they stand: the same text,
+    // the same text around it in the unit, the same heading. No anchor
+    // selects one of them alone, so none is offered.
     for candidate in candidates {
         assert_eq!(candidate["sameFingerprint"], true);
-        assert!(s(&candidate["anchor"]).starts_with('{'), "{candidate}");
+        assert_eq!(candidate["anchor"], Value::Null, "{candidate}");
     }
     assert_eq!(
         s(&c["next"]),
@@ -1298,9 +1332,31 @@ fn status_selects_by_state_by_locator_and_by_id() {
 #[test]
 fn an_id_prefix_that_matches_two_claims_is_ambiguous_id() {
     let repo = seeded();
-    // Two statements whose claim ids share their first characters.
-    let a = repo.claim("statement 267", CACHE_SUBJECT, &[]);
-    let b = repo.claim("statement 525", CACHE_SUBJECT, &[]);
+    // Two statements whose claim ids share their first characters. They
+    // are found, not written down: a claim id is derived from the claim's
+    // content, so the ids are computed for one statement after another,
+    // with the stored subject of a first claim, until two of them share
+    // four characters after the prefix.
+    let probe = repo.claim("probe", CACHE_SUBJECT, &[]);
+    let listed = j(&repo, &["list", &probe]);
+    let subject: hibi::model::Anchor =
+        serde_json::from_value(listed["claim"]["subject"].clone()).unwrap();
+    let mut seen: BTreeMap<String, String> = BTreeMap::new();
+    let mut pair: Option<(String, String)> = None;
+    for n in 0..200_000 {
+        let statement = format!("statement {n}");
+        let id = hibi::model::Claim::new(&statement, subject.clone(), Vec::new(), None, None)
+            .unwrap()
+            .id
+            .to_string();
+        if let Some(earlier) = seen.insert(id[..7].to_owned(), statement.clone()) {
+            pair = Some((earlier, statement));
+            break;
+        }
+    }
+    let (first, second) = pair.expect("two of 200,000 ids share four characters");
+    let a = repo.claim(&first, CACHE_SUBJECT, &[]);
+    let b = repo.claim(&second, CACHE_SUBJECT, &[]);
     assert_ne!(a, b);
     let shared = a.chars().zip(b.chars()).take_while(|(x, y)| x == y).count();
     assert!(shared >= 7, "{a} and {b} share a valid prefix");
@@ -1492,9 +1548,9 @@ fn r36_reanchor_with_a_new_subject_replaces_the_claim() {
         v["claim"]["sides"][0]["anchor"],
         json!({"loc": "file:docs/a.md", "sel": {
             "quote": "Up to 64 entries are cached.",
-            "prefix": "# Guide\n\n",
-            "suffix": " Requests time out after 30 seconds.\n",
-            "pos": 9
+            "prefix": "",
+            "suffix": "",
+            "within": ["Guide", "Up to 64 entries are cached."]
         }})
     );
     assert_eq!(v["claim"]["sides"][1]["anchor"]["sel"]["symbol"], "limit");
@@ -2053,20 +2109,20 @@ fn r55_a_reworded_sentence_is_a_candidate_and_mark_is_refused() {
     assert_eq!(e["code"], "side_missing");
     assert_eq!(s(&e["remediation"]), next);
     assert_eq!(repo.records("marks").len(), 1);
-    // The cause: found by similarity only.
+    // The cause.
     assert_eq!(
         view["sides"][0]["detail"],
-        "the anchor matches no unit exactly"
+        "the stored anchor no longer identifies one unit"
     );
     assert!(
-        s(&e["message"]).contains("(not_exact): the anchor matches no unit exactly; "),
+        s(&e["message"]).contains("(not_exact): the stored anchor no longer identifies one unit; "),
         "{e}"
     );
     let human = repo.human(&["--now", NOW, "status"]);
     assert!(
         human
             .stdout
-            .contains("missing (not_exact)\n    the anchor matches no unit exactly\n"),
+            .contains("missing (not_exact)\n    the stored anchor no longer identifies one unit\n"),
         "{}",
         human.stdout
     );
@@ -2145,11 +2201,6 @@ fn a_candidate_anchor_selects_one_unit_of_the_whole_resource() {
             "file:c.ts#D.v",
             "file:c.ts#C.v",
         ),
-        (
-            "file:a.rs::fn run(&self) -> u8",
-            "file:a.rs#T.run",
-            "file:a.rs#A.run",
-        ),
     ] {
         let e = refused(&repo, &["claim", "S", "--subject", anchor]);
         assert_eq!(e["code"], "side_ambiguous", "{anchor}: {e}");
@@ -2167,6 +2218,36 @@ fn a_candidate_anchor_selects_one_unit_of_the_whole_resource() {
         let v = j(&repo, &["claim", anchor, "--subject", unique]);
         assert_eq!(v["claims"][0]["created"], true, "{unique}");
     }
+
+    // The two `A.run` are identical where they stand: the same text in a
+    // declaration of the same name. They are listed as a group that no
+    // anchor tells apart, with what to do, and no anchor is offered for
+    // them. The declaration with another name has its anchor.
+    let e = refused(
+        &repo,
+        &["claim", "S", "--subject", "file:a.rs::fn run(&self) -> u8"],
+    );
+    assert_eq!(e["code"], "side_ambiguous");
+    let message = s(&e["message"]);
+    assert!(message.contains(": file:a.rs#T.run"), "{message}");
+    assert_eq!(
+        message
+            .matches("identical to another candidate, no anchor selects it alone")
+            .count(),
+        2,
+        "{message}"
+    );
+    assert!(
+        message.contains("quote a longer passage that tells them apart"),
+        "{message}"
+    );
+    assert!(
+        !message.contains("A.run\"") || !message.contains("{\"loc\""),
+        "{message}"
+    );
+    assert!(!message.contains("{\"loc\":\"file:a.rs\""), "{message}");
+    let v = j(&repo, &["claim", "S", "--subject", "file:a.rs#T.run"]);
+    assert_eq!(v["claims"][0]["created"], true);
 }
 
 /// An anchor that matches very many units: twenty candidates and the
@@ -2174,7 +2255,10 @@ fn a_candidate_anchor_selects_one_unit_of_the_whole_resource() {
 #[test]
 fn at_most_twenty_candidates_are_shown_with_the_total() {
     let repo = seeded();
-    let many: String = (0..25).map(|_| "The item is ready.\n\n").collect();
+    // Twenty-five different sentences that hold the quoted words.
+    let many: String = (0..25)
+        .map(|n| format!("Item number {n} is ready.\n\n"))
+        .collect();
     repo.write("docs/list.md", &format!("# List\n\n{many}"));
 
     let e = refused(
@@ -2183,7 +2267,7 @@ fn at_most_twenty_candidates_are_shown_with_the_total() {
             "claim",
             "Again",
             "--subject",
-            "file:docs/list.md::The item is ready.",
+            "file:docs/list.md::is ready.",
         ],
     );
     assert_eq!(e["code"], "side_ambiguous");
@@ -2191,6 +2275,15 @@ fn at_most_twenty_candidates_are_shown_with_the_total() {
     assert!(message.contains("matches 25 units"), "{message}");
     assert_eq!(message.matches("{\"loc\"").count(), 20, "{message}");
     assert!(message.ends_with("; and 5 more"), "{message}");
+    // Each listed anchor selects its sentence.
+    let v = j(
+        &repo,
+        &["claim", "Again", "--subject", &json_anchor_in(message)],
+    );
+    assert_eq!(
+        v["claims"][0]["claim"]["sides"][0]["unit"]["label"],
+        "Item number 0 is ready."
+    );
 }
 
 /// `reanchor` onto a unit that a live claim with the same statement
@@ -2328,10 +2421,7 @@ fn a_symbol_on_a_markdown_file_is_invalid_anchor() {
 fn a_stale_claim_is_reported_against_the_mark_that_matches_the_most_sides() {
     let repo = seeded();
     let id = repo.claim("Cache size", CACHE_SUBJECT, &[LIMIT_EVIDENCE]);
-    repo.write(
-        "src/a.rs",
-        &CODE.replace("max_entries = 64", "max_entries = 128"),
-    );
+    repo.write("src/a.rs", &limit_edited());
     // The second mark, in the same second as the first.
     let v = j(&repo, &["mark", &id]);
     let second = id_of(&v["marks"][0]["mark"], "m1-");
@@ -2492,13 +2582,16 @@ fn human_output_has_no_control_characters_from_file_text() {
 #[test]
 fn json_output_escapes_del_and_c1_controls() {
     let repo = seeded();
-    let sentence = "The \u{7f}cap\u{85} is \u{9b}five.";
+    let sentence = "The \u{7f}cap is \u{9b}five.";
     repo.write("docs/c1.md", &format!("# C1\n\n{sentence}\n"));
+    // U+0085 is white space, which no stored text keeps; the statement is
+    // stored as given.
+    let statement = "Cap\u{85}five";
     let out = repo.run(&[
         "--now",
         NOW,
         "claim",
-        "Cap",
+        statement,
         "--subject",
         "file:docs/c1.md::is",
     ]);
@@ -2512,10 +2605,10 @@ fn json_output_escapes_del_and_c1_controls() {
         assert!(out.stdout.contains(escaped), "{:?}", out.stdout);
     }
     let v = out.json();
-    // (U+0085 is white space, so the label holds a space in its place.)
+    assert_eq!(v["claims"][0]["claim"]["statement"], statement);
     assert_eq!(
         v["claims"][0]["claim"]["sides"][0]["unit"]["label"],
-        sentence.replace('\u{85}', "")
+        sentence
     );
     // An error message that quotes the text.
     let failed = repo.run(&[
@@ -2524,7 +2617,7 @@ fn json_output_escapes_del_and_c1_controls() {
         "claim",
         "Cap",
         "--subject",
-        "file:docs/c1.md::The \u{7f}cap\u{85} is \u{9b}six.",
+        "file:docs/c1.md::The \u{7f}cap is \u{9b}six.",
     ]);
     assert_eq!(failed.status, 1);
     assert!(
@@ -2623,8 +2716,9 @@ fn an_exact_quote_in_another_sentence_is_a_candidate_and_never_the_side() {
     assert!(s(&e["message"]).contains("up to 30 s"), "{e}");
     assert_eq!(s(&e["remediation"]), next);
     assert_eq!(repo.records("marks").len(), 1);
-    // The words say what happened: the quote was found, elsewhere.
-    let cause = "the quoted text was found, but not where it was stored, and the unit there is not the one that was marked";
+    // The words say what happened without claiming that nothing matches:
+    // the quoted text is in the candidate.
+    let cause = "the stored anchor no longer identifies one unit";
     assert_eq!(side["detail"], cause);
     assert!(s(&e["message"]).contains(cause), "{e}");
     assert!(!s(&e["message"]).contains("matches no unit exactly"), "{e}");
@@ -2667,17 +2761,20 @@ fn an_exact_quote_in_another_sentence_is_a_candidate_and_never_the_side() {
     assert_eq!(v["claims"][0]["sides"][0]["state"], "missing");
 }
 
-/// The sentence before a quoted sentence is edited: the quoted sentence is
-/// what was marked, so the claim stays fresh and there is nothing to do.
+/// An edit to a neighbouring sentence that does not name the paragraph
+/// leaves a claim on another sentence of it fresh, with nothing to do.
 #[test]
 fn an_edit_next_to_a_quoted_sentence_leaves_the_claim_fresh() {
     let repo = seeded();
-    repo.write("n.md", "# N\n\nFirst sentence here. The cap is five.\n");
+    repo.write(
+        "n.md",
+        "# N\n\nFirst sentence here. The cap is five. A last sentence.\n",
+    );
     let id = repo.claim("cap", "file:n.md::The cap is five.", &[]);
     let stored = repo.store_files();
     repo.write(
         "n.md",
-        "# N\n\nFirst sentence was edited, twice. The cap is five.\n",
+        "# N\n\nFirst sentence here. The cap is five. A last sentence, edited twice.\n",
     );
 
     let view = repo.view(&id);
@@ -2687,6 +2784,57 @@ fn an_edit_next_to_a_quoted_sentence_leaves_the_claim_fresh() {
     assert_eq!(view["sides"][0]["detail"], Value::Null);
     assert_eq!(j(&repo, &["status"])["claims"], json!([]));
     assert_eq!(repo.store_files(), stored);
+}
+
+/// The stated limit of section 6.7: a paragraph of several sentences is
+/// named by its first sentence. Editing that sentence renames the
+/// paragraph, and the claims on its other sentences become candidates. The
+/// sentence with the marked content is the first candidate, so the
+/// reanchor is one step, and it is the caller who takes it.
+#[test]
+fn editing_the_first_sentence_of_a_paragraph_makes_its_other_claims_candidates() {
+    let repo = seeded();
+    repo.write(
+        "n.md",
+        "# N\n\nFirst sentence here. The cap is five. A last sentence.\n",
+    );
+    let id = repo.claim("cap", "file:n.md::The cap is five.", &[]);
+    assert_eq!(
+        repo.view(&id)["sides"][0]["anchor"]["sel"]["within"],
+        json!(["N", "First sentence here."])
+    );
+    repo.write(
+        "n.md",
+        "# N\n\nFirst sentence was edited. The cap is five. A last sentence.\n",
+    );
+
+    let view = repo.view(&id);
+    assert_eq!(view["state"], "stale");
+    assert_eq!(sides(&view), json!([["missing", "not_exact", true]]));
+    let side = &view["sides"][0];
+    assert_eq!(
+        side["detail"],
+        "the stored anchor no longer identifies one unit"
+    );
+    let first = &side["candidates"][0];
+    assert_eq!(first["label"], "The cap is five.");
+    assert_eq!(first["sameFingerprint"], true);
+    let next = format!("hibi reanchor {id} --subject <anchor>");
+    assert_eq!(s(&view["next"]), next);
+    // The printed command holds no candidate, and `mark` does not take one.
+    assert!(!next.contains("cap"));
+    let e = refused(&repo, &["mark", &id]);
+    assert_eq!(e["code"], "side_missing");
+    assert_eq!(s(&e["remediation"]), next);
+
+    let anchor = s(&first["anchor"]).to_owned();
+    let v = at(
+        &repo,
+        "2026-11-20T13:00:00Z",
+        &["reanchor", &id, "--subject", &anchor],
+    );
+    assert_eq!(v["claim"]["state"], "fresh");
+    assert_eq!(v["claim"]["sides"][0]["unit"]["label"], "The cap is five.");
 }
 
 /// A quote on part of a sentence, and the sentence is edited elsewhere:
@@ -2717,10 +2865,12 @@ fn a_quoted_phrase_in_an_edited_sentence_is_a_candidate() {
     assert_eq!(v["accepted"]["sides"][0]["reason"], "not_exact");
 }
 
-/// R55: editing the quoted line of a declaration anchored by symbol does
-/// not lose the side; the symbol identifies the unit exactly.
+/// R55: a typed `#name::<line>` anchor. When the quoted line is edited
+/// the name still identifies the unit: the side is `changed`, says that
+/// the stored quote is gone, and asks for a new anchor, because a mark
+/// would keep the stale quote for good. `mark` is refused.
 #[test]
-fn r55_editing_the_quoted_line_under_a_symbol_keeps_the_side() {
+fn r55_editing_the_quoted_line_under_a_symbol_asks_for_a_new_anchor() {
     let repo = seeded();
     let id = repo.claim(
         "The cache holds 64 entries.",
@@ -2741,8 +2891,79 @@ fn r55_editing_the_quoted_line_under_a_symbol_keeps_the_side() {
             ["changed", "fingerprint_differs", false]
         ])
     );
+    let side = &view["sides"][1];
+    assert_eq!(side["unit"]["key"], "function:limit");
+    assert_eq!(side["detail"], "the stored quote is no longer in this unit");
+    assert!(s(&side["text"]).contains("let max_entries = 128;"));
+    let next = format!("hibi reanchor {id} --evidence 1=<anchor>");
+    assert_eq!(s(&view["next"]), next);
+    let human = repo.human(&["--now", NOW, "status"]);
+    assert!(
+        human
+            .stdout
+            .contains("    the stored quote is no longer in this unit\n"),
+        "{}",
+        human.stdout
+    );
+
+    let e = refused(&repo, &["mark", &id]);
+    assert_eq!(e["code"], "selector_not_exact");
+    assert!(
+        s(&e["message"]).contains("a mark would keep the stale quote"),
+        "{e}"
+    );
+    assert_eq!(s(&e["remediation"]), next);
+    let e = refused(&repo, &["reanchor", &id, "--statement", "Another."]);
+    assert_eq!(e["code"], "selector_not_exact");
+    assert_eq!(s(&e["remediation"]), next);
+
+    // The caller re-checked and names the line as it is now.
+    let v = at(
+        &repo,
+        "2026-11-20T13:00:00Z",
+        &[
+            "reanchor",
+            &id,
+            "--evidence",
+            "1=file:src/a.rs#limit::let max_entries = 128;",
+        ],
+    );
+    let new = id_of(&v["new"], "c1-");
+    assert_eq!(v["claim"]["state"], "fresh");
+    assert_eq!(v["claim"]["next"], Value::Null);
+    assert_eq!(
+        v["claim"]["sides"][1]["anchor"]["sel"]["quote"],
+        "let max_entries = 128;"
+    );
+    assert_eq!(repo.view(&new)["sides"][1]["detail"], Value::Null);
+}
+
+/// R55: the same anchor when another line of the function is edited: the
+/// quoted line is still there, so the anchor is good. The side is
+/// `changed`, says nothing more, and `next` is `hibi mark`.
+#[test]
+fn r55_editing_another_line_under_a_symbol_asks_for_a_mark() {
+    let repo = seeded();
+    let id = repo.claim(
+        "The cache holds 64 entries.",
+        CACHE_SUBJECT,
+        &[LIMIT_EVIDENCE],
+    );
+    repo.write("src/a.rs", &limit_edited());
+
+    let view = repo.view(&id);
+    assert_eq!(view["state"], "stale");
+    assert_eq!(
+        sides(&view),
+        json!([
+            ["same", null, false],
+            ["changed", "fingerprint_differs", false]
+        ])
+    );
     assert_eq!(view["sides"][1]["unit"]["key"], "function:limit");
+    assert_eq!(view["sides"][1]["detail"], Value::Null);
     assert_eq!(s(&view["next"]), format!("hibi mark {id}"));
+
     // After the mark the claim is fresh and there is nothing more to do.
     let v = at(&repo, "2026-11-20T13:00:00Z", &["mark", &id]);
     let marked = &v["marks"][0]["claimView"];
@@ -2754,44 +2975,6 @@ fn r55_editing_the_quoted_line_under_a_symbol_keeps_the_side() {
     assert!(marked["sides"][1].get("text").is_none());
     assert_eq!(marked["next"], Value::Null);
     assert_eq!(repo.view(&id)["next"], Value::Null);
-
-    // The quoted line is deleted altogether: still the same unit, by
-    // symbol.
-    repo.write(
-        "src/a.rs",
-        "pub fn limit() -> u32 {\n    256\n}\n\npub fn timeout() -> u32 {\n    30\n}\n",
-    );
-    let view = repo.view(&id);
-    assert_eq!(
-        sides(&view),
-        json!([
-            ["same", null, false],
-            ["changed", "fingerprint_differs", false]
-        ])
-    );
-    assert_eq!(s(&view["next"]), format!("hibi mark {id}"));
-    // The symbol names the unit; the side says that the stored quote is
-    // no longer in it, in JSON and in text.
-    assert_eq!(
-        view["sides"][1]["detail"],
-        "the stored quote is no longer in this unit"
-    );
-    let human = repo.human(&["--now", NOW, "status"]);
-    assert!(
-        human.stdout.contains(
-            "    the stored quote is no longer in this unit
-"
-        ),
-        "{}",
-        human.stdout
-    );
-    // After the mark the side is the same and says nothing.
-    let v = at(&repo, "2026-11-20T14:00:00Z", &["mark", &id]);
-    assert_eq!(
-        v["marks"][0]["claimView"]["sides"][1]["detail"],
-        Value::Null
-    );
-    assert_eq!(repo.view(&id)["sides"][1]["detail"], Value::Null);
 }
 
 /// Reverting the content to what an older mark covers makes the claim
@@ -2811,7 +2994,7 @@ fn any_matching_mark_is_enough_and_comments_do_not_count() {
     );
     assert_eq!(repo.state(&id), "fresh");
 
-    repo.write("src/a.rs", &CODE.replace("= 64;", "= 128;"));
+    repo.write("src/a.rs", &limit_edited());
     assert_eq!(repo.state(&id), "stale");
     let v = at(&repo, "2026-11-20T13:00:00Z", &["mark", &id]);
     let later = s(&v["marks"][0]["mark"]).to_owned();
@@ -2911,10 +3094,7 @@ fn mark_clears_a_stale_claim_and_keeps_its_id() {
     let repo = seeded();
     let cache = repo.claim("Cache size", CACHE_SUBJECT, &[LIMIT_EVIDENCE]);
     let timeout = repo.claim("Timeout", TIMEOUT_SUBJECT, &["file:src/a.rs#timeout"]);
-    repo.write(
-        "src/a.rs",
-        &CODE.replace("= 64;", "= 128;").replace("    30", "    45"),
-    );
+    repo.write("src/a.rs", &limit_edited().replace("    30", "    45"));
     assert_eq!(repo.state(&cache), "stale");
     assert_eq!(repo.state(&timeout), "stale");
 
@@ -3494,8 +3674,9 @@ fn a_member_claim_goes_stale_only_when_that_member_changes() {
 }
 
 /// The identical `claim` command after an edit above the quoted sentence
-/// marks the existing claim and creates no second one. The claim id covers
-/// the stored context and position of the quote, which the edit changed.
+/// marks the existing claim and creates no second one. The stored selector
+/// holds only text of the quoted unit and its heading path, so an edit
+/// outside the unit does not change it, and the claim id stays the same.
 #[test]
 fn claiming_again_after_an_edit_near_the_quote_creates_no_duplicate() {
     let repo = Repo::new();
@@ -3546,11 +3727,19 @@ fn claiming_again_after_an_edit_near_the_quote_creates_no_duplicate() {
     assert_eq!(v["claims"][0]["created"], true);
     assert_ne!(v["claims"][0]["id"], id.as_str());
 
-    // Only a live claim is matched. After the retirement the command
-    // makes a new claim: its completed context differs from the retired
-    // claim's, so it is not the retired claim again either.
+    // Only a live claim is matched. After the retirement the identical
+    // command builds the retired claim again, which is refused (R54): a
+    // retirement is a decision, and the same statement on the same anchors
+    // does not undo it without a word. A note makes it a new claim.
     repo.json(&["retire", &id]);
-    let v = repo.json(&args);
+    let before = repo.store_files();
+    let e = repo.fail(&args);
+    assert_eq!(e["code"], "claim_retired");
+    assert!(e["message"].as_str().unwrap().contains(&id), "{e}");
+    assert_eq!(repo.store_files(), before);
+    let mut noted = args.to_vec();
+    noted.extend(["--note", "checked again after the rewrite"]);
+    let v = repo.json(&noted);
     assert_eq!(v["claims"][0]["created"], true);
     assert_ne!(v["claims"][0]["id"], id.as_str());
 }
