@@ -248,10 +248,11 @@ fn human_status() {
         shot(&repo, &["status", &cache])
     );
 
-    // The limit changes: one stale claim with a changed side.
+    // The function changes on a line the anchor does not quote: one stale
+    // claim with a changed side.
     repo.write(
         "src/cache.rs",
-        &CACHE_RS.replace("max_entries = 64", "max_entries = 128"),
+        &CACHE_RS.replace("    max_entries\n", "    max_entries * 2\n"),
     );
     insta::assert_snapshot!("human_status_one_stale", shot(&repo, &["status"]));
     insta::assert_snapshot!("human_status_detail", shot(&repo, &["status", "--detail"]));
@@ -287,7 +288,7 @@ fn human_mark() {
     let workers = claim(&repo, "Workers restart every night.", WORKERS_SUBJECT, &[]);
     repo.write(
         "src/cache.rs",
-        &CACHE_RS.replace("max_entries = 64", "max_entries = 128"),
+        &CACHE_RS.replace("    max_entries\n", "    max_entries * 2\n"),
     );
     insta::assert_snapshot!(
         "human_mark",
@@ -379,6 +380,41 @@ fn human_sides_that_do_not_resolve() {
                 "Ready",
                 "--subject",
                 "file:docs/list.md::The item is ready."
+            ]
+        )
+    );
+}
+
+/// A typed `#name::<line>` anchor whose quoted line was edited: the side
+/// says that the stored quote is gone, `mark` is refused, and the claim is
+/// anchored again with the line as it is now.
+#[test]
+fn human_stored_quote_gone() {
+    let repo = scenario();
+    let cache = claim(
+        &repo,
+        "The cache holds 64 entries.",
+        CACHE_SUBJECT,
+        &[LIMIT_EVIDENCE],
+    );
+    repo.write(
+        "src/cache.rs",
+        &CACHE_RS.replace("max_entries = 64", "max_entries = 128"),
+    );
+    insta::assert_snapshot!(
+        "human_stored_quote_gone",
+        shots(
+            &repo,
+            &[
+                &["status"],
+                &["mark", &cache],
+                &[
+                    "reanchor",
+                    &cache,
+                    "--evidence",
+                    "1=file:src/cache.rs#limit::let max_entries = 128;"
+                ],
+                &["status"]
             ]
         )
     );

@@ -228,14 +228,24 @@ fn r7_r8_two_branches_claim_in_one_shard_and_merge_without_conflict() {
     assert_eq!(status["warnings"], json!([]));
     assert_eq!(listed_ids(&repo), sorted(all.clone()));
     assert_eq!(states(&repo, &all), all_fresh(&all));
-    assert_eq!(sorted(ids_of(&repo.records("claims"))), sorted(all.clone()));
+    // The raw shards hold every record. git's union merge may write a line
+    // that neither branch changed a second time (here both branches added
+    // lines on both sides of the base claim's line, so the whole file is
+    // one merge region); a repeated line is the same record, the loader
+    // counts it once (section 12.2), and the next write removes it, which
+    // the end of this test checks.
+    let distinct = |records: Vec<Value>| -> Vec<String> {
+        let mut ids = sorted(ids_of(&records));
+        ids.dedup();
+        ids
+    };
+    assert_eq!(distinct(repo.records("claims")), sorted(all.clone()));
     assert_eq!(
-        sorted(ids_of(&repo.shard(&format!("claims/{d}.jsonl")))),
+        distinct(repo.shard(&format!("claims/{d}.jsonl"))),
         sorted(all.clone())
     );
-    let marks = repo.records("marks");
-    assert_eq!(marks.len(), 5);
-    assert_eq!(repo.shard(&format!("marks/{d}.jsonl")).len(), 5);
+    assert_eq!(distinct(repo.records("marks")).len(), 5);
+    assert_eq!(distinct(repo.shard(&format!("marks/{d}.jsonl"))).len(), 5);
     for id in &all {
         let own = marks_of(&repo, id);
         assert_eq!(own.len(), 1, "{id}");
@@ -249,14 +259,18 @@ fn r7_r8_two_branches_claim_in_one_shard_and_merge_without_conflict() {
     assert_eq!(repo.git(&["status", "--porcelain"]), "");
     assert_eq!(listed_ids(&repo), sorted(all.clone()));
     assert_eq!(states(&repo, &all), all_fresh(&all));
-    assert_eq!(repo.records("marks").len(), 5);
+    assert_eq!(distinct(repo.records("marks")).len(), 5);
 
-    // A write after the merge leaves the merged shards in writer order.
+    // A write after the merge leaves the shards it writes in writer order,
+    // each record once: a mark writes the marks shard, and a new claim
+    // writes the claims shard as well.
     let v = repo.json(&["--now", "2026-11-21T12:00:00Z", "mark", &base]);
     assert_eq!(v["marks"].as_array().unwrap().len(), 1);
+    let fifth = repo.claim("Fact 5.", &fact_anchor("docs/facts.md", 5), &[]);
+    assert_eq!(shard_of(&repo, &fifth), d);
     assert_shards_sorted(&repo);
-    assert_eq!(repo.records("claims").len(), 5);
-    assert_eq!(repo.records("marks").len(), 6);
+    assert_eq!(repo.records("claims").len(), 6);
+    assert_eq!(repo.records("marks").len(), 7);
     assert_eq!(marks_of(&repo, &base).len(), 2);
 }
 
@@ -660,7 +674,9 @@ fn r33_claim_stdin_writes_every_element() {
             "subject": {"loc": "file:docs/facts.md", "sel": {"quote": fact(2)}},
             "evidence": [
                 {"loc": "file:src/limits.rs", "sel": {"symbol": "limit"}},
-                "file:src/limits.rs::a + 7"
+                // A quote on another unit: a quote inside `limit` would be
+                // the first evidence side again.
+                "file:src/limits.rs::u32 = 5"
             ]
         },
         {
@@ -715,7 +731,7 @@ fn r33_claim_stdin_writes_every_element() {
     assert_eq!(claim["subject"]["sel"]["quote"], fact(2));
     assert_eq!(claim["evidence"][0]["loc"], "file:src/limits.rs");
     assert_eq!(claim["evidence"][0]["sel"]["symbol"], "limit");
-    assert_eq!(claim["evidence"][1]["sel"]["quote"], "a + 7");
+    assert_eq!(claim["evidence"][1]["sel"]["quote"], "u32 = 5");
     let mark = record(&repo, "marks", &mark_ids[1]);
     assert_eq!(mark["claim"], ids[1].as_str());
     assert_eq!(mark["by"], Value::Null);

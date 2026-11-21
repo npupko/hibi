@@ -2,35 +2,35 @@
 source: crates/hibi-cli/tests/snapshots.rs
 expression: "shots(&repo, &[&[\"list\", &cache], &[\"list\", &workers]])"
 ---
-$ hibi list c1-hpz1bn11xde8mh34mkkk
+$ hibi list c1-xm05t7nwaq279drrsp1v
 exit status: 0
 ---- standard output ----
-c1-hpz1bn11xde8mh34mkkk
+c1-xm05t7nwaq279drrsp1v
   statement: The cache holds 64 entries.
-  subject: {"loc":"file:docs/guide.md","sel":{"quote":"The cache holds 64 entries.","prefix":"# Guide\n\n","suffix":" Requests time out after 30 seconds.\n\n- Retries ","pos":9}}
-  evidence 1: {"loc":"file:src/cache.rs","sel":{"quote":"let max_entries = 64;","prefix":"pub fn limit() -> u32 {\n    ","suffix":"\n    max_entries\n}\n\n","pos":28,"symbol":"limit"}}
-  evidence 2: {"loc":"file:src/cache.rs","sel":{"quote":"pub fn timeout() -> u32 {","prefix":"\n\n","suffix":"\n    30\n}\n","pos":69,"symbol":"timeout"}}
+  subject: {"loc":"file:docs/guide.md","sel":{"quote":"The cache holds 64 entries.","prefix":"","suffix":"","within":["Guide","The cache holds 64 entries."]}}
+  evidence 1: {"loc":"file:src/cache.rs","sel":{"quote":"let max_entries = 64;","prefix":"pub fn limit() -> u32 {","suffix":"max_entries }","symbol":"limit"}}
+  evidence 2: {"loc":"file:src/cache.rs","sel":{"symbol":"timeout"}}
 2 marks:
-  m1-7r7r5z96t3zzggccy7pr  2026-11-20T12:00:00Z
+  m1-j4t08x2pdrkzxvvx9b4e  2026-11-20T12:00:00Z
     file:docs/guide.md  b3:prose-v1:34da78fbbacfbf227381ac83d86394ff
     file:src/cache.rs  b3:ast-v1:d4a43aaddbd75fa038a7b141187f69d5
     file:src/cache.rs  b3:ast-v1:dd8c766334feed7562225226a2c1132d
-  m1-1a8d6ad67syd8g8jbvqh  2026-11-20T13:00:00Z  by nick  note: read the function
+  m1-1a46r4fayh4m7gzqg8b6  2026-11-20T13:00:00Z  by nick  note: read the function
     file:docs/guide.md  b3:prose-v1:34da78fbbacfbf227381ac83d86394ff
     file:src/cache.rs  b3:ast-v1:d4a43aaddbd75fa038a7b141187f69d5
     file:src/cache.rs  b3:ast-v1:dd8c766334feed7562225226a2c1132d
 ---- standard error ----
 (empty)
 
-$ hibi list c1-dccp96583661kgfj4rex
+$ hibi list c1-50f8z81fqkasb0v2kvve
 exit status: 0
 ---- standard output ----
-c1-dccp96583661kgfj4rex
+c1-50f8z81fqkasb0v2kvve
   statement: Workers restart every night.
-  subject: {"loc":"file:docs/ops.md","sel":{"quote":"Workers are restarted nightly.","prefix":"# Operations\n\n","suffix":" The queue is drained on shutdown.\n","pos":14}}
+  subject: {"loc":"file:docs/ops.md","sel":{"quote":"Workers are restarted nightly.","prefix":"","suffix":"","within":["Operations","Workers are restarted nightly."]}}
 1 mark:
-  m1-4bx4fmte0fvadk3a769w  2026-11-20T12:00:00Z
+  m1-7n0br3wctwahg5fdjchy  2026-11-20T12:00:00Z
     file:docs/ops.md  b3:prose-v1:c8c83203a2aeb8555bdd49194f526697
-retired: r1-cy33w2z456kj8vg94ff1  2026-11-20T14:00:00Z  note: section removed
+retired: r1-w9kmq49entzg7c78dq4g  2026-11-20T14:00:00Z  note: section removed
 ---- standard error ----
 (empty)

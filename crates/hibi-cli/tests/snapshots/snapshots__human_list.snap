@@ -5,15 +5,15 @@ expression: "shots(&repo,\n&[&[\"list\"], &[\"list\", \"--retired\"],\n&[\"list\
 $ hibi list
 exit status: 0
 ---- standard output ----
-c1-hpz1bn11xde8mh34mkkk  The cache holds 64 entries.  file:docs/guide.md  2 marks  last 2026-11-20T13:00:00Z
+c1-xm05t7nwaq279drrsp1v  The cache holds 64 entries.  file:docs/guide.md  2 marks  last 2026-11-20T13:00:00Z
 ---- standard error ----
 (empty)
 
 $ hibi list --retired
 exit status: 0
 ---- standard output ----
-c1-dccp96583661kgfj4rex  Workers restart every night.  file:docs/ops.md  1 mark  last 2026-11-20T12:00:00Z  retired
-c1-hpz1bn11xde8mh34mkkk  The cache holds 64 entries.  file:docs/guide.md  2 marks  last 2026-11-20T13:00:00Z
+c1-50f8z81fqkasb0v2kvve  Workers restart every night.  file:docs/ops.md  1 mark  last 2026-11-20T12:00:00Z  retired
+c1-xm05t7nwaq279drrsp1v  The cache holds 64 entries.  file:docs/guide.md  2 marks  last 2026-11-20T13:00:00Z
 ---- standard error ----
 (empty)
 

@@ -438,7 +438,9 @@ fn a_stdin_batch_reports_every_failing_element() {
     assert!(text(&errors[1]["message"]).starts_with("found null; "));
 }
 
-/// A recheck period of zero and a repeated evidence anchor are refused.
+/// A recheck period of zero and repeated evidence are refused. Evidence is
+/// repeated when two evidence sides resolve to the same unit, however each
+/// anchor is written.
 #[test]
 fn a_zero_recheck_and_a_repeated_evidence_anchor_are_refused() {
     let repo = Repo::new();
@@ -460,7 +462,10 @@ fn a_zero_recheck_and_a_repeated_evidence_anchor_are_refused() {
         "file:src/a.rs::pub const MAX: u32 = 5;",
     ]);
     assert_eq!(e["code"], "invalid_argument");
-    assert!(text(&e["message"]).contains("evidence 1 and evidence 2 are the same anchor"));
+    assert!(
+        text(&e["message"]).contains("evidence 1 and evidence 2 resolve to the same unit"),
+        "{e}"
+    );
     assert!(repo.records("claims").is_empty());
     let id = repo.claim("s", subject, &["file:src/a.rs#MAX"]);
     let e = repo.fail(&["reanchor", &id, "--recheck", "P0D"]);

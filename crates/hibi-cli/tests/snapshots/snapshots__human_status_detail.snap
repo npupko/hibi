@@ -7,16 +7,16 @@ exit status: 0
 ---- standard output ----
 2 claims: 1 fresh, 1 stale, 0 expired, 0 retired
 
-c1-b1cqk12je92xh6d4na21  stale  The cache holds 64 entries.
-  marked 2026-11-20T12:00:00Z (m1-8jnpnyrstkx94kwrchk4)
+c1-h11mnkp70sgmegp55r2g  stale  The cache holds 64 entries.
+  marked 2026-11-20T12:00:00Z (m1-0jseyppy3zdpd0gvx6v6)
   subject  file:docs/guide.md  same  sentence "The cache holds 64 entries.", line 3
     | The cache holds 64 entries.
   evidence 1  file:src/cache.rs  changed (fingerprint_differs)  function "limit", lines 1-4
     | pub fn limit() -> u32 {
-    |     let max_entries = 128;
-    |     max_entries
+    |     let max_entries = 64;
+    |     max_entries * 2
     | }
-  next: hibi mark c1-b1cqk12je92xh6d4na21
+  next: hibi mark c1-h11mnkp70sgmegp55r2g
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ---- standard error ----

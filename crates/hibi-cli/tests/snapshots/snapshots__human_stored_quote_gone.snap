@@ -1,0 +1,56 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shots(&repo,\n&[&[\"status\"], &[\"mark\", &cache],\n&[\"reanchor\", &cache, \"--evidence\",\n\"1=file:src/cache.rs#limit::let max_entries = 128;\"], &[\"status\"]])"
+---
+$ hibi status
+exit status: 0
+---- standard output ----
+1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
+
+c1-h11mnkp70sgmegp55r2g  stale  The cache holds 64 entries.
+  marked 2026-11-20T12:00:00Z (m1-0jseyppy3zdpd0gvx6v6)
+  evidence 1  file:src/cache.rs  changed (fingerprint_differs)  function "limit", lines 1-4
+    the stored quote is no longer in this unit
+    | pub fn limit() -> u32 {
+    |     let max_entries = 128;
+    |     max_entries
+    | }
+  next: hibi reanchor c1-h11mnkp70sgmegp55r2g --evidence 1=<anchor>
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+---- standard error ----
+(empty)
+
+$ hibi mark c1-h11mnkp70sgmegp55r2g
+exit status: 1
+---- standard output ----
+(empty)
+---- standard error ----
+error: selector_not_exact: evidence 1 (file:src/cache.rs): the stored quote is no longer in this unit, function:limit (function) at line 1: limit; a mark would keep the stale quote
+  fix: hibi reanchor c1-h11mnkp70sgmegp55r2g --evidence 1=<anchor>
+
+$ hibi reanchor c1-h11mnkp70sgmegp55r2g --evidence '1=file:src/cache.rs#limit::let max_entries = 128;'
+exit status: 0
+---- standard output ----
+c1-h11mnkp70sgmegp55r2g is retired and replaced by the new claim c1-t87hh5at6bjvfa0r3a0g
+  mark m1-yt12r2bffbqhw245skf5, retirement r1-rjj74n4m1vysgx1cde4j
+  was stale: evidence 1 file:src/cache.rs changed (fingerprint_differs); now marked: make sure you re-checked it
+    evidence 1 is now:
+    | pub fn limit() -> u32 {
+    |     let max_entries = 128;
+    |     max_entries
+    | }
+  subject file:docs/guide.md (sentence "The cache holds 64 entries.", line 3)
+    {"loc":"file:docs/guide.md","sel":{"quote":"The cache holds 64 entries.","prefix":"","suffix":"","within":["Guide","The cache holds 64 entries."]}}
+  evidence 1 file:src/cache.rs (function "limit", lines 1-4)
+    {"loc":"file:src/cache.rs","sel":{"quote":"let max_entries = 128;","prefix":"pub fn limit() -> u32 {","suffix":"max_entries }","symbol":"limit"}}
+---- standard error ----
+(empty)
+
+$ hibi status
+exit status: 0
+---- standard output ----
+2 claims: 1 fresh, 0 stale, 0 expired, 1 retired
+nothing stale
+---- standard error ----
+(empty)
