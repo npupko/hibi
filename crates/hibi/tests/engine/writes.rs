@@ -924,6 +924,113 @@ fn reanchor_names_a_failing_kept_side_by_its_old_evidence_number() {
     assert_eq!(out.claim.sides.len(), 3);
 }
 
+/// A write on a claim that exists reads that claim's own stored anchors,
+/// each resolved once in the run. Another anchor that reaches the same unit
+/// does not stand in for a stored anchor that no longer resolves exactly:
+/// `claim` does not mark such a claim, `reanchor` does not merge into it,
+/// and `reanchor` does not mark a kept side that did not resolve.
+#[test]
+fn a_same_claim_write_rests_on_the_stored_anchors_as_resolved_in_this_run() {
+    let (w, mut p, store) = setup();
+    let a = claim_at(&store, &mut p, on("S", "k1"), "2026-01-01T00:00:00Z");
+    let b = claim_at(&store, &mut p, on("S", "k2"), "2026-01-01T00:00:00Z");
+    // The stored anchor of `a` is now found only by similarity, while a
+    // quote still reaches its unit exactly.
+    w.borrow_mut().overrides.insert(
+        anchor("t:a", key_sel("k1")),
+        Ok(vec![approx(unit("k1", "note", "Retries are capped at 5."))]),
+    );
+    let by_quote = || json_anchor("t:a", Selector::quote("Retries are capped"));
+    assert_eq!(view(&store, &mut p, &a).state, ClaimState::Stale);
+    let before = (store.appends.get(), store.counts());
+
+    // `claim` with the other anchor builds the claim `a` again.
+    let errors = claim(
+        &store,
+        &mut p,
+        &[ClaimInput {
+            subject: by_quote(),
+            ..claim_input("S", "t:a", &[])
+        }],
+        false,
+    )
+    .unwrap_err();
+    assert_eq!(errors[0].code, Code::SideMissing);
+    assert!(errors[0].message.contains(a.as_str()), "{}", errors[0]);
+    assert!(errors[0].message.contains("not_exact"), "{}", errors[0]);
+    assert_eq!(
+        errors[0].remediation,
+        Some(format!("hibi reanchor {a} --subject <anchor>"))
+    );
+
+    // `reanchor` of `b` onto that unit would merge into `a`.
+    let e = reanchor(
+        &store,
+        &mut p,
+        ReanchorInput {
+            claim: b.to_string(),
+            subject: Some(by_quote()),
+            ..ReanchorInput::default()
+        },
+    )
+    .unwrap_err();
+    assert_eq!(e.code, Code::SideMissing);
+    assert!(e.message.contains(a.as_str()), "{e}");
+
+    // `reanchor` that keeps the side writes no mark for it.
+    let e = reanchor(
+        &store,
+        &mut p,
+        ReanchorInput {
+            claim: a.to_string(),
+            note: Some("x".into()),
+            ..ReanchorInput::default()
+        },
+    )
+    .unwrap_err();
+    assert_eq!(e.code, Code::SideMissing);
+    assert_eq!((store.appends.get(), store.counts()), before);
+
+    // With the stored anchor resolving again, the same three writes go
+    // through, and each stored anchor is sent to the provider once a run.
+    w.borrow_mut().overrides.clear();
+    let sent = |w: &Shared, key: &str| {
+        let wanted = format!(
+            "resolve {}",
+            serde_json::to_string(&anchor("t:a", key_sel(key))).unwrap()
+        );
+        w.borrow().log.iter().filter(|l| **l == wanted).count()
+    };
+    w.borrow_mut().log.clear();
+    let out = claim(
+        &store,
+        &mut p,
+        &[ClaimInput {
+            subject: by_quote(),
+            ..claim_input("S", "t:a", &[])
+        }],
+        false,
+    )
+    .unwrap();
+    assert_eq!(out.claims[0].id, a);
+    assert!(!out.claims[0].created);
+    assert_eq!(sent(&w, "k1"), 1);
+
+    w.borrow_mut().log.clear();
+    let out = reanchor(
+        &store,
+        &mut p,
+        ReanchorInput {
+            claim: a.to_string(),
+            note: Some("x".into()),
+            ..ReanchorInput::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(sent(&w, "k1"), 1, "{:?}", w.borrow().log);
+    assert_eq!(out.claim.state, ClaimState::Fresh);
+}
+
 /// R54: a reanchor whose result equals a retired claim fails with
 /// `claim_retired`, writes nothing, and names the `--note` command with
 /// the caller's other arguments repeated.

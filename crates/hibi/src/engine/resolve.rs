@@ -387,6 +387,37 @@ pub fn resolve_with(provider: &mut dyn Provider, anchors: &[&Anchor]) -> Vec<Res
 
 /// Resolve anchors through the registry: one `resolve` call per scheme,
 /// schemes in ascending order. One result per anchor, in order.
+/// The resolutions of one run of a write command. An anchor is sent to its
+/// provider once, and every later question about it gets that answer: what
+/// a write accepts, what it compares and what it marks then rest on one
+/// reading of the resource, also when a provider would answer differently
+/// the second time.
+#[derive(Default)]
+pub(crate) struct Once {
+    seen: HashMap<Anchor, Resolved>,
+}
+
+impl Once {
+    /// One resolution per anchor, in order.
+    pub(crate) fn resolve(
+        &mut self,
+        providers: &mut Providers,
+        anchors: &[&Anchor],
+    ) -> Vec<Resolved> {
+        let mut unseen: Vec<&Anchor> = Vec::new();
+        for a in anchors {
+            if !self.seen.contains_key(*a) && !unseen.contains(a) {
+                unseen.push(a);
+            }
+        }
+        let answers = resolve_anchors(providers, &unseen);
+        for (a, r) in unseen.into_iter().zip(answers) {
+            self.seen.insert(a.clone(), r);
+        }
+        anchors.iter().map(|a| self.seen[*a].clone()).collect()
+    }
+}
+
 pub fn resolve_anchors(providers: &mut Providers, anchors: &[&Anchor]) -> Vec<Resolved> {
     let mut by_scheme: BTreeMap<&str, Vec<usize>> = BTreeMap::new();
     for (i, a) in anchors.iter().enumerate() {

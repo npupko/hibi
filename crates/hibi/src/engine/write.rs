@@ -17,7 +17,7 @@ use crate::store::{Batch, Ledger, Store};
 
 use super::fresh::{Index, ViewOptions, accepted, claim_view, evaluate, next_command};
 use super::input::{AnchorInput, ClaimInput, MarkInput, ReanchorInput, RetireInput};
-use super::resolve::{Resolved, describe_unit, resolve_anchors};
+use super::resolve::{Once, Resolved, describe_unit, resolve_anchors};
 use super::run_warnings;
 use super::types::{
     Accepted, ClaimView, NEXT_NOTE, Nullable, Reason, SideState, TEXT_EXCERPT_CHARS, Warning,
@@ -569,8 +569,9 @@ fn claim_elements(
     }
 
     // Step 2: one resolution pass for every anchor of every element.
+    let mut once = Once::default();
     let all: Vec<&Anchor> = prepared.iter().flatten().flat_map(|p| &p.anchors).collect();
-    let mut resolved = resolve_anchors(providers, &all).into_iter();
+    let mut resolved = once.resolve(providers, &all).into_iter();
     let warnings = run_warnings(&ledger, git, all.iter().copied()).map_err(|e| vec![e])?;
 
     // Step 3: the claim of each element, from the completed selectors.
@@ -608,20 +609,30 @@ fn claim_elements(
         }
     }
 
-    // An element whose id is not that of a live claim may still be an
-    // existing claim: resolve the stored anchors of every live claim that
-    // agrees with it on the fields that need no resolution, in one pass.
+    // An element may be a claim that exists: the live claim with its id, or
+    // a live claim that agrees with it on the fields that need no
+    // resolution. The stored anchors of each such claim are resolved in
+    // one pass. What a mark on an existing claim covers and what it takes
+    // over is read from the claim's own stored anchors, never from the
+    // anchor the caller gave: that one may reach the same unit while the
+    // stored anchor no longer does.
     let is_live = |id: &str| index.claim(id).is_some() && !index.is_retired(id);
     let mut candidates: Vec<&Claim> = Vec::new();
-    for b in built.iter().filter(|b| !is_live(b.claim.id.as_str())) {
-        for c in index.live().filter(|c| same_fields(c, &b.claim)) {
+    for b in &built {
+        let id = b.claim.id.as_str();
+        let found: Vec<&Claim> = if is_live(id) {
+            index.claim(id).into_iter().collect()
+        } else {
+            index.live().filter(|c| same_fields(c, &b.claim)).collect()
+        };
+        for c in found {
             if !candidates.iter().any(|x| x.id == c.id) {
                 candidates.push(c);
             }
         }
     }
     let candidate_anchors: Vec<&Anchor> = candidates.iter().flat_map(|c| c.sides()).collect();
-    let mut candidate_resolved = resolve_anchors(providers, &candidate_anchors).into_iter();
+    let mut candidate_resolved = once.resolve(providers, &candidate_anchors).into_iter();
     let candidates: Vec<(&Claim, Vec<Resolved>)> = candidates
         .into_iter()
         .map(|c| {
@@ -637,7 +648,44 @@ fn claim_elements(
     for b in &built {
         let id = b.claim.id.as_str();
         let existing = if is_live(id) {
-            None
+            // The live claim with this id. A stored side that does not
+            // resolve exactly now makes the element fail as `mark` would.
+            let Some((c, rs)) = candidates.iter().find(|(c, _)| c.id.as_str() == id) else {
+                errors.push(
+                    Error::internal(format!("the live claim {id} was not resolved"))
+                        .with_index(b.index),
+                );
+                continue;
+            };
+            let failure = c
+                .sides()
+                .zip(rs)
+                .enumerate()
+                .find_map(|(n, (a, r))| unresolved_error(n, a, r, false));
+            if let Some(e) = failure {
+                let e = Error::new(
+                    e.code,
+                    format!(
+                        "this is the claim {id}, and its stored anchor does not resolve: {}",
+                        e.message
+                    ),
+                );
+                let e = match evaluate(c, index.marks_of(id), false, rs, now) {
+                    Ok(eval) => match next_command(c, &eval) {
+                        Some(next) => e.with_remediation(next),
+                        None => e,
+                    },
+                    Err(_) => e,
+                };
+                errors.push(e.with_index(b.index));
+                continue;
+            }
+            Some(
+                &candidates[candidates
+                    .iter()
+                    .position(|(x, _)| x.id == c.id)
+                    .unwrap_or(0)],
+            )
         } else {
             candidates
                 .iter()
@@ -1014,8 +1062,9 @@ pub fn reanchor(
 
     // What the write takes over: the old claim as it stands now, by its
     // own stored anchors. A kept side that changed is marked by this write.
+    let mut once = Once::default();
     let old_anchors: Vec<&Anchor> = old.sides().collect();
-    let old_resolved = resolve_anchors(providers, &old_anchors);
+    let old_resolved = once.resolve(providers, &old_anchors);
     let before = accepted(
         old,
         &evaluate(
@@ -1028,8 +1077,11 @@ pub fn reanchor(
     );
 
     // Step 3.
+    // A kept side has the old claim's stored anchor: `once` gives it the
+    // resolution that `before` was read from, so this write never marks a
+    // kept side that it reports as not resolved.
     let anchors: Vec<&Anchor> = plan.iter().map(|(a, _)| a).collect();
-    let resolved = resolve_anchors(providers, &anchors);
+    let resolved = once.resolve(providers, &anchors);
     let warnings = run_warnings(&ledger, git, anchors.iter().copied())?;
     let mut units: Vec<&Unit> = Vec::with_capacity(plan.len());
     for (((anchor, new), r), n) in plan.iter().zip(&resolved).zip(numbers.iter().copied()) {
@@ -1095,8 +1147,31 @@ pub fn reanchor(
     // The new claim may be a live claim under another id: the same claim
     // by the rule of `claim`, stored with a context that has since gone out
     // of date. The old claim is then merged into that one.
-    let twin: Option<(&Claim, Vec<Resolved>)> = if index.claim(new.id.as_str()).is_some() {
-        None
+    let twin: Option<(&Claim, Vec<Resolved>)> = if let Some(same) = index.claim(new.id.as_str()) {
+        // The live claim with the new id. It is the target only when its
+        // own stored anchors resolve exactly in this run.
+        let same_anchors: Vec<&Anchor> = same.sides().collect();
+        let rs = once.resolve(providers, &same_anchors);
+        let failure = same
+            .sides()
+            .zip(&rs)
+            .enumerate()
+            .find_map(|(n, (a, r))| unresolved_error(n, a, r, false));
+        if let Some(e) = failure {
+            let e = Error::new(
+                e.code,
+                format!(
+                    "re-anchoring {} would merge it into the claim {}, whose stored anchor does not resolve: {}",
+                    old.id, same.id, e.message
+                ),
+            );
+            let eval = evaluate(same, index.marks_of(same.id.as_str()), false, &rs, now)?;
+            return Err(match next_command(same, &eval) {
+                Some(next) => e.with_remediation(next),
+                None => e,
+            });
+        }
+        Some((same, rs))
     } else {
         let keys: Vec<&str> = units.iter().map(|u| u.key.as_str()).collect();
         let asked: Vec<bool> = plan
@@ -1108,7 +1183,7 @@ pub fn reanchor(
             .filter(|c| c.id != old.id && same_fields(c, &new))
             .collect();
         let other_anchors: Vec<&Anchor> = others.iter().flat_map(|c| c.sides()).collect();
-        let mut other_resolved = resolve_anchors(providers, &other_anchors).into_iter();
+        let mut other_resolved = once.resolve(providers, &other_anchors).into_iter();
         others
             .into_iter()
             .map(|c| {
@@ -1121,7 +1196,7 @@ pub fn reanchor(
 
     // Step 6.
     let mut batch = Batch::default();
-    let merged = twin.is_some() || index.claim(new.id.as_str()).is_some();
+    let merged = twin.is_some();
     let (target, target_resolved): (Claim, Vec<Resolved>) = match twin {
         Some((c, rs)) => (c.clone(), rs),
         None => (new, resolved.iter().map(as_stored).collect()),
@@ -1129,12 +1204,21 @@ pub fn reanchor(
     if !merged {
         batch.claims.push(target.clone());
     }
+    // The mark covers the target's sides as the target's own anchors
+    // resolve in this run.
     let target_anchors: Vec<Anchor> = target.sides().cloned().collect();
+    let target_units: Vec<&Unit> = target_resolved.iter().filter_map(Resolved::unit).collect();
+    if target_units.len() != target_anchors.len() {
+        return Err(Error::internal(format!(
+            "claim {} lost a resolved side while it was being marked",
+            target.id
+        )));
+    }
     let mark = Mark::new(
         target.id.clone(),
         now,
         by.clone(),
-        mark_sides(&target_anchors, &units),
+        mark_sides(&target_anchors, &target_units),
         None,
     )?;
     let retirement = Retirement::new(old.id.clone(), Some(target.id.clone()), now, by, None)?;
