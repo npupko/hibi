@@ -634,16 +634,16 @@ struct Built<'p> {
 /// and each side resolving to the unit with the key in `keys`, which holds
 /// the key of the unit each side of `new` resolved to. Selectors are not
 /// compared: `#MAX` and a quote on the same constant name the same side.
-/// A stored side that resolved by its symbol alone, its quote gone, is not
-/// a match: that claim needs a new anchor first.
+/// A stored side that resolved by its symbol alone, its quote gone, is
+/// still that unit here; the write on such a claim then fails, because a
+/// mark would keep the stale quote ([`stored_failure`]).
 fn same_claim(existing: &Claim, resolved: &[Resolved], new: &Claim, keys: &[&str]) -> bool {
     same_fields(existing, new)
         && keys.len() == resolved.len()
-        && resolved.iter().zip(keys).all(|(old_r, key)| {
-            old_r
-                .unit()
-                .is_some_and(|u| u.key == *key && u.identity.is_none())
-        })
+        && resolved
+            .iter()
+            .zip(keys)
+            .all(|(old_r, key)| old_r.unit().is_some_and(|u| u.key == *key))
 }
 
 /// The part of [`same_claim`] that needs no resolution.
@@ -777,23 +777,23 @@ fn claim_elements(
         }
     }
 
-    // An element may be a claim that exists: the live claim with its id, or
-    // a live claim that agrees with it on the fields that need no
-    // resolution. The stored anchors of each such claim are resolved in
-    // one pass. What a mark on an existing claim covers and what it takes
-    // over is read from the claim's own stored anchors, never from the
-    // anchor the caller gave: that one may reach the same unit while the
-    // stored anchor no longer does.
-    let is_live = |id: &str| index.claim(id).is_some() && !index.is_retired(id);
+    // The same claim (section 9.5) is the same statement, recheck period and
+    // note with every side resolving to the same unit, however the anchors
+    // are written. An element is compared with the live claims (it marks
+    // the one it is), with the retired claims (it is then refused), and with
+    // the elements before it in this batch (it is then that claim). The
+    // stored anchors of every claim that agrees on the fields that need no
+    // resolution are resolved in one pass. What a mark on an existing claim
+    // covers and takes over is read from that claim's own stored anchors,
+    // never from the anchor the caller gave.
     let mut candidates: Vec<&Claim> = Vec::new();
     for b in &built {
         let id = b.claim.id.as_str();
-        let found: Vec<&Claim> = if is_live(id) {
-            index.claim(id).into_iter().collect()
-        } else {
-            index.live().filter(|c| same_fields(c, &b.claim)).collect()
-        };
-        for c in found {
+        for c in ledger
+            .claims
+            .iter()
+            .filter(|c| c.id.as_str() == id || same_fields(c, &b.claim))
+        {
             if !candidates.iter().any(|x| x.id == c.id) {
                 candidates.push(c);
             }
@@ -809,75 +809,87 @@ fn claim_elements(
         })
         .collect();
 
-    // Step 4: the mark of each element, on its own claim or on the live
-    // claim it is the same as.
+    // Step 4: the mark of each element, on its own claim or on the claim
+    // it is the same as.
     let mut batch = Batch::default();
     let mut results: Vec<ClaimOutcome> = Vec::new();
+    // The claims this run creates, with the resolutions they were built
+    // from: a later element may be one of them.
+    let mut made: Vec<(Claim, Vec<Resolved>)> = Vec::new();
     for b in &built {
         let id = b.claim.id.as_str();
-        let existing = if is_live(id) {
-            // The live claim with this id. A stored side that does not
-            // resolve exactly now makes the element fail as `mark` would.
-            let Some((c, rs)) = candidates.iter().find(|(c, _)| c.id.as_str() == id) else {
-                errors.push(
-                    Error::internal(format!("the live claim {id} was not resolved"))
-                        .with_index(b.index),
-                );
-                continue;
-            };
-            if rs.iter().any(unsettled) {
-                let eval = match evaluate(c, index.marks_of(id), false, rs, now) {
-                    Ok(eval) => eval,
-                    Err(e) => {
-                        errors.push(e.with_index(b.index));
-                        continue;
-                    }
-                };
-                if let Some(e) = stored_failure(providers, c, &eval, rs) {
-                    let e = Error::new(
-                        e.code,
-                        format!(
-                            "this is the claim {id}, and its stored anchor does not resolve: {}",
-                            e.message
-                        ),
-                    );
-                    let e = match next_command(c, &eval) {
-                        Some(next) => e.with_remediation(next),
-                        None => e,
-                    };
+        let keys: Vec<&str> = b
+            .resolved
+            .iter()
+            .filter_map(|r| r.unit().map(|u| u.key.as_str()))
+            .collect();
+        let same = |c: &Claim, rs: &[Resolved]| {
+            c.id.as_str() == id
+                || (keys.len() == b.resolved.len() && same_claim(c, rs, &b.claim, &keys))
+        };
+        // A live claim: the one with this id, else the smallest id.
+        let live = candidates
+            .iter()
+            .filter(|(c, rs)| !index.is_retired(c.id.as_str()) && same(c, rs))
+            .min_by_key(|(c, _)| (c.id.as_str() != id, &c.id));
+        if let Some((c, rs)) = live
+            && rs.iter().any(unsettled)
+        {
+            // A stored side that does not resolve, or resolves by its name
+            // alone with its quote gone, makes the element fail as `mark`
+            // on that claim would.
+            let eval = match evaluate(c, index.marks_of(c.id.as_str()), false, rs, now) {
+                Ok(eval) => eval,
+                Err(e) => {
                     errors.push(e.with_index(b.index));
                     continue;
                 }
+            };
+            if let Some(e) = stored_failure(providers, c, &eval, rs) {
+                let e = Error::new(
+                    e.code,
+                    format!(
+                        "this is the claim {}, and its stored anchor does not resolve: {}",
+                        c.id, e.message
+                    ),
+                );
+                let e = match next_command(c, &eval) {
+                    Some(next) => e.with_remediation(next),
+                    None => e,
+                };
+                errors.push(e.with_index(b.index));
+                continue;
             }
-            Some(
-                &candidates[candidates
-                    .iter()
-                    .position(|(x, _)| x.id == c.id)
-                    .unwrap_or(0)],
-            )
-        } else {
-            candidates
+        }
+        // A retired claim: a retirement is a decision, and writing the
+        // anchors another way does not undo it.
+        let retired = match live {
+            Some(_) => None,
+            None => candidates
                 .iter()
-                .filter(|(c, rs)| {
-                    let keys: Vec<&str> = b
-                        .resolved
-                        .iter()
-                        .filter_map(|r| r.unit().map(|u| u.key.as_str()))
-                        .collect();
-                    keys.len() == b.resolved.len() && same_claim(c, rs, &b.claim, &keys)
-                })
-                .min_by(|(x, _), (y, _)| x.id.cmp(&y.id))
+                .filter(|(c, rs)| index.is_retired(c.id.as_str()) && same(c, rs))
+                .map(|(c, _)| &c.id)
+                .min(),
         };
-        let (target, target_resolved): (&Claim, Vec<Resolved>) = match existing {
-            Some((c, rs)) => (c, rs.clone()),
-            None => (&b.claim, b.resolved.iter().map(as_stored).collect()),
+        // An element before this one in the batch.
+        let earlier = match (live, retired) {
+            (None, None) => made.iter().find(|(c, rs)| same(c, rs)),
+            _ => None,
         };
+        let existing: Option<(&Claim, &Vec<Resolved>)> = live
+            .map(|(c, rs)| (*c, rs))
+            .or(earlier.map(|(c, rs)| (c, rs)));
+        let (target, target_resolved): (Claim, Vec<Resolved>) = match existing {
+            Some((c, rs)) => (c.clone(), rs.clone()),
+            None => (b.claim.clone(), b.resolved.iter().map(as_stored).collect()),
+        };
+        let target = &target;
         let marked = (|| -> Result<Mark, Error> {
-            if existing.is_none() && index.is_retired(id) {
+            if let Some(retired) = retired {
                 return Err(Error::new(
                     Code::ClaimRetired,
                     format!(
-                        "the claim {id} with this statement, these anchors and this note is retired"
+                        "the claim {retired}, with this statement, this note and its sides on the same units, is retired"
                     ),
                 ));
             }
@@ -904,6 +916,7 @@ fn claim_elements(
                     || batch.claims.iter().any(|c| c.id == target.id);
                 if !exists {
                     batch.claims.push(target.clone());
+                    made.push((target.clone(), target_resolved.clone()));
                 }
                 push_mark(&mut batch, &mark);
                 // What the mark takes over for a claim that was in the
@@ -1323,45 +1336,63 @@ pub fn reanchor(
         .with_remediation(reanchor_with_note(&old.id, input)));
     }
 
-    // The new claim may be a live claim under another id: the same claim
-    // by the rule of `claim`, stored with a context that has since gone out
-    // of date. The old claim is then merged into that one.
-    let twin: Option<(&Claim, Vec<Resolved>)> = if let Some(same) = index.claim(new.id.as_str()) {
-        // The live claim with the new id. It is the target only when its
-        // own stored anchors resolve exactly in this run.
-        let same_anchors: Vec<&Anchor> = same.sides().collect();
-        let rs = once.resolve(providers, &same_anchors);
-        let eval = evaluate(same, index.marks_of(same.id.as_str()), false, &rs, now)?;
-        if let Some(e) = stored_failure(providers, same, &eval, &rs) {
-            let e = Error::new(
-                e.code,
-                format!(
-                    "re-anchoring {} would merge it into the claim {}, whose stored anchor does not resolve: {}",
-                    old.id, same.id, e.message
-                ),
-            );
-            return Err(match next_command(same, &eval) {
-                Some(next) => e.with_remediation(next),
-                None => e,
-            });
+    // The new claim may be a claim that exists under another id: the same
+    // claim by the rule of `claim` (section 9.5), whatever its anchors look
+    // like. A live one is the target, and the old claim is merged into it;
+    // a retired one makes the command fail as its own id would.
+    let keys: Vec<&str> = units.iter().map(|u| u.key.as_str()).collect();
+    let others: Vec<&Claim> = ledger
+        .claims
+        .iter()
+        .filter(|c| c.id != old.id && (c.id == new.id || same_fields(c, &new)))
+        .collect();
+    let other_anchors: Vec<&Anchor> = others.iter().flat_map(|c| c.sides()).collect();
+    let mut other_resolved = once.resolve(providers, &other_anchors).into_iter();
+    let others: Vec<(&Claim, Vec<Resolved>)> = others
+        .into_iter()
+        .map(|c| {
+            let rs: Vec<Resolved> = other_resolved.by_ref().take(c.side_count()).collect();
+            (c, rs)
+        })
+        .filter(|(c, rs)| c.id == new.id || same_claim(c, rs, &new, &keys))
+        .collect();
+    let live = others
+        .iter()
+        .filter(|(c, _)| !index.is_retired(c.id.as_str()))
+        .min_by_key(|(c, _)| (c.id != new.id, &c.id));
+    let twin: Option<(&Claim, Vec<Resolved>)> = match live {
+        Some((same, rs)) => {
+            // It is the target only when its own stored anchors resolve
+            // in this run and none of them has lost its quote.
+            let eval = evaluate(same, index.marks_of(same.id.as_str()), false, rs, now)?;
+            if let Some(e) = stored_failure(providers, same, &eval, rs) {
+                let e = Error::new(
+                    e.code,
+                    format!(
+                        "re-anchoring {} would merge it into the claim {}, whose stored anchor does not resolve: {}",
+                        old.id, same.id, e.message
+                    ),
+                );
+                return Err(match next_command(same, &eval) {
+                    Some(next) => e.with_remediation(next),
+                    None => e,
+                });
+            }
+            Some((*same, rs.clone()))
         }
-        Some((same, rs))
-    } else {
-        let keys: Vec<&str> = units.iter().map(|u| u.key.as_str()).collect();
-        let others: Vec<&Claim> = index
-            .live()
-            .filter(|c| c.id != old.id && same_fields(c, &new))
-            .collect();
-        let other_anchors: Vec<&Anchor> = others.iter().flat_map(|c| c.sides()).collect();
-        let mut other_resolved = once.resolve(providers, &other_anchors).into_iter();
-        others
-            .into_iter()
-            .map(|c| {
-                let rs: Vec<Resolved> = other_resolved.by_ref().take(c.side_count()).collect();
-                (c, rs)
-            })
-            .filter(|(c, rs)| same_claim(c, rs, &new, &keys))
-            .min_by(|(x, _), (y, _)| x.id.cmp(&y.id))
+        None => {
+            if let Some((retired, _)) = others.iter().min_by_key(|(c, _)| &c.id) {
+                return Err(Error::new(
+                    Code::ClaimRetired,
+                    format!(
+                        "re-anchoring {} would produce the retired claim {}: the same statement and note, with its sides on the same units",
+                        old.id, retired.id
+                    ),
+                )
+                .with_remediation(reanchor_with_note(&old.id, input)));
+            }
+            None
+        }
     };
 
     // Step 6.

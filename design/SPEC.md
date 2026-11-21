@@ -2764,9 +2764,12 @@ the write checks (section 15.3).
    2. `E` and `N` have the same number of sides, and at every position the
       locators of the two sides are equal.
    3. At every position, the stored anchor of `E`, resolved in this run,
-      gives exactly one unit without `identity`, and the key of that unit
-      equals the key of the unit the element's anchor resolved to. Exactly
-      one unit means the last row of the first table of section 9.2.
+      gives exactly one unit, and the key of that unit equals the key of
+      the unit the element's anchor resolved to. Exactly one unit means the
+      last row of the first table of section 9.2. A unit resolved with
+      `identity: "symbol"` is that unit here too: the claim is found, and
+      the element then fails by rule 1, because a mark would keep the stale
+      quote. It does not write a second claim beside the first.
 
    Selectors are not compared. Two anchors that resolve to the same unit
    name the same side, however they are written: `#MAX` and a quote on the
@@ -2774,18 +2777,31 @@ the write checks (section 15.3).
 3. When at least one live claim is the same claim as `N`, the element marks
    the one with the smallest id (ids compared as byte strings). `N` is not
    written.
-4. When no live claim is the same claim as `N`: if the id of `N` is the id
-   of a retired claim the element fails with `claim_retired`
-   (section 15.3); otherwise `N` is written as a new claim.
+4. When no live claim is the same claim as `N`, `N` is compared with the
+   retired claims in the same way (conditions 1 to 3, or an equal id). When
+   one is the same claim the element fails with `claim_retired`
+   (section 15.3), naming the one with the smallest id: a retirement is a
+   decision, and writing the anchors another way does not undo it. A
+   different `note` makes another claim.
+5. Otherwise `N` is compared with the claims that earlier elements of the
+   same batch created, by conditions 1 and 2 and the keys of the units
+   their sides resolved to. When one is the same claim, the element is that
+   claim: it reports its id and `created: false`, and its mark is the same
+   record (section 15.2).
+6. Otherwise `N` is written as a new claim.
+
+The rule is one rule: the same statement, `recheck` and `note`, and sides
+on the same units. It does not depend on how an anchor is written, and it
+is applied against the live claims, the retired claims and the batch.
 
 What is not compared:
 
 - No key of a selector: not `quote`, `prefix`, `suffix`, `within`,
   `symbol`, `count` or `key`. The keys of the resolved units are
   (condition 3).
-- A retired claim is never the same claim as `N`. A stored anchor that
-  resolves to no unit, to several units, or to a unit with another key
-  fails condition 3. So does a stored anchor whose side is `missing` with
+- A stored anchor that resolves to no unit, to several units, or to a
+  unit with another key fails condition 3. A retired claim whose stored
+  anchors no longer resolve is therefore not found by rule 4. So does a stored anchor whose side is `missing` with
   reason `not_exact`: a candidate is never the unit of condition 3, also
   when its key is the key of the unit the element's anchor resolved to.
 
@@ -2817,9 +2833,10 @@ claim and `N` the claim that step 4 of `reanchor` builds (section 15.3).
    says, or the command fails with the error of that side.
 3. Otherwise `N` is compared with every live claim other than `O` that was
    in the store when the command read it, by conditions 1 to 3 above, with
-   `N` in the place of the claim an element builds. The live claims that
-   meet conditions 1 and 2 are resolved in one pass (section 9.1), each
-   claim once.
+   `N` in the place of the claim an element builds. The claims that meet
+   conditions 1 and 2 are resolved in one pass (section 9.1), each claim
+   once. When no live claim is the same claim and a retired claim is, the
+   command fails with `claim_retired` as rule 1 says for an equal id.
 4. When at least one live claim is the same claim as `N`, the one with the
    smallest id (ids compared as byte strings) is the target. When none is,
    `N` is written as a new claim.
@@ -5315,7 +5332,7 @@ Candidate, one unit that the stored anchor of the side could mean:
 | Key | Type |
 |---|---|
 | `key`, `kind`, `label`, `line`, `endLine` | as in UnitRef |
-| `text` | the unit text cut to 240 characters, or `null` when the provider returned the unit without text |
+| `text` | the unit text cut to 240 characters, or `null` when the provider returned the unit without text. Text that is cut ends with `… (<n> characters)`, where `<n>` is the length of the whole text; the same holds for every `text` that an output cuts to 240 characters (a `changed` side, an AcceptedSide, a `cover` item, a `triage` item) |
 | `anchor` | string or `null`: the anchor the provider printed for this unit (section 6.7), as an argument to give back: `<loc>#<symbol>` when the selector is a symbol alone, and the anchor as JSON otherwise. `null` when another listed candidate carries the same printed anchor: the two are identical where they stand, and no anchor selects one of them alone |
 | `sameFingerprint` | boolean |
 
@@ -5346,7 +5363,11 @@ Rules for the Side keys:
   `invalid_selector` or `invalid_locator`, without the error code. For a
   `changed` side whose unit the provider returned with
   `identity: "symbol"` (section 9.2) it is
-  `the stored quote is no longer in this unit`. For a `missing` side with
+  `the stored quote is no longer in this unit` when the stored selector
+  has a `quote`, and
+  `the provider identified this unit by its name alone: the stored selector no longer matches it otherwise`
+  when it has none (an external provider may answer so for a selector of
+  its own). For a `missing` side with
   reason `not_exact` it says why nothing resolved:
   `the name and the quoted text now point to different units: the first candidate has the name, the others hold the quoted text`
   when the stored selector has a `symbol` and a `quote` and no `count`, the
@@ -5377,9 +5398,8 @@ Rules for the Side keys:
   `candidates`, in the provider's order, with `sameFingerprint: true`; the
   provider's own candidates follow; a unit is listed once, by its key, and
   the list is cut to `MAX_CANDIDATES`. `candidatesTotal` counts the units
-  of both sources once each. (hibi keeps only the first 20 units of each
-  source, so a unit with the marked content that the provider also
-  returned beyond its first 20 is counted twice.) Such a unit is a
+  of both sources once each, also when only the first units of each are
+  kept. Such a unit is a
   candidate like any other: it resolves nothing. The message of the
   `side_missing` error of `mark`, of `claim` on a claim that exists and of
   `reanchor` for a stored side lists the same candidates in the same
@@ -5597,6 +5617,7 @@ The error object is the one of section 15.1; these rules fix its
 
   ```text
   <side> (<locator>): the anchor matches <n> units; use one of these anchors: <candidates>
+  <side> (<locator>): the anchor matches <n> units that cannot be told apart: <candidates>
   <side> (<locator>): the anchor matches no unit exactly; <count>, each a guess to check before use: <candidates>
   <side> (<locator>) resolves to no unit (not_exact): <cause>; <count>, each a guess to check before use: <candidates>
   <side> (<locator>) resolves to no unit (selector_not_found): the selector matches no unit; <count>, each a guess to check before use: <candidates>
@@ -5607,9 +5628,13 @@ The error object is the one of section 15.1; these rules fix its
   `the name and the quoted text now point to different units: the first candidate has the name, the others hold the quoted text`,
   or `the stored anchor no longer identifies one unit`. A candidate that no
   anchor selects alone is written
-  `<kind> "<label>", line <n>: identical to another candidate, no anchor selects it alone`,
+  `<unit>: identical to another one, no anchor selects it alone`,
   and a list that holds one ends with
-  `. Units that are identical where they stand cannot be anchored by that text alone: quote a longer passage that tells them apart, or in code anchor <loc>#<symbol>::<line>.`
+  `. Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them (the #name of the enclosing declaration, or the whole file), or take one out of a scope with an exclusion that names its key.`
+  The second form of the first message is used when no unit of the list
+  has an anchor of its own; `side_ambiguous` then has that sentence as its
+  remediation as well, in place of the advice to give a symbol or a
+  longer quote, which cannot work for such units.
   A stored side resolved by its symbol alone, its quote gone and its state
   `changed`, has the `selector_not_exact` message
   `<side> (<locator>): the stored quote is no longer in this unit, <unit>; a mark would keep the stale quote`.
@@ -5941,8 +5966,8 @@ creates none. The target of an element is found in this order:
    - it has the same number of sides, and each side has the same locator as
      the side of the built claim at that position;
    - for each side, the stored anchor of the live claim, resolved in this
-     run, gives exactly one unit without `identity`, and that unit has the
-     same key as the unit the element's anchor resolved to.
+     run, gives exactly one unit, and that unit has the same key as the unit
+     the element's anchor resolved to.
 
    Selectors are not compared (section 9.5): two anchors that resolve to
    the same unit name the same side. A live claim with a stored anchor that
@@ -6144,7 +6169,7 @@ since <range> (base <commit>)
     - <kind> "<label>", line <n>
       cannot be told apart from another candidate: no anchor selects it alone
     and <n> more
-    Units that are identical where they stand cannot be anchored by that text alone: quote a longer passage that tells them apart, or in code anchor <loc>#<symbol>::<line>.
+    Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them (the #name of the enclosing declaration, or the whole file), or take one out of a scope with an exclusion that names its key.
     | <one line of the unit text>
   next: <next>
 
@@ -6180,6 +6205,12 @@ Re-check each statement before running its next command. If it no longer holds, 
   what the stored selector holds of `symbol`, `quote` and `key`, in this
   order, joined by `, `, with the quote put on one line and cut to 80
   characters. It is omitted when the stored selector has none of the three.
+- The `stored:` line is also printed for a `changed` side that has a
+  `detail` (its stored quote is gone, section 9.2), so that the reader sees
+  which line is no longer there.
+- A side's `remediation` is printed under it, except for the reasons
+  `provider_not_registered`, `provider_failed` and `repo_not_allowed`,
+  where the claim's `next` is that same command.
 - The candidate lines are printed for a side that has `candidates`. The
   first of them gives `candidatesTotal`, with the word `candidate` when the
   count is 1. For a `missing` side it continues as shown above. For an `ambiguous` side it is
@@ -6413,7 +6444,11 @@ per item when the provider has `render`, and otherwise with one batched
 of many identical units matches all of them, so resolving it per item
 costs the number of units each time. For the same reason a resolution
 keeps the first `MAX_CANDIDATES` units of an answer and the count of all. `anchor` is the unit's
-locator with its completed selector and can be passed to `claim --stdin`.
+locator with its printed selector and can be passed to `claim --stdin`. It
+is `null` when another uncovered unit of the same resource in the scope has
+the same printed selector: the two are identical where they stand and no
+anchor selects one alone. The text output then prints under the item
+`cannot be anchored alone: claim the unit that contains it, or exclude it with unit = "<key>"`.
 `matched` counts what each exclusion took out: resources for an exclusion
 whose `unit` is `null`, units for one that names a unit (section 10.1). A
 scope's `units`, `covered`, `excluded` and `uncovered` count units of the
@@ -7162,6 +7197,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 143 | The engine adds no identity rule to the provider's answer. A unit resolved by its symbol alone, the stored quote gone, is `changed`, asks for a new anchor, and is refused by `mark`. Candidates and ambiguity lists print the provider's printed anchor; units with the same printed anchor are listed as a group without an anchor. The same claim, and repeated evidence, are decided by the units the sides resolve to. A quote that cannot be told apart is `quote_not_distinguishable`. A bare quote inside a declaration gets a note. | Identity belongs to one place; a mark must not keep a stale quote; what cannot be selected must not be offered; two ways to write an anchor name one side. |
 | 144 | A file of a code class that does not parse is `unavailable` for `resolve` with any selector, for `units` and for `render`, with the line of the first error; there is no fallback to `block` units for a code class, and the cache stores no row for such a file. Its sides are `unavailable` (`resource_unavailable`) and come back unchanged when it parses; `cover` lists it under `unavailable`. A file the pinned grammar cannot parse cannot be anchored: exclude it from the scope. Supersedes decision 3. | The text fallback produced half-states: a quote stored with `within` became `not_exact` with a text block as its candidate, and re-anchoring to it tied the claim to broken text; a top-level quote became `profile_mismatch` with `next: hibi mark`, which would record a `prose-v1` fingerprint of code. |
 | 145 | An exclusion without `unit` takes whole resources out of a scope: they are not read and not listed under `unavailable`, and its `matched` counts resources. An exclusion with `unit` counts units. | Excluding a file is the remedy for a file that cannot be read or parsed; reading it again only reported it again. |
+| 146 | One same-claim rule, by resolved units, against live claims, retired claims and the elements of one batch; a stored side resolved by name alone still counts as its unit, and the write then fails. Units that cannot be told apart get no anchor anywhere (lists, `cover`) and the advice says what works. Cut text says that it is cut. `candidatesTotal` is exact. | A spelling of an anchor must not make a duplicate or bring a retired claim back; advice that cannot work is worse than none. |
 | 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
 | 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
 | 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
@@ -8098,4 +8134,26 @@ Each of these has a test, named in parentheses.
   `r38_exclusions_are_reported_with_reason_and_match_count`,
   `r38_covered_through_the_parent_chain_and_exclusions_with_counts`,
   `resources_that_cannot_be_listed_are_unavailable`.)
+- R149. The same claim does not depend on how its anchors are written:
+  two spellings in one batch are one claim, another spelling marks the
+  live claim, and another spelling of a retired claim is `claim_retired`.
+  A stored side resolved by its name alone is still its unit, and the
+  write fails without making a second claim.
+  (`the_same_claim_does_not_depend_on_how_its_anchors_are_written`,
+  `the_same_claim_rule_holds_in_a_batch_and_for_a_side_without_its_quote`,
+  `claim_matches_by_resolved_unit_and_prefers_the_smallest_id`.)
+- R150. Units that cannot be told apart are never offered an anchor: the
+  ambiguity message does not say "use one of these anchors" when it lists
+  none, its remediation is the one for such units, and `cover` lists them
+  with `anchor: null` and the exclusion to use. `candidatesTotal` counts
+  each unit once. Cut text ends with a marker and the whole length. A
+  gone-quote side shows the stored quote, and a `repo_not_found` side its
+  remediation, in the text output.
+  (`selector_advice_comes_from_the_provider`,
+  `cover_offers_no_anchor_for_units_that_cannot_be_told_apart`,
+  `identical_twins_are_listed_without_an_anchor`,
+  `the_candidate_total_counts_each_unit_once`,
+  `the_text_of_a_candidate_is_cut_to_240_characters`,
+  `items_are_ordered_capped_and_cut`,
+  `r39_a_repo_side_without_git_is_repo_not_found`.)
 

@@ -2149,10 +2149,66 @@ fn claim_matches_by_resolved_unit_and_prefers_the_smallest_id() {
         };
         w.borrow_mut().overrides.insert(c.subject.clone(), answer);
     }
-    let out = claim(&store, &mut p, &[by_quote("S", "capped at 5")], false).unwrap();
+    // No live claim is the same claim now. The retired one still is, by
+    // its units: writing the anchor another way does not undo a retirement.
+    let before = store.counts();
+    let errors = claim(&store, &mut p, &[by_quote("S", "capped at 5")], false).unwrap_err();
+    assert_eq!(codes(&errors), [(Code::ClaimRetired, None)]);
+    assert!(errors[0].message.contains(ids[0].as_str()), "{}", errors[0]);
+    assert_eq!(store.counts(), before);
+    // With another note it is another claim.
+    let noted = ClaimInput {
+        note: Some("checked again".into()),
+        ..by_quote("S", "capped at 5")
+    };
+    let out = claim(&store, &mut p, &[noted], false).unwrap();
     assert!(out.claims[0].created);
     assert!(!ids.contains(&out.claims[0].id));
     assert_eq!(store.counts().0, 4);
+}
+
+/// Section 9.5 inside one batch and for a stored side that lost its quote.
+/// Two elements that name the same sides in two ways are one claim. A
+/// stored side resolved by its name alone is still that unit, so the claim
+/// is found, and the write then fails because a mark would keep the stale
+/// quote; no second claim is written beside it.
+#[test]
+fn the_same_claim_rule_holds_in_a_batch_and_for_a_side_without_its_quote() {
+    let (w, mut p, store) = setup();
+    let by_key = on("S", "k1");
+    let by_quote = ClaimInput {
+        subject: json_anchor("t:a", Selector::quote("Retries are capped")),
+        ..claim_input("S", "t:a", &[])
+    };
+    let out = claim(&store, &mut p, &[by_key.clone(), by_quote.clone()], false).unwrap();
+    assert_eq!(out.claims.len(), 2);
+    assert_eq!(out.claims[0].id, out.claims[1].id);
+    assert_eq!(
+        (out.claims[0].created, out.claims[1].created),
+        (true, false)
+    );
+    assert_eq!(store.counts(), (1, 1, 0));
+    let id = out.claims[0].id.clone();
+
+    // The stored anchor now resolves by name alone, with another content.
+    let mut gone = unit("k1", "note", "Retries are capped at 9.");
+    gone.identity = Some(hibi::provider::Identity::Symbol);
+    w.borrow_mut()
+        .overrides
+        .insert(anchor("t:a", key_sel("k1")), Ok(vec![gone]));
+    {
+        let mut world = w.borrow_mut();
+        let units = world.resources.get_mut("t:a").unwrap().as_mut().unwrap();
+        units[0] = unit("k1", "note", "Retries are capped at 9.");
+    }
+    let errors = claim(&store, &mut p, &[by_quote], false).unwrap_err();
+    assert_eq!(codes(&errors), [(Code::SelectorNotExact, None)]);
+    assert!(errors[0].message.contains(id.as_str()), "{}", errors[0]);
+    assert_eq!(
+        errors[0].remediation,
+        Some(format!("hibi reanchor {id} --subject <anchor>"))
+    );
+    assert_eq!(store.counts(), (1, 1, 0));
 }
 
 // ---------------------------------------------------------------------------

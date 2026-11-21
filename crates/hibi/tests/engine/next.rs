@@ -835,6 +835,35 @@ fn identical_twins_are_listed_without_an_anchor() {
     assert!(!message.contains(r#""quote":"the same text""#), "{message}");
 }
 
+/// `candidatesTotal` counts each unit once, also when the units with the
+/// marked content and the units the provider returned are the same many
+/// units, of which only the first are kept.
+#[test]
+fn the_candidate_total_counts_each_unit_once() {
+    let mut f = fixture(None);
+    // Fifty units with the marked content; the provider guesses at all of
+    // them and at three others.
+    let same: Vec<Unit> = (0..50)
+        .map(|n| unit(&format!("s{n:02}"), "note", "first"))
+        .collect();
+    let others: Vec<Unit> = (0..3)
+        .map(|n| unit(&format!("o{n}"), "note", &format!("other {n}")))
+        .collect();
+    let all: Vec<Unit> = same.iter().chain(&others).cloned().collect();
+    set(&f.worlds[1], "u:b", all.clone());
+    f.worlds[1].borrow_mut().overrides.insert(
+        anchor("u:b", key_sel("k")),
+        Ok(all.into_iter().map(approx).collect()),
+    );
+    let v = view(&f.store, &mut f.p, &f.id);
+    let side = &v.sides[1];
+    assert_eq!(side.reason, Some(engine::Reason::NotExact));
+    assert_eq!(side.candidates_total, Some(53));
+    let shown = side.candidates.as_ref().unwrap();
+    assert_eq!(shown.len(), engine::MAX_CANDIDATES);
+    assert!(shown.iter().all(|c| c.same_fingerprint));
+}
+
 /// A stored side that matches very many units shows twenty candidates
 /// and the count of all of them.
 #[test]

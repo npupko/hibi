@@ -453,3 +453,110 @@ fn a_printed_anchor_is_accepted_with_its_stored_keys() {
         assert_eq!(v["claims"][0]["created"], false);
     }
 }
+
+/// Section 9.5: the same claim is the same statement, recheck period and
+/// note on the same units, however the anchors are written. It holds
+/// inside one batch (two spellings are one claim), against a live claim
+/// (the second spelling marks it), and against a retired claim (the other
+/// spelling is refused like the first).
+#[test]
+fn the_same_claim_does_not_depend_on_how_its_anchors_are_written() {
+    let repo = Repo::new();
+    repo.write("docs/a.md", "Downloads are tried 5 times.\n");
+    repo.write("src/a.rs", "pub const MAX: u32 = 5;\n");
+    let subject = "file:docs/a.md::tried 5 times";
+    let by_name = "file:src/a.rs#MAX";
+    let by_quote = "file:src/a.rs::pub const MAX: u32 = 5;";
+
+    let batch = json!([
+        {"statement": "s", "subject": subject, "evidence": [by_name]},
+        {"statement": "s", "subject": subject, "evidence": [by_quote]}
+    ]);
+    let v = repo
+        .hibi()
+        .args(["--format", "json", "--now", NOW, "claim", "--stdin"])
+        .stdin(&batch.to_string())
+        .run()
+        .ok();
+    let id = s(&v["claims"][0]["id"]).to_owned();
+    assert_eq!(v["claims"][1]["id"], id.as_str());
+    assert_eq!(v["claims"][0]["created"], true);
+    assert_eq!(v["claims"][1]["created"], false);
+    assert_eq!(repo.records("claims").len(), 1);
+
+    // Against the live claim.
+    let again = repo.json(&[
+        "--now",
+        NOW,
+        "claim",
+        "s",
+        "--subject",
+        subject,
+        "--evidence",
+        by_quote,
+    ]);
+    assert_eq!(again["claims"][0]["id"], id.as_str());
+    assert_eq!(again["claims"][0]["created"], false);
+
+    // Against the retired claim: neither spelling brings it back.
+    repo.json(&["retire", &id]);
+    let before = repo.store_files();
+    for evidence in [by_name, by_quote] {
+        let e = repo.fail(&["claim", "s", "--subject", subject, "--evidence", evidence]);
+        assert_eq!(e["code"], "claim_retired", "{evidence}: {e}");
+        assert!(s(&e["message"]).contains(&id), "{e}");
+    }
+    assert_eq!(repo.store_files(), before);
+    let v = repo.json(&[
+        "claim",
+        "s",
+        "--subject",
+        subject,
+        "--evidence",
+        by_quote,
+        "--note",
+        "checked again",
+    ]);
+    assert_eq!(v["claims"][0]["created"], true);
+}
+
+/// Units that are identical where they stand are listed by `cover` without
+/// an anchor: none selects one of them alone. The text output says so and
+/// names the exclusion that takes one out; excluding by key works.
+#[test]
+fn cover_offers_no_anchor_for_units_that_cannot_be_told_apart() {
+    let repo = Repo::new();
+    let scope = |exclude: &str| {
+        format!(
+            "version = 1\n\n[[scope]]\nname = \"docs\"\nresource = \"file:docs/*.md\"\nkinds = [\"sentence\"]\n{exclude}"
+        )
+    };
+    repo.write(".hibi/hibi.toml", &scope(""));
+    repo.write(
+        "docs/t.md",
+        "# T\n\nThe cap is 5.\n\nThe cap is 5.\n\nAnother sentence.\n",
+    );
+    let v = repo.json(&["cover"]);
+    let items = v["scopes"][0]["items"].as_array().unwrap();
+    assert_eq!(items.len(), 3, "{v}");
+    assert_eq!(items[0]["anchor"], Value::Null, "{v}");
+    assert_eq!(items[1]["anchor"], Value::Null, "{v}");
+    assert!(items[2]["anchor"].is_object(), "{v}");
+    let key = s(&items[0]["unit"]["key"]).to_owned();
+    let human = repo.human(&["cover"]);
+    let line = format!(
+        "cannot be anchored alone: claim the unit that contains it, or exclude it with unit = \"{key}\""
+    );
+    assert!(human.stdout.contains(&line), "{}", human.stdout);
+
+    // The exclusion the line names takes that unit out.
+    repo.write(
+        ".hibi/hibi.toml",
+        &scope(&format!(
+            "exclude = [{{ resource = \"file:docs/t.md\", unit = \"{key}\", reason = \"a twin\" }}]\n"
+        )),
+    );
+    let v = repo.json(&["cover"]);
+    assert!(v["summary"]["excluded"].as_u64().unwrap() >= 1, "{v}");
+    assert_eq!(v["scopes"][0]["exclusions"][0]["unit"], key.as_str());
+}

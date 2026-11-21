@@ -669,6 +669,21 @@ fn r39_a_repo_side_without_git_is_repo_not_found() {
         v["summary"],
         json!({"claims": 2, "fresh": 1, "stale": 1, "expired": 0, "retired": 0})
     );
+    // The claim has no `next`, so the text output prints what the side says
+    // to do.
+    assert_eq!(claim["sides"][1]["remediation"], "hibi providers");
+    let human = s
+        .repo
+        .hibi()
+        .env("PATH", empty.only())
+        .args(["--format", "human", "status"])
+        .run();
+    assert!(
+        human.stdout.contains("unavailable (repo_not_found)\n")
+            && human.stdout.contains("\n    hibi providers\n"),
+        "{}",
+        human.stdout
+    );
 }
 
 /// R64 and section 14.1: with a key set and git absent, the judge commands
