@@ -3805,7 +3805,7 @@ because a union merge can produce both. It keeps one record per id.
 | Finding | Result |
 |---|---|
 | A shard file is missing | Treated as empty |
-| `.hibi` is a directory and `.hibi/claims` or `.hibi/marks` does not exist | `store_corrupt`. The message is `the directory .hibi/<name> is missing`, naming `claims` first when both are missing. The remediation says to restore the directory from git or to create the empty directory again. |
+| `.hibi` is a directory and `.hibi/claims` or `.hibi/marks` does not exist | `store_corrupt`. The message is `the directory .hibi/<name> is missing`, naming `claims` first when both are missing. The remediation says to look first (`git status -- <dir>`), that restoring the directory from git brings back the committed records only, and that the empty directory can be created again. The remediation for shard files over `MAX_STORE_BYTES` likewise says to look first (`git diff --stat`) and that a restore from an earlier commit discards every record written since that commit. |
 | A line is not valid JSON, has a wrong key set, or its `id` is not the id derived from its body | `store_corrupt`, naming file and line |
 | A line parses and its id is right, but its bytes are not the canonical form of the record | `store_corrupt` |
 | A claim sits in a shard other than `shard(claim)`, or a mark or retirement sits in a marks shard other than its claim's | `store_corrupt` |

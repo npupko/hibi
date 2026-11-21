@@ -398,7 +398,7 @@ fn check_store(hibi: &Path) -> Result<(), Error> {
         let dir = format!("{HIBI_DIR}/{}", kind.dir());
         return Err(
             corrupt(format!("the directory {dir} is missing")).with_remediation(format!(
-                "Restore {dir} from git, for example with git checkout -- {dir}, or create the empty directory again with mkdir {dir}."
+                "Look first: git status -- {dir} shows what git knows of the directory. Restoring it with git checkout -- {dir} brings back the committed records only; records that were written and never committed are not in git and stay lost. To start that directory empty instead, create it again with mkdir {dir}."
             )),
         );
     }
@@ -409,7 +409,7 @@ fn check_store(hibi: &Path) -> Result<(), Error> {
             found.shard_bytes
         ))
         .with_remediation(format!(
-            "Restore {HIBI_DIR}/{claims} and {HIBI_DIR}/{marks} from a commit in which they are smaller, for example with git checkout <commit> -- {HIBI_DIR}/{claims} {HIBI_DIR}/{marks}."
+            "Look first: git diff --stat -- {HIBI_DIR}/{claims} {HIBI_DIR}/{marks} shows which shard files grew. Restoring them from a commit in which they are smaller, for example with git checkout <commit> -- {HIBI_DIR}/{claims} {HIBI_DIR}/{marks}, discards every record written since that commit, committed or not, so keep the lines you need before you do."
         )));
     }
     Ok(())

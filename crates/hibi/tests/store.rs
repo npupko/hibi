@@ -724,6 +724,12 @@ fn total_store_size_boundary() {
             remediation.contains(".hibi/claims") && remediation.contains(".hibi/marks"),
             "{op}: {remediation}"
         );
+        // It says to look first and what a restore from a commit loses.
+        assert!(
+            remediation.starts_with("Look first: git diff --stat -- ")
+                && remediation.contains("discards every record written since that commit"),
+            "{op}: {remediation}"
+        );
     }
 }
 
@@ -765,7 +771,7 @@ fn missing_shard_directory_is_store_corrupt() {
                 e.remediation.as_deref(),
                 Some(
                     format!(
-                        "Restore .hibi/{d} from git, for example with git checkout -- .hibi/{d}, or create the empty directory again with mkdir .hibi/{d}."
+                        "Look first: git status -- .hibi/{d} shows what git knows of the directory. Restoring it with git checkout -- .hibi/{d} brings back the committed records only; records that were written and never committed are not in git and stay lost. To start that directory empty instead, create it again with mkdir .hibi/{d}."
                     )
                     .as_str()
                 ),
