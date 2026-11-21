@@ -151,7 +151,7 @@ the claim is stale until you re-anchor it.
 - **A container was renamed** (struct `Config` to `Settings`): a member's
   side is `missing` (`not_exact`) with the member under its new path as a
   candidate, such as `Settings.timeout_secs`, and `sameFingerprint: true`
-  (text: "same content as at the last mark"). Its content is what was
+  (text: "same content as at the reference mark"). Its content is what was
   checked; re-anchor to it.
 - **A file was renamed or moved**: the side is `missing`
   (`resource_not_found`) with no candidates. Give the new path with

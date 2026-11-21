@@ -47,10 +47,10 @@ hibi status --since main
 
 ```text output
 3 claims: 1 fresh, 1 stale, 0 expired, 1 retired
-since main (base 548454d1fcf4bcceb2a61becc8dc805fbf757e88)
+since main (base 13a56feae2ed715a9bcbbafe7e62a172902ada46)
 
 c1-6exasfv5q6wh17yqtfmn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T04:17:12Z (m1-5k2x039751r72wq5tpk7)
+  marked 2026-11-21T04:34:49Z (m1-emjm7a3xe3nva8cbbh2r)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  function "delay_ms", lines 5-7
   next: hibi mark c1-6exasfv5q6wh17yqtfmn
 
@@ -78,7 +78,7 @@ hibi cover --since main
 ```
 
 ```text output
-since main (base 548454d1fcf4bcceb2a61becc8dc805fbf757e88)
+since main (base 13a56feae2ed715a9bcbbafe7e62a172902ada46)
 docs (file:docs/**/*.md; sentence, list-item, table-row): 1 unit, 0 covered, 0 excluded, 1 uncovered
   file:docs/retry.md
         9  sentence  Each attempt times out after 10 seconds.
@@ -89,7 +89,7 @@ are not evaluated with `--since`, and say so:
 
 ```text output
 $ HIBI_CONFIG=user.toml hibi cover --since main --scope notes
-since main (base 19de186f1fab7a63d3d6c9661664ea73380515c1)
+since main (base ee383d91a12ca0edff4447bfbee55e486ed3d98d)
 notes (ref:notes; note): 0 units, 0 covered, 0 excluded, 0 uncovered
   not evaluated: --since works only for scopes on scheme "file"
 ```

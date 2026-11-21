@@ -48,9 +48,9 @@ $ hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-9v8cr7r83ptv9es2rwv7  stale  SMALL is 1.
-  marked 2026-11-21T04:20:22Z (m1-wfk3m9jh9mgtdw9vsxd2)
+  marked 2026-11-21T04:35:06Z (m1-7p5j7bxw06hgq4g5jg64)
   evidence 1  file:src/grow.rs  unavailable (too_large)
-    too_large: file:src/grow.rs has 2457830 bytes, more than the limit of 2097152 bytes for a code file
+    file:src/grow.rs has 2457830 bytes, more than the limit of 2097152 bytes for a code file
     The resource is over a size limit: 8 MiB for markdown, prose and text, 2 MiB for a code file, or 100,000 units in one resource. Anchor a smaller file; for a claim that exists, retire it; in a scope, add an exclusion for the resource.
 ```
 
@@ -62,13 +62,13 @@ never read. Without git, any regular file under the root can be read.
 
 ```text output
 $ hibi claim "x" --subject "file:README.MD::The limit"
-error: side_missing: the subject (file:README.MD) resolves to no unit (resource_not_found): not_found: file:README.MD is not in git's file list of the root (tracked, or untracked and not ignored)
+error: side_missing: the subject (file:README.MD) resolves to no unit (resource_not_found): file:README.MD is not in git's file list of the root (tracked, or untracked and not ignored)
   fix: Point the anchor at text that exists in the resource.
 ```
 
 ```text output
 $ hibi claim "x" --subject "file:docs/secret.md::The secret"
-error: side_missing: the subject (file:docs/secret.md) resolves to no unit (resource_not_found): not_found: file:docs/secret.md is not in git's file list of the root (tracked, or untracked and not ignored)
+error: side_missing: the subject (file:docs/secret.md) resolves to no unit (resource_not_found): file:docs/secret.md is not in git's file list of the root (tracked, or untracked and not ignored)
   fix: Point the anchor at text that exists in the resource.
 ```
 

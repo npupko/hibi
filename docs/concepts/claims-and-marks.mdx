@@ -52,7 +52,7 @@ hibi mark c1-6exa --note "200 << n equals 200 * 2^n" --by agent:claude
 ```
 
 ```text output
-c1-6exasfv5q6wh17yqtfmn  marked  m1-hr5kerchfz19a9kcsvep
+c1-6exasfv5q6wh17yqtfmn  marked  m1-6xvpmpa38dhj9zr4qeck
   was stale: evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked
 ```
 
@@ -76,7 +76,7 @@ hibi retire c1-24t0 --note "The docs no longer state the attempt limit."
 ```
 
 ```text output
-c1-24t09j90dg85esm4e3e9  retired  r1-2y08f31z8x06qvp5mkjx
+c1-24t09j90dg85esm4e3e9  retired  r1-91z62yy50j5m1xecm3fb
 ```
 
 `--replaced-by <claim-id>` names the claim that takes the place of the
@@ -156,7 +156,7 @@ anchor after the function changed:
 
 ```text output
 $ hibi claim "Old entries are evicted first." --subject "file:docs/cache.md::evicted first" --evidence "file:src/cache.rs#evict"
-c1-j480e5y2qz6p0pxv37bf  marked  m1-1z06hcrgab1vt64fe7qt  subject file:docs/cache.md (sentence "Old entries are evicted first.", line 4); evidence 1 file:src/cache.rs (function "evict", line 8)
+c1-j480e5y2qz6p0pxv37bf  marked  m1-0y81ys4mvakbsx3wk45e  subject file:docs/cache.md (sentence "Old entries are evicted first.", line 4); evidence 1 file:src/cache.rs (function "evict", line 8)
   was stale: evidence 1 file:src/cache.rs changed (fingerprint_differs); now marked
 ```
 
@@ -169,7 +169,7 @@ delays", which changes the stored context of the quote:
 
 ```text output
 $ hibi claim "The client gives up after 3 attempts." --subject "file:docs/retry.md::gives up after 3 attempts" --evidence "file:src/retry.rs#MAX_ATTEMPTS"
-c1-24t09j90dg85esm4e3e9  marked  m1-w8ssndgzed98pab3gmmn  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-24t09j90dg85esm4e3e9  marked  m1-vqgcvgr975qcadfhseqf  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 In JSON the entry has `"created": false`. Only live claims are matched: after
@@ -190,10 +190,10 @@ hibi list --retired
 ```
 
 ```text output
-c1-24t09j90dg85esm4e3e9  The client gives up after 3 attempts.  file:docs/retry.md  2 marks  last 2026-11-21T04:17:12Z  retired
-c1-6exasfv5q6wh17yqtfmn  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  2 marks  last 2026-11-21T04:17:12Z  retired
-c1-dbv50xcvkr3wg5jnbtfw  The client gives up after 5 attempts.  file:docs/retry.md  1 mark  last 2026-11-21T04:17:11Z  retired
-c1-mdm107xhmdkbrfbr7awv  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  1 mark  last 2026-11-21T04:17:13Z
+c1-24t09j90dg85esm4e3e9  The client gives up after 3 attempts.  file:docs/retry.md  2 marks  last 2026-11-21T04:34:50Z  retired
+c1-6exasfv5q6wh17yqtfmn  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  2 marks  last 2026-11-21T04:34:50Z  retired
+c1-dbv50xcvkr3wg5jnbtfw  The client gives up after 5 attempts.  file:docs/retry.md  1 mark  last 2026-11-21T04:34:48Z  retired
+c1-mdm107xhmdkbrfbr7awv  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  1 mark  last 2026-11-21T04:34:50Z
 c1-zfv9r5t784m0vnty4fv9  Each attempt times out after 10 seconds.  file:docs/retry.md  1 mark  last 2026-08-01T09:00:00Z
 ```
 
@@ -210,10 +210,10 @@ c1-dbv50xcvkr3wg5jnbtfw
   subject: {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 5 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
   evidence 1: {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 5;","prefix":"\n","suffix":"\n\n","pos":62,"symbol":"MAX_ATTEMPTS"}}
 1 mark:
-  m1-mntzc6v9qrd88gke0f3d  2026-11-21T04:17:11Z
+  m1-45esqyhdt3sd9schhede  2026-11-21T04:34:48Z
     file:docs/retry.md  b3:prose-v1:0233c89ebf2069292e2778bdc7176396
     file:src/retry.rs  b3:ast-v1:fb3a4a42c90a9093fe98969b8a0018c0
-retired: r1-j3aa61jedcv2kp65b7dg  2026-11-21T04:17:11Z  replaced by c1-24t09j90dg85esm4e3e9
+retired: r1-ytfvh8razps7sj4z5zes  2026-11-21T04:34:49Z  replaced by c1-24t09j90dg85esm4e3e9
 ```
 
 `--loc <glob>` keeps claims with a side whose locator matches, and

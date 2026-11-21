@@ -128,12 +128,37 @@ $ hibi status --detail c1-5eaf
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
 c1-5eaf6x2yrjb6xrkx2yqe  fresh  The queue holds 100 jobs.
-  marked 2026-11-21T04:20:23Z (m1-bbktvyzqnjrvgpmewc1j)
+  marked 2026-11-21T04:35:07Z (m1-ae4p3abfbf5bzrdp1rmy)
   subject  file:README.md  same  sentence "The limit is applied per worker.", line 5
     | The limit is applied per worker.
   evidence 1  file:src/queue.py  same  function "limit", lines 4-5
     | def limit():
     |     return 100
+```
+
+In `src/parse.py`, a claim was made on the first of two `@overload` stubs of
+`parse`, `def parse(x: int) -> int: ...`. Its signature was then changed
+to `x: float`. Both stubs hold the quote, and the unchanged `str` stub is
+listed first, so read every candidate:
+
+```text output
+$ hibi status c1-hq4t
+3 claims: 2 fresh, 1 stale, 0 expired, 0 retired
+
+c1-hq4tecap6tc6bz0zbppm  stale  Parsing an int gives an int.
+  marked 2026-11-21T04:35:07Z (m1-jkbh1dpzaefsbmkcnqz4)
+  evidence 1  file:src/parse.py  missing (not_exact)
+    stored: symbol parse, quote "@overload"
+    2 candidates, found by similarity; each is a guess, read it before you anchor to it:
+    - function "parse", line 5
+      | @overload def parse(x: str) -> str: ...
+      anchor: {"loc":"file:src/parse.py","sel":{"quote":"@overload","prefix":"\n","suffix":"\ndef parse(x: str) -> str: ...\n","pos":73,"symbol":"parse"}}
+    - function "parse", line 3
+      | @overload def parse(x: float) -> float: ...
+      anchor: {"loc":"file:src/parse.py","sel":{"quote":"@overload","prefix":"\n\n","suffix":"\ndef parse(x: float) -> float: ...\n","pos":29,"symbol":"parse"}}
+  next: hibi reanchor c1-hq4tecap6tc6bz0zbppm --evidence 1=<anchor>
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
 Two declarations of one symbol that are identical, byte for byte, and have
@@ -233,7 +258,7 @@ and can be anchored:
 
 ```text output
 $ hibi claim "Jobs run at most 3 times." --subject "file:src/jobs.py#Job::Jobs run at most 3 times" --evidence "file:src/jobs.py#Job.retries"
-c1-qvbjt2ph1pgeyxqzpj2w  created  m1-s74e3b2z2w577d5jt1by  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
+c1-qvbjt2ph1pgeyxqzpj2w  created  m1-yqvmb9v2d0k60qzkea66  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
 ```
 
 ## Renames
@@ -248,7 +273,7 @@ $ hibi status
 3 claims: 1 fresh, 2 stale, 0 expired, 0 retired
 
 c1-3mz8p0vyhcqppgjbvtyh  stale  limit returns 100.
-  marked 2026-11-21T04:17:17Z (m1-da0wgcz2hb5pj1ha4yzd)
+  marked 2026-11-21T04:35:04Z (m1-73fyqxar6y9a6bnmejp0)
   evidence 1  file:src/jobs.py  missing (not_exact)
     stored: symbol limit, quote "def limit():"
     1 candidate, found by similarity; each is a guess, read it before you anchor to it:
@@ -258,7 +283,7 @@ c1-3mz8p0vyhcqppgjbvtyh  stale  limit returns 100.
   next: hibi reanchor c1-3mz8p0vyhcqppgjbvtyh --evidence 1=<anchor>
 
 c1-wza47tv2t7g9czrk16x4  stale  The queue holds 100 jobs.
-  marked 2026-11-21T04:17:17Z (m1-mw6py7trnfqqht89y2qz)
+  marked 2026-11-21T04:35:04Z (m1-sf6pe38e2tf0x4vrf53b)
   evidence 1  file:src/jobs.py  missing (not_exact)
     stored: symbol limit, quote "def limit():"
     1 candidate, found by similarity; each is a guess, read it before you anchor to it:
@@ -276,7 +301,7 @@ holds, anchor to it:
 ```text output
 $ hibi reanchor c1-3mz8 --statement 'queue_limit returns 100.' --evidence 1=file:src/jobs.py#queue_limit
 c1-3mz8p0vyhcqppgjbvtyh is retired and replaced by the new claim c1-gnn5034a914fjregkzbx
-  mark m1-sp8ffyqgs7t0pn1m1xhw, retirement r1-ed5hq4avvf4d7ng9st4k
+  mark m1-7t9ttgtk5eb0q9pw9gj1, retirement r1-e4fr5gjc0frz1j42byqt
   was stale: evidence 1 file:src/jobs.py missing (not_exact); now marked
   subject file:README.md (sentence "The limit is applied per worker.", line 5)
     {"loc":"file:README.md","sel":{"quote":"The limit is applied per worker.","prefix":"runs at most 3 times.\nThe queue holds 100 jobs.\n","suffix":"\n","pos":62}}
@@ -293,7 +318,7 @@ $ hibi status
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
 c1-5hktdkt5a4dmvmc90eec  stale  At most 100 jobs are queued.
-  marked 2026-11-21T04:25:05Z (m1-wbqvcdbbgztd9rp2v87m)
+  marked 2026-11-21T04:34:53Z (m1-sms5mndc136twmyyp84t)
   evidence 1  file:src/jobs.py  missing (selector_not_found)
     stored: symbol JOB_LIMIT, quote "JOB_LIMIT = 100"
   next: hibi reanchor c1-5hktdkt5a4dmvmc90eec --evidence 1=<anchor>
@@ -303,7 +328,7 @@ Re-check each statement before running its next command. If it no longer holds, 
 
 A rename of an enclosing container (a struct, class or module) changes a
 member's path but not the member's content. The member is a candidate with
-"same content as at the last mark" (`sameFingerprint: true` in JSON).
+"same content as at the reference mark" (`sameFingerprint: true` in JSON).
 Renaming the struct `Config` to `Settings` gives, for a claim on its field
 `Config.timeout_secs`:
 
@@ -312,11 +337,11 @@ $ hibi status
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
 c1-d0a4yrq9pmv59dc0ggqa  stale  The request timeout is stored in whole seconds.
-  marked 2026-11-21T04:25:05Z (m1-q7msyvy1q1gv2zer63c3)
+  marked 2026-11-21T04:34:53Z (m1-ksjcjqwvdm47wy7ak4mf)
   evidence 1  file:src/config.rs  missing (not_exact)
     stored: symbol Config.timeout_secs, quote "pub timeout_secs: u32"
     1 candidate, found by similarity; each is a guess, read it before you anchor to it:
-    - field "Settings.timeout_secs", line 5; same content as at the last mark
+    - field "Settings.timeout_secs", line 5; same content as at the reference mark
       | pub timeout_secs: u32
       anchor: file:src/config.rs#Settings.timeout_secs
   next: hibi reanchor c1-d0a4yrq9pmv59dc0ggqa --evidence 1=<anchor>
