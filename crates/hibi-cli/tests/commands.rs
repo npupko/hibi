@@ -2,9 +2,9 @@
 //! `mark`, `reanchor`, `retire` and `list` (spec sections 3.6, 5, 6.7, 9
 //! and 15; requirements R35 to R37 and R52 to R55).
 //!
-//! Claim, mark and retirement ids are content-addressed, so with fixed file
-//! contents, statements and `--now` they are fixed, and the tests assert
-//! them literally.
+//! Claim, mark and retirement ids are content-addressed. They depend on the
+//! completed selectors, so the tests take every id from command output and
+//! compare ids with each other; no id is written out here.
 
 mod support;
 
@@ -76,6 +76,23 @@ fn refused(repo: &Repo, args: &[&str]) -> Value {
 
 fn s(v: &Value) -> &str {
     v.as_str().unwrap_or_else(|| panic!("not a string: {v}"))
+}
+
+/// A full record id of one type: `c1-`, `m1-` or `r1-` and 20 characters.
+#[track_caller]
+fn id_of(v: &Value, prefix: &str) -> String {
+    let id = s(v);
+    let body = id
+        .strip_prefix(prefix)
+        .unwrap_or_else(|| panic!("{id} does not start with {prefix}"));
+    assert!(
+        body.len() == 20
+            && body
+                .chars()
+                .all(|c| c.is_ascii_digit() || c.is_ascii_lowercase()),
+        "{id} is not a full id"
+    );
+    id.to_owned()
 }
 
 /// The ids of a `claims` array, in output order.
@@ -233,7 +250,6 @@ fn init_outside_a_git_repository_is_not_a_git_repository() {
 fn the_root_is_found_from_a_subdirectory_and_given_by_root() {
     let repo = seeded();
     let id = repo.claim("The cache holds 64 entries.", CACHE_SUBJECT, &[]);
-    assert_eq!(id, "c1-5dzngf9a2gw78kyd583p");
 
     let from_sub = repo
         .hibi()
@@ -319,22 +335,26 @@ fn claim_reports_a_fresh_claim_view_with_completed_selectors() {
     assert_eq!(keys(entry), ["accepted", "claim", "created", "id", "mark"]);
     assert_eq!(entry["accepted"], Value::Null);
     assert!(v["nextNote"].is_string());
-    assert_eq!(entry["id"], "c1-1gdm5rr2knddb5tfsp7n");
+    let id = id_of(&entry["id"], "c1-");
     assert_eq!(entry["created"], true);
-    assert_eq!(entry["mark"], "m1-rg67bhvrxw5kqxa04a80");
+    let mark = id_of(&entry["mark"], "m1-");
 
     // The ClaimView, whole. The stored anchors are the completed selectors
     // (quote, prefix, suffix, pos, and the symbol of a declaration), not
-    // the compact text that was typed.
+    // the compact text that was typed. In prose the context is the text
+    // around the quote in the file. For a declaration whose symbol is
+    // unique it is cut at the unit's scope: the unit and the whitespace,
+    // `,` and `;` directly around it. `pos` is a byte offset in the file
+    // in both.
     assert_eq!(
         entry["claim"],
         json!({
-            "id": "c1-1gdm5rr2knddb5tfsp7n",
+            "id": id,
             "statement": "The cache holds 64 entries.",
             "recheck": null,
             "note": null,
             "state": "fresh",
-            "mark": "m1-rg67bhvrxw5kqxa04a80",
+            "mark": mark,
             "markedAt": NOW,
             "expiresAt": null,
             "sides": [
@@ -360,8 +380,8 @@ fn claim_reports_a_fresh_claim_view_with_completed_selectors() {
                     "role": "evidence",
                     "anchor": {"loc": "file:src/a.rs", "sel": {
                         "quote": "let max_entries = 64;",
-                        "prefix": "it is checked here.\npub fn limit() -> u32 {\n    ",
-                        "suffix": " // max entries note\n    max_entries\n}\n\npub fn t",
+                        "prefix": "\npub fn limit() -> u32 {\n    ",
+                        "suffix": " // max entries note\n    max_entries\n}\n\n",
                         "pos": 58,
                         "symbol": "limit"
                     }},
@@ -384,7 +404,7 @@ fn claim_reports_a_fresh_claim_view_with_completed_selectors() {
     assert_eq!(
         claims[0],
         json!({
-            "id": "c1-1gdm5rr2knddb5tfsp7n",
+            "id": id,
             "statement": "The cache holds 64 entries.",
             "subject": entry["claim"]["sides"][0]["anchor"],
             "evidence": [entry["claim"]["sides"][1]["anchor"]],
@@ -396,8 +416,8 @@ fn claim_reports_a_fresh_claim_view_with_completed_selectors() {
     assert_eq!(
         marks,
         [json!({
-            "id": "m1-rg67bhvrxw5kqxa04a80",
-            "claim": "c1-1gdm5rr2knddb5tfsp7n",
+            "id": mark,
+            "claim": id,
             "at": NOW,
             "by": null,
             "sides": [
@@ -428,7 +448,8 @@ fn claim_completes_a_symbol_a_bare_quote_and_a_whole_file() {
         ],
     );
     let view = &v["claims"][0]["claim"];
-    assert_eq!(v["claims"][0]["id"], "c1-mrsr00pj9dhzqk9p7dsb");
+    let id = id_of(&v["claims"][0]["id"], "c1-");
+    assert_eq!(view["id"], id.as_str());
     assert_eq!(
         view["sides"][0]["anchor"],
         json!({"loc": "file:docs/a.md", "sel": {}})
@@ -440,7 +461,7 @@ fn claim_completes_a_symbol_a_bare_quote_and_a_whole_file() {
         view["sides"][1]["anchor"],
         json!({"loc": "file:src/a.rs", "sel": {
             "quote": "pub fn timeout() -> u32 {",
-            "prefix": "es = 64; // max entries note\n    max_entries\n}\n\n",
+            "prefix": "\n\n",
             "suffix": "\n    30\n}\n",
             "pos": 119,
             "symbol": "timeout"
@@ -451,8 +472,8 @@ fn claim_completes_a_symbol_a_bare_quote_and_a_whole_file() {
         view["sides"][2]["anchor"],
         json!({"loc": "file:src/a.rs", "sel": {
             "quote": "max_entries = 64",
-            "prefix": "s checked here.\npub fn limit() -> u32 {\n    let ",
-            "suffix": "; // max entries note\n    max_entries\n}\n\npub fn ",
+            "prefix": "\npub fn limit() -> u32 {\n    let ",
+            "suffix": "; // max entries note\n    max_entries\n}\n\n",
             "pos": 62,
             "symbol": "limit"
         }})
@@ -477,15 +498,16 @@ fn r53_claiming_again_gives_the_same_id_and_a_second_mark() {
         LIMIT_EVIDENCE,
     ];
     let first = j(&repo, &args);
-    assert_eq!(first["claims"][0]["id"], "c1-1gdm5rr2knddb5tfsp7n");
+    let id = id_of(&first["claims"][0]["id"], "c1-");
     assert_eq!(first["claims"][0]["created"], true);
-    assert_eq!(first["claims"][0]["mark"], "m1-rg67bhvrxw5kqxa04a80");
+    let first_mark = id_of(&first["claims"][0]["mark"], "m1-");
 
     // One hour later: the same claim, not created, with a new mark.
     let second = at(&repo, "2026-11-20T13:00:00Z", &args);
-    assert_eq!(second["claims"][0]["id"], "c1-1gdm5rr2knddb5tfsp7n");
+    assert_eq!(second["claims"][0]["id"], id.as_str());
     assert_eq!(second["claims"][0]["created"], false);
-    assert_eq!(second["claims"][0]["mark"], "m1-07wndnh446e4gbde6hhg");
+    let second_mark = id_of(&second["claims"][0]["mark"], "m1-");
+    assert_ne!(second_mark, first_mark);
     assert_eq!(second["claims"][0]["claim"]["state"], "fresh");
     assert_eq!(
         second["claims"][0]["claim"]["markedAt"],
@@ -496,18 +518,19 @@ fn r53_claiming_again_gives_the_same_id_and_a_second_mark() {
 
     // At the same instant the mark is the same record too: nothing new.
     let third = j(&repo, &args);
-    assert_eq!(third["claims"][0]["id"], "c1-1gdm5rr2knddb5tfsp7n");
+    assert_eq!(third["claims"][0]["id"], id.as_str());
     assert_eq!(third["claims"][0]["created"], false);
-    assert_eq!(third["claims"][0]["mark"], "m1-rg67bhvrxw5kqxa04a80");
+    assert_eq!(third["claims"][0]["mark"], first_mark.as_str());
     assert_eq!(repo.records("claims").len(), 1);
     assert_eq!(repo.records("marks").len(), 2);
 
     // Another repository with the same file contents.
     let other = seeded();
     let again = j(&other, &args);
-    assert_eq!(again["claims"][0]["id"], "c1-1gdm5rr2knddb5tfsp7n");
+    assert_eq!(again["claims"][0]["id"], id.as_str());
     assert_eq!(again["claims"][0]["created"], true);
-    assert_eq!(again["claims"][0]["mark"], "m1-rg67bhvrxw5kqxa04a80");
+    assert_eq!(again["claims"][0]["mark"], first_mark.as_str());
+    assert_eq!(other.records("claims"), repo.records("claims"));
 
     // The typed form does not matter, only what it resolves to: the bare
     // quote completes to the same selector as symbol plus quote.
@@ -522,7 +545,7 @@ fn r53_claiming_again_gives_the_same_id_and_a_second_mark() {
             "file:src/a.rs::let max_entries = 64;",
         ],
     );
-    assert_eq!(bare["claims"][0]["id"], "c1-1gdm5rr2knddb5tfsp7n");
+    assert_eq!(bare["claims"][0]["id"], id.as_str());
     assert_eq!(bare["claims"][0]["created"], false);
 }
 
@@ -631,7 +654,6 @@ fn by_and_note_are_stored_trimmed_and_empty_is_null() {
         ],
     );
     let noted = s(&v["claims"][0]["id"]).to_owned();
-    assert_eq!(noted, "c1-bnaamxp0qe3fx79hq7fs");
     assert_eq!(
         v["claims"][0]["claim"]["statement"],
         "The cache holds 64 entries."
@@ -660,7 +682,7 @@ fn by_and_note_are_stored_trimmed_and_empty_is_null() {
         ],
     );
     let plain = s(&v["claims"][0]["id"]).to_owned();
-    assert_eq!(plain, "c1-5dzngf9a2gw78kyd583p");
+    assert_ne!(plain, noted);
     assert_eq!(v["claims"][0]["claim"]["note"], Value::Null);
     let listed = j(&repo, &["list", &plain]);
     assert_eq!(listed["claim"]["note"], Value::Null);
@@ -785,7 +807,6 @@ fn r52_reanchor_with_a_quote_in_a_comment_is_refused() {
         CACHE_SUBJECT,
         &[LIMIT_EVIDENCE],
     );
-    assert_eq!(id, "c1-1gdm5rr2knddb5tfsp7n");
 
     let e = refused(
         &repo,
@@ -907,14 +928,20 @@ fn r35_every_stale_or_expired_claim_has_the_next_of_the_table() {
         TIMEOUT_SUBJECT,
         &["file:src/a.rs#timeout::30"],
     );
-    assert_eq!(changed, "c1-q2h16fvncxa57ch849g8");
-    assert_eq!(expired, "c1-wfmrq6gwkdpdbv35j3pd");
-    assert_eq!(evidence_gone, "c1-9gc0kqje9trxxdsswa4a");
-    assert_eq!(subject_gone, "c1-f3dgwapadfddqpm0fxzh");
-    assert_eq!(both_gone, "c1-wca78e0w40g8w20rv871");
-    assert_eq!(ambiguous, "c1-a68sqvf5fmkkg2pndrp4");
-    assert_eq!(fresh_approx, "c1-ck0xrnhevzzjywhvcz65");
-    assert_eq!(stale_approx, "c1-53kxz2fcrrvyx626ewc6");
+    // Eight different claims.
+    let mut created = vec![
+        changed.clone(),
+        expired.clone(),
+        evidence_gone.clone(),
+        subject_gone.clone(),
+        both_gone.clone(),
+        ambiguous.clone(),
+        fresh_approx.clone(),
+        stale_approx.clone(),
+    ];
+    created.sort();
+    created.dedup();
+    assert_eq!(created.len(), 8);
 
     // Everything is fresh and nothing is listed.
     let v = j(&repo, &["status"]);
@@ -969,6 +996,7 @@ fn r35_every_stale_or_expired_claim_has_the_next_of_the_table() {
     let listed_order = sorted.clone();
     sorted.sort();
     assert_eq!(listed_order, sorted, "claims are ordered by id");
+    assert_eq!(sorted, created, "the eight claims that were created");
     let claims = by_id(&v);
     let same = json!(["same", null, false]);
     let missing = json!(["missing", "selector_not_found", false]);
@@ -1109,9 +1137,7 @@ fn status_selects_by_state_by_locator_and_by_id() {
     let fresh = repo.claim("Retries", RETRY_SUBJECT, &["file:docs/b.md"]);
     let stale = repo.claim("Cache size", CACHE_SUBJECT, &[LIMIT_EVIDENCE]);
     let retired = repo.claim("Timeout", TIMEOUT_SUBJECT, &["file:src/a.rs#timeout"]);
-    assert_eq!(fresh, "c1-2gzzbx0maggkfqqca27p");
-    assert_eq!(stale, "c1-nhzyhs9pvks5vjx3tq12");
-    assert_eq!(retired, "c1-3sd97t17d49fxysgn694");
+    assert!(fresh != stale && stale != retired && fresh != retired);
     j(&repo, &["retire", &retired]);
     repo.write("src/a.rs", &CODE.replace("= 64;", "= 128;"));
 
@@ -1238,8 +1264,7 @@ fn an_id_prefix_that_matches_two_claims_is_ambiguous_id() {
     // Two statements whose claim ids share their first characters.
     let a = repo.claim("statement 267", CACHE_SUBJECT, &[]);
     let b = repo.claim("statement 525", CACHE_SUBJECT, &[]);
-    assert_eq!(a, "c1-2fwwa6j8kdxjtz6f9xyd");
-    assert_eq!(b, "c1-2fww0mgdxh7hcjn5zatz");
+    assert_ne!(a, b);
     let shared = a.chars().zip(b.chars()).take_while(|(x, y)| x == y).count();
     assert!(shared >= 7, "{a} and {b} share a valid prefix");
 
@@ -1273,7 +1298,6 @@ fn r36_reanchor_with_a_new_statement_replaces_the_claim() {
         CACHE_SUBJECT,
         &[LIMIT_EVIDENCE],
     );
-    assert_eq!(old, "c1-1gdm5rr2knddb5tfsp7n");
 
     let v = at(
         &repo,
@@ -1304,11 +1328,11 @@ fn r36_reanchor_with_a_new_statement_replaces_the_claim() {
             "warnings"
         ]
     );
-    assert_eq!(v["old"], "c1-1gdm5rr2knddb5tfsp7n");
-    assert_eq!(v["new"], "c1-c5dmdnr0men8yge93g3g");
-    assert_eq!(v["mark"], "m1-07krzmcryqd5756tqhtk");
-    assert_eq!(v["retirement"], "r1-mq73bnsxwqpvw9fgfqz4");
-    let new = s(&v["new"]).to_owned();
+    assert_eq!(v["old"], old.as_str());
+    let new = id_of(&v["new"], "c1-");
+    assert_ne!(new, old);
+    id_of(&v["mark"], "m1-");
+    let retirement = id_of(&v["retirement"], "r1-");
     assert_eq!(v["claim"]["id"], new.as_str());
     assert_eq!(
         v["claim"]["statement"],
@@ -1330,7 +1354,7 @@ fn r36_reanchor_with_a_new_statement_replaces_the_claim() {
     assert_eq!(
         listed_old["retirements"],
         json!([{
-            "id": "r1-mq73bnsxwqpvw9fgfqz4",
+            "id": retirement,
             "retires": old,
             "replacedBy": new,
             "at": "2026-11-20T13:00:00Z",
@@ -1419,10 +1443,12 @@ fn r36_reanchor_with_a_new_subject_replaces_the_claim() {
         ],
     );
     assert_eq!(v["old"], old.as_str());
-    assert_eq!(v["new"], "c1-qggtg92v3m72cw6sxwpq");
-    assert_eq!(v["mark"], "m1-3f42jckkg5k0bgjcgj2z");
-    assert_eq!(v["retirement"], "r1-sfyxkxjtwxrw51gzgb0e");
-    let new = s(&v["new"]).to_owned();
+    let new = id_of(&v["new"], "c1-");
+    assert_ne!(new, old);
+    id_of(&v["mark"], "m1-");
+    id_of(&v["retirement"], "r1-");
+    assert_eq!(v["claim"]["id"], new.as_str());
+    assert_eq!(v["claim"]["mark"], v["mark"]);
     assert_eq!(v["claim"]["state"], "fresh");
     assert_eq!(v["claim"]["statement"], "The cache holds 64 entries.");
     assert_eq!(
@@ -1494,7 +1520,6 @@ fn reanchor_edits_the_evidence_list_the_recheck_period_and_the_note() {
         CACHE_SUBJECT,
         &[LIMIT_EVIDENCE, "file:src/a.rs#timeout"],
     );
-    assert_eq!(first, "c1-nypzs91wgyf1zh0nkzwp");
     let evidence = |id: &str| -> Vec<(String, Value)> {
         let listed = j(&repo, &["list", id]);
         listed["claim"]["evidence"]
@@ -1523,8 +1548,8 @@ fn reanchor_edits_the_evidence_list_the_recheck_period_and_the_note() {
             &format!("2={RETRY_SUBJECT}"),
         ],
     );
-    let second = s(&v["new"]).to_owned();
-    assert_eq!(second, "c1-qxrg8s42et71bd1mvkzt");
+    assert_eq!(v["old"], first.as_str());
+    let second = id_of(&v["new"], "c1-");
     assert_eq!(
         evidence(&second),
         [rs("limit"), md("The retry count is 3.")]
@@ -1543,8 +1568,8 @@ fn reanchor_edits_the_evidence_list_the_recheck_period_and_the_note() {
             TIMEOUT_SUBJECT,
         ],
     );
-    let third = s(&v["new"]).to_owned();
-    assert_eq!(third, "c1-czg4ap6zkvjca8580vpr");
+    assert_eq!(v["old"], second.as_str());
+    let third = id_of(&v["new"], "c1-");
     assert_eq!(
         evidence(&third),
         [
@@ -1572,8 +1597,8 @@ fn reanchor_edits_the_evidence_list_the_recheck_period_and_the_note() {
             "file:src/a.rs#limit",
         ],
     );
-    let fourth = s(&v["new"]).to_owned();
-    assert_eq!(fourth, "c1-z0b03a09ej9dztb7xjc3");
+    assert_eq!(v["old"], third.as_str());
+    let fourth = id_of(&v["new"], "c1-");
     assert_eq!(
         evidence(&fourth),
         [md("The retry count is 3."), rs("timeout"), rs("limit")]
@@ -1606,8 +1631,8 @@ fn reanchor_edits_the_evidence_list_the_recheck_period_and_the_note() {
             "  run the cache test  ",
         ],
     );
-    let fifth = s(&v["new"]).to_owned();
-    assert_eq!(fifth, "c1-r7z07ezqryb4y9wnzq3v");
+    assert_eq!(v["old"], fourth.as_str());
+    let fifth = id_of(&v["new"], "c1-");
     assert_eq!(v["claim"]["recheck"], "P30D");
     assert_eq!(v["claim"]["note"], "run the cache test");
     assert_eq!(v["claim"]["expiresAt"], "2026-12-20T12:00:00Z");
@@ -1617,8 +1642,8 @@ fn reanchor_edits_the_evidence_list_the_recheck_period_and_the_note() {
     // `none` removes each; removing both gives the fourth claim's body
     // again, which is retired, so remove them one at a time.
     let v = j(&repo, &["reanchor", &fifth, "--recheck", "none"]);
-    let sixth = s(&v["new"]).to_owned();
-    assert_eq!(sixth, "c1-rc5g1p559n2f81t56hg7");
+    assert_eq!(v["old"], fifth.as_str());
+    let sixth = id_of(&v["new"], "c1-");
     assert_eq!(v["claim"]["recheck"], Value::Null);
     assert_eq!(v["claim"]["note"], "run the cache test");
     assert_eq!(v["claim"]["expiresAt"], Value::Null);
@@ -1629,8 +1654,8 @@ fn reanchor_edits_the_evidence_list_the_recheck_period_and_the_note() {
         &repo,
         &["reanchor", &sixth, "--note", "none", "--recheck", "P1Y"],
     );
-    let seventh = s(&v["new"]).to_owned();
-    assert_eq!(seventh, "c1-sd0gs615e5rhx1mqr39h");
+    assert_eq!(v["old"], sixth.as_str());
+    let seventh = id_of(&v["new"], "c1-");
     assert_eq!(v["claim"]["note"], Value::Null);
     assert_eq!(v["claim"]["recheck"], "P1Y");
     let listed = j(&repo, &["list", &seventh]);
@@ -1650,9 +1675,25 @@ fn reanchor_edits_the_evidence_list_the_recheck_period_and_the_note() {
             "3",
         ],
     );
-    let eighth = s(&v["new"]).to_owned();
-    assert_eq!(eighth, "c1-40xbkvxnb5cx5xxzvj5j");
+    assert_eq!(v["old"], seventh.as_str());
+    let eighth = id_of(&v["new"], "c1-");
     assert_eq!(evidence(&eighth), []);
+
+    // Every step made a claim of its own.
+    let mut chain = vec![
+        first,
+        second,
+        third,
+        fourth,
+        fifth,
+        sixth,
+        seventh,
+        eighth.clone(),
+    ];
+    chain.sort();
+    chain.dedup();
+    assert_eq!(chain.len(), 8);
+    assert_eq!(ids(&j(&repo, &["list", "--retired"])), chain);
 
     // Only the last claim is live.
     let v = j(&repo, &["status"]);
@@ -1754,7 +1795,6 @@ fn r37_a_renamed_function_is_changed_and_approx_then_wants_a_reanchor() {
         CACHE_SUBJECT,
         &["file:src/a.rs#limit::let max_entries = 64;"],
     );
-    assert_eq!(id, "c1-1gdm5rr2knddb5tfsp7n");
     repo.write("src/a.rs", &CODE.replace("fn limit", "fn max_cache_size"));
 
     let view = repo.view(&id);
@@ -1775,8 +1815,9 @@ fn r37_a_renamed_function_is_changed_and_approx_then_wants_a_reanchor() {
 
     let v = at(&repo, "2026-11-20T13:00:00Z", &["mark", &id]);
     assert_eq!(v["marks"][0]["claim"], id.as_str());
-    assert_eq!(v["marks"][0]["mark"], "m1-a5tkkqrtmvpkw6qddsmm");
+    let mark = id_of(&v["marks"][0]["mark"], "m1-");
     let marked = &v["marks"][0]["claimView"];
+    assert_eq!(marked["mark"], mark.as_str());
     assert_eq!(marked["state"], "fresh");
     assert_eq!(
         sides(marked),
@@ -1792,8 +1833,9 @@ fn r37_a_renamed_function_is_changed_and_approx_then_wants_a_reanchor() {
     // Running that command stores the new symbol and clears `approx`.
     let v = at(&repo, "2026-11-20T14:00:00Z", &["reanchor", &id]);
     assert_eq!(v["old"], id.as_str());
-    assert_eq!(v["new"], "c1-4twtjk025mzt59q9qbd5");
-    let new = s(&v["new"]).to_owned();
+    let new = id_of(&v["new"], "c1-");
+    assert_ne!(new, id);
+    assert_eq!(v["claim"]["id"], new.as_str());
     assert_eq!(
         v["claim"]["sides"][1]["anchor"]["sel"]["symbol"],
         "max_cache_size"
@@ -1818,7 +1860,6 @@ fn r37_a_renamed_function_is_changed_and_approx_then_wants_a_reanchor() {
 fn r55_mark_accepts_an_approx_side_and_shows_what_was_marked() {
     let repo = seeded();
     let id = repo.claim("Retries", RETRY_SUBJECT, &[LIMIT_EVIDENCE]);
-    assert_eq!(id, "c1-06djv1tm4th95hajnvwj");
     // The sentence is reworded slightly: the quote is found only
     // approximately.
     repo.write(
@@ -1848,7 +1889,7 @@ fn r55_mark_accepts_an_approx_side_and_shows_what_was_marked() {
     );
     assert_eq!(v["marks"][0]["accepted"]["was"], "stale");
     assert_eq!(v["marks"][0]["claim"], id.as_str());
-    assert_eq!(v["marks"][0]["mark"], "m1-917ssa66gvj3kfctxcb8");
+    let mark = id_of(&v["marks"][0]["mark"], "m1-");
     let marked = &v["marks"][0]["claimView"];
     assert_eq!(marked["id"], id.as_str());
     assert_eq!(marked["state"], "fresh");
@@ -1875,6 +1916,8 @@ fn r55_mark_accepts_an_approx_side_and_shows_what_was_marked() {
     assert_eq!(repo.records("marks").len(), 2);
     let listed = j(&repo, &["list", &id]);
     assert_eq!(listed["retirements"], json!([]));
+    assert_eq!(listed["marks"][1]["id"], mark.as_str());
+    assert_ne!(listed["marks"][0]["id"], mark.as_str());
     assert_eq!(
         listed["claim"]["subject"]["sel"]["quote"],
         "The retry count is 3."
@@ -1918,7 +1961,10 @@ fn r55_mark_accepts_an_approx_side_and_shows_what_was_marked() {
 
     // The reanchor refreshes the quote.
     let v = at(&repo, "2026-11-20T14:00:00Z", &["reanchor", &id]);
-    assert_eq!(v["new"], "c1-dx2qvy598dv63qzd84wx");
+    assert_eq!(v["old"], id.as_str());
+    let new = id_of(&v["new"], "c1-");
+    assert_ne!(new, id);
+    assert_eq!(v["claim"]["id"], new.as_str());
     assert_eq!(
         v["claim"]["sides"][0]["anchor"]["sel"]["quote"],
         "The retry count is 4."
@@ -2054,7 +2100,6 @@ fn r54_reanchor_back_to_a_retired_claim_is_refused() {
         CACHE_SUBJECT,
         &[LIMIT_EVIDENCE],
     );
-    assert_eq!(a, "c1-1gdm5rr2knddb5tfsp7n");
     let v = j(
         &repo,
         &[
@@ -2064,8 +2109,8 @@ fn r54_reanchor_back_to_a_retired_claim_is_refused() {
             "The cache holds sixty-four entries.",
         ],
     );
-    let b = s(&v["new"]).to_owned();
-    assert_eq!(b, "c1-c5dmdnr0men8yge93g3g");
+    let b = id_of(&v["new"], "c1-");
+    assert_ne!(b, a);
     assert_eq!(repo.state(&a), "retired");
 
     // Re-anchoring B back to A's statement would produce A again.
@@ -2110,8 +2155,10 @@ fn r54_reanchor_back_to_a_retired_claim_is_refused() {
         ],
     );
     assert_eq!(v["old"], b.as_str());
-    assert_eq!(v["new"], "c1-yh81nbe2gjagedmc0nga");
-    assert_ne!(v["new"], a.as_str());
+    let c = id_of(&v["new"], "c1-");
+    assert_ne!(c, a);
+    assert_ne!(c, b);
+    assert_eq!(v["claim"]["id"], c.as_str());
     assert_eq!(v["claim"]["statement"], "The cache holds 64 entries.");
     assert_eq!(v["claim"]["note"], "restored");
     assert_eq!(repo.state(&b), "retired");
@@ -2150,8 +2197,9 @@ fn mark_clears_a_stale_claim_and_keeps_its_id() {
     assert_eq!(marks.len(), 2);
     assert_eq!(marks[0]["claim"], cache.as_str());
     assert_eq!(marks[1]["claim"], timeout.as_str());
-    assert_eq!(marks[0]["mark"], "m1-bj82ap9pq8f364jmehh0");
-    assert_eq!(marks[1]["mark"], "m1-a6mgbhnjkmcphfydyzdf");
+    let cache_mark = id_of(&marks[0]["mark"], "m1-");
+    let timeout_mark = id_of(&marks[1]["mark"], "m1-");
+    assert_ne!(cache_mark, timeout_mark);
     for m in marks {
         assert_eq!(m["claimView"]["state"], "fresh");
         assert_eq!(m["claimView"]["mark"], m["mark"]);
@@ -2167,7 +2215,7 @@ fn mark_clears_a_stale_claim_and_keeps_its_id() {
     assert_eq!(
         listed["marks"][1],
         json!({
-            "id": "m1-bj82ap9pq8f364jmehh0",
+            "id": cache_mark,
             "claim": cache,
             "at": "2026-11-20T13:00:00Z",
             "by": "nick",
@@ -2178,6 +2226,10 @@ fn mark_clears_a_stale_claim_and_keeps_its_id() {
             "note": "read both"
         })
     );
+    assert_ne!(listed["marks"][0]["id"], cache_mark.as_str());
+    let listed = j(&repo, &["list", &timeout]);
+    assert_eq!(listed["marks"].as_array().unwrap().len(), 2);
+    assert_eq!(listed["marks"][1]["id"], timeout_mark.as_str());
     assert_eq!(j(&repo, &["status"])["claims"], json!([]));
 }
 
@@ -2270,9 +2322,7 @@ fn retire_takes_several_ids_and_reports_already_retired() {
     let cache = repo.claim("Cache size", CACHE_SUBJECT, &[LIMIT_EVIDENCE]);
     let timeout = repo.claim("Timeout", TIMEOUT_SUBJECT, &[]);
     let retries = repo.claim("Retries", RETRY_SUBJECT, &[]);
-    assert_eq!(cache, "c1-nhzyhs9pvks5vjx3tq12");
-    assert_eq!(timeout, "c1-h3e6qz7am671y6swdx3q");
-    assert_eq!(retries, "c1-xwexnhk34kmp3zjc73pg");
+    assert!(cache != timeout && timeout != retries && cache != retries);
 
     let v = j(
         &repo,
@@ -2287,17 +2337,20 @@ fn retire_takes_several_ids_and_reports_already_retired() {
         ],
     );
     assert_eq!(v["command"], "retire");
+    let cache_retirement = id_of(&v["retired"][0]["retirement"], "r1-");
+    let timeout_retirement = id_of(&v["retired"][1]["retirement"], "r1-");
+    assert_ne!(cache_retirement, timeout_retirement);
     assert_eq!(
         v["retired"],
         json!([
-            {"claim": cache, "retirement": "r1-a701x0xhk9gcbfgfsgwb", "alreadyRetired": false},
-            {"claim": timeout, "retirement": "r1-bj2y8knxxpt8va8p1808", "alreadyRetired": false}
+            {"claim": cache, "retirement": cache_retirement, "alreadyRetired": false},
+            {"claim": timeout, "retirement": timeout_retirement, "alreadyRetired": false}
         ])
     );
     assert_eq!(
         j(&repo, &["list", &cache])["retirements"],
         json!([{
-            "id": "r1-a701x0xhk9gcbfgfsgwb",
+            "id": cache_retirement,
             "retires": cache,
             "replacedBy": null,
             "at": NOW,
@@ -2317,13 +2370,20 @@ fn retire_takes_several_ids_and_reports_already_retired() {
         "2026-11-20T13:00:00Z",
         &["retire", &cache, &retries, &timeout],
     );
+    let retries_retirement = id_of(&v["retired"][1]["retirement"], "r1-");
+    assert_ne!(retries_retirement, cache_retirement);
+    assert_ne!(retries_retirement, timeout_retirement);
     assert_eq!(
         v["retired"],
         json!([
             {"claim": cache, "retirement": null, "alreadyRetired": true},
-            {"claim": retries, "retirement": "r1-c52n9nv27tyrzpzq5ffs", "alreadyRetired": false},
+            {"claim": retries, "retirement": retries_retirement, "alreadyRetired": false},
             {"claim": timeout, "retirement": null, "alreadyRetired": true}
         ])
+    );
+    assert_eq!(
+        j(&repo, &["list", &retries])["retirements"][0]["id"],
+        retries_retirement.as_str()
     );
     assert_eq!(repo.records("marks").len(), before + 1);
     assert_eq!(
@@ -2424,9 +2484,7 @@ fn list_filters_by_retirement_locator_and_text() {
         s(&v["claims"][0]["id"]).to_owned()
     };
     let stable = repo.claim("stable cache text", "file:docs/b.md", &[]);
-    assert_eq!(cache, "c1-nhzyhs9pvks5vjx3tq12");
-    assert_eq!(timeout, "c1-sx9wtywat1p0vn4x9t3q");
-    assert_eq!(stable, "c1-dcqkfxt0cjj2mh0zfz9q");
+    assert!(cache != timeout && timeout != stable && cache != stable);
     at(&repo, "2026-11-20T13:00:00Z", &["mark", &timeout]);
     at(&repo, "2026-11-20T14:00:00Z", &["retire", &stable]);
 

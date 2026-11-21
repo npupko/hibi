@@ -402,7 +402,14 @@ fn reanchor_on_unchanged_files_is_no_change_for_every_anchor_form() {
     repo.write("docs/a.md", "The function f runs alpha twice.\n");
     let subject = "file:docs/a.md::runs alpha twice";
     for evidence in ["file:m.rs#f", "file:m.rs#f::(a", "file:m.rs#g"] {
-        let v = repo.json(&["claim", evidence, "--subject", subject, "--evidence", evidence]);
+        let v = repo.json(&[
+            "claim",
+            evidence,
+            "--subject",
+            subject,
+            "--evidence",
+            evidence,
+        ]);
         let id = text(&v["claims"][0]["id"]).to_owned();
         let stored = v["claims"][0]["claim"]["sides"][1]["anchor"].clone();
         for round in 0..2 {
@@ -438,9 +445,7 @@ fn reanchor_on_unchanged_files_is_no_change_for_every_anchor_form() {
 #[test]
 fn the_content_of_an_ignored_file_is_never_printed() {
     let repo = Repo::new();
-    repo.config(
-        "[[scope]]\nname = \"all\"\nresource = \"file:**/*.md\"\nkinds = [\"sentence\"]\n",
-    );
+    repo.config("[[scope]]\nname = \"all\"\nresource = \"file:**/*.md\"\nkinds = [\"sentence\"]\n");
     repo.write("notes.md", "The launch code is set.\n");
     repo.write("docs/a.md", "A public sentence.\n");
     repo.commit("base");
