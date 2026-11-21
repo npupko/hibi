@@ -59,7 +59,7 @@ one sentence or one command, or `null`.
 | `invalid_json` | Standard input is not the expected JSON |
 | `invalid_anchor` | A locator, selector or compact anchor does not parse |
 | `invalid_duration` | A `recheck` duration does not parse, is zero, or runs past the year 9999 |
-| `invalid_time` | `--now` does not parse |
+| `invalid_time` | `--now` does not parse or is later than 9999-12-30T22:00:00Z |
 | `invalid_range` | A `--since` range is not one of the accepted forms |
 | `not_initialized` | No `.hibi/hibi.toml` was found |
 | `already_initialized` | `init` on an existing store |
@@ -79,10 +79,10 @@ one sentence or one command, or `null`.
 | `claim_retired` | A write on a retired claim, or a claim equal to a retired one |
 | `no_change` | `reanchor` would produce the same claim |
 | `unknown_scheme` | A new anchor uses a scheme that is not declared |
-| `side_missing` | An anchor resolves to no unit |
+| `side_missing` | An anchor resolves to no unit; for a stored anchor not found exactly, the message lists the candidates found by similarity |
 | `side_ambiguous` | An anchor resolves to several units |
 | `side_unavailable` | An anchor cannot be evaluated; the message gives the reason |
-| `selector_not_exact` | A new anchor resolved only approximately |
+| `selector_not_exact` | A new anchor matches no unit exactly, and the message lists what was found by similarity; or its quote does not occur in the unit its symbol names |
 | `quote_spans_units` | A quote reaches outside one unit |
 | `quote_in_comment` | A quote lies inside a code comment |
 | `unsupported_selector` | A new anchor uses a selector key its provider does not accept, such as `key` on a `file:` locator |

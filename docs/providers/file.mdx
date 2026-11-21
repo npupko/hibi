@@ -27,11 +27,15 @@ Every file also has one unit of kind `file` that spans all of it; the empty
 selector, as in `--subject file:docs/retry.md`, selects it.
 
 A code file that does not parse without error is read as class `text` for that
-run, so its units are blocks (see
-[fingerprints](/concepts/fingerprints#a-file-that-does-not-parse)). A file
-that is not valid UTF-8 is not read, and a side on it is `unavailable` with
-reason `not_text`; a file larger than 8 MiB is `unavailable` with reason
-`too_large`, as is a file with more than 100,000 units. A symbolic link
+run, so its units are blocks, and a side whose anchor has a symbol is
+`unavailable` with reason `resource_unavailable`, naming the line of the first
+error (see
+[fingerprints](/concepts/fingerprints#a-file-that-does-not-parse)). A
+`#symbol` on a markdown, prose or text file is refused, because such a file
+has no declarations. A file that is not valid UTF-8 is not read, and a side on
+it is `unavailable` with reason `not_text`. A code file larger than 2 MiB, or
+any other file larger than 8 MiB, is `unavailable` with reason `too_large`,
+as is a file with more than 100,000 units. A symbolic link
 anywhere in the path is not followed: the file counts as not found, and a side
 on it is `missing` with reason `resource_not_found`. CRLF line endings are
 read as LF.

@@ -38,7 +38,7 @@ including how to report a vulnerability, is in
   under `.git/` and `.hibi/` are never read. A sibling repository is read only
   when your user config allows its directory, and only files that git lists
   there.
-- **Exhaust memory with one file.** A file larger than 8 MiB is not read, a
+- **Exhaust memory with one file.** A code file larger than 2 MiB or another file larger than 8 MiB is not read, a
   shard larger than 64 MiB, a store larger than 256 MiB in total, and a `hibi.toml` or user config larger than 1 MiB
   are errors, and a provider response line longer than 16 MiB kills the
   provider.

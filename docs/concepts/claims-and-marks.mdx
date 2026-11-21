@@ -52,13 +52,18 @@ hibi mark c1-6exa --note "200 << n equals 200 * 2^n" --by agent:claude
 ```
 
 ```text output
-c1-6exasfv5q6wh17yqtfmn  marked  m1-7qacd2t4qv319302894y
+c1-6exasfv5q6wh17yqtfmn  marked  m1-h68x0anbcwam1bettg8g
   was stale: evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked
 ```
 
-`mark` requires every side to resolve to exactly one unit. A side that is
-missing or matches several units makes the command fail with `side_missing`
-or `side_ambiguous`; use `reanchor` to point that side at the right unit.
+`mark` requires every side to resolve to exactly one unit, exactly. A side
+that is missing or matches several units makes the command fail with
+`side_missing` or `side_ambiguous`; use `reanchor` to point that side at the
+right unit. That includes a side whose stored anchor is no longer found
+exactly: `mark` never follows a unit found by similarity.
+
+`mark` prints which sides were not the same, not what changed in them. Read
+the change, for example with `git diff`, before you mark.
 
 ## Retirement
 
@@ -71,7 +76,7 @@ hibi retire c1-24t0 --note "The docs no longer state the attempt limit."
 ```
 
 ```text output
-c1-24t09j90dg85esm4e3e9  retired  r1-j7bah1ahr7t4cp0ttc5q
+c1-24t09j90dg85esm4e3e9  retired  r1-q7pwwmjk54n4qda5sh5z
 ```
 
 `--replaced-by <claim-id>` names the claim that takes the place of the
@@ -90,13 +95,16 @@ hibi reanchor c1-dbv5 \
   --subject "file:docs/retry.md::gives up after 3 attempts"
 ```
 
-If the rebuilt claim is the same as another live claim, `reanchor` marks that
-claim and retires the old one into it instead of writing a new claim; the
-JSON result then has `"merged": true`. Like `mark`, the result reports what
+If the rebuilt claim is the same as another live claim, by the rule of
+[running the same claim again](#running-the-same-claim-again), `reanchor`
+marks that claim and retires the old one into it instead of writing a new
+claim; the JSON result then has `"merged": true` and `new` is the id of the
+existing claim. Like `mark`, the result reports what
 the old claim was before the write.
 
 Without options, `reanchor` resolves every side again and stores the current
-selectors. When nothing changed since the selectors were stored, it writes
+selectors, with their current context. Every side must resolve exactly, as
+for `mark`. When nothing changed since the selectors were stored, it writes
 nothing. For a claim in another example repository whose files did not
 change:
 
@@ -106,7 +114,6 @@ error: no_change: re-anchoring c1-z8raazy7mcj5yffz18hv would produce the same cl
   fix: The stored anchors are up to date. To record a new check, run hibi mark c1-z8raazy7mcj5yffz18hv
 ```
 
- That refreshes a claim whose text moved or was reworded slightly.
 Because `reanchor` writes a mark, run it only after you checked the statement.
 
 ## Ids
@@ -138,7 +145,8 @@ anchor after the function changed:
 
 ```text output
 $ hibi claim "Old entries are evicted first." --subject "file:docs/cache.md::evicted first" --evidence "file:src/cache.rs#evict"
-{"ok":true,"command":"claim","claims":[{"id":"c1-j480e5y2qz6p0pxv37bf","created":false,"mark":"m1-tyn3q1xy7arydh42fr41","accepted":{"was":"fresh","sides":[]},"claim":{"id":"c1-j480e5y2qz6p0pxv37bf","statement":"Old entries are evicted first.","recheck":null,"note":null,"state":"fresh","mark":"m1-tyn3q1xy7arydh42fr41","markedAt":"2026-11-21T01:04:53Z","expiresAt":null,"sides":[{"index":0,"role":"subject","anchor":{"loc":"file:docs/cache.md","sel":{"quote":"evicted first","prefix":"he\n\nThe cache holds 64 entries.\nOld entries are ","suffix":".\nThe cache is cleared on restart.\n","pos":53}},"state":"same","reason":null,"approx":false,"unit":{"key":"sentence:d38c9d9e8ff7","kind":"sentence","label":"Old entries are evicted first.","line":4,"endLine":4},"fp":"b3:prose-v1:d38c9d9e8ff707fb8571689daebebd2e","markedFp":"b3:prose-v1:d38c9d9e8ff707fb8571689daebebd2e"},{"index":1,"role":"evidence","anchor":{"loc":"file:src/cache.rs","sel":{"quote":"pub fn evict() {}","prefix":";\n\n","suffix":"\n","pos":101,"symbol":"evict"}},"state":"same","reason":null,"approx":false,"unit":{"key":"function:evict","kind":"function","label":"evict","line":8,"endLine":8},"fp":"b3:ast-v1:8a3118f2b5f71bcedcf9c1cfd4e26e68","markedFp":"b3:ast-v1:8a3118f2b5f71bcedcf9c1cfd4e26e68"}],"next":null}}],"nextNote":"Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A fresh claim is listed only because its anchor drifted: the statement still holds, so look at what the anchor points to now, then run its reanchor command.","warnings":[]}
+c1-j480e5y2qz6p0pxv37bf  marked  m1-cjh6k5hq785rtvr9k031  subject file:docs/cache.md (sentence "Old entries are evicted first.", line 4); evidence 1 file:src/cache.rs (function "evict", line 8)
+  was stale: evidence 1 file:src/cache.rs changed (fingerprint_differs); now marked
 ```
 
 In JSON each entry carries `accepted`: `null` for a new claim, otherwise
@@ -150,7 +158,7 @@ delays", which changes the stored context of the quote:
 
 ```text output
 $ hibi claim "The client gives up after 3 attempts." --subject "file:docs/retry.md::gives up after 3 attempts" --evidence "file:src/retry.rs#MAX_ATTEMPTS"
-c1-24t09j90dg85esm4e3e9  marked  m1-94grzney160p4r34d4t6  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-24t09j90dg85esm4e3e9  marked  m1-n4mvkwxjeqxpb72r9ns9  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 In JSON the entry has `"created": false`. Only live claims are matched: after
@@ -171,10 +179,10 @@ hibi list --retired
 ```
 
 ```text output
-c1-24t09j90dg85esm4e3e9  The client gives up after 3 attempts.  file:docs/retry.md  2 marks  last 2026-11-21T01:03:54Z  retired
-c1-6exasfv5q6wh17yqtfmn  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  3 marks  last 2026-11-21T01:03:54Z  retired
-c1-dbv50xcvkr3wg5jnbtfw  The client gives up after 5 attempts.  file:docs/retry.md  1 mark  last 2026-11-21T01:03:53Z  retired
-c1-h9dtbswxnzzjyb2nej30  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  1 mark  last 2026-11-21T01:03:54Z
+c1-24t09j90dg85esm4e3e9  The client gives up after 3 attempts.  file:docs/retry.md  2 marks  last 2026-11-21T03:02:32Z  retired
+c1-6exasfv5q6wh17yqtfmn  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  2 marks  last 2026-11-21T03:02:32Z  retired
+c1-dbv50xcvkr3wg5jnbtfw  The client gives up after 5 attempts.  file:docs/retry.md  1 mark  last 2026-11-21T03:02:30Z  retired
+c1-mdm107xhmdkbrfbr7awv  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  1 mark  last 2026-11-21T03:02:32Z
 c1-zfv9r5t784m0vnty4fv9  Each attempt times out after 10 seconds.  file:docs/retry.md  1 mark  last 2026-08-01T09:00:00Z
 ```
 
@@ -191,10 +199,10 @@ c1-dbv50xcvkr3wg5jnbtfw
   subject: {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 5 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
   evidence 1: {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 5;","prefix":"\n","suffix":"\n\n","pos":62,"symbol":"MAX_ATTEMPTS"}}
 1 mark:
-  m1-fpax67p2tzwx7x3hea9e  2026-11-21T01:03:53Z
+  m1-dca40cngrya262q84gvf  2026-11-21T03:02:30Z
     file:docs/retry.md  b3:prose-v1:0233c89ebf2069292e2778bdc7176396
     file:src/retry.rs  b3:ast-v1:fb3a4a42c90a9093fe98969b8a0018c0
-retired: r1-p3sg08ntcgbzh3g6b8re  2026-11-21T01:03:53Z  replaced by c1-24t09j90dg85esm4e3e9
+retired: r1-q9h7ffty4qnze1cnqjv7  2026-11-21T03:02:30Z  replaced by c1-24t09j90dg85esm4e3e9
 ```
 
 `--loc <glob>` keeps claims with a side whose locator matches, and

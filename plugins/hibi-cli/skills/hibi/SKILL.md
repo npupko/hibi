@@ -17,8 +17,9 @@ allowed-tools: >-
 
 hibi records that a statement was checked against evidence (a **claim**, with
 a first **mark** holding the fingerprint of every side), and later reports
-exactly what changed (`hibi status`) and what in a declared scope has no claim
-(`hibi cover`). It is memory, not a gatekeeper. You are trusted to judge
+which side of which claim changed (`hibi status`) and what in a declared scope
+has no claim (`hibi cover`). It does not show what changed in a side: you read
+that yourself before you mark. It is memory, not a gatekeeper. You are trusted to judge
 whether a statement holds. hibi tells you what to re-check. When you cannot
 decide, ask the user.
 
@@ -59,19 +60,25 @@ Ask the user before each of these steps; they change the repository.
 
 ## The session loop
 
-1. **Status.** `hibi status --detail` lists stale and expired claims, and
-   drifted fresh claims, with the current text of every side. Each side that
-   is not `same` has a `state` (`changed`, `missing`, `ambiguous`,
-   `unavailable`) and a `reason`.
-2. **Re-check** each stale or expired claim. Read the statement and the
-   current text. Decide whether the statement still holds. Never run `next`
-   without this step.
-   **Refresh** each drifted claim. It is fresh, so the statement still holds
-   as checked, but a side was found only approximately. Look at the unit the
-   side resolves to now. If it is the right unit, run `next`
-   (`hibi reanchor <id>`). If not, give the right anchor with `--subject` or
-   `--evidence <n>=<anchor>`.
-3. **Record what you found.**
+1. **Status.** `hibi status --detail` lists stale and expired claims with the
+   current text of every side. Each side that is not `same` has a `state`
+   (`changed`, `missing`, `ambiguous`, `unavailable`) and a `reason`.
+2. **Read the change.** For each changed side, look at what changed before
+   you decide anything: `git diff -- <path>` for a file, or
+   `hibi status --detail <id>` for the unit's current text. `status` says
+   which side changed, and `mark` prints only "was stale: evidence 1 ...
+   changed; now marked", so neither shows you the change.
+3. **Re-check** the statement against what you read. Decide whether it still
+   holds. Never run `next` without this step, and never mark claims in bulk
+   without having read each change.
+4. **A side not found exactly.** A side whose anchor is not found exactly is
+   `missing` with reason `not_exact`, and lists `candidates`: units found by
+   similarity, each with an `anchor` that selects it. A candidate is a guess.
+   Read it. If it is the unit the claim is about, re-check the statement
+   against it, then `hibi reanchor <id> --subject <anchor>` or
+   `--evidence <n>=<anchor>` with that anchor. If none is right, find the
+   unit and give its anchor. `mark` refuses such a claim (`side_missing`).
+5. **Record what you found.**
    - Still holds: `hibi mark <id>`.
    - Holds, but the subject moved or matches several units:
      `hibi reanchor <id> --subject <anchor>`.
@@ -85,16 +92,17 @@ Ask the user before each of these steps; they change the repository.
      `hibi retire <id> --note "why"`.
    - You cannot tell whether the document or the code is right: ask the user.
      Do not mark.
-4. **Claim.** After you check a new statement, record it:
+6. **Claim.** After you check a new statement, record it:
    `hibi claim "<statement>" --subject <anchor> --evidence <anchor>`.
    Running the same claim again, even after text near the quote changed,
    marks the existing live claim (`created: false`) instead of adding one,
    and reports what it was before (`accepted.was`, for example `stale`).
    Re-check before you do that, as for `mark`.
-5. **Cover.** `hibi cover` (or `--since main...`) lists units of the declared
+7. **Cover.** `hibi cover` (or `--since main...`) lists units of the declared
    scopes that no claim covers. Claim the checkable ones. To exclude one unit,
-   with the user's agreement, add an entry with its key from the `cover`
-   output to the scope's `exclude` list in `.hibi/hibi.toml`:
+   with the user's agreement, add an entry to the scope's `exclude` list in
+   `.hibi/hibi.toml`. The unit key is in the JSON output of `cover`
+   (`items[].unit.key`); the text output prints no keys:
    `{ resource = "file:docs/retry.md", unit = "sentence:0863e2920c1f", reason = "a pointer, not a statement" }`.
    Leave out `unit` to exclude a whole file.
 
@@ -107,30 +115,36 @@ or `null`:
 
 | `next` | Meaning |
 |---|---|
-| `hibi mark <id>` | A side changed or the period expired. Re-check, then mark, or repair or retire. |
-| `hibi reanchor <id> --subject <anchor>` | The subject is missing or ambiguous. Find the unit and give its anchor. |
-| `hibi reanchor <id> --evidence <n>=<anchor>` | Evidence number n is missing or ambiguous. Find the unit and give its anchor. |
-| `hibi reanchor <id>` | The claim is fresh but drifted: a side was found only approximately. Check what the side points to, then refresh the stored selector. |
-| `hibi reanchor <id> --note <text>` | As above, when the plain form would recreate a retired claim. |
+| `hibi mark <id>` | A side changed or the period expired. Read the change, re-check, then mark, or repair or retire. |
+| `hibi reanchor <id> --subject <anchor>` | The subject is missing or ambiguous. Read the candidates, choose the unit, and give its anchor. |
+| `hibi reanchor <id> --evidence <n>=<anchor>` | Evidence number n is missing or ambiguous. Read the candidates, choose the unit, and give its anchor. |
 | `hibi providers` | A provider or sibling repository is not set up. Tell the user; setup is in their user config. |
-| `null` | Fresh, retired, or unavailable for a reason you cannot fix (not text, too large, provider error). |
+| `null` | Fresh, retired, or unavailable for a reason no command fixes. The side's `remediation` says what to do, for example fix a syntax error or declare a scheme. |
 
-Plain `hibi status` lists stale, expired and drifted claims; the summary
-counts drifted claims inside `fresh`, as in `2 fresh (1 drifted)`.
-`hibi status <id>` shows one claim in any state.
+`next` never contains a candidate: `<anchor>` is yours to fill. Plain
+`hibi status` lists stale and expired claims. `hibi status <id>` shows one
+claim in any state.
 
 ## Renames
 
-- **A declaration was renamed** (`JOB_LIMIT` to `MAX_JOBS`): its fingerprint
-  changed, so the claim is stale, and the side is `missing` or found
-  approximately. Re-check, then `hibi reanchor <id> --evidence <n>=<anchor>`
-  with the new symbol.
-- **A container was renamed** (struct `Config` to `Settings`): its members'
-  fingerprints did not change, so the claim stays fresh but drifted, showing
-  the new path such as `Settings.timeout_secs`. Run `hibi reanchor <id>`.
+hibi keeps no alias for a renamed or moved unit. The side is `missing`, and
+the claim is stale until you re-anchor it.
+
+- **A declaration was renamed** (function `limit` to `queue_limit`): the side
+  is `missing` (`not_exact`) and usually lists the renamed declaration as a
+  candidate, with an anchor such as `file:src/jobs.py#queue_limit`. The name
+  is part of its content, so `sameFingerprint` is `false`. Read it; if it is
+  the same thing, re-check and run `hibi reanchor <id> --evidence <n>=<anchor>`
+  with that anchor. A short declaration whose rename changed most of its
+  first line can have no candidate (`selector_not_found`); find it yourself.
+- **A container was renamed** (struct `Config` to `Settings`): a member's
+  side is `missing` (`not_exact`) with the member under its new path as a
+  candidate, such as `Settings.timeout_secs`, and `sameFingerprint: true`
+  (text: "same content as at the last mark"). Its content is what was
+  checked; re-anchor to it.
 - **A file was renamed or moved**: the side is `missing`
-  (`resource_not_found`). Give the new path with `--subject` or
-  `--evidence <n>=<anchor>`.
+  (`resource_not_found`) with no candidates. Give the new path with
+  `--subject` or `--evidence <n>=<anchor>`.
 
 ## Anchors
 
@@ -154,6 +168,8 @@ Rules for a new anchor (in `claim`, and a replaced or added side in
 - With `#symbol::quote`, the quote must occur inside that declaration;
   otherwise the anchor is `selector_not_exact`. A doc comment above the
   declaration is outside it.
+- A `#symbol` works only in code. On a markdown, prose or text file it is
+  refused: "this kind of file has no symbols; anchor it with a quote".
 - A quote inside a code comment, including rustdoc, JSDoc and Javadoc, is
   refused (`quote_in_comment`): anchor the code the comment describes. A
   Python docstring is a string and can be quoted.
@@ -163,8 +179,8 @@ Rules for a new anchor (in `claim`, and a replaced or added side in
   ignored), spelled with the same letter case. Ignored files and paths under
   `.git/` or `.hibi/` cannot be anchored.
 
-`mark` is different: it accepts an approximately found side, because you have
-just re-checked, and prints that side's text so you see what you marked.
+`mark` checks only that every side resolves to exactly one unit. It never
+follows a candidate.
 
 Units of code: functions, methods, classes, structs, interfaces, traits,
 enums, types, variables, modules, impls, macros, top-level statements, and
@@ -176,7 +192,8 @@ precede. Units of prose: `sentence`, `heading`, `list-item`, `table-row`,
 ## What stales a claim
 
 Fingerprints are exact. Prose ignores whitespace changes. Code ignores
-whitespace, line breaks, comments and a trailing comma, but a formatter that
+whitespace, line breaks, comments and a trailing comma, but a Python
+backslash line continuation counts, and a formatter that
 changes semicolons, quote style or parentheses stales claims; re-check and
 mark them. A reverted change makes a claim fresh again.
 
@@ -195,7 +212,7 @@ EOF
 ```
 
 ```bash
-echo '["c1-zfv9", {"claim": "c1-h9dt", "note": "checked against delay_ms"}]' | hibi mark --stdin
+echo '["c1-zfv9", {"claim": "c1-mdm1", "note": "checked against delay_ms"}]' | hibi mark --stdin
 ```
 
 An anchor in a batch is a compact string or `{"loc": ..., "sel": {...}}`.

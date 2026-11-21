@@ -47,14 +47,14 @@ hibi status --since main
 
 ```text output
 3 claims: 1 fresh, 1 stale, 0 expired, 1 retired
-since main (base e48ad6eb3d571de9ae97fbd154326e7b206d0b7b)
+since main (base 7f478ecec7ae44cbf34d3275a417e4548ee260da)
 
 c1-6exasfv5q6wh17yqtfmn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T01:03:54Z (m1-0wxpd9vmp99gnceykpzj)
+  marked 2026-11-21T03:02:31Z (m1-448dbnqzkcm4g3hm1f4x)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  function "delay_ms", lines 5-7
   next: hibi mark c1-6exasfv5q6wh17yqtfmn
 
-Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
 The rewrite computes the same values, so the statement still holds:
@@ -78,7 +78,7 @@ hibi cover --since main
 ```
 
 ```text output
-since main (base e48ad6eb3d571de9ae97fbd154326e7b206d0b7b)
+since main (base 7f478ecec7ae44cbf34d3275a417e4548ee260da)
 docs (file:docs/**/*.md; sentence, list-item, table-row): 1 unit, 0 covered, 0 excluded, 1 uncovered
   file:docs/retry.md
         9  sentence  Each attempt times out after 10 seconds.
@@ -89,7 +89,7 @@ are not evaluated with `--since`, and say so:
 
 ```text output
 $ HIBI_CONFIG=user.toml hibi cover --since main --scope notes
-since main (base ef27c1f81d05b07c81e3c49e4e41dffe4302299a)
+since main (base c52d759b7b4d65e35efe02e35eb6ab501f4b0aa7)
 notes (ref:notes; note): 0 units, 0 covered, 0 excluded, 0 uncovered
   not evaluated: --since works only for scopes on scheme "file"
 ```

@@ -16,38 +16,45 @@ when it cannot decide.
     hibi status
     ```
 
-    By default `status` lists the stale and expired claims, and the fresh
-    claims whose anchor drifted (a side was found only approximately). For
-    each one it lists the sides that are not the same as at the mark, with a
-    state and a reason, and a `next` command. Add `--detail` to include the current text
-    of every side, so the re-check needs no extra file reads:
+    By default `status` lists the stale and expired claims. For each one it
+    lists the sides that are not the same as at the mark, with a state and a
+    reason, and a `next` command. A side that cannot be found exactly also
+    lists the units found by similarity, as candidates. Add `--detail` to
+    include the current text of every side:
 
     ```bash
     hibi status --detail
     ```
   </Step>
-  <Step title="Re-check each stale or expired claim">
-    Read the statement and the current text of its sides. Decide whether the
-    statement still holds. `next` is what to run when it does; it is not a
-    verdict. hibi prints the reminder once per run: "Re-check each stale or
-    expired statement before running its next command. If it no longer holds,
-    fix the text or the code, or retire the claim with hibi retire."
+  <Step title="Re-check each listed claim">
+    Read the statement, then read what changed. `status` tells you which side
+    changed, not what changed in it, and `mark` prints only which sides were
+    not the same. So before you mark, look at the change itself: `git diff`
+    on the side's path, or `hibi status --detail <id>` for the unit's current
+    text. Decide whether the statement still holds against that text. Never
+    mark several claims at once without having read each change.
+
+    `next` is what to run when the statement holds; it is not a verdict.
+    When a listed claim's `next` is `mark` or `reanchor`, hibi prints the
+    reminder once per run: "Re-check each statement before
+    running its next command. If it no longer holds, fix the text or the
+    code, or retire the claim with hibi retire."
   </Step>
-  <Step title="Refresh each drifted claim">
-    A drifted claim is fresh: every side still has a fingerprint that a mark
-    recorded, so the statement still holds as checked. Only the anchor no
-    longer matches exactly, for example because the sentence around a quote
-    was reworded or an enclosing struct was renamed. Look at the unit the side
-    resolves to now. If it is the unit the claim is about, run `next`
-    (`hibi reanchor <id>`), which stores a selector that matches exactly
-    again. If it is the wrong unit, point the side at the right one with
-    `--subject` or `--evidence <n>=<anchor>`.
+  <Step title="Re-anchor a side that is not found exactly">
+    A side whose stored anchor is not found exactly is `missing` with reason
+    `not_exact`. hibi then lists the units it found by similarity as
+    candidates, each with an anchor that selects it. A candidate is a guess:
+    read it, and decide whether it is the unit the claim is about. If it is,
+    re-check the statement against it and run `next` with that anchor, for
+    example `hibi reanchor <id> --subject <anchor>`. If no candidate is
+    right, find the unit yourself and give its anchor. `mark` refuses a claim
+    with such a side, so the claim never silently follows a guess.
   </Step>
   <Step title="Record what you found">
     | Finding | Command |
     |---|---|
     | The statement still holds | `hibi mark <id>` |
-    | It holds, but a side moved, was reworded or matches several units | `hibi reanchor <id>`, with `--subject` or `--evidence <n>=<anchor>` for the side that moved |
+    | It holds, but a side moved, was reworded or matches several units | `hibi reanchor <id>` with `--subject <anchor>` or `--evidence <n>=<anchor>` for that side |
     | The statement must change (you fixed the text, or the code changed what is true) | Fix the text, then `hibi reanchor <id> --statement "..." --subject ...` |
     | The statement was removed or no longer applies | `hibi retire <id> --note "why"` |
     | You cannot tell which side is right, the document or the code | Ask the user. Do not mark. |
@@ -86,53 +93,74 @@ applies:
 
 | Condition | `next` |
 |---|---|
-| Fresh with no approximate side, or retired | `null` |
+| Fresh or retired | `null` |
 | A side is missing or ambiguous | `hibi reanchor <id> --subject <anchor>` or `--evidence <n>=<anchor>`, one option per such side |
-| A side is unavailable because its scheme is not declared, its provider is not registered or failed, or a sibling repository is not allowed | `hibi providers` |
-| A side is unavailable because a sibling repository was not found, the file is not text or too large, or the provider answered with an error | `null` |
-| Fresh, and a side was found only approximately | `hibi reanchor <id>`, or `hibi reanchor <id> --note <text>` when the plain command would recreate a retired claim |
+| A side is unavailable because its provider is not registered or failed, or a sibling repository is not allowed | `hibi providers` |
+| A side is unavailable because its scheme is not declared, a sibling repository was not found, the file is not text or too large, the provider answered with an error, or the resource cannot be read now | `null`; the side's `remediation` says what to do |
 | Otherwise: expired, a side changed, or a side is unavailable with `profile_mismatch` | `hibi mark <id>` |
 
-A stale claim with an approximately found side gets `hibi mark <id>`. After
-the mark, the claim is fresh and drifted, and its `next` becomes
-`hibi reanchor <id>`. Here the sentence was reworded from "doubles each time"
-to "doubles every time"; the meaning is unchanged, so the claim is marked:
+`next` never contains a candidate. Where a side has to be anchored again it
+says `<anchor>`, and you choose the anchor after reading the candidates.
 
-```text output
-$ hibi mark c1-6exa --by agent:claude
-c1-6exasfv5q6wh17yqtfmn  marked  m1-x8gr8a1x4a71hye6ajyn
-  was stale: subject file:docs/retry.md changed (fingerprint_differs); now marked
-  subject  file:docs/retry.md  same, found approximately  sentence "The delay between attempts doubles every time, starting at …", line 5
-    | The delay between attempts doubles every time, starting at 200 ms.
-  next: hibi reanchor c1-6exasfv5q6wh17yqtfmn
-
-A next command here only brings a stored anchor up to date. Look at what the anchor points to now, then run it.
-```
-
-`mark` prints the text of every approximately found side, so you see exactly
-what you marked. The next `status` lists the claim as drifted, with a second
-reminder for it:
+Here the sentence was reworded from "doubles each time" to "doubles every
+time". The stored quote no longer occurs, so the subject is missing and the
+reworded sentence is listed as a candidate:
 
 ```text output
 $ hibi status
-4 claims: 2 fresh (1 drifted), 0 stale, 1 expired, 1 retired
+4 claims: 1 fresh, 1 stale, 1 expired, 1 retired
 
-c1-6exasfv5q6wh17yqtfmn  fresh  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T01:03:54Z (m1-x8gr8a1x4a71hye6ajyn)
-  subject  file:docs/retry.md  same, found approximately  sentence "The delay between attempts doubles every time, starting at …", line 5
-  next: hibi reanchor c1-6exasfv5q6wh17yqtfmn
+c1-6exasfv5q6wh17yqtfmn  stale  The delay doubles each time, starting at 200 ms.
+  marked 2026-11-21T03:02:32Z (m1-h68x0anbcwam1bettg8g)
+  subject  file:docs/retry.md  missing (not_exact)
+    stored: quote "The delay between attempts doubles each time, starting at 200 ms."
+    1 candidate, found by similarity; each is a guess, read it before you anchor to it:
+    - sentence "The delay between attempts doubles every time, starting at …", line 5
+      | The delay between attempts doubles every time, starting at 200 ms.
+      anchor: {"loc":"file:docs/retry.md","sel":{"quote":"The delay between attempts doubles every time, starting at 200 ms.","prefix":" failed download.\nIt gives up after 3 attempts.\n","suffix":"\n\n## Timeouts\n\nEach attempt times out after 10 s","pos":90}}
+  next: hibi reanchor c1-6exasfv5q6wh17yqtfmn --subject <anchor>
 
 c1-zfv9r5t784m0vnty4fv9  expired  Each attempt times out after 10 seconds.
   marked 2026-08-01T09:00:00Z (m1-w0yyhnc63nzdvsk0kjb9), recheck P90D ran out at 2026-10-30T09:00:00Z
   next: hibi mark c1-zfv9r5t784m0vnty4fv9
 
-Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
-
-A fresh claim is listed because its anchor drifted. The statement still holds: look at what the anchor points to now, then run its reanchor command.
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
-`hibi reanchor c1-6exa` then replaces the claim with one whose anchor matches
-exactly, and it is no longer listed.
+`mark` refuses the claim, because its subject resolves to no unit:
+
+```text output
+$ hibi mark c1-6exa --by agent:claude
+error: side_missing: the subject (file:docs/retry.md) resolves to no unit (not_exact): the anchor matches no unit exactly; 1 unit was found by similarity, each a guess to check before use: sentence "The delay between attempts doubles every time, starting at 200 ms.", line 5: {"loc":"file:docs/retry.md","sel":{"quote":"The delay between attempts doubles every time, starting at 200 ms.","prefix":" failed download.\nIt gives up after 3 attempts.\n","suffix":"\n\n## Timeouts\n\nEach attempt times out after 10 s","pos":90}}
+  fix: hibi reanchor c1-6exasfv5q6wh17yqtfmn --subject <anchor>
+```
+
+The candidate is the same sentence, and the statement still holds. Anchor the
+subject to it with a quote of your own:
+
+```text output
+$ hibi reanchor c1-6exa --subject 'file:docs/retry.md::doubles every time'
+c1-6exasfv5q6wh17yqtfmn is retired and replaced by the new claim c1-mdm107xhmdkbrfbr7awv
+  mark m1-1z7f6akkx7qgx56m2dww, retirement r1-w0qvjrt1nnv022vswjc1
+  was stale: subject file:docs/retry.md missing (not_exact); now marked
+  subject file:docs/retry.md (sentence "The delay between attempts doubles every time, starting at …", line 5)
+    {"loc":"file:docs/retry.md","sel":{"quote":"doubles every time","prefix":"up after 3 attempts.\nThe delay between attempts ","suffix":", starting at 200 ms.\n\n## Timeouts\n\nEach attempt","pos":117}}
+  evidence 1 file:src/retry.rs (function "delay_ms", lines 5-7)
+    {"loc":"file:src/retry.rs","sel":{"quote":"pub fn delay_ms(n: u32) -> u64 {","prefix":"\n","suffix":"\n    200 << n\n}\n","pos":147,"symbol":"delay_ms"}}
+```
+
+The old claim is retired into the new one, and `status` no longer lists it:
+
+```text output
+$ hibi status
+5 claims: 2 fresh, 0 stale, 1 expired, 2 retired
+
+c1-zfv9r5t784m0vnty4fv9  expired  Each attempt times out after 10 seconds.
+  marked 2026-08-01T09:00:00Z (m1-w0yyhnc63nzdvsk0kjb9), recheck P90D ran out at 2026-10-30T09:00:00Z
+  next: hibi mark c1-zfv9r5t784m0vnty4fv9
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
 
 ## JSON for agents
 
@@ -141,11 +169,21 @@ prints one JSON object. The fields an agent reads from `status`:
 
 | Field | Meaning |
 |---|---|
-| `summary` | Counts of every claim in the store by state, before any filter. `drifted` counts the fresh claims with an approximately found side and is part of `fresh`. |
+| `summary` | Counts of every claim in the store by state, before any filter |
 | `claims[].state` | `fresh`, `stale`, `expired` or `retired` |
-| `claims[].sides[]` | One entry per side: `index` (0 for the subject, n for evidence n), `role`, `anchor`, `state`, `reason`, `approx`, `unit`, `fp` and `markedFp`, plus `candidates` when ambiguous and `text` with `--detail` |
+| `claims[].sides[]` | One entry per side: `index` (0 for the subject, n for evidence n), `role`, `anchor`, `state`, `reason`, `unit`, `fp`, `markedFp`, `remediation` and `detail`; `candidates` and `candidatesTotal` for a side that is missing (`not_exact`) or ambiguous; `text` with `--detail` |
+| `claims[].sides[].candidates[]` | A unit the anchor could mean: `key`, `kind`, `label`, `line`, `endLine`, `text` (at most 240 characters), `anchor` (a string that selects that unit alone) and `sameFingerprint`. At most 20 are listed; `candidatesTotal` counts all of them. |
+| `claims[].sides[].detail` | For an unavailable side: the message that says why, from the provider or from hibi; otherwise `null` |
+| `claims[].sides[].remediation` | For a side that cannot be evaluated: the limit or the cause and what you can do, otherwise `null` |
 | `claims[].next` | The command to run after a successful re-check, or `null` |
-| `nextNote` | The reminders: re-check a statement before running its `next`; when it no longer holds, fix the text or the code, or retire the claim; and for a drifted fresh claim, look at what the anchor points to now before running its `reanchor` |
+| `nextNote` | The reminders: re-check a statement before running its `next`; when it no longer holds, fix the text or the code, or retire the claim; and a candidate is a guess to read before you anchor to it |
+
+`sameFingerprint` is `true` when the candidate's content equals the content
+at the reference mark. The unit then has the content that was checked and
+only its path changed, for example because its enclosing struct was
+renamed. Renaming the declaration itself changes
+its content, so its candidate has `false`. Either way, read the candidate
+before you anchor to it.
 
 Every write that adds a mark to an existing claim (`claim` on an existing
 claim, `mark`, `reanchor`) reports what it accepted:
@@ -176,7 +214,7 @@ error: element 2: invalid_duration: the recheck period "P0D" is zero; it must be
 ```
 
 ```bash
-echo '["c1-zfv9", {"claim": "c1-h9dt", "note": "checked against delay_ms"}]' | hibi mark --stdin
+echo '["c1-zfv9", {"claim": "c1-mdm1", "note": "checked against delay_ms"}]' | hibi mark --stdin
 ```
 
 ```bash

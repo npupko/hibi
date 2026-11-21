@@ -50,8 +50,9 @@ $ HIBI_CONFIG=none.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T01:04:13Z (m1-k5patpggnk7548zpwbem)
+  marked 2026-11-21T03:02:34Z (m1-mha0ka4z0safgnbcw30b)
   subject  ref:notes  unavailable (provider_not_registered)
+    the user config has no provider command for scheme ref
   next: hibi providers
 ```
 
@@ -90,7 +91,7 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
 ```
 
 ```text output
-c1-regrhf1hta0k48q82xea  created  m1-k5patpggnk7548zpwbem  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-regrhf1hta0k48q82xea  created  m1-mha0ka4z0safgnbcw30b  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 A selector key the provider did not list in `hello` is refused before
@@ -110,11 +111,11 @@ $ HIBI_CONFIG=user.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T01:04:13Z (m1-k5patpggnk7548zpwbem)
+  marked 2026-11-21T03:02:34Z (m1-mha0ka4z0safgnbcw30b)
   subject  ref:notes  changed (fingerprint_differs)  note "Downloads are retried at most 4 times."
   next: hibi mark c1-regrhf1hta0k48q82xea
 
-Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
 A scope can name one external resource; its units come from the provider:
@@ -155,13 +156,14 @@ Protocol version 1. The full specification is section 13 of
   error, of which hibi keeps the last 4096 bytes for its error messages.
 - Requests are sequential. The first is always `hello`.
 - Each response must arrive within `timeout_ms` (default 10000, from 100 to
-  600000). A response line longer than 16 MiB is a violation.
+  600000). A provider that stops reading its input fails when that limit
+  expires, like one that does not answer. A response line longer than 16 MiB
+  is a violation.
 - When it is done, hibi closes standard input. The provider must then exit
   with status 0 within 2 seconds; hibi kills it after that. Output written
   after the last response is limited to 65,536 bytes.
-- A provider that stops reading its input, writes a line when no request is
-  waiting, or exits while a child process still holds its output pipes is
-  treated as failed at once, not after a timeout.
+- A provider that writes a line when no request is waiting, or exits while a
+  child process still holds its output pipes, is treated as failed at once.
 - On a timeout, an oversized line, a line that is not a JSON object, a
   response with the wrong `id`, or an unexpected exit, hibi kills the provider
   for the rest of the run, and every side it had not answered is `unavailable`
@@ -244,7 +246,7 @@ key or an unlisted one.
 | `parent` | no, default `null` | Key of the enclosing unit. A claim on a unit also covers its ancestors. |
 | `label` | no | One line for people |
 | `range` | no | `{"start", "end", "line", "endLine"}`: UTF-8 byte offsets into the resource text (start inclusive, end exclusive) and 1-based line numbers. Leave it out when the resource is not text. |
-| `approx` | no, default `false` | In `resolve`: the selector did not match exactly, and the unit was found by approximation or fallback |
+| `approx` | no, default `false` | In `resolve`: the selector did not match exactly, and the unit was found by similarity or fallback. hibi never resolves a side to such a unit: when any unit of an answer has `approx: true`, the side is `missing` with reason `not_exact` and the units are listed as its candidates. |
 | `refuse` | no | In `resolve`: this resolution must not be used to create a claim or replace a side. One of `quote_spans_units` and `quote_in_comment`. |
 
 A fingerprint is `b3:<profile>:<hex>`: `b3` says the digest is BLAKE3,

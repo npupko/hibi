@@ -34,8 +34,9 @@ its own resources through an [external provider](/providers/external).
 
 An anchor answers "which unit is this". A fingerprint answers "what did the
 checker see". Keeping them apart means that re-finding a moved unit can never
-pass for "unchanged". A similarity score helps find a unit and propose a
-re-anchor; it never decides freshness, which is exact fingerprint equality.
+pass for "unchanged". A similarity score only proposes candidates for a
+re-anchor. It never resolves an anchor and never decides freshness, which is
+exact fingerprint equality.
 
 ## One freshness rule
 

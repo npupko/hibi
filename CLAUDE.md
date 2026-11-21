@@ -8,14 +8,20 @@ of them is wrong; say which in the same change.
 
 ## Build and test
 
-These five gates must pass before a commit (CONTRIBUTING.md explains them):
+These gates must pass before a commit. They are the list in CONTRIBUTING.md,
+which explains them; keep the two lists the same.
 
 ```bash
 cargo fmt --all --check
 cargo clippy --workspace --all-targets -- -D warnings
+cargo clippy -p hibi --no-default-features --all-targets -- -D warnings
 cargo test --workspace
 cargo build -p hibi --no-default-features
 cargo test -p hibi --no-default-features
+for f in file git-store command cache judge; do
+  cargo build -p hibi --no-default-features --features "$f"
+  cargo test -p hibi --no-default-features --features "$f"
+done
 ```
 
 `cases/` holds data cases for the pure algorithms; `cargo test` runs them.
@@ -41,10 +47,14 @@ and `plugins/hibi-cli/` are the user documentation.
 
 - Every example output must be pasted from a real run of the binary. Run
   commands in a scratch git repository, not in this one.
-- Every `hibi ...` line in a fenced code block must parse with the clap
-  definition. `crates/hibi-cli/tests/doc_commands.rs` checks this (R43). A
-  block that shows output rather than commands is marked with the word
-  `output` after the language, for example ```` ```text output ````.
+- Every `hibi ...` line in a fenced code block, and every inline code span
+  that starts with `hibi `, must parse with the clap definition.
+  `crates/hibi-cli/tests/doc_commands.rs` checks this (R43). A block that
+  shows output rather than commands is marked with the word `output` after
+  the language, for example ```` ```text output ````. In an inline span a
+  placeholder such as `<id>` is read as a word, and a span of only `hibi`
+  and a subcommand names that command. A span that is not a command line is
+  written with double backticks, which render the same and are not checked.
 - Check the site with the Mintlify CLI, pinned because `mint@latest` failed
   to install on 2026-11-21. Copy `docs/` to a scratch directory and run there:
 

@@ -46,27 +46,43 @@ Consequences:
 | `changed` | `fingerprint_differs` | The unit was found and its fingerprint differs |
 | `changed` | `no_mark` | The claim has no mark |
 | `missing` | `selector_not_found` | The resource exists, but no unit matches the anchor |
+| `missing` | `not_exact` | No unit matches the anchor exactly; `candidates` lists the units found by similarity |
 | `missing` | `resource_not_found` | The file or resource does not exist |
 | `ambiguous` | `several_units` | The anchor matches several units; `candidates` lists them |
-| `unavailable` | `profile_mismatch` | The fingerprints use different profiles, for example a code file that no longer parses |
-| `unavailable` | `scheme_not_declared` | The locator's scheme is not declared in `.hibi/hibi.toml` |
+| `unavailable` | `profile_mismatch` | The fingerprints use different profiles, for example a whole code file that no longer parses |
+| `unavailable` | `resource_unavailable` | The resource exists but cannot be read now: a code file that does not parse, for an anchor with a symbol, or git's file list cannot be read |
+| `unavailable` | `scheme_not_declared` | The locator's scheme is not declared in `.hibi/hibi.toml`, for example after its declaration was removed |
 | `unavailable` | `provider_not_registered` | The scheme is declared, but your user config has no command for it. No command is run. |
 | `unavailable` | `provider_failed` | The provider command could not start, timed out, broke the protocol or was killed |
 | `unavailable` | `provider_error` | The provider answered with an error, or returned a unit hibi rejects |
-| `unavailable` | `not_text`, `too_large` | The file is not valid UTF-8, or is larger than 8 MiB |
+| `unavailable` | `not_text`, `too_large` | The file is not valid UTF-8, or is too large: a code file over 2 MiB, another file over 8 MiB, or more than 100,000 units |
 | `unavailable` | `repo_not_found`, `repo_not_allowed` | A sibling repository could not be used (see [configuration](/configuration#sibling-repositories)) |
 
-A side can also be `approx`: found only approximately, through a fuzzy match
-of its quote or a symbol that no longer exists. `approx` never changes the
-claim's state. A fresh claim with an `approx` side is called **drifted**: the
-statement still holds as checked, but the stored anchor no longer matches
-exactly, and `next` suggests `reanchor` (see
-[agent workflow](/agent-workflow#reading-next)). The summary counts drifted
-claims as part of `fresh`, for example `4 claims: 2 fresh (1 drifted), 0 stale,
-1 expired, 1 retired`.
+A side is never resolved by similarity. A candidate is a guess at where the
+unit went, for you to read; the side stays `missing` until you re-anchor it
+(see [anchors](/concepts/anchors#finding-the-unit)).
+
+An unavailable side also carries `detail`, the message that says why, from
+the provider or from hibi, and `remediation`, what the limit or the cause is
+and what you can do. The text
+output prints both under the side. For a scheme whose declaration was
+removed:
+
+```text output
+$ HIBI_CONFIG=user.toml hibi status
+1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
+
+c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
+  marked 2026-11-21T03:02:34Z (m1-mha0ka4z0safgnbcw30b)
+  subject  ref:notes  unavailable (scheme_not_declared)
+    the scheme ref is not declared in .hibi/hibi.toml
+    Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim.
+```
 
 The reference mark, against which side states are reported, is the newest
-matching mark if any mark matches, otherwise the newest mark. The text output
+matching mark if any mark matches, otherwise the newest mark. Marks with the
+same time, to the second, are ordered by id, so of two marks made within one
+second either can count as the newest. The text output
 of `status` names it, with its time, under each listed claim, together with
 the recheck period and when it runs out. For a side that is missing or
 ambiguous it also prints the stored symbol, quote or key, so you can see what
@@ -104,7 +120,7 @@ c1-zfv9r5t784m0vnty4fv9  expired  Each attempt times out after 10 seconds.
   marked 2026-08-01T09:00:00Z (m1-w0yyhnc63nzdvsk0kjb9), recheck P90D ran out at 2026-10-30T09:00:00Z
   next: hibi mark c1-zfv9r5t784m0vnty4fv9
 
-Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
 ## The current time
@@ -119,7 +135,7 @@ fresh.
 
 | Invocation | Lists |
 |---|---|
-| `hibi status` | Stale and expired claims, and drifted fresh claims |
+| `hibi status` | Stale and expired claims |
 | `hibi status --state fresh --state retired` | Claims in the given states |
 | `hibi status c1-dbv5 c1-24t0` | Exactly these claims, in any state |
 | `hibi status --loc 'file:src/**'` | Claims with a side whose locator matches the glob |
