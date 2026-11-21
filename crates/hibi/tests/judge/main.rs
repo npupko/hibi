@@ -946,7 +946,9 @@ fn key_leak_an_echoed_key_in_an_answer_is_not_cached() {
         "the key is in the cached answer {}",
         entry.answer
     );
-    assert!(entry.answer.contains("[redacted]"), "{}", entry.answer);
+    // The cache holds the typed fields only: the extra member is gone.
+    assert!(!entry.answer.contains("echo"), "{}", entry.answer);
+    assert!(entry.answer.contains("\"noul\""), "{}", entry.answer);
     // No file of the cache database holds the key.
     for e in std::fs::read_dir(fx._cache_dir.path()).unwrap() {
         let path = e.unwrap().path();
@@ -1465,4 +1467,48 @@ fn suggest_evidence_argument_errors_contact_nothing() {
         (0, true),
         "no code units in docs"
     );
+}
+
+/// A key that occurs inside an otherwise valid response does not break the
+/// request: the response is parsed as it was written, and nothing stored or
+/// returned contains the key.
+#[test]
+fn key_leak_a_key_that_occurs_in_a_valid_response_does_not_break_it() {
+    // `answers` is a member name of every valid response.
+    const WORD: &str = "answers";
+    let fx = fixture(&[]);
+    let mock = Mock::start(Arc::new(|r, _| {
+        let mut v = mock::answers(&r.body, &by_content);
+        v["note"] = json!(format!("your key is {WORD}"));
+        for (_, a) in v["answers"].as_object_mut().unwrap() {
+            a["echo"] = json!(r.header("authorization"));
+        }
+        Reply::json(200, &v)
+    }));
+    let judge = judge_with_key(&fx, &mock, WORD);
+    let out = fx.triage(&judge, true).unwrap();
+    assert_eq!(out.considered, 5);
+    assert!(!serde_json::to_string(&out).unwrap().contains(WORD));
+    // Cached, and read back from the cache without a request.
+    let again = fx.triage(&judge, true).unwrap();
+    assert_eq!(
+        serde_json::to_value(&again).unwrap(),
+        serde_json::to_value(&out).unwrap()
+    );
+    assert_eq!(mock.count(), 1);
+    for e in std::fs::read_dir(fx._cache_dir.path()).unwrap() {
+        let path = e.unwrap().path();
+        let bytes = std::fs::read(&path).unwrap();
+        let found = bytes.windows(WORD.len()).any(|w| w == WORD.as_bytes());
+        assert!(!found, "the key is in {}", path.display());
+    }
+    // An error for such a key is still redacted.
+    mock.set_script(Arc::new(|r, _| {
+        Reply::json(401, &json!({"detail": r.header("authorization")}))
+    }));
+    let fresh = fixture(&[]);
+    let judge = judge_with_key(&fresh, &mock, WORD);
+    let e = fresh.triage(&judge, true).unwrap_err();
+    assert!(!e.message.contains(WORD), "{e}");
+    assert!(e.message.contains("[redacted]"), "{e}");
 }

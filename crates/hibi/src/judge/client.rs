@@ -2,12 +2,14 @@
 //! `concurrency` requests in flight, a timeout per attempt, retries with
 //! backoff on 408, 429, 5xx, connection errors and timeouts.
 //!
-//! The key. No text that leaves this module holds the key or the
-//! `Authorization` header value: every response body is passed through
-//! [`redact`] before anything reads it (so neither an error, the output
-//! nor the cache can hold a key that a proxy echoed back), and every error
-//! is passed through it once more by [`seal`] before it is returned (so a
-//! transport error string cannot hold it either).
+//! The key. No error that leaves this module holds the key or the
+//! `Authorization` header value: the body of a refused request is passed
+//! through [`redact`] before it is quoted, and every error is passed
+//! through it once more by [`seal`] before it is returned, so neither a
+//! transport error string nor text quoted from a usable response can hold
+//! it. A usable response is parsed as the peer wrote it: only its typed
+//! answer fields are read, and only those are cached (`Answer::to_cached`),
+//! so a key a proxy echoed back reaches neither the output nor the cache.
 //!
 //! Local errors. The header value and the URL are built once by
 //! [`prepare`], before any attempt. A key or URL the HTTP library cannot
@@ -303,22 +305,29 @@ fn attempt(agent: &Agent, judge: &Judge, prepared: &Prepared, body: &[u8]) -> At
         .as_reader()
         .take(MAX_RESPONSE_BYTES)
         .read_to_string(&mut text);
-    // From here on nothing sees the body as the peer wrote it.
-    let text = redact(&text, &judge.key);
+    // A usable body is parsed as the peer wrote it; only typed fields are
+    // read from it, and any text taken from it for an error is redacted
+    // when the error leaves this module (`seal`).
     if (200..300).contains(&status) {
         return match read {
             Ok(_) => Attempt::Done(text),
             Err(e) => Attempt::Retry(format!("reading the response failed: {e}"), None),
         };
     }
-    let message = format!("Jev answered with status {status}{}", detail(&text));
+    // Redacted before the cut, so that the cut cannot leave a part of the
+    // key.
+    let message = format!(
+        "Jev answered with status {status}{}",
+        detail(&redact(&text, &judge.key))
+    );
     match status_cause(status) {
         None => Attempt::Retry(message, wait),
         Some(cause) => Attempt::Fatal(Failure { message, cause }),
     }
 }
 
-/// One request with its retries. On success, the response body, redacted.
+/// One request with its retries. On success, the response body as the peer
+/// wrote it.
 fn post(agent: &Agent, judge: &Judge, prepared: &Prepared, body: &[u8]) -> Result<String, Failure> {
     let policy = &judge.policy;
     let attempts = policy.attempts.max(1);

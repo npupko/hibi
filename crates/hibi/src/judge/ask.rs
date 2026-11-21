@@ -50,6 +50,20 @@ pub enum Answer {
 }
 
 impl Answer {
+    /// The form kept in the cache (section 14.6): the fields hibi reads and
+    /// nothing else of the response, so that no other text a peer put into
+    /// its answer is ever stored. [`read_answer`] reads it back.
+    pub fn to_cached(&self) -> Value {
+        match self {
+            Answer::Noul(p) => serde_json::json!({"type": "noul", "noul": p}),
+            Answer::Choice { choice, p } => serde_json::json!({
+                "type": "choice",
+                "choice": choice,
+                "probabilities": {choice.as_str(): p},
+            }),
+        }
+    }
+
     /// The Noul probability, or `None` for a Choice.
     pub fn noul(&self) -> Option<f64> {
         match self {
@@ -192,7 +206,7 @@ fn read_response(
     index: usize,
     total: usize,
     text: &str,
-) -> Result<Vec<(Slot, Value, Answer)>, Error> {
+) -> Result<Vec<(Slot, Answer)>, Error> {
     let bad = |why: String| {
         Error::new(
             Code::JudgeFailed,
@@ -224,7 +238,7 @@ fn read_response(
                 question["type"]
             ))
         })?;
-        out.push(((g, i, q), raw.clone(), answer));
+        out.push(((g, i, q), answer));
     }
     Ok(out)
 }
@@ -288,11 +302,11 @@ pub(super) fn ask(
     for result in results.into_iter().flatten() {
         match result {
             Ok(read) => {
-                for ((g, i, q), raw, answer) in read {
+                for ((g, i, q), answer) in read {
                     if let Some(c) = cache {
                         let entry = JudgeEntry {
                             model: MODEL.to_owned(),
-                            answer: raw.to_string(),
+                            answer: answer.to_cached().to_string(),
                             at: at.clone(),
                         };
                         let _ = c.put_judge(&keys[g][i][q], &entry);
