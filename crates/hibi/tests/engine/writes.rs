@@ -1031,6 +1031,88 @@ fn a_same_claim_write_rests_on_the_stored_anchors_as_resolved_in_this_run() {
     assert_eq!(out.claim.state, ClaimState::Fresh);
 }
 
+/// A new anchor whose completed selector would not resolve back to its
+/// own unit alone is refused when the claim is made, with its own code and
+/// what to quote instead; nothing is written.
+#[test]
+fn a_quote_that_cannot_be_told_apart_is_refused_at_claim_time() {
+    let (w, mut p, store) = setup();
+    let mut twin = unit("k1", "note", "Retries are capped at 5.");
+    twin.refuse = Some(Refuse::QuoteNotDistinguishable);
+    w.borrow_mut()
+        .overrides
+        .insert(anchor("t:a", key_sel("k1")), Ok(vec![twin]));
+    let errors = claim(&store, &mut p, &[on("S", "k1")], false).unwrap_err();
+    assert_eq!(codes(&errors), [(Code::QuoteNotDistinguishable, None)]);
+    assert_eq!(errors[0].code.as_str(), "quote_not_distinguishable");
+    assert!(
+        errors[0]
+            .message
+            .starts_with("the subject (t:a): the quoted text is identical, with identical text around it in its unit, to another place in the same container"),
+        "{}",
+        errors[0]
+    );
+    assert_eq!(
+        errors[0].remediation.as_deref(),
+        Some(
+            "Quote a longer passage that occurs once in its place, or in code anchor <loc>#<symbol>::<line>."
+        )
+    );
+    assert_eq!(store.counts(), (0, 0, 0));
+
+    // The same for a replaced side of `reanchor`. A stored side is not
+    // checked again: it was accepted when its claim was made.
+    w.borrow_mut().overrides.clear();
+    let id = claim_at(&store, &mut p, on("S", "k2"), "2026-01-01T00:00:00Z");
+    let mut twin = unit("k1", "note", "Retries are capped at 5.");
+    twin.refuse = Some(Refuse::QuoteNotDistinguishable);
+    w.borrow_mut()
+        .overrides
+        .insert(anchor("t:a", key_sel("k1")), Ok(vec![twin]));
+    let e = reanchor(
+        &store,
+        &mut p,
+        ReanchorInput {
+            claim: id.to_string(),
+            subject: Some(json_anchor("t:a", key_sel("k1"))),
+            ..ReanchorInput::default()
+        },
+    )
+    .unwrap_err();
+    assert_eq!(e.code, Code::QuoteNotDistinguishable);
+    assert_eq!(store.counts(), (1, 1, 0));
+}
+
+/// Section 9.5: the same claim is decided by the units the sides resolve
+/// to, not by how the anchors are written. A claim made again with another
+/// anchor for the same unit marks the existing claim.
+#[test]
+fn the_same_claim_is_the_same_units_however_the_anchors_are_written() {
+    let (_w, mut p, store) = setup();
+    let first = claim(&store, &mut p, &[on("S", "k1")], false).unwrap();
+    let by_quote = ClaimInput {
+        subject: json_anchor("t:a", Selector::quote("Retries are capped")),
+        ..claim_input("S", "t:a", &[])
+    };
+    let again = claim(&store, &mut p, &[by_quote], false).unwrap();
+    assert_eq!(again.claims[0].id, first.claims[0].id);
+    assert!(!again.claims[0].created);
+    // One claim. (Its mark at the same instant is the same record.)
+    assert_eq!(store.counts(), (1, 1, 0));
+    // Another unit, another statement, or another note is another claim.
+    for other in [
+        on("S", "k2"),
+        on("S2", "k1"),
+        ClaimInput {
+            note: Some("why".into()),
+            ..on("S", "k1")
+        },
+    ] {
+        let out = claim(&store, &mut p, &[other], false).unwrap();
+        assert!(out.claims[0].created);
+    }
+}
+
 /// R54: a reanchor whose result equals a retired claim fails with
 /// `claim_retired`, writes nothing, and names the `--note` command with
 /// the caller's other arguments repeated.
