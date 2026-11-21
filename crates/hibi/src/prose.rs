@@ -68,7 +68,13 @@ pub struct ProseUnit {
 /// The prose units of a resource in source order, with fingerprints and
 /// keys. The `file` unit is not included.
 pub fn units(text: &str, class: ProseClass) -> Vec<ProseUnit> {
-    let regions = split(text, class);
+    units_from(text, split(text, class))
+}
+
+/// The prose units of `regions`, the result of [`split`] on `text`, with
+/// fingerprints and keys. Lets a caller check the region count before the
+/// fingerprints are computed.
+pub fn units_from(text: &str, regions: Vec<Region>) -> Vec<ProseUnit> {
     let fps: Vec<Fingerprint> = regions
         .iter()
         .map(|r| fingerprint::prose_v1(&text[r.start..r.end]))

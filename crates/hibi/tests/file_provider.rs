@@ -381,6 +381,129 @@ fn members_are_units_with_their_own_fingerprints() {
     }
 }
 
+/// Copy every file under `cases/fixtures` into `root/fx/` and return the
+/// copied paths, relative to `root`.
+fn copy_fixtures(root: &Path) -> Vec<String> {
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../cases/fixtures");
+    let mut files = Vec::new();
+    let mut stack = vec![fixtures.clone()];
+    while let Some(dir) = stack.pop() {
+        for entry in fs::read_dir(&dir).unwrap() {
+            let p = entry.unwrap().path();
+            if p.is_dir() {
+                stack.push(p);
+            } else {
+                let rel = p
+                    .strip_prefix(&fixtures)
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_owned();
+                let dest = format!("fx/{rel}");
+                write(root, &dest, fs::read(&p).unwrap());
+                files.push(dest);
+            }
+        }
+    }
+    files.sort();
+    files
+}
+
+/// Ruling on section 6.7: a completed selector is a fixed point. Resolving
+/// it against unchanged text gives the same unit, not approximate, not
+/// refused, with an identical selector. Checked for anchors generated from
+/// every unit of every fixture (each line of the unit and each word of its
+/// first lines, with and without the unit's symbol), plus the verifier's
+/// repro, where a hit near the unit's edge used to lose its stored context.
+#[test]
+fn completed_selectors_are_fixed_points() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    write(
+        root,
+        "m.rs",
+        "fn g() {\n    run(alpha); // run(alpha);\n}\n\n// run(alpha);\nfn f() {\n    run(alpha);\n    // run(alpha);\n    /* run(alpha); */\n    run(alpha); // run(alpha);\n}\n",
+    );
+    let mut files = vec!["m.rs".to_owned()];
+    files.extend(copy_fixtures(root));
+    // The verifier's repro: `#f::(a` on m.rs.
+    let mut p = wt(root);
+    let first = one(&mut p, "file:m.rs", json!({"symbol": "f", "quote": "(a"}));
+    assert!(first.refuse.is_none(), "{first:?}");
+    let again = one(
+        &mut p,
+        "file:m.rs",
+        serde_json::to_value(&first.sel).unwrap(),
+    );
+    assert_eq!(
+        (&again.key, &again.sel, again.approx, again.refuse),
+        (&first.key, &first.sel, false, None)
+    );
+
+    let mut checked = 0;
+    let mut failures = Vec::new();
+    for path in &files {
+        let l = format!("file:{path}");
+        let mut p = wt(root);
+        let Ok(units) = p.units(&loc(&l), None) else {
+            continue;
+        };
+        let text = fs::read_to_string(root.join(path))
+            .unwrap()
+            .replace("\r\n", "\n");
+        for u in units.iter().filter(|u| u.kind != "file") {
+            let r = u.range.unwrap();
+            let unit_text = &text[r.start..r.end];
+            let mut quotes: Vec<String> = unit_text
+                .lines()
+                .map(|line| line.trim().to_owned())
+                .filter(|q| !q.is_empty() && q.chars().count() <= 200)
+                .collect();
+            quotes.extend(
+                unit_text
+                    .lines()
+                    .take(3)
+                    .flat_map(|line| line.split_whitespace())
+                    .filter(|w| w.chars().count() >= 2)
+                    .map(str::to_owned),
+            );
+            for q in quotes {
+                let mut sels = vec![json!({"quote": q})];
+                if let Some(s) = &u.sel.symbol {
+                    sels.push(json!({"symbol": s, "quote": q}));
+                }
+                for s in sels {
+                    let Ok(got) = resolve(&mut p, &l, s.clone()) else {
+                        continue;
+                    };
+                    if got.len() != 1 || got[0].refuse.is_some() {
+                        continue;
+                    }
+                    let first = &got[0];
+                    let again =
+                        resolve(&mut p, &l, serde_json::to_value(&first.sel).unwrap()).unwrap();
+                    checked += 1;
+                    let ok = again.len() == 1
+                        && again[0].key == first.key
+                        && again[0].sel == first.sel
+                        && !again[0].approx
+                        && again[0].refuse.is_none();
+                    if !ok && failures.len() < 10 {
+                        failures.push(format!("{path} {s} -> {:?} then {:?}", first.sel, again));
+                    }
+                }
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} not fixed points:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+    assert!(checked > 5000, "{checked} anchors checked");
+}
+
 /// A default quote is never inside a comment (audit of section 6.7): no
 /// unit of a file with a parse tree starts inside a comment node, so the
 /// "first line starts with a comment" fallback is never taken, and every
@@ -622,6 +745,7 @@ fn decoding_crlf_bom_and_not_text() {
 fn r49_size_cap() {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path();
+    assert_eq!(MAX_FILE_BYTES, 8_388_608, "the cap of section 6.1");
     let at_cap = vec![b'a'; MAX_FILE_BYTES as usize];
     write(root, "at-cap.cfg", &at_cap);
     assert_eq!(
@@ -1381,4 +1505,203 @@ fn r40_no_cache_cold_cache_and_warm_cache_agree() {
                 .starts_with("[{\"key\":\"file\"")
         );
     }
+}
+
+// ---------------------------------------------------------------------------
+// Reads limited to git's file list (ruling on section 6.8)
+// ---------------------------------------------------------------------------
+
+/// A repository with a tracked README, an ignored `.env`, an untracked file
+/// that is not ignored, and a store file under `.hibi/`.
+fn listed_repo(tmp: &Path) -> PathBuf {
+    let root = tmp.join("repo");
+    fs::create_dir(&root).unwrap();
+    sh_git(&root, &["init", "-q"]);
+    write(&root, "README.md", "Tracked text.\n");
+    write(&root, ".gitignore", ".env\n");
+    write(&root, ".hibi/hibi.toml", "version = 1\n");
+    sh_git(&root, &["add", "-A"]);
+    sh_git(&root, &["commit", "-qm", "base"]);
+    write(&root, ".env", "API_TOKEN=second-secret-value\n");
+    write(&root, "notes.md", "Untracked but not ignored.\n");
+    root
+}
+
+#[test]
+fn file_reads_follow_the_root_file_list_when_git_is_usable() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = listed_repo(tmp.path());
+    let git = isolated_git(tmp.path());
+    let mut p = FileProvider::working_tree(&root, options(git.clone()));
+    assert_eq!(one(&mut p, "file:README.md", json!({})).kind, "file");
+    assert_eq!(one(&mut p, "file:notes.md", json!({})).kind, "file");
+    let e = resolve(&mut p, "file:.env", json!({"quote": "API_TOKEN"})).unwrap_err();
+    assert_eq!(e.code, ProviderErrorCode::NotFound);
+    assert!(e.message.contains("file list"), "{}", e.message);
+    assert!(!e.message.contains("second-secret"), "{}", e.message);
+    for l in [
+        "file:.git/config",
+        "file:.GIT/config",
+        "file:.hibi/hibi.toml",
+        "file:README.MD",
+    ] {
+        assert_eq!(
+            code_of(resolve(&mut p, l, json!({}))),
+            ProviderErrorCode::NotFound,
+            "{l}"
+        );
+        assert_eq!(
+            p.units(&loc(l), None).unwrap_err().code,
+            ProviderErrorCode::NotFound,
+            "{l}"
+        );
+    }
+    // Without git the working-tree rule stands: the ignored file is read,
+    // and .git/ and .hibi/ still are not.
+    let mut no = wt(&root);
+    assert_eq!(
+        one(&mut no, "file:.env", json!({"quote": "API_TOKEN"})).kind,
+        "block"
+    );
+    for l in [
+        "file:.git/config",
+        "file:.hibi/hibi.toml",
+        "file:sub/.git/config",
+    ] {
+        assert_eq!(
+            code_of(resolve(&mut no, l, json!({}))),
+            ProviderErrorCode::NotFound,
+            "{l}"
+        );
+    }
+    // A revision source never reads .hibi/ either.
+    let base = head(&root);
+    let mut rev = FileProvider::revision(&root, base, options(git)).unwrap();
+    assert_eq!(
+        code_of(resolve(&mut rev, "file:.hibi/hibi.toml", json!({}))),
+        ProviderErrorCode::NotFound
+    );
+    assert_eq!(one(&mut rev, "file:README.md", json!({})).kind, "file");
+}
+
+/// A failing file list is `unavailable`, never `not_found` (section 6.7,
+/// error 2), for the root and for a sibling.
+#[test]
+fn a_failing_file_list_is_unavailable() {
+    let tmp = tempfile::tempdir().unwrap();
+    let root = listed_repo(tmp.path());
+    let git = isolated_git(tmp.path());
+    fs::write(root.join(".git/index"), b"not an index").unwrap();
+    let mut p = FileProvider::working_tree(&root, options(git.clone()));
+    let e = resolve(&mut p, "file:README.md", json!({})).unwrap_err();
+    assert_eq!(e.code, ProviderErrorCode::Unavailable, "{}", e.message);
+
+    let s = siblings();
+    fs::set_permissions(s.api.join("secret.md"), fs::Permissions::from_mode(0o644)).unwrap();
+    fs::write(s.api.join(".git/index"), b"not an index").unwrap();
+    let mut p = sibling_provider(
+        &s,
+        repo_config("api"),
+        vec![entry(&s.root, "api", &s.api)],
+        isolated_git(&s.tmp),
+    );
+    let e = resolve(&mut p, "repo:api//docs/listed.md", json!({})).unwrap_err();
+    assert_eq!(e.code, ProviderErrorCode::Unavailable, "{}", e.message);
+}
+
+// ---------------------------------------------------------------------------
+// Cache rows and selectors (rulings on sections 11.3 and 6.7)
+// ---------------------------------------------------------------------------
+
+/// A cache that records every row.
+#[derive(Default)]
+struct Rows(RefCell<HashMap<(String, String), String>>);
+
+impl UnitCache for Rows {
+    fn get_units(&self, blob: &str, class: &str) -> Option<String> {
+        self.0
+            .borrow()
+            .get(&(blob.to_owned(), class.to_owned()))
+            .cloned()
+    }
+    fn put_units(&self, blob: &str, class: &str, units: &str) {
+        self.0
+            .borrow_mut()
+            .insert((blob.to_owned(), class.to_owned()), units.to_owned());
+    }
+}
+
+fn cached(root: &Path, rows: &Rc<Rows>) -> FileProvider {
+    let mut o = options(no_git());
+    o.cache = Some(Box::new(rows.clone()));
+    FileProvider::working_tree(root, o)
+}
+
+#[test]
+fn a_not_text_row_for_valid_utf8_is_a_miss_and_is_rewritten() {
+    let tmp = tempfile::tempdir().unwrap();
+    let text = "Valid text here.\n";
+    write(tmp.path(), "a.md", text);
+    let rows = Rc::new(Rows::default());
+    let key = (hibi::git::blob_id(text.as_bytes()), "markdown".to_owned());
+    rows.0.borrow_mut().insert(key.clone(), "not_text".into());
+    let u = one(
+        &mut cached(tmp.path(), &rows),
+        "file:a.md",
+        json!({"quote": "Valid"}),
+    );
+    assert_eq!(u.kind, "sentence");
+    assert!(
+        rows.0.borrow()[&key].starts_with("[{"),
+        "the row is rewritten"
+    );
+    // Invalid UTF-8 is still not_text, and its row says so.
+    write(tmp.path(), "b.md", [0xffu8, 0xfe]);
+    assert_eq!(
+        code_of(resolve(
+            &mut cached(tmp.path(), &rows),
+            "file:b.md",
+            json!({})
+        )),
+        ProviderErrorCode::NotText
+    );
+}
+
+#[test]
+fn a_cache_row_larger_than_8_mib_is_not_written() {
+    let tmp = tempfile::tempdir().unwrap();
+    // 99,999 sentences: within the unit cap, but the row is far over 8 MiB.
+    let big = "S.\n\n".repeat(99_999);
+    write(tmp.path(), "big.md", &big);
+    write(tmp.path(), "small.md", "One sentence.\n");
+    let rows = Rc::new(Rows::default());
+    let mut p = cached(tmp.path(), &rows);
+    assert_eq!(p.units(&loc("file:big.md"), None).unwrap().len(), 100_000);
+    p.units(&loc("file:small.md"), None).unwrap();
+    let written: Vec<usize> = rows.0.borrow().values().map(String::len).collect();
+    assert_eq!(written.len(), 1, "only the small row is written");
+    assert!(written[0] <= hibi::provider::file::MAX_CACHE_ROW_BYTES);
+    // One more unit is too_large through the provider.
+    write(tmp.path(), "over.md", "S.\n\n".repeat(100_000));
+    assert_eq!(
+        code_of(resolve(&mut p, "file:over.md", json!({}))),
+        ProviderErrorCode::TooLarge
+    );
+}
+
+/// Resolve error 7: a selector that is invalid in another way than its
+/// keys cannot arrive over JSON (deserialization refuses it) but can be
+/// built through the Rust API, and is `invalid_request`.
+#[test]
+fn an_invalid_selector_built_in_rust_is_invalid_request() {
+    let tmp = tempfile::tempdir().unwrap();
+    write(tmp.path(), "a.md", "Text.\n");
+    let sel = Selector {
+        prefix: Some("x".into()),
+        ..Selector::default()
+    };
+    let r = wt(tmp.path())
+        .resolve(&[Anchor::new(loc("file:a.md"), sel)])
+        .remove(0);
+    assert_eq!(r.unwrap_err().code, ProviderErrorCode::InvalidRequest);
 }

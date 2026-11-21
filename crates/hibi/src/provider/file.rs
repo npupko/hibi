@@ -31,6 +31,11 @@ use doc::Doc;
 /// file is `too_large` and is not read.
 pub const MAX_FILE_BYTES: u64 = 8_388_608;
 
+/// The largest cache row the provider writes, in bytes (ruling on 11.3).
+pub const MAX_CACHE_ROW_BYTES: usize = 8_388_608;
+
+pub use doc::MAX_UNITS_PER_RESOURCE;
+
 /// The provider name in [`ProviderInfo`].
 pub const PROVIDER_NAME: &str = "hibi-file";
 
@@ -127,6 +132,11 @@ enum Source {
     WorkingTree {
         /// Per alias: the sibling, or the error every locator of it gets.
         siblings: HashMap<String, Result<Rc<Sibling>, ProviderError>>,
+        /// The root's file list, fetched once: `None` until first use;
+        /// `Some(Ok(None))` when git is not usable for the root (the
+        /// working-tree rule alone applies); `Some(Err(_))` when listing
+        /// failed.
+        root_files: Option<Result<Option<Rc<HashSet<String>>>, ProviderError>>,
     },
     Revision {
         base: ObjectId,
@@ -176,6 +186,7 @@ impl FileProvider {
             root.into(),
             Source::WorkingTree {
                 siblings: HashMap::new(),
+                root_files: None,
             },
             options,
         )
@@ -215,7 +226,7 @@ impl FileProvider {
 
     /// The sibling repository of `alias`, checked once per provider.
     fn sibling(&mut self, alias: &str) -> Result<Rc<Sibling>, ProviderError> {
-        let Source::WorkingTree { siblings } = &mut self.source else {
+        let Source::WorkingTree { siblings, .. } = &mut self.source else {
             return Err(err(
                 ProviderErrorCode::InvalidLocator,
                 "repo: locators are not available at a base commit",
@@ -305,9 +316,24 @@ impl FileProvider {
         match loc.parts() {
             LocatorParts::File { path } => {
                 let path = path.to_owned();
+                if is_private_path(&path) {
+                    return Err(ProviderError::not_found(format!(
+                        "{loc}: paths under .git/ and .hibi/ are never read"
+                    )));
+                }
                 if matches!(self.source, Source::Revision { .. }) {
                     let bytes = self.read_revision(&path)?;
                     return Ok((bytes, path));
+                }
+                // When git is usable for the root, only the paths of its file
+                // list are read (ruling on section 6.8), so an ignored file
+                // such as `.env` is never opened.
+                if let Some(files) = self.root_files()?
+                    && !files.contains(&path)
+                {
+                    return Err(ProviderError::not_found(format!(
+                        "{loc} is not in git's file list of the root (tracked, or untracked and not ignored)"
+                    )));
                 }
                 let bytes = read_tree_file(&self.root, &path, loc)?;
                 Ok((bytes, path))
@@ -328,6 +354,33 @@ impl FileProvider {
                 format!("the file provider does not serve scheme {scheme}"),
             )),
         }
+    }
+
+    /// The root's file list (section 10.4) when git is usable for the root:
+    /// git passed the version check and the root is a git top level.
+    /// `None` otherwise, when the working-tree rule alone applies. Fetched
+    /// once per provider. A failing list is `unavailable`.
+    fn root_files(&mut self) -> Result<Option<Rc<HashSet<String>>>, ProviderError> {
+        let Source::WorkingTree { root_files, .. } = &mut self.source else {
+            return Ok(None);
+        };
+        if let Some(r) = root_files {
+            return r.clone();
+        }
+        let result = match self.git.git() {
+            Some(git) if git.is_toplevel(&self.root).unwrap_or(false) => git
+                .file_list(&self.root)
+                .map(|files| Some(Rc::new(files.into_iter().collect())))
+                .map_err(|e| {
+                    err(
+                        ProviderErrorCode::Unavailable,
+                        format!("the root's file list cannot be read: {}", e.message),
+                    )
+                }),
+            _ => Ok(None),
+        };
+        *root_files = Some(result.clone());
+        result
     }
 
     fn read_revision(&mut self, path: &str) -> Result<Vec<u8>, ProviderError> {
@@ -375,9 +428,9 @@ impl FileProvider {
                 format!("{loc} is not valid UTF-8"),
             )
         };
-        if row.as_deref() == Some(NOT_TEXT) {
-            return Err(not_text());
-        }
+        // A `not_text` row is not believed: the bytes decide (ruling on
+        // section 11.3). A row that says `not_text` for valid UTF-8 is a
+        // miss and is rewritten below.
         let text = match String::from_utf8(bytes) {
             Ok(t) => t,
             Err(_) => {
@@ -397,10 +450,24 @@ impl FileProvider {
         }
         let d = Doc::build(text, class)?;
         if let (Some(c), Some(b)) = (cache, &blob) {
-            c.put_units(b, class.name(), &d.to_cache());
+            let row = d.to_cache();
+            // A row larger than the cap is not written (ruling on 11.3).
+            if row.len() <= MAX_CACHE_ROW_BYTES {
+                c.put_units(b, class.name(), &row);
+            }
         }
         Ok(d)
     }
+}
+
+/// A `file:` path under `.git/` (any segment) or `.hibi/` (the first
+/// segment), compared without ASCII case so that a case-insensitive file
+/// system cannot reach them through `.GIT` (ruling on section 6.8).
+fn is_private_path(path: &str) -> bool {
+    let mut segments = path.split('/');
+    let first = segments.next().unwrap_or("");
+    let is = |s: &str, name: &str| s.eq_ignore_ascii_case(name);
+    is(first, ".git") || is(first, ".hibi") || segments.any(|s| is(s, ".git"))
 }
 
 fn too_large(what: &str, size: u64) -> ProviderError {

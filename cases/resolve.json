@@ -36,7 +36,7 @@
           "refuse": null,
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
-            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "prefix": "\n",
             "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
             "pos": 61,
             "symbol": "retry"
@@ -64,8 +64,8 @@
           "refuse": null,
           "sel": {
             "quote": "pub struct Cache;",
-            "prefix": " // step(1); first\n    step(1);\n    step(1);\n}\n\n",
-            "suffix": "\n\nimpl Cache {\n    pub fn get(&self) -> u32 { 1 ",
+            "prefix": "\n\n",
+            "suffix": "\n\n",
             "pos": 212,
             "symbol": "Cache"
           }
@@ -92,7 +92,7 @@
           "refuse": null,
           "sel": {
             "quote": "impl Cache {",
-            "prefix": "    step(1);\n    step(1);\n}\n\npub struct Cache;\n\n",
+            "prefix": ";\n\n",
             "suffix": "\n    pub fn get(&self) -> u32 { 1 }\n    pub fn p",
             "pos": 231,
             "symbol": "impl Cache"
@@ -122,7 +122,7 @@
           "sel": {
             "quote": "n.min(limit)",
             "prefix": ") -> u32 {\n    let limit = MAX; // cap here\n    ",
-            "suffix": "\n}\n\npub fn twice() {\n    // step(1); first\n    s",
+            "suffix": "\n}\n\n",
             "pos": 128,
             "symbol": "retry"
           }
@@ -150,7 +150,7 @@
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
-            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "prefix": "\n",
             "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
             "pos": 61,
             "symbol": "retry"
@@ -179,7 +179,7 @@
           "refuse": null,
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
-            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "prefix": "\n",
             "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
             "pos": 61,
             "symbol": "retry"
@@ -208,7 +208,7 @@
           "refuse": null,
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
-            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "prefix": "\n",
             "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
             "pos": 61,
             "symbol": "retry"
@@ -237,7 +237,7 @@
           "refuse": null,
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
-            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "prefix": "\n",
             "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
             "pos": 61,
             "symbol": "retry"
@@ -266,8 +266,8 @@
           "refuse": null,
           "sel": {
             "quote": "-> u32 { 1 }",
-            "prefix": "ruct Cache;\n\nimpl Cache {\n    pub fn get(&self) ",
-            "suffix": "\n    pub fn put(&self) -> u32 { 1 }\n}\n",
+            "prefix": "\n    pub fn get(&self) ",
+            "suffix": "\n    ",
             "pos": 266,
             "symbol": "Cache.get"
           }
@@ -295,8 +295,8 @@
           "refuse": null,
           "sel": {
             "quote": "-> u32 { 1 }",
-            "prefix": "n get(&self) -> u32 { 1 }\n    pub fn put(&self) ",
-            "suffix": "\n}\n",
+            "prefix": "\n    pub fn put(&self) ",
+            "suffix": "\n",
             "pos": 301,
             "symbol": "Cache.put"
           }
@@ -324,8 +324,8 @@
           "refuse": null,
           "sel": {
             "quote": "step(1);",
-            "prefix": ")\n}\n\npub fn twice() {\n    // step(1); first\n    ",
-            "suffix": "\n    step(1);\n}\n\npub struct Cache;\n\nimpl Cache {",
+            "prefix": "\n\npub fn twice() {\n    // step(1); first\n    ",
+            "suffix": "\n    step(1);\n}\n\n",
             "pos": 187,
             "symbol": "twice"
           }
@@ -354,8 +354,8 @@
           "refuse": null,
           "sel": {
             "quote": "step(1)",
-            "prefix": ")\n}\n\npub fn twice() {\n    // step(1); first\n    ",
-            "suffix": ";\n    step(1);\n}\n\npub struct Cache;\n\nimpl Cache ",
+            "prefix": "\n\npub fn twice() {\n    // step(1); first\n    ",
+            "suffix": ";\n    step(1);\n}\n\n",
             "pos": 187,
             "symbol": "twice"
           }
@@ -384,7 +384,7 @@
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "pub fn twice() {",
-            "prefix": "et limit = MAX; // cap here\n    n.min(limit)\n}\n\n",
+            "prefix": "\n\n",
             "suffix": "\n    // step(1); first\n    step(1);\n    step(1);",
             "pos": 144,
             "symbol": "twice"
@@ -412,8 +412,8 @@
           "refuse": null,
           "sel": {
             "quote": "step(1);",
-            "prefix": ")\n}\n\npub fn twice() {\n    // step(1); first\n    ",
-            "suffix": "\n    step(1);\n}\n\npub struct Cache;\n\nimpl Cache {",
+            "prefix": "\n\npub fn twice() {\n    // step(1); first\n    ",
+            "suffix": "\n    step(1);\n}\n\n",
             "pos": 187,
             "symbol": "twice"
           }
@@ -440,8 +440,8 @@
           "refuse": null,
           "sel": {
             "quote": "pub fn get(&self)",
-            "prefix": "step(1);\n}\n\npub struct Cache;\n\nimpl Cache {\n    ",
-            "suffix": " -> u32 { 1 }\n    pub fn put(&self) -> u32 { 1 }",
+            "prefix": "\n    ",
+            "suffix": " -> u32 { 1 }\n    ",
             "pos": 248,
             "symbol": "Cache.get"
           }
@@ -468,7 +468,7 @@
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
-            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "prefix": "\n",
             "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
             "pos": 61,
             "symbol": "retry"
@@ -540,8 +540,8 @@
           "refuse": "quote_spans_units",
           "sel": {
             "quote": "pub struct Cache;",
-            "prefix": " // step(1); first\n    step(1);\n    step(1);\n}\n\n",
-            "suffix": "\n\nimpl Cache {\n    pub fn get(&self) -> u32 { 1 ",
+            "prefix": "\n\n",
+            "suffix": "\n\n",
             "pos": 212,
             "symbol": "Cache"
           }
@@ -568,7 +568,7 @@
           "refuse": null,
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
-            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "prefix": "\n",
             "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
             "pos": 61,
             "symbol": "retry"
@@ -596,8 +596,8 @@
           "refuse": null,
           "sel": {
             "quote": "pub fn get(&self) -> u32 { 1 }",
-            "prefix": "step(1);\n}\n\npub struct Cache;\n\nimpl Cache {\n    ",
-            "suffix": "\n    pub fn put(&self) -> u32 { 1 }\n}\n",
+            "prefix": "\n    ",
+            "suffix": "\n    ",
             "pos": 248,
             "symbol": "Cache.get"
           }
@@ -608,8 +608,8 @@
           "refuse": null,
           "sel": {
             "quote": "pub fn put(&self) -> u32 { 1 }",
-            "prefix": " Cache {\n    pub fn get(&self) -> u32 { 1 }\n    ",
-            "suffix": "\n}\n",
+            "prefix": "\n    ",
+            "suffix": "\n",
             "pos": 283,
             "symbol": "Cache.put"
           }
@@ -636,8 +636,8 @@
           "refuse": null,
           "sel": {
             "quote": "pub fn get(&self) -> u32 { 1 }",
-            "prefix": "step(1);\n}\n\npub struct Cache;\n\nimpl Cache {\n    ",
-            "suffix": "\n    pub fn put(&self) -> u32 { 1 }\n}\n",
+            "prefix": "\n    ",
+            "suffix": "\n    ",
             "pos": 248,
             "symbol": "Cache.get"
           }
@@ -648,8 +648,8 @@
           "refuse": null,
           "sel": {
             "quote": "pub fn put(&self) -> u32 { 1 }",
-            "prefix": " Cache {\n    pub fn get(&self) -> u32 { 1 }\n    ",
-            "suffix": "\n}\n",
+            "prefix": "\n    ",
+            "suffix": "\n",
             "pos": 283,
             "symbol": "Cache.put"
           }
@@ -677,8 +677,8 @@
           "refuse": null,
           "sel": {
             "quote": "{ 1 }",
-            "prefix": "che;\n\nimpl Cache {\n    pub fn get(&self) -> u32 ",
-            "suffix": "\n    pub fn put(&self) -> u32 { 1 }\n}\n",
+            "prefix": "\n    pub fn get(&self) -> u32 ",
+            "suffix": "\n    ",
             "pos": 273,
             "symbol": "Cache.get"
           }
@@ -706,8 +706,8 @@
           "refuse": null,
           "sel": {
             "quote": "{ 1 }",
-            "prefix": "self) -> u32 { 1 }\n    pub fn put(&self) -> u32 ",
-            "suffix": "\n}\n",
+            "prefix": "\n    pub fn put(&self) -> u32 ",
+            "suffix": "\n",
             "pos": 308,
             "symbol": "Cache.put"
           }
@@ -734,8 +734,8 @@
           "refuse": null,
           "sel": {
             "quote": "step(1)",
-            "prefix": ")\n}\n\npub fn twice() {\n    // step(1); first\n    ",
-            "suffix": ";\n    step(1);\n}\n\npub struct Cache;\n\nimpl Cache ",
+            "prefix": "\n\npub fn twice() {\n    // step(1); first\n    ",
+            "suffix": ";\n    step(1);\n}\n\n",
             "pos": 187,
             "symbol": "twice"
           }
@@ -763,7 +763,7 @@
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "pub fn twice() {",
-            "prefix": "et limit = MAX; // cap here\n    n.min(limit)\n}\n\n",
+            "prefix": "\n\n",
             "suffix": "\n    // step(1); first\n    step(1);\n    step(1);",
             "pos": 144,
             "symbol": "twice"
@@ -792,8 +792,8 @@
           "refuse": null,
           "sel": {
             "quote": "-> u32 { 1 }",
-            "prefix": "n get(&self) -> u32 { 1 }\n    pub fn put(&self) ",
-            "suffix": "\n}\n",
+            "prefix": "\n    pub fn put(&self) ",
+            "suffix": "\n",
             "pos": 301,
             "symbol": "Cache.put"
           }
@@ -821,7 +821,7 @@
           "refuse": null,
           "sel": {
             "quote": "pub fn retry(n: u32)",
-            "prefix": "cy.\npub const MAX: u32 = 5;\n\n/// Doc for retry.\n",
+            "prefix": "\n",
             "suffix": " -> u32 {\n    let limit = MAX; // cap here\n    n",
             "pos": 61,
             "symbol": "retry"
@@ -850,8 +850,8 @@
           "refuse": null,
           "sel": {
             "quote": "pub fn get(&self) -> u32 { 1 }",
-            "prefix": "step(1);\n}\n\npub struct Cache;\n\nimpl Cache {\n    ",
-            "suffix": "\n    pub fn put(&self) -> u32 { 1 }\n}\n",
+            "prefix": "\n    ",
+            "suffix": "\n    ",
             "pos": 248,
             "symbol": "Cache.get"
           }
@@ -939,8 +939,8 @@
           "refuse": null,
           "sel": {
             "quote": "pub host: String",
-            "prefix": "pub struct Config {\n    pub port: u16,\n    ",
-            "suffix": ",\n}\n\npub enum Level {\n    Low,\n    High = 9,\n}\n",
+            "prefix": ",\n    ",
+            "suffix": ",\n",
             "pos": 43,
             "symbol": "Config.host"
           }
@@ -967,8 +967,8 @@
           "refuse": null,
           "sel": {
             "quote": "host",
-            "prefix": "pub struct Config {\n    pub port: u16,\n    pub ",
-            "suffix": ": String,\n}\n\npub enum Level {\n    Low,\n    High ",
+            "prefix": ",\n    pub ",
+            "suffix": ": String,\n",
             "pos": 47,
             "symbol": "Config.host"
           }
@@ -995,8 +995,8 @@
           "refuse": null,
           "sel": {
             "quote": "High = 9",
-            "prefix": " host: String,\n}\n\npub enum Level {\n    Low,\n    ",
-            "suffix": ",\n}\n",
+            "prefix": ",\n    ",
+            "suffix": ",\n",
             "pos": 94,
             "symbol": "Level.High"
           }
@@ -1024,7 +1024,7 @@
           "sel": {
             "quote": "pub struct Config {",
             "prefix": "",
-            "suffix": "\n    pub port: u16,\n    pub host: String,\n}\n\npub",
+            "suffix": "\n    pub port: u16,\n    pub host: String,\n}\n\n",
             "pos": 0,
             "symbol": "Config"
           }
@@ -1051,8 +1051,8 @@
           "refuse": null,
           "sel": {
             "quote": "pub port: u16",
-            "prefix": "pub struct Config {\n    ",
-            "suffix": ",\n    pub host: String,\n}\n\npub enum Level {\n    ",
+            "prefix": "\n    ",
+            "suffix": ",\n    ",
             "pos": 24,
             "symbol": "Config.port"
           }
@@ -1079,8 +1079,8 @@
           "refuse": "quote_spans_units",
           "sel": {
             "quote": "pub port: u16",
-            "prefix": "pub struct Config {\n    ",
-            "suffix": ",\n    pub host: String,\n}\n\npub enum Level {\n    ",
+            "prefix": "\n    ",
+            "suffix": ",\n    ",
             "pos": 24,
             "symbol": "Config.port"
           }
@@ -1406,7 +1406,7 @@
           "refuse": null,
           "sel": {
             "quote": "function g(a",
-            "prefix": "oid;\nexport function f(a: any) {\n  return a;\n}\n\n",
+            "prefix": "\n\n",
             "suffix": " /* first */, b) {\n  return a + b;\n}\n",
             "pos": 115,
             "symbol": "g"
@@ -1435,7 +1435,7 @@
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "function g(a",
-            "prefix": "oid;\nexport function f(a: any) {\n  return a;\n}\n\n",
+            "prefix": "\n\n",
             "suffix": " /* first */, b) {\n  return a + b;\n}\n",
             "pos": 115,
             "symbol": "g"
@@ -1463,7 +1463,7 @@
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "function g(a",
-            "prefix": "oid;\nexport function f(a: any) {\n  return a;\n}\n\n",
+            "prefix": "\n\n",
             "suffix": " /* first */, b) {\n  return a + b;\n}\n",
             "pos": 115,
             "symbol": "g"
@@ -1491,7 +1491,7 @@
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "function g(a",
-            "prefix": "oid;\nexport function f(a: any) {\n  return a;\n}\n\n",
+            "prefix": "\n\n",
             "suffix": " /* first */, b) {\n  return a + b;\n}\n",
             "pos": 115,
             "symbol": "g"
@@ -1519,7 +1519,7 @@
           "refuse": null,
           "sel": {
             "quote": "return a + b;",
-            "prefix": "  return a;\n}\n\nfunction g(a /* first */, b) {\n  ",
+            "prefix": "\n\nfunction g(a /* first */, b) {\n  ",
             "suffix": "\n}\n",
             "pos": 148,
             "symbol": "g"
@@ -1575,7 +1575,7 @@
           "refuse": null,
           "sel": {
             "quote": "Area of a circle.",
-            "prefix": "import math\n\ndef area(r):\n    \"\"\"",
+            "prefix": "\n\ndef area(r):\n    \"\"\"",
             "suffix": "\"\"\"\n    # pi times r squared\n    return math.pi ",
             "pos": 33,
             "symbol": "area"
@@ -1603,7 +1603,7 @@
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "def area(r):",
-            "prefix": "import math\n\n",
+            "prefix": "\n\n",
             "suffix": "\n    \"\"\"Area of a circle.\"\"\"\n    # pi times r sq",
             "pos": 13,
             "symbol": "area"
@@ -1631,7 +1631,7 @@
           "refuse": null,
           "sel": {
             "quote": "RATE = 0.5",
-            "prefix": " pi times r squared\n    return math.pi * r * r\n\n",
+            "prefix": "\n\n",
             "suffix": "\n",
             "pos": 107,
             "symbol": "RATE"
@@ -1772,7 +1772,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "markdown: quote running past the end of a heading: refused",
+    "name": "markdown: quote running past the end of a heading by whitespace only: kept",
     "input": {
       "path": "docs/pricing.md",
       "fixture": "fixtures/resolve/pricing.md",
@@ -1785,12 +1785,12 @@
         {
           "key": "heading:*",
           "approx": false,
-          "refuse": "quote_spans_units",
+          "refuse": null,
           "sel": {
-            "quote": "# Pricing",
-            "prefix": "---\ntitle: Pricing page\n---\n",
-            "suffix": "\n\nPro costs $29/month. Teams cost $99/month.\n\nSa",
-            "pos": 28
+            "quote": "Pricing\n",
+            "prefix": "---\ntitle: Pricing page\n---\n# ",
+            "suffix": "\nPro costs $29/month. Teams cost $99/month.\n\nSam",
+            "pos": 30
           }
         }
       ]
@@ -2494,6 +2494,232 @@
             "prefix": "The guide says ",
             "suffix": ".\n\nAnd so: retries are capped at five times",
             "pos": 15
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "typescript: several declarations: a quote found in one that runs into the next is refused",
+    "input": {
+      "path": "src/over.ts",
+      "fixture": "fixtures/resolve/over.ts",
+      "sel": {
+        "symbol": "f",
+        "quote": "any) {\n  return a;\n}\n\nfunction g(a"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:f~3",
+          "approx": false,
+          "refuse": "quote_spans_units",
+          "sel": {
+            "quote": "export function f(a: any) {",
+            "prefix": "ing): void;\nexport function f(a: number): void;\n",
+            "suffix": "\n  return a;\n}\n\nfunction g(a /* first */, b) {\n ",
+            "pos": 72,
+            "symbol": "f"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "rust members: a quote starting in the indentation resolves to the field and is kept",
+    "input": {
+      "path": "src/shapes.rs",
+      "fixture": "fixtures/resolve/shapes.rs",
+      "sel": {
+        "quote": "    pub host"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "field:Config.host",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "    pub host",
+            "prefix": ",\n",
+            "suffix": ": String,\n",
+            "pos": 39,
+            "symbol": "Config.host"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "rust members: a whole field line with its comma is kept",
+    "input": {
+      "path": "src/shapes.rs",
+      "fixture": "fixtures/resolve/shapes.rs",
+      "sel": {
+        "quote": "pub host: String,"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "field:Config.host",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub host: String,",
+            "prefix": ",\n    ",
+            "suffix": "\n",
+            "pos": 43,
+            "symbol": "Config.host"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "rust members: a variant with its comma and the closing brace spans the container",
+    "input": {
+      "path": "src/shapes.rs",
+      "fixture": "fixtures/resolve/shapes.rs",
+      "sel": {
+        "quote": "High = 9,\n}"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "variant:Level.High",
+          "approx": false,
+          "refuse": "quote_spans_units",
+          "sel": {
+            "quote": "High = 9",
+            "prefix": ",\n    ",
+            "suffix": ",\n",
+            "pos": 94,
+            "symbol": "Level.High"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "boundary: a quote starting where the previous unit ends belongs to the next unit",
+    "input": {
+      "path": "src/ab.rs",
+      "text": "fn a() {}fn b() {}\n",
+      "sel": {
+        "quote": "fn b()"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:b",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "fn b()",
+            "prefix": "",
+            "suffix": " {}\n",
+            "pos": 9,
+            "symbol": "b"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "boundary: a quote starting outside every unit takes the first unit it intersects",
+    "input": {
+      "path": "docs/tb.md",
+      "text": "Intro here.\n\n---\n\nText here.\n",
+      "sel": {
+        "quote": "---\n\nText"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "refuse": "quote_spans_units",
+          "sel": {
+            "quote": "Text here.",
+            "prefix": "Intro here.\n\n---\n\n",
+            "suffix": "\n",
+            "pos": 18
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "boundary: several declarations, a quote starting where one ends lies in the next",
+    "input": {
+      "path": "src/ff.ts",
+      "text": "function f(a: string): void;function f(a: number): void;\n",
+      "sel": {
+        "symbol": "f",
+        "quote": "function f(a: number)"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:f~2",
+          "approx": false,
+          "refuse": null,
+          "sel": {
+            "quote": "function f(a: number)",
+            "prefix": "function f(a: string): void;",
+            "suffix": ": void;\n",
+            "pos": 28,
+            "symbol": "f"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "several declarations: a quote found in a comment in one of them is refused",
+    "input": {
+      "path": "src/fc.ts",
+      "text": "function f(a: string): void;\nfunction f(a: any) {\n  return a; // the input\n}\n",
+      "sel": {
+        "symbol": "f",
+        "quote": "the input"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:f~2",
+          "approx": false,
+          "refuse": "quote_in_comment",
+          "sel": {
+            "quote": "function f(a: any) {",
+            "prefix": "function f(a: string): void;\n",
+            "suffix": "\n  return a; // the input\n}\n",
+            "pos": 29,
+            "symbol": "f"
           }
         }
       ]

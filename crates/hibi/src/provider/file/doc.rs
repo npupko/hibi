@@ -5,6 +5,7 @@
 //! Pure: everything here is a function of the resource text and its class.
 
 use std::cell::OnceCell;
+use std::collections::{HashMap, HashSet};
 
 use crate::code::{self, Analysis, Class};
 use crate::fingerprint::{self, AST_V1};
@@ -14,8 +15,42 @@ use crate::prose::{self, ProseClass};
 use crate::provider::{ProviderError, ProviderErrorCode, Range, Refuse, Rendered, Unit};
 use crate::text;
 
+/// The most units one resource may have, the `file` unit included. A
+/// resource with more is `too_large` (ruling on section 6.1).
+pub const MAX_UNITS_PER_RESOURCE: usize = 100_000;
+
 /// Characters of `normalize(text)` in a label (section 6.2).
 const LABEL_CHARS: usize = 80;
+
+#[cfg(test)]
+thread_local! {
+    /// Steps of the unit and comment lookups on this thread. Tests compare
+    /// it across input sizes, so that a complexity check does not depend on
+    /// machine speed.
+    static WORK: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+#[cfg(test)]
+fn count_work(n: usize) {
+    WORK.with(|w| w.set(w.get() + n));
+}
+
+#[cfg(not(test))]
+#[inline(always)]
+fn count_work(_: usize) {}
+
+fn too_many_units(n: usize) -> ProviderError {
+    ProviderError::new(
+        ProviderErrorCode::TooLarge,
+        format!("the resource has {n} units, more than the limit of {MAX_UNITS_PER_RESOURCE}"),
+    )
+}
+
+/// A byte counts as filler at the edge of a quote that runs past its unit:
+/// whitespace, `,` or `;` (ruling on section 6.7).
+fn is_filler(c: char) -> bool {
+    text::is_ws(c) || c == ',' || c == ';'
+}
 /// Characters of a default quote (section 6.7).
 const DEFAULT_QUOTE_CHARS: usize = 120;
 
@@ -40,8 +75,15 @@ pub(super) struct Doc {
     /// without error.
     tree: bool,
     entries: Vec<Entry>,
-    /// Comment node ranges, when `tree`. Filled on first use after a cache
-    /// hit.
+    /// Per entry: the index of its parent entry (`None` for the `file`
+    /// unit). Units nest, so the parent chain is the containment chain.
+    parents: Vec<Option<usize>>,
+    /// Per entry: true when it has a symbol that no other entry has. Such a
+    /// unit is resolved through the one-declaration symbol path, which
+    /// locates within the unit's own text (section 6.7).
+    unique_symbol: Vec<bool>,
+    /// Comment node ranges, when `tree`, sorted and disjoint. Filled on
+    /// first use after a cache hit.
     comments: OnceCell<Vec<(usize, usize)>>,
     /// The heading path of every entry (empty for the `file` unit and for
     /// classes without prose units). Filled on first use after a cache hit.
@@ -123,8 +165,12 @@ impl Doc {
         let comments = OnceCell::new();
         let headings = OnceCell::new();
         if let Some(pc) = prose_class(class) {
+            let regions = prose::split(&text, pc);
+            if regions.len() + 1 > MAX_UNITS_PER_RESOURCE {
+                return Err(too_many_units(regions.len() + 1));
+            }
             raws.push(file(fingerprint::prose_v1(&text), &text));
-            let units = prose::units(&text, pc);
+            let units = prose::units_from(&text, regions);
             let mut paths = vec![Vec::new()];
             for u in units {
                 paths.push(u.region.heading_path.clone());
@@ -145,6 +191,9 @@ impl Doc {
             let blocks = if class.is_code() {
                 match code::analyze(&text, class) {
                     Analysis::Code(cf) => {
+                        if cf.units.len() > MAX_UNITS_PER_RESOURCE {
+                            return Err(too_many_units(cf.units.len()));
+                        }
                         tree = true;
                         let _ = comments.set(cf.comments);
                         for u in cf.units {
@@ -168,6 +217,9 @@ impl Doc {
                 Some(code::text_units(&text))
             };
             if let Some(blocks) = blocks {
+                if blocks.len() + 1 > MAX_UNITS_PER_RESOURCE {
+                    return Err(too_many_units(blocks.len() + 1));
+                }
                 raws.push(file(fingerprint::prose_v1(&text), &text));
                 raws.extend(blocks.into_iter().map(|b| Raw {
                     key: b.key,
@@ -198,6 +250,8 @@ impl Doc {
             class,
             tree,
             entries: Vec::with_capacity(raws.len()),
+            parents: Vec::new(),
+            unique_symbol: Vec::new(),
             comments,
             headings,
         };
@@ -230,11 +284,39 @@ impl Doc {
             };
             doc.entries.push(entry);
         }
+        doc.index();
         for i in 0..doc.entries.len() {
             let sel = doc.completed(i, None)?;
             doc.entries[i].unit.sel = sel;
         }
         Ok(doc)
+    }
+
+    /// Fill `parents` and `unique_symbol` from the entries.
+    fn index(&mut self) {
+        let mut by_key: HashMap<&str, usize> = HashMap::with_capacity(self.entries.len());
+        let mut symbols: HashMap<&str, usize> = HashMap::new();
+        for (i, e) in self.entries.iter().enumerate() {
+            by_key.insert(e.unit.key.as_str(), i);
+            if let Some(s) = &e.symbol {
+                *symbols.entry(s.as_str()).or_default() += 1;
+            }
+        }
+        self.parents = self
+            .entries
+            .iter()
+            .map(|e| {
+                e.unit
+                    .parent
+                    .as_deref()
+                    .and_then(|p| by_key.get(p).copied())
+            })
+            .collect();
+        self.unique_symbol = self
+            .entries
+            .iter()
+            .map(|e| e.symbol.as_deref().is_some_and(|s| symbols[s] == 1))
+            .collect();
     }
 
     /// The cache form of section 11.3: the JSON array of the units without
@@ -244,23 +326,62 @@ impl Doc {
         serde_json::to_string(&units).expect("units serialize")
     }
 
-    /// Rebuild a document from its cache form. `None` when the row does not
-    /// describe this text (it is then ignored and rewritten).
+    /// Rebuild a document from its cache form. `None` when the row is not
+    /// exactly what [`Doc::to_cache`] writes for a text like this one: the
+    /// caller then ignores it and rewrites it. The checks, each of which
+    /// makes the row a miss:
+    ///
+    /// 1. it is a JSON array with at least one element;
+    /// 2. every element is an object with exactly the keys `key`, `kind`,
+    ///    `parent`, `label`, `range`, `fp`, `sel`;
+    /// 3. every element reads as a unit (valid fingerprint and selector);
+    /// 4. every kind is one of the file provider's kinds;
+    /// 5. the first unit is the `file` unit over `[0, len)` with no parent,
+    ///    and no other unit is a `file` unit;
+    /// 6. every range lies within the text, on character boundaries;
+    /// 7. units after the first are ordered by start, then end descending;
+    /// 8. keys are unique, and every parent names an earlier unit;
+    /// 9. the profile fits the class: `ast-v1` only for a code class.
     pub(super) fn from_cache(text: String, class: Class, row: &str) -> Option<Doc> {
-        let units: Vec<Unit> = serde_json::from_str(row).ok()?;
-        let first = units.first()?;
-        if first.key != "file" || first.range?.end != text.len() {
-            return None;
-        }
-        let tree = class.is_code() && first.fp.profile() == AST_V1;
-        let mut entries = Vec::with_capacity(units.len());
-        for u in units {
+        const KEYS: [&str; 7] = ["key", "kind", "parent", "label", "range", "fp", "sel"];
+        let value: serde_json::Value = serde_json::from_str(row).ok()?;
+        let items = value.as_array().filter(|a| !a.is_empty())?;
+        let mut entries: Vec<Entry> = Vec::with_capacity(items.len());
+        let mut keys: HashSet<String> = HashSet::with_capacity(items.len());
+        for (i, item) in items.iter().enumerate() {
+            let obj = item.as_object()?;
+            if obj.len() != KEYS.len() || !KEYS.iter().all(|k| obj.contains_key(*k)) {
+                return None;
+            }
+            let u: Unit = serde_json::from_value(item.clone()).ok()?;
+            if !super::KINDS.contains(&u.kind.as_str()) || u.text.is_some() {
+                return None;
+            }
             let r = u.range?;
             if r.start > r.end
                 || r.end > text.len()
                 || !text.is_char_boundary(r.start)
                 || !text.is_char_boundary(r.end)
             {
+                return None;
+            }
+            let is_file = u.kind == "file";
+            if (i == 0) != is_file
+                || (i == 0 && (u.key != "file" || r.start != 0 || r.end != text.len()))
+                || (i == 0) != u.parent.is_none()
+            {
+                return None;
+            }
+            if i >= 2 {
+                let prev = &entries[i - 1];
+                if (r.start, std::cmp::Reverse(r.end)) < (prev.start, std::cmp::Reverse(prev.end)) {
+                    return None;
+                }
+            }
+            if u.parent.as_ref().is_some_and(|p| !keys.contains(p)) {
+                return None;
+            }
+            if !keys.insert(u.key.clone()) {
                 return None;
             }
             entries.push(Entry {
@@ -270,14 +391,23 @@ impl Doc {
                 unit: u,
             });
         }
-        Some(Doc {
+        let profile = entries[0].unit.fp.profile().to_owned();
+        if profile == AST_V1 && !class.is_code() {
+            return None;
+        }
+        let tree = class.is_code() && profile == AST_V1;
+        let mut doc = Doc {
             text,
             class,
             tree,
             entries,
+            parents: Vec::new(),
+            unique_symbol: Vec::new(),
             comments: OnceCell::new(),
             headings: OnceCell::new(),
-        })
+        };
+        doc.index();
+        Some(doc)
     }
 
     fn comments(&self) -> &[(usize, usize)] {
@@ -305,13 +435,25 @@ impl Doc {
         })
     }
 
-    /// `in_comment(L)` of section 6.7 for a span.
+    /// `in_comment(L)` of section 6.7 for a span. The comment ranges are
+    /// sorted and disjoint, so only the last comment that starts before the
+    /// span's end can intersect it: a binary search.
     fn in_comment(&self, s: Span) -> bool {
-        self.tree
-            && self
-                .comments()
-                .iter()
-                .any(|&(cs, ce)| cs < s.end && s.start < ce)
+        if !self.tree {
+            return false;
+        }
+        count_work(1);
+        let comments = self.comments();
+        let n = comments.partition_point(|&(cs, _)| cs < s.end);
+        n > 0 && s.start < comments[n - 1].1
+    }
+
+    /// The start of the first comment that starts in `[from, to)`.
+    fn first_comment_in(&self, from: usize, to: usize) -> Option<usize> {
+        count_work(1);
+        let comments = self.comments();
+        let n = comments.partition_point(|&(cs, _)| cs < from);
+        comments.get(n).map(|&(cs, _)| cs).filter(|&cs| cs < to)
     }
 
     /// The default quote span of entry `i` (section 6.7): the first line of
@@ -324,11 +466,7 @@ impl Doc {
         let unit_text = &self.text[e.start..e.end];
         let line_end = e.start + unit_text.find('\n').unwrap_or(unit_text.len());
         let cut = if self.tree {
-            self.comments()
-                .iter()
-                .map(|&(s, _)| s)
-                .find(|&s| e.start <= s && s < line_end)
-                .unwrap_or(line_end)
+            self.first_comment_in(e.start, line_end).unwrap_or(line_end)
         } else {
             line_end
         };
@@ -373,7 +511,19 @@ impl Doc {
             Some((b, _)) => s + text::trim_end(&span[..b]).len(),
             None => end,
         };
-        let q = locate::quote_selector(&self.text, s, end).map_err(|err| {
+        // The context comes from the text that resolving this selector will
+        // search: the unit's scope when its symbol is unique (the
+        // one-declaration symbol path locates there), the whole resource
+        // otherwise. So the completed selector is a fixed point: resolving
+        // it against the same text gives the same unit and selector
+        // (ruling on section 6.7).
+        let (from, to) = if self.unique_symbol[i] {
+            self.symbol_scope(i)
+        } else {
+            (0, self.text.len())
+        };
+        debug_assert!(from <= s && end <= to, "a kept span lies in its scope");
+        let q = locate::quote_selector(&self.text[from..to], s - from, end - from).map_err(|err| {
             ProviderError::new(
                 ProviderErrorCode::Internal,
                 format!(
@@ -386,7 +536,7 @@ impl Doc {
             quote: Some(q.quote),
             prefix: Some(q.prefix),
             suffix: Some(q.suffix),
-            pos: Some(q.pos as u64),
+            pos: Some((from + q.pos) as u64),
             symbol: e.symbol.clone(),
             key: None,
         })
@@ -431,20 +581,100 @@ impl Doc {
     // Resolve (section 6.7)
     // -----------------------------------------------------------------------
 
-    /// `inside(L, u)`.
+    /// `inside(L, u)`: `L` is found and exact, and the parts of its span
+    /// outside the unit consist only of whitespace, `,` and `;` (ruling on
+    /// section 6.7: copying a member line with its indentation or its
+    /// separator does not span another unit).
     fn inside(&self, l: &Located, i: usize) -> bool {
-        let e = &self.entries[i];
-        matches!(l, Located::Found { how: How::Exact, span } if e.start <= span.start && span.end <= e.end)
+        matches!(l, Located::Found { how: How::Exact, span } if self.within(*span, i))
     }
 
-    /// The innermost unit for a span.
-    fn innermost(&self, s: Span) -> usize {
-        let others = || self.entries.iter().enumerate().skip(1);
-        others()
-            .filter(|(_, e)| e.start <= s.start && s.start < e.end)
-            .min_by_key(|(i, e)| (e.end - e.start, *i))
-            .or_else(|| others().find(|(_, e)| e.start < s.end && s.start < e.end))
-            .map_or(0, |(i, _)| i)
+    /// The parts of `span` outside unit `i` are only filler.
+    fn within(&self, span: Span, i: usize) -> bool {
+        let e = &self.entries[i];
+        let before = &self.text[span.start..span.start.max(e.start.min(span.end))];
+        let after = &self.text[span.start.max(e.end).min(span.end)..span.end];
+        before.chars().all(is_filler) && after.chars().all(is_filler)
+    }
+
+    /// The text the one-declaration symbol path searches for unit `i`: its
+    /// range widened over the filler (whitespace, `,`, `;`) directly
+    /// before and after it, so that a quote copied with its indentation or
+    /// separator is found there, and kept, exactly as in the other paths.
+    fn symbol_scope(&self, i: usize) -> (usize, usize) {
+        let e = &self.entries[i];
+        let before = &self.text[..e.start];
+        let from = before.trim_end_matches(is_filler).len();
+        let after = &self.text[e.end..];
+        let to = e.end + (after.len() - after.trim_start_matches(is_filler).len());
+        (from, to)
+    }
+
+    /// `span` without leading and trailing whitespace (unchanged when it is
+    /// all whitespace).
+    fn trimmed(&self, span: Span) -> Span {
+        let t = &self.text[span.start..span.end];
+        let lead = t.len() - text::trim_start(t).len();
+        let core = text::trim(t);
+        if core.is_empty() {
+            return span;
+        }
+        Span {
+            start: span.start + lead,
+            end: span.start + lead + core.len(),
+        }
+    }
+
+    /// The innermost unit for a span, from the span with leading and
+    /// trailing whitespace ignored (ruling on section 6.7): among the units
+    /// other than `file` that contain its first byte, the smallest (the
+    /// earliest of equal ranges); if none, the first unit in source order
+    /// that intersects it; if none, the `file` unit.
+    ///
+    /// Units nest and are sorted by start, then end descending, so the last
+    /// unit that starts at or before the byte, or one of its ancestors, is
+    /// the smallest one containing it: a binary search and a walk up the
+    /// parent chain, not a scan of every unit.
+    fn innermost(&self, span: Span) -> usize {
+        let s = self.trimmed(span);
+        let rest = &self.entries[1..];
+        let k = rest.partition_point(|e| e.start <= s.start);
+        let mut i = k;
+        while i > 0 {
+            count_work(1);
+            let e = &self.entries[i];
+            if e.start <= s.start && s.start < e.end {
+                while i > 1
+                    && self.entries[i - 1].start == e.start
+                    && self.entries[i - 1].end == e.end
+                {
+                    i -= 1;
+                }
+                return i;
+            }
+            match self.parents[i] {
+                Some(p) => i = p,
+                None => break,
+            }
+        }
+        match rest.get(k) {
+            Some(e) if e.start < s.end => k + 1,
+            _ => 0,
+        }
+    }
+
+    /// The first unit of `candidates` (indices into the entries) that
+    /// contains the first byte of `span` with whitespace ignored.
+    fn containing(&self, candidates: &[usize], span: Span) -> Vec<usize> {
+        let s = self.trimmed(span);
+        candidates
+            .iter()
+            .copied()
+            .filter(|&i| {
+                let e = &self.entries[i];
+                e.start <= s.start && s.start < e.end
+            })
+            .collect()
     }
 
     /// `pick(L)` for an ambiguous result whose tied hits lie in one unit.
@@ -562,8 +792,8 @@ impl Doc {
                 if !has_quote {
                     return Ok(vec![self.out(i, None, false, None)?]);
                 }
-                let e = &self.entries[i];
-                let mut l = self.locate_in(e.start, e.end, sel);
+                let (from, to) = self.symbol_scope(i);
+                let mut l = self.locate_in(from, to, sel);
                 if let Located::Ambiguous { ties, .. } = &l {
                     l = self.pick(ties);
                 }
@@ -579,16 +809,17 @@ impl Doc {
                 if has_quote {
                     let l = self.locate_in(0, self.text.len(), sel);
                     if let Located::Found { how, span } = l {
-                        let c: Vec<usize> = s
-                            .iter()
-                            .copied()
-                            .filter(|&i| {
-                                let e = &self.entries[i];
-                                e.start <= span.start && span.start < e.end
-                            })
-                            .collect();
+                        let c = self.containing(&s, span);
                         if c.len() == 1 {
-                            let refuse = self.in_comment(span).then_some(Refuse::QuoteInComment);
+                            // The refusals apply in every branch (ruling on
+                            // section 6.7).
+                            let refuse = if self.in_comment(span) {
+                                Some(Refuse::QuoteInComment)
+                            } else if how == How::Exact && !self.within(span, c[0]) {
+                                Some(Refuse::QuoteSpansUnits)
+                            } else {
+                                None
+                            };
                             return Ok(vec![self.out(
                                 c[0],
                                 Some(&l),
@@ -615,9 +846,10 @@ impl Doc {
                 Located::Missing => return Ok(Vec::new()),
                 Located::Ambiguous { ties, .. } => {
                     let mut u: Vec<usize> = Vec::new();
+                    let mut seen: HashSet<usize> = HashSet::new();
                     for t in ties {
                         let i = self.innermost(*t);
-                        if !u.contains(&i) {
+                        if seen.insert(i) {
                             u.push(i);
                         }
                     }
@@ -669,6 +901,215 @@ mod tests {
             let full: String = text::normalize(s).chars().take(LABEL_CHARS).collect();
             assert_eq!(label_of(s), full, "{s:?}");
         }
+    }
+
+    /// The result of `f` and the lookup work counted while it ran.
+    fn with_work<T>(f: impl FnOnce() -> T) -> (T, usize) {
+        WORK.with(|w| w.set(0));
+        let out = f();
+        (out, WORK.with(|w| w.get()))
+    }
+
+    /// Doubling the input must at most about double the work: linear is
+    /// near 2, quadratic near 4.
+    fn assert_linear(small: usize, large: usize, what: &str) {
+        assert!(
+            large <= 3 * small,
+            "{what}: work grew from {small} to {large} when the input doubled"
+        );
+    }
+
+    /// Limit 7: an ambiguous quote with many tied hits in many units, and
+    /// many tied hits in one unit with many comments, resolve in linear
+    /// work (innermost and in_comment are lookups, not scans).
+    #[test]
+    fn many_tied_hits_resolve_in_linear_work() {
+        let across = |n: usize| {
+            let t = "Same text here.\n\n".repeat(n);
+            let doc = Doc::build(t, Class::Markdown).unwrap();
+            let (r, work) = with_work(|| doc.resolve(&Selector::quote("Same text")).unwrap());
+            assert_eq!(r.len(), n);
+            work
+        };
+        assert_linear(across(2000), across(4000), "ties across units");
+        let within = |n: usize| {
+            // n hits in comments before the one in code, so `pick` checks
+            // every one of them.
+            let body = format!("{}    x();\n", "    // x();\n".repeat(n));
+            let t = format!("fn f() {{\n{body}}}\n");
+            let doc = Doc::build(t, Class::Rust).unwrap();
+            let (r, work) = with_work(|| doc.resolve(&Selector::quote("x();")).unwrap());
+            assert_eq!(r.len(), 1);
+            work
+        };
+        assert_linear(within(2000), within(4000), "ties within one unit");
+    }
+
+    /// Limit 8: default quotes for many units with comments cost linear
+    /// work (the comment lookup per unit is a binary search).
+    #[test]
+    fn default_quotes_cost_linear_work() {
+        let run = |n: usize| {
+            let t = "function f(){} // c\n".repeat(n);
+            let (doc, work) = with_work(|| Doc::build(t, Class::Typescript).unwrap());
+            assert_eq!(doc.entries.len(), n + 1);
+            work
+        };
+        assert_linear(run(2000), run(4000), "default quotes");
+    }
+
+    /// Limit 9: a resource with more than MAX_UNITS_PER_RESOURCE units is
+    /// too_large; exactly the limit is accepted.
+    #[test]
+    fn unit_count_cap() {
+        let at = "S.\n\n".repeat(MAX_UNITS_PER_RESOURCE - 1);
+        assert_eq!(
+            Doc::build(at, Class::Markdown).unwrap().entries.len(),
+            MAX_UNITS_PER_RESOURCE
+        );
+        let over = "S.\n\n".repeat(MAX_UNITS_PER_RESOURCE);
+        let err = Doc::build(over, Class::Markdown).unwrap_err();
+        assert_eq!(err.code, ProviderErrorCode::TooLarge);
+        assert!(err.message.contains("100001 units"), "{}", err.message);
+        let blocks = "b\n\n".repeat(MAX_UNITS_PER_RESOURCE);
+        assert_eq!(
+            Doc::build(blocks, Class::Text).unwrap_err().code,
+            ProviderErrorCode::TooLarge
+        );
+        assert_eq!(MAX_UNITS_PER_RESOURCE, 100_000);
+    }
+
+    /// Limit 11: every condition of `from_cache` makes a row a miss.
+    #[test]
+    fn cache_rows_are_validated_strictly() {
+        let t = "// lead\nfn a() { 1 }\nstruct S { x: u8 }\n".to_owned();
+        let good = Doc::build(t.clone(), Class::Rust).unwrap().to_cache();
+        assert!(Doc::from_cache(t.clone(), Class::Rust, &good).is_some());
+        let rows: Vec<serde_json::Value> = serde_json::from_str(&good).unwrap();
+        let edit = |f: &dyn Fn(&mut Vec<serde_json::Value>)| {
+            let mut r = rows.clone();
+            f(&mut r);
+            serde_json::to_string(&r).unwrap()
+        };
+        let bad: Vec<(&str, String)> = vec![
+            ("not JSON", "[{".to_owned()),
+            ("not an array", "{}".to_owned()),
+            ("empty array", "[]".to_owned()),
+            (
+                "an extra key",
+                edit(&|r| {
+                    r[1]["extra"] = 1.into();
+                }),
+            ),
+            (
+                "text, which a row never has",
+                edit(&|r| {
+                    r[1]["text"] = "x".into();
+                }),
+            ),
+            (
+                "a missing key",
+                edit(&|r| {
+                    r[1].as_object_mut().unwrap().remove("label");
+                }),
+            ),
+            (
+                "an invalid fingerprint",
+                edit(&|r| {
+                    r[1]["fp"] = "b3:ast-v1:zz".into();
+                }),
+            ),
+            (
+                "an unknown kind",
+                edit(&|r| {
+                    r[1]["kind"] = "widget".into();
+                }),
+            ),
+            (
+                "a first unit that is not the file",
+                edit(&|r| {
+                    r.swap(0, 1);
+                }),
+            ),
+            (
+                "a file range that is not the text",
+                edit(&|r| {
+                    r[0]["range"]["end"] = 3.into();
+                }),
+            ),
+            (
+                "a range past the text",
+                edit(&|r| {
+                    r[1]["range"]["end"] = 999.into();
+                }),
+            ),
+            ("a range off a character boundary", {
+                let t2 = "é".to_owned();
+                let mut r: Vec<serde_json::Value> =
+                    serde_json::from_str(&Doc::build(t2, Class::Text).unwrap().to_cache()).unwrap();
+                r[1]["range"]["end"] = 1.into();
+                serde_json::to_string(&r).unwrap()
+            }),
+            (
+                "units out of order",
+                edit(&|r| {
+                    let n = r.len();
+                    r.swap(1, n - 1);
+                }),
+            ),
+            (
+                "a duplicate key",
+                edit(&|r| {
+                    r[2]["key"] = r[1]["key"].clone();
+                }),
+            ),
+            (
+                "a parent that names no earlier unit",
+                edit(&|r| {
+                    r[1]["parent"] = "nope".into();
+                }),
+            ),
+            (
+                "an ast-v1 file unit for a class without a grammar",
+                good.clone(),
+            ),
+        ];
+        for (what, row) in &bad {
+            let class = if *what == "an ast-v1 file unit for a class without a grammar"
+                || *what == "a range off a character boundary"
+            {
+                Class::Text
+            } else {
+                Class::Rust
+            };
+            let text = if *what == "a range off a character boundary" {
+                "é".to_owned()
+            } else {
+                t.clone()
+            };
+            assert!(
+                Doc::from_cache(text, class, row).is_none(),
+                "accepted a row with {what}"
+            );
+        }
+    }
+
+    /// Pin: the default-quote cut at a comment that starts exactly at the
+    /// unit's start (unreachable from a parse, so the unit is made by hand)
+    /// takes the whole first line.
+    #[test]
+    fn default_quote_with_a_comment_at_the_unit_start() {
+        let t = "/* c */ x = 1\n".to_owned();
+        let mut doc = Doc::build(t.clone(), Class::Text).unwrap();
+        doc.tree = true;
+        let _ = doc.comments.set(vec![(0, 7)]);
+        assert_eq!(doc.entries[1].start, 0);
+        assert_eq!(&t[..doc.default_quote_end(1)], "/* c */ x = 1");
+        // A comment later on the line cuts there.
+        let mut doc = Doc::build("x = 1 /* c */\n".to_owned(), Class::Text).unwrap();
+        doc.tree = true;
+        let _ = doc.comments.set(vec![(6, 13)]);
+        assert_eq!(doc.default_quote_end(1), 5);
     }
 
     /// Ruling on section 6.7: a completed quote is cut to MAX_QUOTE_CHARS
