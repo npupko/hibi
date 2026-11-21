@@ -5122,6 +5122,13 @@ panics; only a process that aborts may write to it. The two exceptions are
 `schema <name>` and `completions`,
 whose standard output is the schema or the script in both formats, and help.
 
+In `human` format every control character except U+000A and U+0009 is
+removed from what is written to standard output and standard error, for
+results, warnings and errors alike: text from a file, a provider or the
+store must not move the cursor, change colours or hide what follows. JSON
+output is not changed; a JSON string writes such a character as an escape.
+The raw output of `schema` and `completions` is not changed either.
+
 Human error and warning lines:
 
 ```
@@ -5272,8 +5279,22 @@ Rules for the Side keys:
   than 20. For an `ambiguous` side they are the units the stored anchor
   matches. For a `missing` side with reason `not_exact` they are the units
   of an answer in which at least one unit has `approx: true`; every unit of
-  such an answer is a candidate, also when the answer holds one unit. A
-  `missing` side with another reason has no `candidates` key.
+  such an answer is a candidate, also when the answer holds one unit.
+- Candidates by content. For a `missing` side with reason `not_exact` or
+  `selector_not_found` of a claim that has a reference mark, `status` also
+  lists the units of the side's resource whose fingerprint equals
+  `markedFp`: one `units` call for the resource, and `render` for the text
+  of a listed unit that came without text. They stand first in
+  `candidates`, in the provider's order, with `sameFingerprint: true`; the
+  provider's own candidates follow; a unit is listed once, by its key, and
+  the list is cut to `MAX_CANDIDATES`. `candidatesTotal` counts the units
+  of both sources once each. (hibi keeps only the first 20 units of each
+  source, so a unit with the marked content that the provider also
+  returned beyond its first 20 is counted twice.) Such a unit is a
+  candidate like any other: it resolves nothing. A provider that cannot
+  list units, or whose listing fails, adds none. A `selector_not_found`
+  side for which nothing is found, and a `missing` side with any other
+  reason, has no `candidates` key.
 - A candidate is a guess for the caller to read. No command takes a
   candidate as the unit of a side, and no `next` and no remediation that is
   a command contains a candidate or its anchor.
@@ -5577,7 +5598,12 @@ The error object is the one of section 15.1; these rules fix its
     exclusion for the resource."
   - `provider_error`: "The provider gave an answer hibi cannot use. Run hibi
     providers --check <scheme> to see what it gets wrong; for a claim that
-    exists, retire it if the resource is gone for good."
+    exists, retire it if the resource is gone for good.", with the scheme
+    of the side's locator in place of `<scheme>`. For the built-in schemes
+    `file` and `repo`, which `providers --check` does not take, it is
+    "hibi's own provider for this scheme gave an answer hibi cannot use;
+    that is a fault in hibi. For a claim that exists, retire it if the
+    resource is gone for good."
   In human `status` output the sentence is printed under such a side.
 - `mark`. When a side of a claim does not resolve exactly to one unit, the
   error code comes from the first such side in index order (`side_missing`,
@@ -5780,7 +5806,13 @@ For each element, in order:
 The same-claim rule. A claim made again marks the existing live claim and
 creates none. The target of an element is found in this order:
 
-1. The live claim whose id equals the id of the built claim.
+1. The live claim whose id equals the id of the built claim. Its stored
+   anchors are resolved in this run. When one of them does not resolve to
+   exactly one unit, exactly, the element fails as `mark <id>` would
+   (`side_missing`, `side_ambiguous` or `side_unavailable`, with the
+   claim's `next` as remediation): the anchor the caller gave may reach
+   the unit while the stored anchor no longer does, and a mark may not
+   rest on that.
 2. Otherwise a live claim that is the same claim as the built one. A live
    claim is the same claim when all of the following hold:
    - its `statement`, `recheck` and `note` equal those of the built claim;
@@ -5797,7 +5829,15 @@ creates none. The target of an element is found in this order:
      provider chose that quote from the unit's content.
 
    `prefix`, `suffix` and `pos` are never compared: they change when text
-   near the quote is edited. When several live claims are the same claim,
+   near the quote is edited. A live claim with a stored anchor that does
+   not resolve exactly is therefore never the same claim, and a new claim
+   is created beside it.
+
+   Every anchor is sent to its provider once in a run of `claim` or
+   `reanchor`, and every use of it takes that answer: what the mark covers,
+   what `accepted` reports and what the same-claim rule compares are read
+   from the stored anchors of the claim that gets the mark, as resolved in
+   this run. When several live claims are the same claim,
    the one with the smallest id is the target. A retired claim is never
    matched by this step.
 3. Otherwise the built claim, which this run creates.
@@ -5890,7 +5930,7 @@ Human: one line per claim:
 
 ```
 <id>  created|marked  <mark id>  <role> <locator> (<kind> "<label>", line <n>); ...
-  was <state>: <role> <locator> <side state> (<reason>); ...; now marked
+  was <state>: <role> <locator> <side state> (<reason>); ...; now marked: make sure you re-checked it
 ```
 
 - The first line names every side, joined by `; `. `<role>` is `subject` or
@@ -5956,7 +5996,7 @@ since <range> (base <commit>)
     <detail>
     <remediation>
     stored: symbol <symbol>, quote "<quote>", key <key>
-    <n> candidates, found by similarity; each is a guess, read it before you anchor to it:
+    <n> candidates; each is a guess, read it before you anchor to it:
     - <kind> "<label>", line <n>; same content as at the reference mark
       | <the candidate's text on one line>
       anchor: <anchor>
@@ -5998,16 +6038,22 @@ Re-check each statement before running its next command. If it no longer holds, 
   characters. It is omitted when the stored selector has none of the three.
 - The candidate lines are printed for a side that has `candidates`. The
   first of them gives `candidatesTotal`, with the word `candidate` when the
-  count is 1. For a `missing` side with reason `not_exact` it continues as
-  shown above. For an `ambiguous` side it is
+  count is 1. For a `missing` side it continues as shown above. For an `ambiguous` side it is
   `<n> candidates; the stored anchor matches each of them:`. Each candidate
   of `candidates` then has up to three lines. The `-` line gives the kind,
   the label (or the key when the unit has no label) put on one line and cut
   to 60 characters, and the first line of the unit; `, line <n>` is omitted
   for a unit without a range, and `; same content as at the reference mark` is
-  printed only when `sameFingerprint` is `true`. The `|` line is the
-  candidate's `text` put on one line and cut to 100 characters, and is
-  omitted when `text` is `null`. The `anchor:` line is the candidate's
+  printed only when `sameFingerprint` is `true`. The label is written as it
+  is inside double quotes; only `"` (as `\"`) and control characters are
+  escaped. The `|` line is the candidate's `text` put on one line and cut
+  to 100 characters, and is omitted when `text` is `null`. When that line
+  would be equal for two candidates of the side whose texts differ, it is
+  instead `line <k> of the unit: <that line>` for the first line on which
+  the text differs from the other candidate's, or
+  `ends after line <k> of the unit` when the text is the beginning of the
+  other. With `--detail` the whole `text` is printed, one `|` line per
+  line of it. The `anchor:` line is the candidate's
   `anchor`, complete. `and <n> more` is printed when `candidatesTotal` is
   greater than the number of candidates listed, with the difference.
 - The `next` line is omitted when `next` is `null`.
@@ -6117,7 +6163,12 @@ Builds a new claim from the old one:
    into the one with the smallest id. In this rule a replaced or added
    side is compared by `quote` when its anchor gave a `quote`, and a kept
    side is never compared by `quote`. The stored anchors of the claim that
-   gets the mark are not changed.
+   gets the mark are not changed, and the mark covers its sides as its own
+   stored anchors resolve in this run. When the new id is that of a live
+   claim whose stored anchors do not all resolve exactly, `reanchor` fails
+   with the error of that side, names both claims, and writes nothing. A
+   kept side has the resolution that `accepted` was read from: `reanchor`
+   never marks a kept side that did not resolve exactly in this run.
 6. Append the new claim, a mark for it (`at = now`), and a retirement of the
    old claim with `replacedBy` set to the new id, in one `append`. When the
    old claim is merged into an existing claim, no claim is appended, and
@@ -6145,7 +6196,7 @@ Human:
 ```
 <old id> is retired and replaced by the new claim <new id>
   mark <mark id>, retirement <retirement id>
-  was <state>: <role> <locator> <side state> (<reason>); ...; now marked
+  was <state>: <role> <locator> <side state> (<reason>); ...; now marked: make sure you re-checked it
   <role> <locator> (<kind> "<label>", line <n>)
     <the side's stored anchor as JSON>
 ```
@@ -6209,7 +6260,13 @@ JSON:
 ```
 
 `items` are the uncovered units ordered by locator, then start offset, then
-key. `text` is the unit text cut to 240 characters. `anchor` is the unit's
+key. `text` is the unit text cut to 240 characters. It is read only for the
+items that are listed after `--limit`, with one `render` of the unit's key
+per item when the provider has `render`, and otherwise with one batched
+`resolve` of the items' completed selectors per scheme: a selector of one
+of many identical units matches all of them, so resolving it per item
+costs the number of units each time. For the same reason a resolution
+keeps the first `MAX_CANDIDATES` units of an answer and the count of all. `anchor` is the unit's
 locator with its completed selector and can be passed to `claim --stdin`.
 `matched` counts the units each exclusion excluded. With `--since`, the counts
 cover only the units kept by section 10.3.
@@ -6942,6 +6999,11 @@ Each row is a choice the plan left open or marked illustrative.
 | 130 | Accepted limit: text stored in the ledger stays in the ledger. A claim's stored quote, prefix and suffix are printed by `list` and `status` even after the file is later ignored. | hibi never reads the ignored file; the stored text was committed when the claim was made. |
 | 131 | CI has eight jobs: it also lints the library with features off, builds and tests each single feature, and checks the minimum Rust version with `--locked`. | Every feature set must build and pass. |
 | 132 | Ruling: declarations of one symbol are compared in their own scopes. A declaration's stored context is cut from its scope, or from the whole text when another declaration of the symbol has the same scope text after `normalize` (a twin). With several declarations, the one declaration whose scope or whole-text windows reproduce the stored context after `normalize` resolves; when several reproduce it, every declaration with a hit is returned; when none does, every declaration with a hit is a candidate (`approx`), ordered by context score, best first. Position never chooses between them. | An anchor stored while a symbol was unique silently followed the last duplicate once copies appeared: its short scope context was scored against whole-text windows, and the copy at the end of the file, with the shortest windows, won as an exact resolution. A single best-scoring candidate was tried first and replaced: after a claimed `int` stub of two `@overload` stubs became `float`, the unchanged `str` stub scored higher and was the only candidate, and one wrong guess is worse than a list. |
+| 133 | A write on a claim that exists reads that claim's stored anchors, each resolved once in the run. `claim` on the live claim with the built id fails when a stored anchor does not resolve exactly; such a claim is never the same claim for another; `reanchor` does not merge into it and never marks a kept side that did not resolve. | An anchor the caller gives may reach the unit while the stored anchor no longer does; a mark may not rest on that, nor on a provider's second, different answer. |
+| 134 | For a `missing` side (`not_exact`, `selector_not_found`) `status` lists first the units of the resource with the fingerprint of the reference mark, then the provider's candidates. They are candidates only. | A renamed container or a moved unit keeps its content; the provider's search by similarity may find nothing or something else. |
+| 135 | `cover` reads item text with `render` by key for the listed items only, and a resolution keeps at most `MAX_CANDIDATES` units. | Work and memory are bounded by the listed items, not by the square of the units of a resource of identical units. |
+| 136 | In a standard-input document a string that starts with `{` is a JSON anchor, as on the command line. | A candidate's `anchor` is a string and has to be usable in a batch. |
+| 137 | Human output drops control characters except newline and tab. Advice names what applies: the scheme in the `provider_error` remediation, a symbol only where the units have one, the provider's selector keys for `selector_not_exact`; every `invalid_argument` has a remediation. The `accepted` line reminds the caller of the re-check. Near-identical candidates show the line where they differ. | Text for a terminal must be safe, and advice must be something the caller can do. |
 | 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
 | 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
 | 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
@@ -7748,4 +7810,39 @@ Each of these has a test, named in parentheses.
   "twin declarations: ..."; `default_quotes_are_never_in_comments_and_round_trip`,
   `many_declarations_of_one_symbol_resolve_in_linear_work`,
   `a_candidate_anchor_selects_one_unit_of_the_whole_resource`.)
+- R134. A write on a claim that exists rests on that claim's stored
+  anchors as resolved once in the run: `claim` with another anchor that
+  reaches the same unit fails when the stored anchor does not resolve
+  exactly, `reanchor` does not merge into such a claim and does not mark a
+  kept side that did not resolve, and nothing is written.
+  (`a_same_claim_write_rests_on_the_stored_anchors_as_resolved_in_this_run`.)
+- R135. For a `missing` side, the units with the marked content are the
+  first candidates, with `sameFingerprint: true`, before the provider's;
+  a unit is listed once; `mark` is still refused.
+  (`units_with_the_marked_content_are_the_first_candidates`,
+  `a_unit_found_by_similarity_never_resolves_a_side`,
+  `a_method_of_a_renamed_class_is_offered_first_by_its_content`.)
+- R136. `cover` reads the text of a listed item with one `render` of its
+  key and resolves no item selector; a provider without `render` is asked
+  by selector; a resolution keeps `MAX_CANDIDATES` units and the count.
+  (`cover_reads_item_text_by_key_and_keeps_few_of_many_identical_units`,
+  `items_are_ordered_capped_and_cut`.)
+- R137. A JSON anchor written as a string is read in a standard-input
+  document. (`a_json_anchor_written_as_a_string_is_read_in_a_stdin_batch`.)
+- R138. Human output holds no control character except newline and tab;
+  the `provider_error` remediation names the scheme; ambiguity advice
+  names a symbol only for units that have one; `selector_not_exact` advice
+  comes from the provider's keys; `providers --check` on an undeclared
+  scheme says to declare it; the `HIBI_JEV_URL`, `--replaced-by` and
+  `--in` errors carry a remediation; near-identical candidates show the
+  differing line.
+  (`human_output_has_no_control_characters_from_file_text`,
+  `plain_drops_control_characters_but_newline_and_tab`,
+  `an_unavailable_side_says_the_cause_and_the_way_out`,
+  `selector_advice_comes_from_the_provider`,
+  `r28_a_scheme_that_is_not_listed_is_unknown`,
+  `the_endpoint_must_be_https_or_loopback`,
+  `suggest_evidence_in_errors_say_what_to_do`,
+  `retire_replaced_by_must_name_another_existing_claim`,
+  `near_identical_candidates_show_the_line_where_they_differ`.)
 
