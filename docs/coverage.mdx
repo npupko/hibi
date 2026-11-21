@@ -121,16 +121,16 @@ $ hibi cover --scope steps
 steps (file:docs/steps.md; list-item): 3 units, 0 covered, 0 excluded, 3 uncovered
   file:docs/steps.md
         3  list-item  - Run the tests.
-           cannot be anchored alone: exclude it with unit = "list-item:4fba09794abf" (a claim on the unit that contains it does not cover it)
+           cannot be anchored alone: exclude it with unit = "list-item:4fba09794abf"; each such unit needs its own exclusion, or exclude the resource (a claim on the unit that contains it does not cover it)
         4  list-item  - Build the package.
         5  list-item  - Run the tests.
-           cannot be anchored alone: exclude it with unit = "list-item:4fba09794abf~2" (a claim on the unit that contains it does not cover it)
+           cannot be anchored alone: exclude it with unit = "list-item:4fba09794abf~2"; each such unit needs its own exclusion, or exclude the resource (a claim on the unit that contains it does not cover it)
 ```
 
 A claim on the unit that contains them, such as the whole file, records a
 statement about them, but does not cover them: a claim covers its unit and
 the units around it, not the units inside it. To stop `cover` listing them,
-exclude each one by the key its hint names.
+exclude each one by the key its hint names, or exclude the whole file.
 
 Not every unit states something checkable: headings, examples and opinions
 usually do not. Claim what can be checked against evidence. Exclude the rest

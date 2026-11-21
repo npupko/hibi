@@ -37,7 +37,7 @@ line from the walkthrough:
 
 ```json output
 {"evidence":[{"loc":"file:src/retry.rs","sel":{"symbol":"MAX_ATTEMPTS"}}],"id":"c1-2kfx78rwbb7wyxwst92f","note":null,"recheck":null,"statement":"The client gives up after 3 attempts.","subject":{"loc":"file:docs/retry.md","sel":{"prefix":"It","quote":"gives up after 3 attempts","suffix":".","within":["Retries","The client retries a failed download."]}}}
-{"at":"2026-11-21T12:18:10Z","by":null,"id":"r1-5zkb535hkz5nf4r6t3hn","note":null,"replacedBy":"c1-2kfx78rwbb7wyxwst92f","retires":"c1-c5dm2jvhr8hb36rx5rgm"}
+{"at":"2026-11-21T12:40:28Z","by":null,"id":"r1-cdbr4cb1y91mdnc653kj","note":null,"replacedBy":"c1-2kfx78rwbb7wyxwst92f","retires":"c1-c5dm2jvhr8hb36rx5rgm"}
 ```
 
 `hibi schema claim`, `hibi schema mark` and `hibi schema retirement` print
@@ -86,13 +86,18 @@ shrink.
 | A record in the wrong shard | `store_corrupt` |
 | A shard, `.hibi` or another store path that is a symbolic link | `store_corrupt` |
 | A shard larger than 64 MiB | `store_corrupt` |
-| All shards together larger than 256 MiB | `store_corrupt`; restore the shards from a commit in which they are smaller |
+| All shards together larger than 256 MiB | `store_corrupt`; look first with `git diff --stat`, because restoring the shards from an earlier commit discards every record written since that commit |
 | A mark or retirement whose claim is not in the store | Warning `orphan_record`; the record is ignored |
 | A retirement whose `replacedBy` claim is not in the store | Warning `unknown_replacement`; the retirement stands |
 | `.hibi/hibi.toml` that is not a regular file, or a missing `.hibi/claims/` or `.hibi/marks/` directory | `store_corrupt` |
 | A missing shard file | Read as empty |
 
-The remediation for `store_corrupt` is to restore the named file from git.
+The remediation for `store_corrupt` says to look at the named file first,
+with `git diff -- <file>`. Restoring it with `git checkout -- <file>` also
+discards every record in it that is not committed yet, so keep those lines
+if there are any. For a missing directory it says to look with
+`git status -- <dir>`: restoring the directory from git brings back the
+committed records only.
 
 ## Stores from hibi 0.x
 

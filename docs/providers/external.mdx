@@ -50,7 +50,7 @@ $ HIBI_CONFIG=none.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T12:18:14Z (m1-612d1y1mz1t7hxgj30s7)
+  marked 2026-11-21T12:41:24Z (m1-wc25v6d80291f5ymsse1)
   subject  ref:notes  unavailable (provider_not_registered)
     the user config has no provider command for scheme ref
   next: hibi providers
@@ -91,7 +91,7 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
 ```
 
 ```text output
-c1-kh88fbb9hctgd1v08923  created  m1-612d1y1mz1t7hxgj30s7  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-kh88fbb9hctgd1v08923  created  m1-wc25v6d80291f5ymsse1  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 A selector key the provider did not list in `hello` is refused before
@@ -111,7 +111,7 @@ $ HIBI_CONFIG=user.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T12:18:14Z (m1-612d1y1mz1t7hxgj30s7)
+  marked 2026-11-21T12:41:24Z (m1-wc25v6d80291f5ymsse1)
   subject  ref:notes  changed (fingerprint_differs)  note "Downloads are retried at most 4 times."
     | Downloads are retried at most 4 times.
   next: hibi mark c1-kh88fbb9hctgd1v08923
@@ -168,7 +168,21 @@ Protocol version 1. The full specification is section 13 of
 - On a timeout, an oversized line, a line that is not a JSON object, a
   response with the wrong `id`, or an unexpected exit, hibi kills the provider
   for the rest of the run, and every side it had not answered is `unavailable`
-  with reason `provider_failed`.
+  with reason `provider_failed`. The claim's `next` is then
+  `hibi providers --check <scheme>`, which runs the provider and reports
+  each conformance case. Here the registered command is `false`:
+
+```text output
+$ HIBI_CONFIG=broken.toml hibi status
+1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
+
+c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
+  marked 2026-11-21T12:41:24Z (m1-wc25v6d80291f5ymsse1)
+  subject  ref:notes  unavailable (provider_failed)
+    failed: provider for scheme "ref": the provider exited or closed its output before answering request 1 (hello)
+  next: hibi providers --check ref
+```
+
 
 ### Requests
 
@@ -237,7 +251,9 @@ and, together with `within`, `count`; listing `symbol` also allows
 are in a stored `sel` your provider returned. The empty selector `{}` is
 always allowed. A selector is closed: hibi never sends
 a key the provider did not list, and rejects a returned `sel` with an unknown
-key or an unlisted one.
+key or an unlisted one. A stored selector with a key your provider no
+longer lists is not sent: the side is `unavailable` with reason
+`selector_refused`, and `next` asks for a new anchor.
 
 ### Units
 

@@ -47,10 +47,10 @@ hibi status --since main
 
 ```text output
 3 claims: 1 fresh, 1 stale, 0 expired, 1 retired
-since main (base 977447c2412c2ce39e7f1d0384beb529e1a2bdb5)
+since main (base a43533ffb938a08e3810f6b3883af45ed6a686eb)
 
 c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T12:18:11Z (m1-dztfq00bwh5e7crz2nj7)
+  marked 2026-11-21T12:40:28Z (m1-60kt6fewdpc75tbp0gjt)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  function "delay_ms", lines 5-7
     | pub fn delay_ms(n: u32) -> u64 {
     |     200 << n
@@ -83,7 +83,7 @@ hibi cover --since main
 ```
 
 ```text output
-since main (base 977447c2412c2ce39e7f1d0384beb529e1a2bdb5)
+since main (base a43533ffb938a08e3810f6b3883af45ed6a686eb)
 docs (file:docs/**/*.md; sentence, list-item, table-row): 1 unit, 0 covered, 0 excluded, 1 uncovered
   file:docs/retry.md
         9  sentence  Each attempt times out after 10 seconds.
@@ -94,7 +94,7 @@ are not evaluated with `--since`, and say so:
 
 ```text output
 $ HIBI_CONFIG=user.toml hibi cover --since main --scope notes
-since main (base 06a8672d933eef74f21cc6eec30f8c3fbfef1f2c)
+since main (base 06aa0bc2c6d93a36695cc33bb595ebf5527a5792)
 notes (ref:notes; note): 0 units, 0 covered, 0 excluded, 0 uncovered
   not evaluated: --since works only for scopes on scheme "file"
 ```

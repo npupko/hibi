@@ -81,6 +81,7 @@ Ask the user before each of these steps; they change the repository.
    | Edit | Side | Then |
    |---|---|---|
    | The body of a declaration anchored `#name` | `changed` | Read the change, re-check, `hibi mark` |
+   | A code line quoted by a bare quote commented out | `missing` (`not_exact`) | Read, `hibi reanchor` |
    | The line of a `#name::<line>` anchor edited, removed or commented out | `changed`, "the stored quote is no longer in this unit"; `mark` refuses | Read it, re-check, `hibi reanchor` with the new line |
    | Other lines of a `#name::<line>` declaration | `changed` | Read the change, re-check, `hibi mark` |
    | A sentence edited at its quoted words, or right around a quoted phrase | `missing` (`not_exact`) | Read the candidates and the file, re-check, `hibi reanchor` |
@@ -112,12 +113,13 @@ Ask the user before each of these steps; they change the repository.
    | `not_exact` | The stored anchor no longer identifies one unit. `candidates` lists units it could mean: first units with the marked content (`sameFingerprint: true`), then hibi's guesses. A copy of the text has `sameFingerprint: true` too, so read each one and the file. If one is the unit the claim is about, re-check the statement against it, then run `next` with its `anchor` or with an anchor of your own. A printed `anchor` quotes the unit's first line or whole text, so it can widen a short quote to a whole sentence, or move a `#name::<line>` to another line, without saying so; when the claim is about particular words (a number, a name, one line of code), anchor them yourself (`<loc>::<words>`, `<loc>#<name>::<line>`). After you re-anchor to a candidate with the marked content, check that it is the original and not a copy: look at its line in the file, or run `hibi cover` and see whether the original is now uncovered. `status` cannot tell you, because the claim is fresh either way. When the detail says "the name and the quoted text now point to different units", the quoted line moved into another declaration: the first candidate has the name, the others hold the line. The right unit may not be listed; then find it yourself. |
    | `selector_not_found` | Nothing found: a declaration anchored `#name` was renamed or removed, or the unit was rewritten or moved to another file (only the side's own file is searched). Find it with `git diff` or `git log -p`, re-check, and re-anchor. If it is gone, ask the user before you retire. |
    | `resource_not_found` | The file was moved, renamed or deleted. Find the new path, for example with `git log --stat -- <old path>`, then re-anchor; if it was deleted, ask the user before you retire. |
-   | `several_units` | The anchor matches several units, listed in `candidates`, for example a name that now has a second declaration. Choose the one the statement is about and re-anchor to its `anchor`. A candidate with `anchor: null` is identical, where it stands, to another one, and cannot be anchored alone: anchor the unit that contains them (the `#name` of the enclosing declaration, or the whole file), or ask the user to exclude one from the scope by its key. |
-   | `selector_refused` | The provider refuses the stored anchor; `detail` says why. Re-anchor the side with an anchor the message allows, or ask the user before you retire. |
+   | `several_units` | The anchor matches several units, listed in `candidates`, for example a name that now has a second declaration. Choose the one the statement is about and re-anchor to its `anchor`. A candidate with `anchor: null` is identical, where it stands, to another one, and cannot be anchored alone: anchor the unit that contains them (the `#name` of the enclosing declaration, or the whole file). |
+   | `selector_refused` | The provider refuses the stored anchor, or no longer allows one of its selector keys; `detail` says which. Re-anchor the side with an anchor the message allows, or ask the user before you retire. |
    | `resource_unavailable` | The resource cannot be read now; `detail` says why, for example a syntax error on line 7. A code file that does not parse cannot be anchored at all until it parses. Fix the cause if your change made it, then run `hibi status` again; if it can never parse, ask the user to exclude it from the scope. Do not mark. |
    | `too_large`, `not_text` | The file is over a size limit (2 MiB for code, 8 MiB for other files, 100,000 units) or is not UTF-8. Anchor the statement to another file, or ask the user before you retire. |
    | `profile_mismatch` | The fingerprint profile changed, for example after an external provider renamed its profile, or after a hibi upgrade. Re-check and mark. |
-   | `provider_not_registered`, `provider_failed`, `repo_not_allowed` | `next` is `hibi providers`. Run it and tell the user: providers and sibling repositories are set up in their user config. |
+   | `provider_failed` | `next` is `hibi providers --check <scheme>`, which starts the provider and reports what fails. Tell the user, and run it when they ask. Do not mark. |
+   | `provider_not_registered`, `repo_not_allowed` | `next` is `hibi providers`. Run it and tell the user: providers and sibling repositories are set up in their user config. |
    | `scheme_not_declared` | The scheme is no longer declared in `.hibi/hibi.toml`. Ask the user whether to declare it again or retire the claim. |
    | `repo_not_found`, `provider_error` | The sibling repository is missing, or the provider answered with an error. `remediation` says what to do; tell the user. |
 
@@ -127,7 +129,9 @@ Ask the user before each of these steps; they change the repository.
    - Still holds: `hibi mark <id>`.
    - Holds, but the subject moved or matches several units:
      `hibi reanchor <id> --subject <anchor>`. This also marks every other
-     changed side of the claim: re-check those first.
+     changed side of the claim: re-check those first. When several kept
+     sides need a new anchor, `reanchor` fails once, naming them all, and
+     its fix line repeats your arguments with an `<anchor>` for each.
    - Holds, but evidence number n moved or matches several units:
      `hibi reanchor <id> --evidence <n>=<anchor>`.
    - The statement must change: fix the text first, then
@@ -173,7 +177,7 @@ Ask the user before each of these steps; they change the repository.
    is identical, where it stands, to another unit. A claim on the unit that
    contains it records a statement about them, but does not cover them. To
    stop `cover` listing them, ask the user to exclude each one by the key
-   the hint names.
+   the hint names, or to exclude the whole file.
    `hibi cover --since <range>` lists only units whose key and content are new since
    the base, so a sentence copied within its file, with the original then
    edited, is not listed even when no claim covers it. After copying text,
@@ -192,6 +196,7 @@ or `null`:
 | `hibi reanchor <id> --subject <anchor>` | The subject is missing or ambiguous, its stored anchor is refused, or its stored line is gone. Read the candidates or the unit, choose, and give its anchor. |
 | `hibi reanchor <id> --evidence <n>=<anchor>` | Evidence number n is missing or ambiguous, its stored anchor is refused, or its stored line is gone. Read the candidates or the unit, choose, and give its anchor. |
 | `hibi providers` | A provider or sibling repository is not set up. Tell the user; setup is in their user config. |
+| `hibi providers --check <scheme>` | A provider failed. The command starts it and reports what fails. Tell the user, and run it when they ask. |
 | `null` | Fresh, retired, or unavailable for a reason no command fixes. The side's `remediation` says what to do, for example fix a syntax error or declare a scheme. |
 
 `next` never contains a candidate: `<anchor>` is yours to fill. Plain
@@ -258,8 +263,8 @@ Rules for a new anchor (in `claim`, and a replaced or added side in
   scope cannot be anchored one by one: `claim` answers `side_ambiguous`
   with each unit marked "cannot be told apart". Anchor the unit that
   contains them (the enclosing `#name`, or the whole file). In `cover`, ask
-  the user to exclude each one by its key; a claim on the containing unit
-  does not cover them. (`quote_not_distinguishable` is a guard behind this
+  the user to exclude each one by its key, or the whole file; a claim on
+  the containing unit does not cover them. (`quote_not_distinguishable` is a guard behind this
   that the file provider does not produce in practice.)
 - Two evidence anchors that resolve to the same unit are refused
   (`invalid_argument`), however they are written.

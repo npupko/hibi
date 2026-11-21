@@ -120,7 +120,8 @@ hibi claim "The API times out after 30 seconds." \
 ## Cache
 
 hibi keeps one SQLite file of cached unit lists (keyed by the file's git blob
-id, the resource class and the hibi version) and cached judge answers. The
+id, the resource class, and the hibi version with its unit rules
+revision) and cached judge answers. The
 first that applies:
 
 1. `$HIBI_CACHE_DIR/cache.sqlite3`;

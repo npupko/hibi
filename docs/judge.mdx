@@ -63,13 +63,13 @@ Without the key the three commands fail before doing anything else:
 ```text output
 $ hibi triage
 error: judge_unavailable: TYPESAFE_API_KEY is not set; the judge commands need it
-  fix: Set TYPESAFE_API_KEY, or run the command without the judge.
+  fix: Set TYPESAFE_API_KEY. This command has no form without the judge.
 ```
 
 ```text output
 $ TYPESAFE_API_KEY= hibi status --judge-order
 error: judge_unavailable: TYPESAFE_API_KEY is empty; the judge commands need it
-  fix: Set TYPESAFE_API_KEY, or run the command without the judge.
+  fix: Set TYPESAFE_API_KEY, or run hibi status without --judge-order.
 ```
 
 Plain `hibi status` needs no key. With the key set, the commands next find

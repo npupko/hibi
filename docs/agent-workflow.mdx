@@ -125,7 +125,8 @@ applies:
 |---|---|
 | Fresh or retired | `null` |
 | A side is missing or ambiguous, its stored line is gone from its declaration, or the provider refuses its stored anchor (`selector_refused`) | `hibi reanchor <id> --subject <anchor>` or `--evidence <n>=<anchor>`, one option per such side |
-| A side is unavailable because its provider is not registered or failed, or a sibling repository is not allowed | `hibi providers` |
+| A side is unavailable because its provider is not registered, or a sibling repository is not allowed | `hibi providers` |
+| A side is unavailable because its provider failed | `hibi providers --check <scheme>`, which starts the provider and reports what fails |
 | A side is unavailable because its scheme is not declared, a sibling repository was not found, the file is not text or too large, the provider answered with an error, or the resource cannot be read now | `null`; the side's `remediation` says what to do |
 | Otherwise: expired, a side changed, or a side is unavailable with `profile_mismatch` | `hibi mark <id>` |
 
@@ -145,7 +146,7 @@ c1-xqhbms40kkesq10rxjen  expired  Each attempt times out after 10 seconds.
   next: hibi mark c1-xqhbms40kkesq10rxjen
 
 c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T12:18:11Z (m1-bwvb1rxm5s60j1etfmda)
+  marked 2026-11-21T12:40:28Z (m1-jcq1fhhy4f6xn0em3gbb)
   subject  file:docs/retry.md  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: quote "The delay between attempts doubles each time, starting at 200 ms."
@@ -173,7 +174,7 @@ sentence; your own quote keeps the words the claim is about:
 ```text output
 $ hibi reanchor c1-xwck --subject 'file:docs/retry.md::doubles every time'
 c1-xwck2bdefbx39g56m7dn is retired and replaced by the new claim c1-2axv59jx0ztvfjd1adn9
-  mark m1-0nyd0q6fm2aafgga8ack, retirement r1-wbwqbx7nayzsevp5nhys
+  mark m1-zng89ryhx5s01mec96h1, retirement r1-5exchqb2x3a6hhv66ra9
   was stale: subject file:docs/retry.md missing (not_exact); now marked: make sure you re-checked it
   subject file:docs/retry.md (sentence "The delay between attempts doubles every time, starting at …", line 5)
     {"loc":"file:docs/retry.md","sel":{"quote":"doubles every time","prefix":"The delay between attempts","suffix":", starting at 200 ms.","within":["Retries","The client retries a failed download."]}}
