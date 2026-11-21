@@ -314,8 +314,8 @@ fn count_work(_: usize) {}
 
 /// Cut positions (relative to `p`) for a non-fenced, non-heading piece:
 /// after each `[.!?]["')\]]?` followed by a WS character, with the
-/// exceptions of step 5.
-fn sentence_cuts(p: &str, kind: ProseKind) -> Vec<usize> {
+/// exceptions of step 5. At most `limit` cuts: the scan stops there.
+fn sentence_cuts(p: &str, kind: ProseKind, limit: usize) -> Vec<usize> {
     let spans = code_spans(p);
     let marker_end = if kind == ProseKind::ListItem {
         let rest = trim_start(p);
@@ -332,6 +332,9 @@ fn sentence_cuts(p: &str, kind: ProseKind) -> Vec<usize> {
     // and disjoint, and candidates come in source order.
     let mut span = 0;
     for (i, c) in p.char_indices() {
+        if cuts.len() == limit {
+            break;
+        }
         if !matches!(c, '.' | '!' | '?') {
             continue;
         }
@@ -366,6 +369,12 @@ fn sentence_cuts(p: &str, kind: ProseKind) -> Vec<usize> {
 
 /// Split `text` into prose regions by section 6.3, in source order.
 pub fn split(text: &str, class: ProseClass) -> Vec<Region> {
+    split_at_most(text, class, usize::MAX).expect("no region limit")
+}
+
+/// [`split`], or `None` as soon as there are more than `max_regions`
+/// regions. No region past the limit is built.
+pub fn split_at_most(text: &str, class: ProseClass, max_regions: usize) -> Option<Vec<Region>> {
     let lines = lines_of(text);
     let line_str = |l: &Line| &text[l.start..l.end];
 
@@ -408,8 +417,15 @@ pub fn split(text: &str, class: ProseClass) -> Vec<Region> {
     let mut out = Vec::new();
     let mut stack: Vec<(usize, String)> = Vec::new();
     let path = |stack: &Vec<(usize, String)>| stack.iter().map(|(_, h)| h.clone()).collect();
-    let mut emit = |kind: ProseKind, s: usize, e: usize, heading_path: Vec<String>| {
+    // Push one region; false once there are more than `max_regions`.
+    let emit = |out: &mut Vec<Region>,
+                kind: ProseKind,
+                s: usize,
+                e: usize,
+                heading_path: Vec<String>|
+     -> bool {
         if let Some((s, e)) = trim_span(text, s, e) {
+            count_work(1);
             out.push(Region {
                 kind,
                 start: s,
@@ -419,13 +435,16 @@ pub fn split(text: &str, class: ProseClass) -> Vec<Region> {
                 heading_path,
             });
         }
+        out.len() <= max_regions
     };
     for (bf, bl, fenced) in blocks {
         let Some((bs, be)) = trim_span(text, lines[bf].start, lines[bl].end) else {
             continue;
         };
         if fenced {
-            emit(ProseKind::Fenced, bs, be, path(&stack));
+            if !emit(&mut out, ProseKind::Fenced, bs, be, path(&stack)) {
+                return None;
+            }
             continue;
         }
         // Pieces as line ranges.
@@ -461,20 +480,29 @@ pub fn split(text: &str, class: ProseClass) -> Vec<Region> {
                 while stack.last().is_some_and(|(l, _)| *l >= level) {
                     stack.pop();
                 }
-                emit(kind, ps, pe, path(&stack));
+                if !emit(&mut out, kind, ps, pe, path(&stack)) {
+                    return None;
+                }
                 stack.push((level, own));
                 continue;
             }
             let p = &text[ps..pe];
             let mut from = 0;
-            for cut in sentence_cuts(p, kind) {
-                emit(kind, ps + from, ps + cut, path(&stack));
+            // Every cut gives one region (it holds the end mark), so one cut
+            // past the regions still allowed is enough to pass the limit.
+            let limit = max_regions.saturating_sub(out.len()).saturating_add(1);
+            for cut in sentence_cuts(p, kind, limit) {
+                if !emit(&mut out, kind, ps + from, ps + cut, path(&stack)) {
+                    return None;
+                }
                 from = cut;
             }
-            emit(kind, ps + from, pe, path(&stack));
+            if !emit(&mut out, kind, ps + from, pe, path(&stack)) {
+                return None;
+            }
         }
     }
-    out
+    Some(out)
 }
 
 #[cfg(test)]
@@ -530,5 +558,36 @@ mod tests {
             work
         };
         assert_linear(run(500), run(1000), "code-span pairing");
+    }
+
+    #[test]
+    fn splitting_stops_as_soon_as_the_region_count_passes_the_limit() {
+        // Ruling on section 6.1: regions past the limit are not built. The
+        // work (regions built and characters scanned for sentence ends)
+        // does not grow with the input once the limit is passed.
+        const MAX: usize = 10;
+        type Make = Box<dyn Fn(usize) -> String>;
+        let inputs: [(&str, Make); 3] = [
+            ("paragraphs", Box::new(|n| "Some words.\n\n".repeat(n))),
+            (
+                "sentences of one paragraph",
+                Box::new(|n| "One. ".repeat(n)),
+            ),
+            ("headings", Box::new(|n| "# H\n".repeat(n))),
+        ];
+        for (what, make) in &inputs {
+            let (small, ws) = with_work(|| split_at_most(&make(1000), ProseClass::Markdown, MAX));
+            let (large, wl) = with_work(|| split_at_most(&make(2000), ProseClass::Markdown, MAX));
+            assert!(small.is_none() && large.is_none(), "{what}: not refused");
+            assert_eq!(ws, wl, "{what}: work grew with the input");
+            let under = split_at_most(&make(3), ProseClass::Markdown, MAX);
+            assert_eq!(under, Some(split(&make(3), ProseClass::Markdown)), "{what}");
+        }
+        let exact = "P.\n\n".repeat(MAX);
+        assert_eq!(
+            split_at_most(&exact, ProseClass::Prose, MAX).map(|r| r.len()),
+            Some(MAX)
+        );
+        assert!(split_at_most(&exact, ProseClass::Prose, MAX - 1).is_none());
     }
 }

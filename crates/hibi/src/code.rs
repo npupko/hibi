@@ -852,14 +852,43 @@ fn leading<'t>(node: Node<'t>, class: Class) -> Vec<Node<'t>> {
 /// `text` when the tree has an error. For a class without a grammar the
 /// result is the `text` fallback as well.
 pub fn analyze(text: &str, class: Class) -> Analysis {
+    analyze_at_most(text, class, usize::MAX).expect("no unit limit")
+}
+
+/// [`analyze`], or `None` as soon as the result is known to have more than
+/// `max_units` units, the `file` unit included. Work stops there: no unit
+/// past the limit is fingerprinted or kept.
+pub fn analyze_at_most(text: &str, class: Class, max_units: usize) -> Option<Analysis> {
+    let blocks = |text| text_units_at_most(text, max_units.saturating_sub(1)).map(Analysis::Text);
     let Some(tree) = parse(text, class) else {
-        return Analysis::Text(text_units(text));
+        return blocks(text);
     };
     let root = tree.root_node();
     if root.has_error() {
-        return Analysis::Text(text_units(text));
+        return blocks(text);
     }
-    Analysis::Code(code_units(root, text, class))
+    code_units(root, text, class, max_units).map(Analysis::Code)
+}
+
+/// The line of the first parse error in `text` read as `class`: the first
+/// error or missing node in source order. `None` when the text parses
+/// without error or the class has no grammar.
+pub fn first_error_line(text: &str, class: Class) -> Option<usize> {
+    let tree = parse(text, class)?;
+    let mut node = tree.root_node();
+    if !node.has_error() {
+        return None;
+    }
+    loop {
+        if node.is_error() || node.is_missing() {
+            return Some(node.start_position().row + 1);
+        }
+        let mut cursor = node.walk();
+        let next = node
+            .children(&mut cursor)
+            .find(|c| c.is_error() || c.is_missing() || c.has_error())?;
+        node = next;
+    }
 }
 
 fn line_range(node: Node<'_>) -> (usize, usize) {
@@ -873,8 +902,24 @@ fn line_range(node: Node<'_>) -> (usize, usize) {
     (line, end_line.max(line))
 }
 
-fn code_units(root: Node<'_>, text: &str, class: Class) -> CodeFile {
-    let found = discover(root, text, class);
+fn code_units(root: Node<'_>, text: &str, class: Class, max_units: usize) -> Option<CodeFile> {
+    // Every named root child that is not a comment or a lead node gives at
+    // least one unit (a declaration in it, or itself as a statement), so
+    // their count plus the `file` unit is a lower bound on the units. It
+    // is checked before anything is built, and counting stops at the limit.
+    let lead = lead_kind(class);
+    let mut cursor = root.walk();
+    let mut at_least = 1;
+    for c in root.named_children(&mut cursor) {
+        if !is_comment_kind(c.kind()) && Some(c.kind()) != lead {
+            count_work(1);
+            at_least += 1;
+            if at_least > max_units {
+                return None;
+            }
+        }
+    }
+    let found = discover(root, text, class, max_units.saturating_sub(1))?;
 
     // Statements: named root children that are not comments, not unit
     // nodes, and contain no unit node.
@@ -885,7 +930,6 @@ fn code_units(root: Node<'_>, text: &str, class: Class) -> CodeFile {
     // A lead node (attribute, decorator) that belongs to a unit is not a
     // statement of its own. A lead node is not given leads itself, so a
     // run with no item after it stays as statements.
-    let lead = lead_kind(class);
     // The leads of a shared declaration belong to its units as well.
     let mut absorbed: HashSet<usize> = found
         .iter()
@@ -914,6 +958,9 @@ fn code_units(root: Node<'_>, text: &str, class: Class) -> CodeFile {
         .into_iter()
         .filter(|(c, _)| !absorbed.contains(&c.id()))
         .collect();
+    if 1 + found.len() + statements.len() > max_units {
+        return None;
+    }
 
     // Every unit with its unit node and leads, then source order.
     enum Src {
@@ -1075,16 +1122,22 @@ fn code_units(root: Node<'_>, text: &str, class: Class) -> CodeFile {
         };
         units[pos].parent = Some(parent.unwrap_or_else(|| "file".to_owned()));
     }
-    CodeFile {
+    Some(CodeFile {
         class,
         units,
         comments: comment_spans(root),
-    }
+    })
 }
 
 /// Discovery of section 6.4, iterative. Declarations are returned in
-/// pre-order (source order of their declaration nodes).
-fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
+/// pre-order (source order of their declaration nodes). `None` as soon as
+/// more than `max_found` declarations are found.
+fn discover<'t>(
+    root: Node<'t>,
+    text: &str,
+    class: Class,
+    max_found: usize,
+) -> Option<Vec<Found<'t>>> {
     let wrappers = wrappers(class);
     let inner = inner_bodies(class);
     let mut found: Vec<Found<'t>> = Vec::new();
@@ -1112,6 +1165,7 @@ fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
         // block it is in. Candidates come in source order.
         let mut last_valued: Option<(Option<usize>, Node<'t>)> = None;
         while let Some((node, chain, top)) = pending.pop() {
+            count_work(1);
             let kind = node.kind();
             let wrapper = wrappers.contains(&kind) || is_namespace_statement(class, node);
             if wrapper || inner.contains(&kind) {
@@ -1180,6 +1234,9 @@ fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
                 shared_lead: Vec::new(),
                 repeats,
             });
+            if found.len() > max_found {
+                return None;
+            }
             members.push((index, chain));
             // A declaration at depth MAX_CONTAINER_DEPTH is a unit, but its
             // body is not searched.
@@ -1243,14 +1300,16 @@ fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
         new_index[old] = new;
     }
     let mut slots: Vec<Option<Found<'t>>> = found.into_iter().map(Some).collect();
-    order
-        .iter()
-        .map(|&old| {
-            let mut f = slots[old].take().expect("each index once");
-            f.parent = f.parent.map(|p| new_index[p]);
-            f
-        })
-        .collect()
+    Some(
+        order
+            .iter()
+            .map(|&old| {
+                let mut f = slots[old].take().expect("each index once");
+                f.parent = f.parent.map(|p| new_index[p]);
+                f
+            })
+            .collect(),
+    )
 }
 
 /// The `block` units of section 6.5 for class `text`: each maximal run of
@@ -1258,14 +1317,24 @@ fn discover<'t>(root: Node<'t>, text: &str, class: Class) -> Vec<Found<'t>> {
 /// to the last, with `prose-v1` fingerprints and numbered keys. The `file`
 /// unit is not included.
 pub fn text_units(text: &str) -> Vec<TextUnit> {
+    text_units_at_most(text, usize::MAX).expect("no block limit")
+}
+
+/// [`text_units`], or `None` as soon as there are more than `max_blocks`
+/// blocks. Nothing is fingerprinted before the count is known.
+pub fn text_units_at_most(text: &str, max_blocks: usize) -> Option<Vec<TextUnit>> {
     let mut spans: Vec<(usize, usize, usize, usize)> = Vec::new();
     let mut run: Option<(usize, usize, usize, usize)> = None;
     let mut start = 0;
     for (n, line) in text.split('\n').enumerate() {
+        count_work(1);
         let lineno = n + 1;
         let t = text::trim(line);
         if t.is_empty() {
             spans.extend(run.take());
+            if spans.len() > max_blocks {
+                return None;
+            }
         } else {
             let lead = line.len() - text::trim_start(line).len();
             let end = start + text::trim_end(line).len();
@@ -1280,6 +1349,9 @@ pub fn text_units(text: &str) -> Vec<TextUnit> {
         start += line.len() + 1;
     }
     spans.extend(run.take());
+    if spans.len() > max_blocks {
+        return None;
+    }
     let fps: Vec<Fingerprint> = spans
         .iter()
         .map(|&(s, e, _, _)| fingerprint::prose_v1(&text[s..e]))
@@ -1289,19 +1361,21 @@ pub fn text_units(text: &str) -> Vec<TextUnit> {
         .map(|fp| fingerprint::content_key("block", fp))
         .collect();
     fingerprint::number_duplicates(&mut keys);
-    spans
-        .into_iter()
-        .zip(fps)
-        .zip(keys)
-        .map(|(((start, end, line, end_line), fp), key)| TextUnit {
-            key,
-            start,
-            end,
-            line,
-            end_line,
-            fp,
-        })
-        .collect()
+    Some(
+        spans
+            .into_iter()
+            .zip(fps)
+            .zip(keys)
+            .map(|(((start, end, line, end_line), fp), key)| TextUnit {
+                key,
+                start,
+                end,
+                line,
+                end_line,
+                fp,
+            })
+            .collect(),
+    )
 }
 
 #[cfg(test)]
@@ -1445,8 +1519,8 @@ mod tests {
                 if root.has_error() {
                     continue;
                 }
-                let found = discover(root, &text, class);
-                let f = code_units(root, &text, class);
+                let found = discover(root, &text, class, usize::MAX).expect("no limit");
+                let f = code_units(root, &text, class, usize::MAX).expect("no limit");
                 for d in &found {
                     let stream = direct_stream(d, &found, &text);
                     shared += usize::from(d.shared.is_some());
@@ -2022,5 +2096,80 @@ mod tests {
         assert!(f.in_comment(15, 16));
         assert!(!f.in_comment(4, 5));
         assert_eq!(f.first_comment_start(5, 24), Some(14));
+    }
+
+    /// The work of `analyze_at_most` with a limit of `max` units.
+    fn capped_work(text: &str, class: Class, max: usize) -> (bool, usize) {
+        WORK.with(|w| w.set(0));
+        let over = analyze_at_most(text, class, max).is_none();
+        (over, WORK.with(|w| w.get()))
+    }
+
+    #[test]
+    fn building_stops_as_soon_as_the_unit_count_passes_the_limit() {
+        // Ruling on section 6.1: an over-limit resource is refused without
+        // building its units. The work counter (root children counted,
+        // discovery steps, lines scanned, tokens hashed) is bounded by the
+        // limit, not by the input: doubling the input leaves it unchanged.
+        const MAX: usize = 10;
+        type Make = Box<dyn Fn(usize) -> String>;
+        let inputs: [(&str, Make, Class); 4] = [
+            (
+                "top-level statements",
+                Box::new(|n| "f();\n".repeat(n)),
+                Class::Typescript,
+            ),
+            (
+                "top-level declarations with comments",
+                Box::new(|n| "function f(){} // c\n".repeat(n)),
+                Class::Typescript,
+            ),
+            (
+                "members of one class",
+                Box::new(|n| format!("class C {{\n{}}}\n", "m() {}\n".repeat(n))),
+                Class::Typescript,
+            ),
+            (
+                "text blocks of a file that does not parse",
+                Box::new(|n| format!("def f(:\n\n{}", "x = 1\n\n".repeat(n))),
+                Class::Python,
+            ),
+        ];
+        for (what, make, class) in &inputs {
+            let (over_small, small) = capped_work(&make(1000), *class, MAX);
+            let (over_large, large) = capped_work(&make(2000), *class, MAX);
+            assert!(over_small && over_large, "{what}: not refused");
+            assert_eq!(small, large, "{what}: work grew with the input");
+            assert!(
+                small <= 4 * MAX,
+                "{what}: work {small} for a limit of {MAX}"
+            );
+            // Under the limit the same input is built in full.
+            assert!(
+                analyze_at_most(&make(3), *class, MAX).is_some(),
+                "{what}: refused under the limit"
+            );
+        }
+        // The limit counts the `file` unit: exactly `max` units is allowed.
+        let text = "f();\n".repeat(MAX - 1);
+        assert!(analyze_at_most(&text, Class::Typescript, MAX).is_some());
+        assert!(analyze_at_most(&text, Class::Typescript, MAX - 1).is_none());
+        let blocks = "x\n\n".repeat(MAX - 1);
+        assert_eq!(
+            text_units_at_most(&blocks, MAX - 1).map(|b| b.len()),
+            Some(MAX - 1)
+        );
+        assert!(text_units_at_most(&blocks, MAX - 2).is_none());
+    }
+
+    #[test]
+    fn first_error_line_names_the_first_error() {
+        assert_eq!(
+            first_error_line("x = 1\n\ndef f(:\n  pass\n", Class::Python),
+            Some(3)
+        );
+        assert_eq!(first_error_line("fn a() {}\n", Class::Rust), None);
+        assert_eq!(first_error_line("fn a() {\n", Class::Rust), Some(1));
+        assert_eq!(first_error_line("anything", Class::Text), None);
     }
 }

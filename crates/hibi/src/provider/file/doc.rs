@@ -39,10 +39,10 @@ fn count_work(n: usize) {
 #[inline(always)]
 fn count_work(_: usize) {}
 
-fn too_many_units(n: usize) -> ProviderError {
+fn too_many_units() -> ProviderError {
     ProviderError::new(
         ProviderErrorCode::TooLarge,
-        format!("the resource has {n} units, more than the limit of {MAX_UNITS_PER_RESOURCE}"),
+        format!("the resource has more than {MAX_UNITS_PER_RESOURCE} units, the limit"),
     )
 }
 
@@ -165,10 +165,9 @@ impl Doc {
         let comments = OnceCell::new();
         let headings = OnceCell::new();
         if let Some(pc) = prose_class(class) {
-            let regions = prose::split(&text, pc);
-            if regions.len() + 1 > MAX_UNITS_PER_RESOURCE {
-                return Err(too_many_units(regions.len() + 1));
-            }
+            // Building stops as soon as the count passes the limit.
+            let regions = prose::split_at_most(&text, pc, MAX_UNITS_PER_RESOURCE - 1)
+                .ok_or_else(too_many_units)?;
             raws.push(file(fingerprint::prose_v1(&text), &text));
             let units = prose::units_from(&text, regions);
             let mut paths = vec![Vec::new()];
@@ -189,11 +188,10 @@ impl Doc {
             let _ = headings.set(paths);
         } else {
             let blocks = if class.is_code() {
-                match code::analyze(&text, class) {
+                match code::analyze_at_most(&text, class, MAX_UNITS_PER_RESOURCE)
+                    .ok_or_else(too_many_units)?
+                {
                     Analysis::Code(cf) => {
-                        if cf.units.len() > MAX_UNITS_PER_RESOURCE {
-                            return Err(too_many_units(cf.units.len()));
-                        }
                         tree = true;
                         let _ = comments.set(cf.comments);
                         for u in cf.units {
@@ -214,12 +212,12 @@ impl Doc {
                     Analysis::Text(blocks) => Some(blocks),
                 }
             } else {
-                Some(code::text_units(&text))
+                Some(
+                    code::text_units_at_most(&text, MAX_UNITS_PER_RESOURCE - 1)
+                        .ok_or_else(too_many_units)?,
+                )
             };
             if let Some(blocks) = blocks {
-                if blocks.len() + 1 > MAX_UNITS_PER_RESOURCE {
-                    return Err(too_many_units(blocks.len() + 1));
-                }
                 raws.push(file(fingerprint::prose_v1(&text), &text));
                 raws.extend(blocks.into_iter().map(|b| Raw {
                     key: b.key,
@@ -345,7 +343,9 @@ impl Doc {
     pub(super) fn from_cache(text: String, class: Class, row: &str) -> Option<Doc> {
         const KEYS: [&str; 7] = ["key", "kind", "parent", "label", "range", "fp", "sel"];
         let value: serde_json::Value = serde_json::from_str(row).ok()?;
-        let items = value.as_array().filter(|a| !a.is_empty())?;
+        let items = value
+            .as_array()
+            .filter(|a| !a.is_empty() && a.len() <= MAX_UNITS_PER_RESOURCE)?;
         let mut entries: Vec<Entry> = Vec::with_capacity(items.len());
         let mut keys: HashSet<String> = HashSet::with_capacity(items.len());
         for (i, item) in items.iter().enumerate() {
@@ -970,7 +970,11 @@ mod tests {
         let over = "S.\n\n".repeat(MAX_UNITS_PER_RESOURCE);
         let err = Doc::build(over, Class::Markdown).unwrap_err();
         assert_eq!(err.code, ProviderErrorCode::TooLarge);
-        assert!(err.message.contains("100001 units"), "{}", err.message);
+        assert!(
+            err.message.contains("more than 100000 units"),
+            "{}",
+            err.message
+        );
         let blocks = "b\n\n".repeat(MAX_UNITS_PER_RESOURCE);
         assert_eq!(
             Doc::build(blocks, Class::Text).unwrap_err().code,
