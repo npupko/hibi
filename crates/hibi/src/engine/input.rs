@@ -169,6 +169,28 @@ fn anchor_input(what: &str, value: Value) -> Result<AnchorInput, Error> {
     }
 }
 
+/// What an element of `claim --stdin` is, for messages. The element's
+/// position is the error's `index`, so the message does not repeat it.
+const CLAIM_ELEMENT: &str = "a claim element is an object with statement and subject, and optionally evidence, recheck, note and by";
+
+/// What an element of `mark --stdin` is, for messages.
+const MARK_ELEMENT: &str =
+    "a mark element is a claim id string, or an object with claim and optionally note and by";
+
+/// `element` when it is a JSON object; otherwise `invalid_json` saying
+/// what was found and what an element is, in words of the input format.
+fn object_element(element: Value, expected: &str) -> Result<Value, Error> {
+    let found = match &element {
+        Value::Object(_) => return Ok(element),
+        Value::Null => "null",
+        Value::Bool(_) => "a boolean",
+        Value::Number(_) => "a number",
+        Value::String(_) => "a string",
+        Value::Array(_) => "an array",
+    };
+    Err(invalid_json(format!("found {found}; {expected}")))
+}
+
 /// Read the standard input of `claim --stdin`: a non-empty JSON array of
 /// [`ClaimInput`] elements. The outer error is for input that is not such
 /// an array (`invalid_json`). Otherwise there is one entry per element, in
@@ -182,8 +204,11 @@ pub fn read_claim_stdin(text: &str) -> Result<Vec<Result<ClaimInput, Error>>, Ve
         .into_iter()
         .enumerate()
         .map(|(index, element)| {
-            serde_json::from_value::<ClaimWire>(element)
-                .map_err(|e| invalid_json(format!("element {index}: {e}")))
+            object_element(element, CLAIM_ELEMENT)
+                .and_then(|o| {
+                    serde_json::from_value::<ClaimWire>(o)
+                        .map_err(|e| invalid_json(format!("{CLAIM_ELEMENT}: {e}")))
+                })
                 .and_then(|w| {
                     let subject = anchor_input("subject", w.subject)?;
                     let evidence = w
@@ -239,8 +264,12 @@ pub fn read_mark_stdin(text: &str) -> Result<Vec<Result<MarkInput, Error>>, Vec<
         .enumerate()
         .map(|(index, element)| match element {
             Value::String(claim) => Ok(MarkInput::new(claim)),
-            v => serde_json::from_value::<MarkInput>(v)
-                .map_err(|e| invalid_json(format!("element {index}: {e}")).with_index(index)),
+            v => object_element(v, MARK_ELEMENT)
+                .and_then(|o| {
+                    serde_json::from_value::<MarkInput>(o)
+                        .map_err(|e| invalid_json(format!("{MARK_ELEMENT}: {e}")))
+                })
+                .map_err(|e| e.with_index(index)),
         })
         .collect())
 }

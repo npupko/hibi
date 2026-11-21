@@ -334,6 +334,22 @@ fn a_stdin_batch_reports_every_failing_element() {
     );
     assert!(text(&errors[3]["message"]).contains("longer than zero"));
     assert_eq!(repo.store_files(), before);
+    // The element's position is `index`; the message does not repeat it.
+    assert!(
+        !text(&errors[1]["message"]).contains("element 1"),
+        "{errors:?}"
+    );
+    let human = repo
+        .hibi()
+        .args(["--format", "human", "claim", "--stdin"])
+        .stdin(batch)
+        .run();
+    assert_eq!(
+        human.stderr.matches("element 1").count(),
+        1,
+        "{}",
+        human.stderr
+    );
 
     let id = repo.claim("e", "file:docs/x.md::y", &[]);
     let before = repo.store_files();
@@ -357,6 +373,28 @@ fn a_stdin_batch_reports_every_failing_element() {
         ]
     );
     assert_eq!(repo.store_files(), before);
+    // The messages are in words of the input format: no index twice, and
+    // no name from the implementation.
+    assert_eq!(
+        text(&errors[2]["message"]),
+        "found a number; a mark element is a claim id string, or an object with claim and optionally note and by"
+    );
+    for e in &errors {
+        let m = text(&e["message"]);
+        assert!(!m.starts_with("element") && !m.contains("struct"), "{m}");
+        assert!(!m.contains("MarkInput") && !m.contains("ClaimWire"), "{m}");
+    }
+    let out = repo
+        .hibi()
+        .args(["--format", "json", "claim", "--stdin"])
+        .stdin(r#"["x", null]"#)
+        .run();
+    let errors = out.errs();
+    assert_eq!(
+        text(&errors[0]["message"]),
+        "found a string; a claim element is an object with statement and subject, and optionally evidence, recheck, note and by"
+    );
+    assert!(text(&errors[1]["message"]).starts_with("found null; "));
 }
 
 /// A recheck period of zero and a repeated evidence anchor are refused.

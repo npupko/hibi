@@ -142,7 +142,7 @@ pub fn add(instant: DateTime, d: &Duration) -> Result<DateTime, Error> {
     let overflow = || {
         Error::new(
             Code::InvalidDuration,
-            format!("adding the duration to {instant} goes past 9999-12-31T23:59:59Z"),
+            format!("adding the duration to {instant}Z goes past 9999-12-31T23:59:59Z"),
         )
     };
     let months = d
@@ -194,6 +194,17 @@ mod tests {
     /// `jiff::Timestamp` cannot hold the last day of year 9999 in UTC.
     fn dt(s: &str) -> DateTime {
         s.strip_suffix('Z').unwrap().parse().unwrap()
+    }
+
+    /// The message names the instant as the outputs write it, with `Z`.
+    #[test]
+    fn the_overflow_message_writes_the_instant_with_z() {
+        let e = add(dt("9999-06-01T00:00:00Z"), &parse("P1Y").unwrap()).unwrap_err();
+        assert_eq!(e.code, Code::InvalidDuration);
+        assert_eq!(
+            e.message,
+            "adding the duration to 9999-06-01T00:00:00Z goes past 9999-12-31T23:59:59Z"
+        );
     }
 
     #[test]
