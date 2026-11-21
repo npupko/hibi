@@ -366,8 +366,9 @@ pub trait UnitCache {
 - In a provider built by `working_tree` without a usable git, every `repo:`
   locator is `repo_not_found` (section 10.4).
 - `blob` is the git blob id of the file's bytes and `class` the resource
-  class of section 6.1. The hibi version of the cache key (section 11.3) is
-  not an argument: an implementation serves one engine version.
+  class of section 6.1. The engine string of the cache key (section 11.3),
+  the hibi version and the unit rules revision, is not an argument: an
+  implementation serves one engine string.
 - A `UnitCache` is never authoritative. An implementation that loses a
   value, or fails, MUST change no result. `UnitCache` is also implemented
   for `&T`, `Rc<T>` and `Arc<T>` of an implementation, so one cache can be
@@ -1543,9 +1544,13 @@ is reported:
 6. The resource is of a code class and does not parse (section 6.1):
    `unavailable`, for every selector. The message is
    `<loc> does not parse as <class> (the first error is on line <n>), so its units cannot be read; fix the syntax error`.
-   `<n>` is the 1-based line on which the first error node or missing node of
-   the parse tree, in source order, starts. When the tree has no such node
-   the part in parentheses, with the space before it, is left out.
+   `<n>` is the 1-based line where parsing failed: going down the parse tree
+   in source order to the first error node or missing node, a missing node's
+   line, or, inside an error node, the line of its first token that is not
+   part of a construct it holds (an error node can start lines earlier, at
+   the first construct it swallowed); an error node without such a token
+   gives its own line. When the tree has no error node or missing node the
+   part in parentheses, with the space before it, is left out.
 7. The selector has a `key`: `invalid_selector`.
 8. The selector is not valid by section 5.2 in any other way, for example
    `prefix` without `quote`, `count` without `symbol` or `within`, or a quote longer than
@@ -1710,8 +1715,8 @@ resolve_stored(resource, sel):
       scope = the union of the containers of C
   else:
       scope = the whole resource
-  R = distinct units of the exact hits in scope that reproduce the stored
-      windows of sel in their unit
+  R = distinct units of the exact hits in scope, not in_comment, that
+      reproduce the stored windows of sel in their unit
   if |R| == 1                                    -> [R[0]]
   if |R| > 1                                     -> R      (ambiguous)
   -> candidates(scope)
@@ -1737,12 +1742,15 @@ made against. Choosing one would be a guess. (`cases/resolve.json`:
 `typescript: symbol of overloads: every declaration, ambiguous, with printed anchors`
 and `rust: stored: the symbol named two declarations, now one: candidates`.)
 
-In A1 and A2 a hit inside a comment is not a hit: a stored quote that moved
-into a comment counts as gone from its declaration. In A1 the declaration is
-then resolved by its symbol alone (`identity: "symbol"`), and the engine
-refuses a mark and asks for a reanchor; in A2 that declaration does not hold
-the quote. (`cases/resolve.json`: `python B4: A1: ...` and
-`python B4: A2: ...`.)
+For a stored selector a hit inside a comment, wholly or partly, is not a
+hit, in A1, A2 and P: a stored quote that moved into a comment counts as
+gone. In A1 the declaration is then resolved by its symbol alone
+(`identity: "symbol"`), and the engine refuses a mark and asks for a
+reanchor; in A2 that declaration does not hold the quote; in P nothing
+resolves and the side has candidates. A string is not a comment, even when
+its text looks like one. A new anchor in a comment is refused with
+`quote_in_comment` (below). (`cases/resolve.json`: `python B4: ...` and the
+cases named `... F1: ...` in Java, Python, Rust and TypeScript.)
 
 `count` with `within` counts the containers the path named when the anchor
 was made. While the path names exactly that many, their union is the scope:
@@ -1752,10 +1760,6 @@ number, one added or one gone, nothing resolves: a section pasted again
 before its heading is renamed, in either order of edits, gives candidates.
 Only a unit with no container at all (`within` absent) has the whole
 resource as its scope.
-
-A unit returned alone by P with a hit has `refuse: quote_in_comment` when the
-hit is `in_comment`; a stored anchor in a comment cannot be made, so this
-only shows that the code changed around it.
 
 **Resolution of a new anchor.** A new anchor is what the agent typed: a
 compact anchor or a JSON anchor without stored keys.
@@ -1802,8 +1806,11 @@ resolve to exactly that unit, the stored selector itself, as given, is the
 unit's `sel`: it resolved to that unit alone, so it does, and the engine
 keeps the side's selector unchanged. A refresh never writes a selector that
 does not select its unit alone, and never writes a quote that lies in a
-comment (A1 and A2 do not see such a hit; P marks it with
-`quote_in_comment`, which the engine never writes).
+comment (no stored resolution sees such a hit). A refresh of a stored
+quote-only selector keeps its `within` and `count` as stored and rewrites
+only the quote and windows: it never moves a side to a wider scope, for
+example from a section to the union of that section's piece and a
+subsection that reads the same.
 
 A new anchor that carries a stored key (a printed anchor pasted back) is
 resolved by `resolve_stored`, and its completed selector is computed from
@@ -1870,9 +1877,13 @@ and never builds a claim from it.
   comment node that starts on it when there is a parse tree, with trailing
   WS removed and cut to 120 characters (a line that holds only a comment is
   kept whole); (2) the whole unit text; (3) the runs of lines of the item
-  above. A unit whose `normalize`d text another unit of its scope has, each
-  being the unit a hit at its start resolves to, is an identical twin: none
-  of them is selectable alone.
+  above. These are tried with the unit's own `within`, then, for a unit of a
+  multi-unit piece below a heading, with `within` = its heading path alone
+  (and its `count`): the section reading, which can tell a unit apart when
+  the piece's name also reads as a subsection holding the same text. A unit
+  whose `normalize`d text another unit of a scope has, each being the unit
+  a hit at its start resolves to, is an identical twin in that scope: no
+  quote selects it alone there.
 
 **Members.** Members of named containers are units (section 6.4), so the
 innermost unit of a quote on a member's line is the member. A quote on a
@@ -1961,7 +1972,26 @@ hits, then crossing hits, then the similarity guess.
   original; so is a unit copied inside the same paragraph, list item or
   declaration. Sections whose heading paths read the same, pieces with the
   same name and declarations with the same symbol are one scope when they
-  existed together at claim time (`within` with `count`).
+  existed together at claim time (`within` with `count`). In plain words,
+  these are one scope, and a line or sentence copied from one into another,
+  the original then edited, is followed:
+  - declarations that share a symbol, for a quote inside them: Java and
+    TypeScript overloads, a Python function defined twice, and Rust's
+    `Display::fmt` and `Debug::fmt` of one type, which are both `Id.fmt`;
+  - the same for a typed `#name::<line>` under A2, when the line is copied
+    into another declaration of that name and the original then edited;
+  - a section and a piece that read the same: a heading path equal to a
+    piece's heading path and name;
+  - sections whose headings differ only in inline markup, which heading keys
+    remove: `max_retries` and `maxretries` read the same;
+  - a paragraph pasted again under the same heading, then the original's
+    first sentence edited or its heading renamed: the name now names only
+    the copy, which the claims follow;
+  - two numbered lists in one section, where removing a step leaves an item
+    of the other list reading the same as the claimed one.
+- A paragraph or list item that loses its other sentences, or two paragraphs
+  joined into one, change the piece: the claims on the piece's units have
+  candidates until they are re-anchored.
 - Identical text with identical in-unit windows in one scope cannot be
   claimed by quote; a unit that no printed anchor selects alone is marked
   `quote_not_distinguishable`.
@@ -3572,7 +3602,7 @@ Opening does these steps in order:
 4. Start one `BEGIN IMMEDIATE` transaction. Inside it, read `user_version`.
    When it is 0, create the tables and set `user_version` to 1 with the
    statements below. When it is 1, create nothing. Then delete every `units`
-   row whose `engine` is not the running version. Commit.
+   row whose `engine` is not the running engine string. Commit.
 
 If `user_version` is neither 0 nor 1 (a database written by another hibi),
 the transaction is rolled back, and hibi leaves the file as it is, runs
@@ -3600,7 +3630,7 @@ Two hibi processes opening a missing cache at once MUST both succeed.
 CREATE TABLE units (
   blob    TEXT NOT NULL,   -- hex SHA-1 of "blob <byte length>\0" + file bytes (the git blob id)
   class   TEXT NOT NULL,   -- resource class, section 6.1
-  engine  TEXT NOT NULL,   -- hibi version string, e.g. "5.0.0"
+  engine  TEXT NOT NULL,   -- engine string, e.g. "5.0.0+units.1"
   units   TEXT NOT NULL,   -- JSON array of Unit without `text`, or the text not_text
   PRIMARY KEY (blob, class, engine)
 ) WITHOUT ROWID;
@@ -3619,8 +3649,12 @@ Only `units` rows are deleted on opening. `judge` rows are kept across hibi
 versions.
 
 The `units` table caches the unit list of a file's bytes, including
-fingerprints. The profile versions are covered by `engine`: every hibi release
-starts with empty rows. The blob id is computed from the bytes as read from
+fingerprints. The engine string is the hibi version and the unit rules
+revision, written `<version>+units.<revision>`. `UNIT_RULES_REVISION` is
+bumped in any change to how units are cut, keyed or fingerprinted, or to how
+their printed anchors are chosen, so that two builds with one version number
+never share a row; every hibi release and every revision starts with empty
+rows. (`a_row_of_another_unit_rules_revision_is_a_miss`.) The blob id is computed from the bytes as read from
 disk or from git, before CRLF replacement.
 
 The value of the `units` column is one of two forms:
@@ -7055,6 +7089,13 @@ every other unit its printed anchor. Its cases pin:
   `normalize`d (`text: a typed quote longer than the limit ...`), a symbol
   anchor's quote may span two members, and a quote in front matter stores
   its quote and windows on the `file` unit;
+- a stored quote that now lies in a comment, wholly or partly, is not
+  resolved, and a string that looks like a comment is not a comment (cases
+  named `java F1:`, `python F1:`, `rust F1:`, `typescript F1:`);
+- a unit that its section alone tells apart is printed with that anchor,
+  and a refresh keeps the stored `within` (cases named `markdown: a sentence
+  whose piece name reads as a subsection: ...` and `markdown: a refresh
+  keeps the stored within: ...`);
 - a quote equal to the text after `normalize` is found and stored as the text
   has it (`reflow:`), CRLF becomes LF and a leading U+FEFF belongs to the first
   unit (`decoding:`), unit boundaries (`boundary:`);
@@ -7338,6 +7379,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 146 | One same-claim rule, by resolved units, against live claims, retired claims and the elements of one batch; a stored side resolved by name alone still counts as its unit, and the write then fails. Units that cannot be told apart get no anchor anywhere (lists, `cover`) and the advice says what works. Cut text says that it is cut. `candidatesTotal` is exact. | A spelling of an anchor must not make a duplicate or bring a retired claim back; advice that cannot work is worse than none. |
 | 147 | A printed remedy must work when it is followed. At claim time the twin remedy names only the containing unit; `cover` names only the exclusion, one per unit. `reanchor` names every failing kept side in one error and repeats the caller's arguments. A failed provider points at its check, a refused stored key at a new anchor. The judge, store and indistinguishable-quote remedies say what is true for the command and the provider. An accepted side's text is whole. | Remedies that looped, dropped arguments or led nowhere were followed literally by the reader they are written for. |
 | 147 | Rulings on section 6.7 (round 4): `within` is stored whenever the unit has a container, with `count` = the number of containers the path named at claim time when that is two or more (`count` is allowed with `within` as with `symbol`); while the path names exactly that many, their union is the scope, otherwise only candidates. A section container is one heading's section, not a heading path. A refreshed selector that would not select its unit alone is replaced by the stored selector. In A1 and A2 a hit in a comment is not a hit. Every printed anchor is checked: first line, whole text, runs of lines; a unit nothing selects alone carries `refuse: quote_not_distinguishable`. A typed quote longer than the limit only by whitespace is stored `normalize`d. A quote on the `file` unit keeps its quote and windows. | A `within` dropped because the path was not unique widened the scope to the whole resource for good, so a copy anywhere was followed once the original was edited; a refresh could write a selector that selected another unit; a quote moved into a comment could be marked; printed anchors that did not select their unit were offered and looped; the cut of a long typed quote produced a false `quote_not_distinguishable`. |
+| 148 | Rulings on section 6.7 (round 5): for a stored selector a hit inside a comment is not a hit in P either; the line of the first parse error is where parsing failed, not the start of the error node that holds it; a refresh keeps the stored `within` and `count`; a printed anchor of a unit in a multi-unit piece below a heading is also tried with its section alone; the unit cache key adds `UNIT_RULES_REVISION` to the hibi version; the count of containers a `within` names is two lookups. | A quote commented out stayed `changed` and could be marked; error lines pointed at line 1; a refresh could widen a side's scope; a unit selectable by its section was marked; two builds of one version shared rows and printed old anchors; counting by listing made `cover` quadratic on near-identical units. |
 | 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
 | 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
 | 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
@@ -7346,7 +7388,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 37 | Usage errors exit 1. | Only 0 and 1 exist. |
 | 38 | `claim` on an existing live claim adds a mark; on a retired claim it fails. | Idempotent retries; retirement is permanent. |
 | 39 | `mark` has no `--all`. | Bulk marking is done by piping `status` output into `mark --stdin`, which keeps it explicit. |
-| 40 | The unit cache is keyed by blob id, class and hibi version. | The version covers both profile versions and every splitter rule. |
+| 40 | The unit cache is keyed by blob id, class and hibi version. Since decision 148, the version is the engine string, which adds the unit rules revision. | The version covers both profile versions and every splitter rule. |
 | 41 | User config and cache use XDG paths on macOS as well. | One documented path for command-line users. |
 | 42 | `hibi providers --check` runs the protocol conformance cases. | Provider authors need the cases without the hibi source tree. |
 
@@ -8344,4 +8386,20 @@ Each of these has a test, named in parentheses.
   `the_same_claim_does_not_depend_on_how_its_anchors_are_written`,
   `a_quote_that_cannot_be_told_apart_is_refused_at_claim_time`,
   `a_write_reports_what_it_accepted`.)
+- R156. A stored quote that now lies in a comment, wholly or partly, never
+  resolves a side, in every code language; a string that looks like a
+  comment is not one.
+  (`cases/resolve.json`: the cases named "... F1: ...".)
+- R157. The line of the first parse error is where parsing failed, in each
+  code language. (`the_first_error_line_is_where_parsing_failed`.)
+- R158. A refresh keeps the stored `within` and `count`, and a unit that
+  its section alone tells apart is printed with that anchor, not marked.
+  (`cases/resolve.json`: "markdown: a refresh keeps the stored within: ...",
+  "markdown: a sentence whose piece name reads as a subsection: ...".)
+- R159. A unit cache row written under another unit rules revision is a
+  miss. (`a_row_of_another_unit_rules_revision_is_a_miss`.)
+- R160. Printed anchors of near-identical units cost linear work: pieces
+  with one name, sections with one path, identical paragraphs, same-named
+  and same-bodied functions, top-level statements.
+  (`printed_anchors_of_near_identical_units_cost_linear_work`.)
 

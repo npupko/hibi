@@ -919,15 +919,26 @@ pub fn first_error_line(text: &str, class: Class) -> Option<usize> {
     if !node.has_error() {
         return None;
     }
-    loop {
-        if node.is_error() || node.is_missing() {
+    // An error node holds whole constructs that parsed and, after them, the
+    // tokens that did not: its first token that is not part of a construct
+    // is where parsing failed. An error node can start many lines before
+    // that, at the first construct it swallowed.
+    'down: loop {
+        if node.is_missing() {
             return Some(node.start_position().row + 1);
         }
         let mut cursor = node.walk();
-        let next = node
-            .children(&mut cursor)
-            .find(|c| c.is_error() || c.is_missing() || c.has_error())?;
-        node = next;
+        let children: Vec<Node<'_>> = node.children(&mut cursor).collect();
+        for c in children {
+            if node.is_error() && c.child_count() == 0 && !c.is_extra() {
+                return Some(c.start_position().row + 1);
+            }
+            if c.is_error() || c.is_missing() || c.has_error() {
+                node = c;
+                continue 'down;
+            }
+        }
+        return Some(node.start_position().row + 1);
     }
 }
 
@@ -2213,5 +2224,64 @@ mod tests {
         assert_eq!(first_error_line("fn a() {}\n", Class::Rust), None);
         assert_eq!(first_error_line("fn a() {\n", Class::Rust), Some(1));
         assert_eq!(first_error_line("anything", Class::Text), None);
+    }
+
+    /// The line of the first error is where parsing failed, not the start of
+    /// an error node that swallowed earlier constructs: in each language, a
+    /// missing token or a stray one after several valid declarations. Each
+    /// expected line is the line of the broken construct, read off the text.
+    #[test]
+    fn the_first_error_line_is_where_parsing_failed() {
+        let cases: &[(Class, &str, usize)] = &[
+            // A method without its colon, the last one of a class: the error
+            // node starts at the class (line 4), inside one at the import.
+            (
+                Class::Python,
+                "import os\n\n\nclass A:\n    def f(self):\n        return 1\n\n    def g(self):\n        return 2\n\n\n\n    def h(self)\n        return 3\n",
+                13,
+            ),
+            (
+                Class::Python,
+                "x = 1\n\n\ndef a():\n    return 1\n\n\nclass C\n    y = 1\n",
+                8,
+            ),
+            (
+                Class::Typescript,
+                "export function a(n: number): number {\n  return n + 1;\n}\n\nexport function b(n: number): number {\n  const k = n * 2;\n  return k;\n  if (k > 1 {\n    return 0;\n  }\n}\n",
+                8,
+            ),
+            (
+                Class::Typescript,
+                "const a = 1;\n\nfunction f() {\n  return 1;\n}\n\nfunction g() {\n  let x = ;\n  return x;\n}\n",
+                8,
+            ),
+            (
+                Class::Tsx,
+                "export function A() {\n  return <p>a</p>;\n}\n\nexport function B() {\n  return <p>b</p;\n}\n",
+                6,
+            ),
+            (
+                Class::Rust,
+                "fn a() -> u32 {\n    1\n}\n\nfn b() -> u32 {\n    let x = ;\n    x\n}\n",
+                6,
+            ),
+            (
+                Class::Go,
+                "package p\n\nfunc a() int {\n\treturn 1\n}\n\nfunc b() int {\n\treturn 2 +\n}\n",
+                8,
+            ),
+            (
+                Class::Java,
+                "class A {\n  int a() {\n    return 1;\n  }\n\n  int b() {\n    return 2 +;\n  }\n}\n",
+                7,
+            ),
+        ];
+        for (class, text, line) in cases {
+            assert_eq!(
+                first_error_line(text, *class),
+                Some(*line),
+                "{class:?}: {text:?}"
+            );
+        }
     }
 }

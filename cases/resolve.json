@@ -3675,5 +3675,478 @@
     },
     "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
     "origin": "spec-derived"
+  },
+  {
+    "name": "java F1: a quote in a method: within the method",
+    "input": {
+      "path": "src/A.java",
+      "text": "class A {\n  int run() {\n    // cap at ten\n    int limit = 10;\n    return limit;\n  }\n}\n",
+      "sel": {
+        "quote": "int limit = 10;"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:A.run",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "int limit = 10;",
+            "prefix": "int run() { // cap at ten",
+            "suffix": "return limit; }",
+            "within": [
+              "A.run"
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "java F1: stored: the quoted line joined into the comment before it: a candidate, not resolved",
+    "input": {
+      "path": "src/A.java",
+      "text": "class A {\n  int run() {\n    // cap at ten int limit = 10;\n    return limit;\n  }\n}\n",
+      "sel": {
+        "quote": "int limit = 10;",
+        "prefix": "int run() { // cap at ten",
+        "suffix": "return limit; }",
+        "within": [
+          "A.run"
+        ]
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:A.run",
+          "approx": true,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "A.run"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python F1: a quote in a function: within the function",
+    "input": {
+      "path": "src/run.py",
+      "text": "def run():\n    # cap\n    limit = 10\n    return limit\n",
+      "sel": {
+        "quote": "limit = 10"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "limit = 10",
+            "prefix": "def run(): # cap",
+            "suffix": "return limit",
+            "within": [
+              "run"
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python F1: stored: the quoted line joined into the comment before it: a candidate, not resolved",
+    "input": {
+      "path": "src/run.py",
+      "text": "def run():\n    # cap limit = 10\n    return limit\n",
+      "sel": {
+        "quote": "limit = 10",
+        "prefix": "def run(): # cap",
+        "suffix": "return limit",
+        "within": [
+          "run"
+        ]
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": true,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "run"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "rust F1: a quote in a function after a doc comment: within the function",
+    "input": {
+      "path": "src/lib.rs",
+      "text": "pub fn retry() -> u32 {\n    /// cap\n    let limit = 3;\n    limit\n}\n",
+      "sel": {
+        "quote": "let limit = 3;"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:retry",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "let limit = 3;",
+            "prefix": "pub fn retry() -> u32 { /// cap",
+            "suffix": "limit }",
+            "within": [
+              "retry"
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "rust F1: stored: the quoted line joined into the doc comment: a candidate, not resolved",
+    "input": {
+      "path": "src/lib.rs",
+      "text": "pub fn retry() -> u32 {\n    /// cap let limit = 3;\n    limit\n}\n",
+      "sel": {
+        "quote": "let limit = 3;",
+        "prefix": "pub fn retry() -> u32 { /// cap",
+        "suffix": "limit }",
+        "within": [
+          "retry"
+        ]
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:retry",
+          "approx": true,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "retry"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python F1: a quote after a trailing comment: within the function",
+    "input": {
+      "path": "src/run.py",
+      "text": "def run():\n    limit = 20  # cap\n    return limit\n",
+      "sel": {
+        "quote": "return limit"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "return limit",
+            "prefix": "def run(): limit = 20 # cap",
+            "suffix": "",
+            "within": [
+              "run"
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python F1: stored: the quote now partly in a comment: a candidate, not resolved",
+    "input": {
+      "path": "src/run.py",
+      "text": "def run():\n    limit = 20  # cap return\n    limit\n",
+      "sel": {
+        "quote": "return limit",
+        "prefix": "def run(): limit = 20 # cap",
+        "suffix": "",
+        "within": [
+          "run"
+        ]
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": true,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "run"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python F1: a quote in a string that looks like a comment: claimed",
+    "input": {
+      "path": "src/run.py",
+      "text": "def run():\n    s = \"# limit = 10\"\n    return s\n",
+      "sel": {
+        "quote": "limit = 10"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "limit = 10",
+            "prefix": "def run(): s = \"#",
+            "suffix": "\" return s",
+            "within": [
+              "run"
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python F1: stored: a quote in a string that looks like a comment: resolved",
+    "input": {
+      "path": "src/run.py",
+      "text": "def run():\n    s = \"# limit = 10\"\n    return s\n",
+      "sel": {
+        "quote": "limit = 10",
+        "prefix": "def run(): s = \"#",
+        "suffix": "\" return s",
+        "within": [
+          "run"
+        ]
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "limit = 10",
+            "prefix": "def run(): s = \"#",
+            "suffix": "\" return s",
+            "within": [
+              "run"
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "typescript F1: a top-level statement: no within",
+    "input": {
+      "path": "src/main.ts",
+      "text": "// cap\nsetup(10);\nexport function f(): number {\n  return 1;\n}\n",
+      "sel": {
+        "quote": "setup(10);"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "statement:*",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "setup(10);",
+            "prefix": "",
+            "suffix": ""
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "typescript F1: stored: the top-level statement joined into the comment: no unit resolved",
+    "input": {
+      "path": "src/main.ts",
+      "text": "// cap setup(10);\nexport function f(): number {\n  return 1;\n}\n",
+      "sel": {
+        "quote": "setup(10);",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "file",
+          "approx": true,
+          "identity": null,
+          "refuse": null,
+          "sel": {}
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown: a sentence whose piece name reads as a subsection: its printed anchor names the section alone",
+    "input": {
+      "path": "docs/coll.md",
+      "text": "# Setup\n\nRestart it. Then restart.\n\n## Restart it.\n\nThen restart.\n",
+      "sel": {
+        "quote": "Then restart."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "Then restart.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Setup"
+            ]
+          }
+        },
+        {
+          "key": "sentence:*~2",
+          "approx": false,
+          "identity": null,
+          "refuse": "quote_not_distinguishable",
+          "sel": {
+            "quote": "Then restart.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Setup",
+              "Restart it."
+            ],
+            "count": 2
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown: that printed anchor pasted back selects the sentence alone",
+    "input": {
+      "path": "docs/coll.md",
+      "text": "# Setup\n\nRestart it. Then restart.\n\n## Restart it.\n\nThen restart.\n",
+      "sel": {
+        "quote": "Then restart.",
+        "prefix": "",
+        "suffix": "",
+        "within": [
+          "Setup"
+        ]
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "Then restart.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Setup"
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown: a refresh keeps the stored within: no widening to the two readings",
+    "input": {
+      "path": "docs/coll.md",
+      "text": "# Setup\n\nRestart it. Then restart.\n\n## Restart it.\n\nOther text.\n",
+      "sel": {
+        "quote": "Then restart.",
+        "prefix": "",
+        "suffix": "",
+        "within": [
+          "Setup"
+        ]
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "Then restart.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Setup"
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
   }
 ]

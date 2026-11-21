@@ -863,26 +863,43 @@ impl Doc {
             {
                 found.extend(pieces.iter().map(|&p| Container::Piece(p)));
             }
+            count_work(found.len());
             return found;
         }
         if !self.tree || w.len() != 1 {
             return Vec::new();
         }
-        self.symbols
+        let found: Vec<Container> = self
+            .symbols
             .get(w[0].as_str())
             .map(|d| d.iter().map(|&i| Container::Decl(i)).collect())
-            .unwrap_or_default()
+            .unwrap_or_default();
+        count_work(found.len());
+        found
     }
 
     /// How many containers `names(w)` holds, without listing them.
+    /// Two lookups: a unit's anchor is completed for every unit, and a
+    /// `within` can name thousands of containers.
     fn names_count(&self, w: &[String]) -> usize {
-        if prose_class(self.class).is_none() && self.tree && w.len() == 1 {
-            return self
-                .symbols
-                .get(text::normalize(&w[0]).as_str())
-                .map_or(0, Vec::len);
+        if prose_class(self.class).is_some() {
+            let w: Vec<String> = w.iter().map(|x| text::normalize(x)).collect();
+            let index = self.prose_index();
+            let sections = index.sections.get(&w).map_or(0, Vec::len);
+            let pieces = w.split_last().map_or(0, |(name, path)| {
+                index
+                    .pieces
+                    .get(&(path.to_vec(), name.clone()))
+                    .map_or(0, Vec::len)
+            });
+            return sections + pieces;
         }
-        self.names(w).len()
+        if !self.tree || w.len() != 1 {
+            return 0;
+        }
+        self.symbols
+            .get(text::normalize(&w[0]).as_str())
+            .map_or(0, Vec::len)
     }
 
     /// The containers unit `u` is in: its section and, for a unit of a
@@ -1209,7 +1226,9 @@ impl Doc {
     /// selects its unit alone: the first line as the quote when that
     /// selects the unit alone, else the whole unit text, else each run of
     /// [`Doc::blocks_of`] in turn. A unit whose normalized text another
-    /// unit of its scope has is an identical twin: nothing selects it alone.
+    /// unit of its scope has is an identical twin: nothing selects it alone
+    /// there. A unit of a multi-unit piece below a heading is tried with
+    /// its own `within` and then with its section's alone.
     ///
     /// A first-line quote starts at its unit's start, so its stored prefix
     /// is empty and only a hit at the start of a unit can reproduce it: the
@@ -1244,7 +1263,16 @@ impl Doc {
         // start resolves to, sorted, equal starts counted once; and their
         // normalized texts, counted. Each unit is added to the scopes it
         // belongs to in one pass.
-        let needed: HashSet<ScopeKey> = firsts.iter().map(|f| f.2.clone()).collect();
+        let needed: HashSet<ScopeKey> = firsts
+            .iter()
+            .map(|f| f.2.clone())
+            .chain(
+                firsts
+                    .iter()
+                    .filter_map(|f| self.section_within(f.0))
+                    .map(|w| scope_key(Some(&w))),
+            )
+            .collect();
         let mut starts: HashMap<ScopeKey, Vec<String>> = HashMap::new();
         let mut whole: HashMap<ScopeKey, HashMap<String, usize>> = HashMap::new();
         for v in 1..self.entries.len() {
@@ -1284,73 +1312,134 @@ impl Doc {
         for (i, sel, key) in firsts {
             let e = &self.entries[i];
             let unit_text = &self.text[e.start..e.end];
-            let twins = whole
-                .get(&key)
-                .and_then(|m| m.get(&text::normalize(unit_text)))
-                .copied()
-                .unwrap_or(0);
-            if at_start[i] && twins >= 2 {
-                out.push((i, sel, false));
-                continue;
-            }
-            // The first line.
-            if at_start[i] {
-                let nq = text::normalize(sel.quote.as_deref().unwrap_or_default());
-                let suffix = sel.suffix.clone().unwrap_or_default();
-                let members = groups.get(&key).map_or(&[][..], Vec::as_slice);
-                let lo = members.partition_point(|(s, _)| s.as_str() < nq.as_str());
-                let mut same = 0;
-                for (s, n) in &members[lo..] {
-                    if !s.starts_with(nq.as_str()) {
-                        break;
-                    }
-                    count_work(1);
-                    let rest = text::trim_start(&s[nq.len()..]);
-                    let rest: String = rest.chars().take(WINDOW_CHARS).collect();
-                    if text::trim(&rest) == suffix {
-                        same += n;
-                    }
-                }
-                if same == 1 {
-                    out.push((i, sel, true));
-                    continue;
-                }
-            }
-            // The whole unit text: a quote with empty windows, so only a
-            // unit with the same normalized text reproduces it.
-            let span = Span {
+            let whole_span = Span {
                 start: e.start,
                 end: e.end,
             };
-            let full = self.quote_selector(i, span);
             let cut = text::normalize(unit_text)
                 .chars()
                 .nth(MAX_QUOTE_CHARS)
                 .is_some();
-            if at_start[i] && !cut && twins == 1 {
-                out.push((i, full, true));
-                continue;
+            // The unit's own reading, then, for a unit of a multi-unit
+            // piece, the reading by its section alone.
+            let mut readings = vec![(sel.clone(), key)];
+            if let Some(w) = self.section_within(i) {
+                let alt = self.with_within(sel.clone(), w);
+                let alt_key = scope_key(alt.within.as_deref());
+                readings.push((alt, alt_key));
             }
-            // Not settled by counting: resolve.
-            if self.selects(&sel, i) {
-                out.push((i, sel, true));
-                continue;
+            let mut unsettled: Vec<Selector> = Vec::new();
+            let mut found = None;
+            for (first, key) in &readings {
+                let full = self.with_within(
+                    self.quote_selector(i, whole_span),
+                    first.within.clone().unwrap_or_default(),
+                );
+                match self.by_counting(i, first, &full, key, cut, &at_start[..], &groups, &whole) {
+                    Counted::Selects(s) => {
+                        found = Some(s);
+                        break;
+                    }
+                    Counted::Twin => {}
+                    Counted::Unsettled => unsettled.push(first.clone()),
+                }
             }
-            if self.selects(&full, i) {
-                out.push((i, full, true));
-                continue;
+            // Not settled by counting: resolve, the first line, the whole
+            // text, then each run of lines, in each reading.
+            if found.is_none() {
+                found = unsettled.iter().find_map(|first| {
+                    let w = first.within.clone().unwrap_or_default();
+                    std::iter::once(first.clone())
+                        .chain(
+                            std::iter::once(whole_span)
+                                .chain(self.blocks_of(i))
+                                .map(|b| self.with_within(self.quote_selector(i, b), w.clone())),
+                        )
+                        .find(|s| self.selects(s, i))
+                });
             }
-            let block = self
-                .blocks_of(i)
-                .into_iter()
-                .map(|b| self.quote_selector(i, b))
-                .find(|s| self.selects(s, i));
-            match block {
-                Some(b) => out.push((i, b, true)),
+            match found {
+                Some(s) => out.push((i, s, true)),
                 None => out.push((i, sel, false)),
             }
         }
         Ok(out)
+    }
+
+    /// For a unit of a multi-unit piece below a heading: its heading path,
+    /// the `within` that names its section without the piece.
+    fn section_within(&self, i: usize) -> Option<Vec<String>> {
+        prose_class(self.class)?;
+        let p = &self.prose()[i];
+        (p.multi && !p.path.is_empty()).then(|| p.path.clone())
+    }
+
+    /// `sel` with `within` set to `w` (none when `w` is empty) and `count`
+    /// to the number of containers `w` names when that is two or more.
+    fn with_within(&self, mut sel: Selector, w: Vec<String>) -> Selector {
+        if w.is_empty() {
+            sel.within = None;
+            sel.count = None;
+            return sel;
+        }
+        let n = self.names_count(&w);
+        sel.count = (n >= 2).then_some(n as u64);
+        sel.within = Some(w);
+        sel
+    }
+
+    /// What the counts of a scope say about a unit's first-line selector
+    /// `first` and whole-text selector `full` (section 6.7, printed
+    /// anchors), without resolving either.
+    #[allow(clippy::too_many_arguments)]
+    fn by_counting(
+        &self,
+        i: usize,
+        first: &Selector,
+        full: &Selector,
+        key: &ScopeKey,
+        cut: bool,
+        at_start: &[bool],
+        groups: &HashMap<ScopeKey, Vec<(String, usize)>>,
+        whole: &HashMap<ScopeKey, HashMap<String, usize>>,
+    ) -> Counted {
+        if !at_start[i] {
+            return Counted::Unsettled;
+        }
+        let e = &self.entries[i];
+        let twins = whole
+            .get(key)
+            .and_then(|m| m.get(&text::normalize(&self.text[e.start..e.end])))
+            .copied()
+            .unwrap_or(0);
+        if twins >= 2 {
+            return Counted::Twin;
+        }
+        let nq = text::normalize(first.quote.as_deref().unwrap_or_default());
+        let suffix = first.suffix.clone().unwrap_or_default();
+        let members = groups.get(key).map_or(&[][..], Vec::as_slice);
+        let lo = members.partition_point(|(s, _)| s.as_str() < nq.as_str());
+        let mut same = 0;
+        for (s, n) in &members[lo..] {
+            if !s.starts_with(nq.as_str()) {
+                break;
+            }
+            count_work(1);
+            let rest = text::trim_start(&s[nq.len()..]);
+            let rest: String = rest.chars().take(WINDOW_CHARS).collect();
+            if text::trim(&rest) == suffix {
+                same += n;
+            }
+        }
+        if same == 1 {
+            return Counted::Selects(first.clone());
+        }
+        // The whole unit text: a quote with empty windows, so only a unit
+        // with the same normalized text reproduces it.
+        if !cut && twins == 1 {
+            return Counted::Selects(full.clone());
+        }
+        Counted::Unsettled
     }
 
     /// The scopes unit `v` belongs to: the whole resource, and each union
@@ -1405,7 +1494,7 @@ impl Doc {
         let mut units = Vec::with_capacity(found.len());
         for f in &found {
             let u = if alone {
-                self.out(f, self.completed(sel, f))?
+                self.out(f, self.completed(sel, f, stored))?
             } else {
                 // A listed unit carries its printed anchor, and is marked
                 // when no anchor selects it alone.
@@ -1419,9 +1508,9 @@ impl Doc {
         // The completed selector of a unit returned alone must resolve back
         // to that unit alone (section 6.7). A new anchor whose completed
         // selector does not is refused: the anchored text cannot be told
-        // apart from another place in its container. For a stored selector
-        // the stored selector itself is returned: it resolved to the unit
-        // alone, and a refresh must not replace it by one that does not.
+        // apart from another place in its scope. For a stored selector the
+        // stored selector itself is returned: it resolved to the unit alone,
+        // and a refresh must not replace it by one that does not.
         if let [u] = units.as_mut_slice()
             && alone
             && u.refuse.is_none()
@@ -1438,8 +1527,10 @@ impl Doc {
         Ok(units)
     }
 
-    /// The selector to store for a unit returned alone.
-    fn completed(&self, sel: &Selector, f: &Found) -> Selector {
+    /// The selector to store for a unit returned alone. A stored quote-only
+    /// selector keeps its `within` and `count`: a refresh rewrites the quote
+    /// and windows only, so it never widens the scope (section 6.7).
+    fn completed(&self, sel: &Selector, f: &Found, stored: bool) -> Selector {
         if f.unit == 0 && sel.quote.is_none() {
             return Selector::empty();
         }
@@ -1448,7 +1539,12 @@ impl Doc {
         }
         match f.span {
             Some(span) if f.how == How::Resolved && self.within(span, f.unit) => {
-                self.quote_selector(f.unit, span)
+                let mut c = self.quote_selector(f.unit, span);
+                if stored {
+                    c.within = sel.within.clone();
+                    c.count = sel.count;
+                }
+                c
             }
             _ => self.entries[f.unit].unit.sel.clone(),
         }
@@ -1586,21 +1682,20 @@ impl Doc {
         };
         let hits = self.hits(q);
         let in_scope = |h: &Hit| scope.as_ref().is_none_or(|c| self.in_scope(c, h.unit));
+        // As in A1 and A2, a hit inside a comment (wholly or partly) is not
+        // a hit: a stored quote that moved into a comment is gone, so it
+        // never resolves a side.
         let mut r: Vec<Found> = Vec::new();
-        for h in hits.iter().filter(|h| h.exact && in_scope(h)) {
+        for h in hits
+            .iter()
+            .filter(|h| h.exact && in_scope(h) && !self.in_comment(h.span))
+        {
             if self.reproduces(sel, h.unit, h.span) && !r.iter().any(|f| f.unit == h.unit) {
                 r.push(Found::resolved(h.unit).at(h.span));
             }
         }
         match r.len() {
-            1 => {
-                let mut f = r.remove(0);
-                f.refuse = f
-                    .span
-                    .filter(|&s| self.in_comment(s))
-                    .map(|_| Refuse::QuoteInComment);
-                vec![f]
-            }
+            1 => r,
             0 => self.candidates(q, scope.as_ref()),
             _ => r
                 .into_iter()
@@ -1981,6 +2076,17 @@ impl Scope {
     }
 }
 
+/// What counting says about a printed anchor (section 6.7).
+enum Counted {
+    /// This selector selects the unit alone.
+    Selects(Selector),
+    /// Another unit of the scope has the same text: nothing selects it
+    /// alone in this scope.
+    Twin,
+    /// Counting cannot tell: the selectors are resolved.
+    Unsettled,
+}
+
 /// The scope a printed quote-only selector is resolved in: the whole
 /// resource, or the union of the containers a `within` list names (keyed
 /// by the list, normalized).
@@ -2275,6 +2381,58 @@ mod tests {
         assert_linear(small, large, "printed anchors of copies");
         // Each anchor names its declaration alone.
         assert!(small_doc.units(None).iter().all(|u| u.refuse.is_none()));
+    }
+
+    /// The printed anchors of near-identical units cost linear work in
+    /// every shape where one `within` names many containers or units are
+    /// twins: pieces with one name, sections with one path, identical
+    /// paragraphs, same-named and same-bodied functions, top-level
+    /// statements (a `within` is counted by lookups, not by listing what
+    /// it names).
+    #[test]
+    fn printed_anchors_of_near_identical_units_cost_linear_work() {
+        type Shape = (&'static str, Class, fn(usize) -> String);
+        let shapes: [Shape; 7] = [
+            ("pieces with one name", Class::Markdown, |i| {
+                format!(
+                    "Same start here. The value is {i} and the rest of this sentence is the same.\n\n"
+                )
+            }),
+            ("sections with one path", Class::Markdown, |i| {
+                format!("## Item\n\nText number {i} here.\n\n")
+            }),
+            ("identical paragraphs", Class::Markdown, |_| {
+                "Same start here. Same end here.\n\n".to_owned()
+            }),
+            ("same-named functions", Class::Typescript, |i| {
+                format!("export function f(a: number): number {{\n  return a + {i};\n}}\n\n")
+            }),
+            ("same-bodied functions", Class::Typescript, |i| {
+                format!(
+                    "function f{i}(a: number): number {{\n  const k = a * 2;\n  return k;\n}}\n\n"
+                )
+            }),
+            ("top-level statements", Class::Typescript, |i| {
+                format!("setup({i});\n")
+            }),
+            ("identical top-level statements", Class::Typescript, |_| {
+                "setup(1);\n".to_owned()
+            }),
+        ];
+        for (what, class, unit) in shapes {
+            let build = |n: usize| {
+                let head = if class == Class::Markdown {
+                    "# Doc\n\n"
+                } else {
+                    ""
+                };
+                let t: String = std::iter::once(head.to_owned())
+                    .chain((0..n).map(unit))
+                    .collect();
+                with_work(|| Doc::build(t, class).unwrap()).1
+            };
+            assert_linear(build(1000), build(2000), what);
+        }
     }
 
     /// Limit 8: default quotes for many units with comments cost linear

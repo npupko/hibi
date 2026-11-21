@@ -99,7 +99,8 @@ pub const KINDS: [&str; 22] = [
 const NOT_TEXT: &str = "not_text";
 
 /// A store for the unit list of a file's bytes, keyed by git blob id,
-/// resource class and hibi version (section 11.3). The cache is never
+/// resource class and engine string, the hibi version and the unit rules
+/// revision (section 11.3). The cache is never
 /// authoritative: an implementation that loses a row, or fails, changes no
 /// result. The version is the implementation's own (`cache::Cache` is opened
 /// for one engine version), so it is not an argument.

@@ -42,8 +42,22 @@ pub const FILE_NAME: &str = "cache.sqlite3";
 /// The `user_version` this hibi writes and reads.
 pub const SCHEMA_VERSION: i64 = 1;
 
-/// The engine string of the running hibi: its version (section 11.3).
-pub const ENGINE: &str = env!("CARGO_PKG_VERSION");
+/// The unit rules revision as a literal, for [`ENGINE`].
+macro_rules! unit_rules_revision {
+    () => {
+        "1"
+    };
+}
+
+/// The revision of the unit rules (section 11.3): how units are cut, keyed
+/// and fingerprinted, and how their printed anchors are chosen. Bump it in
+/// any change to those rules, so that a build with the same version number
+/// never reads a row that an older build wrote.
+pub const UNIT_RULES_REVISION: &str = unit_rules_revision!();
+
+/// The engine string of the running hibi (section 11.3): its version and
+/// the unit rules revision, as `<version>+units.<revision>`.
+pub const ENGINE: &str = concat!(env!("CARGO_PKG_VERSION"), "+units.", unit_rules_revision!());
 
 /// The busy timeout of section 11.3.
 const BUSY_TIMEOUT: Duration = Duration::from_millis(5000);
@@ -285,6 +299,26 @@ mod tests {
             .query_row("PRAGMA journal_mode", [], |r| r.get(0))
             .unwrap();
         assert_eq!(mode, "delete", "never WAL: see the module documentation");
+    }
+
+    /// Section 11.3: a row written by a build of the same version under
+    /// another unit rules revision is a miss.
+    #[test]
+    fn a_row_of_another_unit_rules_revision_is_a_miss() {
+        assert_eq!(
+            ENGINE,
+            format!("{}+units.{UNIT_RULES_REVISION}", env!("CARGO_PKG_VERSION"))
+        );
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(FILE_NAME);
+        let older = format!("{}+units.0", env!("CARGO_PKG_VERSION"));
+        let old = Cache::open_as(&path, &older).unwrap();
+        old.put_units("b", "markdown", "[1]").unwrap();
+        drop(old);
+        let new = Cache::open(&path).unwrap();
+        assert_eq!(new.units("b", "markdown").unwrap(), None);
+        new.put_units("b", "markdown", "[2]").unwrap();
+        assert_eq!(new.units("b", "markdown").unwrap().as_deref(), Some("[2]"));
     }
 
     #[test]

@@ -405,6 +405,13 @@ its whitespace, a symbol anchor whose quote spans two members, and a quote
 in front matter. Each stored selector in them is the completed selector of
 the claim-time text, derived by hand, resolved against the edited text.
 
+The next rulings (a stored quote in a comment is not resolved in P either;
+a refresh keeps the stored `within`; a printed anchor is also tried with
+the unit's section alone) changed no case and added fifteen: the cases named
+`java F1:`, `python F1:`, `rust F1:` and `typescript F1:`, two on a sentence
+whose piece name reads as a subsection, and one on a refresh that keeps its
+`within`.
+
 The cases kept from the earlier file (the empty selector, symbols, quotes,
 refusals, members, boundaries, decoding, errors) were derived again for the
 new selector shape.
