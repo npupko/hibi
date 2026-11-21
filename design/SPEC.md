@@ -7273,6 +7273,17 @@ Each row is a choice the plan left open or marked illustrative.
 | 29 | Requests are sequential, one process per scheme per run. | No request ids to correlate out of order; no daemon. |
 | 30 | Ruling from the lead: offsets are UTF-8 bytes; every length and distance counts Unicode scalar values. | Natural for Rust and tree-sitter; a stored prefix or suffix can no longer split a character. v4 counted UTF-16 units. |
 | 31 | Ruling from the lead: whitespace is the Unicode `White_Space` property; `prose-v1` is NFC, collapse, trim. v4's per-line strip is dropped. | The strip had no effect; `White_Space` is what Rust provides. |
+| 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
+| 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
+| 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
+| 35 | The worklist ordering hint is `status --judge-order`; the answer is never printed. | It can only reorder. |
+| 36 | Failure output is `errors`, an array, so a batch reports every bad element. | All-or-nothing input should be fixable in one pass. |
+| 37 | Usage errors exit 1. | Only 0 and 1 exist. |
+| 38 | `claim` on an existing live claim adds a mark; on a retired claim it fails. | Idempotent retries; retirement is permanent. |
+| 39 | `mark` has no `--all`. | Bulk marking is done by piping `status` output into `mark --stdin`, which keeps it explicit. |
+| 40 | The unit cache is keyed by blob id, class and hibi version. Since decision 149, the version is the engine string, which adds the unit rules revision. | The version covers both profile versions and every splitter rule. |
+| 41 | User config and cache use XDG paths on macOS as well. | One documented path for command-line users. |
+| 42 | `hibi providers --check` runs the protocol conformance cases. | Provider authors need the cases without the hibi source tree. |
 | 43 | Ruling from the lead: v4 behaviour is kept for empty stored context at the text edges, for fences that take in the prose of their block, and for a table separator row without a leading pipe. | None of them misleads coverage; changing them would only move unit boundaries. |
 | 44 | CRLF is replaced by LF once, when the file provider decodes a file. | Units, quotes and fingerprints then never contain a line-ending U+000D, and the pure functions stay free of the rule. |
 | 45 | Ruling: an absent resource is the provider error `not_found`; an empty unit list means the selector found nothing; provider error codes map one to one onto side reasons. | The engine must tell `resource_not_found` from `selector_not_found` through the trait alone. |
@@ -7378,19 +7389,8 @@ Each row is a choice the plan left open or marked illustrative.
 | 145 | An exclusion without `unit` takes whole resources out of a scope: they are not read and not listed under `unavailable`, and its `matched` counts resources. An exclusion with `unit` counts units. | Excluding a file is the remedy for a file that cannot be read or parsed; reading it again only reported it again. |
 | 146 | One same-claim rule, by resolved units, against live claims, retired claims and the elements of one batch; a stored side resolved by name alone still counts as its unit, and the write then fails. Units that cannot be told apart get no anchor anywhere (lists, `cover`) and the advice says what works. Cut text says that it is cut. `candidatesTotal` is exact. | A spelling of an anchor must not make a duplicate or bring a retired claim back; advice that cannot work is worse than none. |
 | 147 | A printed remedy must work when it is followed. At claim time the twin remedy names only the containing unit; `cover` names only the exclusion, one per unit. `reanchor` names every failing kept side in one error and repeats the caller's arguments. A failed provider points at its check, a refused stored key at a new anchor. The judge, store and indistinguishable-quote remedies say what is true for the command and the provider. An accepted side's text is whole. | Remedies that looped, dropped arguments or led nowhere were followed literally by the reader they are written for. |
-| 147 | Rulings on section 6.7 (round 4): `within` is stored whenever the unit has a container, with `count` = the number of containers the path named at claim time when that is two or more (`count` is allowed with `within` as with `symbol`); while the path names exactly that many, their union is the scope, otherwise only candidates. A section container is one heading's section, not a heading path. A refreshed selector that would not select its unit alone is replaced by the stored selector. In A1 and A2 a hit in a comment is not a hit. Every printed anchor is checked: first line, whole text, runs of lines; a unit nothing selects alone carries `refuse: quote_not_distinguishable`. A typed quote longer than the limit only by whitespace is stored `normalize`d. A quote on the `file` unit keeps its quote and windows. | A `within` dropped because the path was not unique widened the scope to the whole resource for good, so a copy anywhere was followed once the original was edited; a refresh could write a selector that selected another unit; a quote moved into a comment could be marked; printed anchors that did not select their unit were offered and looped; the cut of a long typed quote produced a false `quote_not_distinguishable`. |
-| 148 | Rulings on section 6.7 (round 5): for a stored selector a hit inside a comment is not a hit in P either; the line of the first parse error is where parsing failed, not the start of the error node that holds it; a refresh keeps the stored `within` and `count`; a printed anchor of a unit in a multi-unit piece below a heading is also tried with its section alone; the unit cache key adds `UNIT_RULES_REVISION` to the hibi version; the count of containers a `within` names is two lookups. | A quote commented out stayed `changed` and could be marked; error lines pointed at line 1; a refresh could widen a side's scope; a unit selectable by its section was marked; two builds of one version shared rows and printed old anchors; counting by listing made `cover` quadratic on near-identical units. |
-| 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
-| 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
-| 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
-| 35 | The worklist ordering hint is `status --judge-order`; the answer is never printed. | It can only reorder. |
-| 36 | Failure output is `errors`, an array, so a batch reports every bad element. | All-or-nothing input should be fixable in one pass. |
-| 37 | Usage errors exit 1. | Only 0 and 1 exist. |
-| 38 | `claim` on an existing live claim adds a mark; on a retired claim it fails. | Idempotent retries; retirement is permanent. |
-| 39 | `mark` has no `--all`. | Bulk marking is done by piping `status` output into `mark --stdin`, which keeps it explicit. |
-| 40 | The unit cache is keyed by blob id, class and hibi version. Since decision 148, the version is the engine string, which adds the unit rules revision. | The version covers both profile versions and every splitter rule. |
-| 41 | User config and cache use XDG paths on macOS as well. | One documented path for command-line users. |
-| 42 | `hibi providers --check` runs the protocol conformance cases. | Provider authors need the cases without the hibi source tree. |
+| 148 | Rulings on section 6.7 (round 4): `within` is stored whenever the unit has a container, with `count` = the number of containers the path named at claim time when that is two or more (`count` is allowed with `within` as with `symbol`); while the path names exactly that many, their union is the scope, otherwise only candidates. A section container is one heading's section, not a heading path. A refreshed selector that would not select its unit alone is replaced by the stored selector. In A1 and A2 a hit in a comment is not a hit. Every printed anchor is checked: first line, whole text, runs of lines; a unit nothing selects alone carries `refuse: quote_not_distinguishable`. A typed quote longer than the limit only by whitespace is stored `normalize`d. A quote on the `file` unit keeps its quote and windows. | A `within` dropped because the path was not unique widened the scope to the whole resource for good, so a copy anywhere was followed once the original was edited; a refresh could write a selector that selected another unit; a quote moved into a comment could be marked; printed anchors that did not select their unit were offered and looped; the cut of a long typed quote produced a false `quote_not_distinguishable`. |
+| 149 | Rulings on section 6.7 (round 5): for a stored selector a hit inside a comment is not a hit in P either; the line of the first parse error is where parsing failed, not the start of the error node that holds it; a refresh keeps the stored `within` and `count`; a printed anchor of a unit in a multi-unit piece below a heading is also tried with its section alone; the unit cache key adds `UNIT_RULES_REVISION` to the hibi version; the count of containers a `within` names is two lookups. | A quote commented out stayed `changed` and could be marked; error lines pointed at line 1; a refresh could widen a side's scope; a unit selectable by its section was marked; two builds of one version shared rows and printed old anchors; counting by listing made `cover` quadratic on near-identical units. |
 
 ---
 
@@ -7835,10 +7835,6 @@ Verification section in order.
   (`r60_commands_that_need_git_fail_with_git_too_old`,
   `r60_a_repo_side_with_an_old_git_is_repo_not_found_with_a_warning`,
   `r60_old_missing_or_unparsable_git`.)
-- R64. With `git` absent from `PATH` and `TYPESAFE_API_KEY` set, the judge
-  commands fail with `not_a_git_repository` and open no network connection.
-  (`r64_judge_commands_with_a_key_and_no_git_are_not_a_git_repository`,
-  `r64_without_usable_git_nothing_is_contacted`.)
 - R61. `status --judge-order`, `triage` and `suggest-evidence` put no text of
   an ignored file, and no text from a sibling repository that is not allowed,
   into any request body.
@@ -7856,6 +7852,10 @@ Verification section in order.
   with `invalid_config`; exactly `MAX_CONFIG_BYTES` is read.
   (`r63_shard_size_boundary`, `total_store_size_boundary`,
   `r63_oversized_config`, `max_config_bytes_is_the_largest_size_read`.)
+- R64. With `git` absent from `PATH` and `TYPESAFE_API_KEY` set, the judge
+  commands fail with `not_a_git_repository` and open no network connection.
+  (`r64_judge_commands_with_a_key_and_no_git_are_not_a_git_repository`,
+  `r64_without_usable_git_nothing_is_contacted`.)
 
 **Added after implementation**
 
