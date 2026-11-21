@@ -834,7 +834,7 @@ it depends on the class of the resource (section 6.1):
 |---|---|
 | Every class | The `file` unit, whose range is `[0, len)`. |
 | `prose`, `markdown` | Also the first prose unit, when that unit starts at offset 0. U+FEFF is not WS, so trimming does not remove it from the unit: the unit's text, printed anchor's first line and fingerprint include it. When a `markdown` text starts with frontmatter the U+FEFF lies in the frontmatter (section 6.3), which is in no prose unit. |
-| `text`, and a code class handled as `text` after a parse error | Also the first `block` unit, for the same reason, when the first line is not empty after trimming. |
+| `text` | Also the first `block` unit, for the same reason, when the first line is not empty after trimming. |
 | A code class (`typescript`, `tsx`, `python`, `rust`, `go`, `java`) parsed without error | No other unit. It belongs only to the `file` unit: the parser skips a leading U+FEFF, so no declaration or `statement` unit starts before the first token. |
 
 A quote that starts after the U+FEFF has it in its stored `prefix` when the
@@ -1032,10 +1032,21 @@ segment counts: `dir.md/file` is `text`, `a.d.ts` is `typescript`,
 | `text` | anything else | Block units |
 
 A file of a code class whose parse tree has an error (the root node's
-`has_error()` is true) is handled as class `text` for that read. This is the
-only fallback. It applies to the whole file. A selector with a `symbol` is
-not resolved against the units of such a read: it fails with `unavailable`
-(section 6.7, error 9).
+`has_error()` is true), or that the grammar returns no tree for, has no
+units: `resolve` with any selector, new or stored, the empty selector
+included, `units` and `render` fail with `unavailable` (section 6.7,
+error 6). There is no fallback to `block` units for a code class: block
+units belong to the class `text` only (section 6.5). A side on such a file
+is `unavailable` with reason `resource_unavailable`, `cover` lists the file
+under the scope's `unavailable` (section 10.2), and once the file parses
+again every stored anchor resolves as before. Anchoring broken code as text
+would tie a claim to text that is not the code, and marking it would record
+a `prose-v1` fingerprint of code.
+
+Stated limit: a file of a code class whose syntax the pinned grammar
+(section 2.6) cannot parse, for example a newer language feature, cannot be
+anchored and is never covered. The remedy is to exclude it from the scope
+(section 11.1).
 
 Every resource of every class also has exactly one unit of kind `file`.
 
@@ -1483,7 +1494,8 @@ of the unit around it, or of a `statement` at the top level:
 ### 6.5 Text units
 
 For class `text`, each maximal run of consecutive lines that are not empty
-after trimming is one unit of kind `block`. Its range runs from the first
+after trimming is one unit of kind `block`. A file of a code class never has
+`block` units: when it does not parse it has no units (section 6.1). Its range runs from the first
 non-WS character of its first line to the end of its last line with trailing
 WS removed. Its parent is `file`.
 
@@ -1526,44 +1538,40 @@ is reported:
 4. The file is longer than `MAX_FILE_BYTES`, or it is of a code class and
    longer than `MAX_CODE_FILE_BYTES` (section 6.1): `too_large`.
 5. The file is not valid UTF-8: `not_text`.
-6. The selector has a `key`: `invalid_selector`.
-7. The selector is not valid by section 5.2 in any other way, for example
+6. The resource is of a code class and does not parse (section 6.1):
+   `unavailable`, for every selector. The message is
+   `<loc> does not parse as <class> (the first error is on line <n>), so its units cannot be read; fix the syntax error`.
+   `<n>` is the 1-based line on which the first error node or missing node of
+   the parse tree, in source order, starts. When the tree has no such node
+   the part in parentheses, with the space before it, is left out.
+7. The selector has a `key`: `invalid_selector`.
+8. The selector is not valid by section 5.2 in any other way, for example
    `prefix` without `quote`, `count` without `symbol`, or a quote longer than
    2,048 characters: `invalid_request`.
-8. The selector has a `symbol` and the class of the resource is `markdown`,
+9. The selector has a `symbol` and the class of the resource is `markdown`,
    `prose` or `text`: `invalid_selector`. These classes have no symbols, so
    no anchor there can name a declaration. The message is
    `<loc> is a <class> file, and this kind of file has no symbols; anchor it with a quote instead`,
    where `<loc>` is the locator and `<class>` the class name of section 6.1.
-9. The selector has a `symbol`, or is the empty selector `{}`, the resource
-   is of a code class and its parse tree has an error (section 6.1):
-   `unavailable`. A whole-file anchor on code is the code's declarations as
-   a whole, so it waits for the file to parse like a symbol anchor. The
-   message is
-   `<loc> does not parse as <class> (the first error is on line <n>), so its declarations cannot be found; fix the syntax error`.
-   `<n>` is the 1-based line on which the first error node or missing node of
-   the parse tree, in source order, starts. When the tree has no such node
-   the part in parentheses, with the space before it, is left out.
 
-Errors 1 to 5 are errors of the resource, so they win over errors 6 to 9 of
-the selector: a selector with a `key` on an absent file is `not_found`.
-`units` and `render` report errors 1 to 5 in the same order. In a batch each
-anchor gets its own result or error.
+Errors 1 to 6 are errors of the resource, so they win over errors 7 to 9 of
+the selector: a selector with a `key` on an absent file is `not_found`, and
+on a code file that does not parse `unavailable`. `units` and `render`
+report errors 1 to 6 in the same order. In a batch each anchor gets its own
+result or error.
 
 A resource with more than `MAX_UNITS_PER_RESOURCE` units (section 6.1) fails
 with `too_large`. This is an error of the resource as well: it is reported
-after error 5 and before errors 6 to 9, and `units` and `render` report it
+after error 6 and before errors 7 to 9, and `units` and `render` report it
 too.
 
-Errors 8 and 9 apply to every selector with a `symbol` (error 9 also to the
-empty selector): with or without a quote, a new anchor or a stored selector,
-and whether or not the symbol ever named a declaration. They apply to
-`resolve` only. A quote-only selector on a code file that does not parse
-resolves against the `block` units of the `text` fallback. A stored symbol anchor on such a file
-is therefore neither resolved against text blocks nor reported as missing:
-its side is `unavailable` with reason `resource_unavailable` (section 13.4)
-until the file parses again, and then the stored selector resolves to its
-declaration unchanged.
+Error 6 applies to every selector: a symbol, a quote with or without
+`within`, the empty selector, a new anchor or a stored selector. A side on
+such a file is neither resolved against text nor reported as missing: it is
+`unavailable` with reason `resource_unavailable` (section 13.4) until the
+file parses again, and then its stored selector resolves to its unit
+unchanged. Error 9 applies to every selector with a `symbol`, with or
+without a quote, and whether or not the symbol ever named a declaration.
 
 If building a completed selector fails (below), the resolution of that
 anchor fails with the provider error `internal`.
@@ -1696,6 +1704,21 @@ candidates(scope):
   that cross units, then the similarity guess in scope; each once, in that
   order, all with approx = true; [] when there is none
 ```
+
+**A stored `#name`.** A typed `#name` is stored as `{symbol}` alone, which
+has none of the stored keys, so it is resolved by `resolve_new`, not by A3:
+when the symbol names several declarations now, every one is returned
+without `approx` (ambiguous, the side is `ambiguous`); when it names none,
+nothing is returned. `#name::<line>` is stored with its quote, windows and,
+for several declarations, `count`, so it is resolved by A1 to A3: when the
+number of declarations changed, every declaration is a candidate (the side
+is `missing`, `not_exact`). Both stay unresolved because the stored selector
+named one declaration and nothing stored tells which of the declarations
+that now carry the name it is: a bare name holds no text to compare, and a
+changed `count` means the set of declarations is not the one the anchor was
+made against. Choosing one would be a guess. (`cases/resolve.json`:
+`typescript: symbol of overloads: every declaration, ambiguous, with printed anchors`
+and `rust: stored: the symbol named two declarations, now one: candidates`.)
 
 A unit returned alone by `resolve_stored` with a hit has `refuse:
 quote_in_comment` when the hit is `in_comment`; a stored anchor in a comment
@@ -2229,12 +2252,10 @@ Two fingerprints are equal when the strings are equal byte for byte. Two
 fingerprints with different profiles are never compared: the side reports
 `unavailable` with reason `profile_mismatch` (section 9.2). This is the only
 effect of a profile mismatch. It happens when a later hibi ships a new profile
-version, when a code file that parsed at mark time no longer parses (or the
-reverse), and when a file's class changes. A side whose stored selector has a
-`symbol` is the exception to the second case: on a code file that does not
-parse it fails with the provider error `unavailable` before any fingerprint
-is compared (section 6.7, error 9), so it reports `unavailable` with reason
-`resource_unavailable` and not `profile_mismatch`.
+version, and when a file's class changes. A code file that does not parse
+is not a profile mismatch: it has no units, every side on it fails with the
+provider error `unavailable` before any fingerprint is compared (section 6.7,
+error 6), and it reports `unavailable` with reason `resource_unavailable`.
 
 ### 8.3 `prose-v1`
 
@@ -2420,9 +2441,8 @@ shared-declaration rules in section 6.4, requires a new profile name
 ### 8.5 No fallback inside a profile
 
 There is no partial tree hashing. A code file either parses without error and
-all its units use `ast-v1`, or it is class `text` for that read and all its
-units use `prose-v1`. A selector with a `symbol` is not resolved against
-those `prose-v1` units (section 6.7, error 9).
+all its units use `ast-v1`, or it has no units and is `unavailable`
+(section 6.1, section 6.7, error 6). A code file never has `prose-v1` units.
 
 ---
 
@@ -4309,8 +4329,8 @@ Three codes are also produced by hibi itself, without an error on the wire:
 returns it when a resource cannot be read for a reason that is neither
 absence nor size nor encoding:
 
-- a selector with a `symbol` is resolved on a file of a code class that does
-  not parse (section 6.7, error 9);
+- a file of a code class that does not parse is resolved with any selector,
+  listed or rendered (section 6.1, section 6.7, error 6);
 - reading a file of the working tree fails with an input or output error
   other than "no such file" or "not a directory" (those two are `not_found`);
 - a resource is read at a revision (`--since`, section 10.3) and git is not
@@ -6688,7 +6708,7 @@ panics counts as a failing case and does not stop the other cases.
 | `canon.json` | Canonical JSON: the input text is parsed and serialized, and the result equals `expected.canonical` and, as hex UTF-8 bytes, `expected.utf8`. When `input.record` names a record type (`claim`, `mark`, `retirement`) the text also deserializes as that record and the record's own canonical form equals the same bytes. | 3.5 |
 | `ids.json` | Id derivation: the canonical form of `input.body`, the 64 hex digits of its BLAKE3 digest, and the id. The body with the expected `id` added deserializes as a record of `input.kind`, and the id derived from that record equals the expected id. | 3.5 |
 | `fingerprint.json` | `fingerprint::prose_v1(text)` (with NFC) and `fingerprint::ast_v1(class, stream)`: the complete fingerprint string | 8.3, 8.4 |
-| `units-code.json` | `code::analyze(text, class)`, with the class taken from `input.path`: the class after the parse-error fallback and every unit in source order as `kind`, `symbol`, `key`, `parent`, `start`, `end`, `line`, `endLine`. See "Code cases" and "Content keys and `endLine`" below. | 6.1, 6.4 to 6.6 |
+| `units-code.json` | `code::analyze(text, class)`, with the class taken from `input.path`: the class and every unit in source order as `kind`, `symbol`, `key`, `parent`, `start`, `end`, `line`, `endLine`. See "Code cases" and "Content keys and `endLine`" below. | 6.1, 6.4 to 6.6 |
 | `resolve.json` | `resolve` of the file provider on a working tree that holds only the case's file: the returned units in order as `key`, `approx`, `identity`, `refuse` (`null` when absent) and the completed selector `sel`, or the provider error code. `approx` is the field of the unit object of section 13.3 as the provider returns it; what the engine makes of an `approx` unit (section 9.2) is not bound by this file. The file's content is a file under `fixtures/resolve/` or inline text, written byte for byte; with neither, the file does not exist. The same anchor is resolved twice without a cache and twice through a cache (empty, then filled), and the four answers MUST be equal. See "Resolve cases" below. | 6.7 |
 | `freshness.json` | `engine::evaluate`: the claim state, the reference mark, `expiresAt`, and each side's state and reason, for a table of marks, side resolutions and `now`. A side resolution of the input is one unit with a fingerprint, no unit, two units, a provider error code or `failed`, a missing provider (`scheme_not_declared` or `provider_not_registered`), or an invalid unit. The expected reference mark is the index of a mark of the input, `null`, or `{"greaterIdOf": [indexes]}` where only the ids decide. The cases cover the reference mark of a claim that is not fresh: the mark that matches the most sides, with marks at different and at equal `at`. | 9.2, 9.3, 15.2 |
 | `coverage.json` | `engine::covered_keys` and `engine::classify`: the units of a scope that are covered, excluded and uncovered, and the number of units each exclusion matched | 10.2 |
@@ -6756,8 +6776,6 @@ case on a general fixture (`fixtures/units/typescript.ts`, `tsx.tsx`,
 `python.py`, `rust.rs`, `go.go`, `java.java`) and cases that pin single rules
 of sections 6.1, 6.2, 6.4 and 8.4:
 
-- the parse-error fallback to the class `text` with `block` units
-  (`broken.py`);
 - `html_comment` at the top level is a comment, not a statement
   (`html-comment.ts`);
 - the `file` unit spans the whole text when blank lines and a comment precede
@@ -6835,8 +6853,13 @@ every other unit its printed anchor. Its cases pin:
   has it (`reflow:`), CRLF becomes LF and a leading U+FEFF belongs to the first
   unit (`decoding:`), unit boundaries (`boundary:`);
 - the errors `invalid_selector` for a symbol on markdown and text and for a
-  selector with `key`, `unavailable` for a symbol or the empty selector on
-  code that does not parse, and `not_found` for a missing resource.
+  selector with `key`, and `not_found` for a missing resource;
+- a code file that does not parse (`broken.py` and inline text, cases named
+  `python with a syntax error: ...`): `unavailable` for a symbol, a symbol
+  with a quote, a stored quote inside a declaration (with `within`), a
+  stored top-level quote, a whole-file anchor and a new quote; and recovery:
+  on the same text with the error removed, each of those stored selectors
+  resolves to its unit unchanged.
 
 **Fixtures read by other tests.** Tests outside `crates/hibi/tests/cases/`
 read fixture files as plain inputs and bind no case: the unit test
@@ -6974,7 +6997,7 @@ Each row is a choice the plan left open or marked illustrative.
 |---|---|---|
 | 1 | The fingerprint of a side is the fingerprint of the whole unit (declaration or region), not of the quoted span or its smallest syntax node. | The plan's check "changing a literal inside an anchored declaration makes them stale" needs the declaration as the fingerprinted thing. |
 | 2 | Ruling from the lead: `ast-v1` is v4's semantic pre-order walk with two exclusions, comment nodes and a comma directly before a closing delimiter. This narrows the plan's "reformatting stales nothing" to whitespace, line breaks, comments and trailing commas. A formatter change to semicolons, quote style or parentheses stales the claim. The only comma of a tuple-like node (Rust `tuple_expression`, `tuple_type`, `tuple_pattern`; Python `tuple`, `tuple_pattern`, `subscript`) is not skipped. | Operators and keywords are anonymous tokens and must count, so punctuation cannot be dropped wholesale. |
-| 3 | A code file with any parse error is handled as plain text for that read. | One rule with no partial trees; the resulting profile change is reported, not hidden. |
+| 3 | Superseded by decision 144: a code file with any parse error has no units and is `unavailable`. Earlier: a code file with any parse error is handled as plain text for that read. | One rule with no partial trees; the resulting profile change is reported, not hidden. |
 | 4 | A profile mismatch reports the side as `unavailable` with reason `profile_mismatch`, and `mark` accepts such a side. | It is visibly not a content change, and one re-check clears it. |
 | 5 | No alias record for renames. A symbol that names no declaration falls back to the quote; every unit the quote then finds is approximate and is a candidate, never a resolution. `reanchor` with the candidate's anchor stores the new symbol. | Superseded in part by decision 120. A rename changes the declaration's fingerprint, so a re-check is needed anyway. |
 | 6 | Stored selectors are completed by the provider (symbol, quote, context, position). Since decision 142 a completed selector holds the symbol as typed and `count`, or the quote with its in-unit windows and `within`; no position. | Every stored anchor can be re-found by two independent means. |
@@ -7086,7 +7109,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 123 | At most `MAX_CANDIDATES` (20) candidates are shown, with `candidatesTotal`. Candidate text is cut to 240 characters. A candidate's anchor is `<loc>#<symbol>` only when the symbol is unique in the whole resource, and a JSON anchor otherwise. `next` uses the `<anchor>` placeholder and never a candidate. | Bounded output; an anchor that is offered must select one unit; the caller chooses. |
 | 124 | Sides carry `detail` and `remediation`. | The JSON holds what the human output prints. |
 | 125 | Provider error `unavailable` maps to the side reason `resource_unavailable`, with `next` `null` and the provider's message as remediation. Provider errors `invalid_selector` and `invalid_locator` map to `selector_refused` for a stored anchor and to the CLI error `invalid_anchor` for a new one. | The resource exists and cannot be read, or the anchor is wrong for the resource; neither is a broken provider. |
-| 126 | A symbol on a resource class that has no symbols is `invalid_selector`. A symbol on a code file that does not parse is `unavailable`, naming the first error line. | A symbol anchor must not be resolved against text blocks while the file is broken. |
+| 126 | A symbol on a resource class that has no symbols is `invalid_selector`. A symbol on a code file that does not parse is `unavailable`, naming the first error line; since decision 144 every selector is. | A symbol anchor must not be resolved against text blocks while the file is broken. |
 | 127 | `reanchor` applies the same-claim rule and reports `merged`; `claim_retired` and `no_change` are checked first, and a kept side is not compared by quote. | Re-anchoring onto a claim that already exists must not create a second one. |
 | 128 | Unit building stops as soon as the count passes `MAX_UNITS_PER_RESOURCE`; the message gives the limit, not a count. | The work is bounded as well as the result. |
 | 129 | A side that is not exact covers no unit, and a claim with such a side is not sent to the judge and is listed first. | It has no resolved unit. |
@@ -7104,6 +7127,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 141 | Superseded by decisions 142 and 143: no fingerprint is evidence of identity. | The rule let a claim follow an identical copy once the original was edited. |
 | 142 | Identity of a stored anchor (section 6.7): a side is resolved only by its symbol and the number of declarations it named (`count`), or by its quote with in-unit windows (`prefix`, `suffix` cut inside the unit) in its container (`within`: a heading path and piece name, or a declaration). Everything else is a candidate. Stored selectors hold no default quotes and no `pos`; printed anchors select their unit alone; `identity: "symbol"` marks a unit its symbol names after its stored quote is gone; `quote_not_distinguishable` refuses a new anchor whose completed selector would not select its unit. Supersedes decisions 132, 138 and 139 and the corroboration of decision 141, and removes `contextChanged`. | A claim could follow an identical copy silently: a fingerprint equal to a mark was taken as identity, and duplicated symbols re-bound. Context windows that reached into neighbouring units changed with unrelated edits, and position chose between equal hits. The rule was designed with the verifier until no scenario could make a candidate resolve. |
 | 143 | The engine adds no identity rule to the provider's answer. A unit resolved by its symbol alone, the stored quote gone, is `changed`, asks for a new anchor, and is refused by `mark`. Candidates and ambiguity lists print the provider's printed anchor; units with the same printed anchor are listed as a group without an anchor. The same claim, and repeated evidence, are decided by the units the sides resolve to. A quote that cannot be told apart is `quote_not_distinguishable`. A bare quote inside a declaration gets a note. | Identity belongs to one place; a mark must not keep a stale quote; what cannot be selected must not be offered; two ways to write an anchor name one side. |
+| 144 | A file of a code class that does not parse is `unavailable` for `resolve` with any selector, for `units` and for `render`, with the line of the first error; there is no fallback to `block` units for a code class, and the cache stores no row for such a file. Its sides are `unavailable` (`resource_unavailable`) and come back unchanged when it parses; `cover` lists it under `unavailable`. A file the pinned grammar cannot parse cannot be anchored: exclude it from the scope. Supersedes decision 3. | The text fallback produced half-states: a quote stored with `within` became `not_exact` with a text block as its candidate, and re-anchoring to it tied the claim to broken text; a top-level quote became `profile_mismatch` with `next: hibi mark`, which would record a `prose-v1` fingerprint of code. |
 | 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
 | 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
 | 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
@@ -7490,8 +7514,8 @@ Verification section in order.
   `r48_symbolic_links_are_refused_and_never_written_through`.)
 - R49. A file longer than `MAX_FILE_BYTES`, or a file of a code class longer
   than `MAX_CODE_FILE_BYTES`, reports `too_large` in both sources and is not
-  parsed. A source file nested 100,000 levels deep is processed or reported
-  as class `text` without a crash.
+  parsed. A source file nested 100,000 levels deep is processed, or reported
+  `unavailable` as a file that does not parse, without a crash.
   (`r49_size_cap`, `code_files_have_a_lower_size_cap`,
   `r49_deep_nesting_does_not_overflow`.)
 - R50. A provider that returns a `sel` with an unknown key, an invalid
@@ -7864,10 +7888,16 @@ Each of these has a test, named in parentheses.
   `resource_unavailable`. (`every_provider_error_code_maps_by_the_table`,
   `cases/freshness.json`.)
 - R126. A symbol on a markdown, prose or text file is `invalid_selector`. A
-  stored symbol anchor on a code file with a syntax error is `unavailable`
-  and resolves to its declaration again once the file parses.
+  code file with a syntax error is `unavailable` for every selector, new or
+  stored, for `units` and for `render`, with the line of the first error;
+  no cache row is written for it; `cover` lists it under `unavailable` with
+  `resource_unavailable`; and every stored anchor resolves to its unit
+  unchanged once the file parses.
   (`a_symbol_on_a_class_without_symbols_is_invalid_selector`,
-  `a_symbol_anchor_on_a_code_file_that_does_not_parse_is_unavailable`.)
+  `a_code_file_that_does_not_parse_is_unavailable_for_every_request`,
+  `a_code_file_that_does_not_parse_is_resource_unavailable`,
+  `a_parse_error_gives_no_units`, `cases/resolve.json`: the cases named
+  "python with a syntax error: ...".)
 - R127. The judge key written with escaped slashes is redacted from errors.
   (`key_leak_an_echoed_header_with_escaped_slashes_is_redacted_from_errors`,
   `redact_knows_the_json_written_key_with_escaped_slashes`.)

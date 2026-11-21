@@ -1319,7 +1319,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "python with a syntax error: a quote: the text block",
+    "name": "python with a syntax error: a quote: unavailable",
     "input": {
       "path": "broken.py",
       "fixture": "fixtures/resolve/broken.py",
@@ -1328,17 +1328,195 @@
       }
     },
     "expected": {
+      "error": "unavailable"
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python with a syntax error: a stored quote inside a declaration: unavailable",
+    "input": {
+      "path": "pkg/limiter.py",
+      "text": "def wait(n):\n    return n * 2\n\n\ndef other(:\n    pass\n\n\nprint(wait(3))\n",
+      "sel": {
+        "quote": "return n * 2",
+        "prefix": "def wait(n):",
+        "suffix": "",
+        "within": [
+          "wait"
+        ]
+      }
+    },
+    "expected": {
+      "error": "unavailable"
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python with a syntax error: a stored top-level quote: unavailable",
+    "input": {
+      "path": "pkg/limiter.py",
+      "text": "def wait(n):\n    return n * 2\n\n\ndef other(:\n    pass\n\n\nprint(wait(3))\n",
+      "sel": {
+        "quote": "print(wait(3))",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "error": "unavailable"
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python with a syntax error: a stored symbol anchor: unavailable",
+    "input": {
+      "path": "pkg/limiter.py",
+      "text": "def wait(n):\n    return n * 2\n\n\ndef other(:\n    pass\n\n\nprint(wait(3))\n",
+      "sel": {
+        "symbol": "wait"
+      }
+    },
+    "expected": {
+      "error": "unavailable"
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python with a syntax error: a stored whole-file anchor: unavailable",
+    "input": {
+      "path": "pkg/limiter.py",
+      "text": "def wait(n):\n    return n * 2\n\n\ndef other(:\n    pass\n\n\nprint(wait(3))\n",
+      "sel": {}
+    },
+    "expected": {
+      "error": "unavailable"
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python with a syntax error: a new quote inside a declaration: unavailable",
+    "input": {
+      "path": "pkg/limiter.py",
+      "text": "def wait(n):\n    return n * 2\n\n\ndef other(:\n    pass\n\n\nprint(wait(3))\n",
+      "sel": {
+        "quote": "n * 2"
+      }
+    },
+    "expected": {
+      "error": "unavailable"
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python with a syntax error: recovery: the stored quote inside a declaration resolves unchanged",
+    "input": {
+      "path": "pkg/limiter.py",
+      "text": "def wait(n):\n    return n * 2\n\n\nprint(wait(3))\n",
+      "sel": {
+        "quote": "return n * 2",
+        "prefix": "def wait(n):",
+        "suffix": "",
+        "within": [
+          "wait"
+        ]
+      }
+    },
+    "expected": {
       "units": [
         {
-          "key": "block:*",
+          "key": "function:wait",
           "approx": false,
           "identity": null,
           "refuse": null,
           "sel": {
-            "quote": "x = 1",
+            "quote": "return n * 2",
+            "prefix": "def wait(n):",
+            "suffix": "",
+            "within": [
+              "wait"
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python with a syntax error: recovery: the stored top-level quote resolves unchanged",
+    "input": {
+      "path": "pkg/limiter.py",
+      "text": "def wait(n):\n    return n * 2\n\n\nprint(wait(3))\n",
+      "sel": {
+        "quote": "print(wait(3))",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "statement:*",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "print(wait(3))",
             "prefix": "",
             "suffix": ""
           }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python with a syntax error: recovery: the stored symbol anchor resolves unchanged",
+    "input": {
+      "path": "pkg/limiter.py",
+      "text": "def wait(n):\n    return n * 2\n\n\nprint(wait(3))\n",
+      "sel": {
+        "symbol": "wait"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:wait",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "wait"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python with a syntax error: recovery: the stored whole-file anchor resolves unchanged",
+    "input": {
+      "path": "pkg/limiter.py",
+      "text": "def wait(n):\n    return n * 2\n\n\nprint(wait(3))\n",
+      "sel": {}
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "file",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {}
         }
       ]
     },

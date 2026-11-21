@@ -279,7 +279,7 @@ extracted files (next section), use four more `origin` values.
 | `canon.json` | `{json, record}`: JSON text, and `null` or the record type (`claim`, `mark`, `retirement`) it must deserialize as | `{canonical, utf8}`: the RFC 8785 serialization as a string and as hex UTF-8 bytes |
 | `ids.json` | `{kind, body}`: a record type and a record body without `id` | `{canonical, blake3, id}`: the canonical body, the 64 hex digits of its BLAKE3 digest, and the id of SPEC section 3.5 |
 | `fingerprint.json` | `{profile: "prose-v1", text}` or `{profile: "ast-v1", class, stream}` | `{fingerprint}`: the string of SPEC section 8 |
-| `units-code.json` | `{fixture, path}`: a file under `fixtures/units/` and a path whose extension selects the class | `{class, units}`: the class after the parse-error fallback, and every unit in source order (start ascending, then end descending) as `{kind, symbol, key, parent, start, end, line, endLine}`. `endLine` is the line of the unit's last character. A content key (`statement`, `block`) is written `<kind>:*`, with `~n` for a duplicate, and matches any 12 lower-case hex digits there. |
+| `units-code.json` | `{fixture, path}`: a file under `fixtures/units/` and a path whose extension selects the class | `{class, units}`: the class, and every unit in source order (start ascending, then end descending) as `{kind, symbol, key, parent, start, end, line, endLine}`. `endLine` is the line of the unit's last character. A content key (`statement`, `block`) is written `<kind>:*`, with `~n` for a duplicate, and matches any 12 lower-case hex digits there. |
 | `resolve.json` | `{path, fixture or text, sel}`: the locator path (its extension selects the class), the file's content from a file under `fixtures/resolve/` or inline (inline text keeps CR LF and a BOM byte for byte), and the selector. With neither `fixture` nor `text` the file does not exist. | `{units}`, every unit `resolve` returns in order as `{key, approx, identity, refuse, sel}`, where `identity` and `refuse` are `null` when absent and `sel` is the completed selector of a unit returned alone and the printed anchor of every other unit; or `{error}` with a provider error code. Content keys are written `<kind>:*` as in `units-code.json`. |
 | `freshness.json` | `{recheck, retired, now, marks: [{at, sides: [fingerprint]}], sides}`: the claim's `recheck`, whether it is retired, `now`, its marks, and the current resolution of each side as `{unit: <fingerprint>}`, `{units: 0}` (no unit), `{units: 2}` (several), `{error: <provider error code or "failed">}`, `{noProvider: "scheme_not_declared" or "provider_not_registered"}` or `{invalidUnit: true}`. A retired claim has no `sides`. | `{state, mark, expiresAt, sides: [{state, reason}]}`: the claim state, the reference mark as an index into `input.marks` (`null` for none, `{greaterIdOf: [indexes]}` for a tie on `at`), `expiresAt` of SPEC section 15.2, and each side's state and reason |
 | `coverage.json` | `{loc, units: [{key, kind, parent}], kinds, resolved, exclude: [{resource, unit}]}`: one resource, its unit list, the scope's kinds, the keys that claim sides resolve to, and the scope's exclusions in declaration order | `{covered, excluded, uncovered, matched}`: the scope units by status, each list in unit order, and the number of units each exclusion excluded |
@@ -368,6 +368,15 @@ removed, because the rule they pinned no longer exists:
   symbol that names nothing gives every declaration of it (none) and the
   units of its quote's exact hits, and the engine adds candidates by content;
 - default quotes in completed selectors: a typed `#name` stores no quote.
+
+Decision 144 (a code file that does not parse is `unavailable` for every
+selector, with no fallback to `block` units) removed two more cases:
+`python with a syntax error: a quote: the text block` in `resolve.json`,
+which became `... a quote: unavailable`, and
+`python with a syntax error: class text, block units` in `units-code.json`,
+because `code::analyze` no longer returns block units for a code class.
+`resolve.json` gained the `python with a syntax error:` cases for stored
+anchors on a broken file and their recovery on the fixed text.
 
 The cases kept from the earlier file (the empty selector, symbols, quotes,
 refusals, members, boundaries, decoding, errors) were derived again for the

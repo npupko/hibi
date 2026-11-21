@@ -10,7 +10,7 @@ exit status: 0
 c1-grbrgqr9cw0g47arm9tx  stale  The threshold is 50.
   marked 2026-11-20T12:00:00Z (m1-fche2xvrp22ac1qvynp3)
   evidence 1  file:src/report.py  unavailable (resource_unavailable)
-    file:src/report.py does not parse as python (the first error is on line 1), so its declarations cannot be found; fix the syntax error. Run the command again once that is fixed.
+    file:src/report.py does not parse as python (the first error is on line 1), so its units cannot be read; fix the syntax error. Run the command again once that is fixed.
 
 c1-rd7108gmy3g6n4kr30mk  stale  The retry count is 3.
   marked 2026-11-20T12:00:00Z (m1-4ga5k9vwzprxzfwk7m3b)

@@ -72,7 +72,8 @@ pub(super) struct Doc {
     text: String,
     class: Class,
     /// True when the file has a parse tree: a code class that parsed
-    /// without error.
+    /// without error. A code class without a tree is never used: it is
+    /// `unavailable` (section 6.1, [`Doc::check_parses`]).
     tree: bool,
     entries: Vec<Entry>,
     /// Per entry: the index of its parent entry (`None` for the `file`
@@ -89,9 +90,6 @@ pub(super) struct Doc {
     /// Per entry: heading path, piece and piece name of a prose unit
     /// (section 6.7). Filled on first use.
     prose: OnceCell<ProseIndex>,
-    /// The line of the first parse error, for a code class without a
-    /// tree. Filled on first use.
-    error_line: OnceCell<Option<usize>>,
 }
 
 /// The first `LABEL_CHARS` characters of `normalize(s)`, without
@@ -213,7 +211,9 @@ impl Doc {
                         }
                         None
                     }
-                    Analysis::Text(blocks) => Some(blocks),
+                    // No units: `FileProvider` reports the file as
+                    // `unavailable` (section 6.1) before any use.
+                    Analysis::Unparsed => Some(Vec::new()),
                 }
             } else {
                 Some(
@@ -257,7 +257,6 @@ impl Doc {
             norm: OnceCell::new(),
             comments,
             prose: OnceCell::new(),
-            error_line: OnceCell::new(),
         };
         for r in raws {
             let label = match &r.symbol {
@@ -402,7 +401,12 @@ impl Doc {
         if profile == AST_V1 && !class.is_code() {
             return None;
         }
-        let tree = class.is_code() && profile == AST_V1;
+        // A code class has rows only of a parsed file (section 11.3): a row
+        // of text blocks for a code class is a miss.
+        if class.is_code() && profile != AST_V1 {
+            return None;
+        }
+        let tree = class.is_code();
         let mut doc = Doc {
             text,
             class,
@@ -413,7 +417,6 @@ impl Doc {
             norm: OnceCell::new(),
             comments: OnceCell::new(),
             prose: OnceCell::new(),
-            error_line: OnceCell::new(),
         };
         doc.index();
         Some(doc)
@@ -606,13 +609,9 @@ impl Doc {
         }
     }
 
-    /// The errors of a selector with a `symbol` on a resource that has no
-    /// declarations to search (ruling on section 6.7). A class without
-    /// symbols (markdown, prose, text) is `invalid_selector`: no anchor
-    /// there can name a declaration. A file of a code class that does not
-    /// parse is `unavailable`: its declarations come back when the syntax
-    /// error is fixed, so a stored symbol anchor is neither resolved
-    /// against text blocks nor reported as a broken provider.
+    /// Error 9 of section 6.7: a selector with a `symbol` on a class without
+    /// symbols (markdown, prose, text) is `invalid_selector`, because no
+    /// anchor there can name a declaration.
     pub(super) fn check_symbol(&self, loc: &str) -> Result<(), ProviderError> {
         if !self.class.is_code() {
             return Err(ProviderError::new(
@@ -623,26 +622,25 @@ impl Doc {
                 ),
             ));
         }
-        self.check_parses(loc)
+        Ok(())
     }
 
-    /// Error 9 of section 6.7 for a selector with a symbol or the empty
-    /// selector: a code file that does not parse is `unavailable`, with the
-    /// line of its first error. Anything else passes.
+    /// Error 6 of section 6.7: a file of a code class that does not parse is
+    /// `unavailable` for `resolve` with any selector, for `units` and for
+    /// `render`, with the line of its first error (section 6.1). Its units
+    /// come back unchanged when the syntax error is fixed.
     pub(super) fn check_parses(&self, loc: &str) -> Result<(), ProviderError> {
         if !self.class.is_code() || self.tree {
             return Ok(());
         }
-        let line = self
-            .error_line
-            .get_or_init(|| code::first_error_line(&self.text, self.class));
+        let line = code::first_error_line(&self.text, self.class);
         let at = line.map_or(String::new(), |l| {
             format!(" (the first error is on line {l})")
         });
         Err(ProviderError::new(
             ProviderErrorCode::Unavailable,
             format!(
-                "{loc} does not parse as {}{at}, so its declarations cannot be found; fix the syntax error",
+                "{loc} does not parse as {}{at}, so its units cannot be read; fix the syntax error",
                 self.class.name()
             ),
         ))

@@ -508,6 +508,9 @@ impl FileProvider {
             return Ok(d);
         }
         let d = Doc::build(text, class)?;
+        // A code file that does not parse has no units and no cache row
+        // (sections 6.1 and 11.3).
+        d.check_parses(loc.as_str())?;
         if let (Some(c), Some(b)) = (cache, &blob) {
             let row = d.to_cache();
             // A row larger than the cap is not written (ruling on 11.3).
@@ -692,12 +695,9 @@ impl Provider for FileProvider {
                 a.sel
                     .validate()
                     .map_err(|e| ProviderError::invalid_request(e.message))?;
-                // Error 8 for a symbol; error 9 for a symbol or the empty
-                // selector on code that does not parse (section 6.7).
+                // Error 9 of section 6.7: a symbol on a class without symbols.
                 if a.sel.symbol.is_some() {
                     doc.check_symbol(a.loc.as_str())?;
-                } else if a.sel.quote.is_none() {
-                    doc.check_parses(a.loc.as_str())?;
                 }
                 doc.resolve(&a.sel)
             })

@@ -488,8 +488,17 @@ fn completed_selectors_are_fixed_points() {
     for path in &files {
         let l = format!("file:{path}");
         let mut p = wt(root);
-        let Ok(units) = p.units(&loc(&l), None) else {
-            continue;
+        let units = match p.units(&loc(&l), None) {
+            Ok(units) => units,
+            // A fixture of a code class that does not parse has no units
+            // (section 6.1).
+            Err(e)
+                if e.code == ProviderErrorCode::Unavailable
+                    && e.message.contains("does not parse") =>
+            {
+                continue;
+            }
+            Err(e) => panic!("{path}: {e}"),
         };
         let text = fs::read_to_string(root.join(path))
             .unwrap()
@@ -527,12 +536,7 @@ fn completed_selectors_are_fixed_points() {
             .map(|u| Anchor::new(loc(&l), u.sel.clone()))
             .collect();
         for (u, got) in units.iter().zip(p.resolve(&own)) {
-            // A whole-file anchor on code that does not parse is
-            // `unavailable` (section 6.7, error 9).
-            let got = match got {
-                Err(e) if u.kind == "file" && e.code == ProviderErrorCode::Unavailable => continue,
-                got => got.unwrap(),
-            };
+            let got = got.unwrap();
             let alone = got.len() == 1
                 && got[0].key == u.key
                 && !got[0].approx
@@ -662,6 +666,14 @@ fn default_quotes_are_never_in_comments_and_round_trip() {
         let mut p = wt(root);
         let units = match p.units(&loc(&l), None) {
             Ok(u) => u,
+            // A fixture of a code class that does not parse has no units
+            // (section 6.1).
+            Err(e)
+                if e.code == ProviderErrorCode::Unavailable
+                    && e.message.contains("does not parse") =>
+            {
+                continue;
+            }
             Err(e) => panic!("{path}: {e}"),
         };
         // Comment spans of a file with a parse tree.
@@ -775,27 +787,6 @@ fn javascript_extensions_use_the_tsx_grammar() {
     let ts = one(&mut wt(tmp.path()), "file:b.ts", json!({"symbol": "f"})).fp;
     let js = one(&mut wt(tmp.path()), "file:b.js", json!({"symbol": "f"})).fp;
     assert_ne!(ts, js);
-}
-
-#[test]
-fn a_syntax_error_makes_the_file_text() {
-    let tmp = tempfile::tempdir().unwrap();
-    write(tmp.path(), "bad.py", "def f(:\n    pass\n\nx = 1\n");
-    let units = wt(tmp.path()).units(&loc("file:bad.py"), None).unwrap();
-    let kinds: Vec<&str> = units.iter().map(|u| u.kind.as_str()).collect();
-    assert_eq!(kinds, ["file", "block", "block"]);
-    assert!(units.iter().all(|u| u.fp.profile() == "prose-v1"));
-    assert!(units.iter().all(|u| u.sel.symbol.is_none()));
-    // A symbol cannot be looked up while the file does not parse (ruling on
-    // section 6.7).
-    assert_eq!(
-        code_of(resolve(
-            &mut wt(tmp.path()),
-            "file:bad.py",
-            json!({"symbol": "f"})
-        )),
-        ProviderErrorCode::Unavailable
-    );
 }
 
 #[test]
@@ -1601,7 +1592,14 @@ fn answers(p: &mut FileProvider) -> Answers {
     let mut out = Vec::new();
     for (path, _) in CORPUS {
         let l = loc(&format!("file:{path}"));
-        let units = p.units(&l, None).unwrap();
+        // A code file that does not parse (`bad.py`) is `unavailable`.
+        let units = match p.units(&l, None) {
+            Ok(units) => units,
+            Err(e) => {
+                out.push(serde_json::to_value(e).unwrap());
+                continue;
+            }
+        };
         out.push(serde_json::to_value(&units).unwrap());
         for u in &units {
             out.push(serde_json::to_value(p.render(&l, &u.key).unwrap()).unwrap());
@@ -1654,22 +1652,23 @@ fn r40_no_cache_cold_cache_and_warm_cache_agree() {
     assert_eq!(warm, plain, "warm cache");
 
     // A damaged row is ignored and rewritten.
-    let mut rows: HashMap<String, String> = HashMap::new();
+    // A code file that does not parse gets no row, so its damaged row stays.
+    let mut rows: HashMap<String, (String, bool)> = HashMap::new();
     for (path, text) in CORPUS {
         let blob = hibi::git::blob_id(text.as_bytes());
         let class = hibi::code::Class::from_path(path).name();
         Cache::put_units(&db, &blob, class, "[{\"not\":\"a unit\"}]").unwrap();
-        rows.insert(blob, class.to_owned());
+        rows.insert(blob, (class.to_owned(), *path == "bad.py"));
     }
     let damaged = answers(&mut with_cache(&counting));
     assert_eq!(damaged, plain, "damaged rows");
-    for (blob, class) in rows {
-        assert!(
-            db.units(&blob, &class)
-                .unwrap()
-                .unwrap()
-                .starts_with("[{\"key\":\"file\"")
-        );
+    for (blob, (class, broken)) in rows {
+        let row = db.units(&blob, &class).unwrap().unwrap();
+        if broken {
+            assert_eq!(row, "[{\"not\":\"a unit\"}]");
+        } else {
+            assert!(row.starts_with("[{\"key\":\"file\""));
+        }
     }
 }
 
@@ -1863,7 +1862,7 @@ fn a_cache_row_larger_than_8_mib_is_not_written() {
     );
 }
 
-/// Resolve error 7: a selector that is invalid in another way than its
+/// Resolve error 8: a selector that is invalid in another way than its
 /// keys cannot arrive over JSON (deserialization refuses it) but can be
 /// built through the Rust API, and is `invalid_request`.
 #[test]
@@ -1926,66 +1925,87 @@ fn a_symbol_on_a_class_without_symbols_is_invalid_selector() {
     assert!(!u.approx);
 }
 
+/// Section 6.1: a file of a code class that does not parse is `unavailable`
+/// for `resolve` with any selector, new or stored, for `units` and for
+/// `render`; nothing is cached for it, and every stored anchor resolves
+/// unchanged once the file parses again.
 #[test]
-fn a_symbol_anchor_on_a_code_file_that_does_not_parse_is_unavailable() {
+fn a_code_file_that_does_not_parse_is_unavailable_for_every_request() {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path();
-    let good = "pub fn wait(n: u32) -> u32 {\n    n * 2\n}\n\npub fn other() {}\n";
-    write(root, "src/limiter.rs", good);
-    // The stored anchor: symbol, quote and context, from the parsed file.
-    let stored = one(
-        &mut wt(root),
-        "file:src/limiter.rs",
-        json!({"symbol": "wait", "quote": "n * 2"}),
-    )
-    .sel;
-    assert_eq!(stored.symbol.as_deref(), Some("wait"));
-    let stored = serde_json::to_value(&stored).unwrap();
-
-    // A temporary syntax error on line 4: the file falls back to text, but a
-    // symbol anchor is not resolved against its blocks.
-    let broken = "pub fn wait(n: u32) -> u32 {\n    n * 2\n}\n\npub fn other( {}\n";
-    write(root, "src/limiter.rs", broken);
-    let rows = Rc::new(Rows::default());
+    let good = "def wait(n):\n    return n * 2\n\n\nprint(wait(3))\n";
+    write(root, "pkg/limiter.py", good);
+    // Stored anchors from the parsed file: a symbol, a quote inside a
+    // declaration (stored with `within`), a top-level quote and the whole
+    // file.
+    let mut stored = Vec::new();
     for (what, s) in [
-        ("stored", stored.clone()),
+        ("symbol", json!({"symbol": "wait", "quote": "n * 2"})),
         (
-            "new with a quote",
-            json!({"symbol": "wait", "quote": "n * 2"}),
+            "quote inside a declaration",
+            json!({"quote": "return n * 2"}),
         ),
-        ("symbol alone", json!({"symbol": "wait"})),
-        ("a symbol that never existed", json!({"symbol": "gone"})),
+        ("top-level quote", json!({"quote": "print(wait(3))"})),
+        ("whole file", json!({})),
     ] {
-        // Without a cache, through an empty cache and through a filled one.
+        let u = one(&mut wt(root), "file:pkg/limiter.py", s);
+        stored.push((what, u.key, serde_json::to_value(&u.sel).unwrap()));
+    }
+    assert_eq!(stored[1].2["within"], json!(["wait"]), "{stored:?}");
+    assert_eq!(stored[2].2.get("within"), None, "{stored:?}");
+
+    // A syntax error on line 8.
+    let broken = format!("{good}\n\ndef other(:\n    pass\n");
+    write(root, "pkg/limiter.py", &broken);
+    let rows = Rc::new(Rows::default());
+    let new_anchors = [
+        ("new symbol", json!({"symbol": "wait"})),
+        ("new quote", json!({"quote": "n * 2"})),
+        ("a symbol that never existed", json!({"symbol": "gone"})),
+    ];
+    let all = stored
+        .iter()
+        .map(|(w, _, s)| (*w, s.clone()))
+        .chain(new_anchors);
+    let check = |e: &ProviderError, what: &str| {
+        assert_unavailable_ending(e, "; fix the syntax error");
+        assert!(
+            e.message.contains("does not parse as python") && e.message.contains("line 8"),
+            "{what}: {}",
+            e.message
+        );
+    };
+    for (what, s) in all {
+        // Without a cache, through an empty cache and through it again.
         for p in [
             &mut wt(root),
             &mut cached(root, &rows),
             &mut cached(root, &rows),
         ] {
-            let e = resolve(p, "file:src/limiter.rs", s.clone()).unwrap_err();
-            assert_unavailable_ending(&e, "; fix the syntax error");
-            assert!(
-                e.message.contains("does not parse") && e.message.contains("line 5"),
-                "{what}: {}",
-                e.message
+            check(
+                &resolve(p, "file:pkg/limiter.py", s.clone()).unwrap_err(),
+                what,
             );
         }
     }
-    assert_eq!(rows.0.borrow().len(), 1, "the text fallback was cached");
-    // A quote-only anchor still resolves against the text blocks.
-    let u = one(
-        &mut cached(root, &rows),
-        "file:src/limiter.rs",
-        json!({"quote": "n * 2"}),
+    let l = loc("file:pkg/limiter.py");
+    check(&wt(root).units(&l, None).unwrap_err(), "units");
+    check(&cached(root, &rows).units(&l, None).unwrap_err(), "units");
+    check(&wt(root).render(&l, "file").unwrap_err(), "render");
+    assert_eq!(
+        rows.0.borrow().len(),
+        0,
+        "a row was cached for a broken file"
     );
-    assert!(u.key.starts_with("block:") && !u.approx, "{u:?}");
 
-    // Fixed again: the stored anchor resolves to its declaration, unchanged.
-    write(root, "src/limiter.rs", good);
-    let u = one(&mut wt(root), "file:src/limiter.rs", stored.clone());
-    assert_eq!(u.key, "function:wait");
-    assert!(!u.approx);
-    assert_eq!(serde_json::to_value(&u.sel).unwrap(), stored);
+    // Fixed again: every stored anchor resolves to its unit, unchanged.
+    write(root, "pkg/limiter.py", good);
+    for (what, key, sel) in &stored {
+        let u = one(&mut cached(root, &rows), "file:pkg/limiter.py", sel.clone());
+        assert_eq!(&u.key, key, "{what}");
+        assert!(!u.approx && u.identity.is_none(), "{what}");
+        assert_eq!(&serde_json::to_value(&u.sel).unwrap(), sel, "{what}");
+    }
 }
 
 #[test]

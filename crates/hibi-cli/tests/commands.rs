@@ -2318,18 +2318,23 @@ fn reanchor_onto_the_same_claim_under_another_id_merges() {
     );
 }
 
-/// A code file that does not parse cannot be searched for a symbol: the
-/// stored side and a new symbol anchor report `resource_unavailable` with
-/// the line of the first error, nothing is written, a quote-only anchor on
-/// the same file still resolves, and once the syntax is fixed the stored
-/// anchor resolves again.
+/// A code file that does not parse is unavailable for every anchor (spec
+/// section 6.1): a stored symbol side, a stored quote side, and new symbol
+/// and quote anchors report `resource_unavailable` with the line of the
+/// first error, nothing is written, `cover` lists the file under the
+/// scope's `unavailable`, and once the syntax is fixed the stored anchors
+/// resolve again.
 #[test]
-fn a_code_file_that_does_not_parse_is_resource_unavailable_for_a_symbol() {
+fn a_code_file_that_does_not_parse_is_resource_unavailable() {
     let repo = seeded();
     let good = "def threshold():\n    return 50\n\n\ndef other():\n    return 1\n";
     let broken = good.replace("def other():", "def other(:");
     repo.write("report.py", good);
     let id = repo.claim("Threshold", CACHE_SUBJECT, &["file:report.py#threshold"]);
+    let quoted = repo.claim("Fifty", "file:report.py::return 50", &[]);
+    repo.config(
+        "[[scope]]\nname = \"code\"\nresource = \"file:report.py\"\nkinds = [\"function\"]\n",
+    );
     let stored = repo.store_files();
 
     repo.write("report.py", &broken);
@@ -2347,7 +2352,7 @@ fn a_code_file_that_does_not_parse_is_resource_unavailable_for_a_symbol() {
     // command again, once.
     assert_eq!(
         s(&side["remediation"]),
-        "file:report.py does not parse as python (the first error is on line 5), so its declarations cannot be found; fix the syntax error. Run the command again once that is fixed."
+        "file:report.py does not parse as python (the first error is on line 5), so its units cannot be read; fix the syntax error. Run the command again once that is fixed."
     );
 
     // The stored anchor: `mark` is refused with the same remediation.
@@ -2374,24 +2379,40 @@ fn a_code_file_that_does_not_parse_is_resource_unavailable_for_a_symbol() {
         human.stdout
     );
 
-    // The syntax is fixed: the stored anchor resolves again, and nothing
-    // was written in between.
-    repo.write("report.py", good);
-    assert_eq!(repo.store_files(), stored);
-    let view = repo.view(&id);
-    assert_eq!(view["state"], "fresh");
-    assert_eq!(view["sides"][1]["detail"], Value::Null);
-    assert_eq!(repo.store_files(), stored);
-
-    // A quote-only anchor does not need the declarations: it resolves on
-    // the file that does not parse.
-    repo.write("report.py", &broken);
-    let v = j(
+    // A stored quote side, inside a declaration, is unavailable too.
+    let view = repo.view(&quoted);
+    let side = &view["sides"][0];
+    assert_eq!(side["state"], "unavailable");
+    assert_eq!(side["reason"], "resource_unavailable");
+    assert!(s(&side["detail"]).contains("line 5"), "{side}");
+    // A new quote anchor on the file.
+    let e = refused(
         &repo,
         &["claim", "Quote", "--subject", "file:report.py::return 50"],
     );
-    assert_eq!(v["claims"][0]["claim"]["state"], "fresh");
-    assert_eq!(v["claims"][0]["claim"]["sides"][0]["reason"], Value::Null);
+    assert_eq!(e["code"], "side_unavailable");
+    assert!(s(&e["message"]).contains("line 5"), "{e}");
+    // `cover` lists the file under the scope's `unavailable`.
+    let v = j(&repo, &["cover", "--scope", "code"]);
+    assert_eq!(
+        v["scopes"][0]["unavailable"],
+        json!([{"loc": "file:report.py", "reason": "resource_unavailable"}]),
+        "{v}"
+    );
+    assert_eq!(v["scopes"][0]["items"], json!([]), "{v}");
+
+    // The syntax is fixed: the stored anchors resolve again, and nothing
+    // was written in between.
+    repo.write("report.py", good);
+    assert_eq!(repo.store_files(), stored);
+    for claim in [&id, &quoted] {
+        let view = repo.view(claim);
+        assert_eq!(view["state"], "fresh", "{view}");
+    }
+    assert_eq!(repo.view(&id)["sides"][1]["detail"], Value::Null);
+    assert_eq!(repo.store_files(), stored);
+    let v = j(&repo, &["cover", "--scope", "code"]);
+    assert_eq!(v["scopes"][0]["unavailable"], json!([]), "{v}");
 }
 
 /// A symbol on a file that has no symbols is the caller's anchor being

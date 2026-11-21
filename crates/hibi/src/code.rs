@@ -801,10 +801,10 @@ pub struct TextUnit {
 pub enum Analysis {
     /// The file parsed without error: `ast-v1` units.
     Code(CodeFile),
-    /// The parse tree has an error: the file is class `text` for this read,
-    /// with `prose-v1` block units. The `file` unit is not included; its
-    /// fingerprint is `prose-v1` of the whole text.
-    Text(Vec<TextUnit>),
+    /// The parse tree has an error, or there is no tree: the file has no
+    /// units (section 6.1). There is no fallback to block units for a code
+    /// class.
+    Unparsed,
 }
 
 /// One discovered declaration.
@@ -889,9 +889,9 @@ fn leading<'t>(node: Node<'t>, class: Class) -> Vec<Node<'t>> {
     lead
 }
 
-/// Parse a file of a code class and build its units, or fall back to class
-/// `text` when the tree has an error. For a class without a grammar the
-/// result is the `text` fallback as well.
+/// Parse a file of a code class and build its units, or
+/// [`Analysis::Unparsed`] when the tree has an error. For a class without a
+/// grammar the result is [`Analysis::Unparsed`] as well.
 pub fn analyze(text: &str, class: Class) -> Analysis {
     analyze_at_most(text, class, usize::MAX).expect("no unit limit")
 }
@@ -900,13 +900,12 @@ pub fn analyze(text: &str, class: Class) -> Analysis {
 /// `max_units` units, the `file` unit included. Work stops there: no unit
 /// past the limit is fingerprinted or kept.
 pub fn analyze_at_most(text: &str, class: Class, max_units: usize) -> Option<Analysis> {
-    let blocks = |text| text_units_at_most(text, max_units.saturating_sub(1)).map(Analysis::Text);
     let Some(tree) = parse(text, class) else {
-        return blocks(text);
+        return Some(Analysis::Unparsed);
     };
     let root = tree.root_node();
     if root.has_error() {
-        return blocks(text);
+        return Some(Analysis::Unparsed);
     }
     code_units(root, text, class, max_units).map(Analysis::Code)
 }
@@ -1425,7 +1424,7 @@ mod tests {
     fn code(text: &str, class: Class) -> CodeFile {
         match analyze(text, class) {
             Analysis::Code(f) => f,
-            Analysis::Text(_) => panic!("{text:?} did not parse as {class:?}"),
+            Analysis::Unparsed => panic!("{text:?} did not parse as {class:?}"),
         }
     }
 
@@ -1697,7 +1696,7 @@ mod tests {
                 for (class, src) in sources {
                     match analyze(&src, class) {
                         Analysis::Code(f) => assert!(f.units.len() >= 2, "{class:?}"),
-                        Analysis::Text(units) => assert_eq!(units.len(), 1, "{class:?}"),
+                        Analysis::Unparsed => {}
                     }
                 }
             })
@@ -1998,11 +1997,16 @@ mod tests {
     }
 
     #[test]
-    fn parse_error_falls_back_to_text_blocks() {
-        let Analysis::Text(units) = analyze("def f(:\n    pass\n\n\n  x = 1  \n", Class::Python)
-        else {
-            panic!("expected the text fallback");
-        };
+    fn a_parse_error_gives_no_units() {
+        assert_eq!(
+            analyze("def f(:\n    pass\n\n\n  x = 1  \n", Class::Python),
+            Analysis::Unparsed
+        );
+    }
+
+    #[test]
+    fn text_blocks_are_runs_of_non_blank_lines() {
+        let units = text_units("def f(:\n    pass\n\n\n  x = 1  \n");
         let spans: Vec<(usize, usize, usize, usize)> = units
             .iter()
             .map(|u| (u.start, u.end, u.line, u.end_line))
@@ -2156,7 +2160,7 @@ mod tests {
         // limit, not by the input: doubling the input leaves it unchanged.
         const MAX: usize = 10;
         type Make = Box<dyn Fn(usize) -> String>;
-        let inputs: [(&str, Make, Class); 4] = [
+        let inputs: [(&str, Make, Class); 3] = [
             (
                 "top-level statements",
                 Box::new(|n| "f();\n".repeat(n)),
@@ -2171,11 +2175,6 @@ mod tests {
                 "members of one class",
                 Box::new(|n| format!("class C {{\n{}}}\n", "m() {}\n".repeat(n))),
                 Class::Typescript,
-            ),
-            (
-                "text blocks of a file that does not parse",
-                Box::new(|n| format!("def f(:\n\n{}", "x = 1\n\n".repeat(n))),
-                Class::Python,
             ),
         ];
         for (what, make, class) in &inputs {

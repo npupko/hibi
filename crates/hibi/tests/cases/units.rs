@@ -5,16 +5,6 @@ use serde_json::{Value, json};
 
 use crate::harness::{Case, cases_dir, expect_eq, str_field};
 
-/// The `file` unit of section 6.2 as a case object.
-fn file_unit(text: &str) -> Value {
-    let last = text.char_indices().last().map_or(0, |(i, _)| i);
-    json!({
-        "kind": "file", "symbol": null, "key": "file", "parent": null,
-        "start": 0, "end": text.len(), "line": 1,
-        "endLine": hibi::text::line_at(text, last),
-    })
-}
-
 /// A content key `<kind>:<12 hex>` with an optional `~n` matches the
 /// expected `<kind>:*` with the same suffix: the 12 hex digits come from a
 /// digest that the case author could not compute by hand.
@@ -69,12 +59,7 @@ pub fn units_code(case: &Case) -> Result<(), String> {
                 .map(|u| (u.kind, u.key.as_str(), &u.fp))
                 .collect::<Vec<_>>(),
         )?,
-        Analysis::Text(blocks) => check_content_keys(
-            &blocks
-                .iter()
-                .map(|u| ("block", u.key.as_str(), &u.fp))
-                .collect::<Vec<_>>(),
-        )?,
+        Analysis::Unparsed => return Err(format!("{fixture} did not parse")),
     }
     let (class_name, mut got) = match code::analyze(&text, class) {
         Analysis::Code(f) => (
@@ -89,16 +74,7 @@ pub fn units_code(case: &Case) -> Result<(), String> {
                 })
                 .collect::<Vec<_>>(),
         ),
-        Analysis::Text(blocks) => {
-            let mut v = vec![file_unit(&text)];
-            v.extend(blocks.iter().map(|u| {
-                json!({
-                    "kind": "block", "symbol": null, "key": u.key, "parent": "file",
-                    "start": u.start, "end": u.end, "line": u.line, "endLine": u.end_line,
-                })
-            }));
-            ("text", v)
-        }
+        Analysis::Unparsed => return Err(format!("{fixture} did not parse")),
     };
     expect_eq("class", class_name, str_field(&case.expected, "class"))?;
     let want = case.expected["units"]
