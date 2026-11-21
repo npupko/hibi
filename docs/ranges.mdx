@@ -47,12 +47,15 @@ hibi status --since main
 
 ```text output
 3 claims: 1 fresh, 1 stale, 0 expired, 1 retired
-since main (base d967cf1843ff103997aa766b6829cf2eaa3e7f68)
+since main (base 32b3fd00695881dadd52fbd5d012948dfb58754f)
 
-c1-6exasfv5q6wh17yqtfmn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T06:50:04Z (m1-62g83g3n46qy4xznn4hn)
+c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
+  marked 2026-11-21T08:59:35Z (m1-vbakkjbbz7xhfn7hz799)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  function "delay_ms", lines 5-7
-  next: hibi mark c1-6exasfv5q6wh17yqtfmn
+    | pub fn delay_ms(n: u32) -> u64 {
+    |     200 << n
+    | }
+  next: hibi mark c1-xwck2bdefbx39g56m7dn
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
@@ -60,7 +63,7 @@ Re-check each statement before running its next command. If it no longer holds, 
 The rewrite computes the same values, so the statement still holds:
 
 ```bash
-hibi mark c1-6exa --note "200 << n equals 200 * 2^n" --by agent:claude
+hibi mark c1-xwck --note "200 << n equals 200 * 2^n" --by agent:claude
 ```
 
 `--since` can be combined with `--loc`. It cannot be combined with `--state`
@@ -78,7 +81,7 @@ hibi cover --since main
 ```
 
 ```text output
-since main (base d967cf1843ff103997aa766b6829cf2eaa3e7f68)
+since main (base 32b3fd00695881dadd52fbd5d012948dfb58754f)
 docs (file:docs/**/*.md; sentence, list-item, table-row): 1 unit, 0 covered, 0 excluded, 1 uncovered
   file:docs/retry.md
         9  sentence  Each attempt times out after 10 seconds.
@@ -89,7 +92,7 @@ are not evaluated with `--since`, and say so:
 
 ```text output
 $ HIBI_CONFIG=user.toml hibi cover --since main --scope notes
-since main (base 2bf9031bfa64a1492ca064dc90294aa9df75ca1a)
+since main (base 9b4eae82bda0cdacb56fad7ad65fedefa8234aef)
 notes (ref:notes; note): 0 units, 0 covered, 0 excluded, 0 uncovered
   not evaluated: --since works only for scopes on scheme "file"
 ```

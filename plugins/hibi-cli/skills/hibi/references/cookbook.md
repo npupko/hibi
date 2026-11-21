@@ -46,7 +46,7 @@ hibi claim "The client gives up after 5 attempts." \
 ```
 
 ```text output
-c1-dbv50xcvkr3wg5jnbtfw  created  m1-2rtrj0b7e1yasz41tm0s  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-c5dm2jvhr8hb36rx5rgm  created  m1-pdfqery1ae16y8n6r17r  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 ## 3. Start of a session: a statement is no longer true
@@ -58,10 +58,11 @@ hibi status
 ```text output
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
-c1-dbv50xcvkr3wg5jnbtfw  stale  The client gives up after 5 attempts.
-  marked 2026-11-21T06:50:02Z (m1-2rtrj0b7e1yasz41tm0s)
+c1-c5dm2jvhr8hb36rx5rgm  stale  The client gives up after 5 attempts.
+  marked 2026-11-21T08:59:34Z (m1-pdfqery1ae16y8n6r17r)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  variable "MAX_ATTEMPTS", line 2
-  next: hibi mark c1-dbv50xcvkr3wg5jnbtfw
+    | pub const MAX_ATTEMPTS: u32 = 3;
+  next: hibi mark c1-c5dm2jvhr8hb36rx5rgm
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
@@ -72,19 +73,21 @@ purpose), fix the document to "It gives up after 3 attempts." and replace the
 claim. If you do not know which is right, ask the user.
 
 ```bash
-hibi reanchor c1-dbv5 \
+hibi reanchor c1-c5dm \
   --statement "The client gives up after 3 attempts." \
   --subject "file:docs/retry.md::gives up after 3 attempts"
 ```
 
 ```text output
-c1-dbv50xcvkr3wg5jnbtfw is retired and replaced by the new claim c1-24t09j90dg85esm4e3e9
-  mark m1-wf5ewq7ww6kpzqc9mg3r, retirement r1-80fwz45fsm0kprh27eys
+c1-c5dm2jvhr8hb36rx5rgm is retired and replaced by the new claim c1-2kfx78rwbb7wyxwst92f
+  mark m1-hqfvdhzhh3k5hf7hanm4, retirement r1-kzkbw96d81jyq607m4sy
   was stale: subject file:docs/retry.md missing (not_exact); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked them
+    evidence 1 is now:
+    | pub const MAX_ATTEMPTS: u32 = 3;
   subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4)
-    {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
+    {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"It","suffix":".","within":["Retries","The client retries a failed download."]}}
   evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
-    {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 3;","prefix":"\n","suffix":"\n\n","pos":62,"symbol":"MAX_ATTEMPTS"}}
+    {"loc":"file:src/retry.rs","sel":{"symbol":"MAX_ATTEMPTS"}}
 ```
 
 ```bash
@@ -113,7 +116,7 @@ EOF
 ```
 
 ```text output
-c1-6exasfv5q6wh17yqtfmn  created  m1-62g83g3n46qy4xznn4hn  subject file:docs/retry.md (sentence "The delay between attempts doubles each time, starting at 2…", line 5); evidence 1 file:src/retry.rs (function "delay_ms", lines 5-7)
+c1-xwck2bdefbx39g56m7dn  created  m1-vbakkjbbz7xhfn7hz799  subject file:docs/retry.md (sentence "The delay between attempts doubles each time, starting at 2…", line 5); evidence 1 file:src/retry.rs (function "delay_ms", lines 5-7)
 ```
 
 If any element fails, nothing is written and each failure carries its index:
@@ -132,12 +135,15 @@ hibi status --since main
 
 ```text output
 3 claims: 1 fresh, 1 stale, 0 expired, 1 retired
-since main (base d967cf1843ff103997aa766b6829cf2eaa3e7f68)
+since main (base 32b3fd00695881dadd52fbd5d012948dfb58754f)
 
-c1-6exasfv5q6wh17yqtfmn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T06:50:04Z (m1-62g83g3n46qy4xznn4hn)
+c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
+  marked 2026-11-21T08:59:35Z (m1-vbakkjbbz7xhfn7hz799)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  function "delay_ms", lines 5-7
-  next: hibi mark c1-6exasfv5q6wh17yqtfmn
+    | pub fn delay_ms(n: u32) -> u64 {
+    |     200 << n
+    | }
+  next: hibi mark c1-xwck2bdefbx39g56m7dn
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
@@ -145,12 +151,16 @@ Re-check each statement before running its next command. If it no longer holds, 
 Re-check: `200 << n` equals `200 * 2^n`. The statement holds:
 
 ```bash
-hibi mark c1-6exa --note "200 << n equals 200 * 2^n" --by agent:claude
+hibi mark c1-xwck --note "200 << n equals 200 * 2^n" --by agent:claude
 ```
 
 ```text output
-c1-6exasfv5q6wh17yqtfmn  marked  m1-eddvp5ecpntrd5f3q2pf
+c1-xwck2bdefbx39g56m7dn  marked  m1-t1r68ygfdz8m7zfjymxm
   was stale: evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked it
+    evidence 1 is now:
+    | pub fn delay_ms(n: u32) -> u64 {
+    |     200 << n
+    | }
 ```
 
 ## 6. New text on a branch with no claim
@@ -162,7 +172,7 @@ hibi cover --since main
 ```
 
 ```text output
-since main (base d967cf1843ff103997aa766b6829cf2eaa3e7f68)
+since main (base 32b3fd00695881dadd52fbd5d012948dfb58754f)
 docs (file:docs/**/*.md; sentence, list-item, table-row): 1 unit, 0 covered, 0 excluded, 1 uncovered
   file:docs/retry.md
         9  sentence  Each attempt times out after 10 seconds.
@@ -184,35 +194,39 @@ hibi claim "Each attempt times out after 10 seconds." \
 claim is listed as expired:
 
 ```text output
-c1-zfv9r5t784m0vnty4fv9  expired  Each attempt times out after 10 seconds.
-  marked 2026-08-01T09:00:00Z (m1-w0yyhnc63nzdvsk0kjb9), recheck P90D ran out at 2026-10-30T09:00:00Z
-  next: hibi mark c1-zfv9r5t784m0vnty4fv9
+c1-xqhbms40kkesq10rxjen  expired  Each attempt times out after 10 seconds.
+  marked 2026-08-01T09:00:00Z (m1-z265p8tcpb68zsvzet3x), recheck P90D ran out at 2026-10-30T09:00:00Z
+  next: hibi mark c1-xqhbms40kkesq10rxjen
 ```
 
-## 7. The same claim again after a nearby edit
+## 7. The same claim again, with another anchor
 
-The heading above the sentence changed from "Retries" to "Retries and
-delays". The sentence itself did not change, so its claim stays fresh.
-Running the original claim command again marks the existing claim instead
-of creating a second one:
+The claim on "It gives up after 3 attempts." was made with the quote
+`gives up after 3 attempts`. Claiming it again with the whole sentence marks
+the existing claim instead of creating a second one, because every side
+resolves to the same unit:
 
 ```bash
 hibi claim "The client gives up after 3 attempts." \
-  --subject "file:docs/retry.md::gives up after 3 attempts" \
+  --subject "file:docs/retry.md::It gives up after 3 attempts." \
   --evidence "file:src/retry.rs#MAX_ATTEMPTS"
 ```
 
 ```text output
-c1-24t09j90dg85esm4e3e9  marked  m1-j0cgjpawvb5nveq0emx6  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-2kfx78rwbb7wyxwst92f  marked  m1-6hscmehqkbswsx2a3wbw  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
+
+This works only while the existing claim's sides resolve. After its
+heading is renamed, for example, the subject is `missing`, and the same
+command writes a second claim; re-anchor the existing claim instead.
 
 ## 8. A documented sentence was edited
 
-"doubles each time" became "doubles every time". Editing a sentence at its
-quoted words, or right around them, does not make the side `changed`: the
-subject is `missing` (`not_exact`), and the edited sentence is listed as a
-candidate. An edit elsewhere in a long sentence, away from the quote, gives
-`changed` instead, and then `mark` is the step, as for code:
+"doubles each time" became "doubles every time". The claim quoted the whole
+sentence, so its quoted words changed: the subject is `missing`
+(`not_exact`), and the edited sentence is listed as a candidate. An edit
+elsewhere in a long sentence, away from a shorter quote, gives `changed`
+instead, and then `mark` is the step, as for code:
 
 ```bash
 hibi status
@@ -221,20 +235,20 @@ hibi status
 ```text output
 4 claims: 1 fresh, 1 stale, 1 expired, 1 retired
 
-c1-6exasfv5q6wh17yqtfmn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T06:50:04Z (m1-eddvp5ecpntrd5f3q2pf)
+c1-xqhbms40kkesq10rxjen  expired  Each attempt times out after 10 seconds.
+  marked 2026-08-01T09:00:00Z (m1-z265p8tcpb68zsvzet3x), recheck P90D ran out at 2026-10-30T09:00:00Z
+  next: hibi mark c1-xqhbms40kkesq10rxjen
+
+c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
+  marked 2026-11-21T08:59:35Z (m1-t1r68ygfdz8m7zfjymxm)
   subject  file:docs/retry.md  missing (not_exact)
-    the anchor matches no unit exactly
+    the stored anchor no longer identifies one unit
     stored: quote "The delay between attempts doubles each time, starting at 200 ms."
     1 candidate; each is a guess, read it before you anchor to it:
     - sentence "The delay between attempts doubles every time, starting at …", line 5
       | The delay between attempts doubles every time, starting at 200 ms.
-      anchor: {"loc":"file:docs/retry.md","sel":{"quote":"The delay between attempts doubles every time, starting at 200 ms.","prefix":" failed download.\nIt gives up after 3 attempts.\n","suffix":"\n\n## Timeouts\n\nEach attempt times out after 10 s","pos":90}}
-  next: hibi reanchor c1-6exasfv5q6wh17yqtfmn --subject <anchor>
-
-c1-zfv9r5t784m0vnty4fv9  expired  Each attempt times out after 10 seconds.
-  marked 2026-08-01T09:00:00Z (m1-w0yyhnc63nzdvsk0kjb9), recheck P90D ran out at 2026-10-30T09:00:00Z
-  next: hibi mark c1-zfv9r5t784m0vnty4fv9
+      anchor: {"loc":"file:docs/retry.md","sel":{"quote":"The delay between attempts doubles every time, starting at 200 ms.","prefix":"","suffix":"","within":["Retries","The client retries a failed download."]}}
+  next: hibi reanchor c1-xwck2bdefbx39g56m7dn --subject <anchor>
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
@@ -242,12 +256,12 @@ Re-check each statement before running its next command. If it no longer holds, 
 A candidate is a guess, so `mark` refuses the claim:
 
 ```bash
-hibi mark c1-6exa --by agent:claude
+hibi mark c1-xwck --by agent:claude
 ```
 
 ```text output
-error: side_missing: the subject (file:docs/retry.md) resolves to no unit (not_exact): the anchor matches no unit exactly; 1 candidate, each a guess to check before use: sentence "The delay between attempts doubles every time, starting at 200 ms.", line 5: {"loc":"file:docs/retry.md","sel":{"quote":"The delay between attempts doubles every time, starting at 200 ms.","prefix":" failed download.\nIt gives up after 3 attempts.\n","suffix":"\n\n## Timeouts\n\nEach attempt times out after 10 s","pos":90}}
-  fix: hibi reanchor c1-6exasfv5q6wh17yqtfmn --subject <anchor>
+error: side_missing: the subject (file:docs/retry.md) resolves to no unit (not_exact): the stored anchor no longer identifies one unit; 1 candidate, each a guess to check before use: sentence "The delay between attempts doubles every time, starting at 200 ms.", line 5: {"loc":"file:docs/retry.md","sel":{"quote":"The delay between attempts doubles every time, starting at 200 ms.","prefix":"","suffix":"","within":["Retries","The client retries a failed download."]}}
+  fix: hibi reanchor c1-xwck2bdefbx39g56m7dn --subject <anchor>
 ```
 
 Read the candidate. It is the same sentence, and the statement still holds,
@@ -256,17 +270,17 @@ would fix the text or retire the claim instead. The candidate's anchor works, an
 of your own:
 
 ```bash
-hibi reanchor c1-6exa --subject 'file:docs/retry.md::doubles every time'
+hibi reanchor c1-xwck --subject 'file:docs/retry.md::doubles every time'
 ```
 
 ```text output
-c1-6exasfv5q6wh17yqtfmn is retired and replaced by the new claim c1-mdm107xhmdkbrfbr7awv
-  mark m1-a52vh20fpy6e9exadaze, retirement r1-e3f420hb3racfmp93078
+c1-xwck2bdefbx39g56m7dn is retired and replaced by the new claim c1-2axv59jx0ztvfjd1adn9
+  mark m1-ftgmt0z1dxzkah7p07z4, retirement r1-9vaxgfrhvjw5fbgnz6se
   was stale: subject file:docs/retry.md missing (not_exact); now marked: make sure you re-checked it
   subject file:docs/retry.md (sentence "The delay between attempts doubles every time, starting at …", line 5)
-    {"loc":"file:docs/retry.md","sel":{"quote":"doubles every time","prefix":"up after 3 attempts.\nThe delay between attempts ","suffix":", starting at 200 ms.\n\n## Timeouts\n\nEach attempt","pos":117}}
+    {"loc":"file:docs/retry.md","sel":{"quote":"doubles every time","prefix":"The delay between attempts","suffix":", starting at 200 ms.","within":["Retries","The client retries a failed download."]}}
   evidence 1 file:src/retry.rs (function "delay_ms", lines 5-7)
-    {"loc":"file:src/retry.rs","sel":{"quote":"pub fn delay_ms(n: u32) -> u64 {","prefix":"\n","suffix":"\n    200 << n\n}\n","pos":147,"symbol":"delay_ms"}}
+    {"loc":"file:src/retry.rs","sel":{"symbol":"delay_ms"}}
 ```
 
 The old claim is retired into the new one, and `status` no longer lists it.
@@ -280,15 +294,15 @@ hibi status
 ```text output
 5 claims: 1 fresh, 1 stale, 1 expired, 2 retired
 
-c1-24t09j90dg85esm4e3e9  stale  The client gives up after 3 attempts.
-  marked 2026-11-21T06:50:05Z (m1-j0cgjpawvb5nveq0emx6)
+c1-2kfx78rwbb7wyxwst92f  stale  The client gives up after 3 attempts.
+  marked 2026-11-21T08:59:35Z (m1-6hscmehqkbswsx2a3wbw)
   subject  file:docs/retry.md  missing (selector_not_found)
     stored: quote "gives up after 3 attempts"
-  next: hibi reanchor c1-24t09j90dg85esm4e3e9 --subject <anchor>
+  next: hibi reanchor c1-2kfx78rwbb7wyxwst92f --subject <anchor>
 
-c1-zfv9r5t784m0vnty4fv9  expired  Each attempt times out after 10 seconds.
-  marked 2026-08-01T09:00:00Z (m1-w0yyhnc63nzdvsk0kjb9), recheck P90D ran out at 2026-10-30T09:00:00Z
-  next: hibi mark c1-zfv9r5t784m0vnty4fv9
+c1-xqhbms40kkesq10rxjen  expired  Each attempt times out after 10 seconds.
+  marked 2026-08-01T09:00:00Z (m1-z265p8tcpb68zsvzet3x), recheck P90D ran out at 2026-10-30T09:00:00Z
+  next: hibi mark c1-xqhbms40kkesq10rxjen
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
@@ -297,11 +311,11 @@ If the sentence moved, give its new anchor with `--subject`. Here it was
 removed on purpose, so retire the claim:
 
 ```bash
-hibi retire c1-24t0 --note "The docs no longer state the attempt limit."
+hibi retire c1-2kfx --note "The docs no longer state the attempt limit."
 ```
 
 ```text output
-c1-24t09j90dg85esm4e3e9  retired  r1-7b73jvyqczfebe4xtzpr
+c1-2kfx78rwbb7wyxwst92f  retired  r1-yxm06xchd4ax4ggtgh2n
 ```
 
 ## 10. Anchor to a struct field, not its doc comment
@@ -319,7 +333,7 @@ Anchor the field itself by its symbol:
 
 ```text output
 $ hibi claim "The request timeout is stored in whole seconds." --subject "file:README.md::stored in whole seconds" --evidence "file:src/config.rs#Config.timeout_secs"
-c1-d0a4yrq9pmv59dc0ggqa  created  m1-rzthd1vtje44jymae3qc  subject file:README.md (sentence "The request timeout is stored in whole seconds.", line 4); evidence 1 file:src/config.rs (field "Config.timeout_secs", line 5)
+c1-796bxye5q996vzq2w0y9  created  m1-1tvh90een18kkqkwy2ew  subject file:README.md (sentence "The request timeout is stored in whole seconds.", line 4); evidence 1 file:src/config.rs (field "Config.timeout_secs", line 5)
 ```
 
 A Python docstring is a string and can be quoted:
@@ -336,15 +350,15 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
 ```
 
 ```text output
-c1-regrhf1hta0k48q82xea  created  m1-tx8vtsd1sa7sgcpkbk9x  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-kh88fbb9hctgd1v08923  created  m1-hcx8k9x68n3bah0p62q2  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 Without the user's registration the side is unavailable and nothing runs.
 Tell the user; do not edit their config unasked:
 
 ```text output
-c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T06:50:07Z (m1-tx8vtsd1sa7sgcpkbk9x)
+c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
+  marked 2026-11-21T08:49:17Z (m1-hcx8k9x68n3bah0p62q2)
   subject  ref:notes  unavailable (provider_not_registered)
     the user config has no provider command for scheme ref
   next: hibi providers
@@ -353,17 +367,17 @@ c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
 ## 12. Look at a claim's history
 
 ```bash
-hibi list c1-dbv5
+hibi list c1-c5dm
 ```
 
 ```text output
-c1-dbv50xcvkr3wg5jnbtfw
+c1-c5dm2jvhr8hb36rx5rgm
   statement: The client gives up after 5 attempts.
-  subject: {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 5 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
-  evidence 1: {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 5;","prefix":"\n","suffix":"\n\n","pos":62,"symbol":"MAX_ATTEMPTS"}}
+  subject: {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 5 attempts","prefix":"It","suffix":".","within":["Retries","The client retries a failed download."]}}
+  evidence 1: {"loc":"file:src/retry.rs","sel":{"symbol":"MAX_ATTEMPTS"}}
 1 mark:
-  m1-2rtrj0b7e1yasz41tm0s  2026-11-21T06:50:02Z
+  m1-pdfqery1ae16y8n6r17r  2026-11-21T08:59:34Z
     file:docs/retry.md  b3:prose-v1:0233c89ebf2069292e2778bdc7176396
     file:src/retry.rs  b3:ast-v1:fb3a4a42c90a9093fe98969b8a0018c0
-retired: r1-80fwz45fsm0kprh27eys  2026-11-21T06:50:03Z  replaced by c1-24t09j90dg85esm4e3e9
+retired: r1-kzkbw96d81jyq607m4sy  2026-11-21T08:59:34Z  replaced by c1-2kfx78rwbb7wyxwst92f
 ```

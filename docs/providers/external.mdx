@@ -49,8 +49,8 @@ with reason `provider_not_registered`, no command is run, and `next` is
 $ HIBI_CONFIG=none.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
-c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T06:50:07Z (m1-tx8vtsd1sa7sgcpkbk9x)
+c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
+  marked 2026-11-21T08:49:17Z (m1-hcx8k9x68n3bah0p62q2)
   subject  ref:notes  unavailable (provider_not_registered)
     the user config has no provider command for scheme ref
   next: hibi providers
@@ -91,7 +91,7 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
 ```
 
 ```text output
-c1-regrhf1hta0k48q82xea  created  m1-tx8vtsd1sa7sgcpkbk9x  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-kh88fbb9hctgd1v08923  created  m1-hcx8k9x68n3bah0p62q2  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 A selector key the provider did not list in `hello` is refused before
@@ -110,10 +110,11 @@ like any other:
 $ HIBI_CONFIG=user.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
-c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T06:50:07Z (m1-tx8vtsd1sa7sgcpkbk9x)
+c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
+  marked 2026-11-21T08:49:17Z (m1-hcx8k9x68n3bah0p62q2)
   subject  ref:notes  changed (fingerprint_differs)  note "Downloads are retried at most 4 times."
-  next: hibi mark c1-regrhf1hta0k48q82xea
+    | Downloads are retried at most 4 times.
+  next: hibi mark c1-kh88fbb9hctgd1v08923
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
@@ -224,13 +225,16 @@ the keys the provider listed in `selectors` in its `hello`:
 | Key | Meaning |
 |---|---|
 | `quote` | Text that occurs in the unit |
-| `prefix`, `suffix` | Up to 48 characters before and after the quote, as stored |
-| `pos` | The quote's byte offset when it was stored; a hint |
+| `prefix`, `suffix` | The text right before and after the quote, as your provider returned it in a `sel` |
+| `within` | The container of the unit, as your provider returned it in a `sel` |
 | `symbol` | A declaration path |
+| `count` | How many declarations the symbol named, as your provider returned it in a `sel` |
 | `key` | A unit key |
 
-Listing `quote` in `selectors` also allows `prefix`, `suffix` and `pos`. The
-empty selector `{}` is always allowed. A selector is closed: hibi never sends
+Listing `quote` in `selectors` also allows `prefix`, `suffix` and `within`;
+listing `symbol` also allows `count`. hibi sends these keys only when they
+are in a stored `sel` your provider returned. The empty selector `{}` is
+always allowed. A selector is closed: hibi never sends
 a key the provider did not list, and rejects a returned `sel` with an unknown
 key or an unlisted one.
 
@@ -246,9 +250,9 @@ key or an unlisted one.
 | `parent` | no, default `null` | Key of the enclosing unit. A claim on a unit also covers its ancestors. |
 | `label` | no | One line for people |
 | `range` | no | `{"start", "end", "line", "endLine"}`: UTF-8 byte offsets into the resource text (start inclusive, end exclusive) and 1-based line numbers. Leave it out when the resource is not text. |
-| `approx` | no, default `false` | In `resolve`: the selector did not match exactly, and the unit was found by similarity or fallback. hibi never resolves a side to such a unit: when any unit of an answer has `approx: true`, the side is `missing` with reason `not_exact` and the units are listed as its candidates. |
-| `contextChanged` | no, default `false` | In `resolve`, for a stored selector (one with `prefix`, `suffix` or `pos`): the quote was found exactly, but the text around it no longer equals the stored `prefix` and `suffix`; or, when a symbol names one declaration, the stored quote is not found in it at all. hibi then accepts the unit only if its fingerprint is one a mark of the claim recorded. Otherwise the side is `missing` (`not_exact`) with the unit as its candidate, or, for a selector with a `symbol`, `changed` with the detail "the stored quote is no longer in this unit". A provider that does not compare context leaves it `false`. |
-| `refuse` | no | In `resolve`: this resolution must not be used to create a claim or replace a side. One of `quote_spans_units` and `quote_in_comment`. |
+| `approx` | no, default `false` | In `resolve`: the unit is a candidate, not the unit the selector was made for. See [identity](#identity). |
+| `identity` | no | In `resolve`: `"symbol"` when the unit is resolved by its symbol alone because the selector's stored quote is no longer in the resource. hibi then reports the side `changed` with the detail "the stored quote is no longer in this unit", asks for a new anchor, and refuses `mark`. |
+| `refuse` | no | In `resolve`: this resolution must not be used to create a claim or replace a side. One of `quote_spans_units`, `quote_in_comment` and `quote_not_distinguishable`. |
 
 A fingerprint is `b3:<profile>:<hex>`: `b3` says the digest is BLAKE3,
 `<profile>` names how the provider normalized the content and matches
@@ -270,6 +274,28 @@ one `units` answer. A unit that fails is not used, and the side becomes
 `unavailable` with reason `provider_error`.
 
 Both sides ignore object keys they do not know, except inside a selector.
+
+### Identity
+
+Which unit a stored anchor names is decided by your provider alone. A unit
+returned without `approx` is your provider's statement that it is the unit
+the stored selector was made for. hibi checks nothing else: it compares that
+unit's fingerprint with the marks. A wrong answer makes a claim follow
+another unit, which can then be reported `fresh` while the text the claim
+was made for changed, or `stale` because of an unrelated change.
+
+When your provider cannot tell, return the units it could mean with
+`approx: true`. hibi never resolves a side to such a unit: when any unit of
+an answer has `approx: true`, the side is `missing` with reason `not_exact`,
+and every unit of the answer is listed as a candidate for the agent to
+choose. One unit without `approx` resolves the side. Several units without
+`approx` make it `ambiguous`.
+
+The reference provider resolves by `key`, by `quote` (every unit containing
+it) or by both, and never returns `approx`. A quote that moved to another
+unit, together with a `key`, gives no unit: the key still names its unit,
+the quote is no longer in it, so the side is `missing`, never the unit the
+quote moved to.
 
 ### Errors
 
@@ -334,8 +360,16 @@ within 2 seconds of the end of input. After an `unsupported_protocol` answer
 the provider may keep running or exit.
 They do not check how `resolve` matches, the content of `units` or
 `render`, or fingerprints; test those with claims of your own. A failing case is
-reported and does not make the command fail. The scheme must be declared in
-`.hibi/hibi.toml` first:
+reported and does not make the command fail. The built-in schemes `file`
+and `repo` have no provider command, so there is nothing to check:
+
+```text output
+$ HIBI_CONFIG=user.toml hibi providers --check file
+error: invalid_argument: the scheme "file" is served by hibi itself: it has no provider command to check
+  fix: Nothing to check: file and repo are built in and need no entry in .hibi/hibi.toml. hibi providers lists every scheme.
+```
+
+Any other scheme must be declared in `.hibi/hibi.toml` first:
 
 ```text output
 $ HIBI_CONFIG=user.toml hibi providers --check ref

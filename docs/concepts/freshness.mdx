@@ -7,7 +7,7 @@ description: "The one rule that decides whether a claim is fresh, stale, expired
 The examples continue the repository from the [quickstart](/quickstart).
 Later in that repository's history `docs/retry.md` gains a section
 `## Timeouts` with the sentence "Each attempt times out after 10 seconds.",
-and the claim `c1-6exa` on its delay sentence is recorded as in the
+and the claim `c1-xwck` on its delay sentence is recorded as in the
 [ranges](/ranges) page. Ids are the ones those runs printed.
 </Note>
 
@@ -43,14 +43,14 @@ Consequences:
 | State | Reason | Meaning |
 |---|---|---|
 | `same` | | The unit's fingerprint equals the one in the reference mark |
-| `changed` | `fingerprint_differs` | The unit was found and its fingerprint differs. When a symbol's quoted text is gone from the declaration entirely, `detail` says "the stored quote is no longer in this unit" |
+| `changed` | `fingerprint_differs` | The unit was found and its fingerprint differs. For a `#name::<line>` anchor whose line was edited or removed, `detail` says "the stored quote is no longer in this unit", and `next` is a `reanchor` |
 | `changed` | `no_mark` | The claim has no mark |
 | `missing` | `selector_not_found` | The resource exists, but no unit matches the anchor |
-| `missing` | `not_exact` | No unit matches the anchor exactly, or the quote was found exactly but nothing confirms the unit is the marked one; `detail` says which. `candidates` lists the units it could mean |
+| `missing` | `not_exact` | The stored anchor no longer identifies one unit; `detail` says why. `candidates` lists the units it could mean |
 | `missing` | `resource_not_found` | The file or resource does not exist |
-| `ambiguous` | `several_units` | The anchor matches several units; `candidates` lists them |
-| `unavailable` | `profile_mismatch` | The fingerprints use different profiles, for example a whole code file that no longer parses |
-| `unavailable` | `resource_unavailable` | The resource exists but cannot be read now: a code file that does not parse, for an anchor with a symbol, or git's file list cannot be read |
+| `ambiguous` | `several_units` | The anchor matches several units, for example a name that now has a second declaration; `candidates` lists them |
+| `unavailable` | `profile_mismatch` | The fingerprints use different profiles, for example a quote on top-level code in a file that no longer parses |
+| `unavailable` | `resource_unavailable` | The resource exists but cannot be read now: a code file that does not parse, for an anchor with a symbol or on the whole file, or git's file list cannot be read |
 | `unavailable` | `scheme_not_declared` | The locator's scheme is not declared in `.hibi/hibi.toml`, for example after its declaration was removed |
 | `unavailable` | `provider_not_registered` | The scheme is declared, but your user config has no command for it. No command is run. |
 | `unavailable` | `provider_failed` | The provider command could not start, timed out, broke the protocol or was killed |
@@ -59,30 +59,36 @@ Consequences:
 | `unavailable` | `not_text`, `too_large` | The file is not valid UTF-8, or is too large: a code file over 2 MiB, another file over 8 MiB, or more than 100,000 units |
 | `unavailable` | `repo_not_found`, `repo_not_allowed` | A sibling repository could not be used (see [configuration](/configuration#sibling-repositories)) |
 
-A side is never resolved by similarity, and an exact match of a stored quote
-counts only when the text around it, or the unit's content, is what was
-marked (see [anchors](/concepts/anchors#an-exact-match-needs-corroboration)).
-In practice:
+A side is never resolved by similarity or by content. A stored anchor
+identifies its unit by name (`#name`) or by place (a quote in its container,
+with the text right around it unchanged); everything else is a candidate
+(see [anchors](/concepts/anchors#how-a-stored-anchor-finds-its-unit)). In
+practice:
 
-- **Code under a symbol is `changed`** when the declaration was edited. Read
-  the change, re-check, and `hibi mark` the claim if it still holds.
-- **A sentence edited at the quoted words, or right around them, is
-  `missing`** (`not_exact`), with the edited sentence as a candidate. Read
-  it, re-check, and `hibi reanchor` the side to the candidate's anchor if
-  the statement still holds. `mark` refuses the claim.
+- **Code under a `#name` is `changed`** when the declaration was edited.
+  Read the change, re-check, and `hibi mark` the claim if it still holds.
+  When the line of a `#name::<line>` anchor was edited, `next` is a
+  `reanchor` with the new line, and `mark` is refused.
+- **A sentence edited at the quoted words, or right around a quoted
+  phrase, is `missing`** (`not_exact`). Read the candidates and the file,
+  re-check, and `hibi reanchor` the side if the statement still holds.
+  `mark` refuses the claim.
 - **A sentence edited elsewhere, away from the quote, is `changed`**, as
   for code.
-- **An edit next to the sentence, or a move of the unchanged sentence,
-  changes nothing.** The claim stays fresh.
+- **An edit to a neighbouring sentence changes nothing**, unless it is the
+  first sentence of the paragraph, which names the paragraph. Then the
+  paragraph's other claims are `missing`, with their unchanged sentences
+  listed first. A renamed heading, a sentence moved to another paragraph,
+  and a renamed function around a quote do the same.
 
-A candidate is a guess at where the unit went, for you to read; the side
-stays `missing` until you re-anchor it.
+A candidate is a guess for you to read; the side stays `missing` until you
+re-anchor it.
 
 An unavailable side also carries `detail`, the message that says why, from
 the provider or from hibi, and `remediation`, what the limit or the cause is
 and what you can do. A `missing` side with reason `not_exact`, and a changed
-side whose quoted text is gone from its declaration, carry a `detail` as
-well. The text output prints both under
+side whose stored line is gone from its declaration, carry a `detail` as
+well. A `changed` side is followed by the unit's text as it is now. The text output prints both under
 the side. For a scheme whose declaration was
 removed:
 
@@ -90,8 +96,8 @@ removed:
 $ HIBI_CONFIG=user.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
-c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T06:50:07Z (m1-tx8vtsd1sa7sgcpkbk9x)
+c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
+  marked 2026-11-21T08:49:17Z (m1-hcx8k9x68n3bah0p62q2)
   subject  ref:notes  unavailable (scheme_not_declared)
     the scheme ref is not declared in .hibi/hibi.toml
     Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim.
@@ -134,9 +140,9 @@ claim expired although nothing changed:
 $ hibi status
 4 claims: 2 fresh, 0 stale, 1 expired, 1 retired
 
-c1-zfv9r5t784m0vnty4fv9  expired  Each attempt times out after 10 seconds.
-  marked 2026-08-01T09:00:00Z (m1-w0yyhnc63nzdvsk0kjb9), recheck P90D ran out at 2026-10-30T09:00:00Z
-  next: hibi mark c1-zfv9r5t784m0vnty4fv9
+c1-xqhbms40kkesq10rxjen  expired  Each attempt times out after 10 seconds.
+  marked 2026-08-01T09:00:00Z (m1-z265p8tcpb68zsvzet3x), recheck P90D ran out at 2026-10-30T09:00:00Z
+  next: hibi mark c1-xqhbms40kkesq10rxjen
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
@@ -155,7 +161,7 @@ fresh.
 |---|---|
 | `hibi status` | Stale and expired claims |
 | `hibi status --state fresh --state retired` | Claims in the given states |
-| `hibi status c1-dbv5 c1-24t0` | Exactly these claims, in any state |
+| `hibi status c1-c5dm c1-2kfx` | Exactly these claims, in any state |
 | `hibi status --loc 'file:src/**'` | Claims with a side whose locator matches the glob |
 | `hibi status --since main` | Stale claims that the changes since `main` caused; see [ranges](/ranges) |
 

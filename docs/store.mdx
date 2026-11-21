@@ -36,8 +36,8 @@ whitespace), and each shard is sorted by id. A claim line and a retirement
 line from the walkthrough:
 
 ```json output
-{"evidence":[{"loc":"file:src/retry.rs","sel":{"pos":62,"prefix":"\n","quote":"pub const MAX_ATTEMPTS: u32 = 3;","suffix":"\n\n","symbol":"MAX_ATTEMPTS"}}],"id":"c1-24t09j90dg85esm4e3e9","note":null,"recheck":null,"statement":"The client gives up after 3 attempts.","subject":{"loc":"file:docs/retry.md","sel":{"pos":52,"prefix":"tries\n\nThe client retries a failed download.\nIt ","quote":"gives up after 3 attempts","suffix":".\nThe delay between attempts doubles each time, "}}}
-{"at":"2026-11-21T06:50:03Z","by":null,"id":"r1-80fwz45fsm0kprh27eys","note":null,"replacedBy":"c1-24t09j90dg85esm4e3e9","retires":"c1-dbv50xcvkr3wg5jnbtfw"}
+{"evidence":[{"loc":"file:src/retry.rs","sel":{"symbol":"MAX_ATTEMPTS"}}],"id":"c1-2kfx78rwbb7wyxwst92f","note":null,"recheck":null,"statement":"The client gives up after 3 attempts.","subject":{"loc":"file:docs/retry.md","sel":{"prefix":"It","quote":"gives up after 3 attempts","suffix":".","within":["Retries","The client retries a failed download."]}}}
+{"at":"2026-11-21T08:59:34Z","by":null,"id":"r1-kzkbw96d81jyq607m4sy","note":null,"replacedBy":"c1-2kfx78rwbb7wyxwst92f","retires":"c1-c5dm2jvhr8hb36rx5rgm"}
 ```
 
 `hibi schema claim`, `hibi schema mark` and `hibi schema retirement` print

@@ -128,7 +128,7 @@ hibi claim "The client gives up after 5 attempts." \
 ```
 
 ```text output
-c1-dbv50xcvkr3wg5jnbtfw  created  m1-2rtrj0b7e1yasz41tm0s  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-c5dm2jvhr8hb36rx5rgm  created  m1-pdfqery1ae16y8n6r17r  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 Now someone changes `MAX_ATTEMPTS` to 3. In the next session the agent asks
@@ -141,10 +141,11 @@ hibi status
 ```text output
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
-c1-dbv50xcvkr3wg5jnbtfw  stale  The client gives up after 5 attempts.
-  marked 2026-11-21T06:50:02Z (m1-2rtrj0b7e1yasz41tm0s)
+c1-c5dm2jvhr8hb36rx5rgm  stale  The client gives up after 5 attempts.
+  marked 2026-11-21T08:59:34Z (m1-pdfqery1ae16y8n6r17r)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  variable "MAX_ATTEMPTS", line 2
-  next: hibi mark c1-dbv50xcvkr3wg5jnbtfw
+    | pub const MAX_ATTEMPTS: u32 = 3;
+  next: hibi mark c1-c5dm2jvhr8hb36rx5rgm
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
@@ -156,19 +157,21 @@ claim with one that states the new fact. An id can be shortened to a unique
 prefix:
 
 ```bash
-hibi reanchor c1-dbv5 \
+hibi reanchor c1-c5dm \
   --statement "The client gives up after 3 attempts." \
   --subject "file:docs/retry.md::gives up after 3 attempts"
 ```
 
 ```text output
-c1-dbv50xcvkr3wg5jnbtfw is retired and replaced by the new claim c1-24t09j90dg85esm4e3e9
-  mark m1-wf5ewq7ww6kpzqc9mg3r, retirement r1-80fwz45fsm0kprh27eys
+c1-c5dm2jvhr8hb36rx5rgm is retired and replaced by the new claim c1-2kfx78rwbb7wyxwst92f
+  mark m1-hqfvdhzhh3k5hf7hanm4, retirement r1-kzkbw96d81jyq607m4sy
   was stale: subject file:docs/retry.md missing (not_exact); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked them
+    evidence 1 is now:
+    | pub const MAX_ATTEMPTS: u32 = 3;
   subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4)
-    {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
+    {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"It","suffix":".","within":["Retries","The client retries a failed download."]}}
   evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
-    {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 3;","prefix":"\n","suffix":"\n\n","pos":62,"symbol":"MAX_ATTEMPTS"}}
+    {"loc":"file:src/retry.rs","sel":{"symbol":"MAX_ATTEMPTS"}}
 ```
 
 ```bash
@@ -204,11 +207,13 @@ A claim is **fresh** when some mark's fingerprints equal the current
 fingerprint of every side, and its recheck period, if any, has not run out. It
 is **stale** when no mark matches, **expired** when a mark matches but the
 period ran out, and **retired** when it was retired. Every side must resolve
-exactly. When the quoted words of a sentence, or the text right around them,
-are edited, the side is missing, and `hibi status` lists the edited sentence
-as a candidate. You read it, re-check the statement, and re-anchor the claim
-with `hibi reanchor`. An edit to the neighbouring sentences leaves the claim
-fresh.
+exactly. A stored anchor finds its unit by name (`#MAX_ATTEMPTS`, the
+declaration with that name) or by place (the quoted words, in their
+section and paragraph, with the text right around them unchanged). When the
+quoted words of a sentence are edited, the side is missing, and
+`hibi status` lists the units it could mean as candidates. You read them,
+re-check the statement, and re-anchor the claim with `hibi reanchor`. An
+edit to a neighbouring sentence leaves the claim fresh.
 
 ## Learn more
 

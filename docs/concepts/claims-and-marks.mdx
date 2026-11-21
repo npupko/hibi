@@ -7,7 +7,7 @@ description: "The three records hibi keeps: claims, marks and retirements."
 The examples continue the repository from the [quickstart](/quickstart).
 Later in that repository's history `docs/retry.md` gains a section
 `## Timeouts` with the sentence "Each attempt times out after 10 seconds.",
-and the claim `c1-6exa` on its delay sentence is recorded as in the
+and the claim `c1-xwck` on its delay sentence is recorded as in the
 [ranges](/ranges) page. Ids are the ones those runs printed.
 </Note>
 
@@ -48,12 +48,16 @@ moment. `hibi claim` writes the first mark itself. `hibi mark` adds another
 after a re-check. A claim can have any number of marks.
 
 ```bash
-hibi mark c1-6exa --note "200 << n equals 200 * 2^n" --by agent:claude
+hibi mark c1-xwck --note "200 << n equals 200 * 2^n" --by agent:claude
 ```
 
 ```text output
-c1-6exasfv5q6wh17yqtfmn  marked  m1-eddvp5ecpntrd5f3q2pf
+c1-xwck2bdefbx39g56m7dn  marked  m1-t1r68ygfdz8m7zfjymxm
   was stale: evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked it
+    evidence 1 is now:
+    | pub fn delay_ms(n: u32) -> u64 {
+    |     200 << n
+    | }
 ```
 
 `mark` requires every side to resolve to exactly one unit, exactly. A side
@@ -72,11 +76,11 @@ retired claim stays in the store, is no longer evaluated, and no longer covers
 anything.
 
 ```bash
-hibi retire c1-24t0 --note "The docs no longer state the attempt limit."
+hibi retire c1-2kfx --note "The docs no longer state the attempt limit."
 ```
 
 ```text output
-c1-24t09j90dg85esm4e3e9  retired  r1-7b73jvyqczfebe4xtzpr
+c1-2kfx78rwbb7wyxwst92f  retired  r1-yxm06xchd4ax4ggtgh2n
 ```
 
 `--replaced-by <claim-id>` names the claim that takes the place of the
@@ -90,7 +94,7 @@ claim that names the new one in `replacedBy`. Use it to change the statement,
 replace or add or drop an anchor, or change the `recheck` period or the note:
 
 ```bash
-hibi reanchor c1-dbv5 \
+hibi reanchor c1-c5dm \
   --statement "The client gives up after 3 attempts." \
   --subject "file:docs/retry.md::gives up after 3 attempts"
 ```
@@ -102,16 +106,17 @@ claim; the JSON result then has `"merged": true` and `new` is the id of the
 existing claim. Like `mark`, the result reports what
 the old claim was before the write.
 
-Without options, `reanchor` resolves every side again and stores the current
-selectors, with their current context. Every side must resolve exactly, as
+Without options, `reanchor` resolves every side again and stores each
+selector as it is completed now, with the current text around each quote and
+its current container. Every side must resolve exactly, as
 for `mark`. When nothing changed since the selectors were stored, it writes
 nothing. For a claim in another example repository whose files did not
 change:
 
 ```text output
-$ hibi reanchor c1-z8ra
-error: no_change: re-anchoring c1-z8raazy7mcj5yffz18hv would produce the same claim
-  fix: The stored anchors are up to date. To record a new check, run hibi mark c1-z8raazy7mcj5yffz18hv
+$ hibi reanchor c1-rp2q
+error: no_change: re-anchoring c1-rp2qmeyffhx5f4vs0sc3 would produce the same claim
+  fix: The stored anchors are up to date. To record a new check, run hibi mark c1-rp2qmeyffhx5f4vs0sc3
 ```
 
 Evidence numbers in `--evidence` and `--drop-evidence` are the numbers of
@@ -120,9 +125,9 @@ number too, also when a lower number is dropped in the same command. Here
 the declaration of evidence 2 was renamed from `RETRIES` to `MAX_RETRIES`:
 
 ```text output
-$ hibi reanchor c1-k32p --drop-evidence 1
-error: side_missing: evidence 2 (file:src/limits.py) resolves to no unit (not_exact): the anchor matches no unit exactly; 1 candidate, each a guess to check before use: variable "MAX_RETRIES", line 2: file:src/limits.py#MAX_RETRIES
-  fix: hibi reanchor c1-k32pw0pd0f6ffj9bx4rh --evidence 2=<anchor>
+$ hibi reanchor c1-70dn --drop-evidence 1
+error: side_missing: evidence 2 (file:src/limits.py) resolves to no unit (selector_not_found): the selector matches no unit
+  fix: hibi reanchor c1-70dnhqhzcddqnj6ry2dy --evidence 2=<anchor>
 ```
 
 Because `reanchor` writes a mark, run it only after you checked the statement.
@@ -142,42 +147,51 @@ the record. Two consequences:
 ## Running the same claim again
 
 Running the same `hibi claim` again adds a mark to the existing claim and
-prints `marked` instead of `created`. The stored anchors include the context
-around a quote (see [anchors](/concepts/anchors)), so after an edit near the
-quote the new claim would get a different id. hibi therefore looks for a live
-claim that is the same in every other respect: the same statement, `recheck`
-and `note`, the same number of sides with the same locators, and every side
-resolving to the same unit with the same symbol, and with the same quote
-where you gave a quote. If it finds one, it marks that claim (the one with
-the smallest id if there are several) and does not rewrite its stored
-anchors. The result says what the claim was before the mark. This is how a
-stale claim shows up when you claim it again with a symbol-only evidence
-anchor after the function changed:
+prints `marked` instead of `created`. The stored anchors hold the text around
+a quote and its container (see [anchors](/concepts/anchors)), and you may
+write an anchor differently the second time, so the new claim could get a
+different id. hibi therefore looks for a live claim that is the same in
+every other respect: the same statement, `recheck` and `note`, the same
+number of sides with the same locators, and every stored side resolving to
+the same unit as the anchor you gave. Selectors are not compared, so
+`#MAX_ATTEMPTS` and a quote on that constant name the same side, and so do a
+quote and a longer quote in one sentence. If it finds such a claim, it marks
+it (the one with the smallest id if there are several) and does not rewrite
+its stored anchors. The result says what the claim was before the mark. This
+is how a stale claim shows up when you claim it again after the function
+changed:
 
 ```text output
 $ hibi claim "Old entries are evicted first." --subject "file:docs/cache.md::evicted first" --evidence "file:src/cache.rs#evict"
-c1-j480e5y2qz6p0pxv37bf  marked  m1-pbr2htax419a5f7e92k6  subject file:docs/cache.md (sentence "Old entries are evicted first.", line 4); evidence 1 file:src/cache.rs (function "evict", line 8)
+c1-msg51e29yny7wkpesxnw  marked  m1-j3f4k474zx9f4jjme97j  subject file:docs/cache.md (sentence "Old entries are evicted first.", line 4); evidence 1 file:src/cache.rs (function "evict", line 8)
   was stale: evidence 1 file:src/cache.rs changed (fingerprint_differs); now marked: make sure you re-checked it
+    evidence 1 is now:
+    | pub fn evict() { drop_oldest(); }
 ```
 
 In JSON each entry carries `accepted`: `null` for a new claim, otherwise
 `{"was": <state before>, "sides": [...]}` listing the sides that were not
-`same`, each with `index`, `role`, `loc`, `state` and `reason`.
+`same`, each with `index`, `role`, `loc`, `state` and `reason`. The lines
+after "is now:" show the text that was accepted.
 
-Here the heading above the sentence changed from "Retries" to "Retries and
-delays", which changes the stored context of the quote:
+Here the claim was made with the quote `gives up after 3 attempts`, and is
+claimed again with the whole sentence:
 
 ```text output
-$ hibi claim "The client gives up after 3 attempts." --subject "file:docs/retry.md::gives up after 3 attempts" --evidence "file:src/retry.rs#MAX_ATTEMPTS"
-c1-24t09j90dg85esm4e3e9  marked  m1-j0cgjpawvb5nveq0emx6  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+$ hibi claim "The client gives up after 3 attempts." --subject "file:docs/retry.md::It gives up after 3 attempts." --evidence "file:src/retry.rs#MAX_ATTEMPTS"
+c1-2kfx78rwbb7wyxwst92f  marked  m1-6hscmehqkbswsx2a3wbw  subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
-In JSON the entry has `"created": false`. Only live claims are matched: after
-a claim is retired, the same command following a nearby edit creates a new
-claim.
+In JSON the entry has `"created": false`. A side of the existing claim must
+resolve to exactly one unit. When it is `missing` or `ambiguous`, for
+example after its heading was renamed, the existing claim is not the same
+claim, and `claim` writes a second one. Re-anchor the existing claim
+instead. Only live claims are matched: after a claim is retired, the same
+command creates a new claim, or fails with `claim_retired` when it builds
+exactly the retired claim.
 
 Commands accept a unique prefix of an id with at least 4 characters after the
-type prefix, such as `c1-dbv5`. A prefix that matches several records is the
+type prefix, such as `c1-c5dm`. A prefix that matches several records is the
 error `ambiguous_id`, and the message lists them.
 
 ## Reading the history
@@ -190,30 +204,30 @@ hibi list --retired
 ```
 
 ```text output
-c1-24t09j90dg85esm4e3e9  The client gives up after 3 attempts.  file:docs/retry.md  2 marks  last 2026-11-21T06:50:05Z  retired
-c1-6exasfv5q6wh17yqtfmn  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  2 marks  last 2026-11-21T06:50:04Z  retired
-c1-dbv50xcvkr3wg5jnbtfw  The client gives up after 5 attempts.  file:docs/retry.md  1 mark  last 2026-11-21T06:50:02Z  retired
-c1-mdm107xhmdkbrfbr7awv  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  1 mark  last 2026-11-21T06:50:05Z
-c1-zfv9r5t784m0vnty4fv9  Each attempt times out after 10 seconds.  file:docs/retry.md  1 mark  last 2026-08-01T09:00:00Z
+c1-2axv59jx0ztvfjd1adn9  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  1 mark  last 2026-11-21T08:59:35Z
+c1-2kfx78rwbb7wyxwst92f  The client gives up after 3 attempts.  file:docs/retry.md  2 marks  last 2026-11-21T08:59:35Z  retired
+c1-c5dm2jvhr8hb36rx5rgm  The client gives up after 5 attempts.  file:docs/retry.md  1 mark  last 2026-11-21T08:59:34Z  retired
+c1-xqhbms40kkesq10rxjen  Each attempt times out after 10 seconds.  file:docs/retry.md  1 mark  last 2026-08-01T09:00:00Z
+c1-xwck2bdefbx39g56m7dn  The delay doubles each time, starting at 200 ms.  file:docs/retry.md  2 marks  last 2026-11-21T08:59:35Z  retired
 ```
 
 With an id, `list` prints the stored claim, its marks in time order and its
 retirement:
 
 ```bash
-hibi list c1-dbv5
+hibi list c1-c5dm
 ```
 
 ```text output
-c1-dbv50xcvkr3wg5jnbtfw
+c1-c5dm2jvhr8hb36rx5rgm
   statement: The client gives up after 5 attempts.
-  subject: {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 5 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
-  evidence 1: {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 5;","prefix":"\n","suffix":"\n\n","pos":62,"symbol":"MAX_ATTEMPTS"}}
+  subject: {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 5 attempts","prefix":"It","suffix":".","within":["Retries","The client retries a failed download."]}}
+  evidence 1: {"loc":"file:src/retry.rs","sel":{"symbol":"MAX_ATTEMPTS"}}
 1 mark:
-  m1-2rtrj0b7e1yasz41tm0s  2026-11-21T06:50:02Z
+  m1-pdfqery1ae16y8n6r17r  2026-11-21T08:59:34Z
     file:docs/retry.md  b3:prose-v1:0233c89ebf2069292e2778bdc7176396
     file:src/retry.rs  b3:ast-v1:fb3a4a42c90a9093fe98969b8a0018c0
-retired: r1-80fwz45fsm0kprh27eys  2026-11-21T06:50:03Z  replaced by c1-24t09j90dg85esm4e3e9
+retired: r1-kzkbw96d81jyq607m4sy  2026-11-21T08:59:34Z  replaced by c1-2kfx78rwbb7wyxwst92f
 ```
 
 `--loc <glob>` keeps claims with a side whose locator matches, and

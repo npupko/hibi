@@ -1,11 +1,11 @@
 ---
 title: "Anchors and selectors"
-description: "How a claim points at a sentence, a function or a field, and finds it again after edits."
+description: "How a claim points at a sentence, a function or a field, and how it finds that unit again after edits."
 ---
 
 An anchor is a locator plus a selector. The locator names a resource; the
-selector picks one unit inside it and lets hibi find that unit again after
-the file is edited.
+selector picks one unit inside it, so that hibi can find that unit again
+after the file is edited.
 
 ## Locators
 
@@ -20,12 +20,15 @@ the file is edited.
 | Key | Meaning |
 |---|---|
 | `quote` | Text that occurs in the unit. Matched as given, untrimmed. |
-| `prefix`, `suffix` | Up to 48 characters before and after the quote. Allowed only with `quote`. |
-| `pos` | The byte offset of the quote when it was recorded. A hint only. Allowed only with `quote`. |
 | `symbol` | The declaration path of a code unit, such as `MAX_ATTEMPTS`, `Config.timeout_secs` or `Store.get`. |
+| `prefix`, `suffix` | Added by hibi. The text right before and after the quote, up to 48 characters each, cut from the unit's own text. A window never reaches into a neighbouring unit. |
+| `within` | Added by hibi to a quote. The container the unit was in: its heading path, and the paragraph, list item or table row when that holds several sentences; in code, the enclosing declaration. |
+| `count` | Added by hibi to a symbol that named two or more declarations when the anchor was made: how many. |
 | `key` | A unit key, for external providers that address units by key. The file provider does not accept it. |
 
-The empty selector `{}` selects the whole resource (its `file` unit).
+The empty selector `{}` selects the whole resource (its `file` unit). A
+selector holds no position: where a quote stood is never used to decide
+which unit it names.
 
 ## Compact anchors on the command line
 
@@ -34,9 +37,9 @@ The empty selector `{}` selects the whole resource (its `file` unit).
 | Compact anchor | Selects |
 |---|---|
 | `file:docs/retry.md` | The whole file |
-| `file:src/retry.rs#delay_ms` | The declaration with this symbol |
+| `file:src/retry.rs#delay_ms` | The declaration with this name |
+| `file:src/retry.rs#delay_ms::200 * 2u64.pow(n)` | The declaration with this name, and the line of it the claim is about |
 | `file:docs/retry.md::gives up after 5 attempts` | The unit that contains this quote |
-| `file:src/retry.rs#delay_ms::200` | A quote inside a symbol |
 
 The part after the first `::` is the quote, taken verbatim. The part between
 `#` and `::` is the symbol. For an external scheme, a compact anchor is the
@@ -56,238 +59,462 @@ and its provider is registered in your user config (see
 echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc": "ref:notes", "sel": {"key": "n1"}}, "evidence": ["file:src/retry.rs#MAX_ATTEMPTS"]}]' | hibi claim --stdin
 ```
 
+## Which anchor to write
+
+- **Code: a name.** Write `#name` to follow a declaration, or
+  `#name::<line>` to follow it and say which line of it the claim is about.
+  With a line, editing that line asks you for a new anchor; editing the rest
+  of the declaration only asks you to re-check.
+- **Prose, and code outside any declaration: a quote.** Quote the words the
+  claim is about. A whole sentence is a good quote; a short phrase works when
+  it occurs once in its paragraph.
+
+A bare quote on a line inside a function follows the text, not the
+function. `claim` accepts it and prints a note with the anchor that follows
+the declaration instead:
+
+```text output
+$ hibi claim 'The delay doubles each time.' --subject 'file:docs/errors.md::The log keeps every attempt.' --evidence 'file:src/backoff.py::BASE_MS * 2 ** n'
+c1-xhtwpvbhz6139jcwdjw2  created  m1-vmmcz2xxm8jtz6npcf1v  subject file:docs/errors.md (sentence "The log keeps every attempt.", line 4); evidence 1 file:src/backoff.py (function "delay", lines 3-4)
+  note: evidence 1 (file:src/backoff.py) tracks the quoted text in its place. To follow the declaration delay instead, anchor file:src/backoff.py#delay::BASE_MS * 2 ** n
+```
+
+In JSON the same sentence is in the entry's `notes`.
+
 ## Stored anchors are completed
 
 hibi never stores a selector as you typed it. It resolves the anchor and
-stores the selector the provider returns for the unit it found. For the file
-provider that is the quote, up to 48 characters before and after it, its
-byte position, and the symbol when the unit is a declaration. For a
-declaration whose symbol is unique in the file, the characters before and
-after are taken only from the declaration's own scope, so they are short.
+stores the selector the provider returns for the unit it found:
+
+- `#name` stores the symbol alone, and `count` when the name has several
+  declarations.
+- `#name::<line>` stores the symbol, the quote, and the text right around
+  the quote inside the declaration.
+- A quote stores the quote, the text right around it inside its unit, and
+  the container (`within`).
+
 This is what `reanchor` printed for the walkthrough's claim:
 
 ```text output
   subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4)
-    {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
+    {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"It","suffix":".","within":["Retries","The client retries a failed download."]}}
   evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
-    {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 3;","prefix":"\n","suffix":"\n\n","pos":62,"symbol":"MAX_ATTEMPTS"}}
+    {"loc":"file:src/retry.rs","sel":{"symbol":"MAX_ATTEMPTS"}}
 ```
 
-The evidence was given as `#MAX_ATTEMPTS` only; hibi added the first line of
-the declaration as its quote.
+The sentence is in the section "Retries", in the paragraph whose first
+sentence is "The client retries a failed download.". The evidence was given
+as `#MAX_ATTEMPTS` and stores only that.
 
-## Finding the unit
+## Finding the unit of a new anchor
 
 A quote that differs from the text only in whitespace, for example after a
 paragraph was re-wrapped, counts as an exact occurrence.
 
-**A new anchor**, as you type it, has a quote but no stored context. Every
-exact occurrence of the quote is a candidate and nothing chooses between
-them. Occurrences inside one unit resolve to that unit. Occurrences in more
-than one unit are `side_ambiguous`, whatever the length of the quote. The
-error lists every candidate with an anchor that selects it, so you can pass
-one of those, make the quote longer, or add a symbol:
+An anchor as you type it must select one unit. Occurrences of the quote
+inside one unit resolve to that unit. Occurrences in more than one unit are
+`side_ambiguous`, whatever the length of the quote. The error lists every
+unit with an anchor that selects it, so you can pass one of those, make the
+quote longer, or add a symbol:
 
 ```text output
 $ hibi claim "x" --subject "file:docs/cache.md::The cache"
-error: side_ambiguous: the subject (file:docs/cache.md): the anchor matches 2 units; use one of these anchors: sentence "The cache holds 64 entries.", line 3: {"loc":"file:docs/cache.md","sel":{"quote":"The cache holds 64 entries.","prefix":"# Cache\n\n","suffix":"\nOld entries are evicted first.\nThe cache is cle","pos":9}}; sentence "The cache is cleared on restart.", line 5: {"loc":"file:docs/cache.md","sel":{"quote":"The cache is cleared on restart.","prefix":"olds 64 entries.\nOld entries are evicted first.\n","suffix":"\n","pos":68}}
+error: side_ambiguous: the subject (file:docs/cache.md): the anchor matches 2 units; use one of these anchors: sentence "The cache holds 64 entries.", line 3: {"loc":"file:docs/cache.md","sel":{"quote":"The cache holds 64 entries.","prefix":"","suffix":"","within":["Cache","The cache holds 64 entries."]}}; sentence "The cache is cleared on restart.", line 5: {"loc":"file:docs/cache.md","sel":{"quote":"The cache is cleared on restart.","prefix":"","suffix":"","within":["Cache","The cache holds 64 entries."]}}
   fix: Give a longer quote, so that the anchor matches one unit.
 ```
 
-**A stored anchor** is resolved on every later run:
-
-1. A `symbol` that names exactly one declaration selects it. The quote then
-   only decides which text the stored selector keeps. When the quoted text
-   is gone from the declaration entirely, the side is `changed`, and its
-   detail says "the stored quote is no longer in this unit".
-2. A `symbol` that names several declarations, such as Python `@overload`
-   stubs or a function defined twice, is compared with each of them. The
-   quote and the context stored around it are looked for in each
-   declaration. The one declaration that reproduces them exactly is
-   selected, so an anchor stored while the symbol was unique keeps
-   following that declaration after copies appear. When none reproduces
-   them, for example after a stub's signature changed, the side is
-   `missing` with reason `not_exact`, and every declaration that holds the
-   quote is a candidate, the closest first. The closest is a guess like any
-   other candidate: read them all. The position in the file never chooses.
-3. Without a symbol, the quote is searched. One exact occurrence selects the
-   unit that contains it, if the match is corroborated (see below). Several
-   exact occurrences are told apart by the similarity of the stored text
-   before and after them. A tie goes to the
-   occurrence nearest `pos` when the quote is under 8 characters, and is
-   `ambiguous` otherwise.
-4. Anything else resolves to no unit. When a symbol names no declaration, or
-   the quote has no exact occurrence, the side is `missing` with reason
-   `not_exact`. The units that the quote still finds, exactly or by a fuzzy
-   search near `pos` with up to 40% of its characters changed (at most 256),
-   are listed as **candidates**.
-
-### An exact match needs corroboration
-
-A stored quote can be found, exactly, in a unit the claim is not about. A
-short quote such as `30 s` can leave the sentence that was checked and turn
-up in another one. So an exact occurrence selects its unit only when one of
-these holds:
-
-- the stored text around the quote is still there, or
-- the unit's content equals what a mark of the claim recorded, so only the
-  text around it changed, for example a neighbouring sentence was edited or
-  the sentence was moved.
-
-Otherwise, for an anchor without a symbol, the side is `missing` with reason
-`not_exact`, and the unit is listed as a candidate. For an anchor whose
-symbol names one declaration, the symbol identifies the unit, and the side
-is `changed`.
-
-A `not_exact` side says which of its two causes it has, on the line under
-the side, in `detail` and at the start of the `side_missing` error:
-
-| Message | Cause |
-|---|---|
-| "the anchor matches no unit exactly" | The quote or symbol was not found; the candidates were found by similarity |
-| "the quoted text was found, but not where it was stored, and the unit there is not the one that was marked" | The quote was found exactly, but nothing confirms that the unit is the one that was checked |
-
-For a sentence, this means:
-
-- An edit to the quoted words, or to the text right around them, makes the
-  side `missing` (`not_exact`), with the edited sentence as a candidate.
-  Read it and re-check the statement. If it still holds, run
-  `hibi reanchor <id> --subject <anchor>` with the candidate's anchor; if
-  not, fix the text or retire the claim. `mark` refuses such a claim.
-- An edit elsewhere in a long sentence, away from the quote, leaves the
-  quote and its surroundings in place. The side is `changed`: read the
-  change, re-check, and mark.
-- An edit to a neighbouring sentence, or a move of the unchanged sentence,
-  leaves the claim fresh.
-
-Here the claim quoted `30 s` in "Each attempt times out after 30 s.". That
-sentence now says `45 s`, and `30 s` appears in the next sentence instead:
+Units that are identical where they stand have no anchor that selects one
+of them alone. The error says so instead of printing an anchor:
 
 ```text output
-$ hibi status c1-zknq
-2 claims: 1 fresh, 1 stale, 0 expired, 0 retired
+$ hibi claim 'The tests run twice.' --subject 'file:docs/twins.md::Run the tests.'
+error: side_ambiguous: the subject (file:docs/twins.md): the anchor matches 2 units; use one of these anchors: sentence "Run the tests.", line 3: identical to another candidate, no anchor selects it alone; sentence "Run the tests.", line 3: identical to another candidate, no anchor selects it alone. Units that are identical where they stand cannot be anchored by that text alone: quote a longer passage that tells them apart, or in code anchor <loc>#<symbol>::<line>.
+  fix: Give a longer quote, so that the anchor matches one unit.
+```
 
-c1-zknqk32fkewpten5cf77  stale  Each attempt times out after 30 seconds.
-  marked 2026-11-21T06:50:33Z (m1-54x3j2njebgmh0xsz46d)
+A quote that selects one unit but whose stored form could not tell it apart
+from another place in the same container fails with
+`quote_not_distinguishable`. Quote a longer passage that occurs once in its
+place, or, in code, anchor `#<symbol>::<line>`.
+
+## How a stored anchor finds its unit
+
+A stored anchor identifies its unit in one of two ways, and nothing else
+resolves it.
+
+**By name.** You wrote `#name`, or `#name::<line>`. The claim follows the
+declaration with that name for as long as the name refers to the same
+number of declarations as when the claim was made. Its body can change: the
+side is then `changed`, and you re-check and mark. With a line, the line
+must still be in the declaration. When it was edited or removed, the side is
+`changed` with the detail "the stored quote is no longer in this unit",
+`next` is a `reanchor`, and `mark` refuses the claim, because a mark would
+keep a line that is no longer in the code.
+
+**By place.** You quoted text. The claim follows those words inside the same
+container, with the text right around them, inside the same unit, unchanged.
+The container is the heading path, plus the paragraph, list item or table
+row when that holds several sentences. In code it is the enclosing
+declaration.
+
+Everything else is a candidate that you choose. hibi lists the units that
+have the content that was marked first, then its guesses, and it never puts
+a candidate into a command. Content alone never identifies a unit, so a copy
+of the text elsewhere is only ever offered.
+
+### What an edit does
+
+| Edit | The side | Your next step |
+|---|---|---|
+| The quoted words of a sentence, or the words right around a quoted phrase | `missing` (`not_exact`) | Read the candidates, re-check, `reanchor` |
+| Elsewhere in a long quoted sentence | `changed` | Read the change, re-check, `mark` |
+| A neighbouring sentence | Nothing | |
+| The first sentence of a paragraph, the first unit of a list item, or the first cell of a table row | The paragraph's other claims are `missing` (`not_exact`); the unchanged sentences are listed first | Read, `reanchor` |
+| A heading renamed or deleted | The claims under it are `missing` (`not_exact`) | Read, `reanchor` |
+| A sentence moved to another paragraph or section | `missing` (`not_exact`) | Read, `reanchor` |
+| The body of a declaration anchored `#name` | `changed` | Read the change, re-check, `mark` |
+| The line of `#name::<line>` edited or removed | `changed`, "the stored quote is no longer in this unit"; `mark` is refused | Read, `reanchor` with the new line |
+| Other lines of a declaration anchored `#name::<line>` | `changed` | Read the change, re-check, `mark` |
+| The declaration renamed or deleted | `missing` (`selector_not_found`), with no candidate unless a unit has the content that was marked | Find it yourself, `reanchor` |
+| A second declaration of the name added, or one of several removed | `ambiguous` or `missing` (`not_exact`), with the declarations as candidates | Read, `reanchor` |
+| The function around a bare quote renamed | `missing` (`not_exact`) | Read, `reanchor` |
+
+### Editing quoted text
+
+Here the claim quoted `30 s` in "Each attempt times out after 30 s.". That
+sentence now says `45 s`, and `30 s` appears in the next sentence instead.
+The candidate is that other sentence, not the one that was checked: a
+candidate is a guess, so read the file.
+
+```text output
+$ hibi status c1-ywv7
+2 claims: 0 fresh, 2 stale, 0 expired, 0 retired
+
+c1-ywv7p0f3s3cac76pdkkk  stale  Each attempt times out after 30 seconds.
+  marked 2026-11-21T08:50:58Z (m1-8mx26f39wnhgntwsc3m6)
   subject  file:docs/timeouts.md  missing (not_exact)
-    the quoted text was found, but not where it was stored, and the unit there is not the one that was marked
+    the stored anchor no longer identifies one unit
     stored: quote "30 s"
     1 candidate; each is a guess, read it before you anchor to it:
     - sentence "The client waits 30 s between attempts.", line 4
       | The client waits 30 s between attempts.
-      anchor: {"loc":"file:docs/timeouts.md","sel":{"quote":"30 s","prefix":" attempt times out after 45 s.\nThe client waits ","suffix":" between attempts.\nRetries stop after the fifth ","pos":64}}
-  next: hibi reanchor c1-zknqk32fkewpten5cf77 --subject <anchor>
+      anchor: {"loc":"file:docs/timeouts.md","sel":{"quote":"The client waits 30 s between attempts.","prefix":"","suffix":"","within":["Timeouts","Each attempt times out after 45 s."]}}
+  next: hibi reanchor c1-ywv7p0f3s3cac76pdkkk --subject <anchor>
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
 `mark` refuses the claim until you re-anchor it or retire it.
 
-For code, a claim on `src/wait.py#wait::time.sleep(BACKOFF_SECONDS * 2 ** n)`
-stays tied to `wait` through its symbol. Editing the quoted line, for
-example `2` to `3`, makes the side `changed`. Removing the line makes it
-`changed` too, and the side says that the quoted text is gone:
+An edit far from the quote, in a long sentence, leaves the quote and the
+text right around it in place. The side is `changed`, and `status` prints
+the sentence as it is now:
 
 ```text output
-$ hibi status c1-1ykm
-5 claims: 2 fresh, 3 stale, 0 expired, 0 retired
+$ hibi status c1-e3q2
+3 claims: 0 fresh, 3 stale, 0 expired, 0 retired
 
-c1-1ykmsy7by40m2awtzhtb  stale  The client waits between attempts.
-  marked 2026-11-21T06:50:33Z (m1-3akat59fmxcym2wxdpqs)
-  evidence 1  file:src/wait.py  changed (fingerprint_differs)  function "wait", lines 3-4
+c1-e3q2sbq694y144250gf3  stale  Retries stop after the fifth failure.
+  marked 2026-11-21T08:50:58Z (m1-6vxgvrpkfqc7323wvmj3)
+  subject  file:docs/errors.md  changed (fingerprint_differs)  sentence "Retries stop after the fifth failed attempt, and the error …", line 3
+    | Retries stop after the fifth failed attempt, and the error that the last attempt returned is passed on to the caller unchanged, with no wrapping at all.
+  next: hibi mark c1-e3q2sbq694y144250gf3
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+### Editing the container
+
+The first sentence of a paragraph names the paragraph. In the example above
+it changed from "Each attempt times out after 30 s." to "... 45 s.", so a
+claim on the unchanged third sentence of that paragraph is a candidate as
+well. The sentence has the content that was marked, so it is listed first:
+
+```text output
+$ hibi status c1-7sf7
+2 claims: 0 fresh, 2 stale, 0 expired, 0 retired
+
+c1-7sf7sk1725e0bwb1wk47  stale  Retries stop after the fifth failure.
+  marked 2026-11-21T08:50:58Z (m1-pa37xhypcq0h58dceevd)
+  subject  file:docs/timeouts.md  missing (not_exact)
+    the stored anchor no longer identifies one unit
+    stored: quote "Retries stop after the fifth failed attempt"
+    1 candidate; each is a guess, read it before you anchor to it:
+    - sentence "Retries stop after the fifth failed attempt, and the error …", line 5; same content as at the reference mark
+      | Retries stop after the fifth failed attempt, and the error that the last attempt returned is passed…
+      anchor: {"loc":"file:docs/timeouts.md","sel":{"quote":"Retries stop after the fifth failed attempt, and the error that the last attempt returned is passed on to the caller unc","prefix":"","suffix":"hanged, without any wrapping.","within":["Timeouts","Each attempt times out after 45 s."]}}
+  next: hibi reanchor c1-7sf7sk1725e0bwb1wk47 --subject <anchor>
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+A renamed heading does the same to every claim under it. Here "# Limits"
+became "# Queue limits":
+
+```text output
+$ hibi status c1-tskx
+5 claims: 1 fresh, 4 stale, 0 expired, 0 retired
+
+c1-tskxsxpgvbthdkkfsmze  stale  The queue holds 100 jobs.
+  marked 2026-11-21T08:50:59Z (m1-djk8qbcwe2n3nj49cddw)
+  subject  file:docs/limits.md  missing (not_exact)
+    the stored anchor no longer identifies one unit
+    stored: quote "The queue holds 100 jobs."
+    1 candidate; each is a guess, read it before you anchor to it:
+    - sentence "The queue holds 100 jobs.", line 3; same content as at the reference mark
+      | The queue holds 100 jobs.
+      anchor: {"loc":"file:docs/limits.md","sel":{"quote":"The queue holds 100 jobs.","prefix":"","suffix":"","within":["Queue limits"]}}
+  next: hibi reanchor c1-tskxsxpgvbthdkkfsmze --subject <anchor>
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+In code, renaming the function around a bare quote makes the claim a
+candidate in the same way. The claim made with the note above, after
+`delay` was renamed to `delay_ms`:
+
+```text output
+$ hibi status c1-xhtw
+8 claims: 2 fresh, 5 stale, 0 expired, 1 retired
+
+c1-xhtwpvbhz6139jcwdjw2  stale  The delay doubles each time.
+  marked 2026-11-21T08:50:59Z (m1-vmmcz2xxm8jtz6npcf1v)
+  evidence 1  file:src/backoff.py  missing (not_exact)
+    the stored anchor no longer identifies one unit
+    stored: quote "BASE_MS * 2 ** n"
+    1 candidate; each is a guess, read it before you anchor to it:
+    - function "delay_ms", line 3
+      | def delay_ms(n): return BASE_MS * 2 ** n
+      anchor: file:src/backoff.py#delay_ms
+  next: hibi reanchor c1-xhtwpvbhz6139jcwdjw2 --evidence 1=<anchor>
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+### Editing the line of a name anchor
+
+A claim on `src/wait.py#wait::time.sleep(BACKOFF_SECONDS * 2 ** n)`, after
+the quoted line was edited from `2` to `3`. The side prints the declaration
+as it is now, and `next` asks for a new anchor:
+
+```text output
+$ hibi status c1-4zg3
+6 claims: 1 fresh, 5 stale, 0 expired, 0 retired
+
+c1-4zg3720m08zgd08ssq7z  stale  The client waits between attempts.
+  marked 2026-11-21T08:50:59Z (m1-7wk5xbd4tz083mqx0yxc)
+  evidence 1  file:src/wait.py  changed (fingerprint_differs)  function "wait", lines 3-5
     the stored quote is no longer in this unit
-  next: hibi mark c1-1ykmsy7by40m2awtzhtb
+    | def wait(n):
+    |     time.sleep(BACKOFF_SECONDS * 3 ** n)
+    |     return n + 1
+  next: hibi reanchor c1-4zg3720m08zgd08ssq7z --evidence 1=<anchor>
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+```text output
+$ hibi mark c1-4zg3
+error: selector_not_exact: evidence 1 (file:src/wait.py): the stored quote is no longer in this unit, function:wait (function) at line 3: wait; a mark would keep the stale quote
+  fix: hibi reanchor c1-4zg3720m08zgd08ssq7z --evidence 1=<anchor>
+```
+
+After re-checking the statement, give the edited line:
+
+```bash
+hibi reanchor c1-4zg3 --evidence '1=file:src/wait.py#wait::time.sleep(BACKOFF_SECONDS * 3 ** n)'
+```
+
+When the line moves into another declaration, the name and the quoted text
+point to different units. Both are candidates, the declaration with the
+name first:
+
+```text output
+$ hibi status c1-6dt3
+11 claims: 4 fresh, 6 stale, 0 expired, 1 retired
+
+c1-6dt3nyqbmd889g7v7z00  stale  wait sleeps first.
+  marked 2026-11-21T08:50:59Z (m1-5v10w59h5xzpr9r8tw0z)
+  evidence 1  file:src/w2.py  missing (not_exact)
+    the name and the quoted text now point to different units: the first candidate has the name, the others hold the quoted text
+    stored: symbol wait, quote "time.sleep(BACKOFF)"
+    2 candidates; each is a guess, read it before you anchor to it:
+    - function "wait", line 3
+      | def wait(n): return n
+      anchor: file:src/w2.py#wait
+    - function "retry", line 6
+      | def retry(n): time.sleep(BACKOFF) return n
+      anchor: file:src/w2.py#retry
+  next: hibi reanchor c1-6dt3nyqbmd889g7v7z00 --evidence 1=<anchor>
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
 ### Duplicated declarations
 
-A claim on `def limit()` in `src/queue.py` stays fresh after a second
-`def limit()` with another body is added above it, and follows the original,
-now on lines 4-5:
+A claim on `src/queue.py#limit`, made while the file had one `def limit()`,
+stops resolving when a second `def limit()` is added above it. The name now
+refers to two declarations, and both are listed in file order. The one with
+the content that was marked is labelled, and has `sameFingerprint: true` in
+JSON:
 
 ```text output
-$ hibi status --detail c1-5eaf
-4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
+$ hibi status --detail c1-p48c
+4 claims: 2 fresh, 2 stale, 0 expired, 0 retired
 
-c1-5eaf6x2yrjb6xrkx2yqe  fresh  The queue holds 100 jobs.
-  marked 2026-11-21T06:50:15Z (m1-r0hevpmmrmxt9jdt7hdp)
+c1-p48cbmnzaq2e1hbc0n3h  stale  The queue holds 100 jobs.
+  marked 2026-11-21T08:49:19Z (m1-z6ze6v6y08kd7y60y3kb)
   subject  file:README.md  same  sentence "The limit is applied per worker.", line 5
     | The limit is applied per worker.
-  evidence 1  file:src/queue.py  same  function "limit", lines 4-5
-    | def limit():
-    |     return 100
-```
-
-In `src/parse.py`, a claim was made on the first of two `@overload` stubs of
-`parse`, `def parse(x: int) -> int: ...`. Its signature was then changed
-to `x: float`. Both stubs hold the quote, and the unchanged `str` stub is
-listed first, so read every candidate:
-
-```text output
-$ hibi status c1-hq4t
-3 claims: 2 fresh, 1 stale, 0 expired, 0 retired
-
-c1-hq4tecap6tc6bz0zbppm  stale  Parsing an int gives an int.
-  marked 2026-11-21T06:50:15Z (m1-t48stzv2y3mksx4dstv3)
-  evidence 1  file:src/parse.py  missing (not_exact)
-    the anchor matches no unit exactly
-    stored: symbol parse, quote "@overload"
-    2 candidates; each is a guess, read it before you anchor to it:
-    - function "parse", line 5
-      | @overload def parse(x: str) -> str: ...
-      anchor: {"loc":"file:src/parse.py","sel":{"quote":"@overload","prefix":"\n","suffix":"\ndef parse(x: str) -> str: ...\n","pos":73,"symbol":"parse"}}
-    - function "parse", line 3
-      | @overload def parse(x: float) -> float: ...
-      anchor: {"loc":"file:src/parse.py","sel":{"quote":"@overload","prefix":"\n\n","suffix":"\ndef parse(x: float) -> float: ...\n","pos":29,"symbol":"parse"}}
-  next: hibi reanchor c1-hq4tecap6tc6bz0zbppm --evidence 1=<anchor>
+  evidence 1  file:src/queue.py  ambiguous (several_units)
+    stored: symbol limit
+    2 candidates; the stored anchor matches each of them:
+    - function "limit", line 1
+      | def limit():
+      |     return 10
+      anchor: {"loc":"file:src/queue.py","sel":{"quote":"def limit():","prefix":"","suffix":"return 10","symbol":"limit","count":2}}
+    - function "limit", line 4; same content as at the reference mark
+      | def limit():
+      |     return 100
+      anchor: {"loc":"file:src/queue.py","sel":{"quote":"return 100","prefix":"def limit():","suffix":"","symbol":"limit","count":2}}
+  next: hibi reanchor c1-p48cbmnzaq2e1hbc0n3h --evidence 1=<anchor>
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
-Two declarations of one symbol that are identical, byte for byte, and have
-identical text around them cannot be told apart. A side anchored to either
-is `ambiguous`. Make them differ, or anchor the code that contains them.
+The printed anchors name the symbol, how many declarations it has, and a
+line that only that declaration holds. Such an anchor keeps following its
+declaration while the name has that many. In `src/parse.py` a claim was
+made on the `int` stub of three `@overload` declarations of `parse`, with
+the anchor printed for it. Its signature was then changed to `x: float`, so
+the stored line is gone and every declaration is a candidate:
+
+```text output
+$ hibi status c1-mr16
+3 claims: 2 fresh, 1 stale, 0 expired, 0 retired
+
+c1-mr16t1770q4fk2e1fvd4  stale  Parsing an int gives an int.
+  marked 2026-11-21T08:49:19Z (m1-h7ge9fjrjcwyqwndf9b7)
+  evidence 1  file:src/parse.py  missing (not_exact)
+    the stored anchor no longer identifies one unit
+    stored: symbol parse, quote "def parse(x: int) -> int: ..."
+    3 candidates; each is a guess, read it before you anchor to it:
+    - function "parse", line 3
+      | @overload def parse(x: float) -> float: ...
+      anchor: {"loc":"file:src/parse.py","sel":{"quote":"def parse(x: float) -> float: ...","prefix":"@overload","suffix":"","symbol":"parse","count":3}}
+    - function "parse", line 5
+      | @overload def parse(x: str) -> str: ...
+      anchor: {"loc":"file:src/parse.py","sel":{"quote":"def parse(x: str) -> str: ...","prefix":"@overload","suffix":"","symbol":"parse","count":3}}
+    - function "parse", line 7
+      | def parse(x): return x
+      anchor: {"loc":"file:src/parse.py","sel":{"quote":"def parse(x):","prefix":"","suffix":"return x","symbol":"parse","count":3}}
+  next: hibi reanchor c1-mr16t1770q4fk2e1fvd4 --evidence 1=<anchor>
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+### Why a side is `not_exact`
+
+The line under a `not_exact` side, its `detail` in JSON, and the start of
+the `side_missing` error of `mark`, `claim` and `reanchor` say why nothing
+resolved:
+
+| Message | Meaning |
+|---|---|
+| "the stored anchor no longer identifies one unit" | The name or the place no longer selects one unit. A candidate may hold the stored text exactly. |
+| "the name and the quoted text now point to different units: the first candidate has the name, the others hold the quoted text" | A `#name::<line>` anchor whose line is now in another declaration |
+
+A new anchor that only similar text was found for fails with
+`selector_not_exact`, and its message starts with "the anchor matches no
+unit exactly".
 
 ### Candidates
 
-The candidates of a missing side come from two sources. First come the
-units of the same file whose content equals what the claim's mark recorded
+The candidates of a side come first from the units of the side's file whose
+content equals what the claim's reference mark recorded
 (`sameFingerprint: true`, printed as "same content as at the reference
-mark"). Then come the units the provider found for the stored anchor: by
-similarity, or exactly but without corroboration. A unit is listed once.
-The same list appears in the `side_missing` errors of `mark`, `claim` and
-`reanchor`.
+mark"). Then come the provider's guesses: units that hold the stored quote
+exactly, then units the quote runs across, then a unit with similar text. A
+unit is listed once. The same list appears in the `side_missing` errors of
+`mark`, `claim` and `reanchor`.
 
 A candidate is never used as the side's unit: the claim is stale, `mark`
-refuses it, and `next` asks you for an anchor. Each candidate carries an
-anchor that selects it alone, so after you have read it you can pass that
-anchor to `reanchor`. Freshness is always exact
+refuses it, and `next` asks you for an anchor. Freshness is always exact
 [fingerprint](/concepts/fingerprints) equality.
 
 Candidates are guesses, and the right unit may not be among them. A unit
 that moved to another file is never a candidate, because only the side's
-own file is searched; look for it yourself and give its anchor.
+own file is searched. A declaration that was renamed is not a candidate
+unless its content is unchanged. Look for it yourself and give its anchor.
+
+Each candidate carries an anchor that selects it alone. The anchor is
+`<loc>#<symbol>` when that symbol occurs once in the whole file, and the
+unit's full anchor as JSON otherwise. Units that are identical where they
+stand have no such anchor: they are listed together, without one, followed
+by what to do. Here the sentence was copied, unchanged, inside its own
+paragraph:
+
+```text output
+$ hibi status c1-d55y
+10 claims: 3 fresh, 6 stale, 0 expired, 1 retired
+
+c1-d55y4047ex5fw3w2d52y  stale  Old entries are evicted first.
+  marked 2026-11-21T08:50:59Z (m1-wyqx5mzxc5jqzp50wv9f)
+  subject  file:docs/evict.md  ambiguous (several_units)
+    stored: quote "Old entries are evicted first."
+    2 candidates; the stored anchor matches each of them:
+    - sentence "Old entries are evicted first.", line 3; same content as at the reference mark
+      | line 3 of the resource
+      cannot be told apart from another candidate: no anchor selects it alone
+    - sentence "Old entries are evicted first.", line 3; same content as at the reference mark
+      | line 3 of the resource
+      cannot be told apart from another candidate: no anchor selects it alone
+    Units that are identical where they stand cannot be anchored by that text alone: quote a longer passage that tells them apart, or in code anchor <loc>#<symbol>::<line>.
+  next: hibi reanchor c1-d55y4047ex5fw3w2d52y --subject <anchor>
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+```
+
+In JSON such a candidate has `"anchor": null`. At most 20 candidates are
+listed, with the count of all of them.
 
 In the text output, each candidate's `|` line shows its text on one line,
 cut to 100 characters. When two candidates would show the same line, each
-shows instead the first line on which it differs from the other.
+shows a line that no other candidate shows, or its place in the file.
 `--detail` prints the whole text, up to 240 characters.
 
-The anchor of a candidate, and of each unit an ambiguity error lists, is
-`<loc>#<symbol>` when that symbol occurs once in the whole file, and the
-unit's full anchor as JSON otherwise. At most 20 are listed, with the count
-of all of them. A new anchor whose symbol names several declarations is
-`ambiguous` and lists every one; each listed anchor carries context cut from
-that declaration's own surroundings. Two Python functions with the same name
-give JSON anchors:
+A new anchor whose symbol names several declarations is `ambiguous` and
+lists every one. Two Python functions with the same name give JSON anchors:
 
 ```text output
 $ hibi claim "x" --subject "file:README.md::A job runs" --evidence "file:src/jobs.py#run"
-error: side_ambiguous: evidence 1 (file:src/jobs.py): the anchor matches 2 units; use one of these anchors: function "run", line 1: {"loc":"file:src/jobs.py","sel":{"quote":"def run(job):","prefix":"","suffix":"\n    return job\n\n","pos":0,"symbol":"run"}}; function "run", line 4: {"loc":"file:src/jobs.py","sel":{"quote":"def run(job, retries):","prefix":"\n\n","suffix":"\n    return job\n\n","pos":30,"symbol":"run"}}
+error: side_ambiguous: evidence 1 (file:src/jobs.py): the anchor matches 2 units; use one of these anchors: function "run", line 1: {"loc":"file:src/jobs.py","sel":{"quote":"def run(job):","prefix":"","suffix":"return job","symbol":"run","count":2}}; function "run", line 4: {"loc":"file:src/jobs.py","sel":{"quote":"def run(job, retries):","prefix":"","suffix":"return job","symbol":"run","count":2}}
   fix: Give a symbol, or a longer quote, so that the anchor matches one unit.
 ```
+
+## Limits
+
+These follow from the rule and are accepted:
+
+- A sentence split far from its quote stays with the half that holds the
+  quote. That half is `changed`.
+- A name anchor follows the name. If the declaration is replaced by
+  different code with the same name, the side is `changed`, and the
+  re-check is yours.
+- Plain text and code outside any declaration have no container. Only the
+  text right around the quote, inside its unit, protects such a claim.
+- A unit copied inside the same paragraph, list item or function, with the
+  original then edited, is followed: the claim moves to the copy.
+- Identical text in one container cannot be claimed by quote. Quote a
+  longer passage, or in code anchor `#<symbol>::<line>`.
+- Editing the first sentence of a paragraph, the first unit of a list item
+  or the first cell of a table row makes the claims on its other units
+  candidates. The unchanged units are listed first, so the re-anchor is one
+  step.
+- A function renamed while its claim names it alone shows no candidate.
+  Find it yourself, as in [renames](#renames).
+- An external provider decides by itself which unit an anchor identifies.
+  See [external providers](/providers/external#identity).
 
 ## Write checks: every side resolves exactly
 
@@ -296,7 +523,7 @@ When an anchor is new (in `claim`, or a replaced or added side in
 
 ```text output
 $ hibi claim "Attempts are tried" --subject "file:docs/retry.md::retries a faild download"
-error: selector_not_exact: the subject (file:docs/retry.md): the anchor matches no unit exactly; 1 candidate, each a guess to check before use: sentence "The client retries a failed download.", line 3: {"loc":"file:docs/retry.md","sel":{"quote":"The client retries a failed download.","prefix":"# Retries\n\n","suffix":"\nIt gives up after 3 attempts.\nThe delay between","pos":11}}
+error: selector_not_exact: the subject (file:docs/retry.md): the anchor matches no unit exactly; 1 candidate, each a guess to check before use: sentence "The client retries a failed download.", line 3: {"loc":"file:docs/retry.md","sel":{"quote":"The client retries a failed download.","prefix":"","suffix":"","within":["Retries","The client retries a failed download."]}}
   fix: Give a quote that occurs exactly in the unit you mean; the candidates in the message have an anchor each.
 ```
 
@@ -339,6 +566,15 @@ error: invalid_anchor: the subject (file:README.md): file:README.md is a markdow
   fix: Change the anchor as the message says. hibi claim --help describes the anchor forms.
 ```
 
+Two evidence anchors that resolve to the same unit are refused, however
+they are written:
+
+```text output
+$ hibi claim "x" --subject "file:docs/cache.md::holds 64 entries" --evidence "file:src/cache.rs#LIMIT" --evidence "file:src/cache.rs#LIMIT"
+error: invalid_argument: evidence 1 and evidence 2 resolve to the same unit (file:src/cache.rs)
+  fix: Give each piece of evidence once.
+```
+
 `mark` and a `reanchor` that keeps a side make the same check on the stored
 anchor: every side must resolve to exactly one unit. A side that is missing
 or ambiguous makes them fail with `side_missing` or `side_ambiguous`, and the
@@ -362,75 +598,51 @@ and can be anchored:
 
 ```text output
 $ hibi claim "Jobs run at most 3 times." --subject "file:src/jobs.py#Job::Jobs run at most 3 times" --evidence "file:src/jobs.py#Job.retries"
-c1-qvbjt2ph1pgeyxqzpj2w  created  m1-w8583058btss48bzm8dw  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
+c1-v78ang0ag8ks41t5fdpb  created  m1-0sxrrdhsdwh306spy4h7  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
 ```
 
 ## Renames
 
 hibi keeps no alias for a renamed or moved unit. When a stored symbol names
-no declaration, the side is `missing`, and the claim is stale until someone
-re-anchors it. The units the stored quote still finds are candidates. Renaming
-the Python function `limit` to `queue_limit` gives:
+no declaration, the side is `missing` with reason `selector_not_found`, and
+the claim is stale until someone re-anchors it. A renamed declaration is not
+listed, because its first line changed with its name. Renaming the Python
+function `limit` to `queue_limit` gives:
 
 ```text output
 $ hibi status
 3 claims: 1 fresh, 2 stale, 0 expired, 0 retired
 
-c1-3mz8p0vyhcqppgjbvtyh  stale  limit returns 100.
-  marked 2026-11-21T06:50:13Z (m1-3c5jfvtqfy5p1m9psb7z)
-  evidence 1  file:src/jobs.py  missing (not_exact)
-    the anchor matches no unit exactly
-    stored: symbol limit, quote "def limit():"
-    1 candidate; each is a guess, read it before you anchor to it:
-    - function "queue_limit", line 7
-      | def queue_limit(): return 100
-      anchor: file:src/jobs.py#queue_limit
-  next: hibi reanchor c1-3mz8p0vyhcqppgjbvtyh --evidence 1=<anchor>
-
-c1-wza47tv2t7g9czrk16x4  stale  The queue holds 100 jobs.
-  marked 2026-11-21T06:50:12Z (m1-jn4xcw9f713gfk3ps1e6)
-  evidence 1  file:src/jobs.py  missing (not_exact)
-    the anchor matches no unit exactly
-    stored: symbol limit, quote "def limit():"
-    1 candidate; each is a guess, read it before you anchor to it:
-    - function "queue_limit", line 7
-      | def queue_limit(): return 100
-      anchor: file:src/jobs.py#queue_limit
-  next: hibi reanchor c1-wza47tv2t7g9czrk16x4 --evidence 1=<anchor>
-
-Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
-```
-
-Read the candidate. If it is the same function and the statement still
-holds, anchor to it:
-
-```text output
-$ hibi reanchor c1-3mz8 --statement 'queue_limit returns 100.' --evidence 1=file:src/jobs.py#queue_limit
-c1-3mz8p0vyhcqppgjbvtyh is retired and replaced by the new claim c1-gnn5034a914fjregkzbx
-  mark m1-zfv0a2p24szj6vm9h3c2, retirement r1-9ahyvb9zqmw719f44nnc
-  was stale: evidence 1 file:src/jobs.py missing (not_exact); now marked: make sure you re-checked it
-  subject file:README.md (sentence "The limit is applied per worker.", line 5)
-    {"loc":"file:README.md","sel":{"quote":"The limit is applied per worker.","prefix":"runs at most 3 times.\nThe queue holds 100 jobs.\n","suffix":"\n","pos":62}}
-  evidence 1 file:src/jobs.py (function "queue_limit", lines 7-8)
-    {"loc":"file:src/jobs.py","sel":{"quote":"def queue_limit():","prefix":"\n\n","suffix":"\n    return 100\n","pos":69,"symbol":"queue_limit"}}
-```
-
-Here the statement named the function, so it changed too. A rename that
-changed most of a short first line can leave no candidate. Renaming
-`JOB_LIMIT = 100` to `MAX_JOBS = 100` gives:
-
-```text output
-$ hibi status
-4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
-
-c1-5hktdkt5a4dmvmc90eec  stale  At most 100 jobs are queued.
-  marked 2026-11-21T06:50:06Z (m1-9dy6zkp5dmqmh0x3wecz)
+c1-80hy5a7k2p7j8zb9y6k7  stale  The queue holds 100 jobs.
+  marked 2026-11-21T08:54:20Z (m1-9v5qmgj71bg7zx3tvrrh)
   evidence 1  file:src/jobs.py  missing (selector_not_found)
-    stored: symbol JOB_LIMIT, quote "JOB_LIMIT = 100"
-  next: hibi reanchor c1-5hktdkt5a4dmvmc90eec --evidence 1=<anchor>
+    stored: symbol limit
+  next: hibi reanchor c1-80hy5a7k2p7j8zb9y6k7 --evidence 1=<anchor>
+
+c1-v848jxj1f7b5scyn9gv9  stale  limit returns 100.
+  marked 2026-11-21T08:54:20Z (m1-a0era0da28ghtrgzy3r0)
+  evidence 1  file:src/jobs.py  missing (selector_not_found)
+    stored: symbol limit
+  next: hibi reanchor c1-v848jxj1f7b5scyn9gv9 --evidence 1=<anchor>
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
+
+Find the function, for example with `git diff`. If it is the same function
+and the statement still holds, anchor to it:
+
+```text output
+$ hibi reanchor c1-v848 --statement 'queue_limit returns 100.' --evidence 1=file:src/jobs.py#queue_limit
+c1-v848jxj1f7b5scyn9gv9 is retired and replaced by the new claim c1-vfgr71xf7tynknj8b0rb
+  mark m1-62hz363tjn5dntp9w06q, retirement r1-8s7chrcf77qx0qq7qtbp
+  was stale: evidence 1 file:src/jobs.py missing (selector_not_found); now marked: make sure you re-checked it
+  subject file:README.md (sentence "The limit is applied per worker.", line 5)
+    {"loc":"file:README.md","sel":{"quote":"The limit is applied per worker.","prefix":"","suffix":"","within":["Jobs","A job runs at most 3 times."]}}
+  evidence 1 file:src/jobs.py (function "queue_limit", lines 7-8)
+    {"loc":"file:src/jobs.py","sel":{"symbol":"queue_limit"}}
+```
+
+Here the statement named the function, so it changed too.
 
 A rename of an enclosing container (a struct, class or module) changes a
 member's path but not the member's content. The member is a candidate with
@@ -442,20 +654,19 @@ Renaming the struct `Config` to `Settings` gives, for a claim on its field
 $ hibi status
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
-c1-d0a4yrq9pmv59dc0ggqa  stale  The request timeout is stored in whole seconds.
-  marked 2026-11-21T06:50:06Z (m1-rzthd1vtje44jymae3qc)
-  evidence 1  file:src/config.rs  missing (not_exact)
-    the anchor matches no unit exactly
-    stored: symbol Config.timeout_secs, quote "pub timeout_secs: u32"
+c1-796bxye5q996vzq2w0y9  stale  The request timeout is stored in whole seconds.
+  marked 2026-11-21T08:44:37Z (m1-1tvh90een18kkqkwy2ew)
+  evidence 1  file:src/config.rs  missing (selector_not_found)
+    stored: symbol Config.timeout_secs
     1 candidate; each is a guess, read it before you anchor to it:
     - field "Settings.timeout_secs", line 5; same content as at the reference mark
       | pub timeout_secs: u32
       anchor: file:src/config.rs#Settings.timeout_secs
-  next: hibi reanchor c1-d0a4yrq9pmv59dc0ggqa --evidence 1=<anchor>
+  next: hibi reanchor c1-796bxye5q996vzq2w0y9 --evidence 1=<anchor>
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
 The field has the content that was checked, so after reading it,
-`hibi reanchor c1-d0a4 --evidence 1=file:src/config.rs#Settings.timeout_secs`
+`hibi reanchor c1-796b --evidence 1=file:src/config.rs#Settings.timeout_secs`
 stores the new symbol.

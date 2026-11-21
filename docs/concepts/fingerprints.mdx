@@ -90,10 +90,13 @@ array in parentheses, `return ([a, b]);`, made it stale:
 $ hibi status --loc "file:src/sum.ts"
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
-c1-zsb4rm615vww8aphg2m0  stale  sum returns both numbers.
-  marked 2026-11-21T06:50:07Z (m1-xyn81b8egwbwnqegtgge)
+c1-nvz527nzmpttbc4zknmg  stale  sum returns both numbers.
+  marked 2026-11-21T08:44:37Z (m1-gmnapa8a5zkbrt5kb0wd)
   evidence 1  file:src/sum.ts  changed (fingerprint_differs)  function "sum", lines 1-3
-  next: hibi mark c1-zsb4rm615vww8aphg2m0
+    | export function sum(a: number, b: number) {
+    |   return ([a, b]);
+    | }
+  next: hibi mark c1-nvz527nzmpttbc4zknmg
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
@@ -101,15 +104,14 @@ Re-check each statement before running its next command. If it no longer holds, 
 ## A file that does not parse
 
 A code file whose syntax tree has an error has no declarations for that run.
-A side whose stored anchor has a symbol is then `unavailable` with reason
-`resource_unavailable`. An anchor into a declaration stores its symbol also
-when you gave only a quote. The message names the first error line, the
-side's `remediation` repeats it, and `next` is `null`, because no hibi
-command fixes a syntax error:
+A side whose stored anchor has a symbol, or is the whole file, is then
+`unavailable` with reason `resource_unavailable`. The message names the
+first error line, the side's `remediation` repeats it, and `next` is
+`null`, because no hibi command fixes a syntax error:
 
 ```text output
-c1-zsb4rm615vww8aphg2m0  stale  sum returns both numbers.
-  marked 2026-11-21T06:50:07Z (m1-xyn81b8egwbwnqegtgge)
+c1-nvz527nzmpttbc4zknmg  stale  sum returns both numbers.
+  marked 2026-11-21T08:44:37Z (m1-gmnapa8a5zkbrt5kb0wd)
   evidence 1  file:src/sum.ts  unavailable (resource_unavailable)
     file:src/sum.ts does not parse as typescript (the first error is on line 2), so its declarations cannot be found; fix the syntax error. Run the command again once that is fixed.
 ```
@@ -117,33 +119,38 @@ c1-zsb4rm615vww8aphg2m0  stale  sum returns both numbers.
 Fix the syntax error and the side is resolved again.
 
 For that run the file is read as plain text, in blocks with `prose-v1`
-fingerprints, so an anchor without a symbol, such as the whole file, still
-resolves. Its fingerprint then has another profile than the marked one, and
-the side is `unavailable` with reason `profile_mismatch`:
+fingerprints. A quote is looked for in those blocks. A quote that was inside
+a declaration has lost its container, so the side is `missing` (`not_exact`)
+and the block is a candidate. Do not re-anchor to it: fix the file instead.
+A quote on top-level code, outside every declaration, can resolve to a
+block. Its fingerprint then has another profile than the marked one, and the
+side is `unavailable` with reason `profile_mismatch`:
 
 ```text output
-c1-qg42h10vrpejrffzc9gc  stale  size.ts sets the size.
-  marked 2026-11-21T06:50:14Z (m1-2yfd6aqpc1zkae1b4g32)
-  evidence 1  file:src/size.ts  unavailable (profile_mismatch)  file "export const SIZE = 8; export const = ;", lines 1-2
-  next: hibi mark c1-qg42h10vrpejrffzc9gc
+c1-ppk8y3bdgc2fp2xv7are  stale  The module logs ready.
+  marked 2026-11-21T08:54:20Z (m1-bff8bg1hz5xepjc8j329)
+  evidence 1  file:src/ready.ts  unavailable (profile_mismatch)  block "console.log("ready");", line 1
+  next: hibi mark c1-ppk8y3bdgc2fp2xv7are
 ```
 
 Two fingerprints of different profiles are never compared.
 `profile_mismatch` therefore occurs when a code file that parsed at the mark
-no longer parses, or the reverse, for an anchor without a symbol; when a
-later hibi ships a new profile version; and when an external provider changes
-the profile name it puts in its fingerprints.
+no longer parses, or the reverse, for a quote outside every declaration;
+when a later hibi ships a new profile version; and when an external provider
+changes the profile name it puts in its fingerprints. While the file does
+not parse, fix it before you mark: a mark then would record the plain-text
+fingerprint.
 
 Renaming a file, also to another extension, is not a profile mismatch: the
 locator names the old path, so the side is missing and `next` asks for a new
 anchor. Renaming `src/lim.rs` to `src/lim.py` gives:
 
 ```text output
-c1-4tsrbh9asdmr6jh963hs  stale  The cache holds 64 entries.
-  marked 2026-11-21T06:50:17Z (m1-qrdeep7x3kav7seaswvq)
+c1-219y84z69sqmxdvykwmp  stale  The cache holds 64 entries.
+  marked 2026-11-21T08:44:43Z (m1-3k994d27c47g8sny99tx)
   evidence 1  file:src/lim.rs  missing (resource_not_found)
-    stored: symbol LIMIT, quote "pub const LIMIT: u32 = 64;"
-  next: hibi reanchor c1-4tsrbh9asdmr6jh963hs --evidence 1=<anchor>
+    stored: symbol LIMIT
+  next: hibi reanchor c1-219y84z69sqmxdvykwmp --evidence 1=<anchor>
 ```
 
 ## Versioning
