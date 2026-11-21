@@ -54,8 +54,8 @@ pub use report::{
     scheme_reports,
 };
 pub use resolve::{
-    Candidates, MAX_CANDIDATES, Resolved, reason_of_no_provider, resolve_anchors, resolve_with,
-    side_of_error,
+    Candidates, MAX_CANDIDATES, Resolved, quoted, reason_of_no_provider, resolve_anchors,
+    resolve_with, side_of_error,
 };
 pub use types::{
     Accepted, AcceptedSide, Candidate, ClaimState, ClaimView, DETAIL_CHARS, Envelope,

@@ -186,11 +186,13 @@ fn side_lines(out: &mut String, side: &Side) {
             } else {
                 ""
             };
+            // The label as it is, in double quotes: only `"` and control
+            // characters are escaped (`hibi::engine::quoted`).
             let _ = writeln!(
                 out,
-                "    - {} \"{}\"{line}{same}",
+                "    - {} {}{line}{same}",
                 c.kind,
-                one_line(label, 60)
+                hibi::engine::quoted(&one_line(label, 60))
             );
             if let Some(text) = &c.text {
                 let _ = writeln!(out, "      | {}", one_line(text, LINE_TEXT_CHARS));
@@ -718,5 +720,82 @@ mod tests {
         );
         let e = Error::new(Code::IoError, "x");
         assert_eq!(error(&e), "error: io_error: x\n");
+    }
+
+    /// The lines under a side that no run of the built-in providers
+    /// reaches together: what a provider said and what to do, a candidate
+    /// label with a quote and a backslash in it, and the count of the
+    /// candidates that are not shown.
+    #[test]
+    fn side_lines_show_detail_remediation_candidates_and_the_rest() {
+        let side = |index: usize, rest: serde_json::Value| {
+            let mut side = serde_json::json!({
+                "index": index,
+                "role": if index == 0 { "subject" } else { "evidence" },
+                "anchor": {"loc": "ext:notes", "sel": {"key": "n1"}},
+                "unit": null, "fp": null, "markedFp": null,
+                "remediation": null, "detail": null
+            });
+            side.as_object_mut()
+                .unwrap()
+                .extend(rest.as_object().unwrap().clone());
+            side
+        };
+        let view: ClaimView = serde_json::from_value(serde_json::json!({
+            "id": "c1-0000000000000000zzzz",
+            "statement": "Retries are capped.",
+            "recheck": null, "note": null, "state": "stale",
+            "mark": null, "markedAt": null, "expiresAt": null,
+            "next": "hibi reanchor c1-0000000000000000zzzz --subject <anchor>",
+            "sides": [
+                side(0, serde_json::json!({
+                    "state": "ambiguous", "reason": "several_units",
+                    "candidatesTotal": 23,
+                    "candidates": [
+                        {"key": "n1", "kind": "note", "label": "say \"hi\" in C:\\dir",
+                         "line": 4, "endLine": 4, "text": "say \"hi\"\nin C:\\dir",
+                         "anchor": "ext:notes#n1", "sameFingerprint": true},
+                        {"key": "n2", "kind": "note", "label": null,
+                         "line": null, "endLine": null, "text": null,
+                         "anchor": "{\"loc\":\"ext:notes\",\"sel\":{\"key\":\"n2\"}}",
+                         "sameFingerprint": false}
+                    ]
+                })),
+                side(1, serde_json::json!({
+                    "state": "unavailable", "reason": "provider_failed",
+                    "detail": "the provider command exited with status 3:\nno such table",
+                    "remediation": "hibi providers"
+                })),
+                side(2, serde_json::json!({
+                    "state": "unavailable", "reason": "scheme_not_declared",
+                    "detail": "the scheme ext is not declared",
+                    "remediation": "Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim."
+                }))
+            ]
+        }))
+        .unwrap();
+        let mut out = String::new();
+        claim_block(&mut out, &view);
+        assert_eq!(
+            out,
+            r#"c1-0000000000000000zzzz  stale  Retries are capped.
+  never marked
+  subject  ext:notes  ambiguous (several_units)
+    stored: key n1
+    23 candidates; the stored anchor matches each of them:
+    - note "say \"hi\" in C:\dir", line 4; same content as at the last mark
+      | say "hi" in C:\dir
+      anchor: ext:notes#n1
+    - note "n2"
+      anchor: {"loc":"ext:notes","sel":{"key":"n2"}}
+    and 21 more
+  evidence 1  ext:notes  unavailable (provider_failed)
+    the provider command exited with status 3: no such table
+  evidence 2  ext:notes  unavailable (scheme_not_declared)
+    the scheme ext is not declared
+    Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim.
+  next: hibi reanchor c1-0000000000000000zzzz --subject <anchor>
+"#
+        );
     }
 }

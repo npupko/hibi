@@ -329,6 +329,61 @@ fn human_mark() {
     );
 }
 
+/// The lines under a side that none of the other snapshots shows: what a
+/// provider said and what to do for a side that cannot be evaluated, the
+/// candidates of an ambiguous side, and the count of candidates that are
+/// not shown.
+#[test]
+fn human_sides_that_do_not_resolve() {
+    let repo = scenario();
+    let padding = "Padding sentence that is quite long indeed, really.\n\n";
+    let block = format!("{padding}The retry count is 3.\n\n{padding}");
+    repo.write("docs/retry.md", &format!("# Retries\n\n{block}"));
+    repo.write("docs/data.md", "The table has 4 columns.\n");
+    repo.write("src/report.py", "def threshold():\n    return 50\n");
+    claim(
+        &repo,
+        "The retry count is 3.",
+        "file:docs/retry.md::The retry count is 3.",
+        &["file:docs/data.md::The table has 4 columns."],
+    );
+    claim(
+        &repo,
+        "The threshold is 50.",
+        CACHE_SUBJECT,
+        &["file:src/report.py#threshold"],
+    );
+    // The retry sentence now stands twice, equally far from where it was;
+    // the data file is no longer text; the code file does not parse.
+    repo.write("docs/retry.md", &format!("# Retries\n\n{block}{block}"));
+    std::fs::write(
+        repo.root.join("docs/data.md"),
+        b"The table \xff\xfe has 4 columns.\n",
+    )
+    .unwrap();
+    repo.write("src/report.py", "def threshold(:\n    return 50\n");
+    insta::assert_snapshot!(
+        "human_status_sides_that_do_not_resolve",
+        shot(&repo, &["status"])
+    );
+
+    // More candidates than are shown.
+    let many: String = (0..23).map(|_| "The item is ready.\n\n").collect();
+    repo.write("docs/list.md", &format!("# List\n\n{many}"));
+    insta::assert_snapshot!(
+        "human_error_more_candidates_than_shown",
+        shot(
+            &repo,
+            &[
+                "claim",
+                "Ready",
+                "--subject",
+                "file:docs/list.md::The item is ready."
+            ]
+        )
+    );
+}
+
 #[test]
 fn human_reanchor() {
     let repo = scenario();

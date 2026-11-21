@@ -50,9 +50,9 @@ impl Candidates {
                     .range
                     .map_or_else(String::new, |r| format!(", line {}", r.line));
                 format!(
-                    "{} {:?}{line}: {anchor}",
+                    "{} {}{line}: {anchor}",
                     u.kind,
-                    super::types::excerpt(label, 80)
+                    quoted(&super::types::excerpt(label, 80))
                 )
             })
             .collect();
@@ -62,6 +62,29 @@ impl Candidates {
         }
         lines.join("; ")
     }
+}
+
+/// `label` inside double quotes, for a message a person or an agent reads.
+/// The label is written as it is: only `"` is escaped (as `\"`), and a
+/// control character is written as `\n`, `\r`, `\t` or `\u{..}`, so that
+/// the label stays on one line and its end is unambiguous. A backslash and
+/// every other character are not escaped. JSON output does not use this:
+/// there a label is a JSON string.
+pub fn quoted(label: &str) -> String {
+    let mut out = String::with_capacity(label.len() + 2);
+    out.push('"');
+    for c in label.chars() {
+        match c {
+            '"' => out.push_str("\\\""),
+            '\n' => out.push_str("\\n"),
+            '\r' => out.push_str("\\r"),
+            '\t' => out.push_str("\\t"),
+            c if c.is_control() => out.push_str(&format!("\\u{{{:x}}}", c as u32)),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
 }
 
 /// The current resolution of one anchor.
@@ -402,4 +425,17 @@ pub fn resolve_anchors(providers: &mut Providers, anchors: &[&Anchor]) -> Vec<Re
     out.into_iter()
         .map(|r| r.expect("every anchor belongs to one scheme group"))
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::quoted;
+
+    #[test]
+    fn a_label_is_quoted_as_it_is() {
+        assert_eq!(quoted(r"C:\dir and a 'word'"), r#""C:\dir and a 'word'""#);
+        assert_eq!(quoted(r#"say "hi""#), r#""say \"hi\"""#);
+        assert_eq!(quoted("a\nb\tc\u{1b}"), r#""a\nb\tc\u{1b}""#);
+        assert_eq!(quoted("日本語 é"), "\"日本語 é\"");
+    }
 }

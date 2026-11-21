@@ -2193,6 +2193,82 @@ fn reanchor_onto_the_same_claim_under_another_id_merges() {
     );
 }
 
+/// A code file that does not parse cannot be searched for a symbol: the
+/// stored side and a new symbol anchor report `resource_unavailable` with
+/// the line of the first error, nothing is written, a quote-only anchor on
+/// the same file still resolves, and once the syntax is fixed the stored
+/// anchor resolves again.
+#[test]
+fn a_code_file_that_does_not_parse_is_resource_unavailable_for_a_symbol() {
+    let repo = seeded();
+    let good = "def threshold():\n    return 50\n\n\ndef other():\n    return 1\n";
+    let broken = good.replace("def other():", "def other(:");
+    repo.write("report.py", good);
+    let id = repo.claim("Threshold", CACHE_SUBJECT, &["file:report.py#threshold"]);
+    let stored = repo.store_files();
+
+    repo.write("report.py", &broken);
+    let view = repo.view(&id);
+    assert_eq!(view["state"], "stale");
+    assert_eq!(view["next"], Value::Null);
+    let side = &view["sides"][1];
+    assert_eq!(side["state"], "unavailable");
+    assert_eq!(side["reason"], "resource_unavailable");
+    assert_eq!(side["unit"], Value::Null);
+    let said = s(&side["detail"]);
+    assert!(said.contains("file:report.py does not parse"), "{said}");
+    assert!(said.contains("line 5"), "{said}");
+    let fix = s(&side["remediation"]);
+    assert!(fix.starts_with(said), "{fix}");
+    assert!(
+        fix.ends_with("Run the command again once that is fixed."),
+        "{fix}"
+    );
+
+    // The stored anchor: `mark` is refused with the same remediation.
+    let e = refused(&repo, &["mark", &id]);
+    assert_eq!(e["code"], "side_unavailable");
+    assert!(s(&e["message"]).contains("line 5"), "{e}");
+    assert_eq!(e["remediation"], side["remediation"]);
+    // A new symbol anchor on the file.
+    let e = refused(
+        &repo,
+        &["claim", "New", "--subject", "file:report.py#threshold"],
+    );
+    assert_eq!(e["code"], "side_unavailable");
+    assert!(s(&e["message"]).contains("resource_unavailable"), "{e}");
+    assert!(s(&e["message"]).contains("line 5"), "{e}");
+    assert_eq!(e["remediation"], side["remediation"]);
+    let human = repo.human(&["--now", NOW, "status"]);
+    assert!(
+        human
+            .stdout
+            .contains("unavailable (resource_unavailable)\n")
+            && human.stdout.contains("line 5"),
+        "{}",
+        human.stdout
+    );
+
+    // The syntax is fixed: the stored anchor resolves again, and nothing
+    // was written in between.
+    repo.write("report.py", good);
+    assert_eq!(repo.store_files(), stored);
+    let view = repo.view(&id);
+    assert_eq!(view["state"], "fresh");
+    assert_eq!(view["sides"][1]["detail"], Value::Null);
+    assert_eq!(repo.store_files(), stored);
+
+    // A quote-only anchor does not need the declarations: it resolves on
+    // the file that does not parse.
+    repo.write("report.py", &broken);
+    let v = j(
+        &repo,
+        &["claim", "Quote", "--subject", "file:report.py::return 50"],
+    );
+    assert_eq!(v["claims"][0]["claim"]["state"], "fresh");
+    assert_eq!(v["claims"][0]["claim"]["sides"][0]["reason"], Value::Null);
+}
+
 /// R55: editing the quoted line of a declaration anchored by symbol does
 /// not lose the side; the symbol identifies the unit exactly.
 #[test]

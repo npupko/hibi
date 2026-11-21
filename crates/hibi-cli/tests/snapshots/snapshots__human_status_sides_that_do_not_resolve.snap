@@ -1,0 +1,33 @@
+---
+source: crates/hibi-cli/tests/snapshots.rs
+expression: "shot(&repo, &[\"status\"])"
+---
+$ hibi status
+exit status: 0
+---- standard output ----
+2 claims: 0 fresh, 2 stale, 0 expired, 0 retired
+
+c1-ganh7310tecp9nwrrbtd  stale  The threshold is 50.
+  marked 2026-11-20T12:00:00Z (m1-crmks435reryx3v5g5aj)
+  evidence 1  file:src/report.py  unavailable (resource_unavailable)
+    file:src/report.py does not parse as python (the first error is on line 1), so its declarations cannot be found; fix the syntax error and run the command again. Run the command again once that is fixed.
+
+c1-p0jdgxhwsjjrb4k45ztn  stale  The retry count is 3.
+  marked 2026-11-20T12:00:00Z (m1-27fxq33n5ngfyqpxsmrt)
+  subject  file:docs/retry.md  ambiguous (several_units)
+    stored: quote "The retry count is 3."
+    2 candidates; the stored anchor matches each of them:
+    - sentence "The retry count is 3.", line 5; same content as at the last mark
+      | The retry count is 3.
+      anchor: {"loc":"file:docs/retry.md","sel":{"quote":"The retry count is 3.","prefix":"ng sentence that is quite long indeed, really.\n\n","suffix":"\n\nPadding sentence that is quite long indeed, re","pos":64}}
+    - sentence "The retry count is 3.", line 11; same content as at the last mark
+      | The retry count is 3.
+      anchor: {"loc":"file:docs/retry.md","sel":{"quote":"The retry count is 3.","prefix":"ng sentence that is quite long indeed, really.\n\n","suffix":"\n\nPadding sentence that is quite long indeed, re","pos":193}}
+  evidence 1  file:docs/data.md  unavailable (not_text)
+    not_text: file:docs/data.md is not valid UTF-8
+    The resource is not UTF-8 text, so it has no units. Anchor a text file; for a claim that exists, retire it; in a scope, add an exclusion for the resource.
+  next: hibi reanchor c1-p0jdgxhwsjjrb4k45ztn --subject <anchor>
+
+Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
+---- standard error ----
+(empty)

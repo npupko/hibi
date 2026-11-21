@@ -309,6 +309,45 @@ fn status_judge_order_reorders_the_stale_claims_and_changes_nothing_else() {
     }
 }
 
+/// Section 14.5: a claim with a side found only by similarity has no text
+/// to send. It is not sent, and it comes before the claims that were.
+#[test]
+fn status_judge_order_does_not_send_a_claim_with_a_side_that_is_not_exact() {
+    let scene = scene();
+    let short = scene.repo.claim(
+        "Documents are short.",
+        "file:docs/retry.md::We like short documents.",
+        &[],
+    );
+    let text = scene.repo.read("docs/retry.md");
+    scene.repo.write(
+        "docs/retry.md",
+        &text.replace("We like short documents.", "We like brief documents."),
+    );
+    let view = scene.repo.view(&short);
+    assert_eq!(view["sides"][0]["reason"], "not_exact", "{view}");
+    assert_eq!(
+        view["sides"][0]["candidates"][0]["text"],
+        "We like brief documents."
+    );
+
+    let server = server();
+    let ordered = judge(&scene, &server, &["status", "--judge-order"]).ok();
+    assert_eq!(
+        texts(&ordered["claims"], "id"),
+        [short, scene.retries.clone(), scene.delay.clone()]
+    );
+    // One request for each of the other two claims; the candidate's text
+    // and the claim's statement went nowhere.
+    let requests = server.recorded();
+    assert_eq!(requests.len(), 2);
+    for r in &requests {
+        let body = r.body.to_string();
+        assert!(!body.contains("brief documents"), "{body}");
+        assert!(!body.contains("Documents are short."), "{body}");
+    }
+}
+
 /// R26: a request that fails on every attempt makes the command fail with
 /// `judge_failed`, and nothing is ranked.
 #[test]

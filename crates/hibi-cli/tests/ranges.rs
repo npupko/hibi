@@ -552,6 +552,56 @@ fn r38_a_stale_claim_covers_and_a_retired_claim_does_not() {
     assert_eq!(keys(&only_scope(&v)), ["function:first", "function:second"]);
 }
 
+/// Section 10.2 with section 9.2: only a side that resolves exactly covers.
+/// A side found only by similarity covers nothing, so the reworded sentence
+/// is uncovered, and `status --since` lists its claim with the candidate.
+#[test]
+fn a_side_found_only_by_similarity_covers_nothing_and_is_listed_since() {
+    let repo = Repo::new();
+    repo.config(DOCS_SCOPE);
+    repo.write("docs/guide.md", GUIDE);
+    let title = repo.claim("the guide has a title", "file:docs/guide.md::# Guide", &[]);
+    let first = repo.claim("first", "file:docs/guide.md::First returns one.", &[]);
+    let second = repo.claim("second", "file:docs/guide.md::Second returns two.", &[]);
+    let v = repo.json(&["cover"]);
+    assert_eq!(counts(&v["summary"]), (3, 3, 0, 0), "{v}");
+    let base = repo.commit("base");
+    repo.git(&["checkout", "-q", "-b", "feature"]);
+
+    replace(&repo, "docs/guide.md", "returns two", "returns three");
+    repo.commit("reword");
+    let view = repo.view(&second);
+    assert_eq!(view["sides"][0]["reason"], "not_exact", "{view}");
+    assert_eq!(repo.state(&first), "fresh");
+    assert_eq!(repo.state(&title), "fresh");
+
+    // The candidate is not the side's unit: nothing covers the sentence.
+    let v = repo.json(&["cover"]);
+    assert_eq!(counts(&v["summary"]), (3, 2, 0, 1), "{v}");
+    assert_eq!(
+        items(&only_scope(&v)),
+        pairs(&[("sentence", "Second returns three.")])
+    );
+    let v = repo.json(&["cover", "--since", "main"]);
+    assert_eq!(
+        items(&only_scope(&v)),
+        pairs(&[("sentence", "Second returns three.")])
+    );
+
+    // The range invalidated exactly that claim.
+    let v = repo.json(&["status", "--since", "main"]);
+    assert_eq!(v["since"]["base"], base.as_str());
+    assert_eq!(ids(&v), vec![second.clone()]);
+    let side = &v["claims"][0]["sides"][0];
+    assert_eq!(side["state"], "missing");
+    assert_eq!(side["reason"], "not_exact");
+    assert_eq!(side["candidates"][0]["text"], "Second returns three.");
+    assert_eq!(
+        v["claims"][0]["next"],
+        format!("hibi reanchor {second} --subject <anchor>")
+    );
+}
+
 /// R38: every exclusion is reported with its reason and the number of units
 /// it excluded. A covered unit is counted as covered, not as excluded.
 #[test]
