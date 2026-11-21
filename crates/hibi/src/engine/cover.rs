@@ -97,6 +97,8 @@ pub struct ScopeCoverage {
     pub units: usize,
     pub covered: usize,
     pub excluded: usize,
+    /// How many resources exclusions without `unit` took out of the scope.
+    pub excluded_resources: usize,
     /// Ordered by locator, then start offset, then key.
     pub uncovered: Vec<UncoveredUnit>,
     pub exclusions: Vec<ExclusionReport>,
@@ -120,8 +122,14 @@ pub struct Coverage {
 pub struct CoverSummary {
     pub units: usize,
     pub covered: usize,
+    /// Units excluded by exclusions that name a unit.
     pub excluded: usize,
     pub uncovered: usize,
+    /// How many resources exclusions without `unit` took out of the listed scopes, summed
+    /// over the scopes.
+    /// They are not read, so their units are in none of the unit counts.
+    #[serde(rename = "excludedResources")]
+    pub excluded_resources: usize,
 }
 
 /// One uncovered unit in the output of `cover`.
@@ -146,8 +154,13 @@ pub struct ScopeReport {
     pub kinds: Vec<String>,
     pub units: usize,
     pub covered: usize,
+    /// Units excluded by exclusions that name a unit.
     pub excluded: usize,
     pub uncovered: usize,
+    /// How many resources exclusions without `unit` took out of the scope.
+    /// They are not read, so their units are in none of the unit counts.
+    #[serde(rename = "excludedResources")]
+    pub excluded_resources: usize,
     /// True when `items` was cut to `--limit`.
     pub truncated: bool,
     #[schemars(with = "Nullable<Skipped>")]
@@ -418,6 +431,7 @@ pub fn coverage(
             units: 0,
             covered: 0,
             excluded: 0,
+            excluded_resources: 0,
             uncovered: Vec::new(),
             exclusions: scope
                 .exclude
@@ -468,6 +482,7 @@ pub fn coverage(
                 .position(|x| x.unit.is_none() && x.resource.matches_locator(&loc))
             {
                 sc.exclusions[i].matched += 1;
+                sc.excluded_resources += 1;
                 continue;
             }
             let listing = listings
@@ -631,6 +646,7 @@ pub fn cover(
         summary.covered += sc.covered;
         summary.excluded += sc.excluded;
         summary.uncovered += sc.uncovered.len();
+        summary.excluded_resources += sc.excluded_resources;
         scopes.push(ScopeReport {
             name: sc.name.clone(),
             resource: sc.resource.clone(),
@@ -639,6 +655,7 @@ pub fn cover(
             covered: sc.covered,
             excluded: sc.excluded,
             uncovered: sc.uncovered.len(),
+            excluded_resources: sc.excluded_resources,
             truncated: n < sc.uncovered.len(),
             skipped: sc.skipped,
             items,

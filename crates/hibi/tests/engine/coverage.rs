@@ -185,11 +185,13 @@ fn r38_covered_through_the_parent_chain_and_exclusions_with_counts() {
         json,
         serde_json::json!({
             "ok": true, "command": "cover", "since": null,
-            "summary": {"units": 4, "covered": 2, "excluded": 1, "uncovered": 1},
+            "summary": {"units": 4, "covered": 2, "excluded": 1, "uncovered": 1,
+                        "excludedResources": 1},
             "scopes": [{
                 "name": "docs", "resource": "file:docs/**/*.md",
                 "kinds": ["sentence", "heading"],
                 "units": 4, "covered": 2, "excluded": 1, "uncovered": 1,
+                "excludedResources": 1,
                 "truncated": false, "skipped": null,
                 "items": [{
                     "loc": "file:docs/a.md",

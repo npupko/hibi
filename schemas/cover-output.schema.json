@@ -104,6 +104,13 @@
           "minimum": 0
         },
         "excluded": {
+          "description": "Units excluded by exclusions that name a unit.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "excludedResources": {
+          "description": "How many resources exclusions without `unit` took out of the listed scopes, summed\nover the scopes.\nThey are not read, so their units are in none of the unit counts.",
           "type": "integer",
           "format": "uint",
           "minimum": 0
@@ -123,7 +130,8 @@
         "units",
         "covered",
         "excluded",
-        "uncovered"
+        "uncovered",
+        "excludedResources"
       ]
     },
     "ExclusionReport": {
@@ -193,6 +201,13 @@
           "minimum": 0
         },
         "excluded": {
+          "description": "Units excluded by exclusions that name a unit.",
+          "type": "integer",
+          "format": "uint",
+          "minimum": 0
+        },
+        "excludedResources": {
+          "description": "How many resources exclusions without `unit` took out of the scope.\nThey are not read, so their units are in none of the unit counts.",
           "type": "integer",
           "format": "uint",
           "minimum": 0
@@ -260,6 +275,7 @@
         "covered",
         "excluded",
         "uncovered",
+        "excludedResources",
         "truncated",
         "skipped",
         "items",

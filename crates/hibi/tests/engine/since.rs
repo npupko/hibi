@@ -337,7 +337,7 @@ fn r20_cover_since_keeps_only_new_or_changed_units() {
     );
     assert_eq!(
         serde_json::to_value(out.summary).unwrap(),
-        serde_json::json!({"units": 4, "covered": 2, "excluded": 0, "uncovered": 2})
+        serde_json::json!({"units": 4, "covered": 2, "excluded": 0, "uncovered": 2, "excludedResources": 0})
     );
 }
 

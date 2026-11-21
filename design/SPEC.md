@@ -6395,9 +6395,10 @@ JSON:
 
 ```json
 {"ok":true,"command":"cover","since":null,
- "summary":{"units":0,"covered":0,"excluded":0,"uncovered":0},
+ "summary":{"units":0,"covered":0,"excluded":0,"uncovered":0,"excludedResources":0},
  "scopes":[{"name":"docs","resource":"file:docs/**/*.md","kinds":["sentence"],
-   "units":0,"covered":0,"excluded":0,"uncovered":0,"truncated":false,"skipped":null,
+   "units":0,"covered":0,"excluded":0,"uncovered":0,"excludedResources":0,
+   "truncated":false,"skipped":null,
    "items":[{"loc":"file:docs/a.md","unit":<UnitRef>,"text":"...","anchor":<Anchor>}],
    "exclusions":[{"resource":"...","unit":null,"reason":"...","matched":0}],
    "unavailable":[{"loc":"...","reason":"..."}]}],
@@ -6417,12 +6418,20 @@ locator with its completed selector and can be passed to `claim --stdin`.
 whose `unit` is `null`, units for one that names a unit (section 10.1). A
 scope's `units`, `covered`, `excluded` and `uncovered` count units of the
 resources that were read, so the units of a wholly excluded resource are in
-none of them. With `--since`, the counts cover only the resources and units
-kept by section 10.3. The human output writes `(<n> resources)` or
-`(<n> units)` after each exclusion.
+none of them. `excluded` counts the units that exclusions with `unit`
+excluded. `excludedResources` counts the resources that exclusions without
+`unit` took out of the scope, so it is the sum of their `matched`; in
+`summary` it is the sum over the listed scopes, and a resource excluded in
+two scopes is counted in each. With `--since`, the counts cover only the
+resources and units kept by section 10.3. The human output writes
+`(<n> resources)` or `(<n> units)` after each exclusion.
 
-Human: per scope a line with the four counts, then the uncovered units grouped
-by file with line numbers and text, then the exclusions with their reasons.
+Human: per scope the line
+`<name> (<resource>; <kinds>): <n> units, <n> covered, <n> excluded, <n> uncovered`,
+followed by `; <n> resources excluded` (`; 1 resource excluded` for one)
+when `excludedResources` is not 0; then the uncovered units grouped by file
+with line numbers and text, then the exclusions with their reasons. With
+several scopes a `total:` line of the same form closes the output.
 
 **`hibi list [<claim-id>] [--loc <glob>]... [--text <substring>] [--retired]`**
 

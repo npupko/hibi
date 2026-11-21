@@ -91,6 +91,19 @@ fn candidate_lines(candidates: &[TextAndLines<'_>]) -> Vec<Option<String>> {
         .collect()
 }
 
+/// The end of a `cover` count line: `; <n> resources excluded` when whole
+/// resources were taken out of the scope, and nothing otherwise. The four
+/// counts before it are units, and `excluded` among them counts only units
+/// that an exclusion names, so without this a scope with a whole-file
+/// exclusion would read "0 excluded" above the exclusion's own line.
+fn resources_excluded(n: usize) -> String {
+    match n {
+        0 => String::new(),
+        1 => "; 1 resource excluded".to_owned(),
+        n => format!("; {n} resources excluded"),
+    }
+}
+
 fn plural(n: usize, one: &str, many: &str) -> String {
     format!("{n} {}", if n == 1 { one } else { many })
 }
@@ -538,14 +551,15 @@ pub fn cover(o: &CoverOutput) -> String {
     for scope in &o.scopes {
         let _ = writeln!(
             out,
-            "{} ({}; {}): {}, {} covered, {} excluded, {} uncovered",
+            "{} ({}; {}): {}, {} covered, {} excluded, {} uncovered{}",
             scope.name,
             scope.resource,
             scope.kinds.join(", "),
             plural(scope.units, "unit", "units"),
             scope.covered,
             scope.excluded,
-            scope.uncovered
+            scope.uncovered,
+            resources_excluded(scope.excluded_resources)
         );
         if scope.skipped.is_some() {
             let _ = writeln!(
@@ -603,11 +617,12 @@ pub fn cover(o: &CoverOutput) -> String {
         let s = &o.summary;
         let _ = writeln!(
             out,
-            "total: {}, {} covered, {} excluded, {} uncovered",
+            "total: {}, {} covered, {} excluded, {} uncovered{}",
             plural(s.units, "unit", "units"),
             s.covered,
             s.excluded,
-            s.uncovered
+            s.uncovered,
+            resources_excluded(s.excluded_resources)
         );
     }
     out

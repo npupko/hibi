@@ -718,6 +718,15 @@ fn a_whole_resource_exclusion_takes_an_unreadable_file_out_of_cover() {
         ])
     );
     assert_eq!(counts(&v["summary"]), (1, 0, 0, 1), "{v}");
+    assert_eq!(v["summary"]["excludedResources"], 0);
+    let human = repo.human(&["cover"]);
+    assert!(
+        human
+            .stdout
+            .contains("1 unit, 0 covered, 0 excluded, 1 uncovered\n"),
+        "{}",
+        human.stdout
+    );
 
     repo.write(
         ".hibi/hibi.toml",
@@ -729,6 +738,13 @@ fn a_whole_resource_exclusion_takes_an_unreadable_file_out_of_cover() {
     let s = only_scope(&v);
     assert_eq!(s["unavailable"], json!([]), "{v}");
     assert_eq!(counts(&v["summary"]), (1, 0, 0, 1), "{v}");
+    // The unit counts say nothing of the files taken out; a count of
+    // resources does, in the scope and in the summary.
+    assert_eq!(s["excludedResources"], 3, "{v}");
+    assert_eq!(
+        v["summary"],
+        json!({"units": 1, "covered": 0, "excluded": 0, "uncovered": 1, "excludedResources": 3})
+    );
     assert_eq!(
         s["exclusions"],
         json!([
@@ -748,6 +764,15 @@ fn a_whole_resource_exclusion_takes_an_unreadable_file_out_of_cover() {
         human.stdout
     );
     assert!(!human.stdout.contains("unavailable:"), "{}", human.stdout);
+    // The count line says both, so "0 excluded" does not stand alone above
+    // the exclusions.
+    assert!(
+        human
+            .stdout
+            .contains("1 unit, 0 covered, 0 excluded, 1 uncovered; 3 resources excluded\n"),
+        "{}",
+        human.stdout
+    );
 
     // `--since`: the excluded files changed in the range and stay out.
     let base = repo.commit("base");
