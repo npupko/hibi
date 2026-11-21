@@ -14,9 +14,9 @@
 //! - A unit's fingerprint is `prose-v1` over its text, its selector is
 //!   `{"key": <key>}`, its label is its text, and it has no range.
 //! - `resolve`: with `key`, the unit with that key; with `quote`, every unit
-//!   whose text contains the quote, in fixture order (`prefix`, `suffix` and
-//!   `pos` are ignored); with both, the units that satisfy both; with `{}`,
-//!   every unit; with `symbol`, `invalid_selector`.
+//!   whose text contains the quote, in fixture order (`prefix`, `suffix`,
+//!   `within` and `count` are ignored); with both, the units that satisfy
+//!   both; with `{}`, every unit; with `symbol`, `invalid_selector`.
 //! - `render`: the unit's text, and as context the texts of its ancestors,
 //!   outermost first. A parent chain that repeats a unit stops there.
 //! - A locator that is not in the fixture is `not_found`.

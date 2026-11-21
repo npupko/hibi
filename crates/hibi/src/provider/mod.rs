@@ -68,7 +68,8 @@ pub struct ProviderInfo {
     /// Schemes this process serves.
     pub schemes: Vec<String>,
     /// Selector keys it accepts, from `quote`, `symbol`, `key`. `quote`
-    /// includes `prefix`, `suffix` and `pos`. `{}` is always accepted. See
+    /// includes `prefix`, `suffix`, `within` and, with `within`, `count`;
+    /// `symbol` includes `count`. `{}` is always accepted. See
     /// [`Selector::disallowed_key`].
     pub selectors: Vec<SelectorKey>,
     /// Unit kinds it can return. Informational.
@@ -153,7 +154,9 @@ pub struct Unit {
     pub range: Option<Range>,
     pub fp: Fingerprint,
     /// A selector that, sent to `resolve` with the same `loc`, returns
-    /// exactly this unit now.
+    /// exactly this unit now; for a unit with `refuse:
+    /// quote_not_distinguishable`, one that names it among the units it
+    /// cannot be told apart from.
     pub sel: Selector,
     /// The unit's content. In `resolve` only.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -167,6 +170,9 @@ pub struct Unit {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub identity: Option<Identity>,
     /// In `resolve`: must not be used to create a claim or replace a side.
+    /// On a unit of `units`, a candidate or a unit of an ambiguous list,
+    /// only `quote_not_distinguishable`: no anchor selects the unit alone,
+    /// so its `sel` is not offered as an anchor (section 6.7).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub refuse: Option<Refuse>,
 }

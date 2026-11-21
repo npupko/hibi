@@ -24,7 +24,7 @@ use hibi::model::{Anchor, Locator, Selector};
 use hibi::provider::file::{
     FileOptions, FileProvider, MAX_CODE_FILE_BYTES, MAX_FILE_BYTES, UnitCache,
 };
-use hibi::provider::{Provider, ProviderError, ProviderErrorCode, Unit};
+use hibi::provider::{Provider, ProviderError, ProviderErrorCode, Refuse, Unit};
 use serde_json::{Value, json};
 
 // ---------------------------------------------------------------------------
@@ -469,6 +469,50 @@ fn completed_selectors_are_fixed_points() {
             files.push(path);
         }
     }
+    // The shapes where one `within` names several containers (section
+    // 6.7): pieces with one name, table rows with one first cell, nested
+    // list items, first sentences equal for 120 characters, a heading that
+    // reads as a piece name, sections with one path, overloads and
+    // same-named methods.
+    let long = "a".repeat(130);
+    let b1_shapes = [
+        (
+            "b1/pieces.md".to_owned(),
+            "# Guide\n\n## Timeouts\n\nSet this in config.toml. The read timeout defaults to 45 s.\n\nSet this in config.toml. The write timeout defaults to 10 s.\n\n## Other\n\nNothing here. The read timeout defaults to 45 s.\n".to_owned(),
+        ),
+        (
+            "b1/table.md".to_owned(),
+            "# T\n\n| key | value. More. |\n| --- | --- |\n| port | 80. Plain. |\n| port | 443. Secure. |\n".to_owned(),
+        ),
+        (
+            "b1/lists.md".to_owned(),
+            "# L\n\n- Step one. Do it.\n  - Step one. Do it again.\n  - Step one. Do it.\n- Step one. Done.\n".to_owned(),
+        ),
+        (
+            "b1/long.md".to_owned(),
+            format!("# Long\n\n{long} first. Then one.\n\n{long} second. Then two.\n"),
+        ),
+        (
+            "b1/collide.md".to_owned(),
+            "# Guide\n\nInstall it. Then run it.\n\n## Install it.\n\nInstall it. Then stop.\n\nThen run it.\n".to_owned(),
+        ),
+        (
+            "b1/sections.md".to_owned(),
+            "# Guide\n\n## Timeouts\n\nRead: 45 s. Write: 10 s.\n\n## Timeouts\n\nRead: 45 s. Write: 20 s.\n\n### Timeouts\n\nRead: 45 s.\n".to_owned(),
+        ),
+        (
+            "b1/over.ts".to_owned(),
+            "function parse(s: string): number;\nfunction parse(s: number): number;\nfunction parse(s: any): number {\n  return Number(s) + 1;\n}\nfunction legacyParse(s: any): number {\n  return Number(s) + 1;\n}\n".to_owned(),
+        ),
+        (
+            "b1/s.py".to_owned(),
+            "class S:\n    def dispatch(self, event):\n        handlers = self.lookup_handlers(event)\n        return [h(event) for h in handlers]\n\n    def dispatch(self, event):\n        handlers = self.lookup_handlers(event)\n        return [h(event) for h in handlers]\n        self.log(event)\n\n    def dispatch(self, event):\n        handlers = self.lookup_handlers(event)\n        return [h(event) for h in handlers]\n".to_owned(),
+        ),
+    ];
+    for (path, text) in b1_shapes {
+        write(root, &path, text);
+        files.push(path);
+    }
     // The verifier's repro: `#f::(a` on m.rs.
     let mut p = wt(root);
     let first = one(&mut p, "file:m.rs", json!({"symbol": "f", "quote": "(a"}));
@@ -529,8 +573,9 @@ fn completed_selectors_are_fixed_points() {
                 }
             }
         }
-        // Every unit's printed anchor selects that unit alone, or, for units
-        // that cannot be told apart, a list that holds it.
+        // Every unit's printed anchor selects that unit alone, unless the
+        // unit is marked as one that no anchor selects alone; a marked
+        // unit's anchor does not select it alone (section 6.7).
         let own: Vec<Anchor> = units
             .iter()
             .map(|u| Anchor::new(loc(&l), u.sel.clone()))
@@ -541,9 +586,10 @@ fn completed_selectors_are_fixed_points() {
                 && got[0].key == u.key
                 && !got[0].approx
                 && got[0].identity.is_none();
-            if !alone && (got.len() < 2 || !got.iter().any(|g| g.key == u.key)) {
+            let marked = u.refuse == Some(Refuse::QuoteNotDistinguishable);
+            if alone == marked || (u.refuse.is_some() && !marked) {
                 failures.push(format!(
-                    "{path}: the printed anchor of {} gives {:?}",
+                    "{path}: the printed anchor of {} (marked: {marked}) gives {:?}",
                     u.key, got
                 ));
             }
@@ -694,13 +740,14 @@ fn default_quotes_are_never_in_comments_and_round_trip() {
             );
             let got = resolve(&mut p, &l, serde_json::to_value(&u.sel).unwrap()).unwrap();
             let keys: Vec<&str> = got.iter().map(|g| g.key.as_str()).collect();
-            // Identical units cannot be told apart (section 6.7, stated
-            // limits): their printed anchor selects all of them.
-            let r = u.range.unwrap();
-            let own = hibi::text::normalize(&text[r.start..r.end]);
-            let same_text =
-                |g: &Unit| g.text.as_deref().map(hibi::text::normalize) == Some(own.clone());
-            if got.len() > 1 && keys.contains(&u.key.as_str()) && got.iter().all(same_text) {
+            // A unit that no anchor selects alone is marked (section 6.7,
+            // stated limits), and its anchor does not select it alone.
+            if u.refuse == Some(Refuse::QuoteNotDistinguishable) {
+                assert!(
+                    keys != [u.key.as_str()] || got[0].approx,
+                    "{path}: {} is marked, but its anchor selects it alone",
+                    u.key
+                );
                 checked += 1;
                 continue;
             }
@@ -1923,6 +1970,88 @@ fn a_symbol_on_a_class_without_symbols_is_invalid_selector() {
         json!({"quote": "Wait twice"}),
     );
     assert!(!u.approx);
+}
+
+/// Section 6.7, stated limits: the edits next to a claimed sentence that
+/// rename its piece (its name is the first 120 characters of the piece's
+/// first unit) leave the claim unresolved; an edit that does not name
+/// the piece leaves it resolved. The claimed sentence is never the piece's
+/// first one.
+#[test]
+fn neighbour_edits_that_rename_a_piece_turn_its_claims_into_candidates() {
+    let renaming = [
+        (
+            "renumbering an ordered list",
+            "# L\n\n1. Install it. Then run it.\n",
+            "# L\n\n2. Install it. Then run it.\n",
+        ),
+        (
+            "changing a list marker",
+            "# L\n\n- Install it. Then run it.\n",
+            "# L\n\n* Install it. Then run it.\n",
+        ),
+        (
+            "reflowing a blockquote",
+            "# L\n\n> Install it now. Then\n> run it.\n",
+            "# L\n\n> Install it\n> now. Then run it.\n",
+        ),
+        (
+            "deleting a paragraph's first sentence",
+            "# L\n\nFirst do this. Install it. Then run it.\n",
+            "# L\n\nInstall it. Then run it.\n",
+        ),
+        (
+            "inserting a paragraph's first sentence",
+            "# L\n\nInstall it. Then run it.\n",
+            "# L\n\nFirst do this. Install it. Then run it.\n",
+        ),
+        (
+            "splitting a paragraph",
+            "# L\n\nInstall it. Wait. Then run it.\n",
+            "# L\n\nInstall it. Wait.\n\nThen run it.\n",
+        ),
+    ];
+    let keeping = [
+        (
+            "editing a neighbour that is not the first sentence",
+            "# L\n\nInstall it. Wait. Then run it.\n",
+            "# L\n\nInstall it. Wait a minute. Then run it.\n",
+        ),
+        (
+            "splitting the paragraph after the claimed sentence",
+            "# L\n\nInstall it. Then run it. Wait.\n",
+            "# L\n\nInstall it. Then run it.\n\nWait.\n",
+        ),
+    ];
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    for (renames, cases) in [(true, &renaming[..]), (false, &keeping[..])] {
+        for (what, before, after) in cases {
+            write(root, "d.md", before);
+            let mut p = wt(root);
+            let claimed = one(&mut p, "file:d.md", json!({"quote": "Then run it"}));
+            assert!(claimed.refuse.is_none(), "{what}: {claimed:?}");
+            let stored = serde_json::to_value(&claimed.sel).unwrap();
+            write(root, "d.md", after);
+            let mut p = wt(root);
+            let got = resolve(&mut p, "file:d.md", stored).unwrap();
+            // Renamed: nothing resolves; the claim has candidates, or none
+            // when nothing in the scope is near the quote.
+            if renames {
+                assert!(
+                    got.iter().all(|u| u.approx),
+                    "{what}: {:?} gives {got:?}",
+                    claimed.sel
+                );
+            } else {
+                assert!(
+                    got.len() == 1 && !got[0].approx,
+                    "{what}: {:?} gives {got:?}",
+                    claimed.sel
+                );
+            }
+        }
+    }
 }
 
 /// Section 6.1: a file of a code class that does not parse is `unavailable`

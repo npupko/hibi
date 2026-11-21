@@ -56,7 +56,7 @@
       ]
     },
     "refuse": {
-      "description": "In `resolve`: must not be used to create a claim or replace a side.",
+      "description": "In `resolve`: must not be used to create a claim or replace a side.\nOn a unit of `units`, a candidate or a unit of an ambiguous list,\nonly `quote_not_distinguishable`: no anchor selects the unit alone,\nso its `sel` is not offered as an anchor (section 6.7).",
       "anyOf": [
         {
           "$ref": "#/$defs/Refuse"
@@ -67,7 +67,7 @@
       ]
     },
     "sel": {
-      "description": "A selector that, sent to `resolve` with the same `loc`, returns\nexactly this unit now.",
+      "description": "A selector that, sent to `resolve` with the same `loc`, returns\nexactly this unit now; for a unit with `refuse:\nquote_not_distinguishable`, one that names it among the units it\ncannot be told apart from.",
       "$ref": "#/$defs/Selector"
     },
     "text": {
@@ -153,7 +153,7 @@
       "type": "object",
       "properties": {
         "count": {
-          "description": "How many declarations the symbol named when the anchor was made,\nstored only when that was two or more.",
+          "description": "With `symbol`: how many declarations the symbol named when the\nanchor was made. Without `symbol`, with `within`: how many\ncontainers `within` named then. Stored only when that was two or\nmore.",
           "type": "integer",
           "format": "uint64",
           "maximum": 9007199254740991,
@@ -197,9 +197,6 @@
       },
       "additionalProperties": false,
       "dependentRequired": {
-        "count": [
-          "symbol"
-        ],
         "prefix": [
           "quote"
         ],
@@ -209,6 +206,22 @@
         "within": [
           "quote"
         ]
+      },
+      "dependentSchemas": {
+        "count": {
+          "anyOf": [
+            {
+              "required": [
+                "symbol"
+              ]
+            },
+            {
+              "required": [
+                "within"
+              ]
+            }
+          ]
+        }
       }
     }
   }

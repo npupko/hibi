@@ -891,11 +891,12 @@ A selector is a JSON object with these optional keys and no others:
 | `suffix` | string | Up to 48 characters of the unit's own text after the quote |
 | `within` | array of 1 to 7 strings | The container of the unit when the anchor was made: a heading path and piece name, or a declaration's symbol (section 6.7). Added by hibi. |
 | `symbol` | string, non-empty | Declaration path in a code resource (section 6.4), as the agent typed it |
-| `count` | integer, 2 or more | How many declarations the symbol named when the anchor was made, stored only when that was two or more |
+| `count` | integer, 2 or more | With `symbol`: how many declarations the symbol named when the anchor was made. Without `symbol`, with `within`: how many containers `within` named then (section 6.7). Stored only when that was two or more. Added by hibi. |
 | `key` | string, non-empty | A unit key, for providers that address units by key |
 
 `prefix`, `suffix` and `within` are allowed only together with `quote`, and
-`count` only together with `symbol`. The empty selector `{}` is valid. A
+`count` only together with `symbol` or `within`. The empty selector `{}` is
+valid. A
 quote that is empty after trimming is `invalid_anchor`. A quote is stored as
 given, untrimmed; the file provider matches it after `normalize` (section
 6.7). A selector holds no position: where a quote stood is never evidence of
@@ -911,7 +912,7 @@ A selector is valid when all of these hold. Each violation is
 
 - It has no key other than the seven above, and no key holds `null`.
 - `prefix`, `suffix` and `within` appear only together with `quote`, and
-  `count` only together with `symbol`.
+  `count` only together with `symbol` or `within`.
 - `quote`, when present, is not empty after trimming and has at most
   `MAX_QUOTE_CHARS` characters.
 - `prefix` and `suffix`, when present, have at most 48 characters each. An
@@ -933,7 +934,7 @@ Which keys a provider accepts:
 
 | Provider | Accepts |
 |---|---|
-| File provider | Its `ProviderInfo.selectors` is `["quote", "symbol"]`: `{}`, `quote` (with `prefix`, `suffix`, `within`), `symbol` (with `count`), or `symbol` with `quote`. A provider that lists `quote` allows `prefix`, `suffix` and `within`; one that lists `symbol` allows `count`. `key` is not allowed (CLI code `unsupported_selector`). |
+| File provider | Its `ProviderInfo.selectors` is `["quote", "symbol"]`: `{}`, `quote` (with `prefix`, `suffix`, `within`, and `count` with `within`), `symbol` (with `count`), or `symbol` with `quote`. A provider that lists `quote` allows `prefix`, `suffix`, `within` and, together with `within`, `count`; one that lists `symbol` allows `count`. `key` is not allowed (CLI code `unsupported_selector`). |
 | External provider | Whatever its `hello` lists in `selectors` (section 13.3). |
 
 ### 5.3 Anchor
@@ -1546,7 +1547,7 @@ is reported:
    the part in parentheses, with the space before it, is left out.
 7. The selector has a `key`: `invalid_selector`.
 8. The selector is not valid by section 5.2 in any other way, for example
-   `prefix` without `quote`, `count` without `symbol`, or a quote longer than
+   `prefix` without `quote`, `count` without `symbol` or `within`, or a quote longer than
    2,048 characters: `invalid_request`.
 9. The selector has a `symbol` and the class of the resource is `markdown`,
    `prose` or `text`: `invalid_selector`. These classes have no symbols, so
@@ -1629,12 +1630,17 @@ Definitions:
   unit was cut from. A piece is a multi-unit piece when two or more units
   were cut from it. Its name is the first 120 characters of the `normalize`d
   text of its first unit; for a table row, of its first cell (the text
-  between the row's first `|` and the next `|`).
+  between the row's first `|` and the next `|`); with WS then removed at the
+  end, since the cut can land on a space.
 - Containers. In a `markdown` or `prose` resource: a section container for
-  each heading path (the heading keys of section 6.3 step 6) that some unit
-  has, holding the units whose heading path is exactly that path, and a piece
-  container for each multi-unit piece, holding its units, written as the
-  heading path of its units followed by its name. In a code resource: one
+  each section that some unit is in, and a piece container for each
+  multi-unit piece, holding its units, written as the heading path of its
+  units followed by its name. A section is the units directly below one
+  heading, whose heading path ends with that heading (a heading unit is in
+  the section of the heading above it), or the units above the first
+  heading; it is written as that heading path (the heading keys of section
+  6.3 step 6). Two sections whose heading paths read the same are two
+  containers written the same way. In a code resource: one
   container for each declaration unit, holding the units within its range,
   itself included, written as its symbol. A `text` resource has no
   containers.
@@ -1647,16 +1653,24 @@ Definitions:
   unit with an empty heading path in a one-unit piece, and for code outside
   every declaration.
 - `names(w)`: the containers a list `w` names. In `markdown` and `prose`: the
-  section containers whose path equals `w`, together with the piece
+  section containers whose path equals `w` (every section of that path),
+  together with the piece
   containers whose heading path equals all of `w` but its last element and
   whose name equals its last element. The two readings are counted together.
   In code: the declaration units whose symbol equals `w[0]` when `w` has one
   element, and none otherwise. Elements are compared after `normalize`.
-- A hit is in a container when its unit is one of the container's units.
+- A hit is in a container when its unit is one of the container's units. A
+  scope of several containers is their union: a hit is in it when it is in
+  one of them.
 - Similarity guess in a scope: the unit of the result of the fuzzy step of
   section 7.2 run on the scope's text with the quote and the position of the
   scope's start, when that result is within the budget of section 7.1. The
-  position only places the search; it never chooses between hits.
+  position only places the search; it never chooses between hits. The text
+  of a container is `scope(u)` for a declaration `u`, and from the start of
+  its first unit to the end of its last for a section or piece. In a scope
+  of several containers the step runs on each container's text, and the
+  result nearest the quote by edit distance is the guess (the earlier
+  container on a tie). A result whose unit is not in the scope is no guess.
 - New anchor: a selector that has none of `prefix`, `suffix`, `within` and
   `count`. A selector with any of them is a stored selector. A printed
   anchor pasted back is a stored selector.
@@ -1672,6 +1686,7 @@ resolve_stored(resource, sel):
       if |S| != c:                                               ; A3
           -> S with approx = true, then, when |S| == 0, the units of the
              exact hits of sel.quote with approx = true
+      ; in A1 and A2 a hit that is in_comment is not a hit
       if c == 1:                                                 ; A1
           U = S[0]
           if not sel.quote                       -> [U]
@@ -1689,8 +1704,9 @@ resolve_stored(resource, sel):
   ; P: no symbol
   if sel.within:
       C = names(sel.within)
-      if |C| != 1                                -> candidates(whole resource)
-      scope = C[0]
+      n = sel.count, or 1 when absent
+      if |C| != n                                -> candidates(whole resource)
+      scope = the union of the containers of C
   else:
       scope = the whole resource
   R = distinct units of the exact hits in scope that reproduce the stored
@@ -1720,9 +1736,25 @@ made against. Choosing one would be a guess. (`cases/resolve.json`:
 `typescript: symbol of overloads: every declaration, ambiguous, with printed anchors`
 and `rust: stored: the symbol named two declarations, now one: candidates`.)
 
-A unit returned alone by `resolve_stored` with a hit has `refuse:
-quote_in_comment` when the hit is `in_comment`; a stored anchor in a comment
-cannot be made, so this only shows that the code changed around it.
+In A1 and A2 a hit inside a comment is not a hit: a stored quote that moved
+into a comment counts as gone from its declaration. In A1 the declaration is
+then resolved by its symbol alone (`identity: "symbol"`), and the engine
+refuses a mark and asks for a reanchor; in A2 that declaration does not hold
+the quote. (`cases/resolve.json`: `python B4: A1: ...` and
+`python B4: A2: ...`.)
+
+`count` with `within` counts the containers the path named when the anchor
+was made. While the path names exactly that many, their union is the scope:
+a path that named several containers from the start is resolved in all of
+them, and a copy outside them is not followed. When the path names another
+number, one added or one gone, nothing resolves: a section pasted again
+before its heading is renamed, in either order of edits, gives candidates.
+Only a unit with no container at all (`within` absent) has the whole
+resource as its scope.
+
+A unit returned alone by P with a hit has `refuse: quote_in_comment` when the
+hit is `in_comment`; a stored anchor in a comment cannot be made, so this
+only shows that the code changed around it.
 
 **Resolution of a new anchor.** A new anchor is what the agent typed: a
 compact anchor or a JSON anchor without stored keys.
@@ -1762,6 +1794,16 @@ quote instead: the anchored text is identical, with identical in-unit
 windows, to another place in the same container; quote a longer passage, or,
 in code, anchor `#<symbol>::<line>`.
 
+The same check applies to every unit returned alone for a stored selector
+(and for a printed anchor pasted back), whose completed selector the engine
+writes when it refreshes a side. When the completed selector does not
+resolve to exactly that unit, the stored selector itself, as given, is the
+unit's `sel`: it resolved to that unit alone, so it does, and the engine
+keeps the side's selector unchanged. A refresh never writes a selector that
+does not select its unit alone, and never writes a quote that lies in a
+comment (A1 and A2 do not see such a hit; P marks it with
+`quote_in_comment`, which the engine never writes).
+
 A new anchor that carries a stored key (a printed anchor pasted back) is
 resolved by `resolve_stored`, and its completed selector is computed from
 that resolution.
@@ -1769,17 +1811,26 @@ that resolution.
 **Completed selector.** For each unit returned alone (not as a candidate and
 not in an ambiguous list) the provider returns the selector to store:
 
-- `file` unit: `{}`.
+- `file` unit, for an anchor without a quote: `{}`. A quote whose unit is the
+  `file` unit (in front matter, or outside every other unit) is a quote-only
+  anchor like any other: its quote and windows in the `file` unit are
+  stored, and it has no `within`. Storing `{}` would drop the quote, and the
+  claim would no longer say which text it is about.
 - A symbol anchor: `symbol` as typed; `count` = |S| when the symbol names two
   or more declarations; `quote` as typed, when one was typed, and then
   `prefix` = `prefix(h, U)` and `suffix` = `suffix(h, U)` of the hit that
   resolved it, when there is one. A typed `#name` with no quote stores no
   quote: stored selectors hold no default quote.
-- A quote-only anchor: `quote` = the resource text of the hit's span, cut to
-  `MAX_QUOTE_CHARS` characters with trailing WS then removed; `prefix` and
-  `suffix` = the in-unit windows of the hit in its unit; `within` =
-  `within(h)` when present and `|names(within(h))| == 1` at this moment,
-  otherwise absent.
+- A quote-only anchor: `quote` = the resource text of the hit's span; when
+  that has more than `MAX_QUOTE_CHARS` characters, its `normalize`d text
+  when that has at most `MAX_QUOTE_CHARS`, and otherwise the text cut to
+  `MAX_QUOTE_CHARS` characters with trailing WS then removed. A typed quote
+  is therefore never cut: the `normalize`d text of its hit is the typed
+  quote `normalize`d, which is not longer than the typed quote. `prefix` and
+  `suffix` = the in-unit windows of the hit in its unit, around the stored
+  quote. `within` = `within(h)` whenever it is present (the unit has a
+  container), and `count` = `|names(within(h))|` at this moment when that is
+  two or more.
 
 A completed selector resolves to itself: resolving it by `resolve_stored`
 against the same resource text returns exactly its unit, with neither
@@ -1787,36 +1838,53 @@ against the same resource text returns exactly its unit, with neither
 completed selector would not is refused (`quote_not_distinguishable`, above).
 
 **Printed anchors.** The `sel` of every unit in an ambiguous list, of every
-candidate, and of every unit returned by `units` (section 13.3) is an anchor
-that, sent back to `resolve`, selects that unit alone:
+candidate, and of every unit returned by `units` (section 13.3) is its
+printed anchor. Every printed anchor is checked: it selects its unit alone
+(resolved by `resolve_stored`, neither `approx` nor `identity`), or the unit
+carries `refuse: quote_not_distinguishable`, which says that no anchor of
+these forms selects it alone. Such a unit keeps its first choice below as
+its `sel`, and the engine shows no anchor for it ("cannot be told apart")
+and never builds a claim from it.
 
 - `file` unit: `{}`.
 - A declaration whose symbol no other unit has: `{"symbol": <symbol>}`
   (`<loc>#<symbol>`).
 - One of several declarations of a symbol: `symbol`, `count` = the number of
-  declarations, and as `quote` the first line of the declaration's text
-  (trimmed of WS, not empty) whose `normalize`d text occurs in no other
-  declaration's `normalize`d scope text, with its in-unit windows in that
-  declaration. When every line occurs in another declaration the
-  declarations are identical twins: the first line is used, and the anchor
-  selects every twin, which `resolve` returns as an ambiguous list.
-- Any other unit: a quote-only selector completed from the unit's first
-  line, as `quote`: its text up to the first U+000A (for a unit with leading
-  nodes, the first leading node's line), cut before the first comment node
-  that starts on it when there is a parse tree, with trailing WS removed and
-  cut to 120 characters (a line that holds only a comment is kept whole).
-  When that selector does not select the unit alone, the whole unit text, cut
-  to `MAX_QUOTE_CHARS`, is the quote. When neither does, the unit is
-  identical to another unit with identical in-unit windows in one container:
-  the first-line selector is used and selects both.
+  declarations, and as `quote`, with its in-unit windows in that
+  declaration, the first of these that selects the declaration alone: (1)
+  the first line of the declaration's text (trimmed of WS, not empty, not in
+  a comment) whose `normalize`d text occurs in no other declaration's
+  `normalize`d scope text, or the first line when there is none; (2) the
+  whole declaration text; (3) for each line in order, the longest run of
+  consecutive lines starting there whose `normalize`d text has at most
+  `MAX_QUOTE_CHARS` characters. Each quote is stored as a completed quote
+  is (above). Declarations whose `normalize`d scope texts are equal are
+  identical twins: none of them is selectable alone. A declaration whose
+  every line occurs in another one, without being its twin, is told apart by
+  (2) or (3).
+- Any other unit: a quote-only selector completed as above, with `within`
+  and `count`, from the first of these that selects the unit alone: (1) the
+  unit's first line: its text up to the first U+000A (for a unit with
+  leading nodes, the first leading node's line), cut before the first
+  comment node that starts on it when there is a parse tree, with trailing
+  WS removed and cut to 120 characters (a line that holds only a comment is
+  kept whole); (2) the whole unit text; (3) the runs of lines of the item
+  above. A unit whose `normalize`d text another unit of its scope has, each
+  being the unit a hit at its start resolves to, is an identical twin: none
+  of them is selectable alone.
 
 **Members.** Members of named containers are units (section 6.4), so the
 innermost unit of a quote on a member's line is the member. A quote on a
 struct field line (`pub host: String`) resolves to the `field` unit, and a
 quote on the container's header line (`pub struct Config {`) to the
-container. A new anchor whose quote starts in one member and ends in the next
-is refused with `quote_spans_units`. A quote copied with the indentation
-before a member, or with the `,` or `;` after it, is inside that member.
+container. A new quote-only anchor whose quote starts in one member and ends
+in the next is refused with `quote_spans_units`. A symbol anchor's quote only
+has to lie within `scope(U)`: it may run over several members of the
+declaration, as in `#Client::host = "localhost"; port = 8080;`, which resolves
+to `Client` (`cases/resolve.json`: `typescript: a symbol anchor whose quote
+spans two members of the declaration: resolved`). A quote copied with the
+indentation before a member, or with the `,` or `;` after it, is inside that
+member.
 
 **When `approx` is set.** `approx: true` marks a candidate, never a
 resolution: every unit returned by `candidates`, every declaration returned
@@ -1855,29 +1923,47 @@ hits, then crossing hits, then the similarity guess.
 **Stated limits.** These follow from the rule and are accepted:
 
 - A sentence split far from the quote stays the unit holding the quote; its
-  fingerprint changes and the side reports `changed`.
+  fingerprint changes and the side reports `changed`. The exception is a
+  split that changes the first 120 characters of a piece's first sentence,
+  which names the piece (below).
 - A typed `#name` survives the replacement of the declaration by different
   code of the same name.
-- Where there is no container (plain text, units above the first heading in
-  a one-unit piece, top-level statements), only in-unit evidence exists:
-  identical units cannot be claimed by quote (`quote_not_distinguishable`),
-  and when a unit is copied and the original is then edited, the copy is
-  followed.
+- Where a unit has no container (plain text, a unit above the first heading
+  in a one-unit piece, code outside every declaration), the whole resource
+  is its scope and only in-unit evidence exists: identical units cannot be
+  claimed by quote (`quote_not_distinguishable`), and when a unit is copied
+  and the original is then edited, the copy is followed.
 - A renamed or deleted container (heading, piece or declaration) makes its
   claims candidates until they are re-anchored.
+- `count` counts containers; it does not tell them apart. When one of the
+  containers a `within` named is removed and another one with the same path
+  or name is added elsewhere, the count is unchanged and the union holds the
+  new one: a copy there, the original then edited, is followed.
 - A renamed function claimed by name alone (`#name`, no quote) yields no
   candidate: the name is gone, the stored selector holds no quote to search
   for, and the function's fingerprint covers its name, so no unit's
   fingerprint equals a mark's.
-- Editing the first sentence of a paragraph, the first unit of a list item or
-  the first cell of a table row renames its piece, which turns the claims on
-  that piece's other units into candidates (content-equal units are listed
-  first, so the reanchor is one step). An edit to a neighbouring unit that
-  does not name the piece has no effect.
-- A unit copied inside the same paragraph, list item or function, the original
-  then edited, is followed.
-- Identical text with identical in-unit windows in one container cannot be
-  claimed by quote.
+- A piece's name is the first 120 characters of its first unit, so an edit
+  there renames the piece, and the claims on the piece's units no longer
+  resolve: they have candidates in the piece, or none. Edits that do this
+  include: editing the first sentence of a paragraph, the first unit of a
+  list item or the first cell of a table row; renumbering an ordered list or
+  changing a list marker (the marker is part of the first unit); reflowing a
+  blockquote so that its line breaks, and the `>` markers with them, move
+  within the first sentence; deleting or inserting a paragraph's first
+  sentence; and splitting a paragraph, which moves the units after the split
+  out of the piece. An edit to another unit of the piece leaves the claims
+  resolved. (`neighbour_edits_that_rename_a_piece_turn_its_claims_into_candidates`.)
+- Inside one scope, a one-unit piece (a one-sentence paragraph, a
+  one-sentence list item, a table row) that is copied, the original then
+  edited, is followed, because nothing tells the copy apart from the
+  original; so is a unit copied inside the same paragraph, list item or
+  declaration. Sections whose heading paths read the same, pieces with the
+  same name and declarations with the same symbol are one scope when they
+  existed together at claim time (`within` with `count`).
+- Identical text with identical in-unit windows in one scope cannot be
+  claimed by quote; a unit that no printed anchor selects alone is marked
+  `quote_not_distinguishable`.
 - An external provider vouches for identity by returning a unit without
   `approx` (section 13.3).
 
@@ -3544,9 +3630,11 @@ The value of the `units` column is one of two forms:
   unit list of section 6. The first element is the unit with key `file`.
   Each element is the unit object of section 13.3 with exactly these seven
   keys: `key`, `kind`, `parent` (a string or `null`), `label`, `range`
-  (`{start, end, line, endLine}`), `fp` and `sel`. The file provider gives
-  every unit a label, so `label` is always written. The keys `text`,
-  `approx` and `refuse` are not written.
+  (`{start, end, line, endLine}`), `fp` and `sel`, and with an eighth key
+  `refuse` whose value is `quote_not_distinguishable` for a unit that no
+  printed anchor selects alone (section 6.7). The file provider gives every
+  unit a label, so `label` is always written. The keys `text`, `approx` and
+  `identity` are not written, nor any other value of `refuse`.
 
 ```json
 [{"key":"file","kind":"file","parent":null,"label":"...","range":{"start":0,"end":412,"line":1,"endLine":18},"fp":"...","sel":{}},
@@ -3577,9 +3665,10 @@ these holds, where the text is the text after CRLF replacement:
 1. The value does not parse as JSON, is not an array, is an empty array, or
    is an array of more than `MAX_UNITS_PER_RESOURCE` elements (section 6).
    The value `not_text` is such a value.
-2. An element is not an object with exactly the seven keys listed above. An
-   element with a key `text`, `approx`, `refuse` or any other key, or without
-   one of the seven, makes the row invalid.
+2. An element is not an object with exactly the seven keys listed above,
+   and `refuse` with the value `quote_not_distinguishable`. An element with a
+   key `text`, `approx`, `identity` or any other key, with `refuse` of
+   another value, or without one of the seven, makes the row invalid.
 3. An element does not read as a unit object of section 13.3: a value has
    the wrong type, `fp` is not a valid fingerprint (section 8.1), or `sel`
    is not a valid selector (section 5.2).
@@ -4284,11 +4373,11 @@ provider unusable.
 | `label` | string | no | One line for people |
 | `range` | `{start, end, line, endLine}` | no | Section 4.2. Omitted when the resource is not text. |
 | `fp` | fingerprint | yes | Section 8.1 |
-| `sel` | selector | yes | A selector that, sent to `resolve` with the same `loc`, returns exactly this unit now |
+| `sel` | selector | yes | A selector that, sent to `resolve` with the same `loc`, returns exactly this unit now; for a unit with `refuse: quote_not_distinguishable`, a selector that names it among the units it cannot be told apart from |
 | `text` | string | in `resolve` only | The unit's content |
 | `approx` | boolean | no (default false) | In `resolve`: the unit is a candidate, not the unit the selector was made for |
 | `identity` | string | no | In `resolve`: `"symbol"` when the unit is resolved by its symbol alone because the selector's stored quote is no longer in the resource (section 6.7, A1) |
-| `refuse` | string | no | In `resolve`: this resolution must not be used to create a claim or replace a side. One of `quote_spans_units`, `quote_in_comment`, `quote_not_distinguishable`. |
+| `refuse` | string | no | In `resolve`: this resolution must not be used to create a claim or replace a side. One of `quote_spans_units`, `quote_in_comment`, `quote_not_distinguishable`. On a unit in `units`, a candidate or a unit of an ambiguous list, only `quote_not_distinguishable`: no anchor selects the unit alone, so its `sel` is not offered as an anchor. |
 
 A provider that returns a unit without `approx` vouches that it is the unit
 the stored selector was made for. hibi checks nothing else: it compares that
@@ -6900,8 +6989,8 @@ every other unit its printed anchor. Its cases pin:
   hit reproduces the windows, or candidates; A3 candidates when the number
   of declarations changed, with the units of the quote's hits when the
   symbol names nothing; P resolved, ambiguous when several units reproduce,
-  candidates when none does or when `within` names other than one container
-  (cases named `... stored: ...`);
+  candidates when none does or when `within` names another number of
+  containers than its `count` (cases named `... stored: ...`);
 - the scenarios of the identity rule, each named after it: a section
   template copy with the original edited, an option reference with
   identical sentences under different headings and as list items under one
@@ -6915,8 +7004,22 @@ every other unit its printed anchor. Its cases pin:
   changed `Alpha.__init__` beside an unchanged `Beta.__init__`, TypeScript
   overloads with one removed, and Go twin `init` functions;
 - printed anchors: `#symbol`, a duplicated declaration's first line no other
-  copy has with `count`, identical twins with identical anchors, and a unit
-  whose first line is not enough quoting its whole text;
+  copy has with `count`, identical twins marked
+  `quote_not_distinguishable`, a unit whose first line is not enough quoting
+  its whole text, and a declaration every line of which occurs in its copy
+  quoting its whole text (`python I1: ...`), a one-unit sentence beside its
+  twin that starts a piece, marked (`markdown I1: ...`);
+- `within` with `count` (cases named `markdown B1: ...` and
+  `typescript B1: ...`): a piece name shared by two pieces, two sections with
+  one path, overloads; a copy outside the union, the original then edited,
+  is not followed; a section pasted again gives candidates;
+- a stored selector whose refreshed selector would not select its unit
+  alone is returned unchanged (`markdown B3: ...`); a stored symbol anchor's
+  quote moved into a comment is gone from the declaration (`python B4: ...`);
+- a typed quote longer than the limit only by its whitespace is stored
+  `normalize`d (`text: a typed quote longer than the limit ...`), a symbol
+  anchor's quote may span two members, and a quote in front matter stores
+  its quote and windows on the `file` unit;
 - a quote equal to the text after `normalize` is found and stored as the text
   has it (`reflow:`), CRLF becomes LF and a leading U+FEFF belongs to the first
   unit (`decoding:`), unit boundaries (`boundary:`);
@@ -7198,6 +7301,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 144 | A file of a code class that does not parse is `unavailable` for `resolve` with any selector, for `units` and for `render`, with the line of the first error; there is no fallback to `block` units for a code class, and the cache stores no row for such a file. Its sides are `unavailable` (`resource_unavailable`) and come back unchanged when it parses; `cover` lists it under `unavailable`. A file the pinned grammar cannot parse cannot be anchored: exclude it from the scope. Supersedes decision 3. | The text fallback produced half-states: a quote stored with `within` became `not_exact` with a text block as its candidate, and re-anchoring to it tied the claim to broken text; a top-level quote became `profile_mismatch` with `next: hibi mark`, which would record a `prose-v1` fingerprint of code. |
 | 145 | An exclusion without `unit` takes whole resources out of a scope: they are not read and not listed under `unavailable`, and its `matched` counts resources. An exclusion with `unit` counts units. | Excluding a file is the remedy for a file that cannot be read or parsed; reading it again only reported it again. |
 | 146 | One same-claim rule, by resolved units, against live claims, retired claims and the elements of one batch; a stored side resolved by name alone still counts as its unit, and the write then fails. Units that cannot be told apart get no anchor anywhere (lists, `cover`) and the advice says what works. Cut text says that it is cut. `candidatesTotal` is exact. | A spelling of an anchor must not make a duplicate or bring a retired claim back; advice that cannot work is worse than none. |
+| 147 | Rulings on section 6.7 (round 4): `within` is stored whenever the unit has a container, with `count` = the number of containers the path named at claim time when that is two or more (`count` is allowed with `within` as with `symbol`); while the path names exactly that many, their union is the scope, otherwise only candidates. A section container is one heading's section, not a heading path. A refreshed selector that would not select its unit alone is replaced by the stored selector. In A1 and A2 a hit in a comment is not a hit. Every printed anchor is checked: first line, whole text, runs of lines; a unit nothing selects alone carries `refuse: quote_not_distinguishable`. A typed quote longer than the limit only by whitespace is stored `normalize`d. A quote on the `file` unit keeps its quote and windows. | A `within` dropped because the path was not unique widened the scope to the whole resource for good, so a copy anywhere was followed once the original was edited; a refresh could write a selector that selected another unit; a quote moved into a comment could be marked; printed anchors that did not select their unit were offered and looped; the cut of a long typed quote produced a false `quote_not_distinguishable`. |
 | 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
 | 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
 | 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
@@ -8055,10 +8159,10 @@ Each of these has a test, named in parentheses.
   (`cases/resolve.json`: the cases named "... stored: ..." and the scenario
   cases; `resolve_json`.)
 - R140. Every completed selector resolves to its unit, and every printed
-  anchor of every unit of every fixture selects that unit alone, or, for
-  units identical with identical in-unit windows in one container, a list
-  that holds it; generated copies that share a long common start are told
-  apart. (`completed_selectors_are_fixed_points`,
+  anchor of every unit of every fixture selects that unit alone, or the unit
+  is marked `quote_not_distinguishable` and its anchor does not select it
+  alone; generated copies that share a long common start, and the shapes
+  where one `within` names several containers, are told apart. (`completed_selectors_are_fixed_points`,
   `default_quotes_are_never_in_comments_and_round_trip`,
   `cases/resolve.json`: the cases named "... printed anchor ...".)
 - R141. A provider analyses a resource once while its bytes are unchanged
@@ -8156,4 +8260,28 @@ Each of these has a test, named in parentheses.
   `the_text_of_a_candidate_is_cut_to_240_characters`,
   `items_are_ordered_capped_and_cut`,
   `r39_a_repo_side_without_git_is_repo_not_found`.)
+- R151. A quote-only completed selector stores `within` whenever its unit has
+  a container and `count` when the path names several; the union of those
+  containers is the scope while the path names that many, so a copy outside
+  it, the original then edited, is not followed, and a section pasted again
+  gives candidates.
+  (`cases/resolve.json`: the cases named "markdown B1: ..." and
+  "typescript B1: ...", `completed_selectors_are_fixed_points`.)
+- R152. A stored selector whose refreshed selector would not select its unit
+  alone comes back unchanged, and a stored symbol anchor's quote that moved
+  into a comment is gone from its declaration (A1: `identity: "symbol"`;
+  A2: that declaration does not hold it).
+  (`cases/resolve.json`: "markdown B3: ...", "python B4: ...".)
+- R153. Every printed anchor selects its unit alone or the unit carries
+  `refuse: quote_not_distinguishable`, also through the cache; a declaration
+  every line of which occurs in its copy is told apart by its whole text;
+  and the printed anchors of many same-named declarations that differ in a
+  line cost linear work.
+  (`cases/resolve.json`: "python I1: ...", "markdown I1: ...",
+  `default_quotes_are_never_in_comments_and_round_trip`,
+  `cache_rows_are_validated_strictly`,
+  `printed_anchors_of_many_copies_cost_linear_work`.)
+- R154. The edits that rename a piece leave the claims on its other units
+  unresolved, and an edit to another unit of the piece does not.
+  (`neighbour_edits_that_rename_a_piece_turn_its_claims_into_candidates`.)
 

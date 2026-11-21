@@ -311,7 +311,8 @@ impl Locator {
 #[serde(deny_unknown_fields)]
 #[schemars(
     description = "A selector (spec section 5.2). No key may be null.",
-    extend("dependentRequired" = {"prefix": ["quote"], "suffix": ["quote"], "within": ["quote"], "count": ["symbol"]})
+    extend("dependentRequired" = {"prefix": ["quote"], "suffix": ["quote"], "within": ["quote"]}),
+    extend("dependentSchemas" = {"count": {"anyOf": [{"required": ["symbol"]}, {"required": ["within"]}]}})
 )]
 pub struct Selector {
     /// Text that occurs in the unit. At most 2,048 characters, and not
@@ -336,8 +337,10 @@ pub struct Selector {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(with = "String", length(min = 1))]
     pub symbol: Option<String>,
-    /// How many declarations the symbol named when the anchor was made,
-    /// stored only when that was two or more.
+    /// With `symbol`: how many declarations the symbol named when the
+    /// anchor was made. Without `symbol`, with `within`: how many
+    /// containers `within` named then. Stored only when that was two or
+    /// more.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(with = "u64", range(min = 2, max = 9_007_199_254_740_991u64))]
     pub count: Option<u64>,
@@ -446,8 +449,8 @@ impl Selector {
                 }
             }
         }
-        if self.symbol.is_none() && self.count.is_some() {
-            return bad("count is allowed only together with symbol".into());
+        if self.symbol.is_none() && self.within.is_none() && self.count.is_some() {
+            return bad("count is allowed only together with symbol or within".into());
         }
         if let Some(q) = &self.quote {
             if text::trim(q).is_empty() {
@@ -1448,6 +1451,8 @@ mod tests {
         bad(r#"{"quote":"x","pos":1}"#);
         bad(r#"{"within":["a"]}"#);
         bad(r#"{"count":2}"#);
+        bad(r#"{"quote":"x","count":2}"#);
+        ok(r#"{"quote":"x","within":["A"],"count":2}"#);
         bad(r#"{"quote":"x","within":[]}"#);
         bad(r#"{"quote":"x","within":["1","2","3","4","5","6","7","8"]}"#);
         bad(r#"{"symbol":"a","count":1}"#);

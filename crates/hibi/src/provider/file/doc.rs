@@ -294,8 +294,9 @@ impl Doc {
             let _ = doc.prose.set(index);
         }
         let sels = doc.printed()?;
-        for (e, sel) in doc.entries.iter_mut().zip(sels) {
+        for (e, (sel, alone)) in doc.entries.iter_mut().zip(sels) {
             e.unit.sel = sel;
+            e.unit.refuse = (!alone).then_some(Refuse::QuoteNotDistinguishable);
         }
         Ok(doc)
     }
@@ -337,7 +338,9 @@ impl Doc {
     ///
     /// 1. it is a JSON array with at least one element;
     /// 2. every element is an object with exactly the keys `key`, `kind`,
-    ///    `parent`, `label`, `range`, `fp`, `sel`;
+    ///    `parent`, `label`, `range`, `fp`, `sel`, and `refuse` with the
+    ///    value `quote_not_distinguishable` for a unit no anchor selects
+    ///    alone;
     /// 3. every element reads as a unit (valid fingerprint and selector);
     /// 4. every kind is one of the file provider's kinds;
     /// 5. the first unit is the `file` unit over `[0, len)` with no parent,
@@ -348,6 +351,7 @@ impl Doc {
     /// 9. the profile fits the class: `ast-v1` only for a code class.
     pub(super) fn from_cache(text: String, class: Class, row: &str) -> Option<Doc> {
         const KEYS: [&str; 7] = ["key", "kind", "parent", "label", "range", "fp", "sel"];
+        const MARK: &str = "refuse";
         let value: serde_json::Value = serde_json::from_str(row).ok()?;
         let items = value
             .as_array()
@@ -356,11 +360,17 @@ impl Doc {
         let mut keys: HashSet<String> = HashSet::with_capacity(items.len());
         for (i, item) in items.iter().enumerate() {
             let obj = item.as_object()?;
-            if obj.len() != KEYS.len() || !KEYS.iter().all(|k| obj.contains_key(*k)) {
+            let marked = obj.contains_key(MARK);
+            if obj.len() != KEYS.len() + usize::from(marked)
+                || !KEYS.iter().all(|k| obj.contains_key(*k))
+            {
                 return None;
             }
             let u: Unit = serde_json::from_value(item.clone()).ok()?;
-            if !super::KINDS.contains(&u.kind.as_str()) || u.text.is_some() {
+            if !super::KINDS.contains(&u.kind.as_str())
+                || u.text.is_some()
+                || (marked && u.refuse != Some(Refuse::QuoteNotDistinguishable))
+            {
                 return None;
             }
             let r = u.range?;
@@ -596,19 +606,6 @@ impl Doc {
         }
     }
 
-    /// Unit `d` is `u` or holds it (the parent chain of `u` reaches `d`).
-    fn holds(&self, d: usize, mut u: usize) -> bool {
-        loop {
-            if u == d {
-                return true;
-            }
-            match self.parents[u] {
-                Some(p) => u = p,
-                None => return false,
-            }
-        }
-    }
-
     /// Error 9 of section 6.7: a selector with a `symbol` on a class without
     /// symbols (markdown, prose, text) is `invalid_selector`, because no
     /// anchor there can name a declaration.
@@ -739,10 +736,15 @@ impl Doc {
     fn prose_index_from(&self, regions: &[prose::Region]) -> ProseIndex {
         {
             let info = self.prose_info(regions);
-            let mut sections: HashSet<Vec<String>> = HashSet::new();
+            let mut sections: HashMap<Vec<String>, Vec<usize>> = HashMap::new();
             let mut pieces: HashMap<(Vec<String>, String), Vec<usize>> = HashMap::new();
             for p in info.iter().skip(1) {
-                sections.insert(p.path.clone());
+                // A section's units come before the next section of the
+                // same path.
+                let list = sections.entry(p.path.clone()).or_default();
+                if list.last() != Some(&p.section) {
+                    list.push(p.section);
+                }
                 if p.multi {
                     let list = pieces.entry((p.path.clone(), p.name.clone())).or_default();
                     if list.last() != Some(&p.piece) {
@@ -772,25 +774,43 @@ impl Doc {
                 let s = spans.entry(r.piece).or_insert((r.start, r.end, k + 1));
                 s.1 = r.end;
             }
+            // The headings of the current path, as entry indexes: the last
+            // one starts the section of a unit below it. A heading itself
+            // is in the section of the heading above it.
+            let mut stack: Vec<usize> = Vec::new();
             for (k, r) in regions.iter().enumerate() {
+                let depth = r.heading_path.len();
+                stack.truncate(depth);
+                let section = if depth == 0 {
+                    0
+                } else {
+                    stack.get(depth - 1).copied().unwrap_or(0)
+                };
+                if r.kind == prose::ProseKind::Heading {
+                    stack.push(k + 1);
+                }
                 let Some(slot) = info.get_mut(k + 1) else {
                     continue;
                 };
                 let multi = sizes[&r.piece] > 1;
+                // The cut at 120 characters can land on a space, which is
+                // removed: `names` compares normalized strings.
                 let name = if multi {
                     let (start, end, first) = spans[&r.piece];
                     let first = &regions[first - 1];
-                    if first.kind == prose::ProseKind::TableRow {
+                    let name = if first.kind == prose::ProseKind::TableRow {
                         first_normalized(first_cell(&self.text[start..end]), PIECE_NAME_CHARS)
                     } else {
                         first_normalized(&self.text[first.start..first.end], PIECE_NAME_CHARS)
-                    }
+                    };
+                    text::trim_end(&name).to_owned()
                 } else {
                     String::new()
                 };
                 *slot = ProseInfo {
                     raw_path: r.heading_path.clone(),
                     path: r.heading_path.iter().map(|h| heading_key(h)).collect(),
+                    section,
                     piece: r.piece,
                     multi,
                     name,
@@ -833,10 +853,11 @@ impl Doc {
         let w: Vec<String> = w.iter().map(|x| text::normalize(x)).collect();
         if prose_class(self.class).is_some() {
             let index = self.prose_index();
-            let mut found = Vec::new();
-            if index.sections.contains(&w) {
-                found.push(Container::Section(w.clone()));
-            }
+            let mut found: Vec<Container> = index
+                .sections
+                .get(&w)
+                .map(|s| s.iter().map(|&x| Container::Section(x)).collect())
+                .unwrap_or_default();
             if let Some((name, path)) = w.split_last()
                 && let Some(pieces) = index.pieces.get(&(path.to_vec(), name.clone()))
             {
@@ -853,49 +874,96 @@ impl Doc {
             .unwrap_or_default()
     }
 
-    /// Unit `u` is one of the units of container `c`.
-    fn in_container(&self, c: &Container, u: usize) -> bool {
-        match c {
-            Container::Section(path) => u != 0 && self.prose()[u].path == *path,
-            Container::Piece(piece) => u != 0 && self.prose()[u].piece == *piece,
-            Container::Decl(d) => self.holds(*d, u),
+    /// How many containers `names(w)` holds, without listing them.
+    fn names_count(&self, w: &[String]) -> usize {
+        if prose_class(self.class).is_none() && self.tree && w.len() == 1 {
+            return self
+                .symbols
+                .get(text::normalize(&w[0]).as_str())
+                .map_or(0, Vec::len);
         }
+        self.names(w).len()
+    }
+
+    /// The containers unit `u` is in: its section and, for a unit of a
+    /// multi-unit piece, that piece (prose), or every declaration holding
+    /// it, itself included (code).
+    fn containers_of(&self, u: usize) -> Vec<Container> {
+        if u == 0 {
+            return Vec::new();
+        }
+        if prose_class(self.class).is_some() {
+            let p = &self.prose()[u];
+            let mut out = vec![Container::Section(p.section)];
+            if p.multi {
+                out.push(Container::Piece(p.piece));
+            }
+            return out;
+        }
+        let mut out = Vec::new();
+        let mut a = Some(u);
+        while let Some(x) = a {
+            if self.entries[x].symbol.is_some() {
+                out.push(Container::Decl(x));
+            }
+            a = self.parents[x];
+        }
+        out
+    }
+
+    /// Unit `u` is in one of the containers of `scope`.
+    fn in_scope(&self, scope: &Scope, u: usize) -> bool {
+        self.containers_of(u).iter().any(|c| scope.set.contains(c))
+    }
+
+    /// The scope a stored `within` gives: the union of the containers it
+    /// names, when it names exactly as many as `count` says (one when
+    /// `count` is absent); `None` otherwise (section 6.7).
+    fn scope_of(&self, within: &[String], count: Option<u64>) -> Option<Scope> {
+        let c = self.names(within);
+        let want = count.map_or(1, |c| usize::try_from(c).unwrap_or(usize::MAX));
+        (c.len() == want).then(|| Scope::of(c))
     }
 
     // -- completed and printed selectors -------------------------------------
 
-    /// The span of a quote as stored: the hit's span cut to
-    /// `MAX_QUOTE_CHARS` characters with trailing WS then removed. The
-    /// windows are cut around this span, so the stored selector finds its
-    /// own quote again.
-    fn stored_span(&self, span: Span) -> Span {
+    /// A quote as stored, with the span its windows are cut around: the
+    /// resource text of the span; when that is longer than
+    /// `MAX_QUOTE_CHARS` characters, its normalized text, when that is not;
+    /// otherwise the text cut to `MAX_QUOTE_CHARS` characters with trailing
+    /// WS then removed, and the span cut with it. A typed quote is never
+    /// cut: the normalized text of its hit is the typed quote normalized,
+    /// which has at most `MAX_QUOTE_CHARS` characters. The stored selector
+    /// finds its own quote again.
+    fn stored_quote(&self, span: Span) -> (String, Span) {
         let q = &self.text[span.start..span.end];
-        match q.char_indices().nth(MAX_QUOTE_CHARS) {
-            Some((b, _)) => Span {
-                start: span.start,
-                end: span.start + text::trim_end(&q[..b]).len(),
-            },
-            None => span,
+        let Some((b, _)) = q.char_indices().nth(MAX_QUOTE_CHARS) else {
+            return (q.to_owned(), span);
+        };
+        let n = text::normalize(q);
+        if n.chars().nth(MAX_QUOTE_CHARS).is_none() {
+            return (n, span);
         }
-    }
-
-    /// The quote of a hit as the resource has it, cut as
-    /// [`Doc::stored_span`] says.
-    fn quote_text(&self, span: Span) -> String {
-        let s = self.stored_span(span);
-        self.text[s.start..s.end].to_owned()
+        let cut = Span {
+            start: span.start,
+            end: span.start + text::trim_end(&q[..b]).len(),
+        };
+        (self.text[cut.start..cut.end].to_owned(), cut)
     }
 
     /// The completed selector of a quote-only anchor at an exact hit in
-    /// unit `u` (section 6.7).
+    /// unit `u` (section 6.7): `within` whenever the unit is in a
+    /// container, with `count` when it names two or more containers.
     fn quote_selector(&self, u: usize, span: Span) -> Selector {
-        let span = self.stored_span(span);
-        let within = self.within_of(u).filter(|w| self.names(w).len() == 1);
+        let (quote, span) = self.stored_quote(span);
+        let within = self.within_of(u);
+        let count = within.as_deref().map_or(0, |w| self.names_count(w));
         Selector {
-            quote: Some(self.text[span.start..span.end].to_owned()),
+            quote: Some(quote),
             prefix: Some(self.prefix_window(u, span)),
             suffix: Some(self.suffix_window(u, span)),
             within,
+            count: (count >= 2).then_some(count as u64),
             ..Selector::default()
         }
     }
@@ -917,41 +985,114 @@ impl Doc {
     }
 
     /// The printed anchors of every unit (section 6.7), computed once when
-    /// the document is built: `{}` for `file`, `{symbol}` for a declaration
-    /// whose symbol is unique, `{symbol, count, quote}` with a line no other
-    /// copy has for one of several declarations, and a quote-only selector
-    /// for every other unit.
-    fn printed(&self) -> Result<Vec<Selector>, ProviderError> {
-        let mut out = vec![Selector::empty(); self.entries.len()];
-        for group in self.symbols.values() {
+    /// the document is built, each with whether it selects its unit alone:
+    /// `{}` for `file`, `{symbol}` for a declaration whose symbol is unique,
+    /// `{symbol, count, quote}` for one of several declarations, and a
+    /// quote-only selector for every other unit. A unit that no anchor of
+    /// these forms selects alone keeps its first-line anchor and is marked
+    /// `refuse: quote_not_distinguishable`.
+    fn printed(&self) -> Result<Vec<(Selector, bool)>, ProviderError> {
+        let mut out = vec![(Selector::empty(), true); self.entries.len()];
+        let mut groups: Vec<&Vec<usize>> = self.symbols.values().collect();
+        groups.sort_by_key(|g| g[0]);
+        for group in groups {
             if group.len() == 1 {
                 let i = group[0];
-                out[i] = Selector {
+                let sel = Selector {
                     symbol: self.entries[i].symbol.clone(),
                     ..Selector::default()
                 };
+                out[i] = (sel, true);
             } else {
-                for (i, sel) in self.copy_anchors(group) {
-                    out[i] = sel;
+                for (i, sel, alone) in self.copy_anchors(group) {
+                    out[i] = (sel, alone);
                 }
             }
         }
         let others: Vec<usize> = (1..self.entries.len())
             .filter(|&i| self.entries[i].symbol.is_none())
             .collect();
-        for (i, sel) in self.quote_anchors(&others)? {
-            out[i] = sel;
+        for (i, sel, alone) in self.quote_anchors(&others)? {
+            out[i] = (sel, alone);
         }
         Ok(out)
     }
 
-    /// The printed anchors of several declarations of one symbol: each with
-    /// `count` and as `quote` the first line of its text whose normalized
-    /// text occurs in no other declaration's normalized scope text.
-    /// Declarations whose normalized scope texts are equal are identical
-    /// twins and are found by hashing first; they have no such line and get
-    /// their first line.
-    fn copy_anchors(&self, group: &[usize]) -> Vec<(usize, Selector)> {
+    /// The trimmed, non-empty lines of unit `i`, as spans.
+    fn lines_of(&self, i: usize) -> Vec<Span> {
+        let e = &self.entries[i];
+        let mut out = Vec::new();
+        let mut offset = e.start;
+        for line in self.text[e.start..e.end].split('\n') {
+            let lead = line.len() - text::trim_start(line).len();
+            let body = text::trim(line);
+            if !body.is_empty() {
+                out.push(Span {
+                    start: offset + lead,
+                    end: offset + lead + body.len(),
+                });
+            }
+            offset += line.len() + 1;
+        }
+        out
+    }
+
+    /// The runs of consecutive lines of unit `i` that a printed anchor
+    /// tries after its first choices: for each line in order, the longest
+    /// run that starts there and whose normalized text has at most
+    /// `MAX_QUOTE_CHARS` characters (the line alone when it is longer).
+    fn blocks_of(&self, i: usize) -> Vec<Span> {
+        let lines = self.lines_of(i);
+        let sizes: Vec<usize> = lines
+            .iter()
+            .map(|l| text::char_len(&text::normalize(&self.text[l.start..l.end])))
+            .collect();
+        let mut out = Vec::with_capacity(lines.len());
+        for a in 0..lines.len() {
+            let mut b = a;
+            let mut total = sizes[a];
+            while b + 1 < lines.len() && total + 1 + sizes[b + 1] <= MAX_QUOTE_CHARS {
+                b += 1;
+                total += 1 + sizes[b];
+            }
+            out.push(Span {
+                start: lines[a].start,
+                end: lines[b].end,
+            });
+        }
+        out
+    }
+
+    /// The printed anchor of one of `n` declarations of a symbol with its
+    /// quote at `span` in declaration `i`.
+    fn copy_selector(&self, i: usize, span: Span, n: usize) -> Selector {
+        let (quote, span) = self.stored_quote(span);
+        Selector {
+            quote: Some(quote),
+            prefix: Some(self.prefix_window(i, span)),
+            suffix: Some(self.suffix_window(i, span)),
+            symbol: self.entries[i].symbol.clone(),
+            count: Some(n as u64),
+            ..Selector::default()
+        }
+    }
+
+    /// The printed anchors of several declarations of one symbol, each with
+    /// `count` and with whether it selects its declaration alone. The quote
+    /// is the first line of the declaration whose normalized text occurs in
+    /// no other declaration's normalized scope text (the first line when
+    /// there is none). When that anchor does not select the declaration
+    /// alone, the whole declaration text is the quote; then each run of
+    /// [`Doc::blocks_of`] in turn. Declarations whose normalized scope
+    /// texts are equal are identical twins: no quote selects one alone.
+    ///
+    /// Which other declarations hold a quote and its windows is looked up
+    /// in an index of their 8-byte windows, and the stored-selector check
+    /// (A2) runs only on those: for many declarations that differ in a
+    /// line, the work is linear in their text, not in its square. A line
+    /// shorter than 8 bytes is looked for in every other declaration.
+    fn copy_anchors(&self, group: &[usize]) -> Vec<(usize, Selector, bool)> {
+        let n = group.len();
         let scopes: Vec<String> = group
             .iter()
             .map(|&i| {
@@ -963,67 +1104,124 @@ impl Doc {
         for s in &scopes {
             *same.entry(s.as_str()).or_default() += 1;
         }
-        let symbol = self.entries[group[0]].symbol.clone();
-        group
+        let index = GramIndex::new(&scopes);
+        // How many declarations have each normalized line as a line: a line
+        // two have cannot be the line no other has, so the index is asked
+        // only about the others.
+        let lines: Vec<Vec<(Span, String)>> = group
             .iter()
-            .enumerate()
-            .map(|(k, &i)| {
-                let e = &self.entries[i];
-                let unit_text = &self.text[e.start..e.end];
-                let mut offset = e.start;
-                let mut chosen: Option<Span> = None;
-                let mut first: Option<Span> = None;
-                for line in unit_text.split('\n') {
-                    let lead = line.len() - text::trim_start(line).len();
-                    let body = text::trim(line);
-                    let span = Span {
-                        start: offset + lead,
-                        end: offset + lead + body.len(),
-                    };
-                    offset += line.len() + 1;
-                    if body.is_empty() {
-                        continue;
-                    }
-                    first.get_or_insert(span);
-                    if same[scopes[k].as_str()] > 1 {
-                        break;
-                    }
-                    let needle = text::normalize(body);
-                    let elsewhere = scopes.iter().enumerate().any(|(j, s)| {
-                        j != k && {
-                            count_work(1);
-                            s.contains(needle.as_str())
-                        }
-                    });
-                    if !elsewhere {
-                        chosen = Some(span);
-                        break;
-                    }
-                }
-                let span = chosen.or(first).expect("a declaration has a line");
-                let sel = Selector {
-                    quote: Some(self.quote_text(span)),
-                    prefix: Some(self.prefix_window(i, span)),
-                    suffix: Some(self.suffix_window(i, span)),
-                    symbol: symbol.clone(),
-                    count: Some(group.len() as u64),
-                    ..Selector::default()
-                };
-                (i, sel)
+            .map(|&i| {
+                self.lines_of(i)
+                    .into_iter()
+                    .map(|l| (l, text::normalize(&self.text[l.start..l.end])))
+                    .collect()
             })
-            .collect()
+            .collect();
+        let mut line_count: HashMap<&str, usize> = HashMap::new();
+        for ls in &lines {
+            let mut seen: HashSet<&str> = HashSet::new();
+            for (_, l) in ls {
+                if seen.insert(l.as_str()) {
+                    *line_count.entry(l.as_str()).or_default() += 1;
+                }
+            }
+        }
+        // A2 runs only on the declarations whose scope holds the quote and
+        // the stored windows: no other one can reproduce them.
+        let selects = |k: usize, sel: &Selector| -> bool {
+            let q = text::normalize(sel.quote.as_deref().unwrap_or_default());
+            let parts: Vec<&str> = [
+                q.as_str(),
+                sel.prefix.as_deref().unwrap_or_default(),
+                sel.suffix.as_deref().unwrap_or_default(),
+            ]
+            .into_iter()
+            .filter(|p| !p.is_empty())
+            .collect();
+            let mut among: Vec<usize> = index
+                .holding(&parts, k)
+                .into_iter()
+                .map(|j| group[j])
+                .collect();
+            among.push(group[k]);
+            matches!(self.a2_reproducing(sel, &among).as_slice(), [(u, _)] if *u == group[k])
+        };
+        let mut out = Vec::with_capacity(n);
+        for (k, &i) in group.iter().enumerate() {
+            count_work(1);
+            let first = lines[k]
+                .first()
+                .map(|(s, _)| *s)
+                .expect("a declaration has a line");
+            if same[scopes[k].as_str()] > 1 {
+                out.push((i, self.copy_selector(i, first, n), false));
+                continue;
+            }
+            // A line in a comment is no quote: a stored symbol anchor does
+            // not see hits in comments (A2).
+            let unique = lines[k].iter().find(|(s, l)| {
+                line_count[l.as_str()] == 1 && !self.in_comment(*s) && !index.held_elsewhere(l, k)
+            });
+            let e = &self.entries[i];
+            let choice = unique.map_or(first, |(s, _)| *s);
+            let whole = Span {
+                start: e.start,
+                end: e.end,
+            };
+            let mut tried: HashSet<(usize, usize)> = HashSet::new();
+            let found = [choice, whole]
+                .into_iter()
+                .chain(std::iter::once(i).flat_map(|i| self.blocks_of(i)))
+                .filter(|s| tried.insert((s.start, s.end)))
+                .map(|s| self.copy_selector(i, s, n))
+                .find(|sel| selects(k, sel));
+            match found {
+                Some(sel) => out.push((i, sel, true)),
+                None => out.push((i, self.copy_selector(i, choice, n), false)),
+            }
+        }
+        out
     }
 
-    /// The printed anchors of units without a symbol: the first line as
-    /// the quote when its selector selects the unit alone, else the whole
-    /// unit text, else the first line (an indistinguishable twin).
+    /// Per entry: the hit of a quote at the entry's start resolves to it,
+    /// because no other unit that starts there is smaller (section 6.7,
+    /// innermost unit). Entries that start at one byte are next to each
+    /// other, the largest first.
+    fn innermost_at_start(&self) -> Vec<bool> {
+        let mut out = vec![false; self.entries.len()];
+        let mut a = 1;
+        while a < self.entries.len() {
+            let mut b = a;
+            while b + 1 < self.entries.len() && self.entries[b + 1].start == self.entries[a].start {
+                b += 1;
+            }
+            let min = (a..=b).map(|x| self.entries[x].end).min().expect("a run");
+            let first = (a..=b)
+                .find(|&x| self.entries[x].end == min)
+                .expect("a run");
+            out[first] = true;
+            a = b + 1;
+        }
+        out
+    }
+
+    /// The printed anchors of units without a symbol, each with whether it
+    /// selects its unit alone: the first line as the quote when that
+    /// selects the unit alone, else the whole unit text, else each run of
+    /// [`Doc::blocks_of`] in turn. A unit whose normalized text another
+    /// unit of its scope has is an identical twin: nothing selects it alone.
     ///
     /// A first-line quote starts at its unit's start, so its stored prefix
     /// is empty and only a hit at the start of a unit can reproduce it: the
     /// units of the scope are sorted by the start of their normalized text
-    /// and searched by prefix, so the check is one sort per scope, not a
-    /// search of the text per unit.
-    fn quote_anchors(&self, units: &[usize]) -> Result<Vec<(usize, Selector)>, ProviderError> {
+    /// and searched by prefix, and whole-unit quotes are counted by
+    /// hashing, so these checks are one sort per scope, not a search of the
+    /// text per unit. Only a unit these checks do not settle is resolved.
+    fn quote_anchors(
+        &self,
+        units: &[usize],
+    ) -> Result<Vec<(usize, Selector, bool)>, ProviderError> {
+        let at_start = self.innermost_at_start();
         // The first-line selector of each unit and its scope.
         let mut firsts: Vec<(usize, Selector, ScopeKey)> = Vec::with_capacity(units.len());
         for &i in units {
@@ -1039,26 +1237,32 @@ impl Doc {
                 ));
             }
             let sel = self.quote_selector(i, span);
-            let key = match sel.within.as_deref().map(|w| self.names(w)) {
-                Some(mut c) if c.len() == 1 => ScopeKey::Container(c.remove(0)),
-                _ => ScopeKey::Whole,
-            };
+            let key = scope_key(sel.within.as_deref());
             firsts.push((i, sel, key));
         }
-        // Per scope: the normalized starts of its units, sorted, equal
-        // starts counted once. Each unit is added to the scopes it belongs
-        // to in one pass.
+        // Per scope: the normalized starts of the units a hit at their
+        // start resolves to, sorted, equal starts counted once; and their
+        // normalized texts, counted. Each unit is added to the scopes it
+        // belongs to in one pass.
         let needed: HashSet<ScopeKey> = firsts.iter().map(|f| f.2.clone()).collect();
         let mut starts: HashMap<ScopeKey, Vec<String>> = HashMap::new();
+        let mut whole: HashMap<ScopeKey, HashMap<String, usize>> = HashMap::new();
         for v in 1..self.entries.len() {
+            if !at_start[v] {
+                continue;
+            }
+            let e = &self.entries[v];
             let start = OnceCell::new();
+            let full = OnceCell::new();
             for key in self.scope_keys(v) {
                 if needed.contains(&key) {
                     count_work(1);
-                    let e = &self.entries[v];
                     let s: &String = start
                         .get_or_init(|| first_normalized(&self.text[e.start..e.end], START_CHARS));
-                    starts.entry(key).or_default().push(s.clone());
+                    starts.entry(key.clone()).or_default().push(s.clone());
+                    let t: &String =
+                        full.get_or_init(|| text::normalize(&self.text[e.start..e.end]));
+                    *whole.entry(key).or_default().entry(t.clone()).or_default() += 1;
                 }
             }
         }
@@ -1076,94 +1280,99 @@ impl Doc {
                 (key, grouped)
             })
             .collect();
-        // First lines that select their unit alone; the others try the whole
-        // unit text.
         let mut out = Vec::with_capacity(firsts.len());
-        let mut fallback: Vec<(usize, Selector, ScopeKey)> = Vec::new();
         for (i, sel, key) in firsts {
-            let nq = text::normalize(sel.quote.as_deref().unwrap_or_default());
-            let suffix = sel.suffix.clone().unwrap_or_default();
-            let members = groups.get(&key).map_or(&[][..], Vec::as_slice);
-            let lo = members.partition_point(|(s, _)| s.as_str() < nq.as_str());
-            let mut same = 0;
-            for (s, n) in &members[lo..] {
-                if !s.starts_with(nq.as_str()) {
-                    break;
-                }
-                count_work(1);
-                let rest = text::trim_start(&s[nq.len()..]);
-                let rest: String = rest.chars().take(WINDOW_CHARS).collect();
-                if text::trim(&rest) == suffix {
-                    same += n;
-                }
-            }
-            if same <= 1 {
-                out.push((i, sel));
-            } else {
-                fallback.push((i, sel, key));
-            }
-        }
-        if fallback.is_empty() {
-            return Ok(out);
-        }
-        // A whole-unit quote has empty windows, so only a unit with the same
-        // normalized text reproduces it: counted per scope by hashing.
-        let needed: HashSet<ScopeKey> = fallback.iter().map(|f| f.2.clone()).collect();
-        let mut whole: HashMap<ScopeKey, HashMap<String, usize>> = HashMap::new();
-        for v in 1..self.entries.len() {
-            let full = OnceCell::new();
-            for key in self.scope_keys(v) {
-                if needed.contains(&key) {
-                    count_work(1);
-                    let e = &self.entries[v];
-                    let t: &String =
-                        full.get_or_init(|| text::normalize(&self.text[e.start..e.end]));
-                    *whole.entry(key).or_default().entry(t.clone()).or_default() += 1;
-                }
-            }
-        }
-        for (i, sel, key) in fallback {
             let e = &self.entries[i];
+            let unit_text = &self.text[e.start..e.end];
+            let twins = whole
+                .get(&key)
+                .and_then(|m| m.get(&text::normalize(unit_text)))
+                .copied()
+                .unwrap_or(0);
+            if at_start[i] && twins >= 2 {
+                out.push((i, sel, false));
+                continue;
+            }
+            // The first line.
+            if at_start[i] {
+                let nq = text::normalize(sel.quote.as_deref().unwrap_or_default());
+                let suffix = sel.suffix.clone().unwrap_or_default();
+                let members = groups.get(&key).map_or(&[][..], Vec::as_slice);
+                let lo = members.partition_point(|(s, _)| s.as_str() < nq.as_str());
+                let mut same = 0;
+                for (s, n) in &members[lo..] {
+                    if !s.starts_with(nq.as_str()) {
+                        break;
+                    }
+                    count_work(1);
+                    let rest = text::trim_start(&s[nq.len()..]);
+                    let rest: String = rest.chars().take(WINDOW_CHARS).collect();
+                    if text::trim(&rest) == suffix {
+                        same += n;
+                    }
+                }
+                if same == 1 {
+                    out.push((i, sel, true));
+                    continue;
+                }
+            }
+            // The whole unit text: a quote with empty windows, so only a
+            // unit with the same normalized text reproduces it.
             let span = Span {
                 start: e.start,
                 end: e.end,
             };
-            let unit_text = &self.text[e.start..e.end];
-            let cut = unit_text.chars().nth(MAX_QUOTE_CHARS).is_some();
-            let alone = if cut {
-                // A quote cut to MAX_QUOTE_CHARS has a suffix window: rare,
-                // resolved directly.
-                self.selects(&self.quote_selector(i, span), i)
-            } else {
-                whole
-                    .get(&key)
-                    .and_then(|m| m.get(&text::normalize(unit_text)))
-                    .is_some_and(|&n| n == 1)
-            };
-            if alone {
-                out.push((i, self.quote_selector(i, span)));
-            } else {
-                out.push((i, sel));
+            let full = self.quote_selector(i, span);
+            let cut = text::normalize(unit_text)
+                .chars()
+                .nth(MAX_QUOTE_CHARS)
+                .is_some();
+            if at_start[i] && !cut && twins == 1 {
+                out.push((i, full, true));
+                continue;
+            }
+            // Not settled by counting: resolve.
+            if self.selects(&sel, i) {
+                out.push((i, sel, true));
+                continue;
+            }
+            if self.selects(&full, i) {
+                out.push((i, full, true));
+                continue;
+            }
+            let block = self
+                .blocks_of(i)
+                .into_iter()
+                .map(|b| self.quote_selector(i, b))
+                .find(|s| self.selects(s, i));
+            match block {
+                Some(b) => out.push((i, b, true)),
+                None => out.push((i, sel, false)),
             }
         }
         Ok(out)
     }
 
-    /// The scopes unit `v` belongs to: the whole resource, and its section
-    /// and piece (prose) or the declarations holding it (code).
+    /// The scopes unit `v` belongs to: the whole resource, and each union
+    /// of containers that a `within` list naming one of its containers
+    /// names.
     fn scope_keys(&self, v: usize) -> Vec<ScopeKey> {
         let mut keys = vec![ScopeKey::Whole];
         if prose_class(self.class).is_some() {
             let p = &self.prose()[v];
-            keys.push(ScopeKey::Container(Container::Section(p.path.clone())));
+            if !p.path.is_empty() {
+                keys.push(scope_key(Some(&p.path)));
+            }
             if p.multi {
-                keys.push(ScopeKey::Container(Container::Piece(p.piece)));
+                let mut w = p.path.clone();
+                w.push(p.name.clone());
+                keys.push(scope_key(Some(&w)));
             }
         } else {
             let mut a = Some(v);
             while let Some(x) = a {
-                if self.entries[x].symbol.is_some() {
-                    keys.push(ScopeKey::Container(Container::Decl(x)));
+                if let Some(s) = &self.entries[x].symbol {
+                    keys.push(scope_key(Some(std::slice::from_ref(s))));
                 }
                 a = self.parents[x];
             }
@@ -1195,24 +1404,36 @@ impl Doc {
         let alone = matches!(found.as_slice(), [f] if f.how != How::Candidate);
         let mut units = Vec::with_capacity(found.len());
         for f in &found {
-            let sel_out = if alone {
-                self.completed(sel, f)
+            let u = if alone {
+                self.out(f, self.completed(sel, f))?
             } else {
-                self.entries[f.unit].unit.sel.clone()
+                // A listed unit carries its printed anchor, and is marked
+                // when no anchor selects it alone.
+                let e = &self.entries[f.unit].unit;
+                let mut u = self.out(f, e.sel.clone())?;
+                u.refuse = e.refuse;
+                u
             };
-            units.push(self.out(f, sel_out)?);
+            units.push(u);
         }
-        // A new anchor's completed selector must resolve back to its unit
-        // alone (section 6.7): otherwise the anchored text cannot be told
-        // apart from another place in its container.
-        if !stored
-            && let [u] = units.as_mut_slice()
+        // The completed selector of a unit returned alone must resolve back
+        // to that unit alone (section 6.7). A new anchor whose completed
+        // selector does not is refused: the anchored text cannot be told
+        // apart from another place in its container. For a stored selector
+        // the stored selector itself is returned: it resolved to the unit
+        // alone, and a refresh must not replace it by one that does not.
+        if let [u] = units.as_mut_slice()
+            && alone
             && u.refuse.is_none()
             && !u.approx
             && u.identity.is_none()
             && !self.selects(&u.sel, found[0].unit)
         {
-            u.refuse = Some(Refuse::QuoteNotDistinguishable);
+            if stored {
+                u.sel = sel.clone();
+            } else {
+                u.refuse = Some(Refuse::QuoteNotDistinguishable);
+            }
         }
         Ok(units)
     }
@@ -1257,14 +1478,30 @@ impl Doc {
         self.hits_in(quote, from, to)
     }
 
-    /// The hit of a stored symbol anchor in declaration `u`: one that
-    /// reproduces the stored windows, else the first outside comments, so
-    /// the completed selector is the one the anchor was made with.
-    fn symbol_hit(&self, sel: &Selector, u: usize, hits: &[Hit]) -> Option<Hit> {
-        hits.iter()
-            .find(|h| self.reproduces(sel, u, h.span))
-            .copied()
-            .or_else(|| self.first_outside_comments(hits))
+    /// The hits of a stored symbol anchor's quote in `scope(u)` (A1 and
+    /// A2): a hit inside a comment is not a hit, so a quote that moved into
+    /// a comment counts as gone from the declaration.
+    fn stored_hits(&self, quote: &str, u: usize) -> Vec<Hit> {
+        self.hits_in_scope(quote, u)
+            .into_iter()
+            .filter(|h| !self.in_comment(h.span))
+            .collect()
+    }
+
+    /// A2 on the declarations `among`: each one whose scope holds a hit of
+    /// the quote (outside comments) that reproduces the stored windows,
+    /// with that hit.
+    fn a2_reproducing(&self, sel: &Selector, among: &[usize]) -> Vec<(usize, Span)> {
+        let q = sel.quote.as_deref().unwrap_or_default();
+        among
+            .iter()
+            .filter_map(|&u| {
+                self.stored_hits(q, u)
+                    .into_iter()
+                    .find(|h| self.reproduces(sel, u, h.span))
+                    .map(|h| (u, h.span))
+            })
+            .collect()
     }
 
     /// `resolve_stored` of section 6.7.
@@ -1290,11 +1527,22 @@ impl Doc {
                 let Some(q) = &sel.quote else {
                     return vec![Found::resolved(u)];
                 };
-                let hits = self.hits_in_scope(q, u);
-                if let Some(h) = self.symbol_hit(sel, u, &hits) {
+                // The hit that reproduces the stored windows, else the
+                // first, so the completed selector is the one the anchor
+                // was made with.
+                let hits = self.stored_hits(q, u);
+                if let Some(h) = hits
+                    .iter()
+                    .find(|h| self.reproduces(sel, u, h.span))
+                    .or(hits.first())
+                {
                     return vec![Found::resolved(u).at(h.span)];
                 }
-                let elsewhere: Vec<Hit> = self.hits(q).into_iter().filter(|h| h.exact).collect();
+                let elsewhere: Vec<Hit> = self
+                    .hits(q)
+                    .into_iter()
+                    .filter(|h| h.exact && !self.in_comment(h.span))
+                    .collect();
                 if !elsewhere.is_empty() {
                     let mut out = vec![Found::candidate(u)];
                     out.extend(self.hit_units(&elsewhere));
@@ -1312,7 +1560,7 @@ impl Doc {
             let mut d = Vec::new();
             let mut r = Vec::new();
             for &u in s {
-                let hits = self.hits_in_scope(q, u);
+                let hits = self.stored_hits(q, u);
                 if hits.is_empty() {
                     continue;
                 }
@@ -1330,17 +1578,14 @@ impl Doc {
         // P.
         let q = sel.quote.as_deref().unwrap_or_default();
         let scope = match &sel.within {
-            Some(w) => {
-                let mut c = self.names(w);
-                if c.len() != 1 {
-                    return self.candidates(q, None);
-                }
-                Some(c.remove(0))
-            }
+            Some(w) => match self.scope_of(w, sel.count) {
+                Some(scope) => Some(scope),
+                None => return self.candidates(q, None),
+            },
             None => None,
         };
         let hits = self.hits(q);
-        let in_scope = |h: &Hit| scope.as_ref().is_none_or(|c| self.in_container(c, h.unit));
+        let in_scope = |h: &Hit| scope.as_ref().is_none_or(|c| self.in_scope(c, h.unit));
         let mut r: Vec<Found> = Vec::new();
         for h in hits.iter().filter(|h| h.exact && in_scope(h)) {
             if self.reproduces(sel, h.unit, h.span) && !r.iter().any(|f| f.unit == h.unit) {
@@ -1370,9 +1615,9 @@ impl Doc {
     /// `candidates(scope)`: the units of the exact hits in scope, then of
     /// the hits that cross units, then the similarity guess, each once, all
     /// approximate.
-    fn candidates(&self, quote: &str, scope: Option<&Container>) -> Vec<Found> {
+    fn candidates(&self, quote: &str, scope: Option<&Scope>) -> Vec<Found> {
         let hits = self.hits(quote);
-        let in_scope = |h: &Hit| scope.is_none_or(|c| self.in_container(c, h.unit));
+        let in_scope = |h: &Hit| scope.is_none_or(|c| self.in_scope(c, h.unit));
         let exact: Vec<Hit> = hits
             .iter()
             .filter(|h| h.exact && in_scope(h))
@@ -1402,29 +1647,68 @@ impl Doc {
 
     /// The similarity guess in a scope: the unit of the fuzzy step of
     /// section 7.2 on the scope's text, within the budget of section 7.1.
-    fn guess(&self, quote: &str, scope: Option<&Container>) -> Option<usize> {
-        let (from, to) = match scope {
-            None => (0, self.text.len()),
-            Some(Container::Decl(d)) => self.symbol_scope(*d),
-            Some(c) => {
-                let units: Vec<usize> = (1..self.entries.len())
-                    .filter(|&u| self.in_container(c, u))
-                    .collect();
-                let first = *units.first()?;
-                let last = *units.last()?;
-                (self.entries[first].start, self.entries[last].end)
-            }
+    /// In a scope of several containers the step runs on each container's
+    /// text, and the result nearest the quote (by edit distance, the
+    /// earlier container on a tie) is the guess. A result whose unit is
+    /// outside the scope is no guess.
+    fn guess(&self, quote: &str, scope: Option<&Scope>) -> Option<usize> {
+        let Some(scope) = scope else {
+            return self.guess_in(quote, 0, self.text.len()).map(|(u, _)| u);
         };
+        // The text of a section or piece container: from its first unit's
+        // start to its last unit's end.
+        let mut hull: HashMap<Container, (usize, usize)> = HashMap::new();
+        if scope.list.iter().any(|c| !matches!(c, Container::Decl(_))) {
+            for u in 1..self.entries.len() {
+                for c in self.containers_of(u) {
+                    if scope.set.contains(&c) {
+                        let e = &self.entries[u];
+                        let h = hull.entry(c).or_insert((e.start, e.end));
+                        h.1 = h.1.max(e.end);
+                    }
+                }
+            }
+        }
+        let mut best: Option<(usize, usize)> = None;
+        for c in &scope.list {
+            let (from, to) = match c {
+                Container::Decl(d) => self.symbol_scope(*d),
+                c => match hull.get(c) {
+                    Some(&h) => h,
+                    None => continue,
+                },
+            };
+            if let Some((u, d)) = self.guess_in(quote, from, to)
+                && self.in_scope(scope, u)
+                && best.is_none_or(|(_, b)| d < b)
+            {
+                best = Some((u, d));
+            }
+        }
+        best.map(|(u, _)| u)
+    }
+
+    /// The fuzzy step on `text[from..to]`: the unit of its result and the
+    /// result's edit distance to the quote, when within the budget.
+    fn guess_in(&self, quote: &str, from: usize, to: usize) -> Option<(usize, usize)> {
         let span = locate::fuzzy(&self.text[from..to], quote, "", "", 0)?;
         let span = Span {
             start: from + span.start,
             end: from + span.end.min(to - from),
         };
-        if span.start >= span.end || !locate::within_budget(&self.text[span.start..span.end], quote)
-        {
+        if span.start >= span.end {
             return None;
         }
-        Some(self.innermost(span))
+        let a: Vec<char> = text::normalize(&self.text[span.start..span.end])
+            .chars()
+            .collect();
+        let b: Vec<char> = text::normalize(quote).chars().collect();
+        let d = if a == b {
+            0
+        } else {
+            text::levenshtein_at_most(&a, &b, locate::error_budget(b.len()))?
+        };
+        Some((self.innermost(span), d))
     }
 
     /// `resolve_new` of section 6.7: what the agent typed.
@@ -1593,28 +1877,125 @@ struct Hit {
 }
 
 /// A container of section 6.7.
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Container {
-    /// The units whose heading path is exactly this path of heading keys.
-    Section(Vec<String>),
+    /// The units of one section: directly below one heading (its entry
+    /// index), or above the first heading (0).
+    Section(usize),
     /// The units of one multi-unit piece, by its number.
     Piece(usize),
     /// A declaration unit and the units within its range.
     Decl(usize),
 }
 
-/// The scope a printed quote-only selector is resolved in.
+/// The key of the scope a printed anchor with this `within` is resolved
+/// in.
+fn scope_key(within: Option<&[String]>) -> ScopeKey {
+    match within {
+        Some(w) => ScopeKey::Within(w.iter().map(|x| text::normalize(x)).collect()),
+        None => ScopeKey::Whole,
+    }
+}
+
+/// Bytes in a window of [`GramIndex`].
+const GRAM: usize = 8;
+
+/// Which of several texts hold some strings: each 8-byte window of the
+/// texts, with the texts that have it. Strings are looked for only in the
+/// texts that have the rarest window of any of them; when none is 8 bytes
+/// long, in every text.
+struct GramIndex<'a> {
+    texts: &'a [String],
+    grams: HashMap<[u8; GRAM], Vec<u32>>,
+}
+
+impl<'a> GramIndex<'a> {
+    fn new(texts: &'a [String]) -> Self {
+        let mut grams: HashMap<[u8; GRAM], Vec<u32>> = HashMap::new();
+        for (t, s) in texts.iter().enumerate() {
+            let t = t as u32;
+            for w in s.as_bytes().windows(GRAM) {
+                count_work(1);
+                let key: [u8; GRAM] = w.try_into().expect("a window of GRAM bytes");
+                let list = grams.entry(key).or_default();
+                if list.last() != Some(&t) {
+                    list.push(t);
+                }
+            }
+        }
+        GramIndex { texts, grams }
+    }
+
+    /// The texts that may hold every string of `parts`: those with the
+    /// rarest window of any part, or every text.
+    fn pool(&self, parts: &[&str]) -> Vec<usize> {
+        let mut best: Option<&[u32]> = None;
+        for part in parts {
+            for w in part.as_bytes().windows(GRAM) {
+                count_work(1);
+                let key: [u8; GRAM] = w.try_into().expect("a window of GRAM bytes");
+                let list = self.grams.get(&key).map_or(&[][..], Vec::as_slice);
+                if best.is_none_or(|b| list.len() < b.len()) {
+                    best = Some(list);
+                }
+            }
+        }
+        match best {
+            Some(list) => list.iter().map(|&t| t as usize).collect(),
+            None => (0..self.texts.len()).collect(),
+        }
+    }
+
+    /// The texts other than `k` that hold every string of `parts`.
+    fn holding(&self, parts: &[&str], k: usize) -> Vec<usize> {
+        self.pool(parts)
+            .into_iter()
+            .filter(|&t| {
+                count_work(1);
+                t != k && parts.iter().all(|p| self.texts[t].contains(p))
+            })
+            .collect()
+    }
+
+    /// A text other than `k` holds `needle`.
+    fn held_elsewhere(&self, needle: &str, k: usize) -> bool {
+        self.pool(&[needle]).into_iter().any(|t| {
+            count_work(1);
+            t != k && self.texts[t].contains(needle)
+        })
+    }
+}
+
+/// The scope a stored `within` gives: the containers it names, in order,
+/// and as a set.
+#[derive(Debug)]
+struct Scope {
+    list: Vec<Container>,
+    set: HashSet<Container>,
+}
+
+impl Scope {
+    fn of(list: Vec<Container>) -> Self {
+        let set = list.iter().copied().collect();
+        Scope { list, set }
+    }
+}
+
+/// The scope a printed quote-only selector is resolved in: the whole
+/// resource, or the union of the containers a `within` list names (keyed
+/// by the list, normalized).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 enum ScopeKey {
     Whole,
-    Container(Container),
+    Within(Vec<String>),
 }
 
 /// The prose units' information with the lookups of `names`.
 #[derive(Debug)]
 struct ProseIndex {
     info: Vec<ProseInfo>,
-    sections: HashSet<Vec<String>>,
+    /// The sections that some unit is in, by heading path, in source order.
+    sections: HashMap<Vec<String>, Vec<usize>>,
     pieces: HashMap<(Vec<String>, String), Vec<usize>>,
 }
 
@@ -1625,6 +2006,10 @@ struct ProseInfo {
     raw_path: Vec<String>,
     /// Their heading keys.
     path: Vec<String>,
+    /// The section the unit is in: the entry index of the heading that
+    /// starts it, or 0 above the first heading. Two sections whose heading
+    /// paths read the same are two sections.
+    section: usize,
     /// The piece the unit was cut from.
     piece: usize,
     /// The piece holds two or more units.
@@ -1874,6 +2259,24 @@ mod tests {
         }
     }
 
+    /// The printed anchors of many same-named declarations that differ in
+    /// one line cost linear work: which other declarations hold a line is
+    /// an index lookup, not a search of every other declaration.
+    #[test]
+    fn printed_anchors_of_many_copies_cost_linear_work() {
+        let build = |n: usize| {
+            let t: String = (0..n)
+                .map(|i| format!("fn f() {{\n    let k = 2;\n    k + {i}\n}}\n\n"))
+                .collect();
+            with_work(|| Doc::build(t, Class::Rust).unwrap())
+        };
+        let (small_doc, small) = build(1000);
+        let (_, large) = build(2000);
+        assert_linear(small, large, "printed anchors of copies");
+        // Each anchor names its declaration alone.
+        assert!(small_doc.units(None).iter().all(|u| u.refuse.is_none()));
+    }
+
     /// Limit 8: default quotes for many units with comments cost linear
     /// work (the comment lookup per unit is a binary search).
     #[test]
@@ -1918,6 +2321,20 @@ mod tests {
         let t = "// lead\nfn a() { 1 }\nstruct S { x: u8 }\n".to_owned();
         let good = Doc::build(t.clone(), Class::Rust).unwrap().to_cache();
         assert!(Doc::from_cache(t.clone(), Class::Rust, &good).is_some());
+        // A unit that no anchor selects alone keeps its mark through the
+        // cache.
+        let twins = "fn init() {}\nfn init() {}\n".to_owned();
+        let row = Doc::build(twins.clone(), Class::Rust).unwrap().to_cache();
+        let back = Doc::from_cache(twins, Class::Rust, &row).expect("a valid row");
+        let marks: Vec<Option<Refuse>> = back.units(None).iter().map(|u| u.refuse).collect();
+        assert_eq!(
+            marks,
+            [
+                None,
+                Some(Refuse::QuoteNotDistinguishable),
+                Some(Refuse::QuoteNotDistinguishable)
+            ]
+        );
         let rows: Vec<serde_json::Value> = serde_json::from_str(&good).unwrap();
         let edit = |f: &dyn Fn(&mut Vec<serde_json::Value>)| {
             let mut r = rows.clone();
@@ -1938,6 +2355,24 @@ mod tests {
                 "text, which a row never has",
                 edit(&|r| {
                     r[1]["text"] = "x".into();
+                }),
+            ),
+            (
+                "a refuse other than quote_not_distinguishable",
+                edit(&|r| {
+                    r[1]["refuse"] = "quote_in_comment".into();
+                }),
+            ),
+            (
+                "a refuse quote_spans_units",
+                edit(&|r| {
+                    r[1]["refuse"] = "quote_spans_units".into();
+                }),
+            ),
+            (
+                "approx, which a row never has",
+                edit(&|r| {
+                    r[1]["approx"] = true.into();
                 }),
             ),
             (

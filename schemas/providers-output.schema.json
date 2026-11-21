@@ -237,7 +237,7 @@
           }
         },
         "selectors": {
-          "description": "Selector keys it accepts, from `quote`, `symbol`, `key`. `quote`\nincludes `prefix`, `suffix` and `pos`. `{}` is always accepted. See\n[`Selector::disallowed_key`].",
+          "description": "Selector keys it accepts, from `quote`, `symbol`, `key`. `quote`\nincludes `prefix`, `suffix`, `within` and, with `within`, `count`;\n`symbol` includes `count`. `{}` is always accepted. See\n[`Selector::disallowed_key`].",
           "type": "array",
           "items": {
             "$ref": "#/$defs/SelectorKey"

@@ -1555,7 +1555,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "markdown: a quote in two identical sentences: ambiguous, identical printed anchors",
+    "name": "markdown: a quote in two identical sentences: ambiguous, each marked as not selectable alone",
     "input": {
       "path": "docs/pricing.md",
       "fixture": "fixtures/resolve/pricing.md",
@@ -1569,22 +1569,32 @@
           "key": "sentence:*",
           "approx": false,
           "identity": null,
-          "refuse": null,
+          "refuse": "quote_not_distinguishable",
           "sel": {
             "quote": "Same sentence here.",
             "prefix": "",
-            "suffix": ""
+            "suffix": "",
+            "within": [
+              "Pricing",
+              "Same sentence here."
+            ],
+            "count": 2
           }
         },
         {
           "key": "sentence:*~2",
           "approx": false,
           "identity": null,
-          "refuse": null,
+          "refuse": "quote_not_distinguishable",
           "sel": {
             "quote": "Same sentence here.",
             "prefix": "",
-            "suffix": ""
+            "suffix": "",
+            "within": [
+              "Pricing",
+              "Same sentence here."
+            ],
+            "count": 2
           }
         }
       ]
@@ -1593,7 +1603,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "markdown: a quote in a piece whose name is shared: no within",
+    "name": "markdown: a quote in a piece whose name is shared: within with count 2",
     "input": {
       "path": "docs/pricing.md",
       "fixture": "fixtures/resolve/pricing.md",
@@ -1611,7 +1621,12 @@
           "sel": {
             "quote": "Other words.",
             "prefix": "",
-            "suffix": ""
+            "suffix": "",
+            "within": [
+              "Pricing",
+              "Same sentence here."
+            ],
+            "count": 2
           }
         }
       ]
@@ -1733,22 +1748,32 @@
           "key": "sentence:*",
           "approx": false,
           "identity": null,
-          "refuse": null,
+          "refuse": "quote_not_distinguishable",
           "sel": {
             "quote": "Same sentence here.",
             "prefix": "",
-            "suffix": ""
+            "suffix": "",
+            "within": [
+              "Pricing",
+              "Same sentence here."
+            ],
+            "count": 2
           }
         },
         {
           "key": "sentence:*~2",
           "approx": false,
           "identity": null,
-          "refuse": null,
+          "refuse": "quote_not_distinguishable",
           "sel": {
             "quote": "Same sentence here.",
             "prefix": "",
-            "suffix": ""
+            "suffix": "",
+            "within": [
+              "Pricing",
+              "Same sentence here."
+            ],
+            "count": 2
           }
         }
       ]
@@ -1757,7 +1782,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "markdown: stored: within names two containers: candidates",
+    "name": "markdown: stored: within names two containers, count says one: candidates",
     "input": {
       "path": "docs/pricing.md",
       "fixture": "fixtures/resolve/pricing.md",
@@ -1777,22 +1802,32 @@
           "key": "sentence:*",
           "approx": true,
           "identity": null,
-          "refuse": null,
+          "refuse": "quote_not_distinguishable",
           "sel": {
             "quote": "Same sentence here.",
             "prefix": "",
-            "suffix": ""
+            "suffix": "",
+            "within": [
+              "Pricing",
+              "Same sentence here."
+            ],
+            "count": 2
           }
         },
         {
           "key": "sentence:*~2",
           "approx": true,
           "identity": null,
-          "refuse": null,
+          "refuse": "quote_not_distinguishable",
           "sel": {
             "quote": "Same sentence here.",
             "prefix": "",
-            "suffix": ""
+            "suffix": "",
+            "within": [
+              "Pricing",
+              "Same sentence here."
+            ],
+            "count": 2
           }
         }
       ]
@@ -2843,7 +2878,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "Go twin init: a new anchor gives both, with identical printed anchors",
+    "name": "Go twin init: a new anchor gives both, each marked as not selectable alone",
     "input": {
       "path": "init.go",
       "text": "package p\n\nfunc init() {}\n\nvar x = 1\n\nfunc init() {}\n",
@@ -2857,7 +2892,7 @@
           "key": "function:init",
           "approx": false,
           "identity": null,
-          "refuse": null,
+          "refuse": "quote_not_distinguishable",
           "sel": {
             "symbol": "init",
             "count": 2,
@@ -2870,7 +2905,7 @@
           "key": "function:init~2",
           "approx": false,
           "identity": null,
-          "refuse": null,
+          "refuse": "quote_not_distinguishable",
           "sel": {
             "symbol": "init",
             "count": 2,
@@ -2903,7 +2938,7 @@
           "key": "function:init",
           "approx": true,
           "identity": null,
-          "refuse": null,
+          "refuse": "quote_not_distinguishable",
           "sel": {
             "symbol": "init",
             "count": 2,
@@ -2916,13 +2951,724 @@
           "key": "function:init~2",
           "approx": true,
           "identity": null,
-          "refuse": null,
+          "refuse": "quote_not_distinguishable",
           "sel": {
             "symbol": "init",
             "count": 2,
             "quote": "func init() {}",
             "prefix": "",
             "suffix": ""
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown B1: a sentence in one of two pieces with the same name: within with count 2",
+    "input": {
+      "path": "docs/guide.md",
+      "text": "# Guide\n\n## Timeouts\n\nSet this in config.toml. The read timeout defaults to 45 s.\n\nSet this in config.toml. The write timeout defaults to 10 s.\n\n## Other\n\nNothing here.\n",
+      "sel": {
+        "quote": "The read timeout defaults to 45 s."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "The read timeout defaults to 45 s.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Guide",
+              "Timeouts",
+              "Set this in config.toml."
+            ],
+            "count": 2
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown B1: copied under another heading, the original edited: the original as a candidate, not the copy",
+    "input": {
+      "path": "docs/guide.md",
+      "text": "# Guide\n\n## Timeouts\n\nSet this in config.toml. The read timeout defaults to 60 s.\n\nSet this in config.toml. The write timeout defaults to 10 s.\n\n## Other\n\nNothing here. The read timeout defaults to 45 s.\n",
+      "sel": {
+        "quote": "The read timeout defaults to 45 s.",
+        "prefix": "",
+        "suffix": "",
+        "within": [
+          "Guide",
+          "Timeouts",
+          "Set this in config.toml."
+        ],
+        "count": 2
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": true,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "The read timeout defaults to 60 s.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Guide",
+              "Timeouts",
+              "Set this in config.toml."
+            ],
+            "count": 2
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown B1: the second piece's sentence copied, the original edited: the nearest piece's sentence is the guess",
+    "input": {
+      "path": "docs/guide.md",
+      "text": "# Guide\n\n## Timeouts\n\nSet this in config.toml. The read timeout defaults to 45 s.\n\nSet this in config.toml. The write timeout defaults to 11 s.\n\n## Other\n\nNothing here. The write timeout defaults to 10 s.\n",
+      "sel": {
+        "quote": "The write timeout defaults to 10 s.",
+        "prefix": "",
+        "suffix": "",
+        "within": [
+          "Guide",
+          "Timeouts",
+          "Set this in config.toml."
+        ],
+        "count": 2
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": true,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "The write timeout defaults to 11 s.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Guide",
+              "Timeouts",
+              "Set this in config.toml."
+            ],
+            "count": 2
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown B1: a section path that names one section: within without count",
+    "input": {
+      "path": "docs/guide.md",
+      "text": "# Guide\n\n## Timeouts\n\nThe read timeout defaults to 45 s.\n",
+      "sel": {
+        "quote": "The read timeout defaults to 45 s."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "The read timeout defaults to 45 s.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Guide",
+              "Timeouts"
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown B1: the section pasted again: the path names two sections: candidates",
+    "input": {
+      "path": "docs/guide.md",
+      "text": "# Guide\n\n## Timeouts\n\nThe read timeout defaults to 45 s.\n\n## Timeouts\n\nThe read timeout defaults to 45 s.\n",
+      "sel": {
+        "quote": "The read timeout defaults to 45 s.",
+        "prefix": "",
+        "suffix": "",
+        "within": [
+          "Guide",
+          "Timeouts"
+        ]
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": true,
+          "identity": null,
+          "refuse": "quote_not_distinguishable",
+          "sel": {
+            "quote": "The read timeout defaults to 45 s.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Guide",
+              "Timeouts"
+            ],
+            "count": 2
+          }
+        },
+        {
+          "key": "sentence:*~2",
+          "approx": true,
+          "identity": null,
+          "refuse": "quote_not_distinguishable",
+          "sel": {
+            "quote": "The read timeout defaults to 45 s.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Guide",
+              "Timeouts"
+            ],
+            "count": 2
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown B1: two sections with one path at claim time: count 2, the union is the scope",
+    "input": {
+      "path": "docs/guide.md",
+      "text": "# Guide\n\n## Timeouts\n\nThe read timeout defaults to 45 s.\n\n## Timeouts\n\nThe write timeout defaults to 10 s.\n",
+      "sel": {
+        "quote": "The write timeout defaults to 10 s."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "The write timeout defaults to 10 s.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Guide",
+              "Timeouts"
+            ],
+            "count": 2
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown B1: two sections with one path at claim time: the stored selector resolves in the union",
+    "input": {
+      "path": "docs/guide.md",
+      "text": "# Guide\n\n## Timeouts\n\nThe read timeout defaults to 45 s.\n\n## Timeouts\n\nThe write timeout defaults to 10 s.\n",
+      "sel": {
+        "quote": "The read timeout defaults to 45 s.",
+        "prefix": "",
+        "suffix": "",
+        "within": [
+          "Guide",
+          "Timeouts"
+        ],
+        "count": 2
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "The read timeout defaults to 45 s.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Guide",
+              "Timeouts"
+            ],
+            "count": 2
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "typescript B1: a quote in an overload implementation: within with count 3",
+    "input": {
+      "path": "src/parse.ts",
+      "text": "function parse(s: string): number;\nfunction parse(s: number): number;\nfunction parse(s: any): number {\n  return Number(s) + 1;\n}\n",
+      "sel": {
+        "quote": "return Number(s) + 1;"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:parse~3",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "return Number(s) + 1;",
+            "prefix": "function parse(s: any): number {",
+            "suffix": "}",
+            "within": [
+              "parse"
+            ],
+            "count": 3
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "typescript B1: the body copied into another function, the original edited: the original as a candidate",
+    "input": {
+      "path": "src/parse.ts",
+      "text": "function parse(s: string): number;\nfunction parse(s: number): number;\nfunction parse(s: any): number {\n  return Number(s) + 2;\n}\nfunction legacyParse(s: any): number {\n  return Number(s) + 1;\n}\n",
+      "sel": {
+        "quote": "return Number(s) + 1;",
+        "prefix": "function parse(s: any): number {",
+        "suffix": "}",
+        "within": [
+          "parse"
+        ],
+        "count": 3
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:parse~3",
+          "approx": true,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "parse",
+            "count": 3,
+            "quote": "function parse(s: any): number {",
+            "prefix": "",
+            "suffix": "return Number(s) + 2; }"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown B3: a refreshed selector that would not select the unit alone: the stored selector is returned",
+    "input": {
+      "path": "docs/setup.md",
+      "text": "# Doc\n\n## Setup\n\nRun the tool. It prints a report.\n\n### Run the tool.\n\nIt prints a report.\n",
+      "sel": {
+        "quote": "It prints a report.",
+        "prefix": "",
+        "suffix": "",
+        "within": [
+          "Doc",
+          "Setup"
+        ]
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "It prints a report.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Doc",
+              "Setup"
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python B4: a symbol and a quote: the quote and its windows are stored",
+    "input": {
+      "path": "src/run.py",
+      "text": "def run():\n    limit = 10\n    return limit\n",
+      "sel": {
+        "symbol": "run",
+        "quote": "limit = 10"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "run",
+            "quote": "limit = 10",
+            "prefix": "def run():",
+            "suffix": "return limit"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python B4: A1: the stored quote moved into a comment: resolved by the symbol, the quote gone",
+    "input": {
+      "path": "src/run.py",
+      "text": "def run():\n    # limit = 10\n    limit = 20\n    return limit\n",
+      "sel": {
+        "symbol": "run",
+        "quote": "limit = 10",
+        "prefix": "def run():",
+        "suffix": "return limit"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": false,
+          "identity": "symbol",
+          "refuse": null,
+          "sel": {
+            "symbol": "run",
+            "quote": "limit = 10"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python B4: two declarations, a symbol and a quote: count 2 and the windows are stored",
+    "input": {
+      "path": "src/run.py",
+      "text": "def run():\n    limit = 10\n    return limit\n\n\ndef run():\n    limit = 30\n    return limit\n",
+      "sel": {
+        "symbol": "run",
+        "quote": "limit = 10"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "run",
+            "count": 2,
+            "quote": "limit = 10",
+            "prefix": "def run():",
+            "suffix": "return limit"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python B4: A2: the stored quote moved into a comment: no declaration holds it, both candidates",
+    "input": {
+      "path": "src/run.py",
+      "text": "def run():\n    # limit = 10\n    limit = 20\n    return limit\n\n\ndef run():\n    limit = 30\n    return limit\n",
+      "sel": {
+        "symbol": "run",
+        "count": 2,
+        "quote": "limit = 10",
+        "prefix": "def run():",
+        "suffix": "return limit"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": true,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "run",
+            "count": 2,
+            "quote": "limit = 20",
+            "prefix": "def run(): # limit = 10",
+            "suffix": "return limit"
+          }
+        },
+        {
+          "key": "function:run~2",
+          "approx": true,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "run",
+            "count": 2,
+            "quote": "limit = 30",
+            "prefix": "def run():",
+            "suffix": "return limit"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python I1: a declaration whose lines all occur in its copy: its whole text is its printed anchor",
+    "input": {
+      "path": "src/s.py",
+      "text": "class S:\n    def dispatch(self, event):\n        handlers = self.lookup_handlers(event)\n        return [h(event) for h in handlers]\n\n    def dispatch(self, event):\n        handlers = self.lookup_handlers(event)\n        return [h(event) for h in handlers]\n        self.log(event)\n",
+      "sel": {
+        "symbol": "S.dispatch"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:S.dispatch",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "S.dispatch",
+            "count": 2,
+            "quote": "def dispatch(self, event):\n        handlers = self.lookup_handlers(event)\n        return [h(event) for h in handlers]",
+            "prefix": "",
+            "suffix": ""
+          }
+        },
+        {
+          "key": "method:S.dispatch~2",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "S.dispatch",
+            "count": 2,
+            "quote": "self.log(event)",
+            "prefix": "dlers(event) return [h(event) for h in handlers]",
+            "suffix": ""
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "python I1: that printed anchor pasted back selects the declaration alone",
+    "input": {
+      "path": "src/s.py",
+      "text": "class S:\n    def dispatch(self, event):\n        handlers = self.lookup_handlers(event)\n        return [h(event) for h in handlers]\n\n    def dispatch(self, event):\n        handlers = self.lookup_handlers(event)\n        return [h(event) for h in handlers]\n        self.log(event)\n",
+      "sel": {
+        "symbol": "S.dispatch",
+        "count": 2,
+        "quote": "def dispatch(self, event):\n        handlers = self.lookup_handlers(event)\n        return [h(event) for h in handlers]",
+        "prefix": "",
+        "suffix": ""
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:S.dispatch",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "S.dispatch",
+            "count": 2,
+            "quote": "def dispatch(self, event):\n        handlers = self.lookup_handlers(event)\n        return [h(event) for h in handlers]",
+            "prefix": "",
+            "suffix": ""
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown I1: a sentence beside its twin that starts a piece: the sentence is marked",
+    "input": {
+      "path": "docs/notes.md",
+      "text": "# Notes\n\nRestart the server.\n\nRestart the server. Then check the logs.\n",
+      "sel": {
+        "quote": "Restart the server."
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "identity": null,
+          "refuse": "quote_not_distinguishable",
+          "sel": {
+            "quote": "Restart the server.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Notes"
+            ]
+          }
+        },
+        {
+          "key": "sentence:*~2",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "Restart the server.",
+            "prefix": "",
+            "suffix": "",
+            "within": [
+              "Notes",
+              "Restart the server."
+            ]
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "text: a typed quote longer than the limit only by its whitespace: stored normalized, not cut",
+    "input": {
+      "path": "conf/long.cfg",
+      "text": "    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\nend1\n\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\n    x\nend2\n",
+      "sel": {
+        "quote": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x end1"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "block:*",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x end1",
+            "prefix": "",
+            "suffix": ""
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "typescript: a symbol anchor whose quote spans two members of the declaration: resolved",
+    "input": {
+      "path": "src/client.ts",
+      "text": "class Client {\n  host = \"localhost\"; port = 8080;\n}\n",
+      "sel": {
+        "symbol": "Client",
+        "quote": "host = \"localhost\"; port = 8080;"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "class:Client",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "symbol": "Client",
+            "quote": "host = \"localhost\"; port = 8080;",
+            "prefix": "class Client {",
+            "suffix": "}"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7 (identity by symbol and count, or by quote with in-unit windows and container), derived by hand: (1) list the units of the text and their containers; (2) find the hits of the quote after normalize; (3) follow resolve_new or resolve_stored as the case name says, which gives the units, approx, identity and refuse; (4) the selector of a unit returned alone is its completed selector, and of every other unit its printed anchor; prefix and suffix are cut mechanically from the stated span inside the stated unit",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "markdown: a quote in front matter: the file unit, with the quote and its windows",
+    "input": {
+      "path": "docs/pricing.md",
+      "fixture": "fixtures/resolve/pricing.md",
+      "sel": {
+        "quote": "title: Pricing page"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "file",
+          "approx": false,
+          "identity": null,
+          "refuse": null,
+          "sel": {
+            "quote": "title: Pricing page",
+            "prefix": "---",
+            "suffix": "--- # Pricing Pro costs $29/month. Teams cost $9"
           }
         }
       ]

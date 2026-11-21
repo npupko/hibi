@@ -359,7 +359,7 @@
       "type": "object",
       "properties": {
         "count": {
-          "description": "How many declarations the symbol named when the anchor was made,\nstored only when that was two or more.",
+          "description": "With `symbol`: how many declarations the symbol named when the\nanchor was made. Without `symbol`, with `within`: how many\ncontainers `within` named then. Stored only when that was two or\nmore.",
           "type": "integer",
           "format": "uint64",
           "maximum": 9007199254740991,
@@ -403,9 +403,6 @@
       },
       "additionalProperties": false,
       "dependentRequired": {
-        "count": [
-          "symbol"
-        ],
         "prefix": [
           "quote"
         ],
@@ -415,6 +412,22 @@
         "within": [
           "quote"
         ]
+      },
+      "dependentSchemas": {
+        "count": {
+          "anyOf": [
+            {
+              "required": [
+                "symbol"
+              ]
+            },
+            {
+              "required": [
+                "within"
+              ]
+            }
+          ]
+        }
       }
     },
     "Timestamp": {

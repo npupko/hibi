@@ -293,7 +293,13 @@ mod tests {
             assert_eq!(p("key/minLength"), 1, "{name}");
             assert_eq!(
                 get(name, &format!("{at}/dependentRequired")),
-                serde_json::json!({"prefix": ["quote"], "suffix": ["quote"], "within": ["quote"], "count": ["symbol"]}),
+                serde_json::json!({"prefix": ["quote"], "suffix": ["quote"], "within": ["quote"]}),
+                "{name}"
+            );
+            // `count` needs `symbol` or `within` (section 5.2).
+            assert_eq!(
+                get(name, &format!("{at}/dependentSchemas")),
+                serde_json::json!({"count": {"anyOf": [{"required": ["symbol"]}, {"required": ["within"]}]}}),
                 "{name}"
             );
             assert_eq!(get(name, &format!("{at}/additionalProperties")), false);

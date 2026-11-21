@@ -378,6 +378,33 @@ because `code::analyze` no longer returns block units for a code class.
 `resolve.json` gained the `python with a syntax error:` cases for stored
 anchors on a broken file and their recovery on the fixed text.
 
+The rulings that store `within` whenever a unit has a container, with
+`count` when the path names several, and that mark a unit no printed
+anchor selects alone (`refuse: quote_not_distinguishable`), changed six
+cases, each derived again by hand from the new rule; three were renamed to
+say what they now pin:
+
+- `markdown: a quote in a piece whose name is shared: no within` became
+  `... within with count 2`: the completed selector holds the shared piece
+  name and `count: 2`;
+- `markdown: a quote in two identical sentences: ambiguous, identical printed
+  anchors` became `... each marked as not selectable alone`, and
+  `markdown: stored: within names two containers: candidates` became
+  `... count says one: candidates`; in these and in
+  `markdown: stored: two units reproduce the stored windows: ambiguous` the
+  two identical sentences carry `within` with `count: 2` and the mark;
+- `Go twin init: a new anchor gives both, with identical printed anchors`
+  became `... each marked as not selectable alone`, and
+  `Go twin init: the printed anchor cannot tell them apart: candidates`
+  marks both twins.
+
+`resolve.json` gained a case for each repro of those rulings: the cases
+named `markdown B1:`, `typescript B1:`, `markdown B3:`, `python B4:`,
+`python I1:` and `markdown I1:`, a typed quote longer than the limit only by
+its whitespace, a symbol anchor whose quote spans two members, and a quote
+in front matter. Each stored selector in them is the completed selector of
+the claim-time text, derived by hand, resolved against the edited text.
+
 The cases kept from the earlier file (the empty selector, symbols, quotes,
 refusals, members, boundaries, decoding, errors) were derived again for the
 new selector shape.
