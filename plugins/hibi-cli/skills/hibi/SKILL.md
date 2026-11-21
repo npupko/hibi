@@ -185,7 +185,10 @@ Rules for a new anchor (in `claim`, and a replaced or added side in
 - A `#symbol` that several declarations share (overloads, a function
   defined twice) is `side_ambiguous`, and the error lists each one with a
   JSON anchor that selects it alone. A claim stored while the symbol was
-  unique keeps following its declaration after copies appear.
+  unique keeps following its declaration after copies appear. When the
+  declaration itself was edited, every copy that holds the quote is a
+  candidate, the closest first. The first is not always the edited one, so
+  read each.
 - A quote inside a code comment, including rustdoc, JSDoc and Javadoc, is
   refused (`quote_in_comment`): anchor the code the comment describes. A
   Python docstring is a string and can be quoted.

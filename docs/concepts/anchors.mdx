@@ -104,9 +104,10 @@ error: side_ambiguous: the subject (file:docs/cache.md): the anchor matches 2 un
    declaration. The one declaration that reproduces them exactly is
    selected, so an anchor stored while the symbol was unique keeps
    following that declaration after copies appear. When none reproduces
-   them and one is closer than the others, that one is a candidate, for
-   example a stub whose signature changed. Otherwise the side is
-   `ambiguous`. The position in the file never chooses.
+   them, for example after a stub's signature changed, the side is
+   `missing` with reason `not_exact`, and every declaration that holds the
+   quote is a candidate, the closest first. The closest is a guess like any
+   other candidate: read them all. The position in the file never chooses.
 3. Without a symbol, the quote is searched. One exact occurrence selects the
    unit that contains it. Several exact occurrences are told apart by the
    similarity of the 48 characters before and after them. A tie goes to the
