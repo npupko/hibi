@@ -47,12 +47,12 @@ hibi status --since main
 
 ```text output
 3 claims: 1 fresh, 1 stale, 0 expired, 1 retired
-since main (base 11a2fec6c7467ca87afeb1824274bc5e90a2b63a)
+since main (base e48ad6eb3d571de9ae97fbd154326e7b206d0b7b)
 
-c1-rj6kbh7y1yw79ywz4msv  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-20T23:56:59Z (m1-pb63mreep429vwparadv)
+c1-6exasfv5q6wh17yqtfmn  stale  The delay doubles each time, starting at 200 ms.
+  marked 2026-11-21T01:03:54Z (m1-0wxpd9vmp99gnceykpzj)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  function "delay_ms", lines 5-7
-  next: hibi mark c1-rj6kbh7y1yw79ywz4msv
+  next: hibi mark c1-6exasfv5q6wh17yqtfmn
 
 Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
@@ -60,7 +60,7 @@ Re-check each stale or expired statement before running its next command. If it 
 The rewrite computes the same values, so the statement still holds:
 
 ```bash
-hibi mark c1-rj6k --note "200 << n equals 200 * 2^n" --by agent:claude
+hibi mark c1-6exa --note "200 << n equals 200 * 2^n" --by agent:claude
 ```
 
 `--since` can be combined with `--loc`. It cannot be combined with `--state`
@@ -78,7 +78,7 @@ hibi cover --since main
 ```
 
 ```text output
-since main (base 11a2fec6c7467ca87afeb1824274bc5e90a2b63a)
+since main (base e48ad6eb3d571de9ae97fbd154326e7b206d0b7b)
 docs (file:docs/**/*.md; sentence, list-item, table-row): 1 unit, 0 covered, 0 excluded, 1 uncovered
   file:docs/retry.md
         9  sentence  Each attempt times out after 10 seconds.
@@ -89,7 +89,7 @@ are not evaluated with `--since`, and say so:
 
 ```text output
 $ HIBI_CONFIG=user.toml hibi cover --since main --scope notes
-since main (base acdd929bb2a8670a5598bef572050a99c18661b8)
+since main (base ef27c1f81d05b07c81e3c49e4e41dffe4302299a)
 notes (ref:notes; note): 0 units, 0 covered, 0 excluded, 0 uncovered
   not evaluated: --since works only for scopes on scheme "file"
 ```

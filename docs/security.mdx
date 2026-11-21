@@ -31,8 +31,13 @@ including how to report a vulnerability, is in
   file is a symbolic link, the command stops with `store_corrupt` before
   writing.
 - **Make hibi read elsewhere.** A path with a symbolic link in it is treated
-  as not found. A sibling repository is read only when your user config
-  allows its directory, and only files that git lists there.
+  as not found. When git can be used, a `file:` path is read only when git
+  lists it in the root (tracked, or untracked and not ignored), so a claim
+  stored in the repository cannot point hibi at an ignored file such as a
+  local secrets file, and `status` never prints the content of one. Paths
+  under `.git/` and `.hibi/` are never read. A sibling repository is read only
+  when your user config allows its directory, and only files that git lists
+  there.
 - **Exhaust memory with one file.** A file larger than 8 MiB is not read, a
   shard larger than 64 MiB, a store larger than 256 MiB in total, and a `hibi.toml` or user config larger than 1 MiB
   are errors, and a provider response line longer than 16 MiB kills the

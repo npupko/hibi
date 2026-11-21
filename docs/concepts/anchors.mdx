@@ -11,7 +11,7 @@ the file is edited.
 
 | Form | Names |
 |---|---|
-| `file:<path>` | A file relative to the root (the directory that contains `.hibi/`). Paths use `/`. |
+| `file:<path>` | A file relative to the root (the directory that contains `.hibi/`). Paths use `/`. When git can be used, the path must be one git lists there, with the same letter case; see [the file provider](/providers/file#resource-classes). |
 | `repo:<alias>//<path>` | A file in a sibling repository. The alias is declared in `.hibi/hibi.toml` and its directory is allowed in your user config. See [configuration](/configuration#sibling-repositories). |
 | `<scheme>:<anything>` | A resource of an [external provider](/providers/external). hibi passes the part after the colon through unchanged. |
 
@@ -60,15 +60,17 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
 
 hibi never stores a selector as you typed it. It resolves the anchor and
 stores the selector the provider returns for the unit it found. For the file
-provider that is the quote, the 48 characters before and after it, its byte
-position, and the symbol when the unit is a declaration. This is what
-`reanchor` printed for the walkthrough's claim:
+provider that is the quote, up to 48 characters before and after it, its
+byte position, and the symbol when the unit is a declaration. For a
+declaration whose symbol is unique in the file, the characters before and
+after are taken only from the declaration's own scope, so they are short.
+This is what `reanchor` printed for the walkthrough's claim:
 
 ```text output
   subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4)
     {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
   evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
-    {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 3;","prefix":"a download is tried before the client gives up.\n","suffix":"\n\n/// The delay before attempt `n`, in milliseco","pos":62,"symbol":"MAX_ATTEMPTS"}}
+    {"loc":"file:src/retry.rs","sel":{"quote":"pub const MAX_ATTEMPTS: u32 = 3;","prefix":"\n","suffix":"\n\n","pos":62,"symbol":"MAX_ATTEMPTS"}}
 ```
 
 The evidence was given as `#MAX_ATTEMPTS` only; hibi added the first line of
@@ -136,7 +138,12 @@ error: selector_not_exact: evidence 1 (file:src/cache.rs): the quote "Settings r
   fix: Quote text that occurs in that unit, or leave the quote out to anchor the whole unit.
 ```
 
-A quote must lie inside one unit:
+A quote copied from a member line keeps its leading indentation and a
+trailing `,` or `;` and still resolves to that member: `file:src/pair.rs::    pub left: u32,`
+selects the field `Pair.left`.
+
+A quote must lie inside one unit, also when a symbol names several
+declarations:
 
 ```text output
 $ echo '[{"statement":"x","subject":"file:docs/retry.md::download.\nIt gives"}]' | hibi claim --stdin
@@ -167,7 +174,7 @@ and can be anchored:
 
 ```text output
 $ hibi claim "Jobs run at most 3 times." --subject "file:src/jobs.py#Job::Jobs run at most 3 times" --evidence "file:src/jobs.py#Job.retries"
-c1-jbtb7avwkaqq3hdcwyrx  created  m1-1bfxgacabk47bvyq5833  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
+c1-qvbjt2ph1pgeyxqzpj2w  created  m1-0v11zy9zm9pvj63z7h68  subject file:src/jobs.py (class "Job", lines 1-8); evidence 1 file:src/jobs.py (field "Job.retries", line 4)
 ```
 
 ## Renames
@@ -183,11 +190,11 @@ it. Renaming `JOB_LIMIT = 100` to `MAX_JOBS = 100` in Python gives:
 $ hibi status
 4 claims: 3 fresh, 1 stale, 0 expired, 0 retired
 
-c1-nr0np8r4490t2adadse5  stale  At most 100 jobs are queued.
-  marked 2026-11-20T23:57:02Z (m1-6gmtk27wnn4hcp8tq6s5)
+c1-5hktdkt5a4dmvmc90eec  stale  At most 100 jobs are queued.
+  marked 2026-11-21T01:04:12Z (m1-w9redgc9k1a4d50mg2yt)
   evidence 1  file:src/jobs.py  missing (selector_not_found)
     stored: symbol JOB_LIMIT, quote "JOB_LIMIT = 100"
-  next: hibi reanchor c1-nr0np8r4490t2adadse5 --evidence 1=<anchor>
+  next: hibi reanchor c1-5hktdkt5a4dmvmc90eec --evidence 1=<anchor>
 
 Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
@@ -202,12 +209,12 @@ struct `Config` to `Settings` gives, for a claim on its field
 $ hibi status
 4 claims: 4 fresh (1 drifted), 0 stale, 0 expired, 0 retired
 
-c1-0m5jkh4kmdjbmejs6jyd  fresh  The request timeout is stored in whole seconds.
-  marked 2026-11-20T23:57:02Z (m1-1c2byr1yxveyxnhzd875)
+c1-d0a4yrq9pmv59dc0ggqa  fresh  The request timeout is stored in whole seconds.
+  marked 2026-11-21T01:04:12Z (m1-ekzjjdk6ez69qeck4tta)
   evidence 1  file:src/config.rs  same, found approximately  field "Settings.timeout_secs", line 5
-  next: hibi reanchor c1-0m5jkh4kmdjbmejs6jyd
+  next: hibi reanchor c1-d0a4yrq9pmv59dc0ggqa
 
 A fresh claim is listed because its anchor drifted. The statement still holds: look at what the anchor points to now, then run its reanchor command.
 ```
 
-`hibi reanchor c1-0m5j` stores the new symbol `Settings.timeout_secs`.
+`hibi reanchor c1-d0a4` stores the new symbol `Settings.timeout_secs`.

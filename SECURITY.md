@@ -50,10 +50,11 @@ that claims point at.
   `status --judge-order` contact the network, and only when you have set
   `TYPESAFE_API_KEY`. They never send the text of an ignored file or of a
   sibling repository you did not allow.
-- **Reading files you did not offer.** A sibling repository is read only
-  when your user config allows it, and only the files that git lists there:
-  tracked files, and untracked files that are not ignored. A path through a
-  symbolic link is treated as missing.
+- **Reading files you did not offer.** When git can be used, a `file:` path
+  is read only when git lists it in the root: tracked, or untracked and not
+  ignored. Paths under `.git/` and `.hibi/` are never read. A sibling
+  repository is read only when your user config allows it, and only the files
+  that git lists there. A path through a symbolic link is treated as missing.
 
 **What is trusted:**
 

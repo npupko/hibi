@@ -49,8 +49,8 @@ with reason `provider_not_registered`, no command is run, and `next` is
 $ HIBI_CONFIG=none.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
-c1-rnkwm7d1br3arbrh8tcs  stale  Downloads are retried at most 3 times.
-  marked 2026-11-20T23:57:03Z (m1-98ydw5w0k5c0tymzxhbz)
+c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
+  marked 2026-11-21T01:04:13Z (m1-k5patpggnk7548zpwbem)
   subject  ref:notes  unavailable (provider_not_registered)
   next: hibi providers
 ```
@@ -90,7 +90,7 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
 ```
 
 ```text output
-c1-rnkwm7d1br3arbrh8tcs  created  m1-98ydw5w0k5c0tymzxhbz  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-regrhf1hta0k48q82xea  created  m1-k5patpggnk7548zpwbem  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 A selector key the provider did not list in `hello` is refused before
@@ -109,10 +109,10 @@ like any other:
 $ HIBI_CONFIG=user.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
-c1-rnkwm7d1br3arbrh8tcs  stale  Downloads are retried at most 3 times.
-  marked 2026-11-20T23:57:03Z (m1-98ydw5w0k5c0tymzxhbz)
+c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
+  marked 2026-11-21T01:04:13Z (m1-k5patpggnk7548zpwbem)
   subject  ref:notes  changed (fingerprint_differs)  note "Downloads are retried at most 4 times."
-  next: hibi mark c1-rnkwm7d1br3arbrh8tcs
+  next: hibi mark c1-regrhf1hta0k48q82xea
 
 Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
@@ -157,7 +157,11 @@ Protocol version 1. The full specification is section 13 of
 - Each response must arrive within `timeout_ms` (default 10000, from 100 to
   600000). A response line longer than 16 MiB is a violation.
 - When it is done, hibi closes standard input. The provider must then exit
-  with status 0; hibi kills it after 2 seconds.
+  with status 0 within 2 seconds; hibi kills it after that. Output written
+  after the last response is limited to 65,536 bytes.
+- A provider that stops reading its input, writes a line when no request is
+  waiting, or exits while a child process still holds its output pipes is
+  treated as failed at once, not after a timeout.
 - On a timeout, an oversized line, a line that is not a JSON object, a
   response with the wrong `id`, or an unexpected exit, hibi kills the provider
   for the rest of the run, and every side it had not answered is `unavailable`
@@ -315,8 +319,10 @@ cargo install --locked --path crates/hibi-provider-reference
 
 `hibi providers --check <scheme>` starts the registered command and runs the
 protocol conformance cases that are compiled into hibi. They check the
-handshake, the envelope, malformed lines, unknown methods, `batch` ordering,
-an error for a resource the provider cannot have, and exit on end of input.
+handshake, the envelope of every response, malformed lines, unknown methods,
+`batch` ordering, an error for a resource the provider cannot have, and exit
+within 2 seconds of the end of input. After an `unsupported_protocol` answer
+the provider may keep running or exit.
 They do not check how `resolve` matches, the content of `units` or
 `render`, or fingerprints; test those with claims of your own. A failing case is
 reported and does not make the command fail.
