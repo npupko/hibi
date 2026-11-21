@@ -295,7 +295,8 @@ Allowed keys: `ProviderInfo.selectors` lists keys from `quote`, `symbol` and
 `symbol` also allows `count`. The empty selector is always allowed. The same rule is applied before a selector is
 sent: the engine does not send a selector with a key the provider does not
 allow. For a new anchor that is the error `unsupported_selector`; for a
-stored anchor the side is `unavailable` with reason `provider_error`.
+stored anchor the side is `unavailable` with reason `selector_refused`,
+and the claim's `next` asks for a new anchor (section 15.2).
 
 `Providers` maps a scheme to a boxed `Provider`. The engine asks it for the
 provider of a locator and receives either the provider or the reason no
@@ -2600,7 +2601,7 @@ and every engine-side check appears once.
 | Engine | The locator's scheme is not `file`, not `repo`, and not listed in `hibi.toml` | `unavailable` | `scheme_not_declared` |
 | Engine | The scheme is listed but the user config has no command for it. No command is run. | `unavailable` | `provider_not_registered` |
 | Engine | The provider's `info` cannot be obtained (section 2.5). This holds for every anchor of the scheme in the pass. | `unavailable` | `provider_failed` |
-| Engine | The stored selector has a key the provider does not allow (section 2.5). The anchor is not sent. | `unavailable` | `provider_error` |
+| Engine | The stored selector has a key the provider does not allow (section 2.5). The anchor is not sent. | `unavailable` | `selector_refused` |
 | Provider | Error `failed` | `unavailable` | `provider_failed` |
 | Provider | Error `unsupported_protocol` | `unavailable` | `provider_failed` |
 | Provider | Error `not_found` | `missing` | `resource_not_found` |
@@ -5449,7 +5450,10 @@ Rules for the Side keys:
   `provider_not_registered` it is
   `the user config has no provider command for scheme <scheme>`. For
   `selector_refused` it is the message of the provider's error
-  `invalid_selector` or `invalid_locator`, without the error code. For a
+  `invalid_selector` or `invalid_locator`, without the error code, or
+  `the provider does not allow the selector key <key>` when the stored
+  selector has a key the provider no longer allows (the anchor is then not
+  sent). For a
   `changed` side whose unit the provider returned with
   `identity: "symbol"` (section 9.2) it is
   `the stored quote is no longer in this unit` when the stored selector
@@ -5467,9 +5471,7 @@ Rules for the Side keys:
   The `side_missing` message of `mark`, `claim` and `reanchor` starts with
   the same sentence. (For a new anchor that only similar text was found
   for, the `selector_not_exact` message starts with
-  `the anchor matches no unit exactly`.) It is `null` for `unavailable` with `profile_mismatch`, for `unavailable` with
-  `provider_error` when the cause is a stored selector key the provider
-  does not allow (the anchor is not sent, section 9.2), and for every other
+  `the anchor matches no unit exactly`.) It is `null` for `unavailable` with `profile_mismatch` and for every other
   state.
 - `candidates` holds units the provider returned for the stored anchor, in
   the provider's order: the first `MAX_CANDIDATES` (20) of them.
@@ -5522,7 +5524,8 @@ The `remediation` of an `unavailable` side:
 
 | Reason | `remediation` |
 |---|---|
-| `provider_not_registered`, `provider_failed`, `repo_not_allowed`, `repo_not_found` | The command `hibi providers` |
+| `provider_not_registered`, `repo_not_allowed`, `repo_not_found` | The command `hibi providers` |
+| `provider_failed` | The command `hibi providers --check <scheme>` with the scheme of the side's locator: it runs the provider and reports each conformance case, where plain `hibi providers` starts nothing. For the built-in schemes `file` and `repo` it is `hibi providers` |
 | `scheme_not_declared` | `Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim.` |
 | `too_large`, `not_text`, `provider_error` | One sentence that states the limit or the cause and what the caller can do. The three sentences are given under `side_unavailable` below. |
 | `selector_refused` | `The stored anchor is no longer accepted for this resource. Give the side another anchor with hibi reanchor, or retire the claim.` The provider's message is in `detail`. |
@@ -5580,7 +5583,8 @@ in the run.
 |---|---|
 | `fresh` or `retired` | `null` |
 | A side is `missing` or `ambiguous`, or `unavailable` with `selector_refused`, or `changed` with its unit resolved by its symbol alone because the stored quote is gone (`identity: "symbol"`, section 9.2; the side's `detail` says so) | `hibi reanchor <id>` with `--subject <anchor>` or `--evidence <n>=<anchor>` for each such side |
-| A side is `unavailable` with `provider_not_registered`, `provider_failed` or `repo_not_allowed` | `hibi providers` |
+| A side is `unavailable` with `provider_not_registered` or `repo_not_allowed` | `hibi providers` |
+| A side is `unavailable` with `provider_failed` | `hibi providers --check <scheme>` for the first such side, or `hibi providers` for a built-in scheme |
 | A side is `unavailable` with `scheme_not_declared`, `repo_not_found`, `not_text`, `too_large`, `provider_error` or `resource_unavailable` | `null` |
 | Otherwise (`expired`, or sides `changed` or `profile_mismatch`) | `hibi mark <id>` |
 
@@ -5632,7 +5636,8 @@ over: the state the claim had before the write and the sides that were not
 
 AcceptedSide, one entry for each side whose state before the write was not
 `same`. A side that was `changed` also has `text`: the unit's text as the
-write marked it, cut to 240 characters. Other sides have no `text` key.
+write marked it, whole and not cut: it is what the caller accepted, so none
+of it is left out. Other sides have no `text` key.
 
 | Key | Type |
 |---|---|
@@ -5719,7 +5724,10 @@ The error object is the one of section 15.1; these rules fix its
   anchor selects alone is written
   `<unit>: identical to another one, no anchor selects it alone`,
   and a list that holds one ends with
-  `. Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them (the #name of the enclosing declaration, or the whole file), or take one out of a scope with an exclusion that names its key.`
+  `. Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the #name of the enclosing declaration, or the whole file.`
+  The sentence names only what works for a claim. An exclusion in a scope
+  is not offered here: scopes play no part in resolving a claim, so the
+  side would stay ambiguous. (`cover` has its own hint, section 15.3.)
   The second form of the first message is used when no unit of the list
   has an anchor of its own; `side_ambiguous` then has that sentence as its
   remediation as well, in place of the advice to give a symbol or a
@@ -5815,8 +5823,8 @@ The error object is the one of section 15.1; these rules fix its
   engine found. The `remediation` is the one the Side carries for that
   reason (the table of the Side above): the command
   `hibi providers` when the reason is
-  `provider_not_registered`, `provider_failed`, `repo_not_allowed` or
-  `repo_not_found`; for `scheme_not_declared` the sentence
+  `provider_not_registered`, `repo_not_allowed` or `repo_not_found`, and
+  `hibi providers --check <scheme>` when it is `provider_failed`; for `scheme_not_declared` the sentence
   `Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim.`;
   for `resource_unavailable` the provider's message followed by
   `Run the command again once that is fixed.`. A new anchor on a scheme that
@@ -6129,6 +6137,11 @@ replaced or added side in `reanchor`:
   `<side> (<locator>): the quoted text is identical, with identical text around it in its unit, to another place in the same scope, so a stored anchor could not tell the two apart`
   and the remediation
   `Quote a longer passage that occurs once in its place, or in code anchor <loc>#<symbol>::<line>.`
+  for the file provider. The sentence is built from the selector keys the
+  provider accepts: the part about a longer passage when it accepts
+  `quote`, the part `in code anchor <loc>#<symbol>::<line>` when it accepts
+  `symbol`, and `give the unit's key` when it accepts `key`, joined with
+  `, or `. A provider that has no symbols is never told to anchor one.
 - A note, not an error: when a quote-only anchor resolves inside a code
   declaration, the entry of that claim has in `notes` the sentence
   `<side> (<locator>) tracks the quoted text in its place. To follow the declaration <name> instead, anchor <locator>#<name>::<line>`
@@ -6259,9 +6272,9 @@ since <range> (base <commit>)
       | <the candidate's text on one line>
       anchor: <anchor>
     - <kind> "<label>", line <n>
-      cannot be told apart from another candidate: no anchor selects it alone
+      cannot be told apart from another unit: no anchor selects it alone
     and <n> more
-    Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them (the #name of the enclosing declaration, or the whole file), or take one out of a scope with an exclusion that names its key.
+    Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the #name of the enclosing declaration, or the whole file.
     | <one line of the unit text>
   next: <next>
 
@@ -6303,6 +6316,8 @@ Re-check each statement before running its next command. If it no longer holds, 
 - A side's `remediation` is printed under it, except for the reasons
   `provider_not_registered`, `provider_failed` and `repo_not_allowed`,
   where the claim's `next` is that same command.
+- In the output of `claim`, `mark` and `reanchor` the `text` of an accepted
+  side is printed whole under `<role> is now:`.
 - The candidate lines are printed for a side that has `candidates`. The
   first of them gives `candidatesTotal`, with the word `candidate` when the
   count is 1. For a `missing` side it continues as shown above. For an `ambiguous` side it is
@@ -6428,15 +6443,26 @@ Builds a new claim from the old one:
    same-claim rule of `claim` is applied to the new claim: when a live
    claim other than the old one is the same claim as the new one, the old
    claim is merged into that claim in the same way, and when several are,
-   into the one with the smallest id. In this rule a replaced or added
-   side is compared by `quote` when its anchor gave a `quote`, and a kept
-   side is never compared by `quote`. The stored anchors of the claim that
+   into the one with the smallest id. The comparison is the one of
+   section 9.5: by the units the sides resolve to, never by a selector.
+   A retired claim that is the same claim makes the command fail with
+   `claim_retired`. This also holds along a chain of replacements: a claim
+   `B` that replaced `A` and is re-anchored back to the units of `A` is
+   `claim_retired`, because `A` is retired. The stored anchors of the claim that
    gets the mark are not changed, and the mark covers its sides as its own
    stored anchors resolve in this run. When the new id is that of a live
    claim whose stored anchors do not all resolve exactly, `reanchor` fails
    with the error of that side, names both claims, and writes nothing. A
    kept side has the resolution that `accepted` was read from: `reanchor`
    never marks a kept side that did not resolve exactly in this run.
+   When kept sides need a new anchor (`missing`, `ambiguous`,
+   `selector_refused`, or resolved by name alone with the quote gone), the
+   command fails once for all of them: the message joins the message of
+   each such side with `; `, the code is that of the first, and the
+   remediation is one command, `hibi reanchor <id>` with every argument the
+   caller gave repeated, followed by `--subject <anchor>` or
+   `--evidence <n>=<anchor>` for each of those sides, `<n>` being the
+   number in the old claim's list.
 6. Append the new claim, a mark for it (`at = now`), and a retirement of the
    old claim with `replacedBy` set to the new id, in one `append`. When the
    old claim is merged into an existing claim, no claim is appended, and
@@ -6537,14 +6563,16 @@ of many identical units matches all of them, so resolving it per item
 costs the number of units each time. For the same reason a resolution
 keeps the first `MAX_CANDIDATES` units of an answer and the count of all. `anchor` is the unit's
 locator with its printed selector and can be passed to `claim --stdin`. It
-is `null` when another uncovered unit of the same resource in the scope has
-the same printed selector: the two are identical where they stand and no
-anchor selects one alone. The text output then prints under the item
-`cannot be anchored alone: exclude it with unit = "<key>" (a claim on the unit that contains it does not cover it)`.
-Only the exclusion takes the item off the list: a claim covers its unit and
-the units that contain it (section 10.2), not the units inside it. The
-error of `claim` for such units keeps both remedies, because there
-anchoring the containing unit is an answer.
+is `null` when no anchor selects the unit alone: the provider returned it
+with `refuse: quote_not_distinguishable`, or another uncovered unit of the
+same resource in the scope has the same printed selector. The text output
+then prints under the item
+`cannot be anchored alone: exclude it with unit = "<key>"; each such unit needs its own exclusion, or exclude the resource (a claim on the unit that contains it does not cover it)`.
+Only an exclusion takes the item off the list: a claim covers its unit and
+the units that contain it (section 10.2), not the units inside it. Excluding
+one of two such units leaves the other listed, still without an anchor.
+The error of `claim` for such units names the other remedy, anchoring the
+unit that contains them, which is an answer there and not here.
 `matched` counts what each exclusion took out: resources for an exclusion
 whose `unit` is `null`, units for one that names a unit (section 10.1). A
 scope's `units`, `covered`, `excluded` and `uncovered` count units of the
@@ -6762,7 +6790,7 @@ Closed list. Every error carries one of these codes.
 | `unsupported_store_version` | `version` in `hibi.toml` is not 1 |
 | `invalid_config` | `hibi.toml` does not parse or breaks section 11.1 |
 | `invalid_user_config` | The user config does not parse or breaks section 11.2 |
-| `store_corrupt` | Section 12.3, including symbolic links and oversized shards |
+| `store_corrupt` | Section 12.3, including symbolic links and oversized shards. Remediation: `Look at the named file first: git diff -- <file> shows what differs from the last commit. Restoring it with git checkout -- <file> also discards every record in it that is not committed yet, so keep those lines if there are any. Replace any symbolic link with the real file or directory.` |
 | `store_locked` | Section 12.4 |
 | `store_full` | A write would make one shard file longer than `MAX_SHARD_BYTES` or the shard files together larger than `MAX_STORE_BYTES` (section 12.4). Nothing is written. |
 | `io_error` | A file operation failed |
@@ -6770,7 +6798,7 @@ Closed list. Every error carries one of these codes.
 | `git_too_old` | The installed git is older than `MIN_GIT` (section 10.4) |
 | `claim_not_found` | Section 3.6 |
 | `ambiguous_id` | Section 3.6 |
-| `claim_retired` | A write on a retired claim. From `mark`, and from `reanchor` on a retired old claim, the remediation names the claim that replaced it, or is `hibi list <id>` (section 15.3). |
+| `claim_retired` | A write on a retired claim. From `mark`, and from `reanchor` on a retired old claim, the remediation names the claim that replaced it, or is `hibi list <id>` (section 15.3). From `claim` the remediation says to give a different `--note`; for an element of a standard-input batch it is `To record the same statement and anchors again, give the element a different "note".` |
 | `no_change` | `reanchor` would produce the same claim |
 | `unknown_scheme` | A new anchor uses a scheme that is not declared |
 | `side_missing` | An anchor resolves to no unit. This includes a stored anchor (in `mark`, or a kept side in `reanchor`) that was found only by similarity: the reason is then `not_exact` and the message lists the candidates (section 15.2). |
@@ -6784,7 +6812,7 @@ Closed list. Every error carries one of these codes.
 | `no_scopes` | `cover` or `triage` with no scope declared |
 | `unknown_scope` | `--scope` names no scope |
 | `too_many_candidates` | Section 14.4 |
-| `judge_unavailable` | Section 14.1 |
+| `judge_unavailable` | Section 14.1. Remediation for `status --judge-order`: `Set TYPESAFE_API_KEY, or run hibi status without --judge-order.` For `triage` and `suggest-evidence`, which have no form without the judge: `Set TYPESAFE_API_KEY. This command has no form without the judge.` |
 | `judge_failed` | Section 14.7 |
 | `internal` | A bug, including a panic (section 15.1). The message asks for a report. The remediation is `null`. |
 
@@ -7308,6 +7336,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 144 | A file of a code class that does not parse is `unavailable` for `resolve` with any selector, for `units` and for `render`, with the line of the first error; there is no fallback to `block` units for a code class, and the cache stores no row for such a file. Its sides are `unavailable` (`resource_unavailable`) and come back unchanged when it parses; `cover` lists it under `unavailable`. A file the pinned grammar cannot parse cannot be anchored: exclude it from the scope. Supersedes decision 3. | The text fallback produced half-states: a quote stored with `within` became `not_exact` with a text block as its candidate, and re-anchoring to it tied the claim to broken text; a top-level quote became `profile_mismatch` with `next: hibi mark`, which would record a `prose-v1` fingerprint of code. |
 | 145 | An exclusion without `unit` takes whole resources out of a scope: they are not read and not listed under `unavailable`, and its `matched` counts resources. An exclusion with `unit` counts units. | Excluding a file is the remedy for a file that cannot be read or parsed; reading it again only reported it again. |
 | 146 | One same-claim rule, by resolved units, against live claims, retired claims and the elements of one batch; a stored side resolved by name alone still counts as its unit, and the write then fails. Units that cannot be told apart get no anchor anywhere (lists, `cover`) and the advice says what works. Cut text says that it is cut. `candidatesTotal` is exact. | A spelling of an anchor must not make a duplicate or bring a retired claim back; advice that cannot work is worse than none. |
+| 147 | A printed remedy must work when it is followed. At claim time the twin remedy names only the containing unit; `cover` names only the exclusion, one per unit. `reanchor` names every failing kept side in one error and repeats the caller's arguments. A failed provider points at its check, a refused stored key at a new anchor. The judge, store and indistinguishable-quote remedies say what is true for the command and the provider. An accepted side's text is whole. | Remedies that looped, dropped arguments or led nowhere were followed literally by the reader they are written for. |
 | 147 | Rulings on section 6.7 (round 4): `within` is stored whenever the unit has a container, with `count` = the number of containers the path named at claim time when that is two or more (`count` is allowed with `within` as with `symbol`); while the path names exactly that many, their union is the scope, otherwise only candidates. A section container is one heading's section, not a heading path. A refreshed selector that would not select its unit alone is replaced by the stored selector. In A1 and A2 a hit in a comment is not a hit. Every printed anchor is checked: first line, whole text, runs of lines; a unit nothing selects alone carries `refuse: quote_not_distinguishable`. A typed quote longer than the limit only by whitespace is stored `normalize`d. A quote on the `file` unit keeps its quote and windows. | A `within` dropped because the path was not unique widened the scope to the whole resource for good, so a copy anywhere was followed once the original was edited; a refresh could write a selector that selected another unit; a quote moved into a comment could be marked; printed anchors that did not select their unit were offered and looped; the cut of a long typed quote produced a false `quote_not_distinguishable`. |
 | 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
 | 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
@@ -7529,7 +7558,11 @@ Verification section in order.
   `r19_r20_uncommitted_and_untracked_changes_count`,
   `r19_status_since_lists_the_claims_the_range_invalidated`.)
 - R20. On the same branch `hibi cover --since <base>` lists exactly the units
-  of the new section.
+  of the new section. Stated exception (section 10.3): a unit is kept when
+  no unit of the same resource at the base has both its key and its
+  fingerprint, so a unit that was copied unchanged while its original was
+  edited is not listed, because the base holds that key with that
+  fingerprint.
   (`r20_cover_since_lists_exactly_the_units_of_the_new_section`,
   `r19_r20_uncommitted_and_untracked_changes_count`,
   `r20_cover_since_keeps_only_new_or_changed_units`.)
@@ -8291,4 +8324,24 @@ Each of these has a test, named in parentheses.
 - R154. The edits that rename a piece leave the claims on its other units
   unresolved, and an edit to another unit of the piece does not.
   (`neighbour_edits_that_rename_a_piece_turn_its_claims_into_candidates`.)
+- R155. Printed remedies can be followed. `reanchor` names every failing
+  kept side in one error with one command that repeats the caller's
+  arguments. A failed provider gives `hibi providers --check <scheme>`; a
+  stored key the provider no longer allows gives the reanchor template.
+  The twin remedy at claim time names only the containing unit; `cover`
+  names the exclusion, and the other twin stays listed until it has its
+  own. `suggest-evidence --in` on an undeclared alias says what `claim`
+  says. `judge_unavailable` offers a form without the judge only for
+  `status`. The `claim_retired` remedy of a batch names the `note` field.
+  An accepted changed side is shown whole.
+  (`reanchor_names_every_failing_kept_side_in_one_error_and_one_command`,
+  `reanchor_names_a_failing_kept_side_by_its_old_evidence_number`,
+  `unavailable_rows`, `r62_a_disallowed_stored_key_is_never_sent`,
+  `selector_advice_comes_from_the_provider`,
+  `cover_offers_no_anchor_for_units_that_cannot_be_told_apart`,
+  `suggest_evidence_in_errors_say_what_to_do`,
+  `without_the_key_nothing_is_contacted`,
+  `the_same_claim_does_not_depend_on_how_its_anchors_are_written`,
+  `a_quote_that_cannot_be_told_apart_is_refused_at_claim_time`,
+  `a_write_reports_what_it_accepted`.)
 
