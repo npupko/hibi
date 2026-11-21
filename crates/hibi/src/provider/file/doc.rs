@@ -1223,8 +1223,16 @@ impl Doc {
                     _ => None,
                 };
                 // The symbol identifies the unit; a stored quote that is no
-                // longer in it is reported, not acted on.
-                let changed = ctx.is_some() && matches!(l, Located::Missing);
+                // longer in it exactly (missing, or found only by the fuzzy
+                // step) is reported, not acted on.
+                let changed = ctx.is_some()
+                    && !matches!(
+                        l,
+                        Located::Found {
+                            how: How::Exact,
+                            ..
+                        }
+                    );
                 return Ok(vec![self.out(i, Some(&l), false, refuse, changed)?]);
             }
             if s.len() > 1 {

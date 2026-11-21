@@ -9,7 +9,7 @@
       "type": "boolean"
     },
     "contextChanged": {
-      "description": "In `resolve`, for a stored selector: the quote was located exactly\nbut the stored `prefix` and `suffix` are not reproduced there, or,\nfor a symbol that names one declaration, the quote is not in it.",
+      "description": "In `resolve`, for a stored selector: the quote was located exactly\nbut the stored `prefix` and `suffix` are not reproduced there, or,\nfor a symbol that names one declaration, the quote is no longer in it\nexactly.",
       "type": "boolean"
     },
     "fp": {

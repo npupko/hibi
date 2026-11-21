@@ -1656,7 +1656,7 @@ resolve(resource, sel):
           if L.status == ambiguous: L = pick(L)
           -> [u] with approx = false               ; the symbol identifies the unit
                       refuse = quote_in_comment if L.status == found and in_comment(L)
-                      contextChanged = sel is stored and L.status == missing
+                      contextChanged = sel is stored and not (L.status == found and L.how == exact)
       if |S| > 1:
           if not sel.quote                         -> S       (ambiguous)
           D = units u of S with a hit in scope(u), in the order of S
@@ -1740,9 +1740,10 @@ sentence edited within 48 characters of the quote, and an edited body line
 inside a declaration's window all set it, while the unit, its `approx` and
 its fingerprint are decided as before. For a symbol that names one
 declaration the symbol identifies the unit, and `contextChanged` is set
-only when the stored quote is not found in it at all. A unit found only by
-the fuzzy step, and every unit of an ambiguous answer, has
-`contextChanged: false`. The provider reports the fact; what the engine
+when the stored quote is no longer in it exactly: not found at all, or found
+only by the fuzzy step (rule 3 of `find` still counts as exact). In the
+other branches a unit found only by the fuzzy step, and every unit of an
+ambiguous answer, has `contextChanged: false`. The provider reports the fact; what the engine
 does with it is section 9.2's. A stored selector whose exact span is not
 inside one unit (apart from filler) is `approx`, besides being refused:
 the structure around the quote changed, for example a blank line now
@@ -4295,7 +4296,7 @@ provider unusable.
 | `sel` | selector | yes | A selector that, sent to `resolve` with the same `loc`, returns exactly this unit now |
 | `text` | string | in `resolve` only | The unit's content |
 | `approx` | boolean | no (default false) | In `resolve`: the selector did not match exactly and the unit was found by approximation or fallback |
-| `contextChanged` | boolean | no (default false) | In `resolve`, for a stored selector (one with `prefix`, `suffix` or `pos`): the quote was located exactly, but the text around it no longer equals the stored `prefix` and `suffix` (after `normalize`); for a symbol that names one declaration, the stored quote is no longer in it. A provider that does not compare context leaves it `false`. |
+| `contextChanged` | boolean | no (default false) | In `resolve`, for a stored selector (one with `prefix`, `suffix` or `pos`): the quote was located exactly, but the text around it no longer equals the stored `prefix` and `suffix` (after `normalize`); for a symbol that names one declaration, the stored quote is no longer in it exactly (not found, or found only approximately). A provider that does not compare context leaves it `false`. |
 | `refuse` | string | no | In `resolve`: this resolution must not be used to create a claim or replace a side. One of `quote_spans_units`, `quote_in_comment`. |
 
 What hibi does with `approx`. A unit with `approx: true` never resolves a
