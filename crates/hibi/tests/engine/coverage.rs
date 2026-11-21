@@ -163,7 +163,8 @@ fn r38_covered_through_the_parent_chain_and_exclusions_with_counts() {
     let mut f = fixture();
     // s1 covers itself and its parent heading.
     f.claim("Capped.", "file:docs/a.md#s1");
-    // A stale claim still covers.
+    // `docs/b.md` is excluded as a whole: it is not read, and a claim on a
+    // unit of it counts nowhere in the scope.
     f.claim("One.", "file:docs/b.md#s3");
     edit(&f.files, "file:docs/b.md", "s3", "Generated one, edited.");
     // A retired claim does not.
@@ -184,11 +185,11 @@ fn r38_covered_through_the_parent_chain_and_exclusions_with_counts() {
         json,
         serde_json::json!({
             "ok": true, "command": "cover", "since": null,
-            "summary": {"units": 6, "covered": 3, "excluded": 2, "uncovered": 1},
+            "summary": {"units": 4, "covered": 2, "excluded": 1, "uncovered": 1},
             "scopes": [{
                 "name": "docs", "resource": "file:docs/**/*.md",
                 "kinds": ["sentence", "heading"],
-                "units": 6, "covered": 3, "excluded": 2, "uncovered": 1,
+                "units": 4, "covered": 2, "excluded": 1, "uncovered": 1,
                 "truncated": false, "skipped": null,
                 "items": [{
                     "loc": "file:docs/a.md",
@@ -198,6 +199,7 @@ fn r38_covered_through_the_parent_chain_and_exclusions_with_counts() {
                     "anchor": {"loc": "file:docs/a.md", "sel": {"symbol": "s5"}}
                 }],
                 "exclusions": [
+                    // One resource, not one unit.
                     {"resource": "file:docs/b.md", "unit": null, "reason": "generated",
                      "matched": 1},
                     {"resource": "file:docs/a.md", "unit": "s2", "reason": "an example",
@@ -220,7 +222,13 @@ fn r38_covered_through_the_parent_chain_and_exclusions_with_counts() {
     claim_at(&f.store, &mut f.p, input, NOW);
     let out = f.cover(&["docs"], 200).unwrap();
     assert_eq!(out.summary.uncovered, 0);
-    assert_eq!(out.summary.covered, 4);
+    assert_eq!(out.summary.covered, 3);
+    // The excluded resource was never asked for its units.
+    assert!(
+        !log(&f.files).iter().any(|l| l == "units file:docs/b.md"),
+        "{:?}",
+        log(&f.files)
+    );
 }
 
 #[test]
@@ -329,7 +337,8 @@ fn r50_the_parent_walk_terminates() {
 fn resources_that_cannot_be_listed_are_unavailable() {
     let mut f = fixture();
     set_err(&f.files, "file:docs/a.md", C::NotText);
-    // In the file list but not readable by section 6.8 (a symbolic link).
+    // `docs/b.md` cannot be listed either, and the scope excludes it as a
+    // whole: it is not read, so it is not reported.
     f.files.borrow_mut().resources.remove("file:docs/b.md");
     // Two units with one key.
     set(
@@ -347,9 +356,17 @@ fn resources_that_cannot_be_listed_are_unavailable() {
         serde_json::to_value(&s.unavailable).unwrap(),
         serde_json::json!([
             {"loc": "file:docs/a.md", "reason": "not_text"},
-            {"loc": "file:docs/b.md", "reason": "resource_not_found"},
             {"loc": "file:docs/deep/c.md", "reason": "provider_error"}
         ])
+    );
+    assert_eq!(s.exclusions[0].resource, "file:docs/b.md");
+    assert_eq!(s.exclusions[0].matched, 1);
+    // In the file list but not readable by section 6.8 (a symbolic link).
+    f.files.borrow_mut().resources.remove("file:docs/deep/c.md");
+    let out = f.cover(&["docs"], 0).unwrap();
+    assert_eq!(
+        serde_json::to_value(&out.scopes[0].unavailable[1]).unwrap(),
+        serde_json::json!({"loc": "file:docs/deep/c.md", "reason": "resource_not_found"})
     );
 
     // An external scheme with no registered provider, a failing provider,

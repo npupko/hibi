@@ -644,21 +644,27 @@ fn r38_exclusions_are_reported_with_reason_and_match_count() {
             {"resource": "file:docs/absent.md", "unit": null, "reason": "matches nothing", "matched": 0},
         ])
     };
+    // The changelog is excluded as a whole: it is not read, its two
+    // sentences are not units of the scope, and its exclusion counts one
+    // resource. The exclusion of one sentence counts that unit.
     let v = repo.json(&["cover"]);
-    assert_eq!(counts(&v["summary"]), (5, 0, 3, 2), "{v}");
+    assert_eq!(counts(&v["summary"]), (3, 0, 1, 2), "{v}");
     let scope = only_scope(&v);
-    assert_eq!(counts(&scope), (5, 0, 3, 2));
+    assert_eq!(counts(&scope), (3, 0, 1, 2));
     assert_eq!(
         items(&scope),
         pairs(&[("sentence", "Alpha is one."), ("sentence", "Beta is two.")])
     );
-    assert_eq!(scope["exclusions"], expected_exclusions(2));
+    assert_eq!(scope["exclusions"], expected_exclusions(1));
 
     // The human output names each exclusion with its reason.
     let human = repo.human(&["cover"]);
     assert_eq!(human.status, 0, "{human:?}");
     assert_eq!(human.stderr, "");
     for needle in [
+        "file:docs/changelog.md (1 resource): release notes, not claims",
+        "(1 unit): an aside",
+        "file:docs/absent.md (0 resources): matches nothing",
         "release notes, not claims",
         "an aside",
         "matches nothing",
@@ -669,16 +675,105 @@ fn r38_exclusions_are_reported_with_reason_and_match_count() {
     }
     assert!(!human.stdout.contains("Released one."), "{}", human.stdout);
 
-    // A claimed unit of the excluded file is covered, so the exclusion
-    // excluded one unit fewer.
+    // A claim on a unit of the excluded file changes nothing in the scope.
     repo.claim(
         "one was released",
         "file:docs/changelog.md::Released one.",
         &[],
     );
     let v = repo.json(&["cover"]);
-    assert_eq!(counts(&v["summary"]), (5, 1, 2, 2), "{v}");
+    assert_eq!(counts(&v["summary"]), (3, 0, 1, 2), "{v}");
     assert_eq!(only_scope(&v)["exclusions"], expected_exclusions(1));
+}
+
+/// A resource that an exclusion without `unit` matches is not read at all.
+/// A code file that does not parse, a file over the size limit and a file
+/// that is not UTF-8 are taken out of a scope this way: they are not
+/// listed under `unavailable`, and the exclusion counts each as one
+/// resource. An exclusion that names a unit still needs the file read.
+#[test]
+fn a_whole_resource_exclusion_takes_an_unreadable_file_out_of_cover() {
+    let repo = Repo::new();
+    let scope = |exclude: &str| {
+        format!(
+            "version = 1\n\n[[scope]]\nname = \"code\"\nresource = \"file:src/*\"\nkinds = [\"function\", \"sentence\"]\n{exclude}"
+        )
+    };
+    repo.write("src/good.py", "def ok():\n    return 1\n");
+    repo.write("src/bad.py", "def broken(:\n    return 1\n");
+    let mut big = "A sentence.\n".repeat(700_000);
+    big.truncate(usize::try_from(hibi::provider::file::MAX_FILE_BYTES).unwrap() + 1);
+    repo.write("src/big.md", &big);
+    std::fs::write(repo.root.join("src/data.md"), [0xff, 0xfe, 0x00, 0x80]).unwrap();
+    repo.write(".hibi/hibi.toml", &scope(""));
+
+    // Without exclusions the three are reported, each with its reason.
+    let v = repo.json(&["cover"]);
+    assert_eq!(
+        only_scope(&v)["unavailable"],
+        json!([
+            {"loc": "file:src/bad.py", "reason": "resource_unavailable"},
+            {"loc": "file:src/big.md", "reason": "too_large"},
+            {"loc": "file:src/data.md", "reason": "not_text"}
+        ])
+    );
+    assert_eq!(counts(&v["summary"]), (1, 0, 0, 1), "{v}");
+
+    repo.write(
+        ".hibi/hibi.toml",
+        &scope(
+            "exclude = [\n  { resource = \"file:src/bad.py\", reason = \"does not parse yet\" },\n  { resource = \"file:src/*.md\", reason = \"data, not prose\" },\n]\n",
+        ),
+    );
+    let v = repo.json(&["cover"]);
+    let s = only_scope(&v);
+    assert_eq!(s["unavailable"], json!([]), "{v}");
+    assert_eq!(counts(&v["summary"]), (1, 0, 0, 1), "{v}");
+    assert_eq!(
+        s["exclusions"],
+        json!([
+            {"resource": "file:src/bad.py", "unit": null, "reason": "does not parse yet", "matched": 1},
+            {"resource": "file:src/*.md", "unit": null, "reason": "data, not prose", "matched": 2}
+        ])
+    );
+    let human = repo.human(&["cover"]);
+    assert!(
+        human
+            .stdout
+            .contains("excluded: file:src/bad.py (1 resource): does not parse yet")
+            && human
+                .stdout
+                .contains("excluded: file:src/*.md (2 resources): data, not prose"),
+        "{}",
+        human.stdout
+    );
+    assert!(!human.stdout.contains("unavailable:"), "{}", human.stdout);
+
+    // `--since`: the excluded files changed in the range and stay out.
+    let base = repo.commit("base");
+    repo.write("src/bad.py", "def broken(:\n    return 2\n");
+    repo.write("src/good.py", "def ok():\n    return 2\n");
+    let v = repo.json(&["cover", "--since", &base]);
+    let s = only_scope(&v);
+    assert_eq!(s["unavailable"], json!([]), "{v}");
+    assert_eq!(s["exclusions"][0]["matched"], 1, "{v}");
+    assert_eq!(s["exclusions"][1]["matched"], 0, "{v}");
+    assert_eq!(counts(&v["summary"]), (1, 0, 0, 1), "{v}");
+
+    // An exclusion that names a unit needs the resource read: the broken
+    // file is reported again.
+    repo.write(
+        ".hibi/hibi.toml",
+        &scope(
+            "exclude = [\n  { resource = \"file:src/bad.py\", unit = \"function:broken\", reason = \"one unit\" },\n  { resource = \"file:src/*.md\", reason = \"data, not prose\" },\n]\n",
+        ),
+    );
+    let v = repo.json(&["cover"]);
+    assert_eq!(
+        only_scope(&v)["unavailable"],
+        json!([{"loc": "file:src/bad.py", "reason": "resource_unavailable"}])
+    );
+    assert_eq!(only_scope(&v)["exclusions"][0]["matched"], 0);
 }
 
 /// Section 15.3: `--limit` caps `items` per scope and never the counts;

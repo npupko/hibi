@@ -57,8 +57,11 @@ pub enum Skipped {
     SinceUnsupported,
 }
 
-/// One exclusion of a scope with the number of units it excluded. A unit
-/// that several exclusions match counts for the first in declaration order.
+/// One exclusion of a scope with what it took out (section 10.1). For an
+/// exclusion without `unit`, `matched` is the number of resources it took
+/// out of the scope; they are not read. For one with `unit` it is the
+/// number of units it excluded. What several exclusions of a kind match
+/// counts for the first in declaration order.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, JsonSchema)]
 pub struct ExclusionReport {
     pub resource: String,
@@ -453,6 +456,20 @@ pub fn coverage(
             });
         }
         for loc in resources {
+            // A resource that an exclusion without `unit` matches is out of
+            // the scope as a whole. It is not read: a file that cannot be
+            // read or parsed is excluded this way, so asking for its units
+            // would only report it as unavailable again. The exclusion
+            // counts the resource; an exclusion with `unit` counts units
+            // and needs the resource read.
+            if let Some(i) = scope
+                .exclude
+                .iter()
+                .position(|x| x.unit.is_none() && x.resource.matches_locator(&loc))
+            {
+                sc.exclusions[i].matched += 1;
+                continue;
+            }
             let listing = listings
                 .entry(loc.clone())
                 .or_insert_with(|| list_registered(providers, &loc));

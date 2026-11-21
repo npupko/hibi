@@ -2893,19 +2893,38 @@ The `kinds` of a scope are checked against what the provider can return:
   of the store in `warnings`, in the order of the scopes.
 
 An exclusion is `{resource, unit?, reason}`. `resource` is a pattern of the
-same form as the scope's. `unit`, when present, is an exact unit key. A unit is
-excluded when an exclusion's `resource` matches its resource and `unit` is
-absent or equals its key. `reason` is required and is shown in the output.
+same form as the scope's. `unit`, when present, is an exact unit key.
+`reason` is required and is shown in the output. There are two kinds:
+
+- Without `unit` the exclusion takes whole resources out of the scope. A
+  resource of the scope that such an exclusion matches is not read: no
+  `units` call is made for it, its units are not units of the scope
+  (they are counted nowhere, and a claim on one of them counts nowhere in
+  the scope), and it is never listed under `unavailable`. This is how a
+  file that cannot be read or parsed (a code file with a syntax error, a
+  file over a size limit, a file that is not UTF-8) is taken out of a
+  scope. The first such exclusion in declaration order that matches the
+  resource counts it: its `matched` (section 15.3) is a number of
+  resources.
+- With `unit` the exclusion excludes that unit of a resource that is read:
+  a unit is excluded when the exclusion's `resource` matches its resource
+  and `unit` equals its key. Its `matched` is a number of units. A resource
+  that only exclusions with `unit` match is read, and is listed under
+  `unavailable` when it cannot be.
+
+Whole-resource exclusions are applied first, to the list of the scope's
+resources, and with `--since` to the resources kept by section 10.3.
 
 An exclusion's `resource` matches a resource as follows: a `file:` pattern
 matches a `file:` locator whose path the glob matches; a `repo:` pattern
 matches a `repo:` locator with the same alias whose path the glob matches; a
 pattern on any other scheme matches the equal locator only.
 
-The exclusions of a scope are tried in declaration order, and the first one
-that matches a unit is the one that excludes it. A unit that several
-exclusions match is counted once, for that first exclusion; the `matched`
-count (section 15.3) of every later exclusion does not include it.
+The exclusions of a kind are tried in declaration order, and the first one
+that matches is the one that counts: a resource that several exclusions
+without `unit` match, and a unit that several exclusions with `unit` match,
+is counted once, for that first exclusion; the `matched` count
+(section 15.3) of every later exclusion does not include it.
 
 ### 10.2 Covered
 
@@ -6394,8 +6413,13 @@ of many identical units matches all of them, so resolving it per item
 costs the number of units each time. For the same reason a resolution
 keeps the first `MAX_CANDIDATES` units of an answer and the count of all. `anchor` is the unit's
 locator with its completed selector and can be passed to `claim --stdin`.
-`matched` counts the units each exclusion excluded. With `--since`, the counts
-cover only the units kept by section 10.3.
+`matched` counts what each exclusion took out: resources for an exclusion
+whose `unit` is `null`, units for one that names a unit (section 10.1). A
+scope's `units`, `covered`, `excluded` and `uncovered` count units of the
+resources that were read, so the units of a wholly excluded resource are in
+none of them. With `--since`, the counts cover only the resources and units
+kept by section 10.3. The human output writes `(<n> resources)` or
+`(<n> units)` after each exclusion.
 
 Human: per scope a line with the four counts, then the uncovered units grouped
 by file with line numbers and text, then the exclusions with their reasons.
@@ -7128,6 +7152,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 142 | Identity of a stored anchor (section 6.7): a side is resolved only by its symbol and the number of declarations it named (`count`), or by its quote with in-unit windows (`prefix`, `suffix` cut inside the unit) in its container (`within`: a heading path and piece name, or a declaration). Everything else is a candidate. Stored selectors hold no default quotes and no `pos`; printed anchors select their unit alone; `identity: "symbol"` marks a unit its symbol names after its stored quote is gone; `quote_not_distinguishable` refuses a new anchor whose completed selector would not select its unit. Supersedes decisions 132, 138 and 139 and the corroboration of decision 141, and removes `contextChanged`. | A claim could follow an identical copy silently: a fingerprint equal to a mark was taken as identity, and duplicated symbols re-bound. Context windows that reached into neighbouring units changed with unrelated edits, and position chose between equal hits. The rule was designed with the verifier until no scenario could make a candidate resolve. |
 | 143 | The engine adds no identity rule to the provider's answer. A unit resolved by its symbol alone, the stored quote gone, is `changed`, asks for a new anchor, and is refused by `mark`. Candidates and ambiguity lists print the provider's printed anchor; units with the same printed anchor are listed as a group without an anchor. The same claim, and repeated evidence, are decided by the units the sides resolve to. A quote that cannot be told apart is `quote_not_distinguishable`. A bare quote inside a declaration gets a note. | Identity belongs to one place; a mark must not keep a stale quote; what cannot be selected must not be offered; two ways to write an anchor name one side. |
 | 144 | A file of a code class that does not parse is `unavailable` for `resolve` with any selector, for `units` and for `render`, with the line of the first error; there is no fallback to `block` units for a code class, and the cache stores no row for such a file. Its sides are `unavailable` (`resource_unavailable`) and come back unchanged when it parses; `cover` lists it under `unavailable`. A file the pinned grammar cannot parse cannot be anchored: exclude it from the scope. Supersedes decision 3. | The text fallback produced half-states: a quote stored with `within` became `not_exact` with a text block as its candidate, and re-anchoring to it tied the claim to broken text; a top-level quote became `profile_mismatch` with `next: hibi mark`, which would record a `prose-v1` fingerprint of code. |
+| 145 | An exclusion without `unit` takes whole resources out of a scope: they are not read and not listed under `unavailable`, and its `matched` counts resources. An exclusion with `unit` counts units. | Excluding a file is the remedy for a file that cannot be read or parsed; reading it again only reported it again. |
 | 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
 | 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
 | 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
@@ -8055,4 +8080,13 @@ Each of these has a test, named in parentheses.
   `claim_completes_a_symbol_a_bare_quote_and_a_whole_file`,
   `a_rename_swap_does_not_move_a_quote_only_anchor`,
   `a_printed_anchor_is_accepted_with_its_stored_keys`.)
+- R148. A resource matched by an exclusion without `unit` is not read by
+  `cover`: a code file that does not parse, a file over the size limit and
+  a file that is not UTF-8 are not listed under `unavailable`, the
+  exclusion's `matched` counts resources, the same holds with `--since`,
+  and an exclusion with `unit` still has the resource read.
+  (`a_whole_resource_exclusion_takes_an_unreadable_file_out_of_cover`,
+  `r38_exclusions_are_reported_with_reason_and_match_count`,
+  `r38_covered_through_the_parent_chain_and_exclusions_with_counts`,
+  `resources_that_cannot_be_listed_are_unavailable`.)
 

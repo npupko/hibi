@@ -5,14 +5,14 @@ expression: "shot(&repo, &[\"cover\", \"--limit\", \"1\"])"
 $ hibi cover --limit 1
 exit status: 0
 ---- standard output ----
-docs (file:docs/**/*.md; sentence, list-item): 6 units, 1 covered, 1 excluded, 4 uncovered
+docs (file:docs/**/*.md; sentence, list-item): 5 units, 1 covered, 0 excluded, 4 uncovered
   file:docs/guide.md
         3  sentence  Requests time out after 30 seconds.
   3 more not listed; raise --limit to see them
-  excluded: file:docs/changelog.md (1 unit): release notes, not claims
+  excluded: file:docs/changelog.md (1 resource): release notes, not claims
 code (file:src/**/*.rs; function): 2 units, 1 covered, 0 excluded, 1 uncovered
   file:src/cache.rs
         6  function  pub fn timeout() -> u32 { 30 }
-total: 8 units, 2 covered, 1 excluded, 5 uncovered
+total: 7 units, 2 covered, 0 excluded, 5 uncovered
 ---- standard error ----
 (empty)

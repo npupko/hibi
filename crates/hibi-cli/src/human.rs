@@ -587,12 +587,13 @@ pub fn cover(o: &CoverOutput) -> String {
                 Some(unit) => format!("{} unit {unit}", x.resource),
                 None => x.resource.clone(),
             };
-            let _ = writeln!(
-                out,
-                "  excluded: {what} ({}): {}",
-                plural(x.matched, "unit", "units"),
-                x.reason
-            );
+            // An exclusion of a whole resource counts resources, which
+            // are not read; one that names a unit counts units.
+            let matched = match &x.unit {
+                Some(_) => plural(x.matched, "unit", "units"),
+                None => plural(x.matched, "resource", "resources"),
+            };
+            let _ = writeln!(out, "  excluded: {what} ({matched}): {}", x.reason);
         }
         for u in &scope.unavailable {
             let _ = writeln!(out, "  unavailable: {} ({})", u.loc, u.reason);

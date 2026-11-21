@@ -127,7 +127,7 @@
       ]
     },
     "ExclusionReport": {
-      "description": "One exclusion of a scope with the number of units it excluded. A unit\nthat several exclusions match counts for the first in declaration order.",
+      "description": "One exclusion of a scope with what it took out (section 10.1). For an\nexclusion without `unit`, `matched` is the number of resources it took\nout of the scope; they are not read. For one with `unit` it is the\nnumber of units it excluded. What several exclusions of a kind match\ncounts for the first in declaration order.",
       "type": "object",
       "properties": {
         "matched": {
