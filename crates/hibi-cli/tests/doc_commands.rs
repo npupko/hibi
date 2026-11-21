@@ -1,5 +1,6 @@
-//! R43: every `hibi` command line shown in a code block of the user docs
-//! parses with the real clap definition, `hibi_cli::cli::command()`.
+//! R43: every `hibi` command line shown in a code block or an inline code
+//! span of the user docs parses with the real clap definition,
+//! `hibi_cli::cli::command()`.
 //!
 //! # Which files
 //!
@@ -14,6 +15,16 @@
 //! Every fenced code block (```` ``` ```` or `~~~`, three or more, indented
 //! or not, because MDX nests blocks inside components), whatever its
 //! language, except a block marked as output.
+//!
+//! # Inline code spans
+//!
+//! A code span in the prose (outside every fenced block) whose text starts
+//! with `hibi ` is read the same way as a block. Such a span of only `hibi`
+//! and a subcommand, such as `` `hibi claim` ``, names the command rather
+//! than running it, so only the subcommand is checked. A span delimited by
+//! two or more backticks, such as ``` `` hibi schema <name> `` ```, renders
+//! the same and is not checked: that is the opt-out for a span that is not a
+//! command line.
 //!
 //! # Marking a block as output
 //!
@@ -100,6 +111,11 @@ fn r43_every_hibi_command_in_the_docs_parses() {
         "README.md shows no hibi command in a code block"
     );
     assert!(total >= 1, "no hibi command was found in the docs");
+    // The same for inline spans: README.md names commands in its prose.
+    assert!(
+        hibi_commands(&readme).iter().any(|s| s.inline),
+        "README.md shows no hibi command in an inline code span"
+    );
 }
 
 /// The files to read, in a stable order.
@@ -162,14 +178,16 @@ fn check_markdown(path: &str, markdown: &str) -> Checked {
         if is_hibi {
             checked.commands += 1;
         }
-        let problem = if simple.substitutions.is_empty() {
-            parse(&simple.words).err()
-        } else {
+        let problem = if !simple.substitutions.is_empty() {
             Some(
                 "uses command substitution, which this test cannot check; \
                  set a variable on a line of its own and use it"
                     .to_owned(),
             )
+        } else if simple.inline && names_a_command(&simple.words) {
+            subcommand_exists(&simple.words[1]).err()
+        } else {
+            parse(&simple.words).err()
         };
         if let Some(problem) = problem {
             let shown = if simple.words.is_empty() {
@@ -183,6 +201,21 @@ fn check_markdown(path: &str, markdown: &str) -> Checked {
         }
     }
     checked
+}
+
+/// True when the words are `hibi` and one word that is not an option: an
+/// inline span that names a command, such as `hibi claim`.
+fn names_a_command(words: &[String]) -> bool {
+    words.len() == 2 && !words[1].starts_with('-')
+}
+
+/// The subcommand exists in the clap definition.
+fn subcommand_exists(name: &str) -> Result<(), String> {
+    if hibi_cli::cli::command().find_subcommand(name).is_some() {
+        Ok(())
+    } else {
+        Err(format!("InvalidSubcommand: there is no subcommand {name}"))
+    }
 }
 
 /// Parse the words with the clap definition. Help and version count as
@@ -231,17 +264,164 @@ fn mentions_hibi(text: &str) -> bool {
 }
 
 /// Every command to check in the markdown: those whose first word is
-/// `hibi`, and those with a command substitution that mentions hibi.
+/// `hibi`, and those with a command substitution that mentions hibi, in
+/// the code blocks and then in the inline code spans.
 fn hibi_commands(markdown: &str) -> Vec<Simple> {
-    blocks(markdown)
+    let is_checked = |s: &Simple| {
+        s.words.first().is_some_and(|w| w == "hibi")
+            || s.substitutions.iter().any(|t| mentions_hibi(t))
+    };
+    let in_blocks = blocks(markdown)
         .into_iter()
         .filter(|b| !b.is_output())
         .flat_map(|b| lex(&b.text, b.first_line))
-        .filter(|s| {
-            s.words.first().is_some_and(|w| w == "hibi")
-                || s.substitutions.iter().any(|t| mentions_hibi(t))
-        })
-        .collect()
+        .filter(is_checked);
+    let in_spans = inline_spans(markdown)
+        .into_iter()
+        .filter(|span| span.text.starts_with("hibi "))
+        .flat_map(|span| lex(&fill_placeholders(&span.text), span.line))
+        .filter(is_checked)
+        .map(|s| Simple { inline: true, ..s });
+    in_blocks.chain(in_spans).collect()
+}
+
+/// The text with each placeholder `<word>` (letters, digits, `-` and `_`)
+/// replaced by `word`, so that a synopsis such as
+/// `hibi reanchor <id> --evidence <n>=<anchor>` is read as arguments, not
+/// as redirections.
+fn fill_placeholders(text: &str) -> String {
+    let mut out = String::new();
+    let mut rest = text;
+    while let Some(open) = rest.find('<') {
+        out.push_str(&rest[..open]);
+        let after = &rest[open + 1..];
+        let name_len = after
+            .find(|c: char| !(c.is_ascii_alphanumeric() || c == '-' || c == '_'))
+            .unwrap_or(after.len());
+        if name_len > 0 && after[name_len..].starts_with('>') {
+            out.push_str(&after[..name_len]);
+            rest = &after[name_len + 1..];
+        } else {
+            out.push('<');
+            rest = after;
+        }
+    }
+    out.push_str(rest);
+    out
+}
+
+/// An inline code span of the prose.
+#[derive(Debug)]
+struct Span {
+    /// The line of the file where the span starts.
+    line: usize,
+    /// Its text, with line breaks read as spaces and one space removed from
+    /// each end when both ends have one.
+    text: String,
+}
+
+/// The code spans delimited by single backticks in the lines outside the
+/// fenced code blocks. A span does not cross a blank line. A span delimited
+/// by two or more backticks is not returned: that is the opt-out.
+fn inline_spans(markdown: &str) -> Vec<Span> {
+    let in_block = block_lines(markdown);
+    let prose: Vec<&str> = markdown
+        .lines()
+        .enumerate()
+        .map(|(i, l)| if in_block[i] { "" } else { l })
+        .collect();
+    let chars: Vec<char> = prose.join("\n").chars().collect();
+    let run_at = |i: usize| chars[i..].iter().take_while(|&&c| c == '`').count();
+    let mut spans = Vec::new();
+    let (mut i, mut line) = (0, 1);
+    while i < chars.len() {
+        match chars[i] {
+            '\n' => {
+                line += 1;
+                i += 1;
+            }
+            '\\' => i += 2,
+            '`' => {
+                let n = run_at(i);
+                let start = i + n;
+                // Find a closing run of exactly n backticks before a blank line.
+                let mut j = start;
+                let mut close = None;
+                while j < chars.len() {
+                    if chars[j] == '\n' && chars.get(j + 1) == Some(&'\n') {
+                        break;
+                    }
+                    if chars[j] == '`' {
+                        let m = run_at(j);
+                        if m == n {
+                            close = Some(j);
+                            break;
+                        }
+                        j += m;
+                    } else {
+                        j += 1;
+                    }
+                }
+                match close {
+                    Some(end) => {
+                        let raw: String = chars[start..end].iter().collect();
+                        if n == 1 {
+                            spans.push(Span {
+                                line,
+                                text: span_text(&raw),
+                            });
+                        }
+                        line += raw.matches('\n').count();
+                        i = end + n;
+                    }
+                    None => i = start,
+                }
+            }
+            _ => i += 1,
+        }
+    }
+    spans
+}
+
+/// The text of a span as CommonMark reads it: line breaks as spaces, and
+/// one space removed from each end when both ends have one and the text is
+/// not only spaces.
+fn span_text(raw: &str) -> String {
+    let text = raw.replace('\n', " ");
+    match text.strip_prefix(' ').and_then(|t| t.strip_suffix(' ')) {
+        Some(inner) if !inner.trim().is_empty() => inner.to_owned(),
+        _ => text,
+    }
+}
+
+/// For each line of the markdown: true when it is a fence or lies inside
+/// a fenced code block.
+fn block_lines(markdown: &str) -> Vec<bool> {
+    let mut out = Vec::new();
+    let mut open: Option<(char, usize)> = None;
+    for line in markdown.lines() {
+        match open {
+            None => {
+                if let Some((c, n, info)) = fence(line)
+                    && !(c == '`' && info.contains('`'))
+                {
+                    open = Some((c, n));
+                    out.push(true);
+                } else {
+                    out.push(false);
+                }
+            }
+            Some((c, n)) => {
+                let closes = fence(line)
+                    .is_some_and(|(d, m, rest)| d == c && m >= n && rest.trim().is_empty());
+                if closes {
+                    open = None;
+                }
+                out.push(true);
+            }
+        }
+    }
+    out
 }
 
 /// A fenced code block.
@@ -330,6 +510,8 @@ struct Simple {
     words: Vec<String>,
     /// The text of each command substitution in it.
     substitutions: Vec<String>,
+    /// It comes from an inline code span, not a code block.
+    inline: bool,
 }
 
 /// A word as the lexer read it.
@@ -815,4 +997,69 @@ fn a_quoted_statement_with_spaces_parses() {
         ]
     );
     assert!(failures_in(md).is_empty(), "{:?}", failures_in(md));
+}
+
+#[test]
+fn an_inline_span_is_checked() {
+    let md = "Run `hibi status --bogus` first.\n\nThen `hibi status --detail`.\n";
+    let failures = failures_in(md);
+    assert_eq!(failures.len(), 1, "{failures:?}");
+    assert!(
+        failures[0].starts_with("doc.md:1: hibi status --bogus -> UnknownArgument: "),
+        "{failures:?}"
+    );
+    assert_eq!(
+        commands_in(md),
+        ["hibi status --bogus", "hibi status --detail"]
+    );
+}
+
+#[test]
+fn an_inline_span_may_cross_a_line_break() {
+    let md = "Run\n`hibi status\n--frobnicate` now.\n";
+    let failures = failures_in(md);
+    assert_eq!(failures.len(), 1, "{failures:?}");
+    assert!(failures[0].starts_with("doc.md:2: hibi status --frobnicate -> "));
+}
+
+#[test]
+fn an_inline_span_that_names_a_command_checks_the_subcommand() {
+    assert!(failures_in("`hibi claim` writes a claim.\n").is_empty());
+    let failures = failures_in("`hibi frobnicate` does nothing.\n");
+    assert_eq!(failures.len(), 1, "{failures:?}");
+    assert!(failures[0].contains("InvalidSubcommand"), "{failures:?}");
+}
+
+#[test]
+fn an_inline_placeholder_is_read_as_an_argument() {
+    let md =
+        "Run `hibi reanchor <id> --evidence <n>=<anchor>` and `hibi status --since <range>`.\n";
+    assert_eq!(
+        commands_in(md),
+        [
+            "hibi reanchor id --evidence n=anchor",
+            "hibi status --since range"
+        ]
+    );
+    assert!(failures_in(md).is_empty(), "{:?}", failures_in(md));
+}
+
+#[test]
+fn a_double_backtick_span_is_not_checked() {
+    let md = "The synopsis is ``hibi completions <shell>``.\n";
+    assert!(commands_in(md).is_empty());
+    assert!(failures_in(md).is_empty());
+}
+
+#[test]
+fn a_span_inside_a_code_block_is_read_once() {
+    let md = "```bash\nhibi status `hibi list`\n```\n\n```text output\n`hibi frobnicate`\n```\n";
+    assert!(failures_in(md).iter().all(|f| !f.contains("frobnicate")));
+    assert!(inline_spans(md).is_empty());
+}
+
+#[test]
+fn a_span_that_does_not_start_with_hibi_is_ignored() {
+    let md = "Install `hibi-cli`, edit `hibi.toml`, run `git status`.\n";
+    assert!(commands_in(md).is_empty());
 }
