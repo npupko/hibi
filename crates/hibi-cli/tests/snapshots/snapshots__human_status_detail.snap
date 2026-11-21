@@ -12,7 +12,6 @@ c1-b1cqk12je92xh6d4na21  stale  The cache holds 64 entries.
   subject  file:docs/guide.md  same  sentence "The cache holds 64 entries.", line 3
     | The cache holds 64 entries.
   evidence 1  file:src/cache.rs  changed (fingerprint_differs)  function "limit", lines 1-4
-    the stored quote is no longer in this unit
     | pub fn limit() -> u32 {
     |     let max_entries = 128;
     |     max_entries
