@@ -1247,10 +1247,38 @@ fn r64_without_usable_git_nothing_is_contacted() {
 
 #[test]
 fn r61_ignored_text_is_never_sent() {
-    let fx = fixture(&[("docs/ignored.md", "Ignored hunter2 sentence.\n")]);
+    let fx = fixture(&[
+        ("docs/ignored.md", "Ignored hunter2 sentence.\n"),
+        ("notes.md", "The token is hunter2.\n"),
+    ]);
     fx.write(".gitignore", "secret.md\nsrc/secret.rs\ndocs/ignored.md\n");
-    let secret = fx.claim("The token is set.", "file:secret.md::The token is hunter2.");
-    fx.write("secret.md", "The token is hunter2 now.\n");
+    // A file that git ignores cannot be claimed at all.
+    let mut p = fx.providers();
+    let refused = engine::claim(
+        &fx.store,
+        &mut p,
+        &fx.git,
+        &[ClaimInput {
+            statement: "The token is set.".into(),
+            subject: "file:secret.md::The token is hunter2.".into(),
+            evidence: Vec::new(),
+            recheck: None,
+            note: None,
+            by: None,
+        }],
+        false,
+        now(),
+    )
+    .unwrap_err();
+    assert_eq!(refused[0].code, hibi::Code::SideMissing);
+    // A claim made while its file was in git's file list; the file is
+    // ignored afterwards, and its text changes.
+    let secret = fx.claim("The token is set.", "file:notes.md::The token is hunter2.");
+    fx.write(
+        ".gitignore",
+        "secret.md\nsrc/secret.rs\ndocs/ignored.md\nnotes.md\n",
+    );
+    fx.write("notes.md", "The token is hunter2 now.\n");
     let open = fx.claim(
         "Retries.",
         "file:docs/guide.md::The client retries a request three times.",
@@ -1272,11 +1300,18 @@ fn r61_ignored_text_is_never_sent() {
     let ids: Vec<String> = o.claims.iter().map(|c| c.id.to_string()).collect();
     assert_eq!(
         ids,
-        [secret, open],
+        [secret.clone(), open],
         "the claim on an ignored file is not sent and comes first"
     );
     assert_eq!(mock.count(), 3);
     assert!(!mock.all_bodies().contains("hunter2"), "R61");
+    // For contrast: the text of the claim on a listed file was sent.
+    assert!(mock.all_bodies().contains("retries a request four times"));
+    // The stored claim on the ignored file reads as missing, and no view
+    // of it carries the file's text.
+    let listed = o.claims.iter().find(|c| c.id.as_str() == secret).unwrap();
+    assert_eq!(listed.sides[0].state, hibi::engine::SideState::Missing);
+    assert!(!serde_json::to_string(&o).unwrap().contains("hunter2 now"));
 }
 
 // ---------------------------------------------------------------------------
