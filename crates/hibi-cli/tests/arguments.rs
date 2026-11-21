@@ -165,12 +165,32 @@ fn selector_advice_comes_from_the_provider() {
     let block = "Padding sentence number one that is quite long indeed, really.\n\nThe cap is 5.\n\nPadding sentence number two that is quite long indeed, really.\n\n";
     repo.write("docs/a.md", &block.repeat(2));
 
-    // The file provider accepts a quote and a symbol.
+    // The file provider accepts a quote and a symbol, but the units of a
+    // markdown file have no symbol: only the quote is advised.
     let e = repo.fail(&["claim", "S", "--subject", "file:docs/a.md::The cap is 5."]);
     assert_eq!(e["code"], "side_ambiguous");
     assert_eq!(
         e["remediation"],
+        "Give a longer quote, so that the anchor matches one unit."
+    );
+    // The units of a code file have symbols.
+    repo.write(
+        "src/a.py",
+        "class P:\n    def v(self):\n        return 1\n\n\nclass Q:\n    def v(self):\n        return 1\n",
+    );
+    let e = repo.fail(&["claim", "S", "--subject", "file:src/a.py::return 1"]);
+    assert_eq!(e["code"], "side_ambiguous");
+    assert_eq!(
+        e["remediation"],
         "Give a symbol, or a longer quote, so that the anchor matches one unit."
+    );
+    // An anchor found only by similarity: the advice names what this
+    // provider accepts and is useful here.
+    let e = repo.fail(&["claim", "S", "--subject", "file:docs/a.md::The cap is 6."]);
+    assert_eq!(e["code"], "selector_not_exact");
+    assert_eq!(
+        e["remediation"],
+        "Give a quote that occurs exactly in the unit you mean; the candidates in the message have an anchor each."
     );
     let stdin = r#"[{"statement":"S","subject":{"loc":"file:docs/a.md","sel":{"key":"k"}}}]"#;
     let e = repo

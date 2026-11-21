@@ -2396,6 +2396,53 @@ fn a_method_of_a_renamed_class_is_offered_first_by_its_content() {
     assert_eq!(refused(&repo, &["mark", &id])["code"], "side_missing");
 }
 
+/// Text from a file reaches a terminal without control characters, except
+/// newline and tab. JSON keeps them, written as escapes.
+#[test]
+fn human_output_has_no_control_characters_from_file_text() {
+    let repo = seeded();
+    repo.write(
+        "docs/esc.md",
+        "# Esc\n\nThe \u{1b}[31mred\u{1b}[0m word \u{7}rings.\n",
+    );
+    let id = repo.claim("Red", "file:docs/esc.md::word", &[]);
+    repo.write(
+        "docs/esc.md",
+        "# Esc\n\nThe \u{1b}[31mred\u{1b}[0m word \u{7}rings twice.\n",
+    );
+    let human = repo.human(&["--now", NOW, "status", "--detail"]);
+    assert!(human.stdout.contains(&id), "{}", human.stdout);
+    assert!(
+        human.stdout.contains("[31mred[0m word rings twice."),
+        "{}",
+        human.stdout
+    );
+    for text in [&human.stdout, &human.stderr] {
+        assert!(
+            !text
+                .chars()
+                .any(|c| c.is_control() && c != '\n' && c != '\t'),
+            "{text:?}"
+        );
+    }
+    // An error message that quotes the file.
+    let failed = repo.human(&[
+        "--now",
+        NOW,
+        "claim",
+        "x",
+        "--subject",
+        "file:docs/esc.md::rings once",
+    ]);
+    assert_eq!(failed.status, 1);
+    assert!(failed.stderr.contains("rings twice"), "{}", failed.stderr);
+    assert!(!failed.stderr.contains('\u{1b}') && !failed.stderr.contains('\u{7}'));
+    // JSON: the characters are there, as escapes.
+    let raw = repo.run(&["--now", NOW, "status", "--detail"]).stdout;
+    assert!(raw.contains("\\u001b[31mred"), "{raw}");
+    assert!(!raw.contains('\u{1b}'));
+}
+
 /// R55: editing the quoted line of a declaration anchored by symbol does
 /// not lose the side; the symbol identifies the unit exactly.
 #[test]
@@ -2819,6 +2866,10 @@ fn retire_replaced_by_must_name_another_existing_claim() {
     // One of the claims being retired.
     let e = refused(&repo, &["retire", &cache, "--replaced-by", &cache]);
     assert_eq!(e["code"], "invalid_argument");
+    assert_eq!(
+        e["remediation"],
+        "Name a claim that stays live as the replacement, or leave --replaced-by out."
+    );
     let e = refused(
         &repo,
         &["retire", &cache, &timeout, "--replaced-by", &timeout[..9]],

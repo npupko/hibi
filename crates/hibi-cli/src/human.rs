@@ -29,6 +29,58 @@ fn one_line(text: &str, max: usize) -> String {
     }
 }
 
+/// `text` without control characters, except newline and tab. Text from a
+/// provider, a file or the store is printed for a person and for an agent
+/// that reads a terminal: an escape sequence in it must not move the
+/// cursor, change colours or hide what follows. JSON output does not need
+/// this, because a JSON string writes a control character as an escape.
+pub fn plain(text: &str) -> String {
+    text.chars()
+        .filter(|c| !c.is_control() || matches!(c, '\n' | '\t'))
+        .collect()
+}
+
+/// For each of `texts`, the line to show under a candidate. Usually the
+/// text on one line, cut to [`LINE_TEXT_CHARS`]. Where that would be the
+/// same for two candidates whose texts differ, the first line on which the
+/// text differs from the other one is shown instead, with its number in
+/// the unit, so that near-identical candidates can be told apart.
+fn candidate_lines(texts: &[Option<&str>]) -> Vec<Option<String>> {
+    let short: Vec<Option<String>> = texts
+        .iter()
+        .map(|t| t.map(|t| one_line(t, LINE_TEXT_CHARS)))
+        .collect();
+    texts
+        .iter()
+        .enumerate()
+        .map(|(i, text)| {
+            let text = (*text)?;
+            let twin = texts.iter().enumerate().find_map(|(j, other)| {
+                let other = (*other)?;
+                (j != i && short[j] == short[i] && other != text).then_some(other)
+            });
+            let Some(twin) = twin else {
+                return short[i].clone();
+            };
+            let mut theirs = twin.lines();
+            for (n, line) in text.lines().enumerate() {
+                if theirs.next() != Some(line) {
+                    return Some(format!(
+                        "line {} of the unit: {}",
+                        n + 1,
+                        one_line(line, LINE_TEXT_CHARS)
+                    ));
+                }
+            }
+            // This text is the beginning of the other one.
+            Some(format!(
+                "ends after line {} of the unit",
+                text.lines().count()
+            ))
+        })
+        .collect()
+}
+
 fn plural(n: usize, one: &str, many: &str) -> String {
     format!("{n} {}", if n == 1 { one } else { many })
 }
@@ -124,7 +176,7 @@ fn side_place(side: &Side) -> String {
 }
 
 /// The lines for one side that is not `same`.
-fn side_lines(out: &mut String, side: &Side) {
+fn side_lines(out: &mut String, side: &Side, detail: bool) {
     let mut line = format!("  {}  {}  {}", role_name(side), side.anchor.loc, side.state);
     if let Some(reason) = side.reason {
         let _ = write!(line, " ({reason})");
@@ -181,7 +233,9 @@ fn side_lines(out: &mut String, side: &Side) {
                 "; the stored anchor matches each of them"
             }
         );
-        for c in candidates {
+        let texts: Vec<Option<&str>> = candidates.iter().map(|c| c.text.as_deref()).collect();
+        let shown = candidate_lines(&texts);
+        for (c, shown) in candidates.iter().zip(shown) {
             let label = c.label.as_deref().unwrap_or(&c.key);
             let line = c.line.map_or_else(String::new, |l| format!(", line {l}"));
             let same = if c.same_fingerprint {
@@ -197,8 +251,18 @@ fn side_lines(out: &mut String, side: &Side) {
                 c.kind,
                 hibi::engine::quoted(&one_line(label, 60))
             );
-            if let Some(text) = &c.text {
-                let _ = writeln!(out, "      | {}", one_line(text, LINE_TEXT_CHARS));
+            // With --detail the whole text the output carries, line by
+            // line; otherwise one line.
+            match (&c.text, shown) {
+                (Some(text), _) if detail => {
+                    for l in text.lines() {
+                        let _ = writeln!(out, "{}", format!("      | {l}").trim_end());
+                    }
+                }
+                (_, Some(line)) => {
+                    let _ = writeln!(out, "      | {line}");
+                }
+                _ => {}
             }
             let _ = writeln!(out, "      anchor: {}", c.anchor);
         }
@@ -213,7 +277,7 @@ fn side_lines(out: &mut String, side: &Side) {
     }
 }
 
-fn claim_block(out: &mut String, view: &ClaimView) {
+fn claim_block(out: &mut String, view: &ClaimView, detail: bool) {
     let _ = writeln!(
         out,
         "{}  {}  {}",
@@ -224,7 +288,7 @@ fn claim_block(out: &mut String, view: &ClaimView) {
     marked_line(out, view);
     for side in &view.sides {
         if side.state != SideState::Same || side.text.is_some() {
-            side_lines(out, side);
+            side_lines(out, side, detail);
         }
     }
     if let Some(next) = &view.next {
@@ -279,7 +343,14 @@ fn accepted_line(out: &mut String, accepted: &Accepted) {
     } else {
         format!(": {}", sides.join("; "))
     };
-    let _ = writeln!(out, "  was {}{what}; now marked", accepted.was);
+    // The write marked sides that were not as the last check left them:
+    // say so, and that the check is the caller's.
+    let checked = match sides.len() {
+        0 => "",
+        1 => ": make sure you re-checked it",
+        _ => ": make sure you re-checked them",
+    };
+    let _ = writeln!(out, "  was {}{what}; now marked{checked}", accepted.was);
 }
 
 /// True when a `next` writes a mark, so the statement must be re-checked
@@ -296,7 +367,9 @@ fn writes_a_mark(view: &ClaimView) -> bool {
 
 /// `default_selection` is true when the caller gave no id, `--state`,
 /// `--loc` or `--since`: only then an empty list means nothing is stale.
-pub fn status(o: &StatusOutput, default_selection: bool) -> String {
+/// `detail` is `--detail`: a candidate is then printed with all of its
+/// text.
+pub fn status(o: &StatusOutput, default_selection: bool, detail: bool) -> String {
     let s = &o.summary;
     let mut out = format!(
         "{}: {} fresh, {} stale, {} expired, {} retired\n",
@@ -319,7 +392,7 @@ pub fn status(o: &StatusOutput, default_selection: bool) -> String {
     }
     for view in &o.claims {
         out.push('\n');
-        claim_block(&mut out, view);
+        claim_block(&mut out, view, detail);
     }
     if o.claims.iter().any(writes_a_mark) {
         let _ = writeln!(
@@ -715,6 +788,32 @@ mod tests {
     }
 
     #[test]
+    fn plain_drops_control_characters_but_newline_and_tab() {
+        assert_eq!(
+            plain("a\u{1b}[31mred\u{1b}[0m\tb\r\nc\u{7}\u{0}\u{9b}d é"),
+            "a[31mred[0m\tb\nc".to_owned() + "d é"
+        );
+    }
+
+    #[test]
+    fn near_identical_candidates_show_the_line_where_they_differ() {
+        let head = "x".repeat(150);
+        let a = format!("{head}\nsecond line\nreturn 1");
+        let b = format!("{head}\nsecond line\nreturn 2");
+        let c = format!("{head}\nsecond line");
+        let lines = candidate_lines(&[Some(&a), Some(&b), Some("short"), None]);
+        assert_eq!(lines[0].as_deref(), Some("line 3 of the unit: return 1"));
+        assert_eq!(lines[1].as_deref(), Some("line 3 of the unit: return 2"));
+        assert_eq!(lines[2].as_deref(), Some("short"));
+        assert_eq!(lines[3], None);
+        let lines = candidate_lines(&[Some(&c), Some(&a)]);
+        assert_eq!(lines[0].as_deref(), Some("ends after line 2 of the unit"));
+        // The same text twice is printed as it is.
+        let lines = candidate_lines(&[Some("same"), Some("same")]);
+        assert_eq!(lines[0].as_deref(), Some("same"));
+    }
+
+    #[test]
     fn errors_show_code_message_fix_and_index() {
         let e = Error::new(Code::NotInitialized, "no store").with_index(2);
         assert_eq!(
@@ -778,7 +877,7 @@ mod tests {
         }))
         .unwrap();
         let mut out = String::new();
-        claim_block(&mut out, &view);
+        claim_block(&mut out, &view, false);
         assert_eq!(
             out,
             r#"c1-0000000000000000zzzz  stale  Retries are capped.

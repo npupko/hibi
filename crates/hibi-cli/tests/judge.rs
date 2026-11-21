@@ -407,6 +407,42 @@ fn the_endpoint_must_be_https_or_loopback() {
         .args(["--format", "json", "triage"])
         .run();
     assert_eq!(out.code(), "invalid_argument");
+    assert_eq!(
+        out.err()["remediation"],
+        "Set HIBI_JEV_URL to an https:// URL, or unset it to use the default endpoint."
+    );
+}
+
+/// `--in` takes file and repo globs; a sibling repository has to be
+/// allowed. Each error says what to do.
+#[test]
+fn suggest_evidence_in_errors_say_what_to_do() {
+    let scene = scene();
+    let server = server();
+    let e = judge(
+        &scene,
+        &server,
+        &["suggest-evidence", "x", "--in", "ref:notes"],
+    )
+    .err();
+    assert_eq!(e["code"], "invalid_argument");
+    assert_eq!(
+        e["remediation"],
+        "Give --in a file: or repo: glob, for example file:src/** or repo:api//src/**."
+    );
+    let e = judge(
+        &scene,
+        &server,
+        &["suggest-evidence", "x", "--in", "repo:api//src/**"],
+    )
+    .err();
+    assert_eq!(e["code"], "invalid_argument");
+    assert!(
+        e["message"].as_str().unwrap().ends_with("is not allowed"),
+        "{e}"
+    );
+    assert_eq!(e["remediation"], "hibi providers");
+    assert_eq!(server.recorded().len(), 0);
 }
 
 /// Section 14.1: without the key the three commands fail with

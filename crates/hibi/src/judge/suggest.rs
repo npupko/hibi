@@ -89,7 +89,10 @@ fn patterns(within: &[String]) -> Result<Vec<ResourcePattern>, Error> {
                 PatternKind::File { .. } | PatternKind::Repo { .. } => Ok(p),
                 PatternKind::Locator(_) => Err(Error::invalid_argument(format!(
                     "--in {w:?} must be a glob on scheme file or repo"
-                ))),
+                ))
+                .with_remediation(
+                    "Give --in a file: or repo: glob, for example file:src/** or repo:api//src/**.",
+                )),
             }
         })
         .collect()
@@ -118,9 +121,10 @@ fn resources(pats: &[ResourcePattern], gate: &mut Gate<'_>) -> Result<Vec<Locato
                     .collect(),
                 None => {
                     return Err(Error::invalid_argument(format!(
-                        "--in {:?}: sibling repository {alias} is not allowed; run hibi providers",
+                        "--in {:?}: sibling repository {alias} is not allowed",
                         p.as_str()
-                    )));
+                    ))
+                    .with_remediation("hibi providers"));
                 }
             },
             PatternKind::Locator(_) => Vec::new(),

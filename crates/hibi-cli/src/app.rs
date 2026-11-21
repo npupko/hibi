@@ -557,7 +557,7 @@ fn status(global: &Global, args: &StatusArgs) -> Result<Reply, Error> {
         "status",
         &output,
         &output.warnings,
-        human::status(&output, default_selection),
+        human::status(&output, default_selection, args.detail),
     )
 }
 

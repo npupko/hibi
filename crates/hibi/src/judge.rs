@@ -211,6 +211,9 @@ fn check_endpoint(endpoint: &str) -> Result<(), Error> {
         Error::invalid_argument(format!(
             "{ENDPOINT_VAR} {endpoint:?} must be an https:// URL, or http:// to 127.0.0.1, [::1] or localhost"
         ))
+        .with_remediation(format!(
+            "Set {ENDPOINT_VAR} to an https:// URL, or unset it to use the default endpoint."
+        ))
     };
     if endpoint.chars().any(|c| c.is_control() || c == ' ') {
         return Err(bad());

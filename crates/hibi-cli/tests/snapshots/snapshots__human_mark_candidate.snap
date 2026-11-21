@@ -34,7 +34,7 @@ exit status: 0
 ---- standard output ----
 c1-dccp96583661kgfj4rex is retired and replaced by the new claim c1-11zmc8n2bb2vtbhncfgv
   mark m1-yfba8rn1bgysen50hsk9, retirement r1-fgfkn5j4bhb35ndfztdm
-  was stale: subject file:docs/ops.md missing (not_exact); now marked
+  was stale: subject file:docs/ops.md missing (not_exact); now marked: make sure you re-checked it
   subject file:docs/ops.md (sentence "Workers are restarted every night.", line 3)
     {"loc":"file:docs/ops.md","sel":{"quote":"Workers are restarted every night.","prefix":"# Operations\n\n","suffix":" The queue is drained on shutdown.\n","pos":14}}
 ---- standard error ----

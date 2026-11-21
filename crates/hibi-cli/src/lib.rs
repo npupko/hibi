@@ -123,9 +123,9 @@ fn succeed(format: Format, reply: Reply) -> ExitCode {
         (Body::Result { human, .. }, Format::Human) => {
             let stderr = &mut std::io::stderr().lock();
             for w in &reply.warnings {
-                print(stderr, &human::warning(w));
+                print(stderr, &human::plain(&human::warning(w)));
             }
-            print(stdout, &human);
+            print(stdout, &human::plain(&human));
         }
     }
     ExitCode::SUCCESS
@@ -145,7 +145,7 @@ fn fail(format: Format, command: &str, errors: Vec<Error>) -> ExitCode {
         Format::Human => {
             let stderr = &mut std::io::stderr().lock();
             for e in &errors {
-                print(stderr, &human::error(e));
+                print(stderr, &human::plain(&human::error(e)));
             }
         }
     }

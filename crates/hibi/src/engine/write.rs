@@ -166,7 +166,7 @@ fn unresolved_error(index: usize, anchor: &Anchor, r: &Resolved, new: bool) -> O
                 Code::SideUnavailable,
                 format!("{what} cannot be evaluated ({reason}): {detail}"),
             );
-            match side_remediation(reason, Some(&detail)) {
+            match side_remediation(reason, Some(&detail), anchor.loc.scheme()) {
                 Some(fix) => e.with_remediation(fix),
                 None => e.without_remediation(),
             }
@@ -203,19 +203,58 @@ fn ambiguous_advice(keys: &[SelectorKey]) -> String {
 /// `unsupported_selector` with one that names the selector keys the
 /// provider of `loc` accepts. Other errors, and a provider whose keys
 /// cannot be read, are left as they are.
-fn advise(providers: &mut Providers, loc: &Locator, e: Error) -> Error {
-    if !matches!(e.code, Code::SideAmbiguous | Code::UnsupportedSelector) {
+fn advise(providers: &mut Providers, loc: &Locator, r: &Resolved, e: Error) -> Error {
+    if !matches!(
+        e.code,
+        Code::SideAmbiguous | Code::UnsupportedSelector | Code::SelectorNotExact
+    ) {
         return e;
     }
     let keys: Option<Vec<SelectorKey>> = providers
         .provider_for(loc)
         .ok()
         .and_then(|p| p.info().ok().map(|i| i.selectors.clone()));
-    let Some(keys) = keys else { return e };
+    let Some(mut keys) = keys else { return e };
+    // A symbol is advised only where the units in question have one: a
+    // provider that accepts symbols may serve resources without any, as
+    // the file provider does for markdown and text.
+    let with_symbol = r
+        .candidates()
+        .is_some_and(|c| c.units.iter().any(|u| u.sel.symbol.is_some()));
+    // (The list of keys a provider accepts, for `unsupported_selector`, is
+    // given whole.)
+    if !with_symbol && e.code != Code::UnsupportedSelector {
+        keys.retain(|k| *k != SelectorKey::Symbol);
+    }
     match e.code {
         Code::SideAmbiguous => {
             let advice = ambiguous_advice(&keys);
             e.with_remediation(advice)
+        }
+        // Only for an anchor found by similarity. The other cause, a quote
+        // that is not in the unit its symbol names, has its own advice.
+        Code::SelectorNotExact if !matches!(r, Resolved::NotExact(_)) => e,
+        Code::SelectorNotExact => {
+            let mut ways = Vec::new();
+            if keys.contains(&SelectorKey::Quote) {
+                ways.push("a quote that occurs exactly in the unit you mean");
+            }
+            if keys.contains(&SelectorKey::Symbol) {
+                ways.push("the symbol of the unit you mean");
+            }
+            if keys.contains(&SelectorKey::Key) {
+                ways.push("the key of the unit you mean");
+            }
+            match ways.as_slice() {
+                [] => e,
+                ways => {
+                    let advice = format!(
+                        "Give {}; the candidates in the message have an anchor each.",
+                        ways.join(", or ")
+                    );
+                    e.with_remediation(advice)
+                }
+            }
         }
         _ => {
             let names: Vec<String> = keys.iter().map(ToString::to_string).collect();
@@ -583,7 +622,7 @@ fn claim_elements(
             let mut stored = Vec::with_capacity(rs.len());
             let mut keyed = Vec::with_capacity(rs.len());
             for (n, (a, r)) in p.anchors.iter().zip(&rs).enumerate() {
-                let unit = check_new(n, a, r).map_err(|e| advise(providers, &a.loc, e))?;
+                let unit = check_new(n, a, r).map_err(|e| advise(providers, &a.loc, r, e))?;
                 let anchor = Anchor::new(a.loc.clone(), unit.sel.clone());
                 keyed.push((anchor.clone(), unit.key.as_str()));
                 stored.push(anchor);
@@ -795,9 +834,10 @@ fn claim_elements(
 /// error carries the `index` of its element. All or nothing, as for
 /// [`claim`].
 ///
-/// A side that is `missing`, `ambiguous` or `unavailable` fails; a profile
-/// mismatch and an approximate resolution are accepted. In the output every
-/// approximate side carries its unit and its text cut to 240 characters.
+/// A side that is `missing`, `ambiguous` or `unavailable` fails, and so
+/// does a side that the provider found only by similarity (`missing`,
+/// `not_exact`). A profile mismatch is accepted: the mark stores the
+/// fingerprint of the current profile.
 pub fn mark(
     store: &dyn Store,
     providers: &mut Providers,
@@ -974,7 +1014,7 @@ fn reanchor_with_note(old: &ClaimId, input: &ReanchorInput) -> String {
 /// `hibi reanchor` (section 15.3): build a new claim from an old one.
 ///
 /// A replaced or added side must pass the write checks of [`claim`]; a kept
-/// side may be approximate and its `refuse` is not checked. Every stored
+/// side must resolve exactly, and its `refuse` is not checked. Every stored
 /// selector becomes the completed selector of its resolved unit. The result
 /// is `no_change` when the new id equals the old one and `claim_retired`
 /// when it equals a retired claim's. When it equals another live claim's,
@@ -1086,7 +1126,7 @@ pub fn reanchor(
     let mut units: Vec<&Unit> = Vec::with_capacity(plan.len());
     for (((anchor, new), r), n) in plan.iter().zip(&resolved).zip(numbers.iter().copied()) {
         if *new {
-            units.push(check_new(n, anchor, r).map_err(|e| advise(providers, &anchor.loc, e))?);
+            units.push(check_new(n, anchor, r).map_err(|e| advise(providers, &anchor.loc, r, e))?);
         } else if let Some(e) = unresolved_error(n, anchor, r, false) {
             // A kept side that no longer resolves to one unit has to be
             // replaced, with an anchor the caller chooses.
@@ -1100,7 +1140,7 @@ pub fn reanchor(
                     };
                     e.with_remediation(format!("hibi reanchor {} {option}", old.id))
                 }
-                _ => advise(providers, &anchor.loc, e),
+                _ => advise(providers, &anchor.loc, r, e),
             });
         } else {
             units.push(r.unit().expect("no failure means one unit"));
@@ -1292,7 +1332,10 @@ pub fn retire(
                 return Err(Error::invalid_argument(format!(
                     "--replaced-by names {}, which is one of the claims being retired",
                     c.id
-                )));
+                ))
+                .with_remediation(
+                    "Name a claim that stays live as the replacement, or leave --replaced-by out.",
+                ));
             }
             Some(c.id.clone())
         }

@@ -410,7 +410,9 @@ pub fn claim_view(
                 fp: unit.map(|u| u.fp.clone()),
                 marked_fp,
                 remediation: match (state, reason) {
-                    (SideState::Unavailable, Some(reason)) => side_remediation(*reason, said),
+                    (SideState::Unavailable, Some(reason)) => {
+                        side_remediation(*reason, said, anchor.loc.scheme())
+                    }
                     _ => None,
                 },
                 detail: said.map(|m| excerpt(m, DETAIL_CHARS)),

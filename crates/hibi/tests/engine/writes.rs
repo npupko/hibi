@@ -1200,7 +1200,8 @@ fn an_unavailable_side_says_the_cause_and_the_way_out() {
         (
             C::Internal,
             "provider_error",
-            "hibi providers --check <scheme>",
+            // The command names the scheme of the anchor.
+            "hibi providers --check t to see",
         ),
         (C::RepoNotFound, "repo_not_found", "hibi providers"),
     ];

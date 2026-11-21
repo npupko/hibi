@@ -286,6 +286,12 @@ fn r28_a_scheme_that_is_not_listed_is_unknown() {
     assert_eq!(v["schemes"], json!([]));
     let out = run(&["providers", "--check", "ref"]);
     assert_eq!(out.code(), "invalid_argument", "{out:?}");
+    // The scheme has to be declared first; `hibi providers` would only
+    // show that it is not.
+    assert_eq!(
+        out.err()["remediation"],
+        "Declare the scheme first: add [schemes.ref] to .hibi/hibi.toml. hibi providers lists the declared schemes."
+    );
     assert_only_git(&bin.calls());
 }
 

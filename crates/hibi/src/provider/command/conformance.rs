@@ -288,7 +288,9 @@ pub fn check_provider(
         return Err(Error::invalid_argument(format!(
             "the scheme {scheme:?} is not listed under [schemes] in .hibi/hibi.toml"
         ))
-        .with_remediation("hibi providers"));
+        .with_remediation(format!(
+            "Declare the scheme first: add [schemes.{scheme}] to .hibi/hibi.toml. hibi providers lists the declared schemes."
+        )));
     }
     let Some(registered) = user.providers.get(scheme) else {
         return Err(Error::invalid_argument(format!(

@@ -12,8 +12,8 @@ use crate::model::{Anchor, ClaimId, Fingerprint, MarkId, Timestamp};
 use crate::provider::Unit;
 use crate::store::{ORPHAN_RECORD, StoreWarning, UNKNOWN_REPLACEMENT};
 
-/// Unit text shown in `cover` items and for approximate sides of `mark` is
-/// cut to this many characters (section 15.3).
+/// Unit text shown in `cover` items and under a candidate is cut to this
+/// many characters (sections 15.2 and 15.3).
 pub const TEXT_EXCERPT_CHARS: usize = 240;
 
 /// The sentence `status` carries once in `nextNote` (section 15.2).
@@ -157,8 +157,9 @@ pub fn unavailable_remediation(reason: Reason) -> Option<&'static str> {
 /// The remediation of a side that is `unavailable` with `reason`, given
 /// what the provider or the registry said. For `resource_unavailable` it
 /// is that message, cut to [`DETAIL_CHARS`], and what to do after it; for
-/// the other reasons it is [`unavailable_remediation`].
-pub fn side_remediation(reason: Reason, message: Option<&str>) -> Option<String> {
+/// `provider_error` it names `scheme` in the command to run; for the other
+/// reasons it is [`unavailable_remediation`].
+pub fn side_remediation(reason: Reason, message: Option<&str>, scheme: &str) -> Option<String> {
     if reason == Reason::ResourceUnavailable {
         let said = excerpt(
             message.unwrap_or("the resource cannot be read now"),
@@ -166,6 +167,17 @@ pub fn side_remediation(reason: Reason, message: Option<&str>) -> Option<String>
         );
         let said = said.trim_end_matches(['.', ' ']);
         return Some(format!("{said}. Run the command again once that is fixed."));
+    }
+    if reason == Reason::ProviderError {
+        // The command names the scheme, so that it can be run as it is. The
+        // built-in schemes have no provider command to check.
+        return Some(if matches!(scheme, "file" | "repo") {
+            "hibi's own provider for this scheme gave an answer hibi cannot use; that is a fault in hibi. For a claim that exists, retire it if the resource is gone for good.".to_owned()
+        } else {
+            format!(
+                "The provider gave an answer hibi cannot use. Run hibi providers --check {scheme} to see what it gets wrong; for a claim that exists, retire it if the resource is gone for good."
+            )
+        });
     }
     unavailable_remediation(reason).map(str::to_owned)
 }
