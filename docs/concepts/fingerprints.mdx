@@ -103,11 +103,13 @@ Re-check each statement before running its next command. If it no longer holds, 
 
 ## A file that does not parse
 
-A code file whose syntax tree has an error has no declarations for that run.
-A side whose stored anchor has a symbol, or is the whole file, is then
-`unavailable` with reason `resource_unavailable`. The message names the
-first error line, the side's `remediation` repeats it, and `next` is
-`null`, because no hibi command fixes a syntax error:
+A code file whose syntax the built-in grammar cannot parse cannot be
+anchored until it parses. Every side on it, whatever its anchor (a symbol, a
+quote or the whole file), is `unavailable` with reason
+`resource_unavailable`, a new anchor on it fails, and `cover` lists the file
+as unavailable. The message names the first error line, the side's
+`remediation` repeats it, and `next` is `null`, because no hibi command
+fixes a syntax error:
 
 ```text output
 c1-nvz527nzmpttbc4zknmg  stale  sum returns both numbers.
@@ -116,30 +118,15 @@ c1-nvz527nzmpttbc4zknmg  stale  sum returns both numbers.
     file:src/sum.ts does not parse as typescript (the first error is on line 2), so its declarations cannot be found; fix the syntax error. Run the command again once that is fixed.
 ```
 
-Fix the syntax error and the side is resolved again.
-
-For that run the file is read as plain text, in blocks with `prose-v1`
-fingerprints. A quote is looked for in those blocks. A quote that was inside
-a declaration has lost its container, so the side is `missing` (`not_exact`)
-and the block is a candidate. Do not re-anchor to it: fix the file instead.
-A quote on top-level code, outside every declaration, can resolve to a
-block. Its fingerprint then has another profile than the marked one, and the
-side is `unavailable` with reason `profile_mismatch`:
-
-```text output
-c1-ppk8y3bdgc2fp2xv7are  stale  The module logs ready.
-  marked 2026-11-21T08:54:20Z (m1-bff8bg1hz5xepjc8j329)
-  evidence 1  file:src/ready.ts  unavailable (profile_mismatch)  block "console.log("ready");", line 1
-  next: hibi mark c1-ppk8y3bdgc2fp2xv7are
-```
+Fix the syntax error and every side on the file is resolved again. If the
+file will never parse, for example because it uses syntax the grammar does
+not know, exclude it from the scope in `.hibi/hibi.toml` and anchor its
+statements elsewhere.
 
 Two fingerprints of different profiles are never compared.
-`profile_mismatch` therefore occurs when a code file that parsed at the mark
-no longer parses, or the reverse, for a quote outside every declaration;
-when a later hibi ships a new profile version; and when an external provider
-changes the profile name it puts in its fingerprints. While the file does
-not parse, fix it before you mark: a mark then would record the plain-text
-fingerprint.
+`profile_mismatch` occurs when a later hibi ships a new profile version, and
+when an external provider changes the profile name it puts in its
+fingerprints.
 
 Renaming a file, also to another extension, is not a profile mismatch: the
 locator names the old path, so the side is missing and `next` asks for a new

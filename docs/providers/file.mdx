@@ -26,10 +26,10 @@ The class of a file follows from its lower-cased extension:
 Every file also has one unit of kind `file` that spans all of it; the empty
 selector, as in `--subject file:docs/retry.md`, selects it.
 
-A code file that does not parse without error is read as class `text` for that
-run, so its units are blocks, and a side whose anchor has a symbol, or is
-the whole file, is `unavailable` with reason `resource_unavailable`, naming the line of the first
-error (see
+A code file that does not parse without error cannot be anchored until it
+parses: every side on it is `unavailable` with reason
+`resource_unavailable`, naming the line of the first error, a new anchor on
+it fails, and `cover` lists it as unavailable (see
 [fingerprints](/concepts/fingerprints#a-file-that-does-not-parse)). A
 `#symbol` on a markdown, prose or text file is refused, because such a file
 has no declarations: a new anchor fails with `invalid_anchor`, and a stored
@@ -78,7 +78,7 @@ error: side_missing: the subject (file:docs/secret.md) resolves to no unit (reso
 |---|---|
 | `sentence`, `heading`, `list-item`, `table-row`, `fenced` | Prose |
 | `function`, `method`, `class`, `struct`, `interface`, `trait`, `enum`, `type`, `variable`, `field`, `variant`, `module`, `impl`, `macro`, `statement` | Code |
-| `block` | Plain text, and code files that do not parse |
+| `block` | Plain text |
 | `file` | Every file |
 
 `hibi providers` lists the classes and profiles of the build.

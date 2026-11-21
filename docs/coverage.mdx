@@ -100,8 +100,9 @@ uncovered prose by how likely each unit states a checkable fact.
 
 ## Units that cannot be listed
 
-A file that matches a scope but cannot be read (not UTF-8, a code file larger than
-2 MiB or another file larger than 8 MiB, a symbolic link) or an external resource whose provider fails is listed as
+A file that matches a scope but cannot be read (not UTF-8, a code file that
+does not parse, a code file larger than 2 MiB or another file larger than
+8 MiB, a symbolic link) or an external resource whose provider fails is listed as
 unavailable, with the reason. Such a resource is never counted as covered and
 never dropped silently. Here `docs/bad.md` is not valid UTF-8 and
 `docs/link.md` is a symbolic link:
