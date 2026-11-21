@@ -840,11 +840,12 @@ impl Doc {
     ///
     /// - One declaration with a hit: that one.
     /// - A new anchor with hits in several: all of them (ambiguous).
-    /// - A stored anchor with hits in several: the one whose scope
-    ///   reproduces the stored `prefix` and `suffix` exactly, when only one
-    ///   does. When none does, the one with the strictly highest context
-    ///   score is a candidate (`approx`): similarity proposes, it never
-    ///   resolves. Otherwise all of them (ambiguous).
+    /// - A stored anchor with hits in several: the one whose windows
+    ///   reproduce the stored `prefix` and `suffix`, when only one does;
+    ///   all of them (ambiguous) when several do. When none does, every one
+    ///   of them is a candidate (`approx`), the best context score first and
+    ///   equal scores in source order: similarity proposes and orders, it
+    ///   never resolves, and one guess alone could be the wrong copy.
     ///
     /// `None` when no scope holds an exact hit: the fuzzy step over the
     /// whole text follows.
@@ -924,7 +925,7 @@ impl Doc {
             }
             hits.extend(best);
         }
-        let one = |h: &Hit, approx: bool| -> Result<Vec<Unit>, ProviderError> {
+        let at_hit = |h: &Hit, approx: bool| -> Result<Unit, ProviderError> {
             let l = Located::Found {
                 how: How::Exact,
                 span: h.span,
@@ -932,7 +933,10 @@ impl Doc {
             // A hit inside a scope can leave the unit only over filler, so
             // `quote_spans_units` cannot occur here.
             let refuse = h.in_comment.then_some(Refuse::QuoteInComment);
-            Ok(vec![self.out(h.unit, Some(&l), approx, refuse)?])
+            self.out(h.unit, Some(&l), approx, refuse)
+        };
+        let one = |h: &Hit, approx: bool| -> Result<Vec<Unit>, ProviderError> {
+            Ok(vec![at_hit(h, approx)?])
         };
         let all = |hits: &[Hit]| -> Result<Vec<Unit>, ProviderError> {
             hits.iter()
@@ -951,12 +955,16 @@ impl Doc {
             0 => {}
             _ => return all(&hits).map(Some),
         }
-        let top = hits.iter().map(|h| h.score).fold(f64::MIN, f64::max);
-        let at_top: Vec<&Hit> = hits.iter().filter(|h| h.score == top).collect();
-        if at_top.len() == 1 {
-            return one(at_top[0], true).map(Some);
-        }
-        all(&hits).map(Some)
+        // No declaration reproduces the stored context: every one with a
+        // hit is a candidate, the likeliest first. `hits` is in source order
+        // and the sort is stable, so equal scores keep it.
+        let mut ranked: Vec<&Hit> = hits.iter().collect();
+        ranked.sort_by(|a, b| b.score.total_cmp(&a.score));
+        ranked
+            .into_iter()
+            .map(|h| at_hit(h, true))
+            .collect::<Result<_, _>>()
+            .map(Some)
     }
 
     /// `resolve(resource, sel)` of section 6.7. The selector has no `key`.

@@ -4190,7 +4190,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "duplicated declarations: an @overload stub whose signature changed is a candidate, approx",
+    "name": "duplicated declarations: an @overload stub whose signature changed: every stub is a candidate, the edited one first",
     "input": {
       "path": "parse.py",
       "text": "from typing import overload\n\n\n@overload\ndef parse(x: int) -> int: ...\n@overload\ndef parse(x: bytes) -> str: ...\ndef parse(x):\n    return x\n",
@@ -4215,6 +4215,18 @@
             "pos": 70,
             "symbol": "parse"
           }
+        },
+        {
+          "key": "function:parse",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "@overload",
+            "prefix": "\n\n\n",
+            "suffix": "\ndef parse(x: int) -> int: ...\n",
+            "pos": 30,
+            "symbol": "parse"
+          }
         }
       ]
     },
@@ -4222,7 +4234,51 @@
     "origin": "spec-derived"
   },
   {
-    "name": "duplicated declarations: an impl block whose first method signature changed is a candidate, approx",
+    "name": "duplicated declarations: an @overload stub changed from int to float: every stub is a candidate, the closest text first",
+    "input": {
+      "path": "parse.py",
+      "text": "from typing import overload\n\n\n@overload\ndef parse(x: float) -> float: ...\n@overload\ndef parse(x: str) -> str: ...\ndef parse(x):\n    return x\n",
+      "sel": {
+        "quote": "@overload",
+        "prefix": "\n\n\n",
+        "suffix": "\ndef parse(x: int) -> int: ...\n",
+        "pos": 30,
+        "symbol": "parse"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:parse~2",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "@overload",
+            "prefix": "\n",
+            "suffix": "\ndef parse(x: str) -> str: ...\n",
+            "pos": 74,
+            "symbol": "parse"
+          }
+        },
+        {
+          "key": "function:parse",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "@overload",
+            "prefix": "\n\n\n",
+            "suffix": "\ndef parse(x: float) -> float: ...\n",
+            "pos": 30,
+            "symbol": "parse"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "duplicated declarations: an impl block whose first method signature changed: every block is a candidate, the edited one first",
     "input": {
       "path": "src/foo.rs",
       "text": "struct Foo;\n\nimpl Foo {\n    fn new() -> Foo { Foo }\n}\n\nimpl Foo {\n    fn len(&self) -> u64 { 0 }\n}\n",
@@ -4247,6 +4303,18 @@
             "pos": 55,
             "symbol": "impl Foo"
           }
+        },
+        {
+          "key": "impl:impl Foo",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "impl Foo {",
+            "prefix": ";\n\n",
+            "suffix": "\n    fn new() -> Foo { Foo }\n}\n\n",
+            "pos": 13,
+            "symbol": "impl Foo"
+          }
         }
       ]
     },
@@ -4254,7 +4322,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "duplicated declarations: a redefinition whose body changed is a candidate, approx",
+    "name": "duplicated declarations: a redefinition whose body changed: every definition is a candidate, the edited one first",
     "input": {
       "path": "home.py",
       "text": "def home():\n    return \"C:/Users\"\n\n\ndef home():\n    return \"/srv/home\"\n",
@@ -4277,6 +4345,18 @@
             "prefix": "\n\n\n",
             "suffix": "\n    return \"/srv/home\"\n",
             "pos": 36,
+            "symbol": "home"
+          }
+        },
+        {
+          "key": "function:home",
+          "approx": true,
+          "refuse": null,
+          "sel": {
+            "quote": "def home():",
+            "prefix": "",
+            "suffix": "\n    return \"C:/Users\"\n\n\n",
+            "pos": 0,
             "symbol": "home"
           }
         }

@@ -378,8 +378,10 @@ resolves to its own copy. New `duplicated declarations` cases pin, at 2, 3 and 2
 method, that a new anchor gives every copy, that an anchor stored while the
 symbol was unique follows the original copy, and that an anchor stored after
 the duplication resolves to its own copy; with identical bodies the stored
-anchor gives every copy. Further cases pin the candidate (`approx`) for an
-edited `@overload` stub, an edited `impl` block and an edited module-level
+anchor gives every copy. Further cases pin that every copy is a candidate
+(`approx`), the closest stored context first, for an edited `@overload`
+stub (including an `int` stub changed to `float`, where the unchanged `str`
+stub comes first), an edited `impl` block and an edited module-level
 redefinition, and that a property setter stays exact. The case `stored
 anchor: a short quote is narrowed by pos` became `... with only pos does not
 narrow them`: position never chooses between declarations of one symbol.

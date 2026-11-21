@@ -1653,10 +1653,11 @@ resolve(resource, sel):
           if sel is a new anchor                   -> D       (ambiguous)
           R = units u of D whose h(u) reproduces the stored context
           if |R| == 1                              -> [R[0]]
-          if |R| == 0 and one unit u of D has a score(h(u)) higher than every other
-                                                   -> [u] with approx = true
-          -> D                                     (ambiguous)
-          ; a unit returned alone above has refuse = quote_in_comment if in_comment(L(u))
+          if |R| > 1                               -> D       (ambiguous)
+          -> every unit u of D with approx = true, by score(h(u)) descending,
+             equal scores in the order of D        (candidates)
+          ; a unit returned at its hit above (alone, or as a candidate) has
+          ; refuse = quote_in_comment if in_comment(L(u))
       missed = true                                ; |S| == 0
   if sel.quote:
       L = find(text, sel)
@@ -1699,8 +1700,12 @@ was unique still finds the declaration it was taken from after copies of
 it appear, and twins are told apart by the text around them. Equality after
 `normalize` lets the comparison ignore the indentation and line breaks that
 change around a declaration when its neighbours change. When no declaration
-reproduces the stored context, the closest one is only proposed:
-similarity proposes, it never resolves.
+reproduces the stored context, every declaration with a hit is proposed,
+the likeliest first: similarity proposes and orders, it never resolves. One
+candidate alone could be the wrong copy, for example the unchanged `str`
+stub of two `@overload` stubs when the claimed `int` stub became `float`,
+because the unchanged text can be closer to the stored context than the
+edited one.
 
 **When `approx` is set.** A unit is returned with `approx: true` in exactly
 these cases:
@@ -1714,8 +1719,9 @@ these cases:
   several declarations of one symbol when no scope holds a hit and the hit
   lies in exactly one of them.
 - In the branch for several declarations of one symbol, a stored selector
-  whose context no unit of `D` reproduces, when one unit of `D` has a
-  strictly higher `score` than every other: that unit is a candidate.
+  whose context no unit of `D` reproduces: every unit of `D` is a
+  candidate, ordered by `score`, best first, equal scores in the order of
+  `D`.
 
 A unit is returned with `approx: false` in every other case:
 
@@ -6641,8 +6647,9 @@ quote, and a symbol with a quote, its cases pin:
 - declarations of one symbol compared in their own scopes: at 2, 3 and 23
   copies, a new anchor gives every copy, an anchor stored while the symbol
   was unique follows the original, and an anchor stored after the
-  duplication resolves to its own copy; an edited copy whose context no
-  scope reproduces is a candidate (`approx`), and a quote found in one scope
+  duplication resolves to its own copy; when an edited copy's context no
+  scope reproduces, every copy with the quote is a candidate (`approx`),
+  the closest context first, and a quote found in one scope
   only stays exact (cases named `duplicated declarations`); twins resolve
   through their whole-text context (cases named `twin declarations:`);
 - decoding: CRLF becomes LF and a leading U+FEFF belongs to the first unit
@@ -6931,7 +6938,7 @@ Each row is a choice the plan left open or marked illustrative.
 | 129 | A side that is not exact covers no unit, and a claim with such a side is not sent to the judge and is listed first. | It has no resolved unit. |
 | 130 | Accepted limit: text stored in the ledger stays in the ledger. A claim's stored quote, prefix and suffix are printed by `list` and `status` even after the file is later ignored. | hibi never reads the ignored file; the stored text was committed when the claim was made. |
 | 131 | CI has eight jobs: it also lints the library with features off, builds and tests each single feature, and checks the minimum Rust version with `--locked`. | Every feature set must build and pass. |
-| 132 | Ruling: declarations of one symbol are compared in their own scopes. A declaration's stored context is cut from its scope, or from the whole text when another declaration of the symbol has the same scope text after `normalize` (a twin). With several declarations, the declaration whose scope or whole-text windows reproduce the stored context after `normalize` resolves; with none, the strictly best context score is a candidate (`approx`); otherwise every declaration with a hit is returned. Position never chooses between them. | An anchor stored while a symbol was unique silently followed the last duplicate once copies appeared: its short scope context was scored against whole-text windows, and the copy at the end of the file, with the shortest windows, won as an exact resolution. |
+| 132 | Ruling: declarations of one symbol are compared in their own scopes. A declaration's stored context is cut from its scope, or from the whole text when another declaration of the symbol has the same scope text after `normalize` (a twin). With several declarations, the one declaration whose scope or whole-text windows reproduce the stored context after `normalize` resolves; when several reproduce it, every declaration with a hit is returned; when none does, every declaration with a hit is a candidate (`approx`), ordered by context score, best first. Position never chooses between them. | An anchor stored while a symbol was unique silently followed the last duplicate once copies appeared: its short scope context was scored against whole-text windows, and the copy at the end of the file, with the shortest windows, won as an exact resolution. A single best-scoring candidate was tried first and replaced: after a claimed `int` stub of two `@overload` stubs became `float`, the unchanged `str` stub scored higher and was the only candidate, and one wrong guess is worse than a list. |
 | 32 | Missing `TYPESAFE_API_KEY` is error `judge_unavailable` with exit 1. | The command could not do its work; the error carries the remedy. |
 | 33 | A judge command with any failed request fails whole. | No partial ranking that looks complete. |
 | 34 | Judge thresholds: Noul bands at 0.7 and 0.3; Choice label needs probability 0.6. | The vendor's documented starting points. |
@@ -7729,10 +7736,11 @@ Each of these has a test, named in parentheses.
 - R133. When a symbol names several declarations, an anchor stored while the
   symbol was unique resolves to the declaration it was taken from, a new
   anchor gives every declaration whose scope holds the quote, the completed
-  selector of every declaration, twins included, resolves to it, and an
-  edited declaration whose context no scope reproduces is returned only as
-  a candidate. Position never chooses between them, and the work is linear
-  in the declarations and their hits.
+  selector of every declaration, twins included, resolves to it, and when
+  an edited declaration's context no scope reproduces, every declaration
+  with the quote is returned as a candidate, the closest context first.
+  Position never chooses between them, and the work is linear in the
+  declarations and their hits.
   (`cases/resolve.json`: the cases named "duplicated declarations" and
   "twin declarations: ..."; `default_quotes_are_never_in_comments_and_round_trip`,
   `many_declarations_of_one_symbol_resolve_in_linear_work`,
