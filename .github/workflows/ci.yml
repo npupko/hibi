@@ -44,6 +44,9 @@ jobs:
           components: clippy
           cache-save-if: ${{ github.ref == 'refs/heads/main' }}
       - run: cargo clippy --workspace --all-targets -- -D warnings
+      # `-p hibi`, not `--workspace`, for the reason given in the test job.
+      - name: Lint the library with its features off
+        run: cargo clippy -p hibi --no-default-features --all-targets -- -D warnings
 
   test:
     runs-on: ubuntu-latest
@@ -63,6 +66,34 @@ jobs:
       - name: Test the library with its features off
         run: cargo test -p hibi --no-default-features
 
+  # Builds and tests the library with one optional feature on and the others
+  # off, for each feature in turn. One job with a loop, not a matrix: the five
+  # runs share one runner, one cache entry and one target directory, so the
+  # dependencies they have in common are compiled once.
+  features:
+    name: single features
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
+        with:
+          toolchain: stable
+          cache-save-if: ${{ github.ref == 'refs/heads/main' }}
+      # The step stops at the first command that fails. The log group that is
+      # open at that point names the feature.
+      - name: Build and test the library with each single feature
+        run: |
+          for f in file git-store command cache judge; do
+            echo "::group::cargo build -p hibi --no-default-features --features $f"
+            cargo build -p hibi --no-default-features --features "$f"
+            echo "::endgroup::"
+            echo "::group::cargo test -p hibi --no-default-features --features $f"
+            cargo test -p hibi --no-default-features --features "$f"
+            echo "::endgroup::"
+          done
+
   # Minimum supported Rust version, from `rust-version` in Cargo.toml.
   msrv:
     runs-on: ubuntu-latest
@@ -74,7 +105,7 @@ jobs:
         with:
           toolchain: "1.90"
           cache-save-if: ${{ github.ref == 'refs/heads/main' }}
-      - run: cargo check --workspace --all-targets
+      - run: cargo check --workspace --all-targets --locked
 
   schemas:
     name: schema drift
