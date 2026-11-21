@@ -2,10 +2,10 @@
 source: crates/hibi-cli/tests/snapshots.rs
 expression: "shot(&repo, &[\"mark\", &cache, \"--by\", \"nick\", \"--note\", \"read the function\"])"
 ---
-$ hibi mark c1-1axpkdaj5vx9dh84d5ns --by nick --note 'read the function'
+$ hibi mark c1-b1cqk12je92xh6d4na21 --by nick --note 'read the function'
 exit status: 0
 ---- standard output ----
-c1-1axpkdaj5vx9dh84d5ns  marked  m1-g6c5zhrrx36ajaxzf3z2
+c1-b1cqk12je92xh6d4na21  marked  m1-fd5bpzbb29ch0h4j6t5r
   was stale: evidence 1 file:src/cache.rs changed (fingerprint_differs); now marked
 ---- standard error ----
 (empty)

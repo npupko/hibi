@@ -2,12 +2,12 @@
 source: crates/hibi-cli/tests/snapshots.rs
 expression: "shot(&repo, &[\"status\", &cache])"
 ---
-$ hibi status c1-1axpkdaj5vx9dh84d5ns
+$ hibi status c1-b1cqk12je92xh6d4na21
 exit status: 0
 ---- standard output ----
 2 claims: 2 fresh, 0 stale, 0 expired, 0 retired
 
-c1-1axpkdaj5vx9dh84d5ns  fresh  The cache holds 64 entries.
-  marked 2026-11-20T12:00:00Z (m1-pqdddr4bpjhwg2dprq3g)
+c1-b1cqk12je92xh6d4na21  fresh  The cache holds 64 entries.
+  marked 2026-11-20T12:00:00Z (m1-8jnpnyrstkx94kwrchk4)
 ---- standard error ----
 (empty)

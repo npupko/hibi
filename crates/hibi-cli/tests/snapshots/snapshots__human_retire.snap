@@ -2,18 +2,18 @@
 source: crates/hibi-cli/tests/snapshots.rs
 expression: "shots(&repo,\n&[&[\"retire\", &cache, \"--note\", \"section removed\"],\n&[\"retire\", &cache, &workers, \"--replaced-by\", &timeout], &[\"status\"],])"
 ---
-$ hibi retire c1-1axpkdaj5vx9dh84d5ns --note 'section removed'
+$ hibi retire c1-b1cqk12je92xh6d4na21 --note 'section removed'
 exit status: 0
 ---- standard output ----
-c1-1axpkdaj5vx9dh84d5ns  retired  r1-9kakb80jjcvsr3r2hw3d
+c1-b1cqk12je92xh6d4na21  retired  r1-vdzy1pxdef82npjf2gxg
 ---- standard error ----
 (empty)
 
-$ hibi retire c1-1axpkdaj5vx9dh84d5ns c1-dccp96583661kgfj4rex --replaced-by c1-mrghfbkcftdmcqdt292q
+$ hibi retire c1-b1cqk12je92xh6d4na21 c1-dccp96583661kgfj4rex --replaced-by c1-taz3x7a1bmrjjhb5mzg6
 exit status: 0
 ---- standard output ----
-c1-1axpkdaj5vx9dh84d5ns  already retired
-c1-dccp96583661kgfj4rex  retired  r1-3pa0jyhacqncd58t1r8e
+c1-b1cqk12je92xh6d4na21  already retired
+c1-dccp96583661kgfj4rex  retired  r1-0h6neenmhgg1qdq63ng4
 ---- standard error ----
 (empty)
 

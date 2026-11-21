@@ -7,16 +7,16 @@ exit status: 0
 ---- standard output ----
 2 claims: 0 fresh, 2 stale, 0 expired, 0 retired
 
-c1-1axpkdaj5vx9dh84d5ns  stale  The cache holds 64 entries.
-  marked 2026-11-20T12:00:00Z (m1-pqdddr4bpjhwg2dprq3g)
+c1-b1cqk12je92xh6d4na21  stale  The cache holds 64 entries.
+  marked 2026-11-20T12:00:00Z (m1-8jnpnyrstkx94kwrchk4)
   evidence 1  file:src/cache.rs  changed (fingerprint_differs)  function "limit", lines 1-4
-  next: hibi mark c1-1axpkdaj5vx9dh84d5ns
+  next: hibi mark c1-b1cqk12je92xh6d4na21
 
-c1-faavzhmqj1e7rzvnyz75  stale  Workers restart every night.
-  marked 2026-11-20T12:00:00Z (m1-3dnc8ee09ccn8znr4tp9)
+c1-vpsqdwgd6c7f2x3zmfe6  stale  Workers restart every night.
+  marked 2026-11-20T12:00:00Z (m1-w27a8m3wwsbq4e0ej9mk)
   subject  file:docs/ops.md  missing (selector_not_found)
     stored: quote "Workers are restarted nightly."
-  next: hibi reanchor c1-faavzhmqj1e7rzvnyz75 --subject <anchor>
+  next: hibi reanchor c1-vpsqdwgd6c7f2x3zmfe6 --subject <anchor>
 
 Re-check each stale or expired statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ---- standard error ----

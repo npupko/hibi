@@ -5,14 +5,14 @@ expression: "shots(&repo, &[created, created, no_evidence])"
 $ hibi claim 'The cache holds 64 entries.' --subject 'file:docs/guide.md::The cache holds 64 entries.' --evidence 'file:src/cache.rs#limit::let max_entries = 64;' --evidence file:src/cache.rs#timeout
 exit status: 0
 ---- standard output ----
-c1-2epmejepkfsf0bcvdwar  created  m1-j5fxxgdw4prj9rx74jzf  subject file:docs/guide.md (sentence "The cache holds 64 entries.", line 3); evidence 1 file:src/cache.rs (function "limit", lines 1-4); evidence 2 file:src/cache.rs (function "timeout", lines 6-8)
+c1-hpz1bn11xde8mh34mkkk  created  m1-7r7r5z96t3zzggccy7pr  subject file:docs/guide.md (sentence "The cache holds 64 entries.", line 3); evidence 1 file:src/cache.rs (function "limit", lines 1-4); evidence 2 file:src/cache.rs (function "timeout", lines 6-8)
 ---- standard error ----
 (empty)
 
 $ hibi claim 'The cache holds 64 entries.' --subject 'file:docs/guide.md::The cache holds 64 entries.' --evidence 'file:src/cache.rs#limit::let max_entries = 64;' --evidence file:src/cache.rs#timeout
 exit status: 0
 ---- standard output ----
-c1-2epmejepkfsf0bcvdwar  marked  m1-j5fxxgdw4prj9rx74jzf  subject file:docs/guide.md (sentence "The cache holds 64 entries.", line 3); evidence 1 file:src/cache.rs (function "limit", lines 1-4); evidence 2 file:src/cache.rs (function "timeout", lines 6-8)
+c1-hpz1bn11xde8mh34mkkk  marked  m1-7r7r5z96t3zzggccy7pr  subject file:docs/guide.md (sentence "The cache holds 64 entries.", line 3); evidence 1 file:src/cache.rs (function "limit", lines 1-4); evidence 2 file:src/cache.rs (function "timeout", lines 6-8)
 ---- standard error ----
 (empty)
 

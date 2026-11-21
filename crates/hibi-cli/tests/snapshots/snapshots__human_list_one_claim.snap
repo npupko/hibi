@@ -2,20 +2,20 @@
 source: crates/hibi-cli/tests/snapshots.rs
 expression: "shots(&repo, &[&[\"list\", &cache], &[\"list\", &workers]])"
 ---
-$ hibi list c1-2epmejepkfsf0bcvdwar
+$ hibi list c1-hpz1bn11xde8mh34mkkk
 exit status: 0
 ---- standard output ----
-c1-2epmejepkfsf0bcvdwar
+c1-hpz1bn11xde8mh34mkkk
   statement: The cache holds 64 entries.
   subject: {"loc":"file:docs/guide.md","sel":{"quote":"The cache holds 64 entries.","prefix":"# Guide\n\n","suffix":" Requests time out after 30 seconds.\n\n- Retries ","pos":9}}
-  evidence 1: {"loc":"file:src/cache.rs","sel":{"quote":"let max_entries = 64;","prefix":"pub fn limit() -> u32 {\n    ","suffix":"\n    max_entries\n}\n\npub fn timeout() -> u32 {\n  ","pos":28,"symbol":"limit"}}
-  evidence 2: {"loc":"file:src/cache.rs","sel":{"quote":"pub fn timeout() -> u32 {","prefix":" {\n    let max_entries = 64;\n    max_entries\n}\n\n","suffix":"\n    30\n}\n","pos":69,"symbol":"timeout"}}
+  evidence 1: {"loc":"file:src/cache.rs","sel":{"quote":"let max_entries = 64;","prefix":"pub fn limit() -> u32 {\n    ","suffix":"\n    max_entries\n}\n\n","pos":28,"symbol":"limit"}}
+  evidence 2: {"loc":"file:src/cache.rs","sel":{"quote":"pub fn timeout() -> u32 {","prefix":"\n\n","suffix":"\n    30\n}\n","pos":69,"symbol":"timeout"}}
 2 marks:
-  m1-j5fxxgdw4prj9rx74jzf  2026-11-20T12:00:00Z
+  m1-7r7r5z96t3zzggccy7pr  2026-11-20T12:00:00Z
     file:docs/guide.md  b3:prose-v1:34da78fbbacfbf227381ac83d86394ff
     file:src/cache.rs  b3:ast-v1:d4a43aaddbd75fa038a7b141187f69d5
     file:src/cache.rs  b3:ast-v1:dd8c766334feed7562225226a2c1132d
-  m1-wm5nbjsnn4a33j9xkp13  2026-11-20T13:00:00Z  by nick  note: read the function
+  m1-1a8d6ad67syd8g8jbvqh  2026-11-20T13:00:00Z  by nick  note: read the function
     file:docs/guide.md  b3:prose-v1:34da78fbbacfbf227381ac83d86394ff
     file:src/cache.rs  b3:ast-v1:d4a43aaddbd75fa038a7b141187f69d5
     file:src/cache.rs  b3:ast-v1:dd8c766334feed7562225226a2c1132d
