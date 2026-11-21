@@ -419,12 +419,39 @@ fn copy_fixtures(root: &Path) -> Vec<String> {
     files
 }
 
+/// Declarations of one symbol that share a long common start and differ
+/// only later: `copies` functions named `run` whose first `shared` lines are
+/// equal, in Python and TypeScript (ruling on section 6.7: a declaration
+/// whose scope selector another declaration reproduces takes whole-text
+/// context, so each copy's anchor still selects it).
+fn shared_start_copies(copies: usize, shared: usize) -> [(String, String); 2] {
+    let mut py = String::new();
+    let mut ts = String::new();
+    for k in 0..copies {
+        py.push_str("def run():\n");
+        ts.push_str("function run(): number {\n");
+        for line in 0..shared {
+            py.push_str(&format!("    value_{line} = compute({line})\n"));
+            ts.push_str(&format!("  const value_{line} = compute({line});\n"));
+        }
+        py.push_str(&format!("    return value_0 + {}\n\n\n", k + 1));
+        ts.push_str(&format!("  return value_0 + {};\n}}\n\n", k + 1));
+    }
+    [
+        (format!("gen/run_{copies}_{shared}.py"), py),
+        (format!("gen/run_{copies}_{shared}.ts"), ts),
+    ]
+}
+
 /// Ruling on section 6.7: a completed selector is a fixed point. Resolving
 /// it against unchanged text gives the same unit, not approximate, not
 /// refused, with an identical selector. Checked for anchors generated from
 /// every unit of every fixture (each line of the unit and each word of its
-/// first lines, with and without the unit's symbol), plus the verifier's
-/// repro, where a hit near the unit's edge used to lose its stored context.
+/// first lines, with and without the unit's symbol), for every unit's own
+/// selector, and for generated copies of one declaration that share a long
+/// common start, plus the verifier's repro, where a hit near the unit's edge
+/// used to lose its stored context. The anchors of one file are resolved in
+/// one batch, as the engine does, so the document is built once per batch.
 #[test]
 fn completed_selectors_are_fixed_points() {
     let tmp = tempfile::tempdir().unwrap();
@@ -436,6 +463,12 @@ fn completed_selectors_are_fixed_points() {
     );
     let mut files = vec!["m.rs".to_owned()];
     files.extend(copy_fixtures(root));
+    for (copies, shared) in [(2, 3), (3, 4), (5, 6)] {
+        for (path, text) in shared_start_copies(copies, shared) {
+            write(root, &path, text);
+            files.push(path);
+        }
+    }
     // The verifier's repro: `#f::(a` on m.rs.
     let mut p = wt(root);
     let first = one(&mut p, "file:m.rs", json!({"symbol": "f", "quote": "(a"}));
@@ -461,7 +494,10 @@ fn completed_selectors_are_fixed_points() {
         let text = fs::read_to_string(root.join(path))
             .unwrap()
             .replace("\r\n", "\n");
+        // Every unit's own selector, then anchors from its lines and words.
+        let mut sels: Vec<Value> = Vec::new();
         for u in units.iter().filter(|u| u.kind != "file") {
+            sels.push(serde_json::to_value(&u.sel).unwrap());
             let r = u.range.unwrap();
             let unit_text = &text[r.start..r.end];
             let mut quotes: Vec<String> = unit_text
@@ -478,30 +514,55 @@ fn completed_selectors_are_fixed_points() {
                     .map(str::to_owned),
             );
             for q in quotes {
-                let mut sels = vec![json!({"quote": q})];
+                sels.push(json!({"quote": q}));
                 if let Some(s) = &u.sel.symbol {
                     sels.push(json!({"symbol": s, "quote": q}));
-                }
-                for s in sels {
-                    let Ok(got) = resolve(&mut p, &l, s.clone()) else {
-                        continue;
-                    };
-                    if got.len() != 1 || got[0].refuse.is_some() {
-                        continue;
-                    }
-                    let first = &got[0];
-                    let again =
-                        resolve(&mut p, &l, serde_json::to_value(&first.sel).unwrap()).unwrap();
-                    checked += 1;
-                    let ok = again.len() == 1
-                        && again[0].key == first.key
-                        && again[0].sel == first.sel
-                        && !again[0].approx
-                        && again[0].refuse.is_none();
-                    if !ok && failures.len() < 10 {
-                        failures.push(format!("{path} {s} -> {:?} then {:?}", first.sel, again));
+                    // A stored anchor with whole-text context at the
+                    // quote's first place in the unit, as a twin's anchor
+                    // is stored: it can name one copy of a line that
+                    // several copies share.
+                    if let Some(at) = unit_text.find(&q) {
+                        let b = r.start + at;
+                        let before: Vec<char> = text[..b].chars().collect();
+                        let prefix: String =
+                            before[before.len().saturating_sub(48)..].iter().collect();
+                        let suffix: String = text[b + q.len()..].chars().take(48).collect();
+                        sels.push(json!({"symbol": s, "quote": q, "prefix": prefix, "suffix": suffix, "pos": b}));
                     }
                 }
+            }
+        }
+        let anchors: Vec<Anchor> = sels
+            .iter()
+            .map(|s| Anchor::new(loc(&l), sel(s.clone())))
+            .collect();
+        let firsts: Vec<(usize, Unit)> = p
+            .resolve(&anchors)
+            .into_iter()
+            .enumerate()
+            .filter_map(|(k, r)| {
+                let mut got = r.ok()?;
+                (got.len() == 1 && got[0].refuse.is_none()).then(|| (k, got.remove(0)))
+            })
+            .collect();
+        let again_anchors: Vec<Anchor> = firsts
+            .iter()
+            .map(|(_, u)| Anchor::new(loc(&l), u.sel.clone()))
+            .collect();
+        for ((k, first), again) in firsts.iter().zip(p.resolve(&again_anchors)) {
+            let again = again.unwrap();
+            checked += 1;
+            let ok = again.len() == 1
+                && again[0].key == first.key
+                && again[0].sel == first.sel
+                && !again[0].approx
+                && !again[0].context_changed
+                && again[0].refuse.is_none();
+            if !ok && failures.len() < 10 {
+                failures.push(format!(
+                    "{path} {} -> {:?} then {:?}",
+                    sels[*k], first.sel, again
+                ));
             }
         }
     }
@@ -1113,15 +1174,12 @@ fn revision_reads_the_base_commit_and_applies_the_path_rule() {
 }
 
 /// A TypeScript file of exactly `len` bytes that parses into one
-/// declaration: a single array literal.
-fn array_file(len: usize) -> String {
-    let (head, tail) = ("const a = [", "0];\n");
+/// declaration: a single string literal, which parses in a few nodes, so
+/// the boundary is checked without the cost of a large tree.
+fn literal_file(len: usize) -> String {
+    let (head, tail) = ("const a = \"", "\";\n");
     let fill = len - head.len() - tail.len();
-    let mut text = String::with_capacity(len);
-    text.push_str(head);
-    text.push_str(&"1,".repeat(fill / 2));
-    text.push_str(&" ".repeat(fill % 2));
-    text.push_str(tail);
+    let text = format!("{head}{}{tail}", "x".repeat(fill));
     assert_eq!(text.len(), len);
     text
 }
@@ -1139,8 +1197,8 @@ fn code_files_have_a_lower_size_cap() {
     let tmp = tempfile::tempdir().unwrap();
     let root = tmp.path().join("repo");
     fs::create_dir(&root).unwrap();
-    write(&root, "at.ts", array_file(cap));
-    write(&root, "over.ts", array_file(cap + 1));
+    write(&root, "at.ts", literal_file(cap));
+    write(&root, "over.ts", literal_file(cap + 1));
     write(&root, "over.md", "word ".repeat(cap / 5 + 1));
     sh_git(&root, &["init", "-q"]);
     sh_git(&root, &["add", "-A"]);
@@ -1947,4 +2005,60 @@ fn a_missed_symbol_only_proposes_candidates() {
         json!({"symbol": "c", "quote": "fn c() { another() }"}),
     );
     assert_eq!((u.key.as_str(), u.approx), ("function:c", false));
+}
+
+/// A cache that counts every lookup, so a test can see when the provider
+/// analyses a resource again.
+#[derive(Default)]
+struct Lookups(RefCell<usize>);
+
+impl UnitCache for Lookups {
+    fn get_units(&self, _: &str, _: &str) -> Option<String> {
+        *self.0.borrow_mut() += 1;
+        None
+    }
+    fn put_units(&self, _: &str, _: &str, _: &str) {}
+}
+
+#[test]
+fn an_analysed_document_is_reused_between_calls_until_its_bytes_change() {
+    // Ruling on section 6.7: `render`, `units` and `resolve` of one run
+    // analyse a resource once while its bytes are unchanged, and never
+    // serve a document for bytes that changed.
+    let tmp = tempfile::tempdir().unwrap();
+    let root = tmp.path();
+    write(root, "a.md", "First sentence. Second sentence.\n");
+    write(root, "b.md", "Other file.\n");
+    let lookups = Rc::new(Lookups::default());
+    let mut o = options(no_git());
+    o.cache = Some(Box::new(lookups.clone()));
+    let mut p = FileProvider::working_tree(root, o);
+    let analyses = || *lookups.0.borrow();
+
+    let units = p.units(&loc("file:a.md"), None).unwrap();
+    assert_eq!(analyses(), 1);
+    let key = units[1].key.clone();
+    p.render(&loc("file:a.md"), &key).unwrap();
+    one(&mut p, "file:a.md", json!({"quote": "Second"}));
+    p.units(&loc("file:b.md"), None).unwrap();
+    p.units(&loc("file:a.md"), None).unwrap();
+    assert_eq!(analyses(), 2, "a.md analysed once, b.md once");
+
+    // Changed bytes: analysed again, and the answer is the new text's.
+    write(root, "a.md", "First sentence. Third sentence.\n");
+    let u = one(&mut p, "file:a.md", json!({"quote": "Third"}));
+    assert_eq!(analyses(), 3);
+    assert_eq!(u.text.as_deref(), Some("Third sentence."));
+    assert!(
+        resolve(&mut p, "file:a.md", json!({"quote": "Second"}))
+            .unwrap()
+            .is_empty()
+    );
+    // The same length and different bytes are a different document too.
+    write(root, "a.md", "First sentence. Fifth sentence.\n");
+    assert_eq!(one(&mut p, "file:a.md", json!({"quote": "Fifth"})).key, {
+        let units = p.units(&loc("file:a.md"), None).unwrap();
+        units[2].key.clone()
+    });
+    assert_eq!(analyses(), 4);
 }

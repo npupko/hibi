@@ -67,7 +67,7 @@ fn key_matches(got: &str, want: &str) -> bool {
 }
 
 /// `input: {path, fixture | text | neither, sel}`; `expected: {units:
-/// [{key, approx, refuse, sel}]}` or `{error: <code>}`. Without `fixture`
+/// [{key, approx, contextChanged, refuse, sel}]}` or `{error: <code>}`. Without `fixture`
 /// and `text` the resource does not exist.
 pub fn resolve(case: &Case) -> Result<(), String> {
     let dir = tempfile::tempdir().map_err(|e| e.to_string())?;
@@ -105,6 +105,7 @@ pub fn resolve(case: &Case) -> Result<(), String> {
         Ok(units) => json!({ "units": units.iter().map(|u| json!({
             "key": u.key,
             "approx": u.approx,
+            "contextChanged": u.context_changed,
             "refuse": u.refuse.map(|r| r.as_str()),
             "sel": serde_json::to_value(&u.sel).unwrap(),
         })).collect::<Vec<_>>() }),

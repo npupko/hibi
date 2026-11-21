@@ -22,6 +22,7 @@ fn unit(key: &str, kind: &str, parent: Option<&str>, fp: Fingerprint) -> Unit {
         sel: Selector::empty(),
         text: None,
         approx: false,
+        context_changed: false,
         refuse: None,
     }
 }

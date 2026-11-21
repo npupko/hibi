@@ -253,6 +253,7 @@ fn unit(u: &FixtureUnit, with_text: bool) -> Unit {
         },
         text: with_text.then(|| u.text.clone()),
         approx: false,
+        context_changed: false,
         refuse: None,
     }
 }

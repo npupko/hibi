@@ -8,7 +8,7 @@
 
 mod doc;
 
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, VecDeque};
 use std::fs::OpenOptions;
 use std::io::Read;
 use std::path::{Component, Path, PathBuf};
@@ -51,6 +51,20 @@ fn byte_limit(path: &str) -> u64 {
 pub const MAX_CACHE_ROW_BYTES: usize = 8_388_608;
 
 pub use doc::MAX_UNITS_PER_RESOURCE;
+
+/// The analysed documents a provider keeps between calls (ruling on
+/// section 6.7): `render`, `units` and `resolve` of one run read a resource
+/// once while its bytes are unchanged. A small bound keeps memory at a few
+/// documents.
+const MEMO_DOCS: usize = 4;
+
+/// One analysed document, keyed by the exact bytes read and the class, so
+/// a file changed within a run is analysed again, never served stale.
+struct Memo {
+    class: Class,
+    bytes: Vec<u8>,
+    doc: Rc<Doc>,
+}
 
 /// The provider name in [`ProviderInfo`].
 pub const PROVIDER_NAME: &str = "hibi-file";
@@ -170,6 +184,8 @@ pub struct FileProvider {
     git: GitStatus,
     cache: Option<Box<dyn UnitCache>>,
     info: ProviderInfo,
+    /// The last analysed documents, most recent first, at most `MEMO_DOCS`.
+    memo: VecDeque<Memo>,
 }
 
 fn err(code: ProviderErrorCode, message: impl Into<String>) -> ProviderError {
@@ -237,6 +253,7 @@ impl FileProvider {
             git: options.git,
             cache: options.cache,
             info: info(),
+            memo: VecDeque::new(),
         }
     }
 
@@ -430,10 +447,34 @@ impl FileProvider {
         }
     }
 
-    /// Read and analyze a resource.
-    fn doc(&mut self, loc: &Locator) -> Result<Doc, ProviderError> {
+    /// Read and analyze a resource. The bytes are read on every call; a
+    /// document analysed from the same bytes and class in an earlier call is
+    /// reused.
+    fn doc(&mut self, loc: &Locator) -> Result<Rc<Doc>, ProviderError> {
         let (bytes, path) = self.read_bytes(loc)?;
         let class = Class::from_path(&path);
+        if let Some(k) = self
+            .memo
+            .iter()
+            .position(|m| m.class == class && m.bytes == bytes)
+        {
+            let m = self.memo.remove(k).expect("found above");
+            let doc = Rc::clone(&m.doc);
+            self.memo.push_front(m);
+            return Ok(doc);
+        }
+        let doc = Rc::new(self.analyse(loc, bytes.clone(), class)?);
+        self.memo.push_front(Memo {
+            class,
+            bytes,
+            doc: Rc::clone(&doc),
+        });
+        self.memo.truncate(MEMO_DOCS);
+        Ok(doc)
+    }
+
+    /// Decode and analyse the bytes of a resource, through the unit cache.
+    fn analyse(&self, loc: &Locator, bytes: Vec<u8>, class: Class) -> Result<Doc, ProviderError> {
         let cache = self.cache.as_deref();
         let blob = cache.map(|_| git::blob_id(&bytes));
         let row = match (cache, &blob) {
@@ -637,7 +678,7 @@ impl Provider for FileProvider {
                 let doc = match docs.get(&a.loc) {
                     Some(d) => d.clone(),
                     None => {
-                        let d = self.doc(&a.loc).map(Rc::new);
+                        let d = self.doc(&a.loc);
                         docs.insert(&a.loc, d.clone());
                         d
                     }

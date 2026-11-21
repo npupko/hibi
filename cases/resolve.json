@@ -11,6 +11,7 @@
         {
           "key": "file",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {}
         }
@@ -33,6 +34,7 @@
         {
           "key": "function:retry",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
@@ -61,6 +63,7 @@
         {
           "key": "struct:Cache",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub struct Cache;",
@@ -89,6 +92,7 @@
         {
           "key": "impl:impl Cache",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "impl Cache {",
@@ -118,6 +122,7 @@
         {
           "key": "function:retry",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "n.min(limit)",
@@ -147,6 +152,7 @@
         {
           "key": "function:retry",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
@@ -176,6 +182,7 @@
         {
           "key": "function:retry",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
@@ -205,6 +212,7 @@
         {
           "key": "function:retry",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
@@ -234,6 +242,7 @@
         {
           "key": "function:retry",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
@@ -263,6 +272,7 @@
         {
           "key": "method:Cache.get",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "-> u32 { 1 }",
@@ -292,6 +302,7 @@
         {
           "key": "method:Cache.put",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "-> u32 { 1 }",
@@ -321,6 +332,7 @@
         {
           "key": "function:twice",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "step(1);",
@@ -351,6 +363,7 @@
         {
           "key": "function:twice",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "step(1)",
@@ -381,6 +394,7 @@
         {
           "key": "function:twice",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "pub fn twice() {",
@@ -409,6 +423,7 @@
         {
           "key": "function:twice",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "step(1);",
@@ -437,6 +452,7 @@
         {
           "key": "method:Cache.get",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn get(&self)",
@@ -465,6 +481,7 @@
         {
           "key": "function:retry",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
@@ -493,6 +510,7 @@
         {
           "key": "file",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_in_comment",
           "sel": {}
         }
@@ -515,6 +533,7 @@
         {
           "key": "file",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_in_comment",
           "sel": {}
         }
@@ -537,6 +556,7 @@
         {
           "key": "struct:Cache",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_spans_units",
           "sel": {
             "quote": "pub struct Cache;",
@@ -565,6 +585,7 @@
         {
           "key": "function:retry",
           "approx": true,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
@@ -593,6 +614,7 @@
         {
           "key": "method:Cache.get",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn get(&self) -> u32 { 1 }",
@@ -605,6 +627,7 @@
         {
           "key": "method:Cache.put",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn put(&self) -> u32 { 1 }",
@@ -633,6 +656,7 @@
         {
           "key": "method:Cache.get",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn get(&self) -> u32 { 1 }",
@@ -645,6 +669,7 @@
         {
           "key": "method:Cache.put",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn put(&self) -> u32 { 1 }",
@@ -674,6 +699,7 @@
         {
           "key": "method:Cache.get",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "{ 1 }",
@@ -703,6 +729,7 @@
         {
           "key": "method:Cache.put",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "{ 1 }",
@@ -731,6 +758,7 @@
         {
           "key": "function:twice",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "step(1)",
@@ -760,6 +788,7 @@
         {
           "key": "function:twice",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "pub fn twice() {",
@@ -789,6 +818,7 @@
         {
           "key": "method:Cache.put",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "-> u32 { 1 }",
@@ -818,6 +848,7 @@
         {
           "key": "function:retry",
           "approx": true,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn retry(n: u32)",
@@ -847,6 +878,7 @@
         {
           "key": "method:Cache.get",
           "approx": true,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn get(&self) -> u32 { 1 }",
@@ -859,6 +891,7 @@
         {
           "key": "method:Cache.put",
           "approx": true,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn put(&self) -> u32 { 1 }",
@@ -888,6 +921,7 @@
         {
           "key": "method:Cache.get",
           "approx": true,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn get(&self) -> u32 { 1 }",
@@ -977,6 +1011,7 @@
         {
           "key": "field:Config.host",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub host: String",
@@ -1005,6 +1040,7 @@
         {
           "key": "field:Config.host",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "host",
@@ -1033,6 +1069,7 @@
         {
           "key": "variant:Level.High",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "High = 9",
@@ -1061,6 +1098,7 @@
         {
           "key": "struct:Config",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub struct Config {",
@@ -1089,6 +1127,7 @@
         {
           "key": "field:Config.port",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub port: u16",
@@ -1117,6 +1156,7 @@
         {
           "key": "field:Config.port",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_spans_units",
           "sel": {
             "quote": "pub port: u16",
@@ -1145,6 +1185,7 @@
         {
           "key": "function:f",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "export function f(a: string): void;",
@@ -1157,6 +1198,7 @@
         {
           "key": "function:f~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "export function f(a: number): void;",
@@ -1169,6 +1211,7 @@
         {
           "key": "function:f~3",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "export function f(a: any) {",
@@ -1198,6 +1241,7 @@
         {
           "key": "function:f~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "a: number",
@@ -1227,6 +1271,7 @@
         {
           "key": "function:f~2",
           "approx": true,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "export function f(a: number): void;",
@@ -1256,6 +1301,7 @@
         {
           "key": "function:f",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "export function f(a: string): void;",
@@ -1268,6 +1314,7 @@
         {
           "key": "function:f~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "export function f(a: number): void;",
@@ -1280,6 +1327,7 @@
         {
           "key": "function:f~3",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "export function f(a: any) {",
@@ -1309,6 +1357,7 @@
         {
           "key": "function:f",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "export function f(a: string): void;",
@@ -1321,6 +1370,7 @@
         {
           "key": "function:f~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "export function f(a: number): void;",
@@ -1333,6 +1383,7 @@
         {
           "key": "function:f~3",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "export function f(a: any) {",
@@ -1363,6 +1414,7 @@
         {
           "key": "function:f",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "export function f(a: ",
@@ -1392,6 +1444,7 @@
         {
           "key": "function:f",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "export function f(a: string): void;",
@@ -1404,6 +1457,7 @@
         {
           "key": "function:f~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "export function f(a: number): void;",
@@ -1416,6 +1470,7 @@
         {
           "key": "function:f~3",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "export function f(a: any) {",
@@ -1444,6 +1499,7 @@
         {
           "key": "function:g",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "function g(a",
@@ -1473,6 +1529,7 @@
         {
           "key": "function:g",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "function g(a",
@@ -1501,6 +1558,7 @@
         {
           "key": "function:g",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "function g(a",
@@ -1529,6 +1587,7 @@
         {
           "key": "function:g",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "function g(a",
@@ -1557,6 +1616,7 @@
         {
           "key": "function:g",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "return a + b;",
@@ -1585,6 +1645,7 @@
         {
           "key": "function:f",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_spans_units",
           "sel": {
             "quote": "export function f(a: string): void;",
@@ -1613,6 +1674,7 @@
         {
           "key": "function:area",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Area of a circle.",
@@ -1641,6 +1703,7 @@
         {
           "key": "function:area",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "def area(r):",
@@ -1669,6 +1732,7 @@
         {
           "key": "variable:RATE",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "RATE = 0.5",
@@ -1697,6 +1761,7 @@
         {
           "key": "statement:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "import math",
@@ -1774,6 +1839,7 @@
         {
           "key": "block:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "x = 1",
@@ -1805,6 +1871,7 @@
         {
           "key": "function:main",
           "approx": true,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def main(values):",
@@ -1831,6 +1898,7 @@
         {
           "key": "file",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {}
         }
@@ -1853,6 +1921,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "$29/month",
@@ -1880,6 +1949,7 @@
         {
           "key": "heading:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Pricing\n",
@@ -1907,6 +1977,7 @@
         {
           "key": "heading:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "# Pricing",
@@ -1934,6 +2005,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_spans_units",
           "sel": {
             "quote": "Pro costs $29/month.",
@@ -1961,6 +2033,7 @@
         {
           "key": "sentence:*",
           "approx": true,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Pro costs $29/month.",
@@ -1988,6 +2061,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Same sentence here.",
@@ -1999,6 +2073,7 @@
         {
           "key": "sentence:*~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Same sentence here.",
@@ -2027,6 +2102,7 @@
         {
           "key": "sentence:*~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Same sentence here.",
@@ -2055,6 +2131,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Same sentence here.",
@@ -2082,6 +2159,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Pro costs $29/month.",
@@ -2093,6 +2171,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Teams cost $99/month.",
@@ -2121,6 +2200,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "/month.",
@@ -2149,6 +2229,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "/month.",
@@ -2176,6 +2257,7 @@
         {
           "key": "file",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {}
         }
@@ -2198,6 +2280,7 @@
         {
           "key": "list-item:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Free tier has 3 seats.",
@@ -2286,6 +2369,7 @@
         {
           "key": "block:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "beta = 2",
@@ -2313,6 +2397,7 @@
         {
           "key": "block:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_spans_units",
           "sel": {
             "quote": "alpha = 1",
@@ -2338,6 +2423,7 @@
         {
           "key": "file",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {}
         }
@@ -2375,6 +2461,7 @@
         {
           "key": "block:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_spans_units",
           "sel": {
             "quote": "word word word word word word word word word word word word word word word word word word word word word word word word",
@@ -2402,6 +2489,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Retries are capped at five.",
@@ -2413,6 +2501,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Note: Retries are capped at five, says the guide.",
@@ -2443,6 +2532,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Retries are capped at five",
@@ -2473,6 +2563,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Retries are capped at five",
@@ -2500,6 +2591,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "The guide says retries are capped at five times.",
@@ -2511,6 +2603,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "And so: retries are capped at five times",
@@ -2541,6 +2634,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "retries are capped at five times",
@@ -2571,6 +2665,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "retries are capped at five times",
@@ -2599,6 +2694,7 @@
         {
           "key": "function:f~3",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_spans_units",
           "sel": {
             "quote": "export function f(a: any) {",
@@ -2627,6 +2723,7 @@
         {
           "key": "field:Config.host",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "    pub host",
@@ -2655,6 +2752,7 @@
         {
           "key": "field:Config.host",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub host: String,",
@@ -2683,6 +2781,7 @@
         {
           "key": "variant:Level.High",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_spans_units",
           "sel": {
             "quote": "High = 9",
@@ -2711,6 +2810,7 @@
         {
           "key": "function:b",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "fn b()",
@@ -2739,6 +2839,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_spans_units",
           "sel": {
             "quote": "Text here.",
@@ -2767,6 +2868,7 @@
         {
           "key": "function:f~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "function f(a: number)",
@@ -2796,6 +2898,7 @@
         {
           "key": "function:f~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_in_comment",
           "sel": {
             "quote": "function f(a: any) {",
@@ -2824,6 +2927,7 @@
         {
           "key": "function:max_size",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def max_size():",
@@ -2836,6 +2940,7 @@
         {
           "key": "function:max_size~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def max_size():",
@@ -2865,6 +2970,7 @@
         {
           "key": "function:max_size",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def max_size():",
@@ -2877,6 +2983,7 @@
         {
           "key": "function:max_size~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def max_size():",
@@ -2907,6 +3014,7 @@
         {
           "key": "function:max_size",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def max_size():",
@@ -2919,6 +3027,7 @@
         {
           "key": "function:max_size~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def max_size():",
@@ -2948,6 +3057,7 @@
         {
           "key": "function:max_size~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "return 2",
@@ -2976,6 +3086,7 @@
         {
           "key": "method:P.v",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -2988,6 +3099,7 @@
         {
           "key": "method:P.v~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3017,6 +3129,7 @@
         {
           "key": "method:P.v",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3029,6 +3142,7 @@
         {
           "key": "method:P.v~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3061,6 +3175,7 @@
         {
           "key": "method:P.v",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3093,6 +3208,7 @@
         {
           "key": "method:P.v~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3121,6 +3237,7 @@
         {
           "key": "method:P.v",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3133,6 +3250,7 @@
         {
           "key": "method:P.v~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3145,6 +3263,7 @@
         {
           "key": "method:P.v~3",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3174,6 +3293,7 @@
         {
           "key": "method:P.v",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3186,6 +3306,7 @@
         {
           "key": "method:P.v~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3198,6 +3319,7 @@
         {
           "key": "method:P.v~3",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3230,6 +3352,7 @@
         {
           "key": "method:P.v",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3262,6 +3385,7 @@
         {
           "key": "method:P.v~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3290,6 +3414,7 @@
         {
           "key": "method:P.v",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3302,6 +3427,7 @@
         {
           "key": "method:P.v~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3314,6 +3440,7 @@
         {
           "key": "method:P.v~3",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3326,6 +3453,7 @@
         {
           "key": "method:P.v~4",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3338,6 +3466,7 @@
         {
           "key": "method:P.v~5",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3350,6 +3479,7 @@
         {
           "key": "method:P.v~6",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3362,6 +3492,7 @@
         {
           "key": "method:P.v~7",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3374,6 +3505,7 @@
         {
           "key": "method:P.v~8",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3386,6 +3518,7 @@
         {
           "key": "method:P.v~9",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3398,6 +3531,7 @@
         {
           "key": "method:P.v~10",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3410,6 +3544,7 @@
         {
           "key": "method:P.v~11",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3422,6 +3557,7 @@
         {
           "key": "method:P.v~12",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3434,6 +3570,7 @@
         {
           "key": "method:P.v~13",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3446,6 +3583,7 @@
         {
           "key": "method:P.v~14",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3458,6 +3596,7 @@
         {
           "key": "method:P.v~15",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3470,6 +3609,7 @@
         {
           "key": "method:P.v~16",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3482,6 +3622,7 @@
         {
           "key": "method:P.v~17",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3494,6 +3635,7 @@
         {
           "key": "method:P.v~18",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3506,6 +3648,7 @@
         {
           "key": "method:P.v~19",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3518,6 +3661,7 @@
         {
           "key": "method:P.v~20",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3530,6 +3674,7 @@
         {
           "key": "method:P.v~21",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3542,6 +3687,7 @@
         {
           "key": "method:P.v~22",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3554,6 +3700,7 @@
         {
           "key": "method:P.v~23",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3583,6 +3730,7 @@
         {
           "key": "method:P.v",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3595,6 +3743,7 @@
         {
           "key": "method:P.v~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3607,6 +3756,7 @@
         {
           "key": "method:P.v~3",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3619,6 +3769,7 @@
         {
           "key": "method:P.v~4",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3631,6 +3782,7 @@
         {
           "key": "method:P.v~5",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3643,6 +3795,7 @@
         {
           "key": "method:P.v~6",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3655,6 +3808,7 @@
         {
           "key": "method:P.v~7",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3667,6 +3821,7 @@
         {
           "key": "method:P.v~8",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3679,6 +3834,7 @@
         {
           "key": "method:P.v~9",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3691,6 +3847,7 @@
         {
           "key": "method:P.v~10",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3703,6 +3860,7 @@
         {
           "key": "method:P.v~11",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3715,6 +3873,7 @@
         {
           "key": "method:P.v~12",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3727,6 +3886,7 @@
         {
           "key": "method:P.v~13",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3739,6 +3899,7 @@
         {
           "key": "method:P.v~14",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3751,6 +3912,7 @@
         {
           "key": "method:P.v~15",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3763,6 +3925,7 @@
         {
           "key": "method:P.v~16",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3775,6 +3938,7 @@
         {
           "key": "method:P.v~17",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3787,6 +3951,7 @@
         {
           "key": "method:P.v~18",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3799,6 +3964,7 @@
         {
           "key": "method:P.v~19",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3811,6 +3977,7 @@
         {
           "key": "method:P.v~20",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3823,6 +3990,7 @@
         {
           "key": "method:P.v~21",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3835,6 +4003,7 @@
         {
           "key": "method:P.v~22",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3847,6 +4016,7 @@
         {
           "key": "method:P.v~23",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3879,6 +4049,7 @@
         {
           "key": "method:P.v",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3911,6 +4082,7 @@
         {
           "key": "method:P.v~12",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3943,6 +4115,7 @@
         {
           "key": "method:P.v",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3955,6 +4128,7 @@
         {
           "key": "method:P.v~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3967,6 +4141,7 @@
         {
           "key": "method:P.v~3",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "def v(self):",
@@ -3995,6 +4170,7 @@
         {
           "key": "function:init",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "func init() {}",
@@ -4007,6 +4183,7 @@
         {
           "key": "function:init~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "func init() {}",
@@ -4039,6 +4216,7 @@
         {
           "key": "function:init",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "func init() {}",
@@ -4071,6 +4249,7 @@
         {
           "key": "function:init~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "func init() {}",
@@ -4099,6 +4278,7 @@
         {
           "key": "method:A.run",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "fn run(&self) -> u8 { 1 }",
@@ -4111,6 +4291,7 @@
         {
           "key": "method:A.run~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "fn run(&self) -> u8 { 1 }",
@@ -4143,6 +4324,7 @@
         {
           "key": "method:A.run",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "fn run(&self) -> u8 { 1 }",
@@ -4175,6 +4357,7 @@
         {
           "key": "method:A.run~2",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "fn run(&self) -> u8 { 1 }",
@@ -4207,6 +4390,7 @@
         {
           "key": "function:parse~2",
           "approx": true,
+          "contextChanged": true,
           "refuse": null,
           "sel": {
             "quote": "@overload",
@@ -4219,6 +4403,7 @@
         {
           "key": "function:parse",
           "approx": true,
+          "contextChanged": true,
           "refuse": null,
           "sel": {
             "quote": "@overload",
@@ -4251,6 +4436,7 @@
         {
           "key": "function:parse~2",
           "approx": true,
+          "contextChanged": true,
           "refuse": null,
           "sel": {
             "quote": "@overload",
@@ -4263,6 +4449,7 @@
         {
           "key": "function:parse",
           "approx": true,
+          "contextChanged": true,
           "refuse": null,
           "sel": {
             "quote": "@overload",
@@ -4295,6 +4482,7 @@
         {
           "key": "impl:impl Foo~2",
           "approx": true,
+          "contextChanged": true,
           "refuse": null,
           "sel": {
             "quote": "impl Foo {",
@@ -4307,6 +4495,7 @@
         {
           "key": "impl:impl Foo",
           "approx": true,
+          "contextChanged": true,
           "refuse": null,
           "sel": {
             "quote": "impl Foo {",
@@ -4339,6 +4528,7 @@
         {
           "key": "function:home~2",
           "approx": true,
+          "contextChanged": true,
           "refuse": null,
           "sel": {
             "quote": "def home():",
@@ -4351,6 +4541,7 @@
         {
           "key": "function:home",
           "approx": true,
+          "contextChanged": true,
           "refuse": null,
           "sel": {
             "quote": "def home():",
@@ -4383,6 +4574,7 @@
         {
           "key": "method:P.v~2",
           "approx": false,
+          "contextChanged": true,
           "refuse": null,
           "sel": {
             "quote": "@v.setter",
@@ -4390,6 +4582,315 @@
             "suffix": "\n    def v(self, x):\n        self._v = int(x)\n",
             "pos": 68,
             "symbol": "P.v"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "stored context: the quoted value now occurs only in another sentence: contextChanged",
+    "input": {
+      "path": "doc.md",
+      "text": "The timeout is 45 s by default.\n\nRetries back off slowly, up to 30 s.\n",
+      "sel": {
+        "quote": "30 s",
+        "prefix": "The timeout is ",
+        "suffix": ".\n\nRetries back off slowly.\n",
+        "pos": 15
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "contextChanged": true,
+          "refuse": null,
+          "sel": {
+            "quote": "30 s",
+            "prefix": "5 s by default.\n\nRetries back off slowly, up to ",
+            "suffix": ".\n",
+            "pos": 64
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "stored context: the sentence before the quoted one changed: same unit, contextChanged",
+    "input": {
+      "path": "doc.md",
+      "text": "The cache holds 128 entries. Old entries are evicted first.\n",
+      "sel": {
+        "quote": "Old entries are evicted first",
+        "prefix": "The cache holds 64 entries. ",
+        "suffix": ".\n",
+        "pos": 28
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": false,
+          "contextChanged": true,
+          "refuse": null,
+          "sel": {
+            "quote": "Old entries are evicted first",
+            "prefix": "The cache holds 128 entries. ",
+            "suffix": ".\n",
+            "pos": 29
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "stored context: a quote now split by a blank line spans two units: approx and refused",
+    "input": {
+      "path": "doc.md",
+      "text": "Alpha returns two and\n\nBeta returns three.\n",
+      "sel": {
+        "quote": "Alpha returns two and\nBeta",
+        "prefix": "",
+        "suffix": " returns three.\n",
+        "pos": 0
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "sentence:*",
+          "approx": true,
+          "contextChanged": false,
+          "refuse": "quote_spans_units",
+          "sel": {
+            "quote": "Alpha returns two and",
+            "prefix": "",
+            "suffix": "\n\nBeta returns three.\n",
+            "pos": 0
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "rust: stored context: one declaration, the stored quote is gone: contextChanged",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "retry",
+        "quote": "totally absent words",
+        "pos": 0
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:retry",
+          "approx": false,
+          "contextChanged": true,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn retry(n: u32) -> u32 {",
+            "prefix": "\n",
+            "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
+            "pos": 61,
+            "symbol": "retry"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "rust: stored context: one declaration, the stored quote found only by the fuzzy step: not contextChanged",
+    "input": {
+      "path": "src/lib.rs",
+      "fixture": "fixtures/resolve/lib.rs",
+      "sel": {
+        "symbol": "retry",
+        "quote": "n.max(limit)",
+        "pos": 0
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:retry",
+          "approx": false,
+          "contextChanged": false,
+          "refuse": null,
+          "sel": {
+            "quote": "pub fn retry(n: u32) -> u32 {",
+            "prefix": "\n",
+            "suffix": "\n    let limit = MAX; // cap here\n    n.min(limi",
+            "pos": 61,
+            "symbol": "retry"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "missed symbol: a renamed class whose method has an identical twin elsewhere: both are candidates",
+    "input": {
+      "path": "classes.py",
+      "text": "class Gamma:\n    def run(self):\n        return 1\n\n\nclass Beta:\n    def run(self):\n        return 1\n",
+      "sel": {
+        "quote": "def run(self):",
+        "prefix": "\n    ",
+        "suffix": "\n        return 1\n\n\n",
+        "pos": 17,
+        "symbol": "Alpha.run"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "method:Gamma.run",
+          "approx": true,
+          "contextChanged": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def run(self):",
+            "prefix": "\n    ",
+            "suffix": "\n        return 1\n\n\n",
+            "pos": 17,
+            "symbol": "Gamma.run"
+          }
+        },
+        {
+          "key": "method:Beta.run",
+          "approx": true,
+          "contextChanged": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def run(self):",
+            "prefix": "\n    ",
+            "suffix": "\n        return 1\n",
+            "pos": 67,
+            "symbol": "Beta.run"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "twin declarations: two run functions that differ after their first 48 characters: a new anchor gives both",
+    "input": {
+      "path": "run.py",
+      "text": "def run():\n    value = compute_the_value()\n    return value + 1\n\n\ndef run():\n    value = compute_the_value()\n    return value + 2\n",
+      "sel": {
+        "symbol": "run"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": false,
+          "contextChanged": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def run():",
+            "prefix": "",
+            "suffix": "\n    value = compute_the_value()\n    return valu",
+            "pos": 0,
+            "symbol": "run"
+          }
+        },
+        {
+          "key": "function:run~2",
+          "approx": false,
+          "contextChanged": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def run():",
+            "prefix": "ue = compute_the_value()\n    return value + 1\n\n\n",
+            "suffix": "\n    value = compute_the_value()\n    return valu",
+            "pos": 66,
+            "symbol": "run"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "twin declarations: two run functions that differ after their first 48 characters: the stored anchor of copy 1 resolves to it",
+    "input": {
+      "path": "run.py",
+      "text": "def run():\n    value = compute_the_value()\n    return value + 1\n\n\ndef run():\n    value = compute_the_value()\n    return value + 2\n",
+      "sel": {
+        "quote": "def run():",
+        "prefix": "",
+        "suffix": "\n    value = compute_the_value()\n    return valu",
+        "pos": 0,
+        "symbol": "run"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run",
+          "approx": false,
+          "contextChanged": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def run():",
+            "prefix": "",
+            "suffix": "\n    value = compute_the_value()\n    return valu",
+            "pos": 0,
+            "symbol": "run"
+          }
+        }
+      ]
+    },
+    "source": "written for v5 from SPEC section 6.7, derived by hand in these steps: (1) list the units of the fixture by sections 6.3 to 6.5 and the rulings on 6.4; (2) run section 7 on the quote, if any, against the text (or against the one declaration on the symbol path); (3) follow the branch of the resolve pseudocode that the case name names, which gives the units, approx and refuse; (4) take the kept quote span [L.start, L.end) or the default quote span of each unit; prefix, suffix and pos are then cut mechanically from that span",
+    "origin": "spec-derived"
+  },
+  {
+    "name": "twin declarations: two run functions that differ after their first 48 characters: the stored anchor of copy 2 resolves to it",
+    "input": {
+      "path": "run.py",
+      "text": "def run():\n    value = compute_the_value()\n    return value + 1\n\n\ndef run():\n    value = compute_the_value()\n    return value + 2\n",
+      "sel": {
+        "quote": "def run():",
+        "prefix": "ue = compute_the_value()\n    return value + 1\n\n\n",
+        "suffix": "\n    value = compute_the_value()\n    return valu",
+        "pos": 66,
+        "symbol": "run"
+      }
+    },
+    "expected": {
+      "units": [
+        {
+          "key": "function:run~2",
+          "approx": false,
+          "contextChanged": false,
+          "refuse": null,
+          "sel": {
+            "quote": "def run():",
+            "prefix": "ue = compute_the_value()\n    return value + 1\n\n\n",
+            "suffix": "\n    value = compute_the_value()\n    return valu",
+            "pos": 66,
+            "symbol": "run"
           }
         }
       ]
@@ -4411,6 +4912,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Pro costs $29 per\nmonth for each seat.",
@@ -4438,6 +4940,7 @@
         {
           "key": "sentence:*",
           "approx": true,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Pro costs $30 per",
@@ -4465,6 +4968,7 @@
         {
           "key": "block:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "w0 w1 w2 w3 w4 w5 w6 w7 w8 w9 w10 w11 w12 w13 w14 w15 w16 w17 w18 w19 w20 w21 w22 w23 w24 w25 w26 w27 w28 w29 w30 w31 w32 w33 w34 w35 w36 w37 w38 w39 w40 w41 w42 w43 w44 w45 w46 w47 w48 w49 w50 w51 w52 w53 w54 w55 w56 w57 w58 w59 w60 w61 w62 w63 w64 w65 w66 w67 w68 w69 w70 w71 w72 w73 w74 w75 w76 w77 w78 w79 w80 w81 w82 w83 w84 w85 w86 w87 w88 w89 w90 w91 w92 w93 w94 w95 w96 w97 w98 w99 w100 w101 w102 w103 w104 w105 w106 w107 w108 w109 w110 w111 w112 w113 w114 w115 w116 w117 w118 w119 w120 w121 w122 w123 w124 w125 w126 w127 w128 w129 w130 w131 w132 w133 w134 w135 w136 w137 w138 w139 w140 w141 w142 w143 w144 w145 w146 w147 w148 w149 w150 w151 w152 w153 w154 w155 w156 w157 w158 w159 w160 w161 w162 w163 w164 w165 w166 w167 w168 w169 w170 w171 w172 w173 w174 w175 w176 w177 w178 w179 w180 w181 w182 w183 w184 w185 w186 w187 w188 w189 w190 w191 w192 w193 w194 w195 w196 w197 w198 w199 w200 w201 w202 w203 w204 w205 w206 w207 w208 w209 w210 w211 w212 w213 w214 w215 w216 w217 w218 w219 w220 w221 w222 w223 w224 w225 w226 w227 w228 w229 w230 w231 w232 w233 w234 w235 w236 w237 w238 w239 w240 w241 w242 w243 w244 w245 w246 w247 w248 w249 w250 w251 w252 w253 w254 w255 w256 w257 w258 w259 w260 w261 w262 w263 w264 w265 w266 w267 w268 w269 w270 w271 w272 w273 w274 w275 w276 w277 w278 w279 w280 w281 w282 w283 w284 w285 w286 w287 w288 w289 w290 w291 w292 w293 w294 w295 w296 w297 w298 w299 w300 w301 w302 w303 w304 w305 w306 w307 w308 w309 w310 w311 w312 w313 w314 w315 w316 w317 w318 w319 w320 w321 w322 w323 w324 w325 w326 w327 w328 w329 w330 w331 w332 w333 w334 w335 w336 w337 w338 w339 w340 w341 w342 w343 w344 w345 w346 w347 w348 w349 w350 w351 w352 w353 w354 w355 w356 w357 w358 w359 w360 w361 w362 w363 w364 w365 w366 w367 w368 w369 w370 w371 w372 w373 w374 w375 w376 w377 w378 w379 w380 w381 w382 w383 w384 w385 w386 w387 w388 w389 w390 w391 w392 w393 w394 w395 w396 w397 w398 w399 w400 w401 w402 w403 w404 w405 w406 w407 w408 w409 w410 w411 w412 w413 w414 w415 w416 w417 w418 w419 w420 w421 w422 w423 w424 w425 w426 w427 w428 w429 w430 w43",
@@ -4492,6 +4996,7 @@
         {
           "key": "block:*",
           "approx": true,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "w0 w1 w2 w3 w4 w5 w6 w7 w8 w9 w10 w11 w12 w13 w14 w15 w16 w17 w18 w19 w20 w21 w22 w23 w24 w25 w26 w27 w28 w29 w30 w31 w3",
@@ -4519,6 +5024,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "world.",
@@ -4546,6 +5052,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_spans_units",
           "sel": {
             "quote": "Hello world.",
@@ -4573,6 +5080,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": "quote_spans_units",
           "sel": {
             "quote": "﻿Intro sentence.",
@@ -4600,6 +5108,7 @@
         {
           "key": "sentence:*",
           "approx": false,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "Intro",

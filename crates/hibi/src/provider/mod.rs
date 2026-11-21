@@ -147,6 +147,11 @@ pub struct Unit {
     /// In `resolve`: found by approximation or fallback.
     #[serde(default, skip_serializing_if = "is_false")]
     pub approx: bool,
+    /// In `resolve`, for a stored selector: the quote was located exactly
+    /// but the stored `prefix` and `suffix` are not reproduced there, or,
+    /// for a symbol that names one declaration, the quote is not in it.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub context_changed: bool,
     /// In `resolve`: must not be used to create a claim or replace a side.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub refuse: Option<Refuse>,

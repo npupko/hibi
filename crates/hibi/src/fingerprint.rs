@@ -57,12 +57,22 @@ pub fn ast_v1_tokens<'a>(class: &str, stream: impl IntoIterator<Item = &'a str>)
     hasher.update(b"\n");
     let mut sep = [0u8; 4];
     let sep = STREAM_SEPARATOR.encode_utf8(&mut sep).as_bytes();
+    // Tokens are short, and one hasher update per token costs far more
+    // than the bytes; they are gathered in a bounded buffer and hashed in
+    // large pieces, so memory stays bounded and the digest is the same.
+    const CHUNK: usize = 64 * 1024;
+    let mut buf: Vec<u8> = Vec::with_capacity(CHUNK);
     for (i, token) in stream.into_iter().enumerate() {
         if i > 0 {
-            hasher.update(sep);
+            buf.extend_from_slice(sep);
         }
-        hasher.update(token.as_bytes());
+        buf.extend_from_slice(token.as_bytes());
+        if buf.len() >= CHUNK {
+            hasher.update(&buf);
+            buf.clear();
+        }
     }
+    hasher.update(&buf);
     Fingerprint::from_digest(AST_V1, &hasher.finalize().as_bytes()[..DIGEST_BYTES])
         .expect("a profile constant and 16 digest bytes form a valid fingerprint")
 }
