@@ -47,10 +47,10 @@ hibi status --since main
 
 ```text output
 3 claims: 1 fresh, 1 stale, 0 expired, 1 retired
-since main (base fd6276985f412b23e553dfff487c90ecdb925ecb)
+since main (base 4c2977cfae6d91e1f3dbe425563de512fb08b240)
 
 c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T09:26:38Z (m1-5ym4ng2fjasdqz163b0g)
+  marked 2026-11-21T11:30:37Z (m1-a1r0kftaq29jn5zprx0s)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  function "delay_ms", lines 5-7
     | pub fn delay_ms(n: u32) -> u64 {
     |     200 << n
@@ -73,15 +73,17 @@ or with claim ids; that is a usage error.
 
 Lists the uncovered units that the range added or changed: a unit is kept
 when its file is a changed path and no unit of the same file at the base had
-the same key and the same fingerprint. The branch above also added a section
-to `docs/retry.md`:
+the same key and the same fingerprint. So a sentence copied within its
+file, with the original then edited, is not listed, even when no claim
+covers it; plain `hibi cover` lists it. The branch above also added a
+section to `docs/retry.md`:
 
 ```bash
 hibi cover --since main
 ```
 
 ```text output
-since main (base fd6276985f412b23e553dfff487c90ecdb925ecb)
+since main (base 4c2977cfae6d91e1f3dbe425563de512fb08b240)
 docs (file:docs/**/*.md; sentence, list-item, table-row): 1 unit, 0 covered, 0 excluded, 1 uncovered
   file:docs/retry.md
         9  sentence  Each attempt times out after 10 seconds.
@@ -92,7 +94,7 @@ are not evaluated with `--since`, and say so:
 
 ```text output
 $ HIBI_CONFIG=user.toml hibi cover --since main --scope notes
-since main (base 2655fe8e5b00116b82fa125819d7fd06772cea9a)
+since main (base 0f34418b17a68c91ac21055a92bd9808b1889f6e)
 notes (ref:notes; note): 0 units, 0 covered, 0 excluded, 0 uncovered
   not evaluated: --since works only for scopes on scheme "file"
 ```

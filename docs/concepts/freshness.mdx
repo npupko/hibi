@@ -75,11 +75,19 @@ practice:
   `mark` refuses the claim.
 - **A sentence edited elsewhere, away from the quote, is `changed`**, as
   for code.
-- **An edit to a neighbouring sentence changes nothing**, unless it is the
-  first sentence of the paragraph, which names the paragraph. Then the
-  paragraph's other claims are `missing`, with their unchanged sentences
-  listed first. A renamed heading, a sentence moved to another paragraph,
-  and a renamed function around a quote do the same.
+- **An edit to another sentence changes nothing**, unless it renames or
+  restructures the container: the first sentence of the paragraph edited,
+  deleted or inserted (it names the paragraph), the paragraph split, an
+  ordered list renumbered, a blockquote reflowed, or a section with the
+  same heading path pasted or removed. Then the claims there are `missing`,
+  usually with their unchanged sentences listed first. A renamed heading, a
+  sentence moved to another paragraph, and a renamed function around a
+  quote do the same.
+- **A copy in the same section can take a claim over.** A one-sentence
+  paragraph, list item or table row copied in its section, with the
+  original then edited, is followed, and the claim stays fresh. `hibi cover`
+  then lists the edited original as uncovered. See
+  [limits](/concepts/anchors#limits).
 
 A candidate is a guess for you to read; the side stays `missing` until you
 re-anchor it.
@@ -97,7 +105,7 @@ $ HIBI_CONFIG=user.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T09:26:42Z (m1-qywq8qjzd5ehckmpn1p8)
+  marked 2026-11-21T11:30:39Z (m1-mzd4p93jj3psxv1bqp56)
   subject  ref:notes  unavailable (scheme_not_declared)
     the scheme ref is not declared in .hibi/hibi.toml
     Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim.

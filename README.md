@@ -128,7 +128,7 @@ hibi claim "The client gives up after 5 attempts." \
 ```
 
 ```text output
-c1-c5dm2jvhr8hb36rx5rgm  created  m1-0p90th74vc95pztmc2t7  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-c5dm2jvhr8hb36rx5rgm  created  m1-dm4tc6p6kkq82jdct105  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 Now someone changes `MAX_ATTEMPTS` to 3. In the next session the agent asks
@@ -142,7 +142,7 @@ hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-c5dm2jvhr8hb36rx5rgm  stale  The client gives up after 5 attempts.
-  marked 2026-11-21T09:26:36Z (m1-0p90th74vc95pztmc2t7)
+  marked 2026-11-21T11:30:36Z (m1-dm4tc6p6kkq82jdct105)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  variable "MAX_ATTEMPTS", line 2
     | pub const MAX_ATTEMPTS: u32 = 3;
   next: hibi mark c1-c5dm2jvhr8hb36rx5rgm
@@ -164,7 +164,7 @@ hibi reanchor c1-c5dm \
 
 ```text output
 c1-c5dm2jvhr8hb36rx5rgm is retired and replaced by the new claim c1-2kfx78rwbb7wyxwst92f
-  mark m1-nbhrzrq169t3bpvfeqnh, retirement r1-zf617j6ehmvxv2zcf0p7
+  mark m1-7xewzxnjgsagaanx2qxr, retirement r1-wdhxwms1n8k93s0ffqq2
   was stale: subject file:docs/retry.md missing (not_exact); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked them
     evidence 1 is now:
     | pub const MAX_ATTEMPTS: u32 = 3;
@@ -213,7 +213,8 @@ section and paragraph, with the text right around them unchanged). When the
 quoted words of a sentence are edited, the side is missing, and
 `hibi status` lists the units it could mean as candidates. You read them,
 re-check the statement, and re-anchor the claim with `hibi reanchor`. An
-edit to a neighbouring sentence leaves the claim fresh.
+edit to a neighbouring sentence leaves the claim fresh, unless it is the
+first sentence of the paragraph, which names the paragraph.
 
 ## Learn more
 

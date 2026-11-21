@@ -70,7 +70,7 @@ With the exclusions above, in a later state of the same repository where
 `docs/retry.md` ends with the sentence "See the FAQ for more.":
 
 ```text output
-docs (file:docs/**/*.md; sentence, list-item, table-row): 4 units, 2 covered, 1 excluded, 1 uncovered
+docs (file:docs/**/*.md; sentence, list-item, table-row): 4 units, 2 covered, 1 excluded, 1 uncovered; 1 resource excluded
   file:docs/retry.md
         3  sentence  The client retries a failed download.
   excluded: file:docs/changelog.md (1 resource): release notes, not claims
@@ -86,7 +86,8 @@ exclusion is never hidden:
   changes, the exclusion stops matching and the sentence is listed again.
   The JSON result reports this as `"matched": 0`.
 - **An exclusion without `unit`** matches whole resources, and counts
-  resources ("(1 resource)"). A matched resource is not read at all: its
+  resources ("(1 resource)"). The scope's line ends with "1 resource
+  excluded", and JSON has `excludedResources`. A matched resource is not read at all: its
   units are not units of the scope, so they appear in no count, it is never
   listed as unavailable, and a claim on one of its units does not show as
   covered in that scope. Here `docs/changelog.md` is such a resource, so the
@@ -108,8 +109,28 @@ hibi cover --limit 1
 ```
 
 ```json output
-{"ok":true,"command":"cover","since":null,"summary":{"units":3,"covered":1,"excluded":0,"uncovered":2},"scopes":[{"name":"docs","resource":"file:docs/**/*.md","kinds":["sentence","list-item","table-row"],"units":3,"covered":1,"excluded":0,"uncovered":2,"truncated":true,"skipped":null,"items":[{"loc":"file:docs/retry.md","unit":{"key":"sentence:f62289c99f0c","kind":"sentence","label":"The client retries a failed download.","line":3,"endLine":3},"text":"The client retries a failed download.","anchor":{"loc":"file:docs/retry.md","sel":{"quote":"The client retries a failed download.","prefix":"","suffix":"","within":["Retries","The client retries a failed download."]}}}],"exclusions":[],"unavailable":[]}],"warnings":[]}
+{"ok":true,"command":"cover","since":null,"summary":{"units":3,"covered":1,"excluded":0,"uncovered":2,"excludedResources":0},"scopes":[{"name":"docs","resource":"file:docs/**/*.md","kinds":["sentence","list-item","table-row"],"units":3,"covered":1,"excluded":0,"uncovered":2,"excludedResources":0,"truncated":true,"skipped":null,"items":[{"loc":"file:docs/retry.md","unit":{"key":"sentence:f62289c99f0c","kind":"sentence","label":"The client retries a failed download.","line":3,"endLine":3},"text":"The client retries a failed download.","anchor":{"loc":"file:docs/retry.md","sel":{"quote":"The client retries a failed download.","prefix":"","suffix":"","within":["Retries","The client retries a failed download."]}}}],"exclusions":[],"unavailable":[]}],"warnings":[]}
 ```
+
+Units that are identical where they stand, such as two list items with the
+same text in one section, have no anchor that selects one of them alone.
+Their `anchor` is `null`, and the text output says so under each:
+
+```text output
+$ hibi cover --scope steps
+steps (file:docs/steps.md; list-item): 3 units, 0 covered, 0 excluded, 3 uncovered
+  file:docs/steps.md
+        3  list-item  - Run the tests.
+           cannot be anchored alone: claim the unit that contains it, or exclude it with unit = "list-item:4fba09794abf"
+        4  list-item  - Build the package.
+        5  list-item  - Run the tests.
+           cannot be anchored alone: claim the unit that contains it, or exclude it with unit = "list-item:4fba09794abf~2"
+```
+
+A claim on the unit that contains them, such as the whole file, records a
+statement about them, but `cover` keeps listing the items: a claim covers
+its unit and the units around it, not the units inside it. To stop `cover`
+listing them, exclude each by the key the line names.
 
 Not every unit states something checkable: headings, examples and opinions
 usually do not. Claim what can be checked against evidence. Exclude the rest
@@ -128,7 +149,7 @@ never dropped silently. To stop reading one for good, exclude it without
 `docs/link.md` is a symbolic link:
 
 ```text output
-docs (file:docs/**/*.md; sentence, list-item, table-row): 4 units, 2 covered, 1 excluded, 1 uncovered
+docs (file:docs/**/*.md; sentence, list-item, table-row): 4 units, 2 covered, 1 excluded, 1 uncovered; 1 resource excluded
   file:docs/retry.md
         3  sentence  The client retries a failed download.
   excluded: file:docs/changelog.md (1 resource): release notes, not claims

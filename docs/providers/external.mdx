@@ -50,7 +50,7 @@ $ HIBI_CONFIG=none.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T09:26:42Z (m1-qywq8qjzd5ehckmpn1p8)
+  marked 2026-11-21T11:30:39Z (m1-mzd4p93jj3psxv1bqp56)
   subject  ref:notes  unavailable (provider_not_registered)
     the user config has no provider command for scheme ref
   next: hibi providers
@@ -91,7 +91,7 @@ echo '[{"statement": "Downloads are retried at most 3 times.", "subject": {"loc"
 ```
 
 ```text output
-c1-kh88fbb9hctgd1v08923  created  m1-qywq8qjzd5ehckmpn1p8  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-kh88fbb9hctgd1v08923  created  m1-mzd4p93jj3psxv1bqp56  subject ref:notes (note "Downloads are retried at most 3 times."); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 A selector key the provider did not list in `hello` is refused before
@@ -111,7 +111,7 @@ $ HIBI_CONFIG=user.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-kh88fbb9hctgd1v08923  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T09:26:42Z (m1-qywq8qjzd5ehckmpn1p8)
+  marked 2026-11-21T11:30:39Z (m1-mzd4p93jj3psxv1bqp56)
   subject  ref:notes  changed (fingerprint_differs)  note "Downloads are retried at most 4 times."
     | Downloads are retried at most 4 times.
   next: hibi mark c1-kh88fbb9hctgd1v08923
@@ -228,11 +228,12 @@ the keys the provider listed in `selectors` in its `hello`:
 | `prefix`, `suffix` | The text right before and after the quote, as your provider returned it in a `sel` |
 | `within` | The container of the unit, as your provider returned it in a `sel` |
 | `symbol` | A declaration path |
-| `count` | How many declarations the symbol named, as your provider returned it in a `sel` |
+| `count` | With `symbol`, how many declarations the symbol named; with `within`, how many containers the path named; as your provider returned it in a `sel` |
 | `key` | A unit key |
 
-Listing `quote` in `selectors` also allows `prefix`, `suffix` and `within`;
-listing `symbol` also allows `count`. hibi sends these keys only when they
+Listing `quote` in `selectors` also allows `prefix`, `suffix`, `within`
+and, together with `within`, `count`; listing `symbol` also allows
+`count`. hibi sends these keys only when they
 are in a stored `sel` your provider returned. The empty selector `{}` is
 always allowed. A selector is closed: hibi never sends
 a key the provider did not list, and rejects a returned `sel` with an unknown

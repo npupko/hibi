@@ -85,7 +85,7 @@ one sentence or one command, or `null`.
 | `selector_not_exact` | A new anchor matches no unit exactly, and the message lists what was found by similarity; or its quote does not occur in the unit its symbol names; or, in `mark` and a `reanchor` that keeps the side, the stored line of a `#name::<line>` anchor is no longer in its declaration |
 | `quote_spans_units` | A quote reaches outside one unit |
 | `quote_in_comment` | A quote lies inside a code comment |
-| `quote_not_distinguishable` | The quoted text is identical, with identical text around it in its unit, to another place in the same container, so a stored anchor could not tell the two apart. Quote a longer passage, or in code anchor `<loc>#<symbol>::<line>` |
+| `quote_not_distinguishable` | The quoted text is identical, with identical text around it in its unit, to another place in the same scope (its container, or the containers its path names), so a stored anchor could not tell the two apart. Quote a longer passage, or in code anchor `<loc>#<symbol>::<line>` |
 | `unsupported_selector` | A new anchor uses a selector key its provider does not accept, such as `key` on a `file:` locator |
 | `no_scopes` | `cover` or `triage` with no scope declared |
 | `unknown_scope` | `--scope` names no scope |

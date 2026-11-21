@@ -38,8 +38,11 @@ pass for "unchanged". A similarity score only proposes candidates for a
 re-anchor. It never resolves an anchor and never decides freshness, which is
 exact fingerprint equality. A stored anchor identifies its unit by name,
 or by the quoted words in their container with the text right around them.
-Content never identifies a unit: a copy of the checked text elsewhere is a
-candidate, not the claim's unit.
+Content never identifies a unit: a copy of the checked text in another
+container is a candidate, not the claim's unit. Inside one container nothing
+tells a copy from the original, so a copy there takes the claim over when
+the original is edited; that limit is stated in
+[anchors](/concepts/anchors#limits).
 
 ## One freshness rule
 

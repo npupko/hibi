@@ -96,7 +96,11 @@ when it cannot decide.
     ```
 
     lists the units of the declared scopes that the branch added or changed
-    and that no claim covers. Claim the checkable ones. A unit that states
+    and that no claim covers. Claim the checkable ones. `--since` lists only
+    units whose key and content are new since the base, so a sentence copied
+    within its file, with the original then edited, is not listed even when
+    no claim covers it. After copying text, run `hibi cover` without
+    `--since`. A unit that states
     nothing checkable can be excluded in `.hibi/hibi.toml` with a reason;
     exclusions are visible in every `cover` report, so agree on them with the
     user.
@@ -141,7 +145,7 @@ c1-xqhbms40kkesq10rxjen  expired  Each attempt times out after 10 seconds.
   next: hibi mark c1-xqhbms40kkesq10rxjen
 
 c1-xwck2bdefbx39g56m7dn  stale  The delay doubles each time, starting at 200 ms.
-  marked 2026-11-21T09:26:38Z (m1-18w5xdb2zk2mbb059vnc)
+  marked 2026-11-21T11:30:37Z (m1-y2ee3s37ecy2hz8bmz74)
   subject  file:docs/retry.md  missing (not_exact)
     the stored anchor no longer identifies one unit
     stored: quote "The delay between attempts doubles each time, starting at 200 ms."
@@ -163,12 +167,13 @@ error: side_missing: the subject (file:docs/retry.md) resolves to no unit (not_e
 ```
 
 The candidate is the same sentence, and the statement still holds. Anchor the
-subject to it with a quote of your own:
+subject to it with a quote of your own. The printed anchor quotes the whole
+sentence; your own quote keeps the words the claim is about:
 
 ```text output
 $ hibi reanchor c1-xwck --subject 'file:docs/retry.md::doubles every time'
 c1-xwck2bdefbx39g56m7dn is retired and replaced by the new claim c1-2axv59jx0ztvfjd1adn9
-  mark m1-3jpn191zrbwa76c32rqy, retirement r1-jnp2z5fg2ppdayffd1p6
+  mark m1-ay4cway642rkbeeryjx9, retirement r1-hn2kwxxdrqt45v3hr4w8
   was stale: subject file:docs/retry.md missing (not_exact); now marked: make sure you re-checked it
   subject file:docs/retry.md (sentence "The delay between attempts doubles every time, starting at …", line 5)
     {"loc":"file:docs/retry.md","sel":{"quote":"doubles every time","prefix":"The delay between attempts","suffix":", starting at 200 ms.","within":["Retries","The client retries a failed download."]}}
@@ -199,7 +204,7 @@ prints one JSON object. The fields an agent reads from `status`:
 | `summary` | Counts of every claim in the store by state, before any filter |
 | `claims[].state` | `fresh`, `stale`, `expired` or `retired` |
 | `claims[].sides[]` | One entry per side: `index` (0 for the subject, n for evidence n), `role`, `anchor`, `state`, `reason`, `unit`, `fp`, `markedFp`, `remediation` and `detail`; `candidates` and `candidatesTotal` for a side that is missing (`not_exact`) or ambiguous; `text` with `--detail` |
-| `claims[].sides[].candidates[]` | A unit the anchor could mean: `key`, `kind`, `label`, `line`, `endLine`, `text` (at most 240 characters), `anchor` and `sameFingerprint`. `anchor` is a string that selects that unit alone, or `null` when the unit is identical, where it stands, to another candidate. At most 20 are listed; `candidatesTotal` counts all of them. |
+| `claims[].sides[].candidates[]` | A unit the anchor could mean: `key`, `kind`, `label`, `line`, `endLine`, `text` (at most 240 characters; cut text ends with `… (<n> characters)`), `anchor` and `sameFingerprint`. `anchor` is a string that selects that unit alone, or `null` when no anchor selects the unit alone, because it is identical, where it stands, to another unit. At most 20 are listed; `candidatesTotal` counts all of them. |
 | `claims[].sides[].detail` | For an unavailable side: the message that says why, from the provider or from hibi. For a `not_exact` side: why nothing resolved, "the stored anchor no longer identifies one unit", or "the name and the quoted text now point to different units: ..." when a `#name::<line>` anchor's line moved into another declaration. For a changed side whose stored line is gone from its declaration: "the stored quote is no longer in this unit". Otherwise `null` |
 | `claims[].sides[].remediation` | For a side that cannot be evaluated: the limit or the cause and what you can do, otherwise `null` |
 | `claims[].next` | The command to run after a successful re-check, or `null` |
@@ -210,7 +215,10 @@ at the reference mark: the unit has the content that was checked, at
 another place or under another path, for example a sentence moved to
 another paragraph or a field whose struct was renamed. Content alone never
 identifies a unit, so a copy of the text has `true` as well. Read the
-candidate before you anchor to it.
+candidate before you anchor to it. After you re-anchor to it, check that it
+is the original and not a copy: look at its line in the file, or run
+`hibi cover` and see whether the original is now uncovered. `status` cannot
+tell you, because the claim is fresh either way.
 
 Every write that adds a mark to an existing claim (`claim` on an existing
 claim, `mark`, `reanchor`) reports what it accepted:
