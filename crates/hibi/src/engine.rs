@@ -41,8 +41,7 @@ pub use cover::{
     UnitCoverage, changed_since, classify, cover, coverage, covered_keys, unit_texts,
 };
 pub use fresh::{
-    Evaluation, Index, QUOTE_GONE, ViewOptions, accepted, claim_view, corroborate, evaluate,
-    next_command,
+    Evaluation, Index, QUOTE_GONE, ViewOptions, accepted, claim_view, evaluate, next_command,
 };
 pub use input::{
     AnchorInput, ClaimInput, MarkInput, ReanchorInput, RetireInput, parse_claim_stdin,
@@ -57,8 +56,9 @@ pub use report::{
     scheme_reports,
 };
 pub use resolve::{
-    BY_SIMILARITY, Candidates, FOUND_ELSEWHERE, MAX_CANDIDATES, Resolved, content_candidates,
-    quoted, reason_of_no_provider, resolve_anchors, resolve_with, side_of_error,
+    BY_SIMILARITY, Candidates, MAX_CANDIDATES, NAME_AND_QUOTE_APART, NOT_IDENTIFIED, Resolved,
+    TWINS_REMEDY, content_candidates, quoted, reason_of_no_provider, resolve_anchors, resolve_with,
+    side_of_error,
 };
 pub use types::{
     Accepted, AcceptedSide, Candidate, ClaimState, ClaimView, DETAIL_CHARS, Envelope,

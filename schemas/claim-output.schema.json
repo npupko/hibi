@@ -128,8 +128,11 @@
       "type": "object",
       "properties": {
         "anchor": {
-          "description": "An anchor that selects this unit and no other unit of the resource,\nto give to `reanchor`: `<loc>#<symbol>`, or a JSON anchor.",
-          "type": "string"
+          "description": "The anchor the provider printed for this unit, to give to\n`reanchor`: `<loc>#<symbol>`, or a JSON anchor. `null` when another\nlisted candidate is identical where it stands, so that no anchor of\nthis form selects one of the two alone.",
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "endLine": {
           "type": [
@@ -214,6 +217,13 @@
         },
         "mark": {
           "$ref": "#/$defs/MarkId"
+        },
+        "notes": {
+          "description": "What the caller should know about the anchors it gave: one sentence\nfor each quote-only anchor that landed inside a code declaration,\nsaying that the anchor tracks that text in its place and which\nanchor follows the declaration instead. Empty otherwise.",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [
@@ -221,6 +231,7 @@
         "created",
         "mark",
         "accepted",
+        "notes",
         "claim"
       ]
     },

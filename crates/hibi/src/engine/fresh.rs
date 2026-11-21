@@ -79,6 +79,20 @@ pub struct Evaluation<'m> {
     pub expires_at: Option<Timestamp>,
     /// State and reason per side; empty for a retired claim.
     pub sides: Vec<(SideState, Option<Reason>)>,
+    /// Per side: true when the side is `changed` and its unit was resolved
+    /// by its symbol alone, because the stored quote is no longer in the
+    /// resource (`identity: "symbol"`, section 6.7). Such a side needs a new
+    /// anchor: a mark would keep the stale quote for good. Empty for a
+    /// retired claim.
+    pub quote_gone: Vec<bool>,
+}
+
+impl Evaluation<'_> {
+    /// True when side `index` has to be given a new anchor because its
+    /// stored quote is gone from the unit its symbol names.
+    pub fn quote_gone(&self, index: usize) -> bool {
+        self.quote_gone.get(index).copied().unwrap_or(false)
+    }
 }
 
 /// True when every side resolves to one unit whose fingerprint equals the
@@ -118,53 +132,10 @@ fn closest<'m>(marks: impl Iterator<Item = &'m Mark>, resolved: &[Resolved]) -> 
     })
 }
 
-/// What `detail` says for a side whose symbol still names its unit while
-/// the stored quote is gone from it (section 9.2).
+/// What `detail` says for a `changed` side whose symbol still names its
+/// unit while the stored quote is gone from it (section 9.2). The unit is
+/// identified by the name alone; the side asks for a new anchor.
 pub const QUOTE_GONE: &str = "the stored quote is no longer in this unit";
-
-/// An exact hit identifies its unit only with corroboration (section 9.2).
-/// `resolved` holds the resolutions of the stored anchors of `claim`, one
-/// per side; each side that resolved to one unit which the provider flags
-/// `contextChanged` is decided here:
-///
-/// - the unit's fingerprint equals this side's fingerprint in some mark of
-///   the claim: it is the unit that was marked and only its surroundings
-///   changed. The side stays resolved and the flag is cleared.
-/// - otherwise, for an anchor without a symbol: nothing says that the
-///   place where the quote now stands is the unit the claim is about. The
-///   side becomes `missing` with reason `not_exact`, and the unit is its
-///   candidate.
-/// - otherwise, for an anchor with a symbol: the symbol identifies the
-///   unit. The side stays resolved, so it is `changed`, and the flag stays
-///   set: the side's `detail` is then [`QUOTE_GONE`].
-///
-/// Every reader of a stored anchor's resolution applies this first, so a
-/// side that it turns away is missing for `status`, `mark`, `reanchor`,
-/// the same-claim rule and `cover` alike.
-pub fn corroborate(claim: &Claim, marks: &[&Mark], resolved: &mut [Resolved]) {
-    for (i, (anchor, r)) in claim.sides().zip(resolved.iter_mut()).enumerate() {
-        let Resolved::One(unit) = r else { continue };
-        if unit.identity != Some(Identity::Symbol) {
-            continue;
-        }
-        let marked = marks.iter().any(|m| {
-            m.check_against(claim).is_ok() && m.sides.get(i).is_some_and(|s| s.fp == unit.fp)
-        });
-        if marked {
-            unit.identity = None;
-        } else if anchor.sel.symbol.is_none() {
-            let select = super::types::escape_controls(
-                &serde_json::to_string(&Anchor::new(anchor.loc.clone(), unit.sel.clone()))
-                    .unwrap_or_default(),
-            );
-            *r = Resolved::Uncorroborated(Candidates {
-                units: vec![(**unit).clone()],
-                anchors: vec![select],
-                total: 1,
-            });
-        }
-    }
-}
 
 /// Evaluate a claim by sections 9.2 and 9.3.
 ///
@@ -189,6 +160,7 @@ pub fn evaluate<'m>(
             reference: latest(marks.iter().copied()),
             expires_at: None,
             sides: Vec::new(),
+            quote_gone: Vec::new(),
         });
     }
     if resolved.len() != claim.side_count() {
@@ -263,11 +235,22 @@ pub fn evaluate<'m>(
             }
         })
         .collect();
+    let sides: Vec<(SideState, Option<Reason>)> = sides;
+    let quote_gone = resolved
+        .iter()
+        .zip(&sides)
+        .map(|(r, (state, _))| {
+            *state == SideState::Changed
+                && r.unit()
+                    .is_some_and(|u| u.identity == Some(Identity::Symbol))
+        })
+        .collect();
     Ok(Evaluation {
         state,
         reference,
         expires_at,
         sides,
+        quote_gone,
     })
 }
 
@@ -320,6 +303,7 @@ pub fn next_command(claim: &Claim, eval: &Evaluation<'_>) -> Option<String> {
         // another anchor too.
         if matches!(state, SideState::Missing | SideState::Ambiguous)
             || *reason == Some(Reason::SelectorRefused)
+            || eval.quote_gone(i)
         {
             if i == 0 {
                 reanchor.push_str(" --subject <anchor>");
@@ -417,18 +401,14 @@ pub fn claim_view(
                 }
                 // Left set by `corroborate` for a unit that its symbol
                 // names and its stored quote is no longer in.
-                Resolved::One(u)
-                    if u.identity == Some(Identity::Symbol) && *state == SideState::Changed =>
-                {
-                    Some(QUOTE_GONE)
-                }
-                // Which of the two causes of `not_exact` it is.
-                other => other.not_exact_cause(),
+                Resolved::One(_) if eval.quote_gone(index) => Some(QUOTE_GONE),
+                // Why a `not_exact` side resolves nothing.
+                other => other.not_exact_cause(anchor),
             };
             let first = by_content.get(index).and_then(Option::as_ref);
             let all = Candidates::merged(first, r.candidates());
             let candidates = all.as_ref().map(|c| {
-                c.shown()
+                c.selectable()
                     .map(|(u, select)| Candidate {
                         key: u.key.clone(),
                         kind: u.kind.clone(),
@@ -436,7 +416,7 @@ pub fn claim_view(
                         line: u.range.map(|r| r.line),
                         end_line: u.range.map(|r| r.end_line),
                         text: u.text.as_deref().map(|t| excerpt(t, TEXT_EXCERPT_CHARS)),
-                        anchor: select.to_owned(),
+                        anchor: select.map(str::to_owned),
                         same_fingerprint: marked_fp.as_ref() == Some(&u.fp),
                     })
                     .collect::<Vec<_>>()

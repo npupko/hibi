@@ -77,6 +77,10 @@ pub enum Code {
     QuoteSpansUnits,
     /// A quote lies wholly or partly inside a code comment.
     QuoteInComment,
+    /// The quoted text is identical, with identical text around it in its
+    /// unit, to another place in the same container: a stored anchor
+    /// could not tell the two apart.
+    QuoteNotDistinguishable,
     /// A new anchor has a selector key its provider does not allow.
     UnsupportedSelector,
     /// `cover` or `triage` with no scope declared.
@@ -95,7 +99,7 @@ pub enum Code {
 
 impl Code {
     /// Every code, in the order of section 15.4.
-    pub const ALL: [Code; 38] = [
+    pub const ALL: [Code; 39] = [
         Code::Usage,
         Code::InvalidArgument,
         Code::InvalidJson,
@@ -127,6 +131,7 @@ impl Code {
         Code::SelectorNotExact,
         Code::QuoteSpansUnits,
         Code::QuoteInComment,
+        Code::QuoteNotDistinguishable,
         Code::UnsupportedSelector,
         Code::NoScopes,
         Code::UnknownScope,
@@ -170,6 +175,7 @@ impl Code {
             Code::SelectorNotExact => "selector_not_exact",
             Code::QuoteSpansUnits => "quote_spans_units",
             Code::QuoteInComment => "quote_in_comment",
+            Code::QuoteNotDistinguishable => "quote_not_distinguishable",
             Code::UnsupportedSelector => "unsupported_selector",
             Code::NoScopes => "no_scopes",
             Code::UnknownScope => "unknown_scope",
@@ -239,6 +245,9 @@ impl Code {
             Code::SelectorNotExact => "Give a quote that occurs exactly in the unit you mean.",
             Code::QuoteSpansUnits => "Quote text from one unit only.",
             Code::QuoteInComment => "Anchor the code the comment describes.",
+            Code::QuoteNotDistinguishable => {
+                "Quote a longer passage that occurs once in its place, or in code anchor <loc>#<symbol>::<line>."
+            }
             Code::UnsupportedSelector => {
                 "Use only the selector keys the provider lists; hibi providers shows them."
             }

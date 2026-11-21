@@ -1644,8 +1644,9 @@ fn a_zero_recheck_period_is_invalid() {
     assert!(!e.to_string().contains("zero"), "{e}");
 }
 
-/// The same evidence anchor twice is `invalid_argument`, in `claim` and
-/// for an added side in `reanchor`. The subject may also be evidence.
+/// Two evidence sides that resolve to the same unit are `invalid_argument`,
+/// in `claim` and for an added side in `reanchor`, however each anchor is
+/// written. The subject may also be evidence.
 #[test]
 fn duplicate_evidence_anchors_are_refused() {
     let (_w, mut p, store) = setup();
@@ -1662,7 +1663,7 @@ fn duplicate_evidence_anchors_are_refused() {
     assert!(
         errors[0]
             .message
-            .contains("evidence 1 and evidence 3 are the same anchor"),
+            .contains("evidence 1 and evidence 3 resolve to the same unit"),
         "{}",
         errors[0]
     );

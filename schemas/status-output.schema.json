@@ -83,8 +83,11 @@
       "type": "object",
       "properties": {
         "anchor": {
-          "description": "An anchor that selects this unit and no other unit of the resource,\nto give to `reanchor`: `<loc>#<symbol>`, or a JSON anchor.",
-          "type": "string"
+          "description": "The anchor the provider printed for this unit, to give to\n`reanchor`: `<loc>#<symbol>`, or a JSON anchor. `null` when another\nlisted candidate is identical where it stands, so that no anchor of\nthis form selects one of the two alone.",
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "endLine": {
           "type": [

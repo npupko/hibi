@@ -28,10 +28,12 @@ pub struct Candidates {
     pub units: Vec<Unit>,
     /// How many units the provider returned.
     pub total: usize,
-    /// For the first [`MAX_CANDIDATES`] units: an anchor string that selects
-    /// that unit and no other unit of the resource. It is `<loc>#<symbol>`
-    /// when the unit's symbol is unique in the whole resource, and the
-    /// unit's completed anchor as JSON otherwise.
+    /// For the first [`MAX_CANDIDATES`] units: the anchor the provider
+    /// printed for the unit (its `sel`, section 6.7), as text to give back.
+    /// It is `<loc>#<symbol>` when the selector is a symbol alone, and the
+    /// anchor as JSON otherwise. Units that are identical where they stand
+    /// carry the same anchor: it selects all of them, so it is not shown as
+    /// a way to pick one ([`Candidates::selects_alone`]).
     pub anchors: Vec<String>,
 }
 
@@ -74,20 +76,36 @@ impl Candidates {
             .zip(self.anchors.iter().map(String::as_str))
     }
 
+    /// The shown candidates, each with its anchor when that anchor selects
+    /// it alone, and `None` when another shown candidate carries the same
+    /// anchor: the two cannot be told apart by any anchor of this form.
+    pub fn selectable(&self) -> impl Iterator<Item = (&Unit, Option<&str>)> {
+        self.shown().map(|(u, anchor)| {
+            let alone = self.anchors.iter().filter(|a| *a == anchor).count() == 1;
+            (u, alone.then_some(anchor))
+        })
+    }
+
+    /// True when the anchor of every shown candidate selects it alone.
+    pub fn selects_alone(&self) -> bool {
+        self.selectable().all(|(_, anchor)| anchor.is_some())
+    }
+
     /// One line per shown candidate: kind, label, line and the anchor that
     /// selects it; then how many more there are.
     pub fn describe(&self) -> String {
         let mut lines: Vec<String> = self
-            .shown()
+            .selectable()
             .map(|(u, anchor)| {
                 let label = u.label.as_deref().unwrap_or(&u.key);
                 let line = u
                     .range
                     .map_or_else(String::new, |r| format!(", line {}", r.line));
                 format!(
-                    "{} {}{line}: {anchor}",
+                    "{} {}{line}: {}",
                     u.kind,
-                    quoted(&super::types::excerpt(label, 80))
+                    quoted(&super::types::excerpt(label, 80)),
+                    anchor.unwrap_or("identical to another candidate, no anchor selects it alone")
                 )
             })
             .collect();
@@ -95,7 +113,12 @@ impl Candidates {
         if more > 0 {
             lines.push(format!("and {more} more"));
         }
-        lines.join("; ")
+        let mut out = lines.join("; ");
+        if !self.selects_alone() {
+            out.push_str(". ");
+            out.push_str(TWINS_REMEDY);
+        }
+        out
     }
 }
 
@@ -122,13 +145,21 @@ pub fn quoted(label: &str) -> String {
     out
 }
 
-/// A `not_exact` side whose candidates the provider found by similarity.
+/// A new anchor that the provider could only guess at.
 pub const BY_SIMILARITY: &str = "the anchor matches no unit exactly";
 
-/// A `not_exact` side whose stored quote was found exactly, without
-/// corroboration (section 9.2). The quoted words are in the candidate, so
-/// saying that nothing matches would read as false.
-pub const FOUND_ELSEWHERE: &str = "the quoted text was found, but not where it was stored, and the unit there is not the one that was marked";
+/// A stored anchor that resolves nothing: its container or name is gone or
+/// names several, its text stands somewhere the stored surroundings do not
+/// fit, or only similar text was found (section 6.7). The candidates may
+/// hold the stored text exactly, so this does not say that nothing matches.
+pub const NOT_IDENTIFIED: &str = "the stored anchor no longer identifies one unit";
+
+/// A stored `#name::<quote>` anchor whose name and quote disagree: the name
+/// still names one declaration, and the quoted text is in other units.
+pub const NAME_AND_QUOTE_APART: &str = "the name and the quoted text now point to different units: the first candidate has the name, the others hold the quoted text";
+
+/// What to do about candidates that no anchor can tell apart.
+pub const TWINS_REMEDY: &str = "Units that are identical where they stand cannot be anchored by that text alone: quote a longer passage that tells them apart, or in code anchor <loc>#<symbol>::<line>.";
 
 /// The current resolution of one anchor.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -142,13 +173,6 @@ pub enum Resolved {
     /// never resolves: the side is `missing` with reason `not_exact`, and
     /// the units are candidates for the caller to check.
     NotExact(Candidates),
-    /// The stored quote was found exactly, at a place that does not
-    /// reproduce the stored context, in a unit that no mark of the claim
-    /// holds, and no symbol names the unit (section 9.2, "An exact hit
-    /// needs corroboration"). The side is `missing` with reason
-    /// `not_exact`, as for [`Resolved::NotExact`], and the unit is its
-    /// candidate; only the words that say what happened differ.
-    Uncorroborated(Candidates),
     /// The resource exists and the selector found nothing.
     NotFound,
     /// The selector has a key the provider does not allow. Nothing was
@@ -164,22 +188,35 @@ pub enum Resolved {
 }
 
 impl Resolved {
-    /// Why a side is `missing` with reason `not_exact`: one sentence for
-    /// each of the two causes, used in the side's `detail`, in the text
-    /// output and in error messages. `None` for every other resolution.
-    pub fn not_exact_cause(&self) -> Option<&'static str> {
-        match self {
-            Resolved::NotExact(_) => Some(BY_SIMILARITY),
-            Resolved::Uncorroborated(_) => Some(FOUND_ELSEWHERE),
-            _ => None,
-        }
+    /// Why a stored side is `missing` with reason `not_exact`: one
+    /// sentence, used in the side's `detail`, in the text output and in
+    /// error messages. `stored` is the side's stored anchor. `None` for
+    /// every other resolution.
+    pub fn not_exact_cause(&self, stored: &Anchor) -> Option<&'static str> {
+        let Resolved::NotExact(c) = self else {
+            return None;
+        };
+        // Section 6.7, A1 with conflicting evidence: the declaration the
+        // symbol names comes first, then the units that hold the quote.
+        let sel = &stored.sel;
+        let apart = sel.symbol.is_some()
+            && sel.quote.is_some()
+            && sel.count.is_none()
+            && c.units.len() >= 2
+            && c.units[0].sel.symbol == sel.symbol
+            && c.units[1..].iter().all(|u| u.sel.symbol != sel.symbol);
+        Some(if apart {
+            NAME_AND_QUOTE_APART
+        } else {
+            NOT_IDENTIFIED
+        })
     }
 
     /// The candidates of an anchor that is ambiguous or was found only by
     /// similarity.
     pub fn candidates(&self) -> Option<&Candidates> {
         match self {
-            Resolved::Several(c) | Resolved::NotExact(c) | Resolved::Uncorroborated(c) => Some(c),
+            Resolved::Several(c) | Resolved::NotExact(c) => Some(c),
             _ => None,
         }
     }
@@ -198,9 +235,7 @@ impl Resolved {
         match self {
             Resolved::One(_) => None,
             Resolved::Several(_) => Some((SideState::Ambiguous, Reason::SeveralUnits)),
-            Resolved::NotExact(_) | Resolved::Uncorroborated(_) => {
-                Some((SideState::Missing, Reason::NotExact))
-            }
+            Resolved::NotExact(_) => Some((SideState::Missing, Reason::NotExact)),
             Resolved::NotFound => Some((SideState::Missing, Reason::SelectorNotFound)),
             Resolved::KeyNotAllowed { .. } => Some((SideState::Unavailable, Reason::ProviderError)),
             Resolved::Failed { state, reason, .. } => Some((*state, *reason)),
@@ -209,13 +244,20 @@ impl Resolved {
 
     /// A sentence about the failure, for error messages.
     pub fn failure_message(&self) -> Option<String> {
-        self.failure_message_with(None)
+        self.failure_message_with(None, None)
     }
 
     /// [`failure_message`](Self::failure_message) for a stored side, with
     /// the units of the resource that have the marked content
     /// ([`content_candidates`]) listed first, as `status` lists them.
-    pub fn failure_message_with(&self, by_content: Option<&Candidates>) -> Option<String> {
+    ///
+    /// `stored` is the side's stored anchor, or `None` for a new anchor: it
+    /// chooses the sentence that says why nothing resolved.
+    pub fn failure_message_with(
+        &self,
+        by_content: Option<&Candidates>,
+        stored: Option<&Anchor>,
+    ) -> Option<String> {
         let units = |n: usize| {
             if n == 1 {
                 "1 candidate".to_owned()
@@ -230,11 +272,13 @@ impl Resolved {
                 c.total,
                 c.describe()
             )),
-            Resolved::NotExact(c) | Resolved::Uncorroborated(c) => {
+            Resolved::NotExact(c) => {
                 let all = Candidates::merged(by_content, Some(c)).unwrap_or_else(|| c.clone());
                 Some(format!(
                     "{}; {}, each a guess to check before use: {}",
-                    self.not_exact_cause().unwrap_or_default(),
+                    stored
+                        .and_then(|a| self.not_exact_cause(a))
+                        .unwrap_or(BY_SIMILARITY),
                     units(all.total),
                     all.describe()
                 ))
@@ -319,20 +363,7 @@ pub(crate) fn failed_from_error(e: &ProviderError) -> Resolved {
 /// resource `loc`. A symbol is used alone only when the provider's unit
 /// list of the resource holds it once; `listing` caches that list per
 /// resource for one resolve pass.
-fn candidates_of(
-    provider: &mut dyn Provider,
-    info: &ProviderInfo,
-    listing: &mut HashMap<Locator, Option<Vec<Unit>>>,
-    loc: &Locator,
-    units: Vec<Unit>,
-) -> Candidates {
-    let all = listing.entry(loc.clone()).or_insert_with(|| {
-        if info.capabilities.units {
-            provider.units(loc, None).ok()
-        } else {
-            None
-        }
-    });
+fn candidates_of(loc: &Locator, units: Vec<Unit>) -> Candidates {
     // Compact syntax has no escapes: a locator or symbol with a control
     // character is given as JSON.
     let compact = loc.is_file_or_repo()
@@ -347,19 +378,23 @@ fn candidates_of(
         .iter()
         .take(MAX_CANDIDATES)
         .map(|u| {
-            let unique = u.sel.symbol.as_deref().filter(|symbol| {
-                compact
+            // The provider's printed anchor (section 6.7): a symbol alone
+            // is written compactly, anything else as JSON.
+            let sel = &u.sel;
+            let only_symbol = sel.quote.is_none()
+                && sel.prefix.is_none()
+                && sel.suffix.is_none()
+                && sel.within.is_none()
+                && sel.count.is_none()
+                && sel.key.is_none();
+            let symbol = u.sel.symbol.as_deref().filter(|symbol| {
+                only_symbol
+                    && compact
                     && !symbol.chars().any(char::is_control)
                     && !symbol.contains('#')
                     && !symbol.contains("::")
-                    && all.as_ref().is_some_and(|all| {
-                        all.iter()
-                            .filter(|x| x.sel.symbol.as_deref() == Some(symbol))
-                            .count()
-                            == 1
-                    })
             });
-            match unique {
+            match symbol {
                 Some(symbol) => format!("{loc}#{symbol}"),
                 None => super::types::escape_controls(
                     &serde_json::to_string(&Anchor::new(loc.clone(), u.sel.clone()))
@@ -436,7 +471,6 @@ pub fn resolve_with(provider: &mut dyn Provider, anchors: &[&Anchor]) -> Vec<Res
                 .map(|_| Resolved::failed(SideState::Unavailable, Reason::ProviderError, &message))
                 .collect()
         } else {
-            let mut listing: HashMap<Locator, Option<Vec<Unit>>> = HashMap::new();
             let mut out = Vec::with_capacity(raw.len());
             for (r, anchor) in raw.into_iter().zip(&unique) {
                 out.push(match r {
@@ -453,20 +487,8 @@ pub fn resolve_with(provider: &mut dyn Provider, anchors: &[&Anchor]) -> Vec<Res
                             match (units.len(), guessed) {
                                 (0, _) => Resolved::NotFound,
                                 (1, false) => Resolved::One(Box::new(units.remove(0))),
-                                (_, false) => Resolved::Several(candidates_of(
-                                    provider,
-                                    &info,
-                                    &mut listing,
-                                    &anchor.loc,
-                                    units,
-                                )),
-                                (_, true) => Resolved::NotExact(candidates_of(
-                                    provider,
-                                    &info,
-                                    &mut listing,
-                                    &anchor.loc,
-                                    units,
-                                )),
+                                (_, false) => Resolved::Several(candidates_of(&anchor.loc, units)),
+                                (_, true) => Resolved::NotExact(candidates_of(&anchor.loc, units)),
                             }
                         }
                     },
@@ -530,13 +552,7 @@ pub fn content_candidates(
                     }
                 }
             }
-            Some(candidates_of(
-                provider,
-                &info,
-                &mut listing,
-                &anchor.loc,
-                same,
-            ))
+            Some(candidates_of(&anchor.loc, same))
         })
         .collect()
 }

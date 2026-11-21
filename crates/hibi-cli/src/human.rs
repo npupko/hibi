@@ -285,10 +285,26 @@ fn side_lines(out: &mut String, side: &Side, detail: bool) {
                 }
                 _ => {}
             }
-            let _ = writeln!(out, "      anchor: {}", c.anchor);
+            // A candidate that is identical to another one where it
+            // stands has no anchor of its own: the group is named as such
+            // and is never offered for pasting.
+            match &c.anchor {
+                Some(anchor) => {
+                    let _ = writeln!(out, "      anchor: {anchor}");
+                }
+                None => {
+                    let _ = writeln!(
+                        out,
+                        "      cannot be told apart from another candidate: no anchor selects it alone"
+                    );
+                }
+            }
         }
         if total > candidates.len() {
             let _ = writeln!(out, "    and {} more", total - candidates.len());
+        }
+        if candidates.iter().any(|c| c.anchor.is_none()) {
+            let _ = writeln!(out, "    {}", hibi::engine::TWINS_REMEDY);
         }
     }
     if let Some(text) = &side.text {
@@ -449,6 +465,9 @@ pub fn claim(o: &ClaimOutput) -> String {
         let _ = writeln!(out, "{}  {what}  {}  {}", c.id, c.mark, sides.join("; "));
         if let Some(accepted) = &c.accepted {
             accepted_line(&mut out, accepted);
+        }
+        for note in &c.notes {
+            let _ = writeln!(out, "  note: {note}");
         }
         if let Some(next) = &c.claim.next {
             let _ = writeln!(out, "  next: {next}");

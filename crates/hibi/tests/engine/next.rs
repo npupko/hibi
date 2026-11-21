@@ -362,7 +362,10 @@ fn a_unit_found_by_similarity_never_resolves_a_side() {
     let c = &candidates[0];
     assert_eq!((c.key.as_str(), c.kind.as_str()), ("moved", "note"));
     assert_eq!(c.text.as_deref(), Some("first"));
-    assert_eq!(c.anchor, r#"{"loc":"u:b","sel":{"key":"moved"}}"#);
+    assert_eq!(
+        c.anchor.as_deref(),
+        Some(r#"{"loc":"u:b","sel":{"key":"moved"}}"#)
+    );
     assert!(c.same_fingerprint, "the content is the marked content");
     // The other sides are untouched.
     assert_eq!(v.sides[0].state, engine::SideState::Same);
@@ -407,13 +410,14 @@ fn a_unit_found_by_similarity_never_resolves_a_side() {
     assert_eq!(errors[0].code, hibi::Code::SideMissing);
     assert!(errors[0].message.contains("not_exact"), "{}", errors[0]);
     assert_eq!(errors[0].remediation, v.next);
-    // The cause is said, in the side and in the error: found by
-    // similarity, not the other cause of `not_exact`.
-    assert_eq!(side.detail.as_deref(), Some(engine::BY_SIMILARITY));
+    // The cause is said, in the side and in the error. A candidate may
+    // hold the stored text exactly, so the sentence does not claim that
+    // nothing matches.
+    assert_eq!(side.detail.as_deref(), Some(engine::NOT_IDENTIFIED));
     assert!(
         errors[0]
             .message
-            .contains("(not_exact): the anchor matches no unit exactly; 1 candidate,"),
+            .contains("(not_exact): the stored anchor no longer identifies one unit; 1 candidate,"),
         "{}",
         errors[0]
     );
@@ -517,7 +521,10 @@ fn units_with_the_marked_content_are_the_first_candidates() {
     assert_eq!(cs[0].key, "renamed");
     assert!(cs[0].same_fingerprint);
     assert_eq!(cs[0].text.as_deref(), Some("first"));
-    assert_eq!(cs[0].anchor, r#"{"loc":"u:b","sel":{"key":"renamed"}}"#);
+    assert_eq!(
+        cs[0].anchor.as_deref(),
+        Some(r#"{"loc":"u:b","sel":{"key":"renamed"}}"#)
+    );
     assert_eq!(
         v.next,
         Some(format!("hibi reanchor {} --evidence 1=<anchor>", f.id))
@@ -596,143 +603,57 @@ fn units_with_the_marked_content_are_the_first_candidates() {
     assert!(first < second, "{message}");
 }
 
-fn moved_context(mut u: Unit) -> Unit {
+/// A unit resolved by its symbol alone: the stored quote is gone from the
+/// resource (`identity: "symbol"`, section 6.7).
+fn by_symbol_only(mut u: Unit) -> Unit {
     u.identity = Some(hibi::provider::Identity::Symbol);
     u
 }
 
-/// Section 9.2: an exact hit identifies its unit only with corroboration.
-/// A unit the provider flags `contextChanged` resolves the side when its
-/// fingerprint is in some mark of the claim; otherwise an anchor without a
-/// symbol is `missing` with the unit as a candidate, and an anchor with a
-/// symbol is `changed` and says that the stored quote is gone.
-#[test]
-fn an_exact_hit_with_another_context_needs_a_mark_or_a_symbol() {
-    // The marked content at a place with another context: resolved.
-    let mut f = fixture(None);
-    f.worlds[1].borrow_mut().overrides.insert(
-        anchor("u:b", key_sel("k")),
-        Ok(vec![moved_context(unit("k", "note", "first"))]),
-    );
-    let v = view(&f.store, &mut f.p, &f.id);
-    assert_eq!((v.state, v.next.clone()), (ClaimState::Fresh, None));
-    assert!(v.sides[1].detail.is_none() && v.sides[1].candidates.is_none());
-
-    // Another content there, and no symbol to say it is the unit: the
-    // quote may stand in a different unit now.
-    set(
-        &f.worlds[1],
-        "u:b",
-        vec![unit("k2", "note", "another sentence")],
-    );
-    f.worlds[1].borrow_mut().overrides.insert(
-        anchor("u:b", key_sel("k")),
-        Ok(vec![moved_context(unit("k2", "note", "another sentence"))]),
-    );
-    let v = view(&f.store, &mut f.p, &f.id);
-    assert_eq!(v.state, ClaimState::Stale);
-    let side = &v.sides[1];
-    assert_eq!(
-        (side.state, side.reason),
-        (engine::SideState::Missing, Some(engine::Reason::NotExact))
-    );
-    assert!(side.unit.is_none());
-    let cs = side.candidates.as_ref().unwrap();
-    assert_eq!(cs.len(), 1);
-    assert_eq!((cs[0].key.as_str(), cs[0].same_fingerprint), ("k2", false));
-    assert_eq!(cs[0].anchor, r#"{"loc":"u:b","sel":{"key":"k2"}}"#);
-    let next = format!("hibi reanchor {} --evidence 1=<anchor>", f.id);
-    assert_eq!(v.next, Some(next.clone()));
-    let before = f.store.counts();
-    let errors = engine::mark(
-        &f.store,
-        &mut f.p,
-        &no_git(),
-        &[MarkInput::new(f.id.as_str())],
-        false,
-        now(),
-    )
-    .unwrap_err();
-    assert_eq!(errors[0].code, hibi::Code::SideMissing);
-    assert_eq!(errors[0].remediation, Some(next.clone()));
-    assert_eq!(f.store.counts(), before);
-    // The cause is said: the quote is there, so "matches no unit exactly"
-    // would read as false.
-    assert_eq!(side.detail.as_deref(), Some(engine::FOUND_ELSEWHERE));
-    let wanted = "(not_exact): the quoted text was found, but not where it was stored, and the unit there is not the one that was marked; 1 candidate, each a guess to check before use: ";
-    assert!(errors[0].message.contains(wanted), "{}", errors[0]);
-    assert!(!errors[0].message.contains("matches no unit exactly"));
-    let e = engine::reanchor(
-        &f.store,
-        &mut f.p,
-        &no_git(),
-        &engine::ReanchorInput {
-            claim: f.id.to_string(),
-            statement: Some("S2".into()),
-            ..engine::ReanchorInput::default()
-        },
-        now(),
-    )
-    .unwrap_err();
-    assert!(e.message.contains(wanted), "{e}");
-    assert_eq!(e.remediation, Some(next));
-
-    // An older mark holds that content: it is a unit that was marked.
-    f.worlds[1].borrow_mut().overrides.clear();
-    set(
-        &f.worlds[1],
-        "u:b",
-        vec![unit("k", "note", "another sentence")],
-    );
-    engine::mark(
-        &f.store,
-        &mut f.p,
-        &no_git(),
-        &[MarkInput::new(f.id.as_str())],
-        false,
-        ts("2026-11-02T00:00:00Z"),
-    )
-    .unwrap();
-    edit(&f.worlds[1], "u:b", "k", "first");
-    engine::mark(
-        &f.store,
-        &mut f.p,
-        &no_git(),
-        &[MarkInput::new(f.id.as_str())],
-        false,
-        ts("2026-11-03T00:00:00Z"),
-    )
-    .unwrap();
-    f.worlds[1].borrow_mut().overrides.insert(
-        anchor("u:b", key_sel("k")),
-        Ok(vec![moved_context(unit("k", "note", "another sentence"))]),
-    );
-    assert_eq!(view(&f.store, &mut f.p, &f.id).state, ClaimState::Fresh);
-}
-
-/// The same hit for an anchor with a symbol: the symbol names the unit, so
-/// the side is `changed`, `next` is `hibi mark`, and `detail` says that the
-/// stored quote is no longer there. After the mark the side is `same` and
-/// says nothing.
-#[test]
-fn a_symbol_keeps_its_unit_when_the_stored_quote_is_gone() {
+/// A claim whose subject is stored as `#limit::return 64` on `t:a`. The
+/// world answers that stored anchor with whatever `overrides` holds.
+fn named_and_quoted() -> (Shared, Providers, MemStore, ClaimId, hibi::model::Anchor) {
     let w = file_world();
-    set(&w, "t:a", vec![sym_unit("limit", "function", "return 64")]);
+    let sel = hibi::model::Selector {
+        quote: Some("return 64".into()),
+        ..symbol_sel("limit")
+    };
+    let mut unit = sym_unit("limit", "function", "fn limit() { return 64 }");
+    unit.sel = sel.clone();
+    set(&w, "t:a", vec![unit.clone()]);
+    let stored = anchor("t:a", sel.clone());
+    w.borrow_mut()
+        .overrides
+        .insert(stored.clone(), Ok(vec![unit]));
     let mut p = providers(&w, &["t"]);
     let store = MemStore::new();
     let id = claim_at(
         &store,
         &mut p,
         engine::ClaimInput {
-            subject: json_anchor("t:a", symbol_sel("limit")),
+            subject: json_anchor("t:a", sel),
             ..claim_input("S", "t:a", &[])
         },
         NOW,
     );
-    set(
-        &w,
-        "t:a",
-        vec![moved_context(sym_unit("limit", "function", "return 128"))],
+    (w, p, store, id, stored)
+}
+
+/// Section 9.2: a side whose unit is resolved by its symbol alone, the
+/// stored quote gone, is `changed`, says so in `detail`, and needs a new
+/// anchor: `next` is the reanchor template, and `mark` and a `reanchor`
+/// that keeps the side are refused, because a mark would keep the stale
+/// quote for good. No fingerprint stands in for the quote.
+#[test]
+fn a_symbol_keeps_its_unit_when_the_stored_quote_is_gone() {
+    let (w, mut p, store, id, stored) = named_and_quoted();
+    w.borrow_mut().overrides.insert(
+        stored,
+        Ok(vec![by_symbol_only(sym_unit(
+            "limit",
+            "function",
+            "fn limit() { return 128 }",
+        ))]),
     );
     let v = view(&store, &mut p, &id);
     assert_eq!(v.state, ClaimState::Stale);
@@ -747,9 +668,11 @@ fn a_symbol_keeps_its_unit_when_the_stored_quote_is_gone() {
     assert_eq!(side.detail.as_deref(), Some(engine::QUOTE_GONE));
     assert_eq!(side.unit.as_ref().unwrap().key, "limit");
     assert!(side.candidates.is_none());
-    assert_eq!(v.next, Some(format!("hibi mark {id}")));
+    let next = format!("hibi reanchor {id} --subject <anchor>");
+    assert_eq!(v.next, Some(next.clone()));
 
-    let out = engine::mark(
+    let before = store.counts();
+    let errors = engine::mark(
         &store,
         &mut p,
         &no_git(),
@@ -757,11 +680,159 @@ fn a_symbol_keeps_its_unit_when_the_stored_quote_is_gone() {
         false,
         now(),
     )
+    .unwrap_err();
+    assert_eq!(errors[0].code, hibi::Code::SelectorNotExact);
+    assert!(
+        errors[0].message.contains(engine::QUOTE_GONE),
+        "{}",
+        errors[0]
+    );
+    assert_eq!(errors[0].remediation, Some(next.clone()));
+    let e = engine::reanchor(
+        &store,
+        &mut p,
+        &no_git(),
+        &engine::ReanchorInput {
+            claim: id.to_string(),
+            statement: Some("S2".into()),
+            ..engine::ReanchorInput::default()
+        },
+        now(),
+    )
+    .unwrap_err();
+    assert_eq!(e.code, hibi::Code::SelectorNotExact);
+    assert_eq!(e.remediation, Some(next));
+    assert_eq!(store.counts(), before);
+
+    // With a new anchor the claim is fresh, and nothing is left to say.
+    set(
+        &w,
+        "t:a",
+        vec![sym_unit("limit", "function", "fn limit() { return 128 }")],
+    );
+    let out = engine::reanchor(
+        &store,
+        &mut p,
+        &no_git(),
+        &engine::ReanchorInput {
+            claim: id.to_string(),
+            subject: Some(json_anchor("t:a", symbol_sel("limit"))),
+            ..engine::ReanchorInput::default()
+        },
+        now(),
+    )
     .unwrap();
-    let side = &out.marks[0].claim_view.sides[0];
-    assert_eq!(side.state, engine::SideState::Same);
-    assert!(side.detail.is_none());
-    assert!(view(&store, &mut p, &id).sides[0].detail.is_none());
+    assert_eq!(out.claim.state, ClaimState::Fresh);
+    assert!(out.claim.sides[0].detail.is_none());
+    assert_eq!(out.claim.next, None);
+}
+
+/// Section 6.7, A1 with conflicting evidence: the name still names one
+/// declaration and the quoted text is in other units. Nothing resolves;
+/// the named unit is the first candidate, and the side says that name and
+/// quote point to different units.
+#[test]
+fn a_name_and_a_quote_that_point_apart_are_candidates_with_that_cause() {
+    let (w, mut p, store, id, stored) = named_and_quoted();
+    let named = sym_unit("limit", "function", "fn limit() { return 128 }");
+    let mut holder = sym_unit("other", "function", "fn other() { return 64 }");
+    holder.sel = hibi::model::Selector {
+        quote: Some("return 64".into()),
+        ..symbol_sel("other")
+    };
+    w.borrow_mut()
+        .overrides
+        .insert(stored, Ok(vec![approx(named), approx(holder)]));
+    let v = view(&store, &mut p, &id);
+    assert_eq!(v.state, ClaimState::Stale);
+    let side = &v.sides[0];
+    assert_eq!(
+        (side.state, side.reason),
+        (engine::SideState::Missing, Some(engine::Reason::NotExact))
+    );
+    assert_eq!(side.detail.as_deref(), Some(engine::NAME_AND_QUOTE_APART));
+    let cs = side.candidates.as_ref().unwrap();
+    assert_eq!(
+        cs.iter().map(|c| c.key.as_str()).collect::<Vec<_>>(),
+        ["limit", "other"]
+    );
+    assert!(cs.iter().all(|c| c.anchor.is_some()));
+    let next = format!("hibi reanchor {id} --subject <anchor>");
+    assert_eq!(v.next, Some(next.clone()));
+    let errors = engine::mark(
+        &store,
+        &mut p,
+        &no_git(),
+        &[MarkInput::new(id.as_str())],
+        false,
+        now(),
+    )
+    .unwrap_err();
+    assert_eq!(errors[0].code, hibi::Code::SideMissing);
+    assert!(
+        errors[0].message.contains(engine::NAME_AND_QUOTE_APART),
+        "{}",
+        errors[0]
+    );
+    assert_eq!(errors[0].remediation, Some(next));
+
+    // Any other answer of candidates only says that nothing is identified.
+    let (w, mut p, store, id, stored) = named_and_quoted();
+    w.borrow_mut().overrides.insert(
+        stored,
+        Ok(vec![approx(sym_unit("other", "function", "fn other() {}"))]),
+    );
+    let v = view(&store, &mut p, &id);
+    assert_eq!(v.sides[0].detail.as_deref(), Some(engine::NOT_IDENTIFIED));
+}
+
+/// Units that are identical where they stand carry the same printed
+/// anchor. They are listed as a group that cannot be told apart: no anchor
+/// is offered for them, and the remedy is given.
+#[test]
+fn identical_twins_are_listed_without_an_anchor() {
+    let mut f = fixture(None);
+    let twin = |key: &str| {
+        let mut u = unit(key, "note", "the same text");
+        u.sel = hibi::model::Selector::quote("the same text");
+        u
+    };
+    f.worlds[1].borrow_mut().overrides.insert(
+        anchor("u:b", key_sel("k")),
+        Ok(vec![twin("t1"), twin("t2"), unit("k3", "note", "other")]),
+    );
+    let v = view(&f.store, &mut f.p, &f.id);
+    let side = &v.sides[1];
+    assert_eq!(side.state, engine::SideState::Ambiguous);
+    let cs = side.candidates.as_ref().unwrap();
+    assert_eq!(cs.len(), 3);
+    assert!(cs[0].anchor.is_none() && cs[1].anchor.is_none());
+    assert_eq!(
+        cs[2].anchor.as_deref(),
+        Some(r#"{"loc":"u:b","sel":{"key":"k3"}}"#)
+    );
+    let json = serde_json::to_value(side).unwrap();
+    assert_eq!(json["candidates"][0]["anchor"], serde_json::Value::Null);
+    let errors = engine::mark(
+        &f.store,
+        &mut f.p,
+        &no_git(),
+        &[MarkInput::new(f.id.as_str())],
+        false,
+        now(),
+    )
+    .unwrap_err();
+    assert_eq!(errors[0].code, hibi::Code::SideAmbiguous);
+    let message = &errors[0].message;
+    assert_eq!(
+        message
+            .matches("identical to another candidate, no anchor selects it alone")
+            .count(),
+        2,
+        "{message}"
+    );
+    assert!(message.ends_with(engine::TWINS_REMEDY), "{message}");
+    assert!(!message.contains(r#""quote":"the same text""#), "{message}");
 }
 
 /// A stored side that matches very many units shows twenty candidates

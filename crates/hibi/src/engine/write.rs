@@ -15,7 +15,7 @@ use crate::model::{Locator, SelectorKey, Timestamp, parse_compact, same_quote};
 use crate::provider::{Providers, Unit};
 use crate::store::{Batch, Ledger, Store};
 
-use super::fresh::{Evaluation, content_wanted, corroborate};
+use super::fresh::{Evaluation, QUOTE_GONE, content_wanted};
 use super::fresh::{Index, ViewOptions, accepted, claim_view, evaluate, next_command};
 use super::input::{AnchorInput, ClaimInput, MarkInput, ReanchorInput, RetireInput};
 use super::resolve::{
@@ -39,6 +39,11 @@ pub struct ClaimResult {
     /// mark and the sides that were not `same`. `null` for a new claim.
     #[schemars(with = "Nullable<Accepted>")]
     pub accepted: Option<Accepted>,
+    /// What the caller should know about the anchors it gave: one sentence
+    /// for each quote-only anchor that landed inside a code declaration,
+    /// saying that the anchor tracks that text in its place and which
+    /// anchor follows the declaration instead. Empty otherwise.
+    pub notes: Vec<String>,
     pub claim: ClaimView,
 }
 
@@ -143,8 +148,22 @@ fn stored_side_error(
     number: usize,
 ) -> Option<Error> {
     let r = rs.get(side)?;
-    r.failure()?;
     let anchor = claim.sides().nth(side)?;
+    if r.failure().is_none() {
+        // The side resolves by its symbol and the stored quote is gone
+        // from the unit: a mark would keep that quote for good, so the
+        // side has to be given a new anchor first.
+        let unit = r.unit().filter(|_| eval.quote_gone(side))?;
+        return Some(Error::new(
+            Code::SelectorNotExact,
+            format!(
+                "{} ({}): {QUOTE_GONE}, {}; a mark would keep the stale quote",
+                side_name(number),
+                anchor.loc,
+                describe_unit(unit)
+            ),
+        ));
+    }
     let mut wanted = content_wanted(claim, eval);
     for (i, w) in wanted.iter_mut().enumerate() {
         if i != side {
@@ -158,6 +177,15 @@ fn stored_side_error(
     unresolved_error_with(number, anchor, r, false, first.as_ref())
 }
 
+/// True when a stored side may not be marked as it resolves: it does not
+/// resolve to one unit, or it resolves by its symbol alone with the stored
+/// quote gone ([`stored_side_error`] decides, with the side's state).
+fn unsettled(r: &Resolved) -> bool {
+    r.failure().is_some()
+        || r.unit()
+            .is_some_and(|u| u.identity == Some(crate::provider::Identity::Symbol))
+}
+
 /// [`stored_side_error`] for the first side of `claim` that fails.
 fn stored_failure(
     providers: &mut Providers,
@@ -165,7 +193,7 @@ fn stored_failure(
     eval: &Evaluation<'_>,
     rs: &[Resolved],
 ) -> Option<Error> {
-    let side = rs.iter().position(|r| r.failure().is_some())?;
+    let side = (0..rs.len()).find(|i| rs[*i].failure().is_some() || eval.quote_gone(*i))?;
     stored_side_error(providers, claim, eval, rs, side, side)
 }
 
@@ -177,7 +205,9 @@ fn unresolved_error_with(
     by_content: Option<&Candidates>,
 ) -> Option<Error> {
     let (state, reason) = r.failure()?;
-    let detail = r.failure_message_with(by_content).unwrap_or_default();
+    let detail = r
+        .failure_message_with(by_content, (!new).then_some(anchor))
+        .unwrap_or_default();
     let what = format!("{} ({})", side_name(index), anchor.loc);
     if new {
         if let Resolved::KeyNotAllowed { key } = r {
@@ -323,6 +353,29 @@ fn advise(providers: &mut Providers, loc: &Locator, r: &Resolved, e: Error) -> E
     }
 }
 
+/// The note for a new quote-only anchor that landed inside a code
+/// declaration: such an anchor tracks the quoted text in its place, so a
+/// copy of the declaration elsewhere, the original then edited, can take
+/// it over (section 6.7, stated limits); an anchor by name and line follows
+/// the declaration. `None` for prose, for an anchor with a symbol, and for
+/// code outside every declaration.
+fn tracks_text_note(index: usize, asked: &Anchor, unit: &Unit) -> Option<String> {
+    let quote = asked.sel.quote.as_deref()?;
+    if asked.sel.symbol.is_some() || unit.fp.profile() != "ast-v1" {
+        return None;
+    }
+    let [name] = unit.sel.within.as_deref()? else {
+        return None;
+    };
+    let line = quote.lines().map(str::trim).find(|l| !l.is_empty())?;
+    Some(format!(
+        "{} ({}) tracks the quoted text in its place. To follow the declaration {name} instead, anchor {}#{name}::{line}",
+        side_name(index),
+        asked.loc,
+        asked.loc
+    ))
+}
+
 /// The write checks of `claim` step 2 for a new anchor: first that applies.
 fn check_new<'r>(index: usize, anchor: &Anchor, r: &'r Resolved) -> Result<&'r Unit, Error> {
     if let Some(e) = unresolved_error(index, anchor, r, true) {
@@ -339,9 +392,12 @@ fn check_new<'r>(index: usize, anchor: &Anchor, r: &'r Resolved) -> Result<&'r U
                 Code::QuoteInComment,
                 "the quote lies wholly or partly inside a code comment",
             ),
+            // The completed selector would not resolve back to this unit
+            // alone (section 6.7), so the claim could follow the other
+            // place without anyone noticing.
             crate::provider::Refuse::QuoteNotDistinguishable => (
-                Code::SideAmbiguous,
-                "the quoted text is identical, with identical text around it in its unit, to another place in the same container, so a stored anchor could not tell them apart; quote a longer passage, or in code anchor #<symbol>::<line>",
+                Code::QuoteNotDistinguishable,
+                "the quoted text is identical, with identical text around it in its unit, to another place in the same container, so a stored anchor could not tell the two apart",
             ),
         };
         return Err(Error::new(code, format!("{what}: {why}")));
@@ -370,19 +426,20 @@ fn check_new<'r>(index: usize, anchor: &Anchor, r: &'r Resolved) -> Result<&'r U
     Ok(unit)
 }
 
-/// `invalid_argument` when two evidence sides are the same anchor: equal
-/// locator, the same resolved unit and an equal completed selector.
-/// `sides` holds the completed anchor and the unit key of every side, the
-/// subject first; the subject is not compared.
+/// `invalid_argument` when two evidence sides resolve to the same unit of
+/// the same resource: they are one piece of evidence given twice, however
+/// each was written (`#MAX` and a quote on the same constant). `sides`
+/// holds the completed anchor and the unit key of every side, the subject
+/// first; the subject is not compared.
 fn duplicate_evidence(sides: &[(Anchor, &str)]) -> Result<(), Error> {
     for (j, (b, b_key)) in sides.iter().enumerate().skip(2) {
         for (i, (a, a_key)) in sides.iter().enumerate().take(j).skip(1) {
-            if a == b && a_key == b_key {
+            if a.loc == b.loc && a_key == b_key {
                 return Err(Error::invalid_argument(format!(
-                    "evidence {i} and evidence {j} are the same anchor ({})",
+                    "evidence {i} and evidence {j} resolve to the same unit ({})",
                     a.loc
                 ))
-                .with_remediation("Give each evidence anchor once."));
+                .with_remediation("Give each piece of evidence once."));
             }
         }
     }
@@ -537,7 +594,14 @@ fn prepare_claim(
 /// One element of `claim` once its mark is built: the claim that is marked,
 /// whether this run creates it, the mark, the resolutions of its sides and
 /// what the mark took over.
-type ClaimOutcome = (Claim, bool, MarkId, Vec<Resolved>, Option<Accepted>);
+type ClaimOutcome = (
+    Claim,
+    bool,
+    MarkId,
+    Vec<Resolved>,
+    Option<Accepted>,
+    Vec<String>,
+);
 
 /// One element of `claim` after its anchors resolved: the claim built from
 /// the completed selectors, and the resolutions it was built from.
@@ -546,40 +610,26 @@ struct Built<'p> {
     input: &'p NewClaim,
     claim: Claim,
     resolved: Vec<Resolved>,
+    /// See [`ClaimResult::notes`].
+    notes: Vec<String>,
 }
 
-/// True when `existing`, whose stored anchors resolve to `resolved`, is
-/// the same claim as `new` in the sense a caller means: equal statement,
-/// `recheck` and `note`, the same number of sides, and for each side the
-/// same locator, the same resolved unit and an equal completed `symbol`.
-/// The completed `quote` must be equal too when the caller gave a quote.
-/// When the caller gave none, the provider chose the quote from the unit's
-/// content, and it changes whenever that content does: it is then not
-/// part of what the caller named. The context and position of a quote
-/// (`prefix`, `suffix`, `pos`) never count: they change when text near the
-/// quote is edited.
-///
-/// `new` is the claim built from the completed selectors, `keys` the key
-/// of the unit each of its sides resolved to, and `asked_quote` whether
-/// the caller gave a quote for that side.
-fn same_claim(
-    existing: &Claim,
-    resolved: &[Resolved],
-    new: &Claim,
-    keys: &[&str],
-    asked_quote: &[bool],
-) -> bool {
+/// True when `existing`, whose stored anchors resolve to `resolved` in
+/// this run, is the same claim as `new` (section 9.5): equal statement,
+/// `recheck` and `note`, the same number of sides with the same locators,
+/// and each side resolving to the unit with the key in `keys`, which holds
+/// the key of the unit each side of `new` resolved to. Selectors are not
+/// compared: `#MAX` and a quote on the same constant name the same side.
+/// A stored side that resolved by its symbol alone, its quote gone, is not
+/// a match: that claim needs a new anchor first.
+fn same_claim(existing: &Claim, resolved: &[Resolved], new: &Claim, keys: &[&str]) -> bool {
     same_fields(existing, new)
-        && existing
-            .sides()
-            .zip(resolved)
-            .zip(new.sides())
-            .zip(keys.iter().zip(asked_quote))
-            .all(|(((old, old_r), side), (key, asked))| {
-                old.sel.symbol == side.sel.symbol
-                    && (!asked || old.sel.quote == side.sel.quote)
-                    && old_r.unit().is_some_and(|u| u.key == *key)
-            })
+        && keys.len() == resolved.len()
+        && resolved.iter().zip(keys).all(|(old_r, key)| {
+            old_r
+                .unit()
+                .is_some_and(|u| u.key == *key && u.identity.is_none())
+        })
 }
 
 /// The part of [`same_claim`] that needs no resolution.
@@ -698,6 +748,13 @@ fn claim_elements(
         match claim {
             Err(e) => errors.push(e.with_index(i)),
             Ok(claim) => built.push(Built {
+                notes: p
+                    .anchors
+                    .iter()
+                    .zip(&rs)
+                    .enumerate()
+                    .filter_map(|(n, (a, r))| tracks_text_note(n, a, r.unit()?))
+                    .collect(),
                 index: i,
                 input: p,
                 claim,
@@ -733,8 +790,7 @@ fn claim_elements(
     let candidates: Vec<(&Claim, Vec<Resolved>)> = candidates
         .into_iter()
         .map(|c| {
-            let mut rs: Vec<Resolved> = candidate_resolved.by_ref().take(c.side_count()).collect();
-            corroborate(c, index.marks_of(c.id.as_str()), &mut rs);
+            let rs: Vec<Resolved> = candidate_resolved.by_ref().take(c.side_count()).collect();
             (c, rs)
         })
         .collect();
@@ -755,7 +811,7 @@ fn claim_elements(
                 );
                 continue;
             };
-            if rs.iter().any(|r| r.failure().is_some()) {
+            if rs.iter().any(unsettled) {
                 let eval = match evaluate(c, index.marks_of(id), false, rs, now) {
                     Ok(eval) => eval,
                     Err(e) => {
@@ -794,13 +850,7 @@ fn claim_elements(
                         .iter()
                         .filter_map(|r| r.unit().map(|u| u.key.as_str()))
                         .collect();
-                    let asked: Vec<bool> = b
-                        .input
-                        .anchors
-                        .iter()
-                        .map(|a| a.sel.quote.is_some())
-                        .collect();
-                    keys.len() == b.resolved.len() && same_claim(c, rs, &b.claim, &keys, &asked)
+                    keys.len() == b.resolved.len() && same_claim(c, rs, &b.claim, &keys)
                 })
                 .min_by(|(x, _), (y, _)| x.id.cmp(&y.id))
         };
@@ -857,7 +907,14 @@ fn claim_elements(
                         }
                     }
                 };
-                results.push((target.clone(), !exists, mark.id, target_resolved, before));
+                results.push((
+                    target.clone(),
+                    !exists,
+                    mark.id,
+                    target_resolved,
+                    before,
+                    b.notes.clone(),
+                ));
             }
         }
     }
@@ -867,7 +924,7 @@ fn claim_elements(
     }
 
     let mut claims = Vec::with_capacity(results.len());
-    for (claim, created, mark, rs, before) in &results {
+    for (claim, created, mark, rs, before, notes) in &results {
         let view = view_after(claim, &index, &batch, rs, ViewOptions::default(), now)
             .map_err(|e| vec![e])?;
         claims.push(ClaimResult {
@@ -875,6 +932,7 @@ fn claim_elements(
             created: *created,
             mark: mark.clone(),
             accepted: before.clone(),
+            notes: notes.clone(),
             claim: view,
         });
     }
@@ -971,9 +1029,8 @@ fn mark_elements(
         let (Ok(input), Some(claim)) = (input, *target) else {
             continue;
         };
-        let mut rs: Vec<Resolved> = resolved.by_ref().take(claim.side_count()).collect();
-        corroborate(claim, index.marks_of(claim.id.as_str()), &mut rs);
-        let failure = if rs.iter().any(|r| r.failure().is_some()) {
+        let rs: Vec<Resolved> = resolved.by_ref().take(claim.side_count()).collect();
+        let failure = if rs.iter().any(unsettled) {
             let eval = evaluate(claim, index.marks_of(claim.id.as_str()), false, &rs, now)
                 .map_err(|e| vec![e])?;
             stored_failure(providers, claim, &eval, &rs).map(|e| (e, eval))
@@ -1165,8 +1222,7 @@ pub fn reanchor(
     // own stored anchors. A kept side that changed is marked by this write.
     let mut once = Once::default();
     let old_anchors: Vec<&Anchor> = old.sides().collect();
-    let mut old_resolved = once.resolve(providers, &old_anchors);
-    corroborate(old, index.marks_of(old.id.as_str()), &mut old_resolved);
+    let old_resolved = once.resolve(providers, &old_anchors);
     let old_eval = evaluate(
         old,
         index.marks_of(old.id.as_str()),
@@ -1197,7 +1253,10 @@ pub fn reanchor(
             // replaced, with an anchor the caller chooses. `n` is its
             // position in the old claim, and `r` is that side's resolution.
             return Err(match r.failure() {
-                Some((SideState::Missing | SideState::Ambiguous, _))
+                // `None`: the side resolves by its symbol and its stored
+                // quote is gone.
+                None
+                | Some((SideState::Missing | SideState::Ambiguous, _))
                 | Some((_, Reason::SelectorRefused)) => {
                     let option = if n == 0 {
                         "--subject <anchor>".to_owned()
@@ -1257,8 +1316,7 @@ pub fn reanchor(
         // The live claim with the new id. It is the target only when its
         // own stored anchors resolve exactly in this run.
         let same_anchors: Vec<&Anchor> = same.sides().collect();
-        let mut rs = once.resolve(providers, &same_anchors);
-        corroborate(same, index.marks_of(same.id.as_str()), &mut rs);
+        let rs = once.resolve(providers, &same_anchors);
         let eval = evaluate(same, index.marks_of(same.id.as_str()), false, &rs, now)?;
         if let Some(e) = stored_failure(providers, same, &eval, &rs) {
             let e = Error::new(
@@ -1276,10 +1334,6 @@ pub fn reanchor(
         Some((same, rs))
     } else {
         let keys: Vec<&str> = units.iter().map(|u| u.key.as_str()).collect();
-        let asked: Vec<bool> = plan
-            .iter()
-            .map(|(a, replaced)| *replaced && a.sel.quote.is_some())
-            .collect();
         let others: Vec<&Claim> = index
             .live()
             .filter(|c| c.id != old.id && same_fields(c, &new))
@@ -1289,11 +1343,10 @@ pub fn reanchor(
         others
             .into_iter()
             .map(|c| {
-                let mut rs: Vec<Resolved> = other_resolved.by_ref().take(c.side_count()).collect();
-                corroborate(c, index.marks_of(c.id.as_str()), &mut rs);
+                let rs: Vec<Resolved> = other_resolved.by_ref().take(c.side_count()).collect();
                 (c, rs)
             })
-            .filter(|(c, rs)| same_claim(c, rs, &new, &keys, &asked))
+            .filter(|(c, rs)| same_claim(c, rs, &new, &keys))
             .min_by(|(x, _), (y, _)| x.id.cmp(&y.id))
     };
 

@@ -367,9 +367,12 @@ pub struct Candidate {
     /// gave none.
     #[schemars(with = "Nullable<String>")]
     pub text: Option<String>,
-    /// An anchor that selects this unit and no other unit of the resource,
-    /// to give to `reanchor`: `<loc>#<symbol>`, or a JSON anchor.
-    pub anchor: String,
+    /// The anchor the provider printed for this unit, to give to
+    /// `reanchor`: `<loc>#<symbol>`, or a JSON anchor. `null` when another
+    /// listed candidate is identical where it stands, so that no anchor of
+    /// this form selects one of the two alone.
+    #[schemars(with = "Nullable<String>")]
+    pub anchor: Option<String>,
     /// True when the unit's fingerprint equals the side's fingerprint in
     /// the reference mark: the unit is the one that was marked, and it
     /// moved or was renamed. `false` also when the claim has no mark.
