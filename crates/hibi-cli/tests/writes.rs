@@ -201,14 +201,18 @@ fn a_write_reports_what_it_accepted() {
     assert!(text(&first["nextNote"]).contains("retire the claim"));
 
     repo.write("src/a.rs", "pub const MAX: u32 = 7;\n");
-    let stale = json!({"was": "stale", "sides": [
-        {"index": 1, "role": "evidence", "loc": "file:src/a.rs", "state": "changed",
-         "reason": "fingerprint_differs"}]});
+    // The accepted side carries the text that the write marked.
+    let stale = |max: u32| {
+        json!({"was": "stale", "sides": [
+            {"index": 1, "role": "evidence", "loc": "file:src/a.rs", "state": "changed",
+             "reason": "fingerprint_differs",
+             "text": format!("pub const MAX: u32 = {max};")}]})
+    };
 
     // The identical claim again: marked, and it says the claim was stale.
     let again = repo.json(&at("2026-11-20T12:01:00Z", &args));
     assert_eq!(again["claims"][0]["created"], false);
-    assert_eq!(again["claims"][0]["accepted"], stale);
+    assert_eq!(again["claims"][0]["accepted"], stale(7));
     assert_eq!(repo.state(&id), "fresh");
 
     repo.write("src/a.rs", "pub const MAX: u32 = 8;\n");
@@ -220,7 +224,7 @@ fn a_write_reports_what_it_accepted() {
     assert_eq!(human.status, 0, "{human:?}");
     assert!(
         human.stdout.contains(
-            "  was stale: evidence 1 file:src/a.rs changed (fingerprint_differs); now marked"
+            "  was stale: evidence 1 file:src/a.rs changed (fingerprint_differs); now marked: make sure you re-checked it\n    evidence 1 is now:\n    | pub const MAX: u32 = 8;\n"
         ),
         "{}",
         human.stdout
@@ -228,7 +232,7 @@ fn a_write_reports_what_it_accepted() {
 
     repo.write("src/a.rs", "pub const MAX: u32 = 9;\n");
     let marked = repo.json(&["--now", "2026-11-20T12:03:00Z", "mark", &id]);
-    assert_eq!(marked["marks"][0]["accepted"], stale);
+    assert_eq!(marked["marks"][0]["accepted"], stale(9));
     assert!(marked["nextNote"].is_string());
 
     repo.write("src/a.rs", "pub const MAX: u32 = 10;\n");
@@ -251,7 +255,7 @@ fn a_write_reports_what_it_accepted() {
         "--statement",
         "Downloads are tried.",
     ]);
-    assert_eq!(out["accepted"], stale);
+    assert_eq!(out["accepted"], stale(11));
     assert_eq!(out["merged"], false);
     assert!(out["nextNote"].is_string());
     assert_eq!(out["claim"]["state"], "fresh");

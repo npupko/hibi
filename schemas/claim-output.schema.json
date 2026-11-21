@@ -88,6 +88,13 @@
         "state": {
           "description": "The side's state before the write.",
           "$ref": "#/$defs/SideState"
+        },
+        "text": {
+          "description": "Present for a side that was `changed`: the unit's text as the write\nmarked it, cut to 240 characters. It is what the caller accepted.",
+          "type": [
+            "string",
+            "null"
+          ]
         }
       },
       "additionalProperties": false,
@@ -494,7 +501,7 @@
           "$ref": "#/$defs/SideState"
         },
         "text": {
-          "description": "The current unit text. Present only with `--detail`.",
+          "description": "The current unit text. Present with `--detail`, whole, for every\nresolved side; and without it for a `changed` side, cut to 240\ncharacters: the label of a unit can be the same before and after a\nchange, the text is not.",
           "type": [
             "string",
             "null"

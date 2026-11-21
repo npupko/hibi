@@ -339,7 +339,10 @@ pub struct Side {
     /// Present with `candidates`: how many there are in all.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub candidates_total: Option<usize>,
-    /// The current unit text. Present only with `--detail`.
+    /// The current unit text. Present with `--detail`, whole, for every
+    /// resolved side; and without it for a `changed` side, cut to 240
+    /// characters: the label of a unit can be the same before and after a
+    /// change, the text is not.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
 }
@@ -412,6 +415,10 @@ pub struct AcceptedSide {
     pub state: SideState,
     #[schemars(with = "Nullable<Reason>")]
     pub reason: Option<Reason>,
+    /// Present for a side that was `changed`: the unit's text as the write
+    /// marked it, cut to 240 characters. It is what the caller accepted.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
 }
 
 /// What a write that produces a mark took over without being told: the

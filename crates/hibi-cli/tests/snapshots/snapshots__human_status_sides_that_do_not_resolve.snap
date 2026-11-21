@@ -18,10 +18,10 @@ c1-p0jdgxhwsjjrb4k45ztn  stale  The retry count is 3.
     stored: quote "The retry count is 3."
     2 candidates; the stored anchor matches each of them:
     - sentence "The retry count is 3.", line 5; same content as at the reference mark
-      | The retry count is 3.
+      | line 5 of the resource
       anchor: {"loc":"file:docs/retry.md","sel":{"quote":"The retry count is 3.","prefix":"ng sentence that is quite long indeed, really.\n\n","suffix":"\n\nPadding sentence that is quite long indeed, re","pos":64}}
     - sentence "The retry count is 3.", line 11; same content as at the reference mark
-      | The retry count is 3.
+      | line 11 of the resource
       anchor: {"loc":"file:docs/retry.md","sel":{"quote":"The retry count is 3.","prefix":"ng sentence that is quite long indeed, really.\n\n","suffix":"\n\nPadding sentence that is quite long indeed, re","pos":193}}
   evidence 1  file:docs/data.md  unavailable (not_text)
     file:docs/data.md is not valid UTF-8

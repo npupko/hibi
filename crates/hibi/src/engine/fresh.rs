@@ -272,7 +272,7 @@ pub fn evaluate<'m>(
 
 /// The record of what a write accepted for `claim`, from its evaluation
 /// before the write.
-pub fn accepted(claim: &Claim, eval: &Evaluation<'_>) -> Accepted {
+pub fn accepted(claim: &Claim, eval: &Evaluation<'_>, resolved: &[Resolved]) -> Accepted {
     Accepted {
         was: eval.state,
         sides: claim
@@ -286,6 +286,12 @@ pub fn accepted(claim: &Claim, eval: &Evaluation<'_>) -> Accepted {
                 loc: anchor.loc.clone(),
                 state: *state,
                 reason: *reason,
+                text: resolved
+                    .get(index)
+                    .and_then(Resolved::unit)
+                    .and_then(|u| u.text.as_deref())
+                    .filter(|_| *state == SideState::Changed)
+                    .map(|t| excerpt(t, TEXT_EXCERPT_CHARS)),
             })
             .collect(),
     }
@@ -394,10 +400,15 @@ pub fn claim_view(
         .zip(claim.sides().zip(resolved))
         .map(|((index, (state, reason)), (anchor, r))| {
             let unit = r.unit();
-            let text = unit
-                .and_then(|u| u.text.as_deref())
-                .filter(|_| options.detail)
-                .map(str::to_owned);
+            let text = unit.and_then(|u| u.text.as_deref()).and_then(|t| {
+                if options.detail {
+                    Some(t.to_owned())
+                } else if *state == SideState::Changed {
+                    Some(excerpt(t, TEXT_EXCERPT_CHARS))
+                } else {
+                    None
+                }
+            });
             let marked_fp = eval.reference.map(|m| m.sides[index].fp.clone());
             let said = match r {
                 Resolved::Failed { message, .. } if *state == SideState::Unavailable => {

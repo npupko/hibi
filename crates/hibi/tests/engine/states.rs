@@ -331,7 +331,7 @@ fn status_json_shape() {
                               "line": null, "endLine": null},
                      "fp": hibi::fingerprint::prose_v1("new text"),
                      "markedFp": hibi::fingerprint::prose_v1("retries are capped at 5"),
-                     "remediation": null, "detail": null},
+                     "remediation": null, "detail": null, "text": "new text"},
                     {"index": 1, "role": "evidence",
                      "anchor": {"loc": "u:b", "sel": {"key": "k1"}},
                      "state": "same", "reason": null,

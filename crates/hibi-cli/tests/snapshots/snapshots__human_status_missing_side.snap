@@ -10,6 +10,10 @@ exit status: 0
 c1-b1cqk12je92xh6d4na21  stale  The cache holds 64 entries.
   marked 2026-11-20T12:00:00Z (m1-8jnpnyrstkx94kwrchk4)
   evidence 1  file:src/cache.rs  changed (fingerprint_differs)  function "limit", lines 1-4
+    | pub fn limit() -> u32 {
+    |     let max_entries = 128;
+    |     max_entries
+    | }
   next: hibi mark c1-b1cqk12je92xh6d4na21
 
 c1-vpsqdwgd6c7f2x3zmfe6  stale  Workers restart every night.

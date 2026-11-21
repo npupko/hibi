@@ -1257,11 +1257,26 @@ fn status_selects_by_state_by_locator_and_by_id() {
     let e = refused(&repo, &["status", &stale, "c1-zzzzzzzzzzzzzzzzzzzz"]);
     assert_eq!(e["code"], "claim_not_found");
 
-    // --detail adds the current unit text to every resolved side.
+    // Without --detail only a changed side carries its current text, cut
+    // to 240 characters; --detail adds the whole text to every resolved
+    // side.
     let v = j(&repo, &["status", &stale]);
     for side in v["claims"][0]["sides"].as_array().unwrap() {
-        assert!(side.get("text").is_none(), "{side}");
+        if side["state"] == "changed" {
+            let text = s(&side["text"]);
+            assert!(text.contains("let max_entries = 128;"), "{side}");
+            assert!(text.chars().count() <= 240, "{side}");
+        } else {
+            assert!(side.get("text").is_none(), "{side}");
+        }
     }
+    // The text output prints it under the side.
+    let human = repo.human(&["--now", NOW, "status", &stale]);
+    assert!(
+        human.stdout.contains("    |     let max_entries = 128;"),
+        "{}",
+        human.stdout
+    );
     let v = j(&repo, &["status", &stale, "--detail"]);
     let c = &v["claims"][0];
     assert_eq!(c["sides"][0]["text"], "The cache holds 64 entries.");

@@ -1352,8 +1352,9 @@ fn writes_report_the_state_they_accepted() {
     edit(&w, "t:a", "k2", "The cap is fixed.");
     let stale = serde_json::json!({
         "was": "stale",
+        // A changed side carries the text that was accepted.
         "sides": [{"index": 1, "role": "evidence", "loc": "t:a", "state": "changed",
-                   "reason": "fingerprint_differs"}]
+                   "reason": "fingerprint_differs", "text": "The cap is fixed."}]
     });
     let again = claim(&store, &mut p, &[input()], false).unwrap();
     assert!(!again.claims[0].created);
@@ -1373,14 +1374,16 @@ fn writes_report_the_state_they_accepted() {
         ts("2026-12-01T00:00:00Z"),
     )
     .unwrap();
+    let mut stale_now = stale.clone();
+    stale_now["sides"][0]["text"] = "The cap is fixed at 9.".into();
     assert_eq!(
         serde_json::to_value(&marked.marks[0].accepted).unwrap(),
-        stale
+        stale_now
     );
     assert_eq!(marked.next_note, engine::NEXT_NOTE);
     let json = serde_json::to_value(&marked).unwrap();
     assert_eq!(json["nextNote"], engine::NEXT_NOTE);
-    assert_eq!(json["marks"][0]["accepted"], stale);
+    assert_eq!(json["marks"][0]["accepted"], stale_now);
 
     // `reanchor` that replaces the subject also marks the kept evidence,
     // which changed: the output says the old claim was stale and why.
@@ -1395,7 +1398,9 @@ fn writes_report_the_state_they_accepted() {
         },
     )
     .unwrap();
-    assert_eq!(serde_json::to_value(&out.accepted).unwrap(), stale);
+    let mut stale_gone = stale.clone();
+    stale_gone["sides"][0]["text"] = "The cap is gone.".into();
+    assert_eq!(serde_json::to_value(&out.accepted).unwrap(), stale_gone);
     assert!(!out.merged);
     assert_eq!(out.next_note, engine::NEXT_NOTE);
     assert_eq!(out.claim.state, ClaimState::Fresh);

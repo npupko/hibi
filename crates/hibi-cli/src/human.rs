@@ -40,6 +40,9 @@ pub fn plain(text: &str) -> String {
         .collect()
 }
 
+/// A candidate's text and its first and last line in the resource.
+type TextAndLines<'a> = (Option<&'a str>, Option<(usize, usize)>);
+
 /// For each candidate, given its text and its line range, the line to show
 /// under it. Usually the text on one line, cut to [`LINE_TEXT_CHARS`].
 /// Where that would be the same for several candidates, each of them shows
@@ -48,7 +51,7 @@ pub fn plain(text: &str) -> String {
 /// that has no such line (its text equals another's, or each of its lines
 /// is shared with one of the others) shows where it stands in the
 /// resource. So no two candidates print the same line.
-fn candidate_lines(candidates: &[(Option<&str>, Option<(usize, usize)>)]) -> Vec<Option<String>> {
+fn candidate_lines(candidates: &[TextAndLines<'_>]) -> Vec<Option<String>> {
     let short: Vec<Option<String>> = candidates
         .iter()
         .map(|(t, _)| t.map(|t| one_line(t, LINE_TEXT_CHARS)))
@@ -243,7 +246,7 @@ fn side_lines(out: &mut String, side: &Side, detail: bool) {
                 "; the stored anchor matches each of them"
             }
         );
-        let texts: Vec<(Option<&str>, Option<(usize, usize)>)> = candidates
+        let texts: Vec<TextAndLines<'_>> = candidates
             .iter()
             .map(|c| {
                 (
@@ -369,6 +372,19 @@ fn accepted_line(out: &mut String, accepted: &Accepted) {
         _ => ": make sure you re-checked them",
     };
     let _ = writeln!(out, "  was {}{what}; now marked{checked}", accepted.was);
+    // What was accepted for a changed side: its text now. The label alone
+    // can be the same before and after the change.
+    for s in &accepted.sides {
+        let Some(text) = &s.text else { continue };
+        let role = match s.role {
+            Role::Subject => "subject".to_owned(),
+            Role::Evidence => format!("evidence {}", s.index),
+        };
+        let _ = writeln!(out, "    {role} is now:");
+        for l in text.lines() {
+            let _ = writeln!(out, "{}", format!("    | {l}").trim_end());
+        }
+    }
 }
 
 /// True when a `next` writes a mark, so the statement must be re-checked

@@ -844,7 +844,7 @@ fn claim_elements(
                     Some(_) => {
                         let marks = index.marks_of(target.id.as_str());
                         match evaluate(target, marks, false, &target_resolved, now) {
-                            Ok(eval) => Some(accepted(target, &eval)),
+                            Ok(eval) => Some(accepted(target, &eval, &target_resolved)),
                             Err(e) => {
                                 errors.push(e.with_index(b.index));
                                 continue;
@@ -1001,7 +1001,7 @@ fn mark_elements(
                 push_mark(&mut batch, &m);
                 let marks = index.marks_of(claim.id.as_str());
                 let before = evaluate(claim, marks, false, &rs, now)
-                    .map(|eval| accepted(claim, &eval))
+                    .map(|eval| accepted(claim, &eval, &rs))
                     .map_err(|e| vec![e])?;
                 results.push((claim, m.id, rs, before));
             }
@@ -1169,7 +1169,7 @@ pub fn reanchor(
         &old_resolved,
         now,
     )?;
-    let before = accepted(old, &old_eval);
+    let before = accepted(old, &old_eval, &old_resolved);
 
     // Step 3.
     // A kept side has the old claim's stored anchor: `once` gives it the
