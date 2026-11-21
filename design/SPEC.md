@@ -6540,7 +6540,11 @@ locator with its printed selector and can be passed to `claim --stdin`. It
 is `null` when another uncovered unit of the same resource in the scope has
 the same printed selector: the two are identical where they stand and no
 anchor selects one alone. The text output then prints under the item
-`cannot be anchored alone: claim the unit that contains it, or exclude it with unit = "<key>"`.
+`cannot be anchored alone: exclude it with unit = "<key>" (a claim on the unit that contains it does not cover it)`.
+Only the exclusion takes the item off the list: a claim covers its unit and
+the units that contain it (section 10.2), not the units inside it. The
+error of `claim` for such units keeps both remedies, because there
+anchoring the containing unit is an answer.
 `matched` counts what each exclusion took out: resources for an exclusion
 whose `unit` is `null`, units for one that names a unit (section 10.1). A
 scope's `units`, `covered`, `excluded` and `uncovered` count units of the

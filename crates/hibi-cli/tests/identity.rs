@@ -545,7 +545,7 @@ fn cover_offers_no_anchor_for_units_that_cannot_be_told_apart() {
     let key = s(&items[0]["unit"]["key"]).to_owned();
     let human = repo.human(&["cover"]);
     let line = format!(
-        "cannot be anchored alone: claim the unit that contains it, or exclude it with unit = \"{key}\""
+        "cannot be anchored alone: exclude it with unit = \"{key}\" (a claim on the unit that contains it does not cover it)"
     );
     assert!(human.stdout.contains(&line), "{}", human.stdout);
 
@@ -604,9 +604,9 @@ fn a_unit_whose_printed_anchor_selects_another_too_is_offered_none() {
     }
     let human = repo.human(&["cover"]);
     assert!(
-        human.stdout.contains(
-            "cannot be anchored alone: claim the unit that contains it, or exclude it with unit = "
-        ),
+        human
+            .stdout
+            .contains("cannot be anchored alone: exclude it with unit = "),
         "{}",
         human.stdout
     );

@@ -145,9 +145,9 @@ pub struct CoverItem {
     /// `claim --stdin`.
     /// `null` when no anchor selects this unit alone: the provider says so,
     /// or another uncovered unit of the resource carries the same printed
-    /// anchor. The unit is identical to another one where it stands. Such a unit is covered by a claim on
-    /// the unit that contains it, or taken out of the scope by an exclusion
-    /// that names its key.
+    /// anchor. The unit is identical to another one where it stands.
+    /// Only an exclusion that names its key takes it out of the scope: a
+    /// claim on the unit that contains it does not cover it.
     #[schemars(with = "Nullable<Anchor>")]
     pub anchor: Option<Anchor>,
 }

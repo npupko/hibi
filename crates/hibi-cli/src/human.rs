@@ -602,11 +602,13 @@ pub fn cover(o: &CoverOutput) -> String {
                 one_line(text, LINE_TEXT_CHARS)
             );
             // Identical to another uncovered unit where it stands: no
-            // anchor selects it alone, so none is offered.
+            // anchor selects it alone, so none is offered. Only an
+            // exclusion takes it off this list: a claim covers its unit
+            // and the units that contain it, not the units inside it.
             if item.anchor.is_none() {
                 let _ = writeln!(
                     out,
-                    "           cannot be anchored alone: claim the unit that contains it, or exclude it with unit = \"{}\"",
+                    "           cannot be anchored alone: exclude it with unit = \"{}\" (a claim on the unit that contains it does not cover it)",
                     item.unit.key
                 );
             }

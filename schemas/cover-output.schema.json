@@ -70,7 +70,7 @@
       "type": "object",
       "properties": {
         "anchor": {
-          "description": "The unit's locator with its completed selector; can be passed to\n`claim --stdin`.\n`null` when no anchor selects this unit alone: the provider says so,\nor another uncovered unit of the resource carries the same printed\nanchor. The unit is identical to another one where it stands. Such a unit is covered by a claim on\nthe unit that contains it, or taken out of the scope by an exclusion\nthat names its key.",
+          "description": "The unit's locator with its completed selector; can be passed to\n`claim --stdin`.\n`null` when no anchor selects this unit alone: the provider says so,\nor another uncovered unit of the resource carries the same printed\nanchor. The unit is identical to another one where it stands.\nOnly an exclusion that names its key takes it out of the scope: a\nclaim on the unit that contains it does not cover it.",
           "anyOf": [
             {
               "$ref": "#/$defs/Anchor"
