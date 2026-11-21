@@ -123,6 +123,29 @@ closed_enum!(
     }
 );
 
+/// What the author can do about a side that cannot be evaluated, by its
+/// reason (section 9.2): the cause or the limit, and the way out. `None`
+/// for a reason that does not make a side unavailable in a write.
+pub fn unavailable_remediation(reason: Reason) -> Option<&'static str> {
+    Some(match reason {
+        Reason::SchemeNotDeclared
+        | Reason::ProviderNotRegistered
+        | Reason::ProviderFailed
+        | Reason::RepoNotAllowed
+        | Reason::RepoNotFound => "hibi providers",
+        Reason::TooLarge => {
+            "The resource is over the size limit: 8 MiB, or 100,000 units in one resource. Anchor a smaller file; for a claim that exists, retire it; in a scope, add an exclusion for the resource."
+        }
+        Reason::NotText => {
+            "The resource is not UTF-8 text, so it has no units. Anchor a text file; for a claim that exists, retire it; in a scope, add an exclusion for the resource."
+        }
+        Reason::ProviderError => {
+            "The provider gave an answer hibi cannot use. Run hibi providers --check <scheme> to see what it gets wrong; for a claim that exists, retire it if the resource is gone for good."
+        }
+        _ => return None,
+    })
+}
+
 /// One entry of `warnings` in the JSON envelope (section 15.1).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
@@ -241,6 +264,12 @@ pub struct Side {
     /// The fingerprint in the reference mark.
     #[schemars(with = "Nullable<Fingerprint>")]
     pub marked_fp: Option<Fingerprint>,
+    /// For a side that cannot be evaluated: what the limit or the cause is
+    /// and what the author can do ([`unavailable_remediation`]). `null` for
+    /// every other side; a side that changed, is missing or is ambiguous
+    /// is answered by the claim's `next`.
+    #[schemars(with = "Nullable<String>")]
+    pub remediation: Option<String>,
     /// Present only when `state` is `ambiguous`.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub candidates: Option<Vec<UnitRef>>,

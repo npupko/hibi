@@ -138,8 +138,7 @@ fn side_lines(out: &mut String, side: &Side) {
     let _ = writeln!(out, "{line}");
     // A side that cannot be evaluated and has no command to run next: the
     // cause and what the author can do.
-    if side.state == SideState::Unavailable
-        && let Some(fix) = side.reason.and_then(hibi::engine::unavailable_remediation)
+    if let Some(fix) = &side.remediation
         && fix != "hibi providers"
     {
         let _ = writeln!(out, "    {fix}");

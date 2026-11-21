@@ -392,6 +392,13 @@
             }
           ]
         },
+        "remediation": {
+          "description": "For a side that cannot be evaluated: what the limit or the cause is\nand what the author can do ([`unavailable_remediation`]). `null` for\nevery other side; a side that changed, is missing or is ambiguous\nis answered by the claim's `next`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "role": {
           "$ref": "#/$defs/Role"
         },
@@ -426,7 +433,8 @@
         "approx",
         "unit",
         "fp",
-        "markedFp"
+        "markedFp",
+        "remediation"
       ]
     },
     "SideState": {

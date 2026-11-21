@@ -1074,7 +1074,69 @@ fn an_unavailable_side_says_the_cause_and_the_way_out() {
             .unwrap_err(),
         );
         assert_eq!(store.counts(), (1, 1, 0), "{reason}");
+
+        // The claim view of `status` carries the same sentence on that
+        // side, and its `next` follows the table of section 15.2.
+        let out = engine::status(
+            &store,
+            &mut p,
+            &no_git(),
+            &engine::StatusQuery {
+                ids: vec![id.to_string()],
+                ..engine::StatusQuery::default()
+            },
+            None,
+            now(),
+        )
+        .unwrap();
+        let side = &out.claims[0].sides[0];
+        assert_eq!(side.state, SideState::Unavailable, "{reason}");
+        let fix = side.remediation.as_deref().unwrap();
+        assert!(fix.contains(says), "{reason}: {fix}");
+        assert_eq!(
+            serde_json::to_value(side).unwrap()["remediation"],
+            fix,
+            "{reason}"
+        );
     }
+    // A side that is the same, changed, missing or ambiguous has none:
+    // the claim's `next` answers those.
+    let (w, mut p, store) = setup();
+    let id = claim(&store, &mut p, &[on("S", "k1")], false)
+        .unwrap()
+        .claims[0]
+        .id
+        .clone();
+    let view = |p: &mut Providers| {
+        engine::status(
+            &store,
+            p,
+            &no_git(),
+            &engine::StatusQuery {
+                ids: vec![id.to_string()],
+                ..engine::StatusQuery::default()
+            },
+            None,
+            now(),
+        )
+        .unwrap()
+        .claims
+        .remove(0)
+    };
+    assert_eq!(view(&mut p).sides[0].remediation, None);
+    edit(&w, "t:a", "k1", "Retries are capped at 9.");
+    let v = view(&mut p);
+    assert_eq!(
+        (v.sides[0].state, &v.sides[0].remediation),
+        (SideState::Changed, &None)
+    );
+    set(&w, "t:a", vec![]);
+    let v = view(&mut p);
+    assert_eq!(
+        (v.sides[0].state, &v.sides[0].remediation),
+        (SideState::Missing, &None)
+    );
+    assert!(v.next.is_some());
 }
 
 /// The numbers in the `too_large` remediation are the file provider's

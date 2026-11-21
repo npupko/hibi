@@ -16,7 +16,7 @@ use crate::store::Ledger;
 use super::resolve::Resolved;
 use super::types::{
     Accepted, AcceptedSide, ClaimState, ClaimView, Reason, Role, Side, SideState,
-    TEXT_EXCERPT_CHARS, UnitRef, excerpt,
+    TEXT_EXCERPT_CHARS, UnitRef, excerpt, unavailable_remediation,
 };
 
 /// A ledger with its marks grouped by claim and its retired claims as a
@@ -349,6 +349,12 @@ pub fn claim_view(
                 unit: unit.map(UnitRef::from),
                 fp: unit.map(|u| u.fp.clone()),
                 marked_fp: eval.reference.map(|m| m.sides[index].fp.clone()),
+                remediation: match (state, reason) {
+                    (SideState::Unavailable, Some(reason)) => {
+                        unavailable_remediation(*reason).map(str::to_owned)
+                    }
+                    _ => None,
+                },
                 candidates: match r {
                     Resolved::Several(units) => Some(units.iter().map(UnitRef::from).collect()),
                     _ => None,

@@ -21,7 +21,7 @@ use super::resolve::{Resolved, describe_unit, resolve_anchors};
 use super::run_warnings;
 use super::types::{
     Accepted, ClaimView, NEXT_NOTE, Nullable, Reason, SideState, TEXT_EXCERPT_CHARS, Warning,
-    excerpt, sh_quote,
+    excerpt, sh_quote, unavailable_remediation,
 };
 
 /// One entry of `claims` in the output of `claim`.
@@ -160,29 +160,6 @@ fn unresolved_error(index: usize, anchor: &Anchor, r: &Resolved, new: bool) -> O
                 None => e.without_remediation(),
             }
         }
-    })
-}
-
-/// What the author can do about a side that cannot be evaluated, by its
-/// reason (section 9.2): the cause or the limit, and the way out. `None`
-/// for a reason that does not make a side unavailable in a write.
-pub fn unavailable_remediation(reason: Reason) -> Option<&'static str> {
-    Some(match reason {
-        Reason::SchemeNotDeclared
-        | Reason::ProviderNotRegistered
-        | Reason::ProviderFailed
-        | Reason::RepoNotAllowed
-        | Reason::RepoNotFound => "hibi providers",
-        Reason::TooLarge => {
-            "The resource is over the size limit: 8 MiB, or 100,000 units in one resource. Anchor a smaller file; for a claim that exists, retire it; in a scope, add an exclusion for the resource."
-        }
-        Reason::NotText => {
-            "The resource is not UTF-8 text, so it has no units. Anchor a text file; for a claim that exists, retire it; in a scope, add an exclusion for the resource."
-        }
-        Reason::ProviderError => {
-            "The provider gave an answer hibi cannot use. Run hibi providers --check <scheme> to see what it gets wrong; for a claim that exists, retire it if the resource is gone for good."
-        }
-        _ => return None,
     })
 }
 

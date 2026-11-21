@@ -57,11 +57,11 @@ pub use resolve::{Resolved, reason_of_no_provider, resolve_anchors, resolve_with
 pub use types::{
     Accepted, AcceptedSide, ClaimState, ClaimView, Envelope, ErrorEnvelope, NEXT_NOTE, Reason,
     Role, Side, SideState, TEXT_EXCERPT_CHARS, UnitRef, Warning, WarningCode, excerpt, sh_quote,
+    unavailable_remediation,
 };
 pub use write::{
     ClaimOutput, ClaimResult, MarkOutput, MarkResult, ReanchorOutput, RetireOutput, RetireResult,
     claim, claim_batch, compact_anchor, mark, mark_batch, reanchor, retire,
-    unavailable_remediation,
 };
 
 use crate::error::Error;

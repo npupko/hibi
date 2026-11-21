@@ -534,6 +534,10 @@ fn a_too_large_or_binary_file_says_the_limit_and_the_way_out() {
         assert_eq!(view["sides"][1]["state"], "unavailable");
         assert_eq!(view["sides"][1]["reason"], reason);
         assert_eq!(view["next"], Value::Null);
+        // The JSON carries the sentence the text output prints, on the
+        // side that cannot be evaluated and on no other.
+        assert!(text(&view["sides"][1]["remediation"]).starts_with(says));
+        assert_eq!(view["sides"][0]["remediation"], Value::Null);
         let human = repo.human(&["status", id]);
         assert!(human.stdout.contains(says), "{}", human.stdout);
     }

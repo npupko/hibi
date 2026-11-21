@@ -333,14 +333,16 @@ fn status_json_shape() {
                      "unit": {"key": "k1", "kind": "note", "label": "new text",
                               "line": null, "endLine": null},
                      "fp": hibi::fingerprint::prose_v1("new text"),
-                     "markedFp": hibi::fingerprint::prose_v1("retries are capped at 5")},
+                     "markedFp": hibi::fingerprint::prose_v1("retries are capped at 5"),
+                     "remediation": null},
                     {"index": 1, "role": "evidence",
                      "anchor": {"loc": "u:b", "sel": {"key": "k1"}},
                      "state": "same", "reason": null, "approx": false,
                      "unit": {"key": "k1", "kind": "note", "label": "evidence",
                               "line": null, "endLine": null},
                      "fp": hibi::fingerprint::prose_v1("evidence"),
-                     "markedFp": hibi::fingerprint::prose_v1("evidence")}
+                     "markedFp": hibi::fingerprint::prose_v1("evidence"),
+                     "remediation": null}
                 ],
                 "next": format!("hibi mark {id}")
             }],

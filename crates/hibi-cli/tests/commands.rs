@@ -373,7 +373,8 @@ fn claim_reports_a_fresh_claim_view_with_completed_selectors() {
                     "unit": {"key": "sentence:34da78fbbacf", "kind": "sentence",
                         "label": "The cache holds 64 entries.", "line": 3, "endLine": 3},
                     "fp": "b3:prose-v1:34da78fbbacfbf227381ac83d86394ff",
-                    "markedFp": "b3:prose-v1:34da78fbbacfbf227381ac83d86394ff"
+                    "markedFp": "b3:prose-v1:34da78fbbacfbf227381ac83d86394ff",
+                    "remediation": null
                 },
                 {
                     "index": 1,
@@ -391,7 +392,8 @@ fn claim_reports_a_fresh_claim_view_with_completed_selectors() {
                     "unit": {"key": "function:limit", "kind": "function",
                         "label": "limit", "line": 2, "endLine": 5},
                     "fp": "b3:ast-v1:d4a43aaddbd75fa038a7b141187f69d5",
-                    "markedFp": "b3:ast-v1:d4a43aaddbd75fa038a7b141187f69d5"
+                    "markedFp": "b3:ast-v1:d4a43aaddbd75fa038a7b141187f69d5",
+                    "remediation": null
                 }
             ],
             "next": null
