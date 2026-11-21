@@ -2218,11 +2218,11 @@ fn a_code_file_that_does_not_parse_is_resource_unavailable_for_a_symbol() {
     let said = s(&side["detail"]);
     assert!(said.contains("file:report.py does not parse"), "{said}");
     assert!(said.contains("line 5"), "{said}");
-    let fix = s(&side["remediation"]);
-    assert!(fix.starts_with(said), "{fix}");
-    assert!(
-        fix.ends_with("Run the command again once that is fixed."),
-        "{fix}"
+    // The provider says the cause and the fix; hibi adds when to run the
+    // command again, once.
+    assert_eq!(
+        s(&side["remediation"]),
+        "file:report.py does not parse as python (the first error is on line 5), so its declarations cannot be found; fix the syntax error. Run the command again once that is fixed."
     );
 
     // The stored anchor: `mark` is refused with the same remediation.
@@ -2333,6 +2333,37 @@ fn a_stale_claim_is_reported_against_the_mark_that_matches_the_most_sides() {
             ["same", null, false]
         ])
     );
+}
+
+/// When git cannot list the files, a file side is `resource_unavailable`
+/// and its remediation says once when to run the command again.
+#[test]
+fn an_unreadable_git_file_list_is_resource_unavailable_without_repetition() {
+    let repo = seeded();
+    repo.commit("base");
+    let id = repo.claim("Cache size", CACHE_SUBJECT, &[]);
+    let index = repo.root.join(".git/index");
+    let saved = std::fs::read(&index).unwrap();
+    std::fs::write(&index, b"not an index").unwrap();
+
+    let view = repo.view(&id);
+    let side = &view["sides"][0];
+    assert_eq!(side["state"], "unavailable", "{view}");
+    assert_eq!(side["reason"], "resource_unavailable", "{view}");
+    assert_eq!(view["next"], Value::Null);
+    let fix = s(&side["remediation"]);
+    assert!(
+        fix.starts_with(s(&side["detail"]).trim_end_matches('.')),
+        "{fix}"
+    );
+    assert!(
+        fix.ends_with(". Run the command again once that is fixed."),
+        "{fix}"
+    );
+    assert_eq!(fix.to_lowercase().matches("again").count(), 1, "{fix}");
+
+    std::fs::write(&index, saved).unwrap();
+    assert_eq!(repo.state(&id), "fresh");
 }
 
 /// R55: editing the quoted line of a declaration anchored by symbol does

@@ -544,11 +544,26 @@ fn a_too_large_or_binary_file_says_the_limit_and_the_way_out() {
 
     // 8 MiB and one byte; and bytes that are not UTF-8.
     let mut large = "A sentence.\n".repeat(700_000);
-    large.truncate(8 * 1024 * 1024 + 1);
+    large.truncate(usize::try_from(MAX_FILE_BYTES).unwrap() + 1);
     repo.write("big.md", &large);
     std::fs::write(repo.root.join("data.md"), [0xff, 0xfe, 0x00, 0x80]).unwrap();
 
-    let limit = "The resource is over the size limit: 8 MiB, or 100,000 units in one resource.";
+    // The sentence names the three limits of the file provider.
+    use hibi::provider::file::{MAX_CODE_FILE_BYTES, MAX_FILE_BYTES, MAX_UNITS_PER_RESOURCE};
+    const MIB: u64 = 1024 * 1024;
+    assert_eq!((MAX_FILE_BYTES % MIB, MAX_CODE_FILE_BYTES % MIB), (0, 0));
+    assert_eq!(MAX_UNITS_PER_RESOURCE % 1000, 0);
+    let limit = format!(
+        "The resource is over a size limit: {} MiB for markdown, prose and text, {} MiB for a code file, or {},000 units in one resource.",
+        MAX_FILE_BYTES / MIB,
+        MAX_CODE_FILE_BYTES / MIB,
+        MAX_UNITS_PER_RESOURCE / 1000
+    );
+    let limit = limit.as_str();
+    assert_eq!(
+        limit,
+        "The resource is over a size limit: 8 MiB for markdown, prose and text, 2 MiB for a code file, or 100,000 units in one resource."
+    );
     let cause = "The resource is not UTF-8 text, so it has no units.";
     for (id, file, reason, says) in [
         (&big, "file:big.md", "too_large", limit),

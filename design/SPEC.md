@@ -1524,7 +1524,7 @@ is reported:
    where `<loc>` is the locator and `<class>` the class name of section 6.1.
 9. The selector has a `symbol`, the resource is of a code class and its parse
    tree has an error (section 6.1): `unavailable`. The message is
-   `<loc> does not parse as <class> (the first error is on line <n>), so its declarations cannot be found; fix the syntax error and run the command again`.
+   `<loc> does not parse as <class> (the first error is on line <n>), so its declarations cannot be found; fix the syntax error`.
    `<n>` is the 1-based line on which the first error node or missing node of
    the parse tree, in source order, starts. When the tree has no such node
    the part in parentheses, with the space before it, is left out.
@@ -5491,9 +5491,10 @@ The error object is the one of section 15.1; these rules fix its
   `scheme_not_declared` reaches this error only for a stored anchor. For the
   other reasons the `remediation` is a sentence that gives the
   cause or the limit and what the caller can do:
-  - `too_large`: "The resource is over the size limit: 8 MiB, or 100,000
-    units in one resource. Anchor a smaller file; for a claim that exists,
-    retire it; in a scope, add an exclusion for the resource."
+  - `too_large`: "The resource is over a size limit: 8 MiB for markdown,
+    prose and text, 2 MiB for a code file, or 100,000 units in one resource.
+    Anchor a smaller file; for a claim that exists, retire it; in a scope,
+    add an exclusion for the resource."
   - `not_text`: "The resource is not UTF-8 text, so it has no units. Anchor a
     text file; for a claim that exists, retire it; in a scope, add an
     exclusion for the resource."

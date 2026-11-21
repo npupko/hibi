@@ -554,7 +554,7 @@ fn r33_mark_batch_is_all_or_nothing_with_indexes() {
             .remediation
             .as_deref()
             .unwrap()
-            .contains("over the size limit")
+            .contains("over a size limit")
     );
     assert_eq!((store.appends.get(), store.counts()), before);
 }
@@ -1087,7 +1087,7 @@ fn an_unavailable_side_says_the_cause_and_the_way_out() {
         (
             C::TooLarge,
             "too_large",
-            "over the size limit: 8 MiB, or 100,000 units",
+            "over a size limit: 8 MiB for markdown, prose and text, 2 MiB for a code file, or 100,000 units",
         ),
         (C::NotText, "not_text", "not UTF-8 text"),
         (

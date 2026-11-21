@@ -136,7 +136,7 @@ pub fn unavailable_remediation(reason: Reason) -> Option<&'static str> {
         | Reason::RepoNotAllowed
         | Reason::RepoNotFound => "hibi providers",
         Reason::TooLarge => {
-            "The resource is over the size limit: 8 MiB, or 100,000 units in one resource. Anchor a smaller file; for a claim that exists, retire it; in a scope, add an exclusion for the resource."
+            "The resource is over a size limit: 8 MiB for markdown, prose and text, 2 MiB for a code file, or 100,000 units in one resource. Anchor a smaller file; for a claim that exists, retire it; in a scope, add an exclusion for the resource."
         }
         Reason::NotText => {
             "The resource is not UTF-8 text, so it has no units. Anchor a text file; for a claim that exists, retire it; in a scope, add an exclusion for the resource."
