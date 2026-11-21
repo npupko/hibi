@@ -214,7 +214,13 @@ fn r33_claim_batch_is_all_or_nothing_with_indexes() {
         "{}",
         errors[2].message
     );
-    assert_eq!(errors[2].remediation, None);
+    assert!(
+        errors[2]
+            .remediation
+            .as_deref()
+            .unwrap()
+            .contains("not UTF-8 text")
+    );
     assert!(errors[3].message.contains("resource_not_found"));
     assert_eq!(store.appends.get(), 0);
     assert_eq!(store.counts(), (0, 0, 0));
@@ -543,7 +549,13 @@ fn r33_mark_batch_is_all_or_nothing_with_indexes() {
     .unwrap_err();
     assert_eq!(codes(&errors), [(Code::SideUnavailable, None)]);
     assert!(errors[0].message.contains("too_large"));
-    assert_eq!(errors[0].remediation, None);
+    assert!(
+        errors[0]
+            .remediation
+            .as_deref()
+            .unwrap()
+            .contains("over the size limit")
+    );
     assert_eq!((store.appends.get(), store.counts()), before);
 }
 
@@ -999,6 +1011,80 @@ fn a_batch_reports_malformed_elements_together_with_the_other_failures() {
         ]
     );
     assert_eq!(store.counts(), (1, 1, 0));
+}
+
+/// A side that cannot be evaluated because of the resource itself says
+/// what the limit or the cause is and what the author can do, in `claim`,
+/// `mark` and `reanchor`.
+#[test]
+fn an_unavailable_side_says_the_cause_and_the_way_out() {
+    let cases = [
+        (
+            C::TooLarge,
+            "too_large",
+            "over the size limit: 8 MiB, or 100,000 units",
+        ),
+        (C::NotText, "not_text", "not UTF-8 text"),
+        (
+            C::Internal,
+            "provider_error",
+            "hibi providers --check <scheme>",
+        ),
+        (C::RepoNotFound, "repo_not_found", "hibi providers"),
+    ];
+    for (code, reason, says) in cases {
+        let (w, mut p, store) = setup();
+        let id = claim(&store, &mut p, &[on("S", "k1")], false)
+            .unwrap()
+            .claims[0]
+            .id
+            .clone();
+        set_err(&w, "t:a", code);
+        let check = |e: &hibi::Error| {
+            assert_eq!(e.code, Code::SideUnavailable, "{reason}");
+            assert!(e.message.contains(reason), "{e}");
+            let fix = e
+                .remediation
+                .as_deref()
+                .unwrap_or_else(|| panic!("{reason}: no remediation"));
+            assert!(fix.contains(says), "{reason}: {fix}");
+        };
+        check(&claim(&store, &mut p, &[on("T", "k2")], false).unwrap_err()[0]);
+        check(
+            &engine::mark(
+                &store,
+                &mut p,
+                &no_git(),
+                &[MarkInput::new(id.as_str())],
+                false,
+                now(),
+            )
+            .unwrap_err()[0],
+        );
+        check(
+            &reanchor(
+                &store,
+                &mut p,
+                ReanchorInput {
+                    claim: id.to_string(),
+                    statement: Some("S2".into()),
+                    ..ReanchorInput::default()
+                },
+            )
+            .unwrap_err(),
+        );
+        assert_eq!(store.counts(), (1, 1, 0), "{reason}");
+    }
+}
+
+/// The numbers in the `too_large` remediation are the file provider's
+/// limits.
+#[cfg(feature = "file")]
+#[test]
+fn the_too_large_remediation_states_the_real_limits() {
+    use hibi::provider::file::{MAX_FILE_BYTES, MAX_UNITS_PER_RESOURCE};
+    assert_eq!(MAX_FILE_BYTES, 8 * 1024 * 1024);
+    assert_eq!(MAX_UNITS_PER_RESOURCE, 100_000);
 }
 
 // ---------------------------------------------------------------------------

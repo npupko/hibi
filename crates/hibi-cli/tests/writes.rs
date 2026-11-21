@@ -491,3 +491,50 @@ fn the_content_of_an_ignored_file_is_never_printed() {
     let cover = repo.json(&["cover"]);
     assert_eq!(cover["scopes"][0]["items"][0]["text"], "A public sentence.");
 }
+
+/// A file over the size limit, and a file that is not text, make a side
+/// unavailable. The error, and the text output of `status` for a stored
+/// claim, say what the limit or cause is and what the author can do.
+#[test]
+fn a_too_large_or_binary_file_says_the_limit_and_the_way_out() {
+    let repo = Repo::new();
+    repo.write("docs/a.md", "Small enough.\n");
+    repo.write("big.md", "A sentence.\n");
+    repo.write("data.md", "Text for now.\n");
+    let big = repo.claim("s", "file:docs/a.md::Small enough.", &["file:big.md"]);
+    let bin = repo.claim("t", "file:docs/a.md::Small enough.", &["file:data.md"]);
+
+    // 8 MiB and one byte; and bytes that are not UTF-8.
+    let mut large = "A sentence.\n".repeat(700_000);
+    large.truncate(8 * 1024 * 1024 + 1);
+    repo.write("big.md", &large);
+    std::fs::write(repo.root.join("data.md"), [0xff, 0xfe, 0x00, 0x80]).unwrap();
+
+    let limit = "The resource is over the size limit: 8 MiB, or 100,000 units in one resource.";
+    let cause = "The resource is not UTF-8 text, so it has no units.";
+    for (id, file, reason, says) in [
+        (&big, "file:big.md", "too_large", limit),
+        (&bin, "file:data.md", "not_text", cause),
+    ] {
+        let e = repo.fail(&["claim", "new", "--subject", file]);
+        assert_eq!(e["code"], "side_unavailable", "{file}");
+        assert!(text(&e["message"]).contains(reason), "{e}");
+        let fix = text(&e["remediation"]);
+        assert!(fix.starts_with(says), "{fix}");
+        assert!(
+            fix.contains("retire it") && fix.contains("add an exclusion"),
+            "{fix}"
+        );
+
+        let e = repo.fail(&["mark", id]);
+        assert_eq!(e["code"], "side_unavailable", "{file}");
+        assert!(text(&e["remediation"]).starts_with(says), "{e}");
+
+        let view = repo.view(id);
+        assert_eq!(view["sides"][1]["state"], "unavailable");
+        assert_eq!(view["sides"][1]["reason"], reason);
+        assert_eq!(view["next"], Value::Null);
+        let human = repo.human(&["status", id]);
+        assert!(human.stdout.contains(says), "{}", human.stdout);
+    }
+}

@@ -61,6 +61,7 @@ pub use types::{
 pub use write::{
     ClaimOutput, ClaimResult, MarkOutput, MarkResult, ReanchorOutput, RetireOutput, RetireResult,
     claim, claim_batch, compact_anchor, mark, mark_batch, reanchor, retire,
+    unavailable_remediation,
 };
 
 use crate::error::Error;

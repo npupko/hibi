@@ -136,6 +136,14 @@ fn side_lines(out: &mut String, side: &Side) {
         let _ = write!(line, "  {}", unit_name(unit));
     }
     let _ = writeln!(out, "{line}");
+    // A side that cannot be evaluated and has no command to run next: the
+    // cause and what the author can do.
+    if side.state == SideState::Unavailable
+        && let Some(fix) = side.reason.and_then(hibi::engine::unavailable_remediation)
+        && fix != "hibi providers"
+    {
+        let _ = writeln!(out, "    {fix}");
+    }
     // A side that no longer resolves to one unit: what the claim stored,
     // so that the reader knows what to look for.
     if matches!(side.state, SideState::Missing | SideState::Ambiguous) {

@@ -155,14 +155,34 @@ fn unresolved_error(index: usize, anchor: &Anchor, r: &Resolved, new: bool) -> O
                 Code::SideUnavailable,
                 format!("{what} cannot be evaluated ({reason}): {detail}"),
             );
-            match reason {
-                Reason::SchemeNotDeclared
-                | Reason::ProviderNotRegistered
-                | Reason::ProviderFailed
-                | Reason::RepoNotAllowed => e,
-                _ => e.without_remediation(),
+            match unavailable_remediation(reason) {
+                Some(fix) => e.with_remediation(fix),
+                None => e.without_remediation(),
             }
         }
+    })
+}
+
+/// What the author can do about a side that cannot be evaluated, by its
+/// reason (section 9.2): the cause or the limit, and the way out. `None`
+/// for a reason that does not make a side unavailable in a write.
+pub fn unavailable_remediation(reason: Reason) -> Option<&'static str> {
+    Some(match reason {
+        Reason::SchemeNotDeclared
+        | Reason::ProviderNotRegistered
+        | Reason::ProviderFailed
+        | Reason::RepoNotAllowed
+        | Reason::RepoNotFound => "hibi providers",
+        Reason::TooLarge => {
+            "The resource is over the size limit: 8 MiB, or 100,000 units in one resource. Anchor a smaller file; for a claim that exists, retire it; in a scope, add an exclusion for the resource."
+        }
+        Reason::NotText => {
+            "The resource is not UTF-8 text, so it has no units. Anchor a text file; for a claim that exists, retire it; in a scope, add an exclusion for the resource."
+        }
+        Reason::ProviderError => {
+            "The provider gave an answer hibi cannot use. Run hibi providers --check <scheme> to see what it gets wrong; for a claim that exists, retire it if the resource is gone for good."
+        }
+        _ => return None,
     })
 }
 
@@ -855,9 +875,11 @@ fn mark_elements(
             // The remediation is the claim's `next` (section 15.2).
             let eval = evaluate(claim, index.marks_of(claim.id.as_str()), false, &rs, now)
                 .map_err(|e| vec![e])?;
+            // Where the table gives no command, the error keeps its own
+            // remediation: the cause and what the author can do.
             let e = match next_command(claim, &eval, &rs, &|id| index.is_retired(id)) {
                 Some(next) => e.with_remediation(next),
-                None => e.without_remediation(),
+                None => e,
             };
             errors.push(e.with_index(i));
             continue;
