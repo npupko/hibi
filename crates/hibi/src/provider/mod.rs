@@ -149,8 +149,8 @@ pub struct Unit {
     pub approx: bool,
     /// In `resolve`, for a stored selector: the quote was located exactly
     /// but the stored `prefix` and `suffix` are not reproduced there, or,
-    /// for a symbol that names one declaration, the quote is no longer in it
-    /// exactly.
+    /// for a symbol that names one declaration, the quote is not found in it
+    /// at all, neither exactly nor by the fuzzy step.
     #[serde(default, skip_serializing_if = "is_false")]
     pub context_changed: bool,
     /// In `resolve`: must not be used to create a claim or replace a side.

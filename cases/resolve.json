@@ -4714,7 +4714,7 @@
     "origin": "spec-derived"
   },
   {
-    "name": "rust: stored context: one declaration, the stored quote found only by the fuzzy step: contextChanged",
+    "name": "rust: stored context: one declaration, the stored quote found only by the fuzzy step: not contextChanged",
     "input": {
       "path": "src/lib.rs",
       "fixture": "fixtures/resolve/lib.rs",
@@ -4729,7 +4729,7 @@
         {
           "key": "function:retry",
           "approx": false,
-          "contextChanged": true,
+          "contextChanged": false,
           "refuse": null,
           "sel": {
             "quote": "pub fn retry(n: u32) -> u32 {",
