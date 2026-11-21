@@ -246,6 +246,26 @@ fn a_write_reports_what_it_accepted() {
     );
 
     // `reanchor` with a new statement also marks the changed evidence.
+    // A long changed side is shown whole in what was accepted: nothing is
+    // marked unseen.
+    let long: String = (0..40)
+        .map(|n| format!("    // line {n} of a long body\n"))
+        .collect();
+    let body = format!("pub fn long() -> u32 {{\n{long}    1\n}}\n");
+    repo.write("src/long.rs", &body);
+    let long_id = repo.claim(
+        "long",
+        "file:docs/a.md::tried 5 times",
+        &["file:src/long.rs#long"],
+    );
+    repo.write("src/long.rs", &body.replace("    1\n", "    2\n"));
+    let marked = repo.json(&["--now", "2026-11-20T12:06:00Z", "mark", &long_id]);
+    let accepted = text(&marked["marks"][0]["accepted"]["sides"][0]["text"]);
+    assert!(accepted.chars().count() > 240, "{}", accepted.len());
+    assert!(
+        accepted.ends_with("    2\n}") && !accepted.contains('…'),
+        "{accepted}"
+    );
     repo.write("src/a.rs", "pub const MAX: u32 = 11;\n");
     let out = repo.json(&[
         "--now",

@@ -289,7 +289,7 @@ pub fn accepted(claim: &Claim, eval: &Evaluation<'_>, resolved: &[Resolved]) -> 
                     .and_then(Resolved::unit)
                     .and_then(|u| u.text.as_deref())
                     .filter(|_| *state == SideState::Changed)
-                    .map(|t| cut_text(t, TEXT_EXCERPT_CHARS)),
+                    .map(str::to_owned),
             })
             .collect(),
     }
@@ -334,12 +334,16 @@ pub fn next_command(claim: &Claim, eval: &Evaluation<'_>) -> Option<String> {
             *state == SideState::Unavailable && reason.is_some_and(|r| reasons.contains(&r))
         })
     };
-    if unavailable(&[
-        Reason::ProviderNotRegistered,
-        Reason::ProviderFailed,
-        Reason::RepoNotAllowed,
-    ]) {
+    if unavailable(&[Reason::ProviderNotRegistered, Reason::RepoNotAllowed]) {
         return Some("hibi providers".to_owned());
+    }
+    // A provider that failed: the check runs it and says what it gets
+    // wrong; plain `hibi providers` starts nothing and would show nothing.
+    let failed = claim.sides().zip(&eval.sides).find(|(_, (state, reason))| {
+        *state == SideState::Unavailable && *reason == Some(Reason::ProviderFailed)
+    });
+    if let Some((anchor, _)) = failed {
+        return Some(super::types::providers_check(anchor.loc.scheme()));
     }
     // No command fits these: the side's `remediation` says what to do.
     if unavailable(&[
@@ -409,7 +413,14 @@ pub fn claim_view(
                 }
             });
             let marked_fp = eval.reference.map(|m| m.sides[index].fp.clone());
+            // A stored selector key the provider no longer allows: the
+            // anchor was not sent, and this says why.
+            let not_allowed = match r {
+                Resolved::KeyNotAllowed { .. } => r.failure_message(),
+                _ => None,
+            };
             let said = match r {
+                Resolved::KeyNotAllowed { .. } => not_allowed.as_deref(),
                 Resolved::Failed { message, .. } if *state == SideState::Unavailable => {
                     Some(message.as_str())
                 }

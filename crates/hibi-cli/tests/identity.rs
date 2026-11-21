@@ -501,6 +501,18 @@ fn the_same_claim_does_not_depend_on_how_its_anchors_are_written() {
     // Against the retired claim: neither spelling brings it back.
     repo.json(&["retire", &id]);
     let before = repo.store_files();
+    // In a batch the remedy names the field, not the option.
+    let out = repo
+        .hibi()
+        .args(["--format", "json", "claim", "--stdin"])
+        .stdin(&json!([{"statement": "s", "subject": subject, "evidence": [by_quote]}]).to_string())
+        .run();
+    let e = out.err();
+    assert_eq!(e["code"], "claim_retired");
+    assert_eq!(
+        e["remediation"],
+        "To record the same statement and anchors again, give the element a different \"note\"."
+    );
     for evidence in [by_name, by_quote] {
         let e = repo.fail(&["claim", "s", "--subject", subject, "--evidence", evidence]);
         assert_eq!(e["code"], "claim_retired", "{evidence}: {e}");
@@ -545,7 +557,7 @@ fn cover_offers_no_anchor_for_units_that_cannot_be_told_apart() {
     let key = s(&items[0]["unit"]["key"]).to_owned();
     let human = repo.human(&["cover"]);
     let line = format!(
-        "cannot be anchored alone: exclude it with unit = \"{key}\" (a claim on the unit that contains it does not cover it)"
+        "cannot be anchored alone: exclude it with unit = \"{key}\"; each such unit needs its own exclusion, or exclude the resource (a claim on the unit that contains it does not cover it)"
     );
     assert!(human.stdout.contains(&line), "{}", human.stdout);
 
@@ -559,6 +571,25 @@ fn cover_offers_no_anchor_for_units_that_cannot_be_told_apart() {
     let v = repo.json(&["cover"]);
     assert!(v["summary"]["excluded"].as_u64().unwrap() >= 1, "{v}");
     assert_eq!(v["scopes"][0]["exclusions"][0]["unit"], key.as_str());
+    // The other twin is still listed, and still without an anchor: it is
+    // not selectable either, and it needs its own exclusion, as the hint
+    // says.
+    let items = v["scopes"][0]["items"].as_array().unwrap();
+    let twin = items
+        .iter()
+        .find(|i| i["text"] == "The cap is 5.")
+        .unwrap_or_else(|| panic!("{v}"));
+    assert_eq!(twin["anchor"], Value::Null, "{v}");
+    let other = s(&twin["unit"]["key"]).to_owned();
+    repo.write(
+        ".hibi/hibi.toml",
+        &scope(&format!(
+            "exclude = [\n  {{ resource = \"file:docs/t.md\", unit = \"{key}\", reason = \"a twin\" }},\n  {{ resource = \"file:docs/t.md\", unit = \"{other}\", reason = \"the other twin\" }},\n]\n"
+        )),
+    );
+    let v = repo.json(&["cover"]);
+    assert_eq!(v["scopes"][0]["items"].as_array().unwrap().len(), 1, "{v}");
+    assert_eq!(v["summary"]["excluded"], 2);
 }
 
 /// A sentence that also opens a paragraph of two sentences: the printed

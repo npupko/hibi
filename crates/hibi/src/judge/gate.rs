@@ -56,6 +56,17 @@ impl<'a> Gate<'a> {
         Ok(self.siblings.get(alias).and_then(Option::as_ref))
     }
 
+    /// Why sibling `alias` fails the checks of section 11.1, in the words
+    /// the file provider uses for a `repo:` side; `None` when it passes.
+    pub fn sibling_refusal(&self, alias: &str) -> Option<String> {
+        let (env, git) = (self.env, self.git);
+        allow_sibling(alias, env.config, env.user, env.root, |d| {
+            git.is_toplevel(d)
+        })
+        .err()
+        .map(|refusal| refusal.message().to_owned())
+    }
+
     /// True when text of `loc` may be sent: an external locator (its text
     /// does not come from the file provider), or a `file:` or `repo:` path
     /// in the file list of its repository.

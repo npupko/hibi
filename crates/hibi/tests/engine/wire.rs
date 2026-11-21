@@ -87,7 +87,7 @@ fn r62_a_disallowed_key_never_reaches_standard_input() {
     };
     assert_eq!(
         side(&quoted.id),
-        (SideState::Unavailable, Some(Reason::ProviderError))
+        (SideState::Unavailable, Some(Reason::SelectorRefused))
     );
     assert_eq!(side(&keyed.id), (SideState::Changed, Some(Reason::NoMark)));
 

@@ -437,9 +437,10 @@ fn suggest_evidence_in_errors_say_what_to_do() {
     )
     .err();
     assert_eq!(e["code"], "invalid_argument");
-    assert!(
-        e["message"].as_str().unwrap().ends_with("is not allowed"),
-        "{e}"
+    // The same sentence `claim` gives for a side on that alias.
+    assert_eq!(
+        e["message"],
+        "--in \"repo:api//src/**\": alias api is not declared under [repos] in .hibi/hibi.toml"
     );
     assert_eq!(e["remediation"], "hibi providers");
     assert_eq!(server.recorded().len(), 0);
@@ -464,6 +465,19 @@ fn without_the_key_nothing_is_contacted() {
             }
             let out = cmd.args(["--format", "json"]).args(&args).run();
             assert_eq!(out.code(), "judge_unavailable", "{args:?}");
+            // Only `status` has a form without the judge.
+            let fix = out.err()["remediation"].as_str().unwrap().to_owned();
+            if args[0] == "status" {
+                assert_eq!(
+                    fix,
+                    "Set TYPESAFE_API_KEY, or run hibi status without --judge-order."
+                );
+            } else {
+                assert_eq!(
+                    fix,
+                    "Set TYPESAFE_API_KEY. This command has no form without the judge."
+                );
+            }
         }
         let outside = scene
             .repo

@@ -219,7 +219,7 @@ impl Code {
             Code::InvalidConfig => "Fix .hibi/hibi.toml as the message says.",
             Code::InvalidUserConfig => "Fix the user config file as the message says.",
             Code::StoreCorrupt => {
-                "Restore the named file from git, for example with git checkout -- <file>, and replace any symbolic link with the real file or directory."
+                "Look at the named file first: git diff -- <file> shows what differs from the last commit. Restoring it with git checkout -- <file> also discards every record in it that is not committed yet, so keep those lines if there are any. Replace any symbolic link with the real file or directory."
             }
             Code::StoreLocked => {
                 "Wait for the other hibi process to finish, then run the command again."
@@ -246,7 +246,7 @@ impl Code {
             Code::QuoteSpansUnits => "Quote text from one unit only.",
             Code::QuoteInComment => "Anchor the code the comment describes.",
             Code::QuoteNotDistinguishable => {
-                "Quote a longer passage that occurs once in its place, or in code anchor <loc>#<symbol>::<line>."
+                "Quote a longer passage that occurs once in its place."
             }
             Code::UnsupportedSelector => {
                 "Use only the selector keys the provider lists; hibi providers shows them."
@@ -254,7 +254,9 @@ impl Code {
             Code::NoScopes => "Declare a [[scope]] in .hibi/hibi.toml.",
             Code::UnknownScope => "Use a scope name declared in .hibi/hibi.toml.",
             Code::TooManyCandidates => "Narrow --in or --kind.",
-            Code::JudgeUnavailable => "Set TYPESAFE_API_KEY, or run the command without the judge.",
+            Code::JudgeUnavailable => {
+                "Set TYPESAFE_API_KEY, or run hibi status without --judge-order."
+            }
             Code::JudgeFailed => "Run the command again later.",
             Code::Internal => return None,
         })

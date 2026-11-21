@@ -195,7 +195,9 @@ fn selector_advice_comes_from_the_provider() {
     );
     assert_eq!(
         e["remediation"],
-        "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them (the #name of the enclosing declaration, or the whole file), or take one out of a scope with an exclusion that names its key."
+        // Only what works for a claim: scopes play no part in resolving
+        // one, so an exclusion is not offered here.
+        "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the #name of the enclosing declaration, or the whole file."
     );
     // The units of a code file have symbols.
     repo.write(

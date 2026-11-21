@@ -1927,7 +1927,12 @@ fn a_function_moved_to_another_file_is_missing_until_the_caller_anchors_it() {
         &["reanchor", &id, "--statement", "The threshold is 50."],
     );
     assert_eq!(e["code"], "side_missing");
-    assert_eq!(s(&e["remediation"]), next);
+    // The command to run next is the one that was run, with an anchor for
+    // the side: the caller's own argument is not dropped.
+    assert_eq!(
+        s(&e["remediation"]),
+        format!("hibi reanchor {id} --statement 'The threshold is 50.' --evidence 1=<anchor>")
+    );
 
     // The caller names the new place.
     let v = at(
@@ -2942,7 +2947,10 @@ fn r55_editing_the_quoted_line_under_a_symbol_asks_for_a_new_anchor() {
     assert_eq!(s(&e["remediation"]), next);
     let e = refused(&repo, &["reanchor", &id, "--statement", "Another."]);
     assert_eq!(e["code"], "selector_not_exact");
-    assert_eq!(s(&e["remediation"]), next);
+    assert_eq!(
+        s(&e["remediation"]),
+        format!("hibi reanchor {id} --statement Another. --evidence 1=<anchor>")
+    );
 
     // The caller re-checked and names the line as it is now.
     let v = at(
@@ -2963,6 +2971,91 @@ fn r55_editing_the_quoted_line_under_a_symbol_asks_for_a_new_anchor() {
         "let max_entries = 128;"
     );
     assert_eq!(repo.view(&new)["sides"][1]["detail"], Value::Null);
+}
+
+/// A `reanchor` whose kept sides fail names every one of them in one error,
+/// and its remediation is one command: the caller's arguments again, with
+/// an anchor placeholder for each failing side. Following it side by side
+/// does not send the caller back and forth.
+#[test]
+fn reanchor_names_every_failing_kept_side_in_one_error_and_one_command() {
+    let repo = seeded();
+    let id = repo.claim(
+        "The cache holds 64 entries.",
+        CACHE_SUBJECT,
+        &[LIMIT_EVIDENCE, "file:src/a.rs#timeout"],
+    );
+    // The subject sentence is reworded, the quoted line of evidence 1 is
+    // edited, and evidence 2 is as it was.
+    repo.write(
+        "docs/a.md",
+        &DOC.replace(
+            "The cache holds 64 entries.",
+            "The cache holds 128 entries.",
+        ),
+    );
+    repo.write(
+        "src/a.rs",
+        &CODE.replace("max_entries = 64", "max_entries = 128"),
+    );
+    let both = format!("hibi reanchor {id} --subject <anchor> --evidence 1=<anchor>");
+    assert_eq!(s(&repo.view(&id)["next"]), both);
+
+    // Giving one of the two: the error names the other, and the command to
+    // run next keeps what was given.
+    let e = refused(
+        &repo,
+        &[
+            "reanchor",
+            &id,
+            "--subject",
+            "file:docs/a.md::The cache holds 128 entries.",
+        ],
+    );
+    assert_eq!(e["code"], "selector_not_exact");
+    assert!(
+        s(&e["message"]).starts_with("evidence 1 (file:src/a.rs): "),
+        "{e}"
+    );
+    assert_eq!(
+        s(&e["remediation"]),
+        format!(
+            "hibi reanchor {id} --subject 'file:docs/a.md::The cache holds 128 entries.' --evidence 1=<anchor>"
+        )
+    );
+    // Giving neither, with another argument: both sides in one message,
+    // one command with both placeholders and the caller's argument.
+    let e = refused(&repo, &["reanchor", &id, "--recheck", "P30D"]);
+    let message = s(&e["message"]);
+    assert!(
+        message.starts_with("the subject (file:docs/a.md) "),
+        "{message}"
+    );
+    assert!(
+        message.contains("; evidence 1 (file:src/a.rs): "),
+        "{message}"
+    );
+    assert_eq!(
+        s(&e["remediation"]),
+        format!("hibi reanchor {id} --recheck P30D --subject <anchor> --evidence 1=<anchor>")
+    );
+    // The command with both anchors goes through.
+    let v = at(
+        &repo,
+        "2026-11-20T13:00:00Z",
+        &[
+            "reanchor",
+            &id,
+            "--recheck",
+            "P30D",
+            "--subject",
+            "file:docs/a.md::The cache holds 128 entries.",
+            "--evidence",
+            "1=file:src/a.rs#limit::let max_entries = 128;",
+        ],
+    );
+    assert_eq!(v["claim"]["state"], "fresh");
+    assert_eq!(v["claim"]["recheck"], "P30D");
 }
 
 /// R55: the same anchor when another line of the function is edited: the

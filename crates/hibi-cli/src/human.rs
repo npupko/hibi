@@ -321,7 +321,7 @@ fn side_lines(out: &mut String, side: &Side, detail: bool) {
                 None => {
                     let _ = writeln!(
                         out,
-                        "      cannot be told apart from another candidate: no anchor selects it alone"
+                        "      cannot be told apart from another unit: no anchor selects it alone"
                     );
                 }
             }
@@ -608,7 +608,7 @@ pub fn cover(o: &CoverOutput) -> String {
             if item.anchor.is_none() {
                 let _ = writeln!(
                     out,
-                    "           cannot be anchored alone: exclude it with unit = \"{}\" (a claim on the unit that contains it does not cover it)",
+                    "           cannot be anchored alone: exclude it with unit = \"{}\"; each such unit needs its own exclusion, or exclude the resource (a claim on the unit that contains it does not cover it)",
                     item.unit.key
                 );
             }

@@ -178,9 +178,11 @@ pub const NOT_IDENTIFIED: &str = "the stored anchor no longer identifies one uni
 /// still names one declaration, and the quoted text is in other units.
 pub const NAME_AND_QUOTE_APART: &str = "the name and the quoted text now point to different units: the first candidate has the name, the others hold the quoted text";
 
-/// What to do about units that no anchor can tell apart. A longer quote
-/// does not help: it reaches outside the unit or matches both again.
-pub const TWINS_REMEDY: &str = "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them (the #name of the enclosing declaration, or the whole file), or take one out of a scope with an exclusion that names its key.";
+/// What to do, for a claim, about units that no anchor can tell apart. A
+/// longer quote does not help: it reaches outside the unit or matches both
+/// again. An exclusion in a scope does not help either: scopes play no
+/// part in resolving a claim (it is `cover`'s remedy, and `cover` says so).
+pub const TWINS_REMEDY: &str = "Units that are identical where they stand cannot be anchored one by one. Anchor the unit that contains them: the #name of the enclosing declaration, or the whole file.";
 
 /// The current resolution of one anchor.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -258,7 +260,11 @@ impl Resolved {
             Resolved::Several(_) => Some((SideState::Ambiguous, Reason::SeveralUnits)),
             Resolved::NotExact(_) => Some((SideState::Missing, Reason::NotExact)),
             Resolved::NotFound => Some((SideState::Missing, Reason::SelectorNotFound)),
-            Resolved::KeyNotAllowed { .. } => Some((SideState::Unavailable, Reason::ProviderError)),
+            // The stored anchor is no longer accepted: the side needs
+            // another one, as for an anchor the provider refuses.
+            Resolved::KeyNotAllowed { .. } => {
+                Some((SideState::Unavailable, Reason::SelectorRefused))
+            }
             Resolved::Failed { state, reason, .. } => Some((*state, *reason)),
         }
     }

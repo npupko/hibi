@@ -255,7 +255,8 @@ fn r50_invalid_units_are_provider_error() {
 }
 
 /// R62: a stored selector with a key the provider no longer allows is not
-/// sent; the side is `unavailable` with `provider_error`.
+/// sent; the side is `unavailable` with `selector_refused`, and the claim
+/// asks for a new anchor.
 #[test]
 fn r62_a_disallowed_stored_key_is_never_sent() {
     let (w, mut p, store, id) = setup();
@@ -263,7 +264,16 @@ fn r62_a_disallowed_stored_key_is_never_sent() {
     let before = log(&w).len();
     assert_eq!(
         side(&store, &mut p, &id),
-        (SideState::Unavailable, Some(Reason::ProviderError))
+        (SideState::Unavailable, Some(Reason::SelectorRefused))
+    );
+    let v = view(&store, &mut p, &id);
+    assert_eq!(
+        v.next,
+        Some(format!("hibi reanchor {id} --subject <anchor>"))
+    );
+    assert_eq!(
+        v.sides[0].detail.as_deref(),
+        Some("the provider does not allow the selector key key")
     );
     let after = log(&w);
     assert!(

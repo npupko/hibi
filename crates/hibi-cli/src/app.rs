@@ -497,7 +497,7 @@ fn status(global: &Global, args: &StatusArgs) -> Result<Reply, Error> {
     // `--judge-order` asks for the judge: its key is checked before any
     // other work (section 14.1).
     let client = if args.judge_order {
-        Some(judge_client()?)
+        Some(judge_client(true)?)
     } else {
         None
     };
@@ -652,15 +652,21 @@ fn providers(global: &Global, args: &ProvidersArgs) -> Result<Reply, Error> {
 /// `TYPESAFE_API_KEY` this fails with `judge_unavailable` before any other
 /// work, including root discovery. The library never reads the
 /// environment; both values are passed in.
-fn judge_client() -> Result<Judge, Error> {
-    Judge::new(
-        std::env::var(judge::KEY_VAR).ok().as_deref(),
-        std::env::var(judge::ENDPOINT_VAR).ok().as_deref(),
-    )
+/// `optional` is true for `status --judge-order`, which also runs without
+/// the judge; `triage` and `suggest-evidence` have no such form, and their
+/// remediation does not offer one.
+fn judge_client(optional: bool) -> Result<Judge, Error> {
+    let key = std::env::var(judge::KEY_VAR).ok();
+    let endpoint = std::env::var(judge::ENDPOINT_VAR).ok();
+    if optional {
+        Judge::new(key.as_deref(), endpoint.as_deref())
+    } else {
+        Judge::required(key.as_deref(), endpoint.as_deref())
+    }
 }
 
 fn triage(global: &Global, args: &TriageArgs) -> Result<Reply, Error> {
-    let client = judge_client()?;
+    let client = judge_client(false)?;
     let (repo, probed) = judge_repo(global)?;
     let now = now(global)?;
     let mut wired = wire_with(&repo, global, Some(probed))?;
@@ -703,7 +709,7 @@ fn triage(global: &Global, args: &TriageArgs) -> Result<Reply, Error> {
 }
 
 fn suggest_evidence(global: &Global, args: &SuggestEvidenceArgs) -> Result<Reply, Error> {
-    let client = judge_client()?;
+    let client = judge_client(false)?;
     let (repo, probed) = judge_repo(global)?;
     let now = now(global)?;
     let mut wired = wire_with(&repo, global, Some(probed))?;

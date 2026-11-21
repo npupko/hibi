@@ -905,7 +905,9 @@ fn reanchor_names_a_failing_kept_side_by_its_old_evidence_number() {
     assert!(e.message.starts_with("evidence 3 (t:a)"), "{}", e.message);
     assert_eq!(
         e.remediation,
-        Some(format!("hibi reanchor {old} --evidence 3=<anchor>"))
+        Some(format!(
+            "hibi reanchor {old} --drop-evidence 1 --evidence 3=<anchor>"
+        ))
     );
     assert_eq!((store.appends.get(), store.counts()), before);
 
@@ -1054,9 +1056,7 @@ fn a_quote_that_cannot_be_told_apart_is_refused_at_claim_time() {
     );
     assert_eq!(
         errors[0].remediation.as_deref(),
-        Some(
-            "Quote a longer passage that occurs once in its place, or in code anchor <loc>#<symbol>::<line>."
-        )
+        Some("Quote a longer passage that occurs once in its place, or give the unit's key.")
     );
     assert_eq!(store.counts(), (0, 0, 0));
 

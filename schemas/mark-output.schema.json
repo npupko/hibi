@@ -90,7 +90,7 @@
           "$ref": "#/$defs/SideState"
         },
         "text": {
-          "description": "Present for a side that was `changed`: the unit's text as the write\nmarked it, cut to 240 characters. It is what the caller accepted.",
+          "description": "Present for a side that was `changed`: the unit's whole text as the\nwrite marked it. It is what the caller accepted, so none of it is\nleft out.",
           "type": [
             "string",
             "null"

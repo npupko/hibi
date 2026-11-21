@@ -294,7 +294,10 @@ fn ambiguous_advice(keys: &[SelectorKey]) -> String {
 fn advise(providers: &mut Providers, loc: &Locator, r: &Resolved, e: Error) -> Error {
     if !matches!(
         e.code,
-        Code::SideAmbiguous | Code::UnsupportedSelector | Code::SelectorNotExact
+        Code::SideAmbiguous
+            | Code::UnsupportedSelector
+            | Code::SelectorNotExact
+            | Code::QuoteNotDistinguishable
     ) {
         return e;
     }
@@ -311,7 +314,12 @@ fn advise(providers: &mut Providers, loc: &Locator, r: &Resolved, e: Error) -> E
         .is_some_and(|c| c.units.iter().any(|u| u.sel.symbol.is_some()));
     // (The list of keys a provider accepts, for `unsupported_selector`, is
     // given whole.)
-    if !with_symbol && e.code != Code::UnsupportedSelector {
+    if !with_symbol
+        && !matches!(
+            e.code,
+            Code::UnsupportedSelector | Code::QuoteNotDistinguishable
+        )
+    {
         keys.retain(|k| *k != SelectorKey::Symbol);
     }
     match e.code {
@@ -326,6 +334,33 @@ fn advise(providers: &mut Providers, loc: &Locator, r: &Resolved, e: Error) -> E
         Code::SideAmbiguous => {
             let advice = ambiguous_advice(&keys);
             e.with_remediation(advice)
+        }
+        // What can tell the place apart depends on what the provider
+        // accepts: a name with a line only where there are names.
+        Code::QuoteNotDistinguishable => {
+            let mut advice = String::new();
+            if keys.contains(&SelectorKey::Quote) {
+                advice.push_str("Quote a longer passage that occurs once in its place");
+            }
+            if keys.contains(&SelectorKey::Symbol) {
+                advice.push_str(if advice.is_empty() {
+                    "Anchor <loc>#<symbol>::<line>"
+                } else {
+                    ", or in code anchor <loc>#<symbol>::<line>"
+                });
+            }
+            if keys.contains(&SelectorKey::Key) {
+                advice.push_str(if advice.is_empty() {
+                    "Give the unit's key"
+                } else {
+                    ", or give the unit's key"
+                });
+            }
+            if advice.is_empty() {
+                e
+            } else {
+                e.with_remediation(format!("{advice}."))
+            }
         }
         // Only for an anchor found by similarity. The other cause, a quote
         // that is not in the unit its symbol names, has its own advice.
@@ -892,12 +927,21 @@ fn claim_elements(
         let target = &target;
         let marked = (|| -> Result<Mark, Error> {
             if let Some(retired) = retired {
-                return Err(Error::new(
+                let e = Error::new(
                     Code::ClaimRetired,
                     format!(
                         "the claim {retired}, with this statement, this note and its sides on the same units, is retired"
                     ),
-                ));
+                );
+                // In a batch the note is a field of the element, not an
+                // option.
+                return Err(if indexed {
+                    e.with_remediation(
+                        "To record the same statement and anchors again, give the element a different \"note\".",
+                    )
+                } else {
+                    e
+                });
             }
             let anchors: Vec<Anchor> = target.sides().cloned().collect();
             let units: Vec<&Unit> = target_resolved.iter().filter_map(Resolved::unit).collect();
@@ -1133,6 +1177,12 @@ fn mark_elements(
 /// The command that repeats the caller's arguments and ends with
 /// `--note <text>`: the remediation when the rebuilt claim is a retired one.
 fn reanchor_with_note(old: &ClaimId, input: &ReanchorInput) -> String {
+    format!("{} --note <text>", reanchor_again(old, input))
+}
+
+/// The `reanchor` command the caller gave, with every argument repeated, so
+/// that a remediation can add to it and lose nothing the caller asked for.
+fn reanchor_again(old: &ClaimId, input: &ReanchorInput) -> String {
     let mut cmd = format!("hibi reanchor {old}");
     let mut arg = |flag: &str, value: &str| {
         cmd.push_str(&format!(" {flag} {}", sh_quote(value)));
@@ -1158,7 +1208,6 @@ fn reanchor_with_note(old: &ClaimId, input: &ReanchorInput) -> String {
     if let Some(b) = &input.by {
         arg("--by", b);
     }
-    cmd.push_str(" --note <text>");
     cmd
 }
 
@@ -1278,6 +1327,10 @@ pub fn reanchor(
     }
     let warnings = run_warnings(&ledger, git, anchors.iter().copied())?;
     let mut units: Vec<&Unit> = Vec::with_capacity(plan.len());
+    // The kept sides that need a new anchor: every one of them is named in
+    // one error, with one command that gives a placeholder for each, so
+    // that the caller is not sent from one side to the next.
+    let mut need_anchor: Vec<(usize, Error)> = Vec::new();
     for (((anchor, new), r), n) in plan.iter().zip(&resolved).zip(numbers.iter().copied()) {
         if *new {
             units.push(check_new(n, anchor, r).map_err(|e| advise(providers, &anchor.loc, r, e))?);
@@ -1285,24 +1338,37 @@ pub fn reanchor(
             // A kept side that no longer resolves to one unit has to be
             // replaced, with an anchor the caller chooses. `n` is its
             // position in the old claim, and `r` is that side's resolution.
-            return Err(match r.failure() {
+            match r.failure() {
                 // `None`: the side resolves by its symbol and its stored
                 // quote is gone.
                 None
                 | Some((SideState::Missing | SideState::Ambiguous, _))
-                | Some((_, Reason::SelectorRefused)) => {
-                    let option = if n == 0 {
-                        "--subject <anchor>".to_owned()
-                    } else {
-                        format!("--evidence {n}=<anchor>")
-                    };
-                    e.with_remediation(format!("hibi reanchor {} {option}", old.id))
-                }
-                _ => advise(providers, &anchor.loc, r, e),
-            });
+                | Some((_, Reason::SelectorRefused)) => need_anchor.push((n, e)),
+                // Nothing an anchor can fix: the side's own remediation.
+                _ => return Err(advise(providers, &anchor.loc, r, e)),
+            }
         } else {
             units.push(r.unit().expect("no failure means one unit"));
         }
+    }
+    if let Some((_, first)) = need_anchor.first() {
+        let code = first.code;
+        let message = need_anchor
+            .iter()
+            .map(|(_, e)| e.message.as_str())
+            .collect::<Vec<_>>()
+            .join("; ");
+        // The caller's own arguments are repeated: the command to run next
+        // is the one that was run, with an anchor for each of these sides.
+        let mut command = reanchor_again(&old.id, input);
+        for (n, _) in &need_anchor {
+            if *n == 0 {
+                command.push_str(" --subject <anchor>");
+            } else {
+                command.push_str(&format!(" --evidence {n}=<anchor>"));
+            }
+        }
+        return Err(Error::new(code, message).with_remediation(command));
     }
 
     // Step 4.

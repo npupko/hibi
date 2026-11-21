@@ -166,6 +166,26 @@ impl Judge {
     /// (`127.0.0.1`, `[::1]`, `localhost`), is `invalid_argument`, so the key
     /// never travels in clear text over a network. Nothing is contacted.
     pub fn new(key: Option<&str>, endpoint: Option<&str>) -> Result<Judge, Error> {
+        Self::open(key, endpoint)
+    }
+
+    /// [`Judge::new`] for a command that is nothing but a judge command
+    /// (`triage`, `suggest-evidence`): without the key its remediation does
+    /// not offer running the command without the judge, which only
+    /// `status --judge-order` has.
+    pub fn required(key: Option<&str>, endpoint: Option<&str>) -> Result<Judge, Error> {
+        Self::open(key, endpoint).map_err(|e| {
+            if e.code == Code::JudgeUnavailable {
+                e.with_remediation(format!(
+                    "Set {KEY_VAR}. This command has no form without the judge."
+                ))
+            } else {
+                e
+            }
+        })
+    }
+
+    fn open(key: Option<&str>, endpoint: Option<&str>) -> Result<Judge, Error> {
         let key = match key {
             Some(k) if !k.is_empty() => k.to_owned(),
             missing => {

@@ -173,6 +173,18 @@ pub fn escape_controls(json: &str) -> String {
     out
 }
 
+/// The command that shows what is wrong with the provider of `scheme`:
+/// `hibi providers --check <scheme>` runs the provider and reports each
+/// conformance case. For the built-in schemes, which have no provider
+/// command, it is `hibi providers`.
+pub fn providers_check(scheme: &str) -> String {
+    if matches!(scheme, "file" | "repo") {
+        "hibi providers".to_owned()
+    } else {
+        format!("hibi providers --check {scheme}")
+    }
+}
+
 /// The remediation of a side that is `unavailable` with `reason`, given
 /// what the provider or the registry said. For `resource_unavailable` it
 /// is that message, cut to [`DETAIL_CHARS`], and what to do after it; for
@@ -186,6 +198,9 @@ pub fn side_remediation(reason: Reason, message: Option<&str>, scheme: &str) -> 
         );
         let said = said.trim_end_matches(['.', ' ']);
         return Some(format!("{said}. Run the command again once that is fixed."));
+    }
+    if reason == Reason::ProviderFailed {
+        return Some(providers_check(scheme));
     }
     if reason == Reason::ProviderError {
         // The command names the scheme, so that it can be run as it is. The
@@ -418,8 +433,9 @@ pub struct AcceptedSide {
     pub state: SideState,
     #[schemars(with = "Nullable<Reason>")]
     pub reason: Option<Reason>,
-    /// Present for a side that was `changed`: the unit's text as the write
-    /// marked it, cut to 240 characters. It is what the caller accepted.
+    /// Present for a side that was `changed`: the unit's whole text as the
+    /// write marked it. It is what the caller accepted, so none of it is
+    /// left out.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
 }

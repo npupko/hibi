@@ -123,11 +123,14 @@ fn resources(pats: &[ResourcePattern], gate: &mut Gate<'_>) -> Result<Vec<Locato
                     .map(|f| format!("repo:{alias}//{f}"))
                     .collect(),
                 None => {
-                    return Err(Error::invalid_argument(format!(
-                        "--in {:?}: sibling repository {alias} is not allowed",
-                        p.as_str()
-                    ))
-                    .with_remediation("hibi providers"));
+                    // The same sentence a `repo:` side gets from `claim`.
+                    let why = gate
+                        .sibling_refusal(alias)
+                        .unwrap_or_else(|| format!("sibling repository {alias} is not allowed"));
+                    return Err(
+                        Error::invalid_argument(format!("--in {:?}: {why}", p.as_str()))
+                            .with_remediation("hibi providers"),
+                    );
                 }
             },
             PatternKind::Locator(_) => Vec::new(),

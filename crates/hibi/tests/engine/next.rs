@@ -88,12 +88,17 @@ fn missing_and_ambiguous_sides_give_reanchor_with_one_option_per_side() {
 
 #[test]
 fn unavailable_rows() {
-    for code in [C::Failed, C::RepoNotAllowed] {
+    // A provider that failed: the check of its scheme says what is wrong;
+    // plain `hibi providers` starts nothing and would show nothing.
+    for (code, next) in [
+        (C::Failed, "hibi providers --check u"),
+        (C::RepoNotAllowed, "hibi providers"),
+    ] {
         let mut f = fixture(None);
         set_err(&f.worlds[1], "u:b", code);
         assert_eq!(
             f.next(),
-            (ClaimState::Stale, Some("hibi providers".to_owned())),
+            (ClaimState::Stale, Some(next.to_owned())),
             "{code}"
         );
     }
@@ -104,9 +109,9 @@ fn unavailable_rows() {
         // A changed side elsewhere does not turn `null` into `hibi mark`.
         edit(&f.worlds[0], "t:a", "k", "edited");
         assert_eq!(f.next().1, None);
-        // The `hibi providers` row comes before the `null` row.
+        // The row of a failed provider comes before the `null` row.
         set_err(&f.worlds[2], "v:c", C::Failed);
-        assert_eq!(f.next().1, Some("hibi providers".to_owned()));
+        assert_eq!(f.next().1, Some("hibi providers --check v".to_owned()));
     }
     // provider_not_registered: `hibi providers` says what is wrong.
     let f = fixture(None);
@@ -206,7 +211,13 @@ fn an_anchor_the_provider_refuses_is_not_a_provider_fault() {
         )
         .unwrap_err();
         assert_eq!(e.code, hibi::Code::SideUnavailable);
-        assert_eq!(e.remediation, Some(next));
+        assert_eq!(
+            e.remediation,
+            Some(format!(
+                "hibi reanchor {} --statement S2 --evidence 1=<anchor>",
+                f.id
+            ))
+        );
 
         // A new anchor: the caller's mistake, in the provider's words.
         let errors = engine::claim(
@@ -701,7 +712,13 @@ fn a_symbol_keeps_its_unit_when_the_stored_quote_is_gone() {
     )
     .unwrap_err();
     assert_eq!(e.code, hibi::Code::SelectorNotExact);
-    assert_eq!(e.remediation, Some(next));
+    // The caller's own arguments are repeated in the command to run next.
+    assert_eq!(
+        e.remediation,
+        Some(format!(
+            "hibi reanchor {id} --statement S2 --subject <anchor>"
+        ))
+    );
     assert_eq!(store.counts(), before);
 
     // With a new anchor the claim is fresh, and nothing is left to say.
