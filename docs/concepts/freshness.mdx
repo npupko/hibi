@@ -43,10 +43,10 @@ Consequences:
 | State | Reason | Meaning |
 |---|---|---|
 | `same` | | The unit's fingerprint equals the one in the reference mark |
-| `changed` | `fingerprint_differs` | The unit was found and its fingerprint differs |
+| `changed` | `fingerprint_differs` | The unit was found and its fingerprint differs. For a symbol whose stored quote is gone from the declaration, `detail` says "the stored quote is no longer in this unit" |
 | `changed` | `no_mark` | The claim has no mark |
 | `missing` | `selector_not_found` | The resource exists, but no unit matches the anchor |
-| `missing` | `not_exact` | No unit matches the anchor exactly; `candidates` lists the units found by similarity |
+| `missing` | `not_exact` | No unit matches the anchor exactly, or the exact match is not corroborated; `candidates` lists the units it could mean |
 | `missing` | `resource_not_found` | The file or resource does not exist |
 | `ambiguous` | `several_units` | The anchor matches several units; `candidates` lists them |
 | `unavailable` | `profile_mismatch` | The fingerprints use different profiles, for example a whole code file that no longer parses |
@@ -59,14 +59,30 @@ Consequences:
 | `unavailable` | `not_text`, `too_large` | The file is not valid UTF-8, or is too large: a code file over 2 MiB, another file over 8 MiB, or more than 100,000 units |
 | `unavailable` | `repo_not_found`, `repo_not_allowed` | A sibling repository could not be used (see [configuration](/configuration#sibling-repositories)) |
 
-A side is never resolved by similarity. A candidate is a guess at where the
-unit went, for you to read; the side stays `missing` until you re-anchor it
-(see [anchors](/concepts/anchors#finding-the-unit)).
+A side is never resolved by similarity, and an exact match of a stored quote
+counts only when the text around it, or the unit's content, is what was
+marked (see [anchors](/concepts/anchors#an-exact-match-needs-corroboration)).
+In practice:
+
+- **Code under a symbol is `changed`** when the declaration was edited. Read
+  the change, re-check, and `hibi mark` the claim if it still holds.
+- **A sentence edited at the quoted words, or right around them, is
+  `missing`** (`not_exact`), with the edited sentence as a candidate. Read
+  it, re-check, and `hibi reanchor` the side to the candidate's anchor if
+  the statement still holds. `mark` refuses the claim.
+- **A sentence edited elsewhere, away from the quote, is `changed`**, as
+  for code.
+- **An edit next to the sentence, or a move of the unchanged sentence,
+  changes nothing.** The claim stays fresh.
+
+A candidate is a guess at where the unit went, for you to read; the side
+stays `missing` until you re-anchor it.
 
 An unavailable side also carries `detail`, the message that says why, from
 the provider or from hibi, and `remediation`, what the limit or the cause is
-and what you can do. The text
-output prints both under the side. For a scheme whose declaration was
+and what you can do. A changed side whose stored quote is gone from its
+declaration carries a `detail` as well. The text output prints both under
+the side. For a scheme whose declaration was
 removed:
 
 ```text output
@@ -74,7 +90,7 @@ $ HIBI_CONFIG=user.toml hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-regrhf1hta0k48q82xea  stale  Downloads are retried at most 3 times.
-  marked 2026-11-21T04:34:54Z (m1-42ab0x632x652x8dxbcq)
+  marked 2026-11-21T06:40:17Z (m1-42yc7z9vw886wac1hg00)
   subject  ref:notes  unavailable (scheme_not_declared)
     the scheme ref is not declared in .hibi/hibi.toml
     Declare the scheme under [schemes] in .hibi/hibi.toml, or retire the claim.

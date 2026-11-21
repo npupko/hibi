@@ -116,7 +116,7 @@ pub fn delay_ms(n: u32) -> u64 {
     ```
 
     ```text output
-    c1-dbv50xcvkr3wg5jnbtfw  created  m1-45esqyhdt3sd9schhede  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+    c1-dbv50xcvkr3wg5jnbtfw  created  m1-65gfwtpr5zm3tye21c1z  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
     ```
 
     `claim` writes the claim and its first mark. The claim is fresh:
@@ -141,15 +141,19 @@ pub fn delay_ms(n: u32) -> u64 {
     1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
     c1-dbv50xcvkr3wg5jnbtfw  stale  The client gives up after 5 attempts.
-      marked 2026-11-21T04:34:48Z (m1-45esqyhdt3sd9schhede)
+      marked 2026-11-21T06:36:08Z (m1-65gfwtpr5zm3tye21c1z)
       evidence 1  file:src/retry.rs  changed (fingerprint_differs)  variable "MAX_ATTEMPTS", line 2
+        the stored quote is no longer in this unit
       next: hibi mark c1-dbv50xcvkr3wg5jnbtfw
 
     Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
     ```
 
-    Only the side that changed is listed. `next` is the command to run if a
-    re-check shows that the statement still holds.
+    Only the side that changed is listed. The symbol `MAX_ATTEMPTS` still
+    finds the declaration, but the line stored with it,
+    `pub const MAX_ATTEMPTS: u32 = 5;`, is no longer there, and the line under
+    the side says so. `next` is the command to run if a re-check shows that
+    the statement still holds.
   </Step>
   <Step title="Re-check and repair">
     The statement no longer holds: the code now says 3. Fix the sentence in
@@ -165,8 +169,8 @@ pub fn delay_ms(n: u32) -> u64 {
 
     ```text output
     c1-dbv50xcvkr3wg5jnbtfw is retired and replaced by the new claim c1-24t09j90dg85esm4e3e9
-      mark m1-5ggg3jc5gq4nxpqhz3e9, retirement r1-ytfvh8razps7sj4z5zes
-      was stale: subject file:docs/retry.md missing (not_exact); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked
+      mark m1-ez6c9tw286fmtpr5n7nx, retirement r1-46e7myf18vtvt9ebb268
+      was stale: subject file:docs/retry.md missing (not_exact); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked them
       subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4)
         {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
       evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
@@ -198,7 +202,7 @@ and `--help` (text). `--format human` or
 piped:
 
 ```json output
-{"ok":true,"command":"status","now":"2026-11-21T04:34:49Z","snapshot":"b3:25f4eb2d87bed455ebcafd26dd97003dce95b82fdf3ab348e8557b04a1c6442a","since":null,"summary":{"claims":2,"fresh":1,"stale":0,"expired":0,"retired":1},"claims":[],"nextNote":"Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A candidate listed under a side is a guess at where its unit went: read it before you anchor to it.","warnings":[]}
+{"ok":true,"command":"status","now":"2026-11-21T06:36:08Z","snapshot":"b3:be848d7d9eb9def69be25fad3c948d7637ad4db62a097cd8c1eaca1e59bf3e2d","since":null,"summary":{"claims":2,"fresh":1,"stale":0,"expired":0,"retired":1},"claims":[],"nextNote":"Re-check each statement before running its next command. When a statement no longer holds, do not run it: fix the text or the code, or retire the claim with hibi retire. A candidate listed under a side is a guess at where its unit went: read it before you anchor to it.","warnings":[]}
 ```
 
 `hibi schema status-output` prints the JSON Schema of that object. Every

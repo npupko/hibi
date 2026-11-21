@@ -128,7 +128,7 @@ hibi claim "The client gives up after 5 attempts." \
 ```
 
 ```text output
-c1-dbv50xcvkr3wg5jnbtfw  created  m1-45esqyhdt3sd9schhede  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
+c1-dbv50xcvkr3wg5jnbtfw  created  m1-65gfwtpr5zm3tye21c1z  subject file:docs/retry.md (sentence "It gives up after 5 attempts.", line 4); evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
 ```
 
 Now someone changes `MAX_ATTEMPTS` to 3. In the next session the agent asks
@@ -142,14 +142,17 @@ hibi status
 1 claim: 0 fresh, 1 stale, 0 expired, 0 retired
 
 c1-dbv50xcvkr3wg5jnbtfw  stale  The client gives up after 5 attempts.
-  marked 2026-11-21T04:34:48Z (m1-45esqyhdt3sd9schhede)
+  marked 2026-11-21T06:36:08Z (m1-65gfwtpr5zm3tye21c1z)
   evidence 1  file:src/retry.rs  changed (fingerprint_differs)  variable "MAX_ATTEMPTS", line 2
+    the stored quote is no longer in this unit
   next: hibi mark c1-dbv50xcvkr3wg5jnbtfw
 
 Re-check each statement before running its next command. If it no longer holds, fix the text or the code, or retire the claim with hibi retire.
 ```
 
-`next` assumes the statement still holds. It does not: the code says 3. The
+The symbol still finds `MAX_ATTEMPTS`, but the line stored with it is gone,
+and the line under the side says so. `next` assumes the statement still
+holds. It does not: the code says 3. The
 agent fixes the sentence to "It gives up after 3 attempts." and replaces the
 claim with one that states the new fact. An id can be shortened to a unique
 prefix:
@@ -162,8 +165,8 @@ hibi reanchor c1-dbv5 \
 
 ```text output
 c1-dbv50xcvkr3wg5jnbtfw is retired and replaced by the new claim c1-24t09j90dg85esm4e3e9
-  mark m1-5ggg3jc5gq4nxpqhz3e9, retirement r1-ytfvh8razps7sj4z5zes
-  was stale: subject file:docs/retry.md missing (not_exact); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked
+  mark m1-ez6c9tw286fmtpr5n7nx, retirement r1-46e7myf18vtvt9ebb268
+  was stale: subject file:docs/retry.md missing (not_exact); evidence 1 file:src/retry.rs changed (fingerprint_differs); now marked: make sure you re-checked them
   subject file:docs/retry.md (sentence "It gives up after 3 attempts.", line 4)
     {"loc":"file:docs/retry.md","sel":{"quote":"gives up after 3 attempts","prefix":"tries\n\nThe client retries a failed download.\nIt ","suffix":".\nThe delay between attempts doubles each time, ","pos":52}}
   evidence 1 file:src/retry.rs (variable "MAX_ATTEMPTS", line 2)
@@ -203,10 +206,11 @@ A claim is **fresh** when some mark's fingerprints equal the current
 fingerprint of every side, and its recheck period, if any, has not run out. It
 is **stale** when no mark matches, **expired** when a mark matches but the
 period ran out, and **retired** when it was retired. Every side must resolve
-exactly. When a stored anchor is not found exactly, for example after its
-sentence was reworded, the side is missing, and `hibi status` lists the units
-found by similarity as candidates. You read them and re-anchor the claim with
-`hibi reanchor`.
+exactly. When the quoted words of a sentence, or the text right around them,
+are edited, the side is missing, and `hibi status` lists the edited sentence
+as a candidate. You read it, re-check the statement, and re-anchor the claim
+with `hibi reanchor`. An edit to the neighbouring sentences leaves the claim
+fresh.
 
 ## Learn more
 

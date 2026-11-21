@@ -127,7 +127,9 @@ cannot be rendered when it does not resolve to exactly one unit (it is
 missing, ambiguous or unavailable), when its provider does not offer
 `render` or `render` fails, or when it is a `file:` or `repo:` side whose
 file git does not list. Claims with such a side are not sent and come first,
-ordered by id. The answer itself is not printed.
+ordered by id. A claim whose sentence was edited at its quote is usually in
+this group, because the side is `missing` (`not_exact`); the ranking covers
+claims whose sides all resolve. The answer itself is not printed.
 
 ## Repeatability and failures
 

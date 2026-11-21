@@ -63,6 +63,15 @@ Ask the user before each of these steps; they change the repository.
 1. **Status.** `hibi status --detail` lists stale and expired claims with the
    current text of every side. Each side that is not `same` has a `state`
    (`changed`, `missing`, `ambiguous`, `unavailable`) and a `reason`.
+
+   What an edit does to a side:
+
+   | Edit | Side | Then |
+   |---|---|---|
+   | Code under a `#symbol` changed | `changed`; when the stored quote is gone from it, the side also says "the stored quote is no longer in this unit" | Read the change, re-check, `hibi mark` |
+   | A sentence edited at its quoted words or right around them | `missing` (`not_exact`), the edited sentence is a candidate | Read the candidate, re-check, `hibi reanchor` to its anchor |
+   | A long sentence edited away from its quote | `changed` | Read the change, re-check, `hibi mark` |
+   | A neighbouring sentence edited, or the sentence moved unchanged | nothing: the claim stays fresh | |
 2. **Read the change.** For each changed side, look at what changed before
    you decide anything: `git diff -- <path>` for a file, or
    `hibi status --detail <id>` for the unit's current text. `status` says
@@ -75,8 +84,8 @@ Ask the user before each of these steps; they change the repository.
 
    | `reason` | What to do |
    |---|---|
-   | `not_exact` | The stored anchor is not found exactly. `candidates` lists units found by similarity, each with an `anchor` that selects it. A candidate is a guess: read it. If it is the unit the claim is about, re-check the statement against it, then run `next` with that anchor. If none is right, find the unit yourself. |
-   | `selector_not_found` | No candidate: the unit was rewritten or removed. Find it with `git diff` or `git log -p`, re-check, and re-anchor. If it is gone, ask the user before you retire. |
+   | `not_exact` | The stored anchor is not found exactly, or found only in a unit that nothing confirms is the marked one. `candidates` lists units it could mean, each with an `anchor` that selects it: first units with the marked content (`sameFingerprint: true`), then the provider's. A candidate is a guess: read it. If it is the unit the claim is about, re-check the statement against it, then run `next` with that anchor. The right unit may not be listed; then find it yourself. |
+   | `selector_not_found` | No candidate: the unit was rewritten, removed, or moved to another file (only the side's own file is searched). Find it with `git diff` or `git log -p`, re-check, and re-anchor. If it is gone, ask the user before you retire. |
    | `resource_not_found` | The file was moved, renamed or deleted. Find the new path, for example with `git log --stat -- <old path>`, then re-anchor; if it was deleted, ask the user before you retire. |
    | `several_units` | The anchor matches several units, listed in `candidates`. Choose the one the statement is about and re-anchor to its `anchor`. |
    | `selector_refused` | The provider refuses the stored anchor; `detail` says why. Re-anchor the side with an anchor the message allows, or ask the user before you retire. |
@@ -113,8 +122,10 @@ Ask the user before each of these steps; they change the repository.
    scopes that no claim covers. Claim the checkable ones. To exclude one unit,
    with the user's agreement, add an entry to the scope's `exclude` list in
    `.hibi/hibi.toml`. The unit key is in the JSON output of `cover`
-   (`items[].unit.key`); the text output prints no keys:
+   (`scopes[].items[].unit.key`); the text output prints no keys:
    `{ resource = "file:docs/retry.md", unit = "sentence:0863e2920c1f", reason = "a pointer, not a statement" }`.
+   A prose unit's key comes from its content, so the exclusion stops
+   matching when that sentence is reworded, and `cover` lists it again.
    Leave out `unit` to exclude a whole file.
 
 Pass `--by agent:claude` (or set `HIBI_BY`) so marks record who checked.
@@ -234,7 +245,8 @@ EOF
 echo '["c1-zfv9", {"claim": "c1-mdm1", "note": "checked against delay_ms"}]' | hibi mark --stdin
 ```
 
-An anchor in a batch is a compact string or `{"loc": ..., "sel": {...}}`.
+An anchor in a batch is a compact string, `{"loc": ..., "sel": {...}}`, or
+that object as a JSON string, as candidates and errors print it.
 Use the object form for a selector other than the empty one on an external
 scheme, for example `{"loc": "ref:notes", "sel": {"key": "n1"}}`, and for a
 path that contains `#` or `::`. Each `cover` item has an `anchor` object you

@@ -36,7 +36,10 @@ An anchor answers "which unit is this". A fingerprint answers "what did the
 checker see". Keeping them apart means that re-finding a moved unit can never
 pass for "unchanged". A similarity score only proposes candidates for a
 re-anchor. It never resolves an anchor and never decides freshness, which is
-exact fingerprint equality.
+exact fingerprint equality. Even an exact match of a stored quote identifies
+its unit only when the text around it, or the unit's content, is what was
+marked: a short quote that reappears in another sentence is a candidate, not
+the claim's unit.
 
 ## One freshness rule
 
@@ -50,7 +53,9 @@ period or not) instead of from claim types.
 
 Code is fingerprinted from its syntax tree, so reformatting that only moves
 whitespace, line breaks or comments stales nothing, while any literal,
-identifier or operator change does. Prose is fingerprinted after Unicode NFC
+identifier or operator change does. The exception is a Python backslash line
+continuation, which is part of the syntax tree and stales a claim when it is
+added or removed. Prose is fingerprinted after Unicode NFC
 and whitespace collapsing. The hash is BLAKE3, chosen for decisions that
 depend on it, and every fingerprint names its profile (`prose-v1`, `ast-v1`)
 so that a later change to the rules shows up as a visible profile mismatch,

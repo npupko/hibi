@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "hibi",
-  "description": "Deterministic memory for AI coding agents: record that a statement was checked against evidence, then learn exactly what changed since and what in a declared scope has no claim.",
+  "description": "Deterministic memory for AI coding agents: record that a statement was checked against evidence, then learn which side of which claim changed since and what in a declared scope has no claim.",
   "colors": {
     "primary": "#D6452F",
     "light": "#E97A66",
