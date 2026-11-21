@@ -5948,7 +5948,7 @@ since <range> (base <commit>)
     <remediation>
     stored: symbol <symbol>, quote "<quote>", key <key>
     <n> candidates, found by similarity; each is a guess, read it before you anchor to it:
-    - <kind> "<label>", line <n>; same content as at the last mark
+    - <kind> "<label>", line <n>; same content as at the reference mark
       | <the candidate's text on one line>
       anchor: <anchor>
     and <n> more
@@ -5995,7 +5995,7 @@ Re-check each statement before running its next command. If it no longer holds, 
   of `candidates` then has up to three lines. The `-` line gives the kind,
   the label (or the key when the unit has no label) put on one line and cut
   to 60 characters, and the first line of the unit; `, line <n>` is omitted
-  for a unit without a range, and `; same content as at the last mark` is
+  for a unit without a range, and `; same content as at the reference mark` is
   printed only when `sameFingerprint` is `true`. The `|` line is the
   candidate's `text` put on one line and cut to 100 characters, and is
   omitted when `text` is `null`. The `anchor:` line is the candidate's
@@ -7273,11 +7273,15 @@ Verification section in order.
   `attest`, `--fail-on`, `bunx`, `supersede`, `archive` and `v4` finds matches
   only in the changelog note. `v4` counts only when it is not followed by a
   dot or a digit, so version numbers such as `v4.2` and action pins do not
-  match. The release workflow is exempt, because its tool names are fixed by
-  the release tooling. `design/` and `cases/` are excluded because they
+  match. A match that lies inside a claim, mark or retirement id (`c1-`,
+  `m1-` or `r1-` followed by characters of the id alphabet) does not count:
+  an id is derived from content, and pasted output holds ids. The release
+  workflow is exempt, because its tool names are fixed by the release
+  tooling. `design/` and `cases/` are excluded because they
   define and test behaviour carried over from the earlier version and have to
   name it.
-  (`r42_no_tracked_file_names_a_leftover_term`.)
+  (`r42_no_tracked_file_names_a_leftover_term`,
+  `a_term_inside_a_record_id_is_not_a_hit`.)
 - R43. Every `hibi` command line in a fenced code block of `README.md`,
   `docs/**/*.mdx` and `plugins/**/*.md`, other than the generated CLI
   reference and blocks marked `output`, parses with the clap definition.

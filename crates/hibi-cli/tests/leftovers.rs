@@ -33,6 +33,28 @@ fn excluded(path: &str) -> bool {
         || path == ".github/workflows/release.yml"
 }
 
+/// The characters of a record id after its prefix (spec section 3.4).
+const ID_ALPHABET: &str = "0123456789abcdefghjkmnpqrstvwxyz";
+
+/// True when the match of `len` bytes at `at` lies inside a claim, mark or
+/// retirement id: `c1-`, `m1-` or `r1-` followed by characters of the id
+/// alphabet. An id is derived from content, so its letters mean nothing.
+fn inside_an_id(text: &str, at: usize, len: usize) -> bool {
+    let in_alphabet = |c: char| ID_ALPHABET.contains(c);
+    if !text[at..at + len].chars().all(in_alphabet) {
+        return false;
+    }
+    let start = text[..at]
+        .char_indices()
+        .rev()
+        .take_while(|(_, c)| in_alphabet(*c))
+        .last()
+        .map_or(at, |(i, _)| i);
+    ["c1-", "m1-", "r1-"]
+        .iter()
+        .any(|prefix| text[..start].ends_with(prefix))
+}
+
 /// The positions of `term` in `text` (lower case) that count as a hit.
 fn hits(text: &str, term: &str, version_like: bool) -> Vec<usize> {
     text.match_indices(term)
@@ -40,6 +62,7 @@ fn hits(text: &str, term: &str, version_like: bool) -> Vec<usize> {
             let next = text[at + term.len()..].chars().next();
             !(version_like && next.is_some_and(|c| c == '.' || c.is_ascii_digit()))
         })
+        .filter(|(at, _)| !inside_an_id(text, *at, term.len()))
         .map(|(at, _)| at)
         .collect()
 }
@@ -89,4 +112,33 @@ fn the_version_like_term_is_not_a_hit_inside_a_version_number() {
     let text = format!("uses: x@{term}.1 and {term}5 but {term} and {term}-store");
     assert_eq!(hits(&text, &term, true).len(), 2);
     assert_eq!(hits(&text, &term, false).len(), 4);
+}
+
+#[test]
+fn a_term_inside_a_record_id_is_not_a_hit() {
+    let term = terms()[5].clone();
+    for prefix in ["c1-", "m1-", "r1-"] {
+        // At the start, in the middle and at the end of the id.
+        for id in [
+            format!("{prefix}{term}rmks435reryx3"),
+            format!("{prefix}crmks{term}35reryx3"),
+            format!("{prefix}crmks435reryx3{term}"),
+        ] {
+            let text = format!("marked 2026-11-20 ({id}) and `hibi mark {id}`");
+            assert_eq!(hits(&text, &term, true), Vec::<usize>::new(), "{text}");
+        }
+    }
+    // Not an id: another prefix, a character outside the alphabet before
+    // the term, or the term after the id has ended.
+    for text in [
+        format!("x1-crmks{term}"),
+        format!("c1-crmks_{term}"),
+        format!("c1-crmks435 {term}"),
+        format!("c1 {term}"),
+    ] {
+        assert_eq!(hits(&text, &term, true).len(), 1, "{text}");
+    }
+    // A term with characters outside the alphabet is never inside an id.
+    let dashed = terms()[1].clone();
+    assert_eq!(hits(&format!("c1-abc{dashed}"), &dashed, false).len(), 1);
 }

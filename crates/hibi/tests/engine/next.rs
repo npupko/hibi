@@ -251,7 +251,8 @@ fn a_side_that_cannot_be_evaluated_says_what_the_provider_said() {
     let side = &v.sides[1];
     assert_eq!(side.reason, Some(engine::Reason::ProviderFailed));
     let said = side.detail.as_deref().unwrap();
-    assert!(said.contains("the helper exited with status 3"), "{said}");
+    // The provider's sentence as it is: no error code in front of it.
+    assert!(said.starts_with("the helper exited with status 3"), "{said}");
     assert!(
         said.chars().count() <= engine::DETAIL_CHARS + 1,
         "{}",

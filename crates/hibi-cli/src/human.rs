@@ -182,7 +182,7 @@ fn side_lines(out: &mut String, side: &Side) {
             let label = c.label.as_deref().unwrap_or(&c.key);
             let line = c.line.map_or_else(String::new, |l| format!(", line {l}"));
             let same = if c.same_fingerprint {
-                "; same content as at the last mark"
+                "; same content as at the reference mark"
             } else {
                 ""
             };
@@ -783,7 +783,7 @@ mod tests {
   subject  ext:notes  ambiguous (several_units)
     stored: key n1
     23 candidates; the stored anchor matches each of them:
-    - note "say \"hi\" in C:\dir", line 4; same content as at the last mark
+    - note "say \"hi\" in C:\dir", line 4; same content as at the reference mark
       | say "hi" in C:\dir
       anchor: ext:notes#n1
     - note "n2"

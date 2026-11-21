@@ -224,17 +224,10 @@ pub fn reason_of_no_provider(np: NoProvider) -> Reason {
 
 pub(crate) fn failed_from_error(e: &ProviderError) -> Resolved {
     let (state, reason) = side_of_error(e.code);
-    // For a resource that cannot be read now, and for an anchor the provider
-    // refuses, the message is the provider's own sentence: the side's
-    // remediation or the error message quotes it.
-    let message = if matches!(
-        reason,
-        Reason::ResourceUnavailable | Reason::SelectorRefused
-    ) {
-        e.message.clone()
-    } else {
-        e.to_string()
-    };
+    // The message is the provider's own sentence, without the error code:
+    // the side's `reason` already names the kind, and `detail`, the
+    // remediation and the error message quote the sentence as it is.
+    let message = e.message.clone();
     Resolved::failed(state, reason, message)
 }
 

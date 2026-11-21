@@ -193,7 +193,8 @@ moved, was renamed or was reworded, hibi lists what it found by similarity \
 as candidates under that side, each with an anchor. A candidate is a guess: \
 hibi never uses one by itself. Read the candidate, and if it is the unit \
 the statement is about, give its anchor to `hibi reanchor`. A candidate \
-marked as having the same content as at the last mark is the marked unit, \
+marked as having the same content as at the reference mark is the marked \
+unit, \
 moved or renamed.
 
 The summary always counts every claim in the store.")]
