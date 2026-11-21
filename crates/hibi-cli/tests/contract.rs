@@ -505,7 +505,19 @@ fn the_largest_now_is_accepted_and_stated() {
             e["message"],
             format!("{late:?} is later than the largest time hibi accepts, {largest}"),
         );
+        assert_eq!(
+            e["remediation"],
+            format!("Give a time from 0000-01-01T00:00:00Z to {largest}.").as_str(),
+            "{late}"
+        );
     }
+    // A value that is not a time keeps the remediation about its form.
+    let e = repo.fail(&["--now", "9999-12-31", "status"]);
+    assert_eq!(e["code"], "invalid_time");
+    assert!(
+        e["remediation"].as_str().unwrap().contains("RFC 3339"),
+        "{e}"
+    );
     assert!(
         help_text(&repo).contains(&format!("The largest value is {largest}")),
         "{}",

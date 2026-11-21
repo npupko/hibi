@@ -773,15 +773,31 @@ impl Timestamp {
             (civil.year() > 0 && offset.to_timestamp(civil).is_err())
                 .then(|| Timestamp::from_instant(jiff::Timestamp::MAX).ok())?
         };
+        // A value that is a time but outside what hibi accepts: the fix is
+        // another time, not another way of writing it.
+        let range = || {
+            let largest = Timestamp::from_instant(jiff::Timestamp::MAX)
+                .map_or_else(|_| String::new(), |t| t.to_string());
+            format!("Give a time from 0000-01-01T00:00:00Z to {largest}.")
+        };
         let instant: jiff::Timestamp =
             s.parse().map_err(|e: jiff::Error| match past_largest() {
                 Some(largest) => Error::new(
                     Code::InvalidTime,
                     format!("{s:?} is later than the largest time hibi accepts, {largest}"),
-                ),
+                )
+                .with_remediation(range()),
                 None => bad(e.to_string()),
             })?;
-        Timestamp::from_instant(instant).map_err(|e| bad(e.message))
+        Timestamp::from_instant(instant).map_err(|_| {
+            Error::new(
+                Code::InvalidTime,
+                format!(
+                    "{s:?} is earlier than the smallest time hibi accepts, 0000-01-01T00:00:00Z"
+                ),
+            )
+            .with_remediation(range())
+        })
     }
 
     /// The UTC civil date and time.
@@ -1702,10 +1718,30 @@ mod tests {
                 e.message,
                 format!("{late:?} is later than the largest time hibi accepts, {max}"),
             );
+            // The value is a time: the remediation names the range, not
+            // how to write a time.
+            assert_eq!(
+                e.remediation.as_deref(),
+                Some("Give a time from 0000-01-01T00:00:00Z to 9999-12-30T22:00:00Z.")
+            );
         }
-        // A malformed value does not get that message.
+        // The same at the other end.
+        assert_eq!(t("0000-01-01T00:00:00Z").unwrap(), "0000-01-01T00:00:00Z");
+        let e = Timestamp::parse_instant("-000001-12-31T23:59:59Z").unwrap_err();
+        assert_eq!(e.code, Code::InvalidTime);
+        assert!(e.message.contains("earlier than the smallest time"), "{e}");
+        assert_eq!(
+            e.remediation.as_deref(),
+            Some("Give a time from 0000-01-01T00:00:00Z to 9999-12-30T22:00:00Z.")
+        );
+        // A malformed value does not get that message, and keeps the
+        // remediation about how to write a time.
         let e = Timestamp::parse_instant("9999-12-31").unwrap_err();
         assert!(!e.message.contains("largest"), "{}", e.message);
+        assert!(
+            e.remediation.as_deref().unwrap().contains("RFC 3339"),
+            "{e:?}"
+        );
     }
 
     #[test]
