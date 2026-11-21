@@ -5422,7 +5422,7 @@ Candidate, one unit that the stored anchor of the side could mean:
 |---|---|
 | `key`, `kind`, `label`, `line`, `endLine` | as in UnitRef |
 | `text` | the unit text cut to 240 characters, or `null` when the provider returned the unit without text. Text that is cut ends with `… (<n> characters)`, where `<n>` is the length of the whole text; the same holds for every `text` that an output cuts to 240 characters (a `changed` side, an AcceptedSide, a `cover` item, a `triage` item) |
-| `anchor` | string or `null`: the anchor the provider printed for this unit (section 6.7), as an argument to give back: `<loc>#<symbol>` when the selector is a symbol alone, and the anchor as JSON otherwise. `null` when another listed candidate carries the same printed anchor: the two are identical where they stand, and no anchor selects one of them alone |
+| `anchor` | string or `null`: the anchor the provider printed for this unit (section 6.7), as an argument to give back: `<loc>#<symbol>` when the selector is a symbol alone, and the anchor as JSON otherwise. `null` when no anchor selects the unit alone: the provider returned it with `refuse: quote_not_distinguishable`, or another listed candidate carries the same printed anchor. The same rule gives `anchor: null` to an item of `cover`, `triage` and `suggest-evidence` |
 | `sameFingerprint` | boolean |
 
 All eight keys are always present.
@@ -6126,12 +6126,15 @@ replaced or added side in `reanchor`:
 - `quote_not_distinguishable`: the provider returned the unit with
   `refuse: quote_not_distinguishable` (section 6.7): the completed selector
   would not resolve back to this unit alone. The message is
-  `<side> (<locator>): the quoted text is identical, with identical text around it in its unit, to another place in the same container, so a stored anchor could not tell the two apart`
+  `<side> (<locator>): the quoted text is identical, with identical text around it in its unit, to another place in the same scope, so a stored anchor could not tell the two apart`
   and the remediation
   `Quote a longer passage that occurs once in its place, or in code anchor <loc>#<symbol>::<line>.`
 - A note, not an error: when a quote-only anchor resolves inside a code
   declaration, the entry of that claim has in `notes` the sentence
-  `<side> (<locator>) tracks the quoted text in its place. To follow the declaration <name> instead, anchor <locator>#<name>::<line>`,
+  `<side> (<locator>) tracks the quoted text in its place. To follow the declaration <name> instead, anchor <locator>#<name>::<line>`
+  (with `this declaration of <name> (<name> names <n> declarations)` in
+  place of `the declaration <name>` when the completed selector has a
+  `count`),
   where `<name>` is the one element of the completed selector's `within`
   and `<line>` the first non-empty line of the quote as typed, trimmed. The
   unit is in code when its fingerprint has the profile `ast-v1`. Prose gets
@@ -6772,7 +6775,7 @@ Closed list. Every error carries one of these codes.
 | `selector_not_exact` | A new anchor (in `claim`, or a replaced or added side in `reanchor`) was found only by similarity, or its quote does not occur in the unit it resolved to. The message shows what was found; in the first case it lists the candidates, each with an anchor that selects it. |
 | `quote_spans_units` | A quote reaches outside one unit |
 | `quote_in_comment` | A quote lies wholly or partly inside a code comment. Remediation: anchor the code the comment describes. |
-| `quote_not_distinguishable` | The quoted text of a new anchor is identical, with identical text around it in its unit, to another place in the same container, so its stored anchor could not tell the two apart (section 6.7). Remediation: `Quote a longer passage that occurs once in its place, or in code anchor <loc>#<symbol>::<line>.` |
+| `quote_not_distinguishable` | The quoted text of a new anchor is identical, with identical text around it in its unit, to another place in the same scope, so its stored anchor could not tell the two apart (section 6.7). Remediation: `Quote a longer passage that occurs once in its place, or in code anchor <loc>#<symbol>::<line>.` |
 | `unsupported_selector` | A new anchor has a selector key its provider does not allow, such as `key` on a `file:` locator |
 | `no_scopes` | `cover` or `triage` with no scope declared |
 | `unknown_scope` | `--scope` names no scope |

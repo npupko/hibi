@@ -560,3 +560,93 @@ fn cover_offers_no_anchor_for_units_that_cannot_be_told_apart() {
     assert!(v["summary"]["excluded"].as_u64().unwrap() >= 1, "{v}");
     assert_eq!(v["scopes"][0]["exclusions"][0]["unit"], key.as_str());
 }
+
+/// A sentence that also opens a paragraph of two sentences: the printed
+/// selector of the lone sentence would select both, and the provider says
+/// so. No anchor is offered for it, in the error of `claim` and in
+/// `cover`, while the sentence in the paragraph keeps its own.
+#[test]
+fn a_unit_whose_printed_anchor_selects_another_too_is_offered_none() {
+    let repo = Repo::new();
+    repo.config(
+        "[[scope]]\nname = \"docs\"\nresource = \"file:docs/*.md\"\nkinds = [\"sentence\"]\n",
+    );
+    repo.write(
+        "docs/notes.md",
+        "# Notes\n\nRestart the server.\n\nRestart the server. Then check the logs.\n",
+    );
+    let e = repo.fail(&[
+        "claim",
+        "X",
+        "--subject",
+        "file:docs/notes.md::Restart the server.",
+    ]);
+    assert_eq!(e["code"], "side_ambiguous", "{e}");
+    let message = s(&e["message"]);
+    assert!(
+        message.contains("sentence \"Restart the server.\", line 3: identical to another one, no anchor selects it alone"),
+        "{message}"
+    );
+    // The one anchor that is offered selects the sentence of the paragraph.
+    let offered = json_anchor_in(message);
+    let v = repo.json(&["--now", NOW, "claim", "X", "--subject", &offered]);
+    assert_eq!(v["claims"][0]["claim"]["sides"][0]["unit"]["line"], 5);
+
+    let v = repo.json(&["cover"]);
+    let items = v["scopes"][0]["items"].as_array().unwrap();
+    let lone = items
+        .iter()
+        .find(|i| i["unit"]["line"] == 3)
+        .unwrap_or_else(|| panic!("{v}"));
+    assert_eq!(lone["anchor"], Value::Null, "{v}");
+    for item in items.iter().filter(|i| i["unit"]["line"] == 5) {
+        assert!(item["anchor"].is_object(), "{v}");
+    }
+    let human = repo.human(&["cover"]);
+    assert!(
+        human.stdout.contains(
+            "cannot be anchored alone: claim the unit that contains it, or exclude it with unit = "
+        ),
+        "{}",
+        human.stdout
+    );
+}
+
+/// The note for a bare quote inside one of several declarations of a name
+/// says that the name has several, and the anchor it advises resolves to
+/// the declaration that holds the line.
+#[test]
+fn the_note_for_a_quote_in_an_overload_names_an_anchor_that_resolves() {
+    let repo = Repo::new();
+    repo.write(
+        "o.py",
+        "def f(x: int) -> int:\n    return x + 1\n\n\ndef f(x: str) -> str:\n    return x + \"1\"\n",
+    );
+    let v = repo.json(&[
+        "--now",
+        NOW,
+        "claim",
+        "Y",
+        "--subject",
+        "file:o.py::return x + 1",
+    ]);
+    assert_eq!(
+        v["claims"][0]["notes"],
+        json!([
+            "the subject (file:o.py) tracks the quoted text in its place. To follow this declaration of f (f names 2 declarations) instead, anchor file:o.py#f::return x + 1"
+        ])
+    );
+    let advised = repo.json(&[
+        "--now",
+        NOW,
+        "claim",
+        "Y2",
+        "--subject",
+        "file:o.py#f::return x + 1",
+    ]);
+    let side = &advised["claims"][0]["claim"]["sides"][0];
+    assert_eq!(side["unit"]["line"], 1);
+    assert_eq!(side["anchor"]["sel"]["symbol"], "f");
+    assert_eq!(side["anchor"]["sel"]["count"], 2);
+    assert_eq!(advised["claims"][0]["notes"], json!([]));
+}

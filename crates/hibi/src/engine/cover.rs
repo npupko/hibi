@@ -143,9 +143,9 @@ pub struct CoverItem {
     pub text: Option<String>,
     /// The unit's locator with its completed selector; can be passed to
     /// `claim --stdin`.
-    /// `null` when another uncovered unit of the resource carries the same
-    /// printed anchor: the two are identical where they stand and no
-    /// anchor selects this one alone. Such a unit is covered by a claim on
+    /// `null` when no anchor selects this unit alone: the provider says so,
+    /// or another uncovered unit of the resource carries the same printed
+    /// anchor. The unit is identical to another one where it stands. Such a unit is covered by a claim on
     /// the unit that contains it, or taken out of the scope by an exclusion
     /// that names its key.
     #[schemars(with = "Nullable<Anchor>")]
@@ -650,8 +650,9 @@ pub fn cover(
                     .next()
                     .flatten()
                     .map(|t| cut_text(&t, TEXT_EXCERPT_CHARS)),
-                anchor: (printed.get(&(&u.loc, &u.unit.sel)) == Some(&1))
-                    .then(|| Anchor::new(u.loc.clone(), u.unit.sel.clone())),
+                anchor: (super::resolve::selects_its_unit(&u.unit)
+                    && printed.get(&(&u.loc, &u.unit.sel)) == Some(&1))
+                .then(|| Anchor::new(u.loc.clone(), u.unit.sel.clone())),
             })
             .collect();
         summary.units += sc.units;

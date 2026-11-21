@@ -188,8 +188,15 @@
       "type": "object",
       "properties": {
         "anchor": {
-          "description": "The unit's locator with its completed selector, for `claim --stdin`.",
-          "$ref": "#/$defs/Anchor"
+          "description": "The unit's locator with its printed selector, to give to `claim`.\n`null` when no anchor selects this unit alone (it is identical to\nanother unit where it stands).",
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Anchor"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "band": {
           "$ref": "#/$defs/Band"

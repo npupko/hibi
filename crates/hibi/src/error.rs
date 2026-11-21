@@ -78,7 +78,7 @@ pub enum Code {
     /// A quote lies wholly or partly inside a code comment.
     QuoteInComment,
     /// The quoted text is identical, with identical text around it in its
-    /// unit, to another place in the same container: a stored anchor
+    /// unit, to another place in the same scope: a stored anchor
     /// could not tell the two apart.
     QuoteNotDistinguishable,
     /// A new anchor has a selector key its provider does not allow.

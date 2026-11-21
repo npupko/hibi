@@ -831,6 +831,22 @@ fn identical_twins_are_listed_without_an_anchor() {
         2,
         "{message}"
     );
+
+    // The provider can say it of one unit: a printed selector that does
+    // not select its unit alone comes with `refuse:
+    // quote_not_distinguishable`, also when no other listed unit has the
+    // same selector. No anchor is offered for it.
+    let mut marked_so = unit("k4", "note", "a sentence in a longer one");
+    marked_so.refuse = Some(hibi::provider::Refuse::QuoteNotDistinguishable);
+    f.worlds[1].borrow_mut().overrides.insert(
+        anchor("u:b", key_sel("k")),
+        Ok(vec![marked_so, unit("k3", "note", "other")]),
+    );
+    let v = view(&f.store, &mut f.p, &f.id);
+    let cs = v.sides[1].candidates.as_ref().unwrap();
+    assert_eq!(cs[0].key, "k4");
+    assert!(cs[0].anchor.is_none(), "{cs:?}");
+    assert!(cs[1].anchor.is_some(), "{cs:?}");
     assert!(message.ends_with(engine::TWINS_REMEDY), "{message}");
     assert!(!message.contains(r#""quote":"the same text""#), "{message}");
 }

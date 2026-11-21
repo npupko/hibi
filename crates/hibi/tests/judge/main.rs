@@ -382,7 +382,10 @@ fn r24_triage_sends_the_pinned_model_and_one_question_pair_per_unit() {
     assert!(out.items[2].unit.line < out.items[3].unit.line);
     assert_eq!(out.considered, 5);
     assert_eq!(out.skipped, 1, "the fenced block is not prose");
-    assert_eq!(out.items[0].anchor.loc.as_str(), "file:docs/guide.md");
+    assert_eq!(
+        out.items[0].anchor.as_ref().unwrap().loc.as_str(),
+        "file:docs/guide.md"
+    );
 }
 
 #[test]

@@ -186,7 +186,7 @@
           "const": "quote_in_comment"
         },
         {
-          "description": "The quoted text is identical, with identical text around it in its\nunit, to another place in the same container: a stored anchor\ncould not tell the two apart.",
+          "description": "The quoted text is identical, with identical text around it in its\nunit, to another place in the same scope: a stored anchor\ncould not tell the two apart.",
           "type": "string",
           "const": "quote_not_distinguishable"
         },

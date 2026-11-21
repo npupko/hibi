@@ -382,8 +382,14 @@ fn tracks_text_note(index: usize, asked: &Anchor, unit: &Unit) -> Option<String>
         return None;
     };
     let line = quote.lines().map(str::trim).find(|l| !l.is_empty())?;
+    // Several declarations can share the name (overloads): the anchor by
+    // name and line then names the one that holds the line.
+    let which = match unit.sel.count {
+        Some(n) => format!("this declaration of {name} ({name} names {n} declarations)"),
+        None => format!("the declaration {name}"),
+    };
     Some(format!(
-        "{} ({}) tracks the quoted text in its place. To follow the declaration {name} instead, anchor {}#{name}::{line}",
+        "{} ({}) tracks the quoted text in its place. To follow {which} instead, anchor {}#{name}::{line}",
         side_name(index),
         asked.loc,
         asked.loc
@@ -411,7 +417,7 @@ fn check_new<'r>(index: usize, anchor: &Anchor, r: &'r Resolved) -> Result<&'r U
             // place without anyone noticing.
             crate::provider::Refuse::QuoteNotDistinguishable => (
                 Code::QuoteNotDistinguishable,
-                "the quoted text is identical, with identical text around it in its unit, to another place in the same container, so a stored anchor could not tell the two apart",
+                "the quoted text is identical, with identical text around it in its unit, to another place in the same scope, so a stored anchor could not tell the two apart",
             ),
         };
         return Err(Error::new(code, format!("{what}: {why}")));

@@ -1048,7 +1048,7 @@ fn a_quote_that_cannot_be_told_apart_is_refused_at_claim_time() {
     assert!(
         errors[0]
             .message
-            .starts_with("the subject (t:a): the quoted text is identical, with identical text around it in its unit, to another place in the same container"),
+            .starts_with("the subject (t:a): the quoted text is identical, with identical text around it in its unit, to another place in the same scope"),
         "{}",
         errors[0]
     );

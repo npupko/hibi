@@ -91,11 +91,13 @@ impl Candidates {
     }
 
     /// The shown candidates, each with its anchor when that anchor selects
-    /// it alone, and `None` when another shown candidate carries the same
-    /// anchor: the two cannot be told apart by any anchor of this form.
+    /// it alone, and `None` when it does not: the provider says so
+    /// ([`selects_its_unit`]), or another shown candidate carries the same
+    /// anchor. Such a unit cannot be told apart by any anchor of this form.
     pub fn selectable(&self) -> impl Iterator<Item = (&Unit, Option<&str>)> {
         self.shown().map(|(u, anchor)| {
-            let alone = self.anchors.iter().filter(|a| *a == anchor).count() == 1;
+            let alone =
+                selects_its_unit(u) && self.anchors.iter().filter(|a| *a == anchor).count() == 1;
             (u, alone.then_some(anchor))
         })
     }
@@ -152,6 +154,15 @@ pub fn quoted(label: &str) -> String {
     }
     out.push('"');
     out
+}
+
+/// False when the provider printed a selector for `unit` that does not
+/// select it alone: the unit then carries `refuse:
+/// quote_not_distinguishable` (section 6.7), also in `units`, in candidate
+/// lists and in ambiguous lists. No anchor may be built or printed from
+/// the `sel` of such a unit.
+pub fn selects_its_unit(unit: &Unit) -> bool {
+    unit.refuse != Some(crate::provider::Refuse::QuoteNotDistinguishable)
 }
 
 /// A new anchor that the provider could only guess at.

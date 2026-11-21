@@ -107,8 +107,11 @@ pub struct TriageItem {
     pub unit: UnitRef,
     /// The unit text cut to 240 characters.
     pub text: String,
-    /// The unit's locator with its completed selector, for `claim --stdin`.
-    pub anchor: Anchor,
+    /// The unit's locator with its printed selector, to give to `claim`.
+    /// `null` when no anchor selects this unit alone (it is identical to
+    /// another unit where it stands).
+    #[schemars(with = "crate::engine::Nullable<Anchor>")]
+    pub anchor: Option<Anchor>,
     /// The Noul probability that the text states a checkable fact.
     pub checkable: f64,
     pub band: Band,
@@ -224,7 +227,8 @@ pub fn triage(
                     loc: p.unit.loc.clone(),
                     unit: UnitRef::from(&p.unit.unit),
                     text: cut_text(&p.text, TEXT_EXCERPT_CHARS),
-                    anchor: Anchor::new(p.unit.loc.clone(), p.unit.unit.sel.clone()),
+                    anchor: engine::selects_its_unit(&p.unit.unit)
+                        .then(|| Anchor::new(p.unit.loc.clone(), p.unit.unit.sel.clone())),
                     checkable,
                     band: Band::of(checkable),
                     evidence: EvidenceLabel::of(&a[1]),

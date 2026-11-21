@@ -51,8 +51,11 @@ pub struct SuggestQuery {
 pub struct SuggestCandidate {
     pub loc: Locator,
     pub unit: UnitRef,
-    /// The unit's locator with its completed selector.
-    pub anchor: Anchor,
+    /// The unit's locator with its printed selector, to give to `claim`.
+    /// `null` when no anchor selects this unit alone (it is identical to
+    /// another unit where it stands).
+    #[schemars(with = "crate::engine::Nullable<Anchor>")]
+    pub anchor: Option<Anchor>,
     /// The Noul probability that reading this unit settles the statement.
     pub p: f64,
     /// `p >= 0.7`.
@@ -232,7 +235,8 @@ pub fn suggest_evidence(
             .ok_or_else(|| Error::internal("a suggest-evidence question got a non-Noul answer"))?;
         ranked.push((
             SuggestCandidate {
-                anchor: Anchor::new(loc.clone(), unit.sel.clone()),
+                anchor: crate::engine::selects_its_unit(&unit)
+                    .then(|| Anchor::new(loc.clone(), unit.sel.clone())),
                 unit: UnitRef::from(&unit),
                 loc,
                 p,
